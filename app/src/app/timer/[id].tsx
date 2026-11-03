@@ -1,5 +1,3 @@
-import { StubScreen } from "../../components";
+import { TimerScreen } from "../../features/todo/TimerScreen";
 
-export default function Screen() {
-  return <StubScreen id="S08" title="타이머" when="다음 단계에서 만들어요" />;
-}
+export default TimerScreen;

@@ -299,6 +299,33 @@ export function copyTodo(id: string, date: Day) {
   set({ ...db, todos: [...db.todos, copy] });
 }
 
+// ── timer ──────────────────────────────────────────────────
+/** Seconds recorded so far, including a running session. Survives the app being closed (only the start time is stored). */
+export function timerTotal(t: Pick<Todo, "timerSeconds" | "timerStartedAt">, nowMs = Date.now()) {
+  const running = t.timerStartedAt ? Math.max(0, Math.floor((nowMs - Date.parse(t.timerStartedAt)) / 1000)) : 0;
+  return t.timerSeconds + running;
+}
+
+/** Starts this to-do's timer and stops any other running one (one timer at a time). */
+export function startTimer(id: string) {
+  id = materialize(id);
+  const stamp = now();
+  set({
+    ...db,
+    todos: db.todos.map((t) =>
+      t.id === id ? { ...t, timerStartedAt: stamp } : t.timerStartedAt ? { ...t, timerSeconds: timerTotal(t), timerStartedAt: undefined } : t,
+    ),
+  });
+}
+
+export function pauseTimer(id: string) {
+  set({ ...db, todos: db.todos.map((t) => (t.id === id && t.timerStartedAt ? { ...t, timerSeconds: timerTotal(t), timerStartedAt: undefined } : t)) });
+}
+
+export function resetTimer(id: string) {
+  updateTodo(id, { timerSeconds: 0, timerStartedAt: undefined });
+}
+
 export const copyTodoTomorrow = (id: string) => {
   id = materialize(id);
   const t = db.todos.find((x) => x.id === id);

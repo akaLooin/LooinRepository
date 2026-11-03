@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
-import { Play } from "./icons";
+import { Pause, Play } from "./icons";
 
 type Kind = "sheetPrimary" | "sheetBlock" | "danger" | "plain";
 
@@ -53,7 +53,7 @@ export function PlayButton({ label = "시작하기", running, onPress }: { label
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       style={{ height: 64, borderRadius: tokens.radius.pill, backgroundColor: c.surfaceInput, flexDirection: "row", alignItems: "center", paddingLeft: 4, paddingRight: 32, gap: 20, alignSelf: "center" }}>
       <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>
-        <Play size={26} color={c.play} fill={running ? "transparent" : c.play} />
+        {running ? <Pause size={26} color={c.play} fill={c.play} /> : <Play size={26} color={c.play} fill={c.play} />}
       </View>
       <AppText variant="bodyLg" weight={700}>{label}</AppText>
     </Pressable>
