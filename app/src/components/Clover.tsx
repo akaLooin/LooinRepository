@@ -12,7 +12,8 @@ export type CloverState =
   | { kind: "partial"; color: string; ratio: number }
   | { kind: "todoOpen" }
   | { kind: "todoDone"; color: string }
-  | { kind: "fill"; color: string };
+  | { kind: "fill"; color: string }
+  | { kind: "split"; colors: string[]; left: number }; // any done: bands by category order; number left, or tick when 0
 
 /** Four overlapping circles: our own four-leaf shape (drawn fresh, not taken from the original). */
 function Lobes({ size, fill }: { size: number; fill: string }) {
@@ -70,6 +71,32 @@ export function Clover({
       body = <Lobes size={size} fill={empty} />;
       count = state.count;
       break;
+    case "split": {
+      const n = Math.max(1, state.colors.length);
+      const band = size / n;
+      body = (
+        <>
+          <Defs>
+            {state.colors.map((_, i) => (
+              <ClipPath key={i} id={`${clipId}b${i}`}>
+                <Rect x={0} y={i * band} width={size} height={i === n - 1 ? size - i * band : band} />
+              </ClipPath>
+            ))}
+          </Defs>
+          {state.colors.map((col, i) => (
+            <G key={i} clipPath={`url(#${clipId}b${i})`}>
+              <Lobes size={size} fill={fill(col)} />
+            </G>
+          ))}
+          {state.left === 0 ? <Tick size={size} color={onColor(fill(state.colors[0]))} /> : null}
+        </>
+      );
+      if (state.left > 0) {
+        count = state.left;
+        countColor = onColor(fill(state.colors[0]));
+      }
+      break;
+    }
     case "fill":
       body = <Lobes size={size} fill={fill(state.color)} />;
       break;

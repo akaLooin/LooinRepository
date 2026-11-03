@@ -7,7 +7,7 @@ Checks: each screen is driven in a browser (Expo web export + Playwright at 411�
 | ID | date | status | missing | harder than expected |
 | --- | --- | --- | --- | --- |
 | shell | 2026-11-03 | done | — | Expo SDK 58 + RN 0.88 types (`TextInputInstance`), web inputs needed their focus outline removed |
-| S03 home | 2026-11-03 | done | category filter (▼), 리스트 메뉴, 보관함 chip, status emoji, friend chips: buttons show a "not yet" toast | Mixed-day clover rule is a guess. The original shows a number on some partly-done days and a tick on others |
+| S03 home | 2026-11-03 | done | category filter (▼), 리스트 메뉴, 보관함 chip, status emoji, friend chips: buttons show a "not yet" toast | Clover rule confirmed by the user: once anything is done the clover fills with the day's category colours, split in category order; the number is what's left in total, a tick means all done (tests in scripts/test-daystate.ts) |
 | S04 inline add/edit | 2026-11-03 | done | — | A tap on a routine suggestion blurs the field first, so closing waits 180 ms |
 | S05 to-do sheet | 2026-11-03 | partial | 시간 알림 and 사진 인증 only show a toast. Drag-to-close (gesture library) | — |
 | S05a memo sheet | 2026-11-03 | done | — | — |
@@ -18,7 +18,7 @@ Checks: each screen is driven in a browser (Expo web export + Playwright at 411�
 | S06d colour by hex | 2026-11-03 | done | — | Differs from the original on purpose (user request) |
 | S06e move to category | 2026-11-03 | done | — | — |
 | S07 routines | 2026-11-03 | partial | drag to reorder | — |
-| S07b routine edit | 2026-11-03 | done | — | What "수동으로 할 일 추가" does is a guess: on = not shown on home automatically, offered as a suggestion when adding |
+| S07b routine edit | 2026-11-03 | done | — | "수동으로 할 일 추가" confirmed by the user: the routine shows as a grey row with + in its category; one tap adds it for that day, then it can be edited (e.g. "💪 운동하기: 어깨") |
 | S07c repeat | 2026-11-03 | done | the original's detail screens for each type are unseen, ours are our own layout | Biweekly counts from the week the routine starts |
 | S07d time sheet | 2026-11-03 | done | — | — |
 | S01, S02, S05b, S08, S09, S12, S12d, S15–S18, S21, S21b, S22 | — | stub | routed, show a "아직 만드는 중이에요" page | — |

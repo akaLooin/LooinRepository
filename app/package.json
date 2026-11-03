@@ -31,7 +31,7 @@
     "web": "expo start --web",
     "tokens": "node scripts/gen-tokens.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-routines.ts"
+    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts"
   },
   "private": true
 }

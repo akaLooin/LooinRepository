@@ -14,6 +14,7 @@ import { tokens, useTheme } from "../../theme";
 import { dayState } from "./dayState";
 import { HomeMenu, MenuButton } from "./HomeMenu";
 import { InlineTodoInput } from "./InlineTodoInput";
+import { PendingRoutineRow } from "./PendingRoutineRow";
 import { TodoSheets } from "./TodoSheets";
 
 const G = tokens.layout.gutter;
@@ -156,13 +157,11 @@ export function HomeScreen() {
                       />
                     ),
                   )}
+                  {manualRoutinesOn(db, selected, cat.id).map((r) => (
+                    <PendingRoutineRow key={r.id} title={r.title} onAdd={() => addRoutineTodo(r.id, selected)} />
+                  ))}
                   {adding === cat.id ? (
-                    <InlineTodoInput
-                      color={cat.color}
-                      suggestions={manualRoutinesOn(db, selected, cat.id).map((r) => ({ id: r.id, title: r.title }))}
-                      onSubmit={(title, routineId) => (routineId ? addRoutineTodo(routineId, selected, title) : onAdd(cat.id, title))}
-                      onDone={() => setAdding(null)}
-                    />
+                    <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} />
                   ) : null}
                 </View>
               </View>

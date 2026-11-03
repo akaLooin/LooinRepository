@@ -148,11 +148,11 @@ export function deleteTodo(id: string) {
   else set({ ...db, todos: db.todos.filter((x) => x.id !== id) });
 }
 
-/** Add a manual-add routine as today's to-do, optionally with extra text ("운동하기: 어깨"). */
-export function addRoutineTodo(routineId: string, day: Day, title: string) {
+/** Add a manual-add routine as that day's to-do, titled like the routine (the user can edit it after, e.g. "운동하기: 어깨"). */
+export function addRoutineTodo(routineId: string, day: Day, title?: string) {
   const r = db.routines.find((x) => x.id === routineId);
   if (!r) return;
-  const row: Todo = { id: newId(), categoryId: r.categoryId, title, date: day, sortOrder: nextOrder(db.todos.filter((x) => x.date === day)), isDone: false,
+  const row: Todo = { id: newId(), categoryId: r.categoryId, title: title ?? r.title, date: day, sortOrder: nextOrder(db.todos.filter((x) => x.date === day)), isDone: false,
     memo: "", memoIsPrivate: false, timerSeconds: 0, routineId, routineDate: day, createdAt: now() };
   set({ ...db, todos: [...db.todos, row] });
 }

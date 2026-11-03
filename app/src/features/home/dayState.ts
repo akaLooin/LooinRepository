@@ -1,23 +1,21 @@
 import type { CloverState } from "../../components";
 import type { Category, Todo } from "../../data/store";
-import { tokens } from "../../theme";
+
+/** How many categories the calendar splits a clover into (설정 → 화면 "할 일 캘린더에서 표시할 카테고리", default 2). */
+export const CALENDAR_CATEGORY_COUNT = 2;
 
 /**
- * Clover for one calendar day. Rules inferred from the reference month view (S03):
+ * Clover for one calendar day (rule confirmed by the user):
  *  - no to-dos: empty clover
- *  - nothing done: grey clover with the number left
- *  - everything done: filled with the first category's colour and a tick
- *  - some done: filled in proportion, tick on top
- * The exact rule the original uses for mixed days is a guess; see build-log.
+ *  - nothing done yet: grey clover with the number left
+ *  - at least one done: the clover is covered in the colours of that day's categories, split into bands
+ *    in category order; on top, the number left across all categories, or a tick when everything is done
  */
-export function dayState(todos: Todo[], categories: Category[]): CloverState {
+export function dayState(todos: Todo[], categories: Category[], limit = CALENDAR_CATEGORY_COUNT): CloverState {
   if (todos.length === 0) return { kind: "empty" };
-  const done = todos.filter((t) => t.isDone);
-  const left = todos.length - done.length;
-  const order = new Map(categories.map((c, i) => [c.id, i]));
-  const firstDone = [...done].sort((a, b) => (order.get(a.categoryId) ?? 0) - (order.get(b.categoryId) ?? 0))[0];
-  const color = categories.find((c) => c.id === (firstDone ?? todos[0]).categoryId)?.color ?? tokens.colors.dark.accent;
-  if (done.length === 0) return { kind: "count", count: left };
-  if (left === 0) return { kind: "done", color };
-  return { kind: "partial", color, ratio: done.length / todos.length };
+  const left = todos.filter((t) => !t.isDone).length;
+  if (left === todos.length) return { kind: "count", count: left };
+  const present = new Set(todos.map((t) => t.categoryId));
+  const colors = categories.filter((c) => present.has(c.id)).slice(0, limit).map((c) => c.color);
+  return { kind: "split", colors: colors.length ? colors : [categories[0]?.color ?? "#FFFFFF"], left };
 }
