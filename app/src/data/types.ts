@@ -47,6 +47,6 @@ export type Routine = RepeatRule & {
   sortOrder: number;
 };
 
-export type DDay = { id: string; title: string; type: "fixed" | "repeat"; targetDate: Day; isPrivate: boolean; sortOrder: number };
+export type DDay = { id: string; title: string; type: "fixed" | "repeat"; targetDate: Day; repeatUnit?: "yearly" | "monthly"; isPrivate: boolean; sortOrder: number };
 
 export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[] };

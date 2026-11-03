@@ -306,9 +306,28 @@ export const copyTodoTomorrow = (id: string) => {
 };
 
 // ── d-days ─────────────────────────────────────────────────
-export function ddayLabel(target: Day, from: Day = today()) {
-  const ms = Date.parse(target) - Date.parse(from);
-  const n = Math.round(ms / 86400000);
-  return n === 0 ? "D-DAY" : n > 0 ? `D-${n}` : `D+${-n}`;
+export { ddayLabel, nextOccurrence } from "./dday";
+
+export function saveDDay(input: Omit<DDay, "id" | "sortOrder"> & { id?: string }) {
+  if (input.id && db.ddays.some((d) => d.id === input.id)) {
+    set({ ...db, ddays: db.ddays.map((d) => (d.id === input.id ? { ...d, ...input, id: d.id } : d)) });
+    return input.id;
+  }
+  const id = newId();
+  set({ ...db, ddays: [...db.ddays, { ...input, id, sortOrder: nextOrder(db.ddays) }] });
+  return id;
+}
+
+export function deleteDDay(id: string) {
+  set({ ...db, ddays: db.ddays.filter((d) => d.id !== id) });
+}
+
+export function moveDDay(id: string, dir: -1 | 1) {
+  const list = [...db.ddays].sort(byOrder);
+  const i = list.findIndex((d) => d.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  set({ ...db, ddays: db.ddays.map((d) => ({ ...d, sortOrder: list.findIndex((x) => x.id === d.id) + 1 })) });
 }
 export type { Category, DDay, Profile, Routine, Todo };

@@ -92,7 +92,7 @@ export function HomeScreen() {
           <ProfileHeader
             name={profile.nickname}
             bio={profile.bio}
-            dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay.targetDate, now) } : undefined}
+            dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now) } : undefined}
             onDday={() => router.push("/ddays" as never)}
             onEmoji={() => notice("상태 이모지는 다음 단계에서 만들어요")}
           />
