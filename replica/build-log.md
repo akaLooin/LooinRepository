@@ -2,7 +2,7 @@
 
 Data layer: **real** since replica-backend. Saved on the device and synced with Supabase when signed in; demo mode (no keys) keeps sample data on the device only. See `replica/backend.md`.
 
-Checks: each screen is driven in a browser (Expo web export + Playwright at 411×891). The checks are add, check, open sheets, save, validation errors and no console errors. Repeat rules have unit tests (`npm test`, 7 cases). The typecheck passes (`npx tsc --noEmit`). Not run on a real Android device yet.
+Checks: each screen is driven in a browser (Expo web export + Playwright at 411×891, scripts in `app/e2e/`). The checks are add, check, open sheets, save, validation errors and no console errors. Unit tests: `npm test` (30 cases: repeat rules, clover, sync, D-days, URL, notifications). The typecheck passes (`npx tsc --noEmit`). Not run on a real Android device yet.
 
 | ID | date | status | missing | harder than expected |
 | --- | --- | --- | --- | --- |
@@ -24,6 +24,14 @@ Checks: each screen is driven in a browser (Expo web export + Playwright at 411�
 | S01 login | 2026-11-03 | done | Google sign-in, password reset | Switched from email codes to email + password: Supabase's built-in mailer no longer allows a template with the code |
 | S12 settings | 2026-11-03 | partial | only account and sync rows work | — |
 | S18 me | 2026-11-03 | partial | profile and a way to settings | — |
-| S02, S05b, S08, S09, S12d, S15–S17, S21, S21b, S22 | — | stub | routed, show a "아직 만드는 중이에요" page | — |
+| S21 D-days | 2026-11-03 | done | drag to reorder (arrows for now) | Repeating D-days: next date, short months use their last day (scripts/test-dday.ts) |
+| S21b D-day edit | 2026-11-03 | done | — | — |
+| S08 timer | 2026-11-03 | done | — | Stores a start time plus a total, so a closed app keeps counting |
+| S05b to-do info | 2026-11-03 | done | photo (no upload yet) | — |
+| S02 profile | 2026-11-03 | partial | profile photo | — |
+| S12d display | 2026-11-03 | partial | 10 of 18 options shown as "준비 중" | Rows without an action disabled the toggles inside them for screen readers; fixed in ListRow and FieldRow |
+| S09 diary | 2026-11-03 | partial | photos, stickers | Entry point is our choice (a row under the day's to-dos); the original's is unseen. Header follows the diary background colour |
+| S22 reminders + S05 alarm | 2026-11-03 | done | — | Local notifications; plan unit-tested (scripts/test-notifications.ts). Ringing only verifiable on a phone |
+| S15–S17 | — | stub | routed, show a "아직 만드는 중이에요" page | — |
 
 Routine occurrences are not stored until the user touches one. Then they become a row with `routine_id` + `routine_date`, matching `replica/schema.sql`. Deleting one occurrence keeps a skipped row so the routine does not bring it back.

@@ -1,0 +1,20 @@
+const { chromium } = require("playwright");
+(async () => {
+  const b = await chromium.launch();
+  const p = await b.newPage({ viewport: { width: 411, height: 891 } });
+  const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
+  await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
+  await p.getByLabel("11월 7일", { exact: true }).click();
+  await p.waitForTimeout(300);
+  const pending = await p.getByLabel("💪 운동하기 오늘 할 일에 추가").count();
+  await p.getByLabel("💪 운동하기 오늘 할 일에 추가").click();
+  await p.waitForTimeout(300);
+  const added = await p.getByRole("checkbox", { name: "💪 운동하기, 미완료" }).count();
+  const pendingAfter = await p.getByLabel("💪 운동하기 오늘 할 일에 추가").count();
+  await p.getByRole("checkbox", { name: "💪 운동하기, 미완료" }).click();
+  await p.waitForTimeout(300);
+  const cell7 = await p.getByLabel("11월 7일", { exact: true }).innerText();
+  await p.screenshot({ path: "pend.png" });
+  console.log(JSON.stringify({ pending, added, pendingAfter, cell7, errs }));
+  await b.close();
+})();

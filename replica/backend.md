@@ -29,7 +29,16 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
    supabase link --project-ref <your project ref>
    supabase functions deploy delete-account
    ```
-6. **Run it on your phone**: `cd app && npm install && npx expo start`, then open the QR code with the Expo Go app on Android.
+6. **Run it on your phone (development)**: `cd app && npm install && npx expo start`, then open the QR code with the Expo Go app on Android.
+
+7. **Install it as a real app (APK), so the PC is not needed day to day**:
+   - Make a free account at expo.dev.
+   - On the PC, once: `cd app`, `npx.cmd eas-cli@latest login`, `npx.cmd eas-cli@latest init`.
+   - Put the two values from `.env.local` into Expo, because `.env.local` is not uploaded:
+     `npx.cmd eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value https://<ref>.supabase.co --visibility plaintext`
+     and the same for `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+   - Build: `npx.cmd eas-cli@latest build -p android --profile preview`. It builds in Expo's cloud (about 10–20 minutes) and gives a link and a QR code. Open it on the phone and install the APK. Android asks to allow installing from that source.
+   - After that the app runs on its own. Rebuild only when the code changes.
 
 ## Checklist
 
@@ -56,7 +65,7 @@ Sync
 Payments, email, jobs
 - [x] No payments (personal use)
 - [x] Only email is the sign-in code (Supabase Auth)
-- [x] Reminders and to-do alarms will be local notifications on the phone (no server job). Not built yet
+- [x] Reminders and to-do alarms are local notifications on the phone (no server job). The plan is unit-tested; ringing needs a phone (Expo Go or the APK)
 - [x] Cleanup job (pg_cron, optional)
 
 Security
