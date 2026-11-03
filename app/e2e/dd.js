@@ -11,9 +11,7 @@ const { chromium } = require("playwright");
   await p.waitForTimeout(400);
   await p.screenshot({ path: "S21.png" });
   r.list = await p.getByText("D-12").count();
-  await p.getByRole("button", { name: "프로젝트 마감 위로" }).click();
-  await p.waitForTimeout(200);
-  r.reordered = (await p.getByRole("button", { name: /, D-/ }).first().innerText()).includes("프로젝트");
+  // reordering is covered by e2e/drag.js
   await p.getByRole("button", { name: "추가하기" }).click();
   await p.waitForTimeout(400);
   await p.getByRole("button", { name: "완료" }).click();

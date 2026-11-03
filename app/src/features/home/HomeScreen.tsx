@@ -3,10 +3,10 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Archive, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, TextAlignStart, TodoRow, useToast, Users,
+  AppText, Archive, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, ddayLabel, EndedCategoryError, manualRoutinesOn, materialize, selectCategories, selectDDays, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, ddayLabel, EndedCategoryError, manualRoutinesOn, materialize, reorderTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
@@ -43,6 +43,7 @@ export function HomeScreen() {
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
@@ -81,7 +82,7 @@ export function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ height: 56, alignItems: "flex-end", justifyContent: "center", paddingHorizontal: G }}>
           <MenuButton onPress={() => setMenuOpen(true)} />
         </View>
@@ -146,24 +147,31 @@ export function HomeScreen() {
                   onAdd={() => { setEditing(null); setAdding(cat.id); }}
                 />
                 <View style={{ marginTop: 6 }}>
-                  {items.map((t) =>
-                    editing === t.id ? (
-                      <InlineTodoInput key={t.id} color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
-                    ) : (
-                      <TodoRow
-                        key={t.id}
-                        title={t.title}
-                        memo={t.memo}
-                        done={t.isDone}
-                        color={cat.color}
-                        onToggle={() => toggleTodo(t.id)}
-                        onPress={() => setSheetTodo(materialize(t.id))}
-                        onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
-                        small={prefs.smallTodoText}
-                        smallMemo={prefs.smallTodoMemo}
-                      />
-                    ),
-                  )}
+                  <ReorderableList
+                    items={items}
+                    keyOf={(t) => t.id}
+                    labelOf={(t) => t.title}
+                    onDragging={setDragging}
+                    onReorder={reorderTodos}
+                    renderItem={(t, drag) =>
+                      editing === t.id ? (
+                        <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
+                      ) : (
+                        <TodoRow
+                          title={t.title}
+                          memo={t.memo}
+                          done={t.isDone}
+                          color={cat.color}
+                          onToggle={() => toggleTodo(t.id)}
+                          onPress={() => setSheetTodo(materialize(t.id))}
+                          onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
+                          small={prefs.smallTodoText}
+                          smallMemo={prefs.smallTodoMemo}
+                          {...drag}
+                        />
+                      )
+                    }
+                  />
                   {manualRoutinesOn(db, selected, cat.id).map((r) => (
                     <PendingRoutineRow key={r.id} title={r.title} onAdd={() => addRoutineTodo(r.id, selected)} />
                   ))}

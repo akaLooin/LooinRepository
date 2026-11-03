@@ -15,7 +15,8 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | cat.js | categories: hex colour, visibility, new, end, delete |
 | rt.js | routines: occurrences on home, manual-add row, repeat, time, new |
 | pend.js | manual-add routine row adds with one tap |
-| dd.js | D-days: list, reorder, new repeating, delete |
+| dd.js | D-days: list, new repeating, delete |
+| drag.js | hold-and-drag reorder: categories, D-days, home to-dos (survives reload), routines |
 | tm.js | timer start/pause, survives reload, info screen |
 | st.js | display settings (theme, week start), profile edit |
 | dy.js | diary: mood, text, background, reopen, empty removes |

@@ -6,13 +6,15 @@ import { ChevronRight } from "./icons";
 
 type Base = { title: string; onPress?: () => void };
 
-function Row({ onPress, children, height = tokens.size.listRowHeight, bg, divider, a11y }: { onPress?: () => void; children: React.ReactNode; height?: number; bg?: string; divider?: boolean; a11y?: string }) {
+function Row({ onPress, onLongPress, delayLongPress, children, height = tokens.size.listRowHeight, bg, divider, a11y }: {
+  onPress?: () => void; onLongPress?: () => void; delayLongPress?: number; children: React.ReactNode; height?: number; bg?: string; divider?: boolean; a11y?: string;
+}) {
   const { c } = useTheme();
   const base = { minHeight: height, flexDirection: "row" as const, alignItems: "center" as const, gap: 14, borderBottomWidth: divider ? 1 : 0, borderBottomColor: c.divider };
   // A row with no action of its own is a plain container, so controls inside it (a Toggle) stay enabled for screen readers.
   if (!onPress) return <View style={[base, { backgroundColor: bg }]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} style={({ pressed }) => [base, { backgroundColor: pressed ? c.surfaceRow : bg }]}>
+    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={a11y} style={({ pressed }) => [base, { backgroundColor: pressed ? c.surfaceRow : bg }]}>
       {children}
     </Pressable>
   );
@@ -78,9 +80,9 @@ export function RadioList<T extends string>({ options, value, onChange }: { opti
 }
 
 /** Routine row: status | name / period and rule › (S07). */
-export function RoutineRow({ status, title, detail, onPress }: Base & { status: string; detail: string }) {
+export function RoutineRow({ status, title, detail, onPress, onLongPress, delayLongPress }: Base & { status: string; detail: string; onLongPress?: () => void; delayLongPress?: number }) {
   return (
-    <Row onPress={onPress} height={74} divider>
+    <Row onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} height={74} divider>
       <View style={{ flex: 1, gap: 4 }}>
         <AppText variant="bodyLg" weight={600}>
           <AppText variant="bodyLg" weight={600} color="info">{status}</AppText>
@@ -95,10 +97,12 @@ export function RoutineRow({ status, title, detail, onPress }: Base & { status: 
 }
 
 /** Rounded row with a right-hand value: D-day list, category list (S21, S06). */
-export function PillRow({ title, right, rightColor = "text", left, onPress, titleColor }: Base & { right: string; rightColor?: ColorName; left?: React.ReactNode; titleColor?: string }) {
+export function PillRow({ title, right, rightColor = "text", left, onPress, titleColor, onLongPress, delayLongPress }: Base & {
+  right: string; rightColor?: ColorName; left?: React.ReactNode; titleColor?: string; onLongPress?: () => void; delayLongPress?: number;
+}) {
   const { c } = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}, ${right}`}
+    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={`${title}, ${right}`}
       style={({ pressed }) => ({ height: 52, borderRadius: tokens.radius.pill, backgroundColor: pressed ? c.surfaceRow : c.surfaceInput, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 10 })}>
       {left}
       <View style={{ flex: 1 }}><AppText variant="bodyLg" weight={titleColor ? 700 : 500} raw={titleColor} numberOfLines={1}>{title}</AppText></View>

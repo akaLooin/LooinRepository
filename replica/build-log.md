@@ -12,19 +12,19 @@ Checks: each screen is driven in a browser (Expo web export + Playwright at 411�
 | S05 to-do sheet | 2026-11-03 | partial | 시간 알림 and 사진 인증 only show a toast. Drag-to-close (gesture library) | — |
 | S05a memo sheet | 2026-11-03 | done | — | — |
 | S06m top menu | 2026-11-03 | done | D-day and reminder screens behind it are stubs | — |
-| S06 categories | 2026-11-03 | partial | drag to reorder | — |
+| S06 categories | 2026-11-03 | done | — | Drag to reorder: own component on PanResponder (no new library), screen readers get move up/down actions |
 | S06b category edit | 2026-11-03 | done | — | — |
 | S06c visibility sheet | 2026-11-03 | done | the setting does nothing until phase 2 | — |
 | S06d colour by hex | 2026-11-03 | done | — | Differs from the original on purpose (user request) |
 | S06e move to category | 2026-11-03 | done | — | — |
-| S07 routines | 2026-11-03 | partial | drag to reorder | — |
+| S07 routines | 2026-11-03 | done | — | — |
 | S07b routine edit | 2026-11-03 | done | — | "수동으로 할 일 추가" confirmed by the user: the routine shows as a grey row with + in its category; one tap adds it for that day, then it can be edited (e.g. "💪 운동하기: 어깨") |
 | S07c repeat | 2026-11-03 | done | the original's detail screens for each type are unseen, ours are our own layout | Biweekly counts from the week the routine starts |
 | S07d time sheet | 2026-11-03 | done | — | — |
 | S01 login | 2026-11-03 | done | Google sign-in, password reset | Switched from email codes to email + password: Supabase's built-in mailer no longer allows a template with the code |
 | S12 settings | 2026-11-03 | partial | only account and sync rows work | — |
 | S18 me | 2026-11-03 | partial | profile and a way to settings | — |
-| S21 D-days | 2026-11-03 | done | drag to reorder (arrows for now) | Repeating D-days: next date, short months use their last day (scripts/test-dday.ts) |
+| S21 D-days | 2026-11-03 | done | — | Repeating D-days: next date, short months use their last day (scripts/test-dday.ts) |
 | S21b D-day edit | 2026-11-03 | done | — | — |
 | S08 timer | 2026-11-03 | done | — | Stores a start time plus a total, so a closed app keeps counting |
 | S05b to-do info | 2026-11-03 | done | photo (no upload yet) | — |
@@ -35,3 +35,7 @@ Checks: each screen is driven in a browser (Expo web export + Playwright at 411�
 | S15–S17 | — | stub | routed, show a "아직 만드는 중이에요" page | — |
 
 Routine occurrences are not stored until the user touches one. Then they become a row with `routine_id` + `routine_date`, matching `replica/schema.sql`. Deleting one occurrence keeps a skipped row so the routine does not bring it back.
+
+## Size fix (after the first run on the user's phone)
+
+The user saw text and icons bigger than the original. Sizes had been measured assuming 1080px = 411dp. Their phone is narrower in dp (Samsung phones are usually 360–393dp), so everything came out 5–14% too big. The app now lays out on a 411dp canvas and scales it to the phone's real width (`app/src/theme/scale.tsx`); bottom sheets and modals scale too. 설정 → 화면 → 화면 크기 shows the phone's width and lets the user pick the factor by hand.

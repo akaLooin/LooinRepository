@@ -191,8 +191,27 @@ export function moveCategoryTodos(fromId: string, toId: string) {
   set({ ...db, todos: db.todos.map((t) => (t.categoryId === fromId ? { ...t, categoryId: toId } : t)), routines: db.routines.map((r) => (r.categoryId === fromId ? { ...r, categoryId: toId } : r)) });
 }
 
+/** New sortOrder for the listed ids (1, 2, 3…); rows not listed keep theirs. Unchanged rows keep their object, so sync sends only what moved. */
+function reorderRows<T extends { id: string; sortOrder: number }>(rows: T[], ids: string[]): T[] {
+  return rows.map((r) => { const i = ids.indexOf(r.id); return i < 0 || r.sortOrder === i + 1 ? r : { ...r, sortOrder: i + 1 }; });
+}
+
 export function reorderCategories(ids: string[]) {
-  set({ ...db, categories: db.categories.map((c) => ({ ...c, sortOrder: ids.indexOf(c.id) + 1 })) });
+  set({ ...db, categories: reorderRows(db.categories, ids) });
+}
+
+export function reorderRoutines(ids: string[]) {
+  set({ ...db, routines: reorderRows(db.routines, ids) });
+}
+
+export function reorderDDays(ids: string[]) {
+  set({ ...db, ddays: reorderRows(db.ddays, ids) });
+}
+
+/** To-dos within one category on one day. Routine occurrences become real rows first so their place sticks. */
+export function reorderTodos(ids: string[]) {
+  const real = ids.map((id) => materialize(id));
+  set({ ...db, todos: reorderRows(db.todos, real) });
 }
 
 // ── to-dos ─────────────────────────────────────────────────
@@ -337,14 +356,6 @@ export function deleteDDay(id: string) {
   set({ ...db, ddays: db.ddays.filter((d) => d.id !== id) });
 }
 
-export function moveDDay(id: string, dir: -1 | 1) {
-  const list = [...db.ddays].sort(byOrder);
-  const i = list.findIndex((d) => d.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= list.length) return;
-  [list[i], list[j]] = [list[j], list[i]];
-  set({ ...db, ddays: db.ddays.map((d) => ({ ...d, sortOrder: list.findIndex((x) => x.id === d.id) + 1 })) });
-}
 // ── diary ──────────────────────────────────────────────────
 export const selectDiary = (day: Day) => (d: DB) => d.diaries.find((x) => x.date === day);
 
