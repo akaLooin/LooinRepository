@@ -29,9 +29,9 @@ export function RoutineListScreen() {
           return (
             <View key={cat.id} style={{ marginTop: 8 }}>
               <Pressable onPress={() => router.push(`/routines/new?category=${cat.id}` as never)} accessibilityRole="button" accessibilityLabel={`${cat.title}에 루틴 추가`}
-                style={{ height: 56, borderRadius: tokens.radius.pill, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 22, paddingRight: 10 }}>
+                style={{ height: 49, borderRadius: tokens.radius.pill, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 20, paddingRight: 8 }}>
                 <AppText variant="category" raw={readableOn(visibleOn(cat.color, c.bg, c.text), c.surface)} style={{ flex: 1 }}>{cat.title}</AppText>
-                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>
+                <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: c.bg, alignItems: "center", justifyContent: "center" }}>
                   <Plus size={20} color={c.text} strokeWidth={2.4} />
                 </View>
               </Pressable>

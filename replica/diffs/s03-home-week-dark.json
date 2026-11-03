@@ -1,0 +1,120 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 37.6,
+  "verdict": "different",
+  "regions": [
+    {
+      "x": 0,
+      "y": 102,
+      "w": 408,
+      "h": 272,
+      "cells": 48,
+      "where": "top centre"
+    },
+    {
+      "x": 0,
+      "y": 646,
+      "w": 408,
+      "h": 153,
+      "cells": 45,
+      "where": "bottom centre"
+    },
+    {
+      "x": 170,
+      "y": 34,
+      "w": 204,
+      "h": 102,
+      "cells": 8,
+      "where": "top right"
+    },
+    {
+      "x": 68,
+      "y": 544,
+      "w": 204,
+      "h": 68,
+      "cells": 7,
+      "where": "bottom centre"
+    },
+    {
+      "x": 0,
+      "y": 476,
+      "w": 170,
+      "h": 34,
+      "cells": 5,
+      "where": "middle left"
+    },
+    {
+      "x": 374,
+      "y": 0,
+      "w": 34,
+      "h": 68,
+      "cells": 2,
+      "where": "top right"
+    },
+    {
+      "x": 102,
+      "y": 408,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "middle left"
+    },
+    {
+      "x": 34,
+      "y": 34,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    },
+    {
+      "x": 102,
+      "y": 272,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle left"
+    },
+    {
+      "x": 68,
+      "y": 306,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle left"
+    },
+    {
+      "x": 34,
+      "y": 408,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle left"
+    },
+    {
+      "x": 170,
+      "y": 442,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle centre"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s03-home-week-dark.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s03-home-week-dark.png"
+  }
+}

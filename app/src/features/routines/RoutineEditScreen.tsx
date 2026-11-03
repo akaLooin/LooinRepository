@@ -51,9 +51,9 @@ export function RoutineEditScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="루틴" onBack={() => router.back()} right={{ label: "확인", onPress: save }} />
-      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 12, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="루틴 이름" underline={color} error={error} autoFocus={!existing} />
-        <View style={{ height: 8 }} />
+        <View style={{ height: 0 }} />
         <FieldGroup>
           <FieldRow title="시작 날짜" value={fmt(startDate)} onPress={() => setSheet("start")} />
           <FieldRow title="종료 날짜" value={endDate ? fmt(endDate) : "없음"} onPress={() => setSheet("end")} />

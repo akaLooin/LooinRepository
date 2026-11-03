@@ -46,7 +46,7 @@ export function IconChip({ children, onPress, label }: { children: React.ReactNo
 export function CategoryPill({ title, color, visibility, onAdd, onPress }: { title: string; color: string; visibility: Visibility; onAdd?: () => void; onPress?: () => void }) {
   const { c } = useTheme();
   const h = tokens.size.categoryPillHeight;
-  const plus = 30;
+  const plus = 34;
   return (
     <View style={{ flexDirection: "row", alignSelf: "flex-start", alignItems: "center", height: h, borderRadius: R, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 4, gap: 8 }}>
       <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="button">

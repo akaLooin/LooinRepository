@@ -86,28 +86,28 @@ export const tokens = {
   },
   "type": {
     "screenTitle": {
-      "size": 18,
-      "line": 24,
+      "size": 17.5,
+      "line": 23,
       "weight": 700
     },
     "profileName": {
-      "size": 20,
-      "line": 26,
+      "size": 19,
+      "line": 25,
       "weight": 700
     },
     "monthTitle": {
-      "size": 20,
-      "line": 26,
+      "size": 19,
+      "line": 25,
       "weight": 700
     },
     "sheetTitle": {
-      "size": 17,
+      "size": 16.5,
       "line": 22,
       "weight": 700
     },
     "bodyLg": {
-      "size": 17,
-      "line": 24,
+      "size": 15.5,
+      "line": 22,
       "weight": 400
     },
     "category": {
@@ -116,22 +116,22 @@ export const tokens = {
       "weight": 700
     },
     "body": {
-      "size": 15,
-      "line": 21,
-      "weight": 400
-    },
-    "date": {
-      "size": 15,
-      "line": 18,
-      "weight": 500
-    },
-    "helper": {
       "size": 14,
       "line": 20,
       "weight": 400
     },
-    "weekday": {
+    "date": {
+      "size": 13.5,
+      "line": 17,
+      "weight": 500
+    },
+    "helper": {
       "size": 13,
+      "line": 18,
+      "weight": 400
+    },
+    "weekday": {
+      "size": 12.5,
       "line": 16,
       "weight": 500
     },
@@ -146,8 +146,8 @@ export const tokens = {
       "weight": 700
     },
     "timer": {
-      "size": 56,
-      "line": 64,
+      "size": 52,
+      "line": 60,
       "weight": 600
     }
   },
@@ -177,11 +177,11 @@ export const tokens = {
     "avatarProfile": 67,
     "avatarChip": 34,
     "chipHeight": 42,
-    "categoryPillHeight": 38,
+    "categoryPillHeight": 43,
     "pillButtonHeight": 34,
     "iconCircle": 30,
-    "listRowHeight": 56,
-    "fieldHeight": 56,
+    "listRowHeight": 52,
+    "fieldHeight": 52,
     "timeCell": 50,
     "toggleWidth": 54,
     "toggleHeight": 30,

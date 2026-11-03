@@ -18,11 +18,11 @@ feature,area,priority,original,clone,notes
 카테고리 공개설정 4단계 (전체 팔로워 일부 나만 보기),privacy,must,yes,partial,1단계부터 선택과 아이콘 표시. 실제 공개는 2단계 / 클론: 고르기와 아이콘은 됨. 실제 공개는 2단계
 클로버 모양 체크박스와 날짜 표시 (남은 수 완료 체크 일부 완료),calendar,must,yes,yes,1단계. 스크린샷 기준으로 똑같이
 루틴 관리 화면 (목표별 목록 진행 중 표시 드래그로 순서 변경),routines,must,yes,yes,1단계 / 클론: 드래그 정렬 아직 / 클론: 길게 눌러 끌기
-프로필 영역 (사진 닉네임 자기소개),profile,must,yes,partial,1단계 / 클론: 홈 표시만. 편집 화면 S02 아직 / 클론: 사진 없음
-설정 화면 (프로필 계정 개인정보 앱 권한 화면 알림 정보 문의 로그아웃),settings,must,yes,partial,"1단계 / 클론: 로그아웃, 계정 삭제, 동기화 상태만"
+프로필 영역 (사진 닉네임 자기소개),profile,must,yes,partial,1단계 / 클론: 홈 표시와 편집(S02). 사진 없음
+설정 화면 (프로필 계정 개인정보 앱 권한 화면 알림 정보 문의 로그아웃),settings,must,yes,partial,"1단계 / 클론: 프로필, 화면, 로그아웃, 계정 삭제, 동기화 상태. 개인정보·앱 권한·알림·공지·문의는 아직"
 주간 캘린더 보기 (월/주 전환),calendar,must,yes,yes,1단계
 할 일 메모와 메모별 나만 보기,todos,must,yes,yes,1단계. S05a / 클론: S05a
-할 일 메뉴 바텀 시트 (S05),todos,must,yes,partial,"1단계. 스크린샷 기준으로 똑같이 / 클론: 시간 알림, 사진 인증은 안내만 / 클론: 사진 인증만 안내"
+할 일 메뉴 바텀 시트 (S05),todos,must,yes,partial,1단계 / 클론: 사진 인증만 안내 문구. 시트를 아래로 끌어 닫기는 아직
 할 일 인라인 편집과 더블 탭 편집,todos,must,yes,yes,1단계
 내일 또 하기와 다른 날 또 하기 (할 일 복사),todos,must,yes,yes,1단계
 상단 ≡ 팝업 메뉴 (카테고리 루틴 디데이 리마인더 관리),navigation,must,yes,yes,"1단계 / 클론: 디데이, 리마인더 화면은 아직 빈 화면"

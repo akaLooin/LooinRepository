@@ -1,0 +1,144 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 34.6,
+  "verdict": "different",
+  "regions": [
+    {
+      "x": 68,
+      "y": 340,
+      "w": 306,
+      "h": 204,
+      "cells": 32,
+      "where": "middle centre"
+    },
+    {
+      "x": 0,
+      "y": 68,
+      "w": 408,
+      "h": 170,
+      "cells": 28,
+      "where": "top centre"
+    },
+    {
+      "x": 68,
+      "y": 612,
+      "w": 306,
+      "h": 170,
+      "cells": 19,
+      "where": "bottom centre"
+    },
+    {
+      "x": 136,
+      "y": 34,
+      "w": 102,
+      "h": 68,
+      "cells": 4,
+      "where": "top centre"
+    },
+    {
+      "x": 0,
+      "y": 272,
+      "w": 68,
+      "h": 102,
+      "cells": 4,
+      "where": "middle left"
+    },
+    {
+      "x": 34,
+      "y": 408,
+      "w": 34,
+      "h": 102,
+      "cells": 3,
+      "where": "middle left"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "top left"
+    },
+    {
+      "x": 0,
+      "y": 544,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "bottom left"
+    },
+    {
+      "x": 170,
+      "y": 544,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "bottom centre"
+    },
+    {
+      "x": 68,
+      "y": 68,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    },
+    {
+      "x": 306,
+      "y": 510,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle right"
+    },
+    {
+      "x": 102,
+      "y": 544,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "bottom left"
+    },
+    {
+      "x": 272,
+      "y": 544,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "bottom right"
+    },
+    {
+      "x": 340,
+      "y": 544,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "bottom right"
+    },
+    {
+      "x": 34,
+      "y": 680,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "bottom left"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s22b-reminder-time-sheet.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s22b-reminder-time-sheet.png"
+  }
+}

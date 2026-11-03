@@ -28,7 +28,7 @@ export function SettingsRow({ title, icon, onPress }: Base & { icon: React.React
 /** Label ... value › (S12d lower half). */
 export function ValueRow({ title, value, onPress, divider = true }: Base & { value: string; divider?: boolean }) {
   return (
-    <Row onPress={onPress} divider={divider} height={60} a11y={`${title}, ${value}`}>
+    <Row onPress={onPress} divider={divider} height={54} a11y={`${title}, ${value}`}>
       <AppText variant="bodyLg" style={{ flex: 1 }}>{title}</AppText>
       <AppText variant="bodyLg" color="text">{value}</AppText>
       <ChevronRightMuted />
@@ -44,7 +44,7 @@ function ChevronRightMuted() {
 /** Label ... [ON] (S12d upper half). */
 export function ToggleRow({ title, value, onChange, divider = true }: { title: string; value: boolean; onChange: (v: boolean) => void; divider?: boolean }) {
   return (
-    <Row divider={divider} height={60}>
+    <Row divider={divider} height={54}>
       <AppText variant="bodyLg" style={{ flex: 1 }}>{title}</AppText>
       <Toggle value={value} onChange={onChange} label={title} />
     </Row>
@@ -54,9 +54,9 @@ export function ToggleRow({ title, value, onChange, divider = true }: { title: s
 /** Coloured circle icon + label, in the to-do sheet (S05). */
 export function SheetMenuRow({ title, icon, color, onPress }: Base & { icon: React.ReactNode; color: ColorName }) {
   const { c } = useTheme();
-  const d = 36;
+  const d = 32;
   return (
-    <Row onPress={onPress} height={66}>
+    <Row onPress={onPress} height={59}>
       <View style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: c[color], alignItems: "center", justifyContent: "center" }}>{icon}</View>
       <AppText variant="bodyLg">{title}</AppText>
     </Row>
@@ -82,7 +82,7 @@ export function RadioList<T extends string>({ options, value, onChange }: { opti
 /** Routine row: status | name / period and rule › (S07). */
 export function RoutineRow({ status, title, detail, onPress, onLongPress, delayLongPress }: Base & { status: string; detail: string; onLongPress?: () => void; delayLongPress?: number }) {
   return (
-    <Row onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} height={74} divider>
+    <Row onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} height={68} divider>
       <View style={{ flex: 1, gap: 4 }}>
         <AppText variant="bodyLg" weight={600}>
           <AppText variant="bodyLg" weight={600} color="info">{status}</AppText>
@@ -103,7 +103,7 @@ export function PillRow({ title, right, rightColor = "text", left, onPress, titl
   const { c } = useTheme();
   return (
     <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={`${title}, ${right}`}
-      style={({ pressed }) => ({ height: 52, borderRadius: tokens.radius.pill, backgroundColor: pressed ? c.surfaceRow : c.surfaceInput, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 10 })}>
+      style={({ pressed }) => ({ height: 48, borderRadius: tokens.radius.pill, backgroundColor: pressed ? c.surfaceRow : c.surfaceInput, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 10 })}>
       {left}
       <View style={{ flex: 1 }}><AppText variant="bodyLg" weight={titleColor ? 700 : 500} raw={titleColor} numberOfLines={1}>{title}</AppText></View>
       <AppText variant="bodyLg" weight={rightColor === "dday" ? 700 : 400} color={rightColor}>{right}</AppText>

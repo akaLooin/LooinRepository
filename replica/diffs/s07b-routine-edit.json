@@ -1,0 +1,88 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 28.8,
+  "verdict": "different",
+  "regions": [
+    {
+      "x": 0,
+      "y": 34,
+      "w": 408,
+      "h": 272,
+      "cells": 34,
+      "where": "top centre"
+    },
+    {
+      "x": 0,
+      "y": 510,
+      "w": 408,
+      "h": 102,
+      "cells": 24,
+      "where": "bottom centre"
+    },
+    {
+      "x": 306,
+      "y": 340,
+      "w": 102,
+      "h": 34,
+      "cells": 3,
+      "where": "middle right"
+    },
+    {
+      "x": 34,
+      "y": 170,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "top left"
+    },
+    {
+      "x": 170,
+      "y": 646,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "bottom centre"
+    },
+    {
+      "x": 34,
+      "y": 0,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    },
+    {
+      "x": 340,
+      "y": 0,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top right"
+    },
+    {
+      "x": 34,
+      "y": 238,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s07b-routine-edit.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s07b-routine-edit.png"
+  }
+}

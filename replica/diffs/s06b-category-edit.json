@@ -1,0 +1,80 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 57.7,
+  "verdict": "partly",
+  "regions": [
+    {
+      "x": 34,
+      "y": 102,
+      "w": 340,
+      "h": 136,
+      "cells": 16,
+      "where": "top centre"
+    },
+    {
+      "x": 34,
+      "y": 272,
+      "w": 170,
+      "h": 102,
+      "cells": 9,
+      "where": "middle left"
+    },
+    {
+      "x": 272,
+      "y": 306,
+      "w": 102,
+      "h": 136,
+      "cells": 8,
+      "where": "middle right"
+    },
+    {
+      "x": 170,
+      "y": 34,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "top centre"
+    },
+    {
+      "x": 34,
+      "y": 0,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    },
+    {
+      "x": 340,
+      "y": 0,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top right"
+    },
+    {
+      "x": 34,
+      "y": 170,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s06b-category-edit.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s06b-category-edit.png"
+  }
+}

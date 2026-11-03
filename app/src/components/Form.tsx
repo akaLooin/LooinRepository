@@ -11,7 +11,7 @@ export function FieldGroup({ children }: { children: React.ReactNode }) {
 
 export function FieldRow({ title, value, onPress, right }: { title: string; value?: string; onPress?: () => void; right?: React.ReactNode }) {
   const { c } = useTheme();
-  const base = { height: 64, paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, gap: 10 };
+  const base = { height: tokens.size.fieldHeight, paddingHorizontal: 18, flexDirection: "row" as const, alignItems: "center" as const, gap: 10 };
   const inner = (
     <>
       <AppText variant="bodyLg" style={{ flex: 1 }}>{title}</AppText>
@@ -45,7 +45,7 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
         placeholderTextColor={c.textPlaceholder}
         autoFocus={autoFocus}
         accessibilityLabel={placeholder}
-        style={{ outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 500), fontSize: bold ? tokens.type.monthTitle.size : t.size, color: textColor ?? c.text, paddingVertical: 14, paddingHorizontal: 4,
+        style={{ outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 500), fontSize: bold ? 18 : t.size, color: textColor ?? c.text, paddingVertical: 10, paddingHorizontal: 4,
           borderBottomWidth: 2, borderBottomColor: error ? c.danger : underline ?? c.text }}
       />
       {error ? <AppText variant="helper" color="danger" style={{ marginTop: 6 }}>{error}</AppText> : null}
@@ -64,7 +64,7 @@ export function MemoInput({ value, onChangeText, placeholder }: { value: string;
       placeholderTextColor={c.textPlaceholder}
       multiline
       accessibilityLabel={placeholder}
-      style={{ minHeight: 140, borderRadius: tokens.radius.lg, backgroundColor: c.surfaceInput, color: c.text, padding: 20, textAlignVertical: "top",
+      style={{ minHeight: 98, borderRadius: tokens.radius.lg, backgroundColor: c.surfaceInput, color: c.text, padding: 20, textAlignVertical: "top",
         fontFamily: fontFamily(400), fontSize: tokens.type["bodyLg"].size }}
     />
   );

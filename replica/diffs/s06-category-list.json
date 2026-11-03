@@ -1,0 +1,64 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 37.8,
+  "verdict": "different",
+  "regions": [
+    {
+      "x": 34,
+      "y": 68,
+      "w": 204,
+      "h": 238,
+      "cells": 20,
+      "where": "top left"
+    },
+    {
+      "x": 272,
+      "y": 170,
+      "w": 102,
+      "h": 136,
+      "cells": 6,
+      "where": "top right"
+    },
+    {
+      "x": 272,
+      "y": 68,
+      "w": 136,
+      "h": 68,
+      "cells": 5,
+      "where": "top right"
+    },
+    {
+      "x": 170,
+      "y": 34,
+      "w": 68,
+      "h": 34,
+      "cells": 2,
+      "where": "top centre"
+    },
+    {
+      "x": 34,
+      "y": 0,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s06-category-list.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s06-category-list.png"
+  }
+}

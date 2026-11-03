@@ -6,7 +6,7 @@ import { AppText, PlayButton, ScreenHeader } from "../../components";
 import { pauseTimer, resetTimer, startTimer, timerTotal, useDB } from "../../data/store";
 import { tokens, useTheme } from "../../theme";
 
-const hms = (s: number) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, "0")).join(":");
+const hms = (s: number) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, "0")).join(" : ");
 
 /** S08. Time is stored as a start time plus a total, so closing the app does not lose it. */
 export function TimerScreen() {
@@ -37,12 +37,12 @@ export function TimerScreen() {
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: tokens.layout.gutter + 20, gap: 20, marginTop: -60 }}>
         <AppText variant="sheetTitle" center numberOfLines={2}>{todo.title}</AppText>
         <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.surfaceStrong, paddingVertical: 10 }}>
-          <AppText variant="timer" color={running || total ? "text" : "timerIdle"} center style={{ fontVariant: ["tabular-nums"] }} accessibilityLabel={`기록한 시간 ${hms(total)}`} accessibilityLiveRegion="none">
+          <AppText variant="timer" color={running || total ? "text" : "timerIdle"} center style={{ fontVariant: ["tabular-nums"] }} accessibilityLabel={`기록한 시간 ${hms(total).replace(/ /g, "")}`} accessibilityLiveRegion="none">
             {hms(total)}
           </AppText>
         </View>
       </View>
-      <View style={{ paddingBottom: insets.bottom + 120, alignItems: "center", gap: 18 }}>
+      <View style={{ paddingBottom: insets.bottom + 170, alignItems: "center", gap: 18 }}>
         <PlayButton running={running} label={running ? "일시정지" : total ? "이어서 하기" : "시작하기"} onPress={() => (running ? pauseTimer(todo.id) : startTimer(todo.id))} />
         {total > 0 && !running ? (
           <Pressable onPress={() => resetTimer(todo.id)} accessibilityRole="button" hitSlop={10}>

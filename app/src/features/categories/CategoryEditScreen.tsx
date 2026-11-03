@@ -41,9 +41,9 @@ export function CategoryEditScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="카테고리" onBack={() => router.back()} right={{ label: "확인", onPress: save }} />
-      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 7, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="카테고리 이름" underline={shown} textColor={readableOn(shown, c.bg)} error={error} autoFocus={isNew} bold />
-        <View style={{ height: 14 }} />
+        <View style={{ height: 6 }} />
         <FieldGroup>
           <FieldRow title="공개설정" value={VISIBILITY_LABEL[visibility]} onPress={() => { setDraftVis(visibility); setSheet("visibility"); }} right={<VisibilityIcon value={visibility} color={c.textMuted} />} />
         </FieldGroup>
@@ -55,8 +55,8 @@ export function CategoryEditScreen() {
           <>
             <FieldGroup><FieldRow title="다른 카테고리로 이관하기" onPress={() => setSheet("move")} /></FieldGroup>
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-              <Button kind="plain" flex height={46} label={existing?.endedAt ? "다시 사용하기" : "종료하기"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); router.back(); }} />
-              <Button kind="danger" flex height={46} label="삭제" onPress={() => setSheet("delete")} />
+              <Button kind="plain" flex height={43} label={existing?.endedAt ? "다시 사용하기" : "종료하기"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); router.back(); }} />
+              <Button kind="danger" flex height={43} label="삭제" onPress={() => setSheet("delete")} />
             </View>
             <View style={{ gap: 6, marginTop: 14 }}>
               <AppText variant="helper" color="textSecondary">종료: 지금까지의 기록은 그대로 두고, 새 할 일만 더 넣을 수 없게 해요.</AppText>

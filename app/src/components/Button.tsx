@@ -6,10 +6,10 @@ import { Pause, Play } from "./icons";
 type Kind = "sheetPrimary" | "sheetBlock" | "danger" | "plain";
 
 const look: Record<Kind, { bg: ColorName; fg: ColorName; h: number; r: number; w: number }> = {
-  sheetPrimary: { bg: "surfaceStrong", fg: "text", h: 54, r: tokens.radius.pill, w: 700 },
-  sheetBlock: { bg: "surfaceStrong", fg: "text", h: 54, r: tokens.radius.sm, w: 500 },
-  danger: { bg: "surfaceInput", fg: "danger", h: 56, r: tokens.radius.sm, w: 500 },
-  plain: { bg: "surfaceRow", fg: "text", h: 50, r: tokens.radius.sm, w: 500 },
+  sheetPrimary: { bg: "surfaceStrong", fg: "text", h: 50, r: tokens.radius.pill, w: 700 },
+  sheetBlock: { bg: "surfaceStrong", fg: "text", h: 48, r: tokens.radius.sm, w: 500 },
+  danger: { bg: "surfaceInput", fg: "danger", h: 52, r: tokens.radius.sm, w: 500 },
+  plain: { bg: "surfaceRow", fg: "text", h: 46, r: tokens.radius.sm, w: 500 },
 };
 
 export function Button({ kind, label, onPress, disabled, loading, flex, height }: { kind: Kind; label: string; onPress?: () => void; disabled?: boolean; loading?: boolean; flex?: boolean; height?: number }) {
@@ -30,7 +30,7 @@ export function TileButton({ label, icon, onPress }: { label: string; icon: Reac
   const { c } = useTheme();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      style={({ pressed }) => ({ flex: 1, height: 96, borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceStrong : c.surfaceButton, alignItems: "center", justifyContent: "center", gap: 10 })}>
+      style={({ pressed }) => ({ flex: 1, height: 85, borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceStrong : c.surfaceButton, alignItems: "center", justifyContent: "center", gap: 10 })}>
       {icon}
       <AppText variant="bodyLg">{label}</AppText>
     </Pressable>

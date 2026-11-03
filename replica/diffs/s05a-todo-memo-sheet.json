@@ -1,0 +1,48 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 19.5,
+  "verdict": "different",
+  "regions": [
+    {
+      "x": 0,
+      "y": 34,
+      "w": 408,
+      "h": 765,
+      "cells": 169,
+      "where": "middle centre"
+    },
+    {
+      "x": 136,
+      "y": 102,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top centre"
+    },
+    {
+      "x": 0,
+      "y": 204,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "top left"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s05a-todo-memo-sheet.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s05a-todo-memo-sheet.png"
+  }
+}

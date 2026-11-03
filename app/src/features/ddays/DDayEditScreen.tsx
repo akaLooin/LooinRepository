@@ -38,7 +38,7 @@ export function DDayEditScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="디데이" onBack={() => router.back()} right={{ label: "완료", onPress: save }} />
-      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="디데이 이름" error={error} autoFocus={!existing} />
         <AppText variant="bodyLg" weight={700} style={{ marginTop: 10 }}>타입</AppText>
         <RadioList value={type} onChange={setType} options={[{ value: "fixed", label: "고정 날짜" }, { value: "repeat", label: "반복" }]} />

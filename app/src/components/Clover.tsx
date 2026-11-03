@@ -17,9 +17,9 @@ export type CloverState =
 
 /** Four overlapping circles: our own four-leaf shape (drawn fresh, not taken from the original). */
 function Lobes({ size, fill }: { size: number; fill: string }) {
-  const r = size * 0.32;
+  const r = size * 0.34;
   const m = size / 2;
-  const d = size * 0.18;
+  const d = size * 0.16;
   return (
     <G fill={fill}>
       <Circle cx={m - d} cy={m} r={r} />

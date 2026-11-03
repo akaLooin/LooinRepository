@@ -1,0 +1,128 @@
+{
+  "mode": "layout",
+  "original": {
+    "width": 411,
+    "height": 799
+  },
+  "clone": {
+    "width": 411,
+    "height": 799
+  },
+  "compared_at": {
+    "width": 411,
+    "height": 799
+  },
+  "height_delta_pct": 0.0,
+  "score": 33.7,
+  "verdict": "different",
+  "regions": [
+    {
+      "x": 0,
+      "y": 272,
+      "w": 408,
+      "h": 340,
+      "cells": 63,
+      "where": "middle centre"
+    },
+    {
+      "x": 0,
+      "y": 68,
+      "w": 408,
+      "h": 238,
+      "cells": 49,
+      "where": "top centre"
+    },
+    {
+      "x": 0,
+      "y": 646,
+      "w": 408,
+      "h": 153,
+      "cells": 33,
+      "where": "bottom centre"
+    },
+    {
+      "x": 0,
+      "y": 34,
+      "w": 68,
+      "h": 68,
+      "cells": 3,
+      "where": "top left"
+    },
+    {
+      "x": 0,
+      "y": 272,
+      "w": 68,
+      "h": 68,
+      "cells": 3,
+      "where": "middle left"
+    },
+    {
+      "x": 374,
+      "y": 0,
+      "w": 34,
+      "h": 68,
+      "cells": 2,
+      "where": "top right"
+    },
+    {
+      "x": 102,
+      "y": 442,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle left"
+    },
+    {
+      "x": 272,
+      "y": 442,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle right"
+    },
+    {
+      "x": 136,
+      "y": 476,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle centre"
+    },
+    {
+      "x": 204,
+      "y": 476,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle centre"
+    },
+    {
+      "x": 272,
+      "y": 510,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "middle right"
+    },
+    {
+      "x": 272,
+      "y": 714,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "bottom right"
+    },
+    {
+      "x": 0,
+      "y": 748,
+      "w": 34,
+      "h": 34,
+      "cells": 1,
+      "where": "bottom left"
+    }
+  ],
+  "files": {
+    "original": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/orig/s03-home-top-light.png",
+    "clone": "/tmp/claude-0/-home-user-LooinRepository/ce54fdb3-8872-5428-8557-05b100b3a2fa/scratchpad/clone/s03-home-top-light.png"
+  }
+}

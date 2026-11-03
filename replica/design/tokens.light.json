@@ -172,32 +172,32 @@
   },
   "type": {
     "screen-title": {
-      "size": 18,
-      "line": 24,
+      "size": 17.5,
+      "line": 23,
       "weight": 700,
       "_used": "화면 제목 (설정, 루틴 관리)"
     },
     "profile-name": {
-      "size": 20,
-      "line": 26,
+      "size": 19,
+      "line": 25,
       "weight": 700,
       "_used": "홈 닉네임"
     },
     "month-title": {
-      "size": 20,
-      "line": 26,
+      "size": 19,
+      "line": 25,
       "weight": 700,
       "_used": "2026년 11월"
     },
     "sheet-title": {
-      "size": 17,
+      "size": 16.5,
       "line": 22,
       "weight": 700,
       "_used": "바텀 시트 제목"
     },
     "body-lg": {
-      "size": 17,
-      "line": 24,
+      "size": 15.5,
+      "line": 22,
       "weight": 400,
       "_used": "할 일, 설정 줄, 시트 메뉴 항목"
     },
@@ -208,25 +208,25 @@
       "_used": "카테고리 알약 이름"
     },
     "body": {
-      "size": 15,
-      "line": 21,
+      "size": 14,
+      "line": 20,
       "weight": 400,
       "_used": "자기소개, 디데이 줄, 값 글자"
     },
     "date": {
-      "size": 15,
-      "line": 18,
+      "size": 13.5,
+      "line": 17,
       "weight": 500,
       "_used": "캘린더 날짜, 클로버 안 숫자"
     },
     "helper": {
-      "size": 14,
-      "line": 20,
+      "size": 13,
+      "line": 18,
       "weight": 400,
       "_used": "안내 문구, 할 일 메모"
     },
     "weekday": {
-      "size": 13,
+      "size": 12.5,
       "line": 16,
       "weight": 500,
       "_used": "요일 줄"
@@ -244,8 +244,8 @@
       "_used": "토글 안 ON/OFF"
     },
     "timer": {
-      "size": 56,
-      "line": 64,
+      "size": 52,
+      "line": 60,
       "weight": 600,
       "_used": "타이머 숫자, 고정폭 숫자"
     }
@@ -277,11 +277,11 @@
     "avatar-profile": 67,
     "avatar-chip": 34,
     "chip-height": 42,
-    "category-pill-height": 38,
+    "category-pill-height": 43,
     "pill-button-height": 34,
     "icon-circle": 30,
-    "list-row-height": 56,
-    "field-height": 56,
+    "list-row-height": 52,
+    "field-height": 52,
     "time-cell": 50,
     "toggle-width": 54,
     "toggle-height": 30,
@@ -304,5 +304,6 @@
     "base": "220ms",
     "sheet": "280ms",
     "ease": "cubic-bezier(.2,.8,.2,1)"
-  }
+  },
+  "_measured": "2026-11-03 replica-diff: sizes re-measured against the reference screenshots on a 411dp canvas (were 6-20% too big)"
 }
