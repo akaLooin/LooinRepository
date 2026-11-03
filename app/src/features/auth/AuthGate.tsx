@@ -1,7 +1,8 @@
 import type { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { endSession, startSession } from "../../data/store";
-import { supabase } from "../../lib/supabase";
+import { supabase, supabaseConfigError } from "../../lib/supabase";
+import { ConfigErrorScreen } from "./ConfigErrorScreen";
 import { supabaseRemote } from "../../data/supabaseRemote";
 import { LoginScreen } from "./LoginScreen";
 
@@ -35,6 +36,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  if (supabaseConfigError) return <ConfigErrorScreen message={supabaseConfigError} />;
   if (!ready) return null;
   if (supabase && !session) return <LoginScreen />;
   return <>{children}</>;
