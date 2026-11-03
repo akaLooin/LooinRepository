@@ -1,5 +1,6 @@
 // Mirrors replica/schema.sql (phase 1). Field names are camelCase versions of the columns.
 import type { Day } from "../lib/dates";
+import type { RepeatRule } from "../lib/routines";
 
 export type Visibility = "public" | "followers" | "partial" | "private";
 
@@ -30,9 +31,22 @@ export type Todo = {
   timerStartedAt?: string;
   routineId?: string;
   routineDate?: Day;
+  isSkipped?: boolean; // a routine occurrence the user deleted
   createdAt: string;
+};
+
+export type Routine = RepeatRule & {
+  id: string;
+  categoryId: string;
+  title: string;
+  startDate: Day;
+  endDate?: Day;
+  timeOfDay?: string; // "HH:MM"
+  memo: string;
+  manualAdd: boolean; // guess: when on, the routine is offered when adding, not shown automatically
+  sortOrder: number;
 };
 
 export type DDay = { id: string; title: string; type: "fixed" | "repeat"; targetDate: Day; isPrivate: boolean; sortOrder: number };
 
-export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; ddays: DDay[] };
+export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[] };

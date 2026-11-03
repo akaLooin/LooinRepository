@@ -16,8 +16,15 @@ function Cell({ label, selected, onPress, a11y }: { label: string; selected: boo
   );
 }
 
-function Grid({ children }: { children: React.ReactNode }) {
-  return <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 8 }}>{children}</View>;
+/** Always six columns, as in the reference. */
+function Grid({ children }: { children: React.ReactNode[] }) {
+  const rows: React.ReactNode[][] = [];
+  for (let i = 0; i < children.length; i += 6) rows.push(children.slice(i, i + 6));
+  return (
+    <View style={{ gap: 8 }}>
+      {rows.map((r, i) => <View key={i} style={{ flexDirection: "row", justifyContent: "space-between" }}>{r}</View>)}
+    </View>
+  );
 }
 
 /** Hour 0-23 and minute in 5-minute steps, as round buttons (S07d, S22b). */

@@ -6,7 +6,8 @@ import {
   AppText, Archive, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, TextAlignStart, TodoRow, useToast, Users,
 } from "../../components";
 import {
-  addTodo, ddayLabel, EndedCategoryError, selectCategories, selectDDays, toggleTodo, updateTodo, useDB,
+  addRoutineTodo, addTodo, ddayLabel, EndedCategoryError, manualRoutinesOn, materialize, selectCategories, selectDDays, todosForDay, toggleTodo,
+  updateTodo, useDB,
 } from "../../data/store";
 import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
 import { tokens, useTheme } from "../../theme";
@@ -27,7 +28,7 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const profile = useDB((d) => d.profile);
   const categories = useDB(selectCategories);
-  const allTodos = useDB((d) => d.todos);
+  const db = useDB((d) => d);
   const ddays = useDB(selectDDays);
 
   const now = today();
@@ -40,14 +41,14 @@ export function HomeScreen() {
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [toast, notice] = useToast();
 
-  const byDay = useMemo(() => {
-    const m = new Map<Day, typeof allTodos>();
-    for (const t of allTodos) m.set(t.date, [...(m.get(t.date) ?? []), t]);
-    return m;
-  }, [allTodos]);
-  const dayTodos = (byDay.get(selected) ?? []).slice().sort((a, b) => Number(a.isDone) - Number(b.isDone) || a.sortOrder - b.sortOrder);
-
   const grid = monthGrid(view.y, view.m);
+  const byDay = useMemo(() => {
+    const m = new Map<Day, ReturnType<typeof todosForDay>>();
+    for (const row of grid) for (const d of row) if (d) m.set(d, todosForDay(db, d));
+    return m;
+  }, [db, view.y, view.m]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dayTodos = todosForDay(db, selected).sort((a, b) => Number(a.isDone) - Number(b.isDone) || a.sortOrder - b.sortOrder);
+
   const weekRow = mode === "week" ? [grid[Math.max(0, parseDay(selected).m === view.m ? weekOfMonth(selected) : 0)]] : undefined;
   const title = mode === "month" ? `${view.y}년 ${view.m}월` : `${view.y}년 ${view.m}월 ${(weekRow ? grid.indexOf(weekRow[0]) : 0) + 1}주차`;
 
@@ -150,12 +151,19 @@ export function HomeScreen() {
                         done={t.isDone}
                         color={cat.color}
                         onToggle={() => toggleTodo(t.id)}
-                        onPress={() => setSheetTodo(t.id)}
-                        onDoubleTap={() => { setSheetTodo(null); setEditing(t.id); }}
+                        onPress={() => setSheetTodo(materialize(t.id))}
+                        onDoubleTap={() => { setSheetTodo(null); setEditing(materialize(t.id)); }}
                       />
                     ),
                   )}
-                  {adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} /> : null}
+                  {adding === cat.id ? (
+                    <InlineTodoInput
+                      color={cat.color}
+                      suggestions={manualRoutinesOn(db, selected, cat.id).map((r) => ({ id: r.id, title: r.title }))}
+                      onSubmit={(title, routineId) => (routineId ? addRoutineTodo(routineId, selected, title) : onAdd(cat.id, title))}
+                      onDone={() => setAdding(null)}
+                    />
+                  ) : null}
                 </View>
               </View>
             );

@@ -1,5 +1,3 @@
-import { StubScreen } from "../../components";
+import { RoutineListScreen } from "../../features/routines/RoutineListScreen";
 
-export default function Screen() {
-  return <StubScreen id="S07" title="루틴 관리" when="다음 단계에서 만들어요" />;
-}
+export default RoutineListScreen;

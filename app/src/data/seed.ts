@@ -4,6 +4,7 @@ import type { DB, Todo } from "./types";
 
 const TODO_CAT = "c0000000-0000-4000-8000-000000000001";
 const NORMAL_CAT = "c0000000-0000-4000-8000-000000000002";
+const WORKOUT = "r0000000-0000-4000-8000-000000000001";
 
 const SAMPLE_TITLES = ["물 2L 마시기", "영단어 30개", "방 정리", "장보기", "블로그 글 쓰기", "스트레칭 10분"];
 
@@ -22,7 +23,8 @@ export function seed(): DB {
   }
   todos.push(todo(TODO_CAT, toDay(2026, 11, 1), "💪 운동하기: 하체", true), todo(NORMAL_CAT, toDay(2026, 11, 1), "빨래 개기"));
   todos.push(todo(TODO_CAT, toDay(2026, 11, 2), "💪 운동하기: 등", true));
-  todos.push(todo(TODO_CAT, toDay(2026, 11, 3), "💪 운동하기: 어깨", true), todo(NORMAL_CAT, toDay(2026, 11, 3), "책 30쪽 읽기", false, "에세이 - 3장"));
+  const workout = { ...todo(TODO_CAT, toDay(2026, 11, 3), "💪 운동하기: 어깨", true), routineId: WORKOUT, routineDate: toDay(2026, 11, 3) };
+  todos.push(workout, todo(NORMAL_CAT, toDay(2026, 11, 3), "책 30쪽 읽기", false, "에세이 - 3장"));
 
   // Keep "today" meaningful when the app runs on another date.
   const t = today();
@@ -35,6 +37,11 @@ export function seed(): DB {
       { id: NORMAL_CAT, title: "Normal", color: "#FFFFFF", visibility: "private", sortOrder: 2 },
     ],
     todos,
+    routines: [
+      { id: WORKOUT, categoryId: TODO_CAT, title: "💪 운동하기", startDate: "2026-09-27", repeatType: "daily", memo: "", manualAdd: true, sortOrder: 1 },
+      { id: "r0000000-0000-4000-8000-000000000002", categoryId: TODO_CAT, title: "💵 월급날", startDate: "2026-09-29", endDate: "2026-12-31", repeatType: "monthly", monthDays: [10], memo: "", manualAdd: false, sortOrder: 2 },
+      { id: "r0000000-0000-4000-8000-000000000003", categoryId: TODO_CAT, title: "📞 집에 안부 전화", startDate: "2026-10-17", endDate: "2027-10-17", repeatType: "weekly", weekdays: [6], memo: "", manualAdd: false, sortOrder: 3 },
+    ],
     ddays: [
       { id: "d0000000-0000-4000-8000-000000000001", title: "자격증 시험", type: "fixed", targetDate: toDay(2026, 11, 15), isPrivate: false, sortOrder: 1 },
       { id: "d0000000-0000-4000-8000-000000000002", title: "프로젝트 마감", type: "fixed", targetDate: toDay(2026, 11, 21), isPrivate: false, sortOrder: 2 },

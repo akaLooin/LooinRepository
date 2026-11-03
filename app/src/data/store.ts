@@ -6,7 +6,8 @@
 import { useSyncExternalStore } from "react";
 import { addDays, today, type Day } from "../lib/dates";
 import { seed } from "./seed";
-import type { Category, DB, DDay, Profile, Todo, Visibility } from "./types";
+import { occursOn } from "../lib/routines";
+import type { Category, DB, DDay, Profile, Routine, Todo, Visibility } from "./types";
 
 let db: DB = seed();
 const listeners = new Set<() => void>();
@@ -41,6 +42,31 @@ export const selectCategories = (d: DB) => [...d.categories].sort(byOrder);
 export const selectActiveCategories = (d: DB) => selectCategories(d).filter((c) => !c.endedAt);
 export const selectTodosOn = (day: Day) => (d: DB) => d.todos.filter((t) => t.date === day).sort(byOrder);
 export const selectDDays = (d: DB) => [...d.ddays].sort(byOrder);
+export const selectRoutines = (d: DB) => [...d.routines].sort(byOrder);
+
+/** Id of a routine occurrence that has no row yet. */
+export const virtualId = (routineId: string, day: Day) => `r:${routineId}:${day}`;
+export const isVirtual = (id: string) => id.startsWith("r:");
+
+/**
+ * To-dos for a day, including routine occurrences that have no row yet (shown as virtual rows).
+ * A row exists once the user touches the occurrence (checks, edits, moves, skips).
+ */
+export function todosForDay(d: DB, day: Day): Todo[] {
+  const real = d.todos.filter((t) => t.date === day && !t.isSkipped);
+  const touched = new Set(d.todos.filter((t) => t.routineId && t.routineDate === day).map((t) => t.routineId));
+  const virtual: Todo[] = d.routines
+    .filter((r) => !r.manualAdd && !touched.has(r.id) && occursOn(r, day))
+    .map((r) => ({
+      id: virtualId(r.id, day), categoryId: r.categoryId, title: r.title, date: day, sortOrder: 1000 + r.sortOrder, isDone: false,
+      memo: "", memoIsPrivate: false, timerSeconds: 0, routineId: r.id, routineDate: day, createdAt: day,
+    }));
+  return [...real, ...virtual];
+}
+
+/** Routines that can be added by hand on this day (manual-add routines). */
+export const manualRoutinesOn = (d: DB, day: Day, categoryId: string) =>
+  d.routines.filter((r) => r.manualAdd && r.categoryId === categoryId && occursOn(r, day) && !d.todos.some((t) => t.routineId === r.id && t.routineDate === day));
 
 // ── profile ────────────────────────────────────────────────
 export function updateProfile(patch: Partial<Profile>) {
@@ -64,12 +90,12 @@ export function endCategory(id: string, ended: boolean) {
 
 /** Deletes the category and every to-do in it (the original's stated behaviour). */
 export function deleteCategory(id: string) {
-  set({ ...db, categories: db.categories.filter((c) => c.id !== id), todos: db.todos.filter((t) => t.categoryId !== id) });
+  set({ ...db, categories: db.categories.filter((c) => c.id !== id), todos: db.todos.filter((t) => t.categoryId !== id), routines: db.routines.filter((r) => r.categoryId !== id) });
 }
 
 /** Moves every to-do to another category. */
 export function moveCategoryTodos(fromId: string, toId: string) {
-  set({ ...db, todos: db.todos.map((t) => (t.categoryId === fromId ? { ...t, categoryId: toId } : t)) });
+  set({ ...db, todos: db.todos.map((t) => (t.categoryId === fromId ? { ...t, categoryId: toId } : t)), routines: db.routines.map((r) => (r.categoryId === fromId ? { ...r, categoryId: toId } : r)) });
 }
 
 export function reorderCategories(ids: string[]) {
@@ -91,22 +117,66 @@ export function addTodo(categoryId: string, date: Day, title: string) {
   return todo.id;
 }
 
+/** Turns a virtual routine occurrence into a real row and returns its id. Real ids pass through. */
+export function materialize(id: string): string {
+  if (!isVirtual(id)) return id;
+  const [, routineId, day] = id.split(":");
+  const existing = db.todos.find((t) => t.routineId === routineId && t.routineDate === day);
+  if (existing) return existing.id;
+  const v = todosForDay(db, day).find((t) => t.id === id);
+  if (!v) return id;
+  const row: Todo = { ...v, id: newId(), createdAt: now() };
+  set({ ...db, todos: [...db.todos, row] });
+  return row.id;
+}
+
 export function updateTodo(id: string, patch: Partial<Todo>) {
   set({ ...db, todos: db.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
 }
 
 export function toggleTodo(id: string) {
+  id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   updateTodo(id, t.isDone ? { isDone: false, doneAt: undefined } : { isDone: true, doneAt: now() });
 }
 
 export function deleteTodo(id: string) {
-  set({ ...db, todos: db.todos.filter((t) => t.id !== id) });
+  const t = db.todos.find((x) => x.id === id);
+  // A routine occurrence is kept as a skipped row so the routine does not bring it back.
+  if (t?.routineId) set({ ...db, todos: db.todos.map((x) => (x.id === id ? { ...x, isSkipped: true } : x)) });
+  else set({ ...db, todos: db.todos.filter((x) => x.id !== id) });
+}
+
+/** Add a manual-add routine as today's to-do, optionally with extra text ("운동하기: 어깨"). */
+export function addRoutineTodo(routineId: string, day: Day, title: string) {
+  const r = db.routines.find((x) => x.id === routineId);
+  if (!r) return;
+  const row: Todo = { id: newId(), categoryId: r.categoryId, title, date: day, sortOrder: nextOrder(db.todos.filter((x) => x.date === day)), isDone: false,
+    memo: "", memoIsPrivate: false, timerSeconds: 0, routineId, routineDate: day, createdAt: now() };
+  set({ ...db, todos: [...db.todos, row] });
+}
+
+// ── routines ───────────────────────────────────────────────
+export function saveRoutine(input: Omit<Routine, "id" | "sortOrder"> & { id?: string }) {
+  if (input.id && db.routines.some((r) => r.id === input.id)) {
+    set({ ...db, routines: db.routines.map((r) => (r.id === input.id ? { ...r, ...input, id: r.id } : r)) });
+    return input.id;
+  }
+  const id = newId();
+  const same = db.routines.filter((r) => r.categoryId === input.categoryId);
+  set({ ...db, routines: [...db.routines, { ...input, id, sortOrder: nextOrder(same) }] });
+  return id;
+}
+
+/** Past rows stay (they keep their title and state); only the rule goes away. */
+export function deleteRoutine(id: string) {
+  set({ ...db, routines: db.routines.filter((r) => r.id !== id), todos: db.todos.map((t) => (t.routineId === id ? { ...t, routineId: undefined, routineDate: undefined } : t)) });
 }
 
 /** 날짜 바꾸기 */
 export function moveTodo(id: string, date: Day) {
+  id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   const same = db.todos.filter((x) => x.categoryId === t.categoryId && x.date === date);
@@ -115,6 +185,7 @@ export function moveTodo(id: string, date: Day) {
 
 /** 내일 또 하기 / 다른 날 또 하기: a fresh, unchecked copy on another day. */
 export function copyTodo(id: string, date: Day) {
+  id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   const same = db.todos.filter((x) => x.categoryId === t.categoryId && x.date === date);
@@ -124,6 +195,7 @@ export function copyTodo(id: string, date: Day) {
 }
 
 export const copyTodoTomorrow = (id: string) => {
+  id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (t) copyTodo(id, addDays(t.date, 1));
 };
@@ -134,4 +206,4 @@ export function ddayLabel(target: Day, from: Day = today()) {
   const n = Math.round(ms / 86400000);
   return n === 0 ? "D-DAY" : n > 0 ? `D-${n}` : `D+${-n}`;
 }
-export type { Category, DDay, Profile, Todo };
+export type { Category, DDay, Profile, Routine, Todo };

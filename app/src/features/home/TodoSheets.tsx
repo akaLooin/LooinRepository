@@ -78,7 +78,7 @@ function MemoSheet({ todo, onClose }: { todo: Todo; onClose: () => void }) {
   );
 }
 
-export function DatePickSheet({ title, initial, onPick, onClose }: { title: string; initial: Day; onPick: (d: Day) => void; onClose: () => void }) {
+export function DatePickSheet({ title, initial, onPick, onClose, onClear }: { title: string; initial: Day; onPick: (d: Day) => void; onClose: () => void; onClear?: () => void }) {
   const { c } = useTheme();
   const start = parseDay(initial);
   const [ym, setYm] = useState({ y: start.y, m: start.m });
@@ -93,7 +93,10 @@ export function DatePickSheet({ title, initial, onPick, onClose }: { title: stri
         <PillButton round onPress={() => shift(1)} a11y="다음 달"><ChevronRight size={20} color={c.text} /></PillButton>
       </View>
       <Calendar picker year={ym.y} month={ym.m} today={picked} selected={picked} onSelect={setPicked} />
-      <View style={{ marginTop: 16 }}><Button kind="sheetBlock" label="완료" onPress={() => onPick(picked)} /></View>
+      <View style={{ marginTop: 16, flexDirection: "row", gap: 10 }}>
+        {onClear ? <Button kind="sheetBlock" flex label="없음" onPress={onClear} /> : null}
+        <Button kind="sheetBlock" flex label="완료" onPress={() => onPick(picked)} />
+      </View>
     </BottomSheet>
   );
 }
