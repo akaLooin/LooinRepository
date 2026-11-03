@@ -39,7 +39,8 @@ export const tokens = {
       "menuMove": "#666cf0",
       "menuInfo": "#36363c",
       "play": "#0078fc",
-      "cloverNumber": "#ffffff"
+      "cloverNumber": "#ffffff",
+      "onIcon": "#ffffff"
     },
     "light": {
       "bg": "#ffffff",
@@ -79,7 +80,8 @@ export const tokens = {
       "menuRepeat": "#fc7812",
       "menuMove": "#666cf0",
       "play": "#0078fc",
-      "menuInfo": "#c8c8cc"
+      "menuInfo": "#c8c8cc",
+      "onIcon": "#ffffff"
     }
   },
   "type": {

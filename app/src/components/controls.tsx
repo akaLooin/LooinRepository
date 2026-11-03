@@ -24,7 +24,7 @@ export function Toggle({ value, onChange, disabled, label }: { value: boolean; o
       style={{ opacity: disabled ? 0.4 : 1 }}
     >
       <View style={{ width: w, height: h, borderRadius: h / 2, backgroundColor: value ? c.toggleOn : c.toggleOff, justifyContent: "center" }}>
-        <AppText variant="toggleLabel" raw="#FFFFFF" style={{ position: "absolute", left: value ? 9 : undefined, right: value ? undefined : 7 }}>
+        <AppText variant="toggleLabel" color="onIcon" style={{ position: "absolute", left: value ? 9 : undefined, right: value ? undefined : 7 }}>
           {value ? "ON" : "OFF"}
         </AppText>
         <Animated.View
