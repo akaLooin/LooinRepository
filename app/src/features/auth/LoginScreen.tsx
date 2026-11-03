@@ -10,6 +10,8 @@ const MIN_PASSWORD = 6; // Supabase Auth default minimum
 /** Turns a Supabase Auth error into a message that says what to do. Unknown errors keep their original text. */
 function explain(err: { message: string; status?: number }, mode: "signIn" | "signUp"): string {
   const m = err.message;
+  if (/json parse|unexpected end of input|unexpected token/i.test(m))
+    return "서버 주소가 맞지 않는 것 같아요. .env.local의 EXPO_PUBLIC_SUPABASE_URL이 https://<프로젝트>.supabase.co 형태인지 확인해 주세요";
   if (/network request failed|failed to fetch|fetch failed/i.test(m)) return "서버에 연결하지 못했어요. 인터넷 연결과 .env.local의 주소를 확인해 주세요";
   if (/not authorized|sending confirmation|error sending/i.test(m))
     return "확인 메일을 보내지 못했어요. Supabase 기본 메일은 프로젝트 팀원 이메일로만 보내요. 대시보드에서 Confirm email을 끄고 다시 가입해 주세요";
