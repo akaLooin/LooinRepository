@@ -37,16 +37,16 @@ export function ColorCodeInput({ value, onChange }: { value: string; onChange: (
             placeholder="00FF7F"
             placeholderTextColor={c.textPlaceholder}
             accessibilityLabel="색상 코드"
-            style={{ flex: 1, fontFamily: fontFamily(600), fontSize: tokens.type["monthTitle"].size, color: c.text, paddingVertical: 10, paddingHorizontal: 4, letterSpacing: 1 }}
+            style={{ flex: 1, minWidth: 0, outlineStyle: "none" as never, fontFamily: fontFamily(600), fontSize: tokens.type["monthTitle"].size, color: c.text, paddingVertical: 10, paddingHorizontal: 4, letterSpacing: 1 }}
           />
         </View>
       </View>
       {invalid ? <AppText variant="helper" color="danger">6자리 색상 코드를 입력해 주세요. 예: 00FF7F</AppText> : null}
       {lowContrast ? <AppText variant="helper" color="textMuted">이 색은 지금 배경에서 잘 안 보일 수 있어요.</AppText> : null}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
         {PRESET_COLORS.map((hex) => (
           <Pressable key={hex} onPress={() => update(hex.slice(1))} accessibilityRole="button" accessibilityLabel={`색 ${hex}`}
-            style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: hex, borderWidth: hex === (parsed ?? value) ? 3 : 0, borderColor: c.text }} />
+            style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: hex, borderWidth: hex === (parsed ?? value) ? 3 : 0, borderColor: c.text }} />
         ))}
       </View>
     </View>

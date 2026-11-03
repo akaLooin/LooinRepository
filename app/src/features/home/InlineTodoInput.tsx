@@ -27,7 +27,7 @@ export function InlineTodoInput({ color, initial = "", onSubmit, onDone }: { col
         placeholder="할 일 입력"
         placeholderTextColor={c.textPlaceholder}
         accessibilityLabel="할 일 입력"
-        style={{ flex: 1, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 8,
+        style={{ flex: 1, minWidth: 0, outlineStyle: "none" as never, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 8,
           borderBottomWidth: 2, borderBottomColor: visibleOn(color, c.bg, c.text) }}
       />
     </View>

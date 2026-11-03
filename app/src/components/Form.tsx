@@ -23,8 +23,8 @@ export function FieldRow({ title, value, onPress, right }: { title: string; valu
 }
 
 /** Title field with a 2dp underline in the category colour (S04, S06b, S07b, S21b). */
-export function TitleInput({ value, onChangeText, placeholder, underline, textColor, error, autoFocus }: {
-  value: string; onChangeText: (s: string) => void; placeholder?: string; underline?: string; textColor?: string; error?: string; autoFocus?: boolean;
+export function TitleInput({ value, onChangeText, placeholder, underline, textColor, error, autoFocus, bold }: {
+  value: string; onChangeText: (s: string) => void; placeholder?: string; underline?: string; textColor?: string; error?: string; autoFocus?: boolean; bold?: boolean;
 }) {
   const { c } = useTheme();
   const t = tokens.type["bodyLg"];
@@ -37,7 +37,7 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
         placeholderTextColor={c.textPlaceholder}
         autoFocus={autoFocus}
         accessibilityLabel={placeholder}
-        style={{ fontFamily: fontFamily(500), fontSize: t.size, color: textColor ?? c.text, paddingVertical: 14, paddingHorizontal: 4,
+        style={{ outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 500), fontSize: bold ? tokens.type.monthTitle.size : t.size, color: textColor ?? c.text, paddingVertical: 14, paddingHorizontal: 4,
           borderBottomWidth: 2, borderBottomColor: error ? c.danger : underline ?? c.text }}
       />
       {error ? <AppText variant="helper" color="danger" style={{ marginTop: 6 }}>{error}</AppText> : null}

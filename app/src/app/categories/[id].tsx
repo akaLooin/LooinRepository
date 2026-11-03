@@ -1,5 +1,3 @@
-import { StubScreen } from "../../components";
+import { CategoryEditScreen } from "../../features/categories/CategoryEditScreen";
 
-export default function Screen() {
-  return <StubScreen id="S06b" title="카테고리" when="곧 만들어요" />;
-}
+export default CategoryEditScreen;

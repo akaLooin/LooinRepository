@@ -94,13 +94,13 @@ export function RoutineRow({ status, title, detail, onPress }: Base & { status: 
 }
 
 /** Rounded row with a right-hand value: D-day list, category list (S21, S06). */
-export function PillRow({ title, right, rightColor = "text", left, onPress }: Base & { right: string; rightColor?: ColorName; left?: React.ReactNode }) {
+export function PillRow({ title, right, rightColor = "text", left, onPress, titleColor }: Base & { right: string; rightColor?: ColorName; left?: React.ReactNode; titleColor?: string }) {
   const { c } = useTheme();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}, ${right}`}
       style={({ pressed }) => ({ height: 52, borderRadius: tokens.radius.pill, backgroundColor: pressed ? c.surfaceRow : c.surfaceInput, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 10 })}>
       {left}
-      <View style={{ flex: 1 }}>{typeof title === "string" ? <AppText variant="bodyLg" weight={500}>{title}</AppText> : title}</View>
+      <View style={{ flex: 1 }}><AppText variant="bodyLg" weight={titleColor ? 700 : 500} raw={titleColor} numberOfLines={1}>{title}</AppText></View>
       <AppText variant="bodyLg" weight={rightColor === "dday" ? 700 : 400} color={rightColor}>{right}</AppText>
     </Pressable>
   );
