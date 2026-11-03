@@ -1,15 +1,16 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import {
   AppText, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
-  TileButton, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton,
+  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton,
 } from "../../components";
-import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, updateTodo, useDB, type Todo } from "../../data/store";
+import { ensurePermission } from "../../data/notifications";
+import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, setTodoAlarm, updateTodo, useDB, type Todo } from "../../data/store";
 import { parseDay, type Day } from "../../lib/dates";
 import { useTheme } from "../../theme";
 
-type Mode = { kind: "menu" } | { kind: "memo" } | { kind: "date"; action: "copy" | "move" } | { kind: "closed" };
+type Mode = { kind: "menu" } | { kind: "memo" } | { kind: "alarm" } | { kind: "date"; action: "copy" | "move" } | { kind: "closed" };
 
 /** S05 to-do menu, plus the memo sheet (S05a) and the date picker it opens. */
 export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string | null; onClose: () => void; onEdit: (id: string) => void; notice: (msg: string) => void }) {
@@ -32,7 +33,7 @@ export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string
           <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
         </View>
         <SheetMenuRow title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
-        <SheetMenuRow title="시간 알림" color="menuTime" icon={icon(Clock)} onPress={() => { close(); notice("시간 알림은 알림 기능과 함께 만들어요"); }} />
+        <SheetMenuRow title={todo.remindAt ? `시간 알림 · ${alarmLabel(todo.remindAt)}` : "시간 알림"} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
         <SheetMenuRow title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
         <SheetMenuRow title="사진 인증" color="menuPhoto" icon={icon(Image)} onPress={() => { close(); notice("사진 인증은 다음 단계에서 만들어요"); }} />
         <SheetMenuRow title="내일 또 하기" color="menuRepeat" icon={icon(ArrowRight)} onPress={() => { copyTodoTomorrow(todo.id); close(); notice("내일 할 일에 추가했어요"); }} />
@@ -42,6 +43,7 @@ export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string
       </BottomSheet>
 
       {mode.kind === "memo" ? <MemoSheet todo={todo} onClose={close} /> : null}
+      {mode.kind === "alarm" ? <AlarmSheet todo={todo} onClose={close} notice={notice} /> : null}
       {mode.kind === "date" ? (
         <DatePickSheet
           title={mode.action === "copy" ? "다른 날 또 하기" : "날짜 바꾸기"}
@@ -57,6 +59,32 @@ export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string
         />
       ) : null}
     </>
+  );
+}
+
+function alarmLabel(iso: string) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** S05 시간 알림: an alarm at a time on the to-do's own day (TimeGrid, as in S07d). */
+function AlarmSheet({ todo, onClose, notice }: { todo: Todo; onClose: () => void; notice: (m: string) => void }) {
+  const start = todo.remindAt ? new Date(todo.remindAt) : null;
+  const [time, setTime] = useState({ h: start?.getHours() ?? 9, m: start ? start.getMinutes() - (start.getMinutes() % 5) : 0 });
+  const save = async () => {
+    setTodoAlarm(todo.id, `${String(time.h).padStart(2, "0")}:${String(time.m).padStart(2, "0")}`);
+    onClose();
+    if (Platform.OS === "web") return notice("알림은 폰 앱에서만 울려요");
+    notice((await ensurePermission()) ? "알림을 맞췄어요" : "알림 권한이 꺼져 있어요. 폰 설정에서 켜 주세요");
+  };
+  return (
+    <BottomSheet visible onClose={onClose} title="시간 알림">
+      <TimeGrid hour={time.h} minute={time.m} onChange={(h, m) => setTime({ h, m })} />
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
+        <Button kind="sheetBlock" flex label="없음" onPress={() => { setTodoAlarm(todo.id, null); onClose(); }} />
+        <Button kind="sheetBlock" flex label="완료" onPress={save} />
+      </View>
+    </BottomSheet>
   );
 }
 

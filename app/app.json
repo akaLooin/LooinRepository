@@ -35,7 +35,8 @@
             "./assets/fonts/Pretendard-Bold.otf"
           ]
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "scheme": "todomateclone"
   }

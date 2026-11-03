@@ -43,6 +43,7 @@ export function seed(): DB {
       { id: "r0000000-0000-4000-8000-000000000003", categoryId: TODO_CAT, title: "📞 집에 안부 전화", startDate: "2026-10-17", endDate: "2027-10-17", repeatType: "weekly", weekdays: [6], memo: "", manualAdd: false, sortOrder: 3 },
     ],
     diaries: [],
+    reminders: [],
     ddays: [
       { id: "d0000000-0000-4000-8000-000000000001", title: "자격증 시험", type: "fixed", targetDate: toDay(2026, 11, 15), isPrivate: false, sortOrder: 1 },
       { id: "d0000000-0000-4000-8000-000000000002", title: "프로젝트 마감", type: "fixed", targetDate: toDay(2026, 11, 21), isPrivate: false, sortOrder: 2 },

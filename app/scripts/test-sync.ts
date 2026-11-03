@@ -8,7 +8,7 @@ let clock = Date.parse("2026-11-03T00:00:00Z");
 const now = () => new Date((clock += 1000)).toISOString();
 
 function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string, unknown>>> } {
-  const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map(), diaries: new Map() };
+  const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map(), diaries: new Map(), reminders: new Map() };
   return {
     rows,
     async pull(since) {
@@ -34,7 +34,7 @@ function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string
   };
 }
 
-const emptyDB = (): DB => ({ profile: { id: USER, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [] });
+const emptyDB = (): DB => ({ profile: { id: USER, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [] });
 const device = (): LocalState => ({ db: emptyDB(), outbox: emptyOutbox(), lastPulled: null });
 function edit(s: LocalState, f: (db: DB) => DB) { const next = f(s.db); s.outbox = track(s.db, next, s.outbox); s.db = next; }
 async function sync(s: LocalState, r: Remote) {

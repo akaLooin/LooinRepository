@@ -10,6 +10,7 @@
     "expo-crypto": "~58.0.7",
     "expo-font": "~58.0.11",
     "expo-linking": "~58.0.15",
+    "expo-notifications": "~58.1.8",
     "expo-router": "~58.0.29",
     "expo-status-bar": "~58.0.4",
     "lucide-react-native": "^1.67.0",
@@ -34,7 +35,7 @@
     "web": "expo start --web",
     "tokens": "node scripts/gen-tokens.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts && tsx scripts/test-url.ts && tsx scripts/test-dday.ts"
+    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts && tsx scripts/test-url.ts && tsx scripts/test-dday.ts && tsx scripts/test-notifications.ts"
   },
   "private": true
 }

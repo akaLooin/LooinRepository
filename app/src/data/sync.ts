@@ -18,8 +18,8 @@ export interface Remote {
 }
 
 export const emptyOutbox = (): Outbox => ({
-  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {} },
-  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {} },
+  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {} },
+  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {} },
   profile: 0,
 });
 

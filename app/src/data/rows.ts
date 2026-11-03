@@ -1,8 +1,8 @@
 // Local objects (camelCase) <-> Supabase rows (snake_case). Field lists follow supabase/migrations.
-import type { Category, DDay, Diary, Profile, Routine, Todo } from "./types";
+import type { Category, DDay, Diary, Profile, Reminder, Routine, Todo } from "./types";
 
-export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries";
-export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries"]; // push order (parents first)
+export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries" | "reminders";
+export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries", "reminders"]; // push order (parents first)
 
 type Row = Record<string, unknown>;
 const n = (v: unknown) => (v === undefined ? null : v);
@@ -21,6 +21,7 @@ export const toRow = {
     memo: t.memo, memo_is_private: t.memoIsPrivate, remind_at: n(t.remindAt), photo_path: n(t.photoUri), timer_seconds: t.timerSeconds,
     timer_started_at: n(t.timerStartedAt), routine_id: n(t.routineId), routine_date: n(t.routineDate), is_skipped: t.isSkipped ?? false,
   }),
+  reminders: (r: Reminder, user_id: string): Row => ({ id: r.id, user_id, time_of_day: r.timeOfDay }),
   diaries: (d: Diary, user_id: string): Row => ({
     id: d.id, user_id, date: d.date, emoji: n(d.emoji), body: d.body, visibility: d.visibility, background_color: n(d.backgroundColor), image_paths: d.imagePaths,
   }),
@@ -42,6 +43,7 @@ export const fromRow = {
     memo: r.memo ?? "", memoIsPrivate: !!r.memo_is_private, remindAt: u(r.remind_at), photoUri: u(r.photo_path), timerSeconds: r.timer_seconds ?? 0,
     timerStartedAt: u(r.timer_started_at), routineId: u(r.routine_id), routineDate: u(r.routine_date), isSkipped: !!r.is_skipped, createdAt: r.created_at ?? "",
   }),
+  reminders: (r: R): Reminder => ({ id: r.id, timeOfDay: String(r.time_of_day).slice(0, 5) }),
   diaries: (r: R): Diary => ({
     id: r.id, date: r.date, emoji: u(r.emoji), body: r.body ?? "", visibility: r.visibility, backgroundColor: u(r.background_color), imagePaths: r.image_paths ?? [],
   }),

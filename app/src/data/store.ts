@@ -8,10 +8,10 @@ import * as Crypto from "expo-crypto";
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
+import { rescheduleNotifications } from "./notifications";
 import { seed } from "./seed";
 import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, upgradeOutbox, type Outbox, type Remote } from "./sync";
-import { occursOn } from "../lib/routines";
-import type { Category, DB, DDay, Diary, Profile, Routine, Todo, Visibility } from "./types";
+import type { Category, DB, DDay, Diary, Profile, Reminder, Routine, Todo, Visibility } from "./types";
 
 // ── session: demo (sample data, this device only) or cloud (signed in, synced) ──
 type Session = { mode: "demo" } | { mode: "cloud"; userId: string; remote: Remote };
@@ -28,6 +28,13 @@ function set(next: DB) {
   notify();
   persistSoon();
   syncSoon();
+  notificationsSoon();
+}
+
+let notifTimer: ReturnType<typeof setTimeout> | null = null;
+function notificationsSoon() {
+  if (notifTimer) clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => rescheduleNotifications(db), 1000);
 }
 
 const storageKey = () => (session.mode === "cloud" ? `todomate:${session.userId}` : "todomate:demo");
@@ -39,7 +46,7 @@ function persistSoon() {
   }, 300);
 }
 
-const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [] });
+const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [] });
 
 /** Loads this device's copy for the session, then (cloud) syncs. */
 export async function startSession(next: Session) {
@@ -48,10 +55,11 @@ export async function startSession(next: Session) {
   const saved = await AsyncStorage.getItem(storageKey()).catch(() => null);
   const parsed = saved ? JSON.parse(saved) : null;
   db = parsed?.db ?? (next.mode === "demo" ? seed() : emptyDB(next.userId));
-  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [] }; // copies saved by older versions
+  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [], reminders: db.reminders ?? [] }; // copies saved by older versions
   outbox = upgradeOutbox(parsed?.outbox);
   lastPulled = parsed?.lastPulled ?? null;
   notify();
+  notificationsSoon();
   if (next.mode === "cloud") startSync();
 }
 
@@ -96,6 +104,7 @@ export async function syncNow() {
     lastPulled = pulled.serverTime;
     notify();
     persistSoon();
+    notificationsSoon();
     setStatus({ state: "idle", lastSyncedAt: new Date().toISOString(), rejected: [...status.rejected, ...rejected].slice(-20) });
   } catch {
     setStatus({ state: "offline" });
@@ -149,29 +158,8 @@ export const selectTodosOn = (day: Day) => (d: DB) => d.todos.filter((t) => t.da
 export const selectDDays = (d: DB) => [...d.ddays].sort(byOrder);
 export const selectRoutines = (d: DB) => [...d.routines].sort(byOrder);
 
-/** Id of a routine occurrence that has no row yet. */
-export const virtualId = (routineId: string, day: Day) => `r:${routineId}:${day}`;
-export const isVirtual = (id: string) => id.startsWith("r:");
-
-/**
- * To-dos for a day, including routine occurrences that have no row yet (shown as virtual rows).
- * A row exists once the user touches the occurrence (checks, edits, moves, skips).
- */
-export function todosForDay(d: DB, day: Day): Todo[] {
-  const real = d.todos.filter((t) => t.date === day && !t.isSkipped);
-  const touched = new Set(d.todos.filter((t) => t.routineId && t.routineDate === day).map((t) => t.routineId));
-  const virtual: Todo[] = d.routines
-    .filter((r) => !r.manualAdd && !touched.has(r.id) && occursOn(r, day))
-    .map((r) => ({
-      id: virtualId(r.id, day), categoryId: r.categoryId, title: r.title, date: day, sortOrder: 1000 + r.sortOrder, isDone: false,
-      memo: "", memoIsPrivate: false, timerSeconds: 0, routineId: r.id, routineDate: day, createdAt: day,
-    }));
-  return [...real, ...virtual];
-}
-
-/** Routines that can be added by hand on this day (manual-add routines). */
-export const manualRoutinesOn = (d: DB, day: Day, categoryId: string) =>
-  d.routines.filter((r) => r.manualAdd && r.categoryId === categoryId && occursOn(r, day) && !d.todos.some((t) => t.routineId === r.id && t.routineDate === day));
+export { isVirtual, manualRoutinesOn, todosForDay, virtualId } from "./occurrences";
+import { isVirtual, todosForDay } from "./occurrences";
 
 // ── profile ────────────────────────────────────────────────
 export function updateProfile(patch: Partial<Profile>) {
@@ -372,4 +360,28 @@ export function saveDiary(day: Day, patch: Partial<Omit<Diary, "id" | "date">>) 
   set({ ...db, diaries: existing ? db.diaries.map((x) => (x.id === existing.id ? next : x)) : [...db.diaries, next] });
 }
 
-export type { Category, DDay, Diary, Profile, Routine, Todo };
+// ── reminders and alarms ───────────────────────────────────
+export const selectReminders = (d: DB) => [...d.reminders].sort((a, b) => a.timeOfDay.localeCompare(b.timeOfDay));
+
+export function addReminder(timeOfDay: string) {
+  if (db.reminders.some((r) => r.timeOfDay === timeOfDay)) return false;
+  set({ ...db, reminders: [...db.reminders, { id: newId(), timeOfDay }] });
+  return true;
+}
+
+export function deleteReminder(id: string) {
+  set({ ...db, reminders: db.reminders.filter((r) => r.id !== id) });
+}
+
+/** Alarm at a time on the to-do's own day; null clears it. */
+export function setTodoAlarm(id: string, timeOfDay: string | null) {
+  id = materialize(id);
+  const t = db.todos.find((x) => x.id === id);
+  if (!t) return;
+  if (!timeOfDay) return updateTodo(id, { remindAt: undefined });
+  const [y, m, d] = t.date.split("-").map(Number);
+  const [hh, mm] = timeOfDay.split(":").map(Number);
+  updateTodo(id, { remindAt: new Date(y, m - 1, d, hh, mm).toISOString() });
+}
+
+export type { Category, DDay, Diary, Profile, Reminder, Routine, Todo };

@@ -59,4 +59,6 @@ export type Diary = {
   imagePaths: string[];
 };
 
-export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[] };
+export type Reminder = { id: string; timeOfDay: string }; // "HH:MM", every day
+
+export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[]; reminders: Reminder[] };
