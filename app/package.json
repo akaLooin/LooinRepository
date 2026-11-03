@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.118.0",
     "expo": "~58.0.22",
     "expo-constants": "~58.0.14",
+    "expo-crypto": "~58.0.7",
     "expo-font": "~58.0.11",
     "expo-linking": "~58.0.15",
     "expo-router": "~58.0.29",
@@ -31,7 +34,7 @@
     "web": "expo start --web",
     "tokens": "node scripts/gen-tokens.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts"
+    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts"
   },
   "private": true
 }

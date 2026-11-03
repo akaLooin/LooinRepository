@@ -1,19 +1,128 @@
 /**
- * Fake data layer: in-memory, seeded, same function names the real one (SQLite + Supabase sync) will have.
- * Screens only use the hooks and actions exported here, so replica-backend can swap the inside without
- * touching screen code.
+ * Data layer. Screens use only the hooks and actions exported here.
+ * Every change lands in this device's copy first (saved to AsyncStorage) and, when signed in, is pushed to
+ * Supabase in the background; changes from other devices are pulled in. See ./sync.ts.
  */
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Crypto from "expo-crypto";
 import { useSyncExternalStore } from "react";
+import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
 import { seed } from "./seed";
+import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, type Outbox, type Remote } from "./sync";
 import { occursOn } from "../lib/routines";
 import type { Category, DB, DDay, Profile, Routine, Todo, Visibility } from "./types";
 
+// ── session: demo (sample data, this device only) or cloud (signed in, synced) ──
+type Session = { mode: "demo" } | { mode: "cloud"; userId: string; remote: Remote };
+let session: Session = { mode: "demo" };
 let db: DB = seed();
+let outbox: Outbox = emptyOutbox();
+let lastPulled: string | null = null;
 const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((l) => l());
+
 function set(next: DB) {
+  if (session.mode === "cloud") outbox = track(db, next, outbox);
   db = next;
-  listeners.forEach((l) => l());
+  notify();
+  persistSoon();
+  syncSoon();
+}
+
+const storageKey = () => (session.mode === "cloud" ? `todomate:${session.userId}` : "todomate:demo");
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+function persistSoon() {
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    AsyncStorage.setItem(storageKey(), JSON.stringify({ v: 1, db, outbox, lastPulled })).catch(() => {});
+  }, 300);
+}
+
+const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [] });
+
+/** Loads this device's copy for the session, then (cloud) syncs. */
+export async function startSession(next: Session) {
+  stopSync();
+  session = next;
+  const saved = await AsyncStorage.getItem(storageKey()).catch(() => null);
+  const parsed = saved ? JSON.parse(saved) : null;
+  db = parsed?.db ?? (next.mode === "demo" ? seed() : emptyDB(next.userId));
+  db = { ...db, routines: db.routines ?? [] };
+  outbox = parsed?.outbox ?? emptyOutbox();
+  lastPulled = parsed?.lastPulled ?? null;
+  notify();
+  if (next.mode === "cloud") startSync();
+}
+
+/** Signing out forgets this device's copy (the server keeps everything). */
+export async function endSession() {
+  stopSync();
+  if (session.mode === "cloud") await AsyncStorage.removeItem(storageKey()).catch(() => {});
+  session = { mode: "demo" };
+  db = emptyDB("signed-out");
+  outbox = emptyOutbox();
+  lastPulled = null;
+  notify();
+}
+
+// ── sync runner ────────────────────────────────────────────
+export type SyncStatus = { state: "idle" | "syncing" | "offline"; pending: number; lastSyncedAt?: string; rejected: { table: string; id: string; error: string }[] };
+let status: SyncStatus = { state: "idle", pending: 0, rejected: [] };
+const statusListeners = new Set<() => void>();
+function setStatus(s: Partial<SyncStatus>) {
+  status = { ...status, ...s, pending: pendingCount(outbox) };
+  statusListeners.forEach((l) => l());
+}
+export function useSyncStatus() {
+  return useSyncExternalStore((l) => { statusListeners.add(l); return () => statusListeners.delete(l); }, () => status, () => status);
+}
+
+let running = false;
+let again = false;
+export async function syncNow() {
+  if (session.mode !== "cloud") return;
+  if (running) { again = true; return; }
+  running = true;
+  const s = session;
+  setStatus({ state: "syncing" });
+  try {
+    const { sent, rejected } = await push({ db, outbox, lastPulled }, s.remote, s.userId);
+    if (session !== s) return; // signed out meanwhile
+    outbox = settle(outbox, sent);
+    const pulled = await s.remote.pull(sinceFor(lastPulled));
+    if (session !== s) return;
+    db = applyPull(db, outbox, pulled);
+    lastPulled = pulled.serverTime;
+    notify();
+    persistSoon();
+    setStatus({ state: "idle", lastSyncedAt: new Date().toISOString(), rejected: [...status.rejected, ...rejected].slice(-20) });
+  } catch {
+    setStatus({ state: "offline" });
+  } finally {
+    running = false;
+    if (again) { again = false; syncSoon(); }
+  }
+}
+
+let soon: ReturnType<typeof setTimeout> | null = null;
+function syncSoon() {
+  if (session.mode !== "cloud") return;
+  if (soon) clearTimeout(soon);
+  soon = setTimeout(syncNow, 2000);
+}
+let interval: ReturnType<typeof setInterval> | null = null;
+let appState: { remove: () => void } | null = null;
+function startSync() {
+  syncNow();
+  interval = setInterval(syncNow, 60000);
+  appState = AppState.addEventListener("change", (s) => { if (s === "active") syncNow(); });
+}
+function stopSync() {
+  if (interval) clearInterval(interval);
+  if (soon) clearTimeout(soon);
+  appState?.remove();
+  interval = null; soon = null; appState = null;
 }
 function subscribe(l: () => void) {
   listeners.add(l);
@@ -26,11 +135,7 @@ export function useDB<T>(select: (db: DB) => T): T {
 }
 
 export function newId() {
-  // Placeholder until expo-crypto is added with the real data layer.
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => {
-    const r = (Math.random() * 16) | 0;
-    return (ch === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
+  return Crypto.randomUUID();
 }
 
 const now = () => new Date().toISOString();

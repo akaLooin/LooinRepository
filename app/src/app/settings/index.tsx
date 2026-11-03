@@ -1,5 +1,3 @@
-import { StubScreen } from "../../components";
+import { SettingsScreen } from "../../features/settings/SettingsScreen";
 
-export default function Screen() {
-  return <StubScreen id="S12" title="설정" when="다음 단계에서 만들어요" />;
-}
+export default SettingsScreen;

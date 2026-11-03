@@ -1,5 +1,20 @@
-import { StubScreen } from "../../components";
+import { router } from "expo-router";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppText, ProfileHeader, SettingsRow, User } from "../../components";
+import { useDB } from "../../data/store";
+import { tokens, useTheme } from "../../theme";
 
-export default function Screen() {
-  return <StubScreen id="S18" title="마이" when="다음 단계에서 만들어요" back={false} />;
+/** S18 (partial): who you are and the way into settings. */
+export default function Me() {
+  const { c } = useTheme();
+  const insets = useSafeAreaInsets();
+  const profile = useDB((d) => d.profile);
+  return (
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 24, paddingHorizontal: tokens.layout.gutter, gap: 24 }}>
+      <AppText variant="screenTitle">마이</AppText>
+      <ProfileHeader name={profile.nickname || "이름 없음"} bio={profile.bio} />
+      <SettingsRow title="설정" icon={<User size={24} color={c.text} />} onPress={() => router.push("/settings" as never)} />
+    </View>
+  );
 }
