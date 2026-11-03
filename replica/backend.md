@@ -15,14 +15,13 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 
 ## Setup (you do these, with your own account)
 
-1. **Create a project** at supabase.com (free plan is fine). Region: Northeast Asia (Seoul).
+1. **Create a project** at supabase.com (free plan is fine). Region: Seoul (Tokyo is fine too: sync runs in the background).
 2. **Create the tables**: Dashboard → SQL Editor → paste all of `supabase/migrations/20261103000000_init.sql` → Run.
    - Optional cleanup job: Database → Extensions → enable `pg_cron`, then run `20261103000100_purge_job.sql` the same way.
-3. **Email code sign-in**: Authentication → Sign In / Providers → Email: on.
-   Then Authentication → Emails → Templates → **Magic Link**. Make the email show the code, because the app asks for the code, not the link. Example (our own wording):
-   - Subject: `로그인 코드: {{ .Token }}`
-   - Body: `<p>앱에 아래 코드를 입력해 주세요.</p><h2>{{ .Token }}</h2><p>10분 안에 사용해 주세요. 요청한 적이 없다면 이 메일은 무시하셔도 돼요.</p>`
-   - The built-in mailer sends only a few emails per hour. That is enough for one person. For more, add your own SMTP (Resend etc.) under Authentication → Emails → SMTP.
+3. **Email + password sign-in**: Authentication → Sign In / Providers → Email: on (the default).
+   - "Confirm email" on (default): after signing up, open the confirmation email and tap the link once, then sign in in the app. The page the link opens may not load, but the email is confirmed anyway.
+   - Or turn "Confirm email" off for a personal project: you can sign in right after signing up.
+   - Why not email codes: Supabase's built-in mailer no longer allows editing the template, and the default Magic Link email has a link, not a code. Codes would need your own SMTP (Gmail app password, Resend…). Password reset by email is not built yet for the same reason.
 4. **Keys into the app**: Project Settings → API Keys. Copy the Project URL and the **publishable** key into `app/.env.local` (see `app/.env.example`). Never put the secret/service-role key in the app.
 5. **Account deletion** (optional until you need it): install the Supabase CLI, then:
    ```
@@ -35,7 +34,8 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 ## Checklist
 
 Auth
-- [x] Email one-time code (no passwords). Creates the account on first sign-in
+- [x] Email + password (Supabase Auth). Sign-up, sign-in, clear error messages
+- [ ] Password reset by email (needs a deep link or your own SMTP)
 - [x] Session stored on the device and refreshed automatically. Sign out clears this device's copy
 - [ ] Google sign-in. Needs your own Google Cloud OAuth client; can be added later
 - [x] Account deletion that really deletes (Edge Function `delete-account`: files, then the auth user, rows cascade). **Not tested against a live project**

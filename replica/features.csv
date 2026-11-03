@@ -1,5 +1,5 @@
 feature,area,priority,original,clone,notes
-소셜 또는 이메일로 가입과 로그인,onboarding,must,yes,partial,1단계. 기기 간 동기화에 계정이 필요 / 클론: 이메일 코드 로그인. Google 로그인은 아직. 실제 프로젝트로는 미검증
+소셜 또는 이메일로 가입과 로그인,onboarding,must,yes,partial,1단계. 기기 간 동기화에 계정이 필요 / 클론: 이메일+비밀번호 로그인. Google 로그인은 아직. 실제 프로젝트로는 미검증
 닉네임과 프로필 사진 설정,onboarding,must,yes,no,1단계
 카테고리 만들기와 편집 (이름 공개설정 색상),goals,must,yes,yes,1단계. S06 S06b / 클론: S06b. 가짜 데이터 층
 카테고리 드래그 정렬 종료하기 삭제,goals,must,yes,partial,1단계. 종료는 데이터 유지하고 추가만 막음 / 클론: 종료와 삭제는 됨. 드래그 정렬은 제스처 라이브러리와 함께
