@@ -38,7 +38,8 @@
     "menu-repeat": "#fc7812",
     "menu-move": "#666cf0",
     "play": "#0078fc",
-    "menu-info": "#c8c8cc"
+    "menu-info": "#c8c8cc",
+    "on-icon": "#ffffff"
   },
   "_original": {
     "clover-number": "#ffffff (흰 숫자, 대비 1.4:1)",

@@ -1,35 +1,35 @@
 feature,area,priority,original,clone,notes
 소셜 또는 이메일로 가입과 로그인,onboarding,must,yes,no,1단계. 기기 간 동기화에 계정이 필요
 닉네임과 프로필 사진 설정,onboarding,must,yes,no,1단계
-카테고리 만들기와 편집 (이름 공개설정 색상),goals,must,yes,no,1단계. S06 S06b
-카테고리 드래그 정렬 종료하기 삭제,goals,must,yes,no,1단계. 종료는 데이터 유지하고 추가만 막음
-날짜별 할 일 추가,todos,must,yes,no,1단계. 핵심 흐름
-할 일 체크로 완료,todos,must,yes,no,1단계. 핵심 흐름
-할 일 수정과 삭제,todos,must,yes,no,1단계
-할 일 날짜 바꾸기,todos,must,yes,no,1단계. S05 날짜 바꾸기
+카테고리 만들기와 편집 (이름 공개설정 색상),goals,must,yes,yes,1단계. S06 S06b / 클론: S06b. 가짜 데이터 층
+카테고리 드래그 정렬 종료하기 삭제,goals,must,yes,partial,1단계. 종료는 데이터 유지하고 추가만 막음 / 클론: 종료와 삭제는 됨. 드래그 정렬은 제스처 라이브러리와 함께
+날짜별 할 일 추가,todos,must,yes,yes,1단계. 핵심 흐름 / 클론: S04 인라인 추가
+할 일 체크로 완료,todos,must,yes,yes,1단계. 핵심 흐름
+할 일 수정과 삭제,todos,must,yes,yes,1단계
+할 일 날짜 바꾸기,todos,must,yes,yes,1단계. S05 날짜 바꾸기 / 클론: S05 날짜 바꾸기
 목표 안에서 할 일 순서 바꾸기,todos,must,yes,no,1단계
-월간 캘린더에 날짜별 완료 표시,calendar,must,yes,no,1단계
-반복 루틴 (매일 요일별 주간 월간),routines,must,yes,no,1단계. 시작일과 종료일 있음
+월간 캘린더에 날짜별 완료 표시,calendar,must,yes,partial,1단계 / 클론: 일부 완료일의 표시 규칙은 추정
+반복 루틴 (매일 요일별 주간 월간),routines,must,yes,yes,1단계. 시작일과 종료일 있음 / 클론: 규칙 테스트 7개 통과
 할 일 시간 알림,notifications,must,yes,no,1단계. S05 시간 알림
 하루 일기와 감정 이모지,diary,must,yes,no,1단계
 여러 기기 동기화,sync,must,yes,no,1단계. 처음부터 서버 저장을 전제로 설계
 오프라인에서 사용 후 나중에 동기화,sync,must,yes,no,1단계
-다크 모드와 라이트 모드,settings,must,yes,no,1단계. 두 테마 모두 스크린샷으로 확인
-카테고리 공개설정 4단계 (전체 팔로워 일부 나만 보기),privacy,must,yes,no,1단계부터 선택과 아이콘 표시. 실제 공개는 2단계
-클로버 모양 체크박스와 날짜 표시 (남은 수 완료 체크 일부 완료),calendar,must,yes,no,1단계. 스크린샷 기준으로 똑같이
-루틴 관리 화면 (목표별 목록 진행 중 표시 드래그로 순서 변경),routines,must,yes,no,1단계
-프로필 영역 (사진 닉네임 자기소개),profile,must,yes,no,1단계
+다크 모드와 라이트 모드,settings,must,yes,partial,1단계. 두 테마 모두 스크린샷으로 확인 / 클론: 두 테마 모두 됨. 설정에서 고르는 화면은 아직
+카테고리 공개설정 4단계 (전체 팔로워 일부 나만 보기),privacy,must,yes,partial,1단계부터 선택과 아이콘 표시. 실제 공개는 2단계 / 클론: 고르기와 아이콘은 됨. 실제 공개는 2단계
+클로버 모양 체크박스와 날짜 표시 (남은 수 완료 체크 일부 완료),calendar,must,yes,yes,1단계. 스크린샷 기준으로 똑같이
+루틴 관리 화면 (목표별 목록 진행 중 표시 드래그로 순서 변경),routines,must,yes,partial,1단계 / 클론: 드래그 정렬 아직
+프로필 영역 (사진 닉네임 자기소개),profile,must,yes,partial,1단계 / 클론: 홈 표시만. 편집 화면 S02 아직
 설정 화면 (프로필 계정 개인정보 앱 권한 화면 알림 정보 문의 로그아웃),settings,must,yes,no,1단계
-주간 캘린더 보기 (월/주 전환),calendar,must,yes,no,1단계
-할 일 메모와 메모별 나만 보기,todos,must,yes,no,1단계. S05a
-할 일 메뉴 바텀 시트 (S05),todos,must,yes,no,1단계. 스크린샷 기준으로 똑같이
-할 일 인라인 편집과 더블 탭 편집,todos,must,yes,no,1단계
-내일 또 하기와 다른 날 또 하기 (할 일 복사),todos,must,yes,no,1단계
-상단 ≡ 팝업 메뉴 (카테고리 루틴 디데이 리마인더 관리),navigation,must,yes,no,1단계
-루틴 편집 (시작 종료 반복 시간 메모 수동 추가 삭제),routines,must,yes,no,1단계
-카테고리 색상을 색상 코드로 직접 입력,goals,must,no,no,사용자 요청. 원본과 다름. 자주 쓰는 색도 함께 제공
-반복 종류 (매일 간격 매주 격주 매월 매년),routines,must,yes,no,1단계. 세부 설정 화면은 미확인
-시간 선택 바텀 시트 (시 0~23 분 5분 단위),components,must,yes,no,1단계. 루틴과 리마인더에서 같이 씀
+주간 캘린더 보기 (월/주 전환),calendar,must,yes,yes,1단계
+할 일 메모와 메모별 나만 보기,todos,must,yes,yes,1단계. S05a / 클론: S05a
+할 일 메뉴 바텀 시트 (S05),todos,must,yes,partial,"1단계. 스크린샷 기준으로 똑같이 / 클론: 시간 알림, 사진 인증은 안내만"
+할 일 인라인 편집과 더블 탭 편집,todos,must,yes,yes,1단계
+내일 또 하기와 다른 날 또 하기 (할 일 복사),todos,must,yes,yes,1단계
+상단 ≡ 팝업 메뉴 (카테고리 루틴 디데이 리마인더 관리),navigation,must,yes,yes,"1단계 / 클론: 디데이, 리마인더 화면은 아직 빈 화면"
+루틴 편집 (시작 종료 반복 시간 메모 수동 추가 삭제),routines,must,yes,yes,1단계 / 클론: 수동 추가의 동작은 추정
+카테고리 색상을 색상 코드로 직접 입력,goals,must,no,yes,사용자 요청. 원본과 다름. 자주 쓰는 색도 함께 제공 / 클론: S06d
+반복 종류 (매일 간격 매주 격주 매월 매년),routines,must,yes,yes,1단계. 세부 설정 화면은 미확인 / 클론: 세부 설정 화면은 우리 방식
+시간 선택 바텀 시트 (시 0~23 분 5분 단위),components,must,yes,yes,1단계. 루틴과 리마인더에서 같이 씀 / 클론: S07d
 할 일 타이머와 시간 기록,timer,should,yes,no,1단계. S05 타이머 열기
 홈 화면 위젯에서 오늘 할 일 체크,widget,should,yes,no,1단계. 안드로이드 Glance 위젯
 설정 → 화면 항목들 (주 시작 요일 24시간제 정렬 작게 보기 등),settings,should,yes,no,1단계. 처음엔 기본값 고정 후 연결
@@ -38,15 +38,15 @@ feature,area,priority,original,clone,notes
 할 일과 일기에 이모지 반응,social,should,yes,no,2단계
 반응과 팔로우 알림,social,should,unknown,no,2단계
 iOS 버전,platform,should,yes,no,안드로이드 이후
-디데이 관리 (목록 추가 드래그 정렬 고정 날짜 반복 나만 보기),profile,should,yes,no,1단계
+디데이 관리 (목록 추가 드래그 정렬 고정 날짜 반복 나만 보기),profile,should,yes,partial,1단계 / 클론: 홈에 첫 디데이 표시만
 캘린더 목표별 걸러 보기,calendar,should,yes,no,1단계. 기능은 추정
 일기 공개 범위 선택,diary,should,yes,no,1단계
 일기 배경색 사진 스티커,diary,should,yes,no,1단계. 도구 막대 기능은 추정
-상단 사람 칩 줄 (나와 친구 전환),social,should,yes,no,1단계에서는 내 칩만. 2단계에 친구 칩
+상단 사람 칩 줄 (나와 친구 전환),social,should,yes,partial,1단계에서는 내 칩만. 2단계에 친구 칩 / 클론: 내 칩만
 할 일 사진 인증,todos,should,yes,no,1단계
 리마인더 관리 (매일 정해진 시간에 오늘 할 일 알림),notifications,should,yes,no,1단계
 할 일 정보 보기 (완료 시각 사진 공개 범위),todos,should,yes,no,1단계
-다른 카테고리로 이관하기,goals,should,yes,no,1단계
+다른 카테고리로 이관하기,goals,should,yes,yes,1단계 / 클론: S06e
 독립 메모장,memo,could,unknown,no,할 일 메모와 별개. 스크린샷에서는 확인 안 됨
 웹과 데스크톱 버전,platform,could,yes,no,원본에는 Windows macOS 웹 버전이 있음
 프리미엄 구독 (월간 연간),payments,could,yes,no,개인/학습용이라 우선순위 낮음
