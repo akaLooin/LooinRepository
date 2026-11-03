@@ -6,7 +6,7 @@ import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadPrefs, usePrefs } from "../data/prefs";
 import { AuthGate } from "../features/auth/AuthGate";
-import { fontFiles, ThemeProvider, useTheme } from "../theme";
+import { fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
 
 function Shell() {
   const { c, scheme, setOverride } = useTheme();
@@ -16,9 +16,11 @@ function Shell() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      <AuthGate>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
-      </AuthGate>
+      <ScaledRoot>
+        <AuthGate>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+        </AuthGate>
+      </ScaledRoot>
     </View>
   );
 }

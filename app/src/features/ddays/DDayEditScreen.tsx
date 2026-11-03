@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AppText, BottomSheet, Button, Calendar, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FieldGroup, FieldRow, PillButton, RadioList, ScreenHeader, TitleInput, Toggle,
 } from "../../components";
@@ -16,7 +16,7 @@ const long = (d: Day) => { const { y, m, d: dd } = parseDay(d); return `${y}년 
 export function DDayEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const existing = useDB((d) => d.ddays.find((x) => x.id === id));
   const [title, setTitle] = useState(existing?.title ?? "");
   const [type, setType] = useState<DDay["type"]>(existing?.type ?? "fixed");

@@ -1,8 +1,8 @@
+import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AppText, BottomSheet, Button, ChevronDown, Image, RadioCheck, ScreenHeader, SmilePlus, useToast, VisibilityIcon, type Visibility,
 } from "../../components";
@@ -22,7 +22,7 @@ export function DiaryScreen() {
   const params = useLocalSearchParams<{ date: string }>();
   const date = params.date && params.date !== "today" ? params.date : today();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const existing = useDB(selectDiary(date));
   const profile = useDB((d) => d.profile);
   const [emoji, setEmoji] = useState(existing?.emoji);

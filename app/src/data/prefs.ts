@@ -13,10 +13,11 @@ export type Prefs = {
   smallTodoText: boolean;
   smallTodoMemo: boolean;
   todoSort: "done_last" | "manual";
+  uiScale: "auto" | number; // 화면 크기: auto fits the phone's width
 };
 
 export const DEFAULT_PREFS: Prefs = {
-  theme: "dark", weekStartsSunday: true, doubleTapToEdit: true, use24h: true, smallTodoText: false, smallTodoMemo: false, todoSort: "done_last",
+  theme: "dark", weekStartsSunday: true, doubleTapToEdit: true, use24h: true, smallTodoText: false, smallTodoMemo: false, todoSort: "done_last", uiScale: "auto",
 };
 
 const KEY = "todomate:prefs";

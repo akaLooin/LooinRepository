@@ -1,6 +1,6 @@
+import { useInsets } from "../theme";
 import { router } from "expo-router";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
 import { ScreenHeader } from "./ScreenHeader";
@@ -8,7 +8,7 @@ import { ScreenHeader } from "./ScreenHeader";
 /** Placeholder for a screen that is routed but not built yet. Says which screen and when. */
 export function StubScreen({ id, title, when, back = true }: { id: string; title: string; when: string; back?: boolean }) {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title={title} onBack={back ? () => (router.canGoBack() ? router.back() : router.replace("/")) : undefined} />

@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, PlayButton, ScreenHeader } from "../../components";
 import { pauseTimer, resetTimer, startTimer, timerTotal, useDB } from "../../data/store";
 import { tokens, useTheme } from "../../theme";
@@ -12,7 +12,7 @@ const hms = (s: number) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s
 export function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const todo = useDB((d) => d.todos.find((t) => t.id === id));
   const [, tick] = useState(0);
   const running = !!todo?.timerStartedAt;

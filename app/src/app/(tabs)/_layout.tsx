@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { router, Slot, usePathname } from "expo-router";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomNav, type Tab } from "../../components";
 import { useTheme } from "../../theme";
 
@@ -8,7 +8,7 @@ const PATHS: Record<Tab, string> = { home: "/", explore: "/explore", alerts: "/a
 
 export default function TabsLayout() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const path = usePathname();
   const active = (Object.keys(PATHS) as Tab[]).find((k) => PATHS[k] === path) ?? "home";
   return (

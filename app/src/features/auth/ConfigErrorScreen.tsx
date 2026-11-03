@@ -1,12 +1,12 @@
+import { useInsets } from "../../theme";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "../../components";
 import { tokens, useTheme } from "../../theme";
 
 /** .env.local has something the app cannot use. Says what, instead of crashing. */
 export function ConfigErrorScreen({ message }: { message: string }) {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 80, paddingHorizontal: tokens.layout.gutter, gap: 14 }}>
       <AppText variant="monthTitle">연결 설정을 확인해 주세요</AppText>

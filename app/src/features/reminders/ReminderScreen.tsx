@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddPill, AppText, BottomSheet, Button, PillRow, ScreenHeader, TimeGrid, Trash2, useToast } from "../../components";
 import { ensurePermission } from "../../data/notifications";
 import { formatTime, usePrefs } from "../../data/prefs";
@@ -13,7 +13,7 @@ const asDate = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); c
 /** S22: times of day when the phone reminds you of today's to-dos. */
 export function ReminderScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const reminders = useDB(selectReminders);
   const { use24h } = usePrefs();
   const [open, setOpen] = useState(false);

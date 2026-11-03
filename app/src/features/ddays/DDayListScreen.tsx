@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddPill, AppText, ChevronDown, ChevronUp, Lock, PillRow, ScreenHeader } from "../../components";
 import { ddayLabel, moveDDay, selectDDays, useDB } from "../../data/store";
 import { tokens, useTheme } from "../../theme";
@@ -8,7 +8,7 @@ import { tokens, useTheme } from "../../theme";
 /** S21. The first D-day others can see is the one shown on the home screen. Reorder with the arrows (drag comes later). */
 export function DDayListScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const ddays = useDB(selectDDays);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>

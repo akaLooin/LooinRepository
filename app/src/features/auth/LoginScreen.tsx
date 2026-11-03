@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, Button, Clover } from "../../components";
 import { supabase } from "../../lib/supabase";
 import { fontFamily, tokens, useTheme } from "../../theme";
@@ -32,7 +32,7 @@ function explain(err: { message: string; status?: number }, mode: "signIn" | "si
  */
 export function LoginScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

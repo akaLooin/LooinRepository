@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddPill, AppText, PillRow, ScreenHeader, VisibilityIcon } from "../../components";
 import { selectCategories, useDB } from "../../data/store";
 import { readableOn, tokens, useTheme, visibleOn } from "../../theme";
@@ -8,7 +8,7 @@ import { readableOn, tokens, useTheme, visibleOn } from "../../theme";
 /** S06: list of categories. Drag to reorder is not built yet (needs the gesture library). */
 export function CategoryListScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const categories = useDB(selectCategories);
   const active = categories.filter((x) => !x.endedAt);
   const ended = categories.filter((x) => x.endedAt);

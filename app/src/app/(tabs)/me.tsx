@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, ProfileHeader, SettingsRow, User } from "../../components";
 import { useDB } from "../../data/store";
 import { tokens, useTheme } from "../../theme";
@@ -8,7 +8,7 @@ import { tokens, useTheme } from "../../theme";
 /** S18 (partial): who you are and the way into settings. */
 export default function Me() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const profile = useDB((d) => d.profile);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 24, paddingHorizontal: tokens.layout.gutter, gap: 24 }}>

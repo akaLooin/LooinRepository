@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, Clover, ScreenHeader, VisibilityIcon } from "../../components";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { timerTotal, useDB } from "../../data/store";
@@ -20,7 +20,7 @@ const dur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.fl
 export function TodoInfoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const todo = useDB((d) => d.todos.find((t) => t.id === id));
   const cat = useDB((d) => d.categories.find((x) => x.id === todo?.categoryId));
   const profile = useDB((d) => d.profile);

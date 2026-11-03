@@ -1,6 +1,6 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, Plus, RoutineRow, ScreenHeader } from "../../components";
 import { selectActiveCategories, selectRoutines, useDB } from "../../data/store";
 import { today } from "../../lib/dates";
@@ -12,7 +12,7 @@ const STATUS = { active: "진행 중", upcoming: "예정", finished: "종료" } 
 /** S07: routines grouped by category. Drag to reorder is not built yet. */
 export function RoutineListScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const categories = useDB(selectActiveCategories);
   const routines = useDB(selectRoutines);
   const now = today();

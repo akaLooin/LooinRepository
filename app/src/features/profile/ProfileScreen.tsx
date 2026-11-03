@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, ScreenHeader, TitleInput } from "../../components";
 import { updateProfile, useDB } from "../../data/store";
 import { fontFamily, tokens, useTheme } from "../../theme";
@@ -9,7 +9,7 @@ import { fontFamily, tokens, useTheme } from "../../theme";
 /** S02: nickname and bio. Profile photo comes with photo upload (later). */
 export function ProfileScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const profile = useDB((d) => d.profile);
   const [nickname, setNickname] = useState(profile.nickname);
   const [bio, setBio] = useState(profile.bio);

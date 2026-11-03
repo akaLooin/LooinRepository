@@ -1,14 +1,14 @@
+import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AppText, BottomSheet, Button, FieldGroup, FieldRow, MemoInput, RadioList, ScreenHeader, TimeGrid, TitleInput, Toggle,
 } from "../../components";
 import { deleteRoutine, saveRoutine, useDB } from "../../data/store";
 import { parseDay, today, weekday, type Day } from "../../lib/dates";
 import { ruleLabel, type RepeatRule, type RepeatType } from "../../lib/routines";
-import { fontFamily, tokens, useTheme, visibleOn } from "../../theme";
+import { fontFamily, ScaledRoot, tokens, useTheme, visibleOn } from "../../theme";
 import { DatePickSheet } from "../home/TodoSheets";
 
 const TYPES: { value: RepeatType; label: string }[] = [
@@ -24,7 +24,7 @@ type Sheet = null | "start" | "end" | "time" | "repeat" | "delete";
 export function RoutineEditScreen() {
   const { id, category } = useLocalSearchParams<{ id: string; category?: string }>();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const existing = useDB((d) => d.routines.find((r) => r.id === id));
   const categoryId = existing?.categoryId ?? category ?? "";
   const cat = useDB((d) => d.categories.find((x) => x.id === categoryId));
@@ -96,7 +96,7 @@ export function RoutineEditScreen() {
 /** S07c as a full-screen page: the type list, then the details that type needs. */
 function RepeatScreen({ rule, startDate, onDone, onBack }: { rule: RepeatRule; startDate: Day; onDone: (r: RepeatRule) => void; onBack: () => void }) {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const s = parseDay(startDate);
   const [r, setR] = useState<RepeatRule>(rule);
   const setType = (t: RepeatType) =>
@@ -117,6 +117,7 @@ function RepeatScreen({ rule, startDate, onDone, onBack }: { rule: RepeatRule; s
   );
   return (
     <Modal visible animationType="slide" onRequestClose={onBack}>
+      <ScaledRoot>
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
         <ScreenHeader title="반복" onBack={onBack} right={{ label: "완료", onPress: () => onDone(r) }} />
         <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 20, paddingBottom: 40 }}>
@@ -147,6 +148,7 @@ function RepeatScreen({ rule, startDate, onDone, onBack }: { rule: RepeatRule; s
           <AppText variant="helper" color="textMuted">{`미리 보기: ${ruleLabel(r)}`}</AppText>
         </ScrollView>
       </View>
+      </ScaledRoot>
     </Modal>
   );
 }

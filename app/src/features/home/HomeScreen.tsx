@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AppText, Archive, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, TextAlignStart, TodoRow, useToast, Users,
 } from "../../components";
@@ -27,7 +27,7 @@ function weekOfMonth(day: Day, sundayFirst: boolean) {
 
 export function HomeScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const profile = useDB((d) => d.profile);
   const categories = useDB(selectCategories);
   const db = useDB((d) => d);

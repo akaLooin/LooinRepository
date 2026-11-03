@@ -1,7 +1,7 @@
+import { useInsets } from "../theme";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AddPill, AppText, BottomNav, BottomSheet, Button, Calendar, CalendarHeader, CategoryPill, Check, Chip, Clock, Clover, ColorCodeInput,
   FieldGroup, FieldRow, FileText, IconChip, Image, Info, MemoInput, PillButton, PillRow, PlayButton, PopupMenu, ProfileHeader, RadioCheck,
@@ -37,7 +37,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function Design() {
   const { theme } = useLocalSearchParams<{ theme?: string }>();
   const { c, scheme, setOverride } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   useEffect(() => {
     if (theme === "light" || theme === "dark") setOverride(theme);
   }, [theme, setOverride]);

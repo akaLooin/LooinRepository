@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AppText, BottomSheet, Bell, Button, Info, Lock, ScreenHeader, SettingsRow, SmilePlus, User, useToast,
 } from "../../components";
@@ -12,7 +12,7 @@ import { tokens, useTheme } from "../../theme";
 /** S12. Account actions work; the other rows open screens that are built later. */
 export function SettingsScreen() {
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const sync = useSyncStatus();
   const [toast, notice] = useToast();
   const [sheet, setSheet] = useState<null | "delete">(null);

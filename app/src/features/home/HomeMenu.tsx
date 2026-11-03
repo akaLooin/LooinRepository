@@ -1,8 +1,8 @@
+import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { Modal, Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PopupMenu } from "../../components";
-import { tokens, useTheme } from "../../theme";
+import { ScaledRoot, tokens, useTheme } from "../../theme";
 
 /** Three uneven bars, our own drawing of a menu button. */
 export function MenuButton({ onPress }: { onPress: () => void }) {
@@ -17,13 +17,14 @@ export function MenuButton({ onPress }: { onPress: () => void }) {
 
 /** S06m: popup anchored top-right over a dimmed screen. */
 export function HomeMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const go = (href: string) => () => {
     onClose();
     router.push(href as never);
   };
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <ScaledRoot>
       <Pressable style={{ flex: 1, backgroundColor: tokens.scrim }} onPress={onClose} accessibilityLabel="메뉴 닫기">
         <View style={{ position: "absolute", top: insets.top + 8, right: tokens.layout.gutter - 4 }}>
           <PopupMenu
@@ -36,6 +37,7 @@ export function HomeMenu({ open, onClose }: { open: boolean; onClose: () => void
           />
         </View>
       </Pressable>
+      </ScaledRoot>
     </Modal>
   );
 }

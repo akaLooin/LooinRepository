@@ -1,7 +1,7 @@
+import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AppText, BottomSheet, Button, ColorCodeInput, FieldGroup, FieldRow, RadioCheck, ScreenHeader, TitleInput, VisibilityIcon, type Visibility,
 } from "../../components";
@@ -17,7 +17,7 @@ type Sheet = null | "visibility" | "color" | "move" | "delete";
 export function CategoryEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { c } = useTheme();
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const categories = useDB(selectCategories);
   const existing = categories.find((x) => x.id === id);
   const isNew = !existing;
