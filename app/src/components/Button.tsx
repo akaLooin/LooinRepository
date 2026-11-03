@@ -38,10 +38,10 @@ export function TileButton({ label, icon, onPress }: { label: string; icon: Reac
 }
 
 /** Header text action: 확인 / 완료. */
-export function TextButton({ label, onPress, disabled }: { label: string; onPress?: () => void; disabled?: boolean }) {
+export function TextButton({ label, onPress, disabled, raw }: { label: string; onPress?: () => void; disabled?: boolean; raw?: string }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} hitSlop={12} accessibilityRole="button" style={{ opacity: disabled ? 0.4 : 1 }}>
-      <AppText variant="bodyLg" weight={500}>{label}</AppText>
+      <AppText variant="bodyLg" weight={500} raw={raw}>{label}</AppText>
     </Pressable>
   );
 }

@@ -18,10 +18,17 @@ export interface Remote {
 }
 
 export const emptyOutbox = (): Outbox => ({
-  upsert: { categories: {}, routines: {}, todos: {}, ddays: {} },
-  remove: { categories: {}, routines: {}, todos: {}, ddays: {} },
+  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {} },
+  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {} },
   profile: 0,
 });
+
+/** An outbox saved by an older version may lack newer tables. */
+export function upgradeOutbox(o: Partial<Outbox> | undefined): Outbox {
+  const e = emptyOutbox();
+  if (!o) return e;
+  return { upsert: { ...e.upsert, ...o.upsert }, remove: { ...e.remove, ...o.remove }, profile: o.profile ?? 0 };
+}
 
 let counter = 0;
 const tick = () => ++counter;
@@ -30,8 +37,8 @@ const tick = () => ++counter;
 export function track(prev: DB, next: DB, outbox: Outbox): Outbox {
   const o: Outbox = { upsert: { ...outbox.upsert }, remove: { ...outbox.remove }, profile: outbox.profile };
   for (const t of TABLES) {
-    const before = new Map((prev[t] as { id: string }[]).map((r) => [r.id, r]));
-    const after = new Map((next[t] as { id: string }[]).map((r) => [r.id, r]));
+    const before = new Map(((prev[t] ?? []) as { id: string }[]).map((r) => [r.id, r]));
+    const after = new Map(((next[t] ?? []) as { id: string }[]).map((r) => [r.id, r]));
     let up = o.upsert[t], rm = o.remove[t];
     for (const [id, row] of after) if (before.get(id) !== row) { up = { ...up, [id]: tick() }; if (rm[id]) { rm = { ...rm }; delete rm[id]; } }
     for (const id of before.keys()) if (!after.has(id)) { rm = { ...rm, [id]: tick() }; if (up[id]) { up = { ...up }; delete up[id]; } }
@@ -101,7 +108,7 @@ export function applyPull(db: DB, outbox: Outbox, pulled: PullResult): DB {
   for (const t of TABLES) {
     const rows = pulled.tables[t];
     if (!rows?.length) continue;
-    const map = new Map((db[t] as { id: string }[]).map((r) => [r.id, r as unknown]));
+    const map = new Map(((db[t] ?? []) as { id: string }[]).map((r) => [r.id, r as unknown]));
     for (const raw of rows) {
       const id = raw.id as string;
       if (outbox.upsert[t][id] || outbox.remove[t][id]) continue;

@@ -8,7 +8,7 @@ let clock = Date.parse("2026-11-03T00:00:00Z");
 const now = () => new Date((clock += 1000)).toISOString();
 
 function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string, unknown>>> } {
-  const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map() };
+  const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map(), diaries: new Map() };
   return {
     rows,
     async pull(since) {
@@ -34,7 +34,7 @@ function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string
   };
 }
 
-const emptyDB = (): DB => ({ profile: { id: USER, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [] });
+const emptyDB = (): DB => ({ profile: { id: USER, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [] });
 const device = (): LocalState => ({ db: emptyDB(), outbox: emptyOutbox(), lastPulled: null });
 function edit(s: LocalState, f: (db: DB) => DB) { const next = f(s.db); s.outbox = track(s.db, next, s.outbox); s.db = next; }
 async function sync(s: LocalState, r: Remote) {
@@ -94,5 +94,18 @@ const t = async (name: string, fn: () => Promise<void>) => { await fn(); console
     assert.deepEqual(rejected.map((r) => r.id), ["t2"]);
     assert.ok(server.rows.ddays.get("d1"));
     assert.equal(Object.keys(B.outbox.upsert.todos).length, 0);
+  });
+  await t("a diary written on B reaches A", async () => {
+    edit(B, (d) => ({ ...d, diaries: [{ id: "y1", date: "2026-11-03", emoji: "😊", body: "좋은 하루", visibility: "private", imagePaths: [] }] }));
+    await sync(B, server); await sync(A, server);
+    assert.equal(A.db.diaries[0]?.body, "좋은 하루");
+    assert.equal(A.db.diaries[0]?.emoji, "😊");
+  });
+  await t("an outbox saved before diaries existed still works", async () => {
+    const { upgradeOutbox } = await import("../src/data/sync");
+    const old = { upsert: { categories: {}, routines: {}, todos: { x: 1 }, ddays: {} }, remove: { categories: {}, routines: {}, todos: {}, ddays: {} }, profile: 0 };
+    const o = upgradeOutbox(old as never);
+    assert.deepEqual(o.upsert.diaries, {});
+    assert.equal(o.upsert.todos.x, 1);
   });
 })().catch((e) => { console.error(e); process.exit(1); });

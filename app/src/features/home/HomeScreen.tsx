@@ -33,6 +33,7 @@ export function HomeScreen() {
   const db = useDB((d) => d);
   const prefs = usePrefs();
   const ddays = useDB(selectDDays);
+  const diaries = useDB((d) => d.diaries);
 
   const now = today();
   const [selected, setSelected] = useState<Day>(now);
@@ -65,6 +66,7 @@ export function HomeScreen() {
     setView(({ y, m }) => { const t = m + dir; return { y: y + Math.floor((t - 1) / 12), m: ((t - 1 + 120) % 12) + 1 }; });
   };
 
+  const diary = diaries.find((x) => x.date === selected);
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
   const shown = categories.filter((cat) => !cat.endedAt || dayTodos.some((t) => t.categoryId === cat.id));
 
@@ -172,6 +174,12 @@ export function HomeScreen() {
               </View>
             );
           })}
+
+          <Pressable onPress={() => router.push(`/diary/${selected}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+            <AppText variant="bodyLg">{diary?.emoji ?? "📔"}</AppText>
+            <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : "이날의 일기 쓰기"}</AppText>
+          </Pressable>
 
           <View style={{ borderTopWidth: 1, borderStyle: "dashed", borderColor: c.surfaceStrong, marginTop: 16 }} />
           <Pressable onPress={() => notice("리스트 메뉴는 다음 단계에서 만들어요")} accessibilityRole="button" style={{ alignSelf: "flex-end", flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 }}>

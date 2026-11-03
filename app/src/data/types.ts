@@ -49,4 +49,14 @@ export type Routine = RepeatRule & {
 
 export type DDay = { id: string; title: string; type: "fixed" | "repeat"; targetDate: Day; repeatUnit?: "yearly" | "monthly"; isPrivate: boolean; sortOrder: number };
 
-export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[] };
+export type Diary = {
+  id: string;
+  date: Day; // one per day
+  emoji?: string;
+  body: string;
+  visibility: Visibility;
+  backgroundColor?: string; // #RRGGBB
+  imagePaths: string[];
+};
+
+export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[] };

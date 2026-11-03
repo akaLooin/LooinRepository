@@ -9,9 +9,9 @@ import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
 import { seed } from "./seed";
-import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, type Outbox, type Remote } from "./sync";
+import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, upgradeOutbox, type Outbox, type Remote } from "./sync";
 import { occursOn } from "../lib/routines";
-import type { Category, DB, DDay, Profile, Routine, Todo, Visibility } from "./types";
+import type { Category, DB, DDay, Diary, Profile, Routine, Todo, Visibility } from "./types";
 
 // ── session: demo (sample data, this device only) or cloud (signed in, synced) ──
 type Session = { mode: "demo" } | { mode: "cloud"; userId: string; remote: Remote };
@@ -39,7 +39,7 @@ function persistSoon() {
   }, 300);
 }
 
-const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [] });
+const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [] });
 
 /** Loads this device's copy for the session, then (cloud) syncs. */
 export async function startSession(next: Session) {
@@ -48,8 +48,8 @@ export async function startSession(next: Session) {
   const saved = await AsyncStorage.getItem(storageKey()).catch(() => null);
   const parsed = saved ? JSON.parse(saved) : null;
   db = parsed?.db ?? (next.mode === "demo" ? seed() : emptyDB(next.userId));
-  db = { ...db, routines: db.routines ?? [] };
-  outbox = parsed?.outbox ?? emptyOutbox();
+  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [] }; // copies saved by older versions
+  outbox = upgradeOutbox(parsed?.outbox);
   lastPulled = parsed?.lastPulled ?? null;
   notify();
   if (next.mode === "cloud") startSync();
@@ -357,4 +357,19 @@ export function moveDDay(id: string, dir: -1 | 1) {
   [list[i], list[j]] = [list[j], list[i]];
   set({ ...db, ddays: db.ddays.map((d) => ({ ...d, sortOrder: list.findIndex((x) => x.id === d.id) + 1 })) });
 }
-export type { Category, DDay, Profile, Routine, Todo };
+// ── diary ──────────────────────────────────────────────────
+export const selectDiary = (day: Day) => (d: DB) => d.diaries.find((x) => x.date === day);
+
+/** One diary per day: creates it on first save, updates it after. Saving an empty one removes it. */
+export function saveDiary(day: Day, patch: Partial<Omit<Diary, "id" | "date">>) {
+  const existing = db.diaries.find((x) => x.date === day);
+  const next: Diary = { id: existing?.id ?? newId(), date: day, body: "", visibility: "private", imagePaths: [], ...existing, ...patch };
+  const empty = !next.body.trim() && !next.emoji && !next.imagePaths.length;
+  if (empty) {
+    if (existing) set({ ...db, diaries: db.diaries.filter((x) => x.id !== existing.id) });
+    return;
+  }
+  set({ ...db, diaries: existing ? db.diaries.map((x) => (x.id === existing.id ? next : x)) : [...db.diaries, next] });
+}
+
+export type { Category, DDay, Diary, Profile, Routine, Todo };

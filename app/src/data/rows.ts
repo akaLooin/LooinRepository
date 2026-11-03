@@ -1,8 +1,8 @@
 // Local objects (camelCase) <-> Supabase rows (snake_case). Field lists follow supabase/migrations.
-import type { Category, DDay, Profile, Routine, Todo } from "./types";
+import type { Category, DDay, Diary, Profile, Routine, Todo } from "./types";
 
-export type Table = "categories" | "routines" | "todos" | "ddays";
-export const TABLES: Table[] = ["categories", "routines", "todos", "ddays"]; // push order (parents first)
+export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries";
+export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries"]; // push order (parents first)
 
 type Row = Record<string, unknown>;
 const n = (v: unknown) => (v === undefined ? null : v);
@@ -21,6 +21,9 @@ export const toRow = {
     memo: t.memo, memo_is_private: t.memoIsPrivate, remind_at: n(t.remindAt), photo_path: n(t.photoUri), timer_seconds: t.timerSeconds,
     timer_started_at: n(t.timerStartedAt), routine_id: n(t.routineId), routine_date: n(t.routineDate), is_skipped: t.isSkipped ?? false,
   }),
+  diaries: (d: Diary, user_id: string): Row => ({
+    id: d.id, user_id, date: d.date, emoji: n(d.emoji), body: d.body, visibility: d.visibility, background_color: n(d.backgroundColor), image_paths: d.imagePaths,
+  }),
   ddays: (d: DDay, user_id: string): Row => ({ id: d.id, user_id, title: d.title, type: d.type, target_date: d.targetDate, repeat_unit: n(d.type === "repeat" ? d.repeatUnit ?? "yearly" : undefined), is_private: d.isPrivate, sort_order: d.sortOrder }),
 };
 
@@ -38,6 +41,9 @@ export const fromRow = {
     id: r.id, categoryId: r.category_id, title: r.title, date: r.date, sortOrder: Number(r.sort_order), isDone: !!r.is_done, doneAt: u(r.done_at),
     memo: r.memo ?? "", memoIsPrivate: !!r.memo_is_private, remindAt: u(r.remind_at), photoUri: u(r.photo_path), timerSeconds: r.timer_seconds ?? 0,
     timerStartedAt: u(r.timer_started_at), routineId: u(r.routine_id), routineDate: u(r.routine_date), isSkipped: !!r.is_skipped, createdAt: r.created_at ?? "",
+  }),
+  diaries: (r: R): Diary => ({
+    id: r.id, date: r.date, emoji: u(r.emoji), body: r.body ?? "", visibility: r.visibility, backgroundColor: u(r.background_color), imagePaths: r.image_paths ?? [],
   }),
   ddays: (r: R): DDay => ({ id: r.id, title: r.title, type: r.type, targetDate: r.target_date, repeatUnit: u(r.repeat_unit), isPrivate: !!r.is_private, sortOrder: Number(r.sort_order) }),
 };
