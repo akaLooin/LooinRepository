@@ -32,14 +32,14 @@ feature,area,priority,original,clone,notes
 시간 선택 바텀 시트 (시 0~23 분 5분 단위),components,must,yes,yes,1단계. 루틴과 리마인더에서 같이 씀 / 클론: S07d
 할 일 타이머와 시간 기록,timer,should,yes,yes,1단계. S05 타이머 열기 / 클론: S08. 앱을 꺼도 기록 유지
 홈 화면 위젯에서 오늘 할 일 체크,widget,should,yes,no,1단계. 안드로이드 Glance 위젯
-설정 → 화면 항목들 (주 시작 요일 24시간제 정렬 작게 보기 등),settings,should,yes,partial,"1단계. 처음엔 기본값 고정 후 연결 / 클론: 6개 동작, 나머지는 준비 중 표시"
+설정 → 화면 항목들 (주 시작 요일 24시간제 정렬 작게 보기 등),settings,should,yes,partial,"1단계 / 클론: 10개 동작(상단 입력·접기·캘린더 카테고리 수 추가), 나머지 준비 중"
 다른 사용자 검색과 팔로우,social,should,yes,no,2단계
 친구 피드 (완료한 할 일과 일기),social,should,yes,no,2단계
 할 일과 일기에 이모지 반응,social,should,yes,no,2단계
 반응과 팔로우 알림,social,should,unknown,no,2단계
 iOS 버전,platform,should,yes,no,안드로이드 이후
 디데이 관리 (목록 추가 드래그 정렬 고정 날짜 반복 나만 보기),profile,should,yes,yes,1단계 / 클론: 홈에 첫 디데이 표시만 / 클론: 순서는 화살표로
-캘린더 목표별 걸러 보기,calendar,should,yes,no,1단계. 기능은 추정
+캘린더 목표별 걸러 보기,calendar,should,yes,yes,1단계 / 클론: ▼ 시트에서 카테고리 고르기
 일기 공개 범위 선택,diary,should,yes,yes,1단계
 일기 배경색 사진 스티커,diary,should,yes,partial,1단계. 도구 막대 기능은 추정 / 클론: 배경색만. 사진 스티커 아직
 상단 사람 칩 줄 (나와 친구 전환),social,should,yes,partial,1단계에서는 내 칩만. 2단계에 친구 칩 / 클론: 내 칩만

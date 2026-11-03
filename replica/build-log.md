@@ -39,3 +39,4 @@ Routine occurrences are not stored until the user touches one. Then they become 
 ## Size fix (after the first run on the user's phone)
 
 The user saw text and icons bigger than the original. Sizes had been measured assuming 1080px = 411dp. Their phone is narrower in dp (Samsung phones are usually 360–393dp), so everything came out 5–14% too big. The app now lays out on a 411dp canvas and scales it to the phone's real width (`app/src/theme/scale.tsx`); bottom sheets and modals scale too. 설정 → 화면 → 화면 크기 shows the phone's width and lets the user pick the factor by hand.
+| S03 home options | 2026-11-03 | done | 보관함 chip | Calendar filter (▼), 리스트 메뉴 (our contents: hide done, collapse, sort, links — the original's menu is unseen), input at top, collapse, calendar category count. e2e/home-options.js |

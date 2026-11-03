@@ -16,6 +16,8 @@ import { dayState } from "./dayState";
 import { HomeMenu, MenuButton } from "./HomeMenu";
 import { InlineTodoInput } from "./InlineTodoInput";
 import { PendingRoutineRow } from "./PendingRoutineRow";
+import { CalendarFilterSheet, ListMenuSheet } from "./HomeSheets";
+import { setPref } from "../../data/prefs";
 import { TodoSheets } from "./TodoSheets";
 
 const G = tokens.layout.gutter;
@@ -44,6 +46,7 @@ export function HomeScreen() {
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [homeSheet, setHomeSheet] = useState<null | "filter" | "list">(null);
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
@@ -68,6 +71,8 @@ export function HomeScreen() {
   };
 
   const diary = diaries.find((x) => x.date === selected);
+  const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
+  const calCats = categories.filter((x) => calIds.has(x.id));
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
   const shown = categories.filter((cat) => !cat.endedAt || dayTodos.some((t) => t.categoryId === cat.id));
 
@@ -110,8 +115,8 @@ export function HomeScreen() {
             onToggleMode={() => { setMode(mode === "month" ? "week" : "month"); setView({ y: parseDay(selected).y, m: parseDay(selected).m }); }}
             onPrev={() => shift(-1)}
             onNext={() => shift(1)}
-            filterColors={categories.slice(0, 2).map((x) => x.color)}
-            onFilter={() => notice("표시할 카테고리 고르기는 다음 단계에서 만들어요")}
+            filterColors={calCats.slice(0, 2).map((x) => x.color)}
+            onFilter={() => setHomeSheet("filter")}
           />
           <Calendar
             year={view.y}
@@ -119,7 +124,7 @@ export function HomeScreen() {
             today={now}
             selected={selected}
             onSelect={(d) => { setSelected(d); setAdding(null); setEditing(null); }}
-            state={(d) => dayState(byDay.get(d) ?? [], categories)}
+            state={(d) => dayState((byDay.get(d) ?? []).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
             rows={weekRow}
             weekStartsSunday={prefs.weekStartsSunday}
           />
@@ -136,17 +141,26 @@ export function HomeScreen() {
             </Pressable>
           ) : null}
           {shown.map((cat) => {
-            const items = dayTodos.filter((t) => t.categoryId === cat.id);
+            const items = dayTodos.filter((t) => t.categoryId === cat.id && !(prefs.hideDone && t.isDone));
+            const collapsed = prefs.collapsibleCategories && prefs.collapsedCategoryIds.includes(cat.id);
+            const addInput = adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} /> : null;
             return (
               <View key={cat.id} style={{ gap: 4 }}>
                 <CategoryPill
                   title={cat.title}
                   color={cat.color}
                   visibility={cat.visibility}
-                  onPress={() => router.push(`/categories/${cat.id}` as never)}
+                  onPress={prefs.collapsibleCategories
+                    ? () => setPref("collapsedCategoryIds", collapsed ? prefs.collapsedCategoryIds.filter((x) => x !== cat.id) : [...prefs.collapsedCategoryIds, cat.id])
+                    : () => router.push(`/categories/${cat.id}` as never)}
+                  onLongPress={() => router.push(`/categories/${cat.id}` as never)}
                   onAdd={() => { setEditing(null); setAdding(cat.id); }}
                 />
+                {collapsed ? (
+                  <AppText variant="helper" color="textMuted" style={{ marginLeft: 6 }}>{`접힘 · 할 일 ${items.length}개`}</AppText>
+                ) : (
                 <View style={{ marginTop: 6 }}>
+                  {prefs.inputAtTop ? addInput : null}
                   <ReorderableList
                     items={items}
                     keyOf={(t) => t.id}
@@ -175,10 +189,9 @@ export function HomeScreen() {
                   {manualRoutinesOn(db, selected, cat.id).map((r) => (
                     <PendingRoutineRow key={r.id} title={r.title} onAdd={() => addRoutineTodo(r.id, selected)} />
                   ))}
-                  {adding === cat.id ? (
-                    <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} />
-                  ) : null}
+                  {prefs.inputAtTop ? null : addInput}
                 </View>
+                )}
               </View>
             );
           })}
@@ -190,7 +203,7 @@ export function HomeScreen() {
           </Pressable>
 
           <View style={{ borderTopWidth: 1, borderStyle: "dashed", borderColor: c.surfaceStrong, marginTop: 16 }} />
-          <Pressable onPress={() => notice("리스트 메뉴는 다음 단계에서 만들어요")} accessibilityRole="button" style={{ alignSelf: "flex-end", flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 }}>
+          <Pressable onPress={() => setHomeSheet("list")} accessibilityRole="button" style={{ alignSelf: "flex-end", flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 }}>
             <TextAlignStart size={20} color={c.text} />
             <AppText variant="bodyLg">리스트 메뉴</AppText>
           </Pressable>
@@ -198,6 +211,8 @@ export function HomeScreen() {
       </ScrollView>
 
       <HomeMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      {homeSheet === "filter" ? <CalendarFilterSheet open onClose={() => setHomeSheet(null)} categories={categories} /> : null}
+      <ListMenuSheet open={homeSheet === "list"} onClose={() => setHomeSheet(null)} />
       <TodoSheets todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
       {toast}
     </View>

@@ -16,6 +16,8 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | rt.js | routines: occurrences on home, manual-add row, repeat, time, new |
 | pend.js | manual-add routine row adds with one tap |
 | dd.js | D-days: list, new repeating, delete |
+| home-options.js | calendar filter, 리스트 메뉴 (hide done, collapse), input at top |
+| capture-for-diff.js | screenshots in the reference states for replica-diff |
 | drag.js | hold-and-drag reorder: categories, D-days, home to-dos (survives reload), routines |
 | tm.js | timer start/pause, survives reload, info screen |
 | st.js | display settings (theme, week start), profile edit |

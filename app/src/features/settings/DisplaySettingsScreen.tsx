@@ -39,10 +39,10 @@ export function DisplaySettingsScreen() {
       <ScreenHeader title="화면" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}>
         <ToggleRow title="달력에서 일요일부터 시작" value={p.weekStartsSunday} onChange={(v) => setPref("weekStartsSunday", v)} />
-        <Later title="할 일을 상단에서 입력" />
+        <ToggleRow title="할 일을 상단에서 입력" value={p.inputAtTop} onChange={(v) => setPref("inputAtTop", v)} />
         <Later title="피드에서 좋아요 보이기" />
         <ToggleRow title="시간을 24시간제로 표시" value={p.use24h} onChange={(v) => setPref("use24h", v)} />
-        <Later title="카테고리 접기 펼치기" />
+        <ToggleRow title="카테고리 접기 펼치기" value={p.collapsibleCategories} onChange={(v) => setPref("collapsibleCategories", v)} />
         <ToggleRow title="할 일 텍스트 작게 보기" value={p.smallTodoText} onChange={(v) => setPref("smallTodoText", v)} />
         <Later title="할 일 사진 작게 보기" />
         <ToggleRow title="할 일 메모 작게 보기" value={p.smallTodoMemo} onChange={(v) => setPref("smallTodoMemo", v)} />
@@ -55,7 +55,7 @@ export function DisplaySettingsScreen() {
         <ValueRow title="할 일 정렬" value={SORT[p.todoSort]} onPress={() => { setDraftSort(p.todoSort); setSheet("sort"); }} />
         <Later title="월별 할 일 캘린더의 최대 항목 개수" value="10" />
         <Later title="주별 할 일 캘린더의 최대 항목 개수" value="무제한" />
-        <Later title="할 일 캘린더에서 표시할 카테고리" value="2" />
+        <ValueRow title="할 일 캘린더에서 표시할 카테고리" value={String(p.calendarCategoryCount)} onPress={() => setPref("calendarCategoryCount", (p.calendarCategoryCount % 4) + 1)} />
       </ScrollView>
       <BottomSheet visible={sheet === "theme"} onClose={() => setSheet(null)} title="테마">
         <RadioList value={draftTheme} onChange={setDraftTheme} options={(Object.keys(THEME) as Prefs["theme"][]).map((v) => ({ value: v, label: THEME[v] }))} />

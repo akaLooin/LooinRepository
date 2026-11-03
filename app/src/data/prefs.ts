@@ -14,10 +14,17 @@ export type Prefs = {
   smallTodoMemo: boolean;
   todoSort: "done_last" | "manual";
   uiScale: "auto" | number; // 화면 크기: auto fits the phone's width
+  calendarCategoryIds: string[] | null; // categories the calendar clovers count; null = all
+  calendarCategoryCount: number; // how many category colours one clover splits into
+  collapsibleCategories: boolean;
+  collapsedCategoryIds: string[];
+  inputAtTop: boolean;
+  hideDone: boolean; // 리스트 메뉴: hide finished to-dos on home
 };
 
 export const DEFAULT_PREFS: Prefs = {
   theme: "dark", weekStartsSunday: true, doubleTapToEdit: true, use24h: true, smallTodoText: false, smallTodoMemo: false, todoSort: "done_last", uiScale: "auto",
+  calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false, hideDone: false,
 };
 
 const KEY = "todomate:prefs";

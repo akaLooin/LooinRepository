@@ -43,13 +43,13 @@ export function IconChip({ children, onPress, label }: { children: React.ReactNo
 }
 
 /** Category header pill: [visibility icon] name [+]. Name uses the user's colour (S03). */
-export function CategoryPill({ title, color, visibility, onAdd, onPress }: { title: string; color: string; visibility: Visibility; onAdd?: () => void; onPress?: () => void }) {
+export function CategoryPill({ title, color, visibility, onAdd, onPress, onLongPress }: { title: string; color: string; visibility: Visibility; onAdd?: () => void; onPress?: () => void; onLongPress?: () => void }) {
   const { c } = useTheme();
   const h = tokens.size.categoryPillHeight;
   const plus = 34;
   return (
     <View style={{ flexDirection: "row", alignSelf: "flex-start", alignItems: "center", height: h, borderRadius: R, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 4, gap: 8 }}>
-      <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="button">
+      <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="button" accessibilityLabel={title}>
         <VisibilityIcon value={visibility} color={c.textMuted} />
         <AppText variant="category" raw={readableOn(color, c.surface)}>{title}</AppText>
       </Pressable>
