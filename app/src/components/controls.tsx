@@ -18,7 +18,9 @@ export function Toggle({ value, onChange, disabled, label }: { value: boolean; o
     <Pressable
       onPress={() => !disabled && onChange(!value)}
       accessibilityRole="switch"
-      accessibilityState={{ checked: value, disabled }}
+      accessibilityState={{ checked: value, disabled: !!disabled }}
+      aria-checked={value}
+      aria-disabled={!!disabled}
       accessibilityLabel={label}
       hitSlop={8}
       style={{ opacity: disabled ? 0.4 : 1 }}

@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Image, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText, Clover, ScreenHeader, VisibilityIcon } from "../../components";
+import { formatTime, usePrefs } from "../../data/prefs";
 import { timerTotal, useDB } from "../../data/store";
 import { parseDay, weekday } from "../../lib/dates";
 import { tokens, useTheme } from "../../theme";
@@ -9,9 +10,9 @@ import { VISIBILITY_LABEL } from "../categories/CategoryEditScreen";
 
 const WD = "일월화수목금토";
 
-function doneLabel(iso: string) {
+function doneLabel(iso: string, use24h: boolean) {
   const d = new Date(iso);
-  return `완료 ${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `완료 ${d.getMonth() + 1}월 ${d.getDate()}일 ${formatTime(d, use24h)}`;
 }
 const dur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.floor((s % 3600) / 60)}분` : s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`);
 
@@ -23,6 +24,7 @@ export function TodoInfoScreen() {
   const todo = useDB((d) => d.todos.find((t) => t.id === id));
   const cat = useDB((d) => d.categories.find((x) => x.id === todo?.categoryId));
   const profile = useDB((d) => d.profile);
+  const { use24h } = usePrefs();
   if (!todo || !cat) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
@@ -55,7 +57,7 @@ export function TodoInfoScreen() {
         <View style={{ gap: 6 }}>
           <AppText variant="bodyLg">{todo.title}</AppText>
           {todo.memo ? <AppText variant="body" color="textSecondary">{todo.memo}</AppText> : null}
-          {todo.isDone && todo.doneAt ? <AppText variant="body" color="textMuted">{doneLabel(todo.doneAt)}</AppText> : null}
+          {todo.isDone && todo.doneAt ? <AppText variant="body" color="textMuted">{doneLabel(todo.doneAt, use24h)}</AppText> : null}
           {seconds > 0 ? <AppText variant="body" color="textMuted">{`기록한 시간 ${dur(seconds)}`}</AppText> : null}
         </View>
       </ScrollView>

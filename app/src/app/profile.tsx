@@ -1,5 +1,3 @@
-import { StubScreen } from "../components";
+import { ProfileScreen } from "../features/profile/ProfileScreen";
 
-export default function Screen() {
-  return <StubScreen id="S02" title="프로필" when="다음 단계에서 만들어요" />;
-}
+export default ProfileScreen;

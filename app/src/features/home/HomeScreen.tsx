@@ -10,6 +10,7 @@ import {
   updateTodo, useDB,
 } from "../../data/store";
 import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
+import { usePrefs } from "../../data/prefs";
 import { tokens, useTheme } from "../../theme";
 import { dayState } from "./dayState";
 import { HomeMenu, MenuButton } from "./HomeMenu";
@@ -19,9 +20,9 @@ import { TodoSheets } from "./TodoSheets";
 
 const G = tokens.layout.gutter;
 
-function weekOfMonth(day: Day) {
+function weekOfMonth(day: Day, sundayFirst: boolean) {
   const { y, m } = parseDay(day);
-  return monthGrid(y, m).findIndex((row) => row.includes(day));
+  return monthGrid(y, m, sundayFirst).findIndex((row) => row.includes(day));
 }
 
 export function HomeScreen() {
@@ -30,6 +31,7 @@ export function HomeScreen() {
   const profile = useDB((d) => d.profile);
   const categories = useDB(selectCategories);
   const db = useDB((d) => d);
+  const prefs = usePrefs();
   const ddays = useDB(selectDDays);
 
   const now = today();
@@ -42,15 +44,15 @@ export function HomeScreen() {
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [toast, notice] = useToast();
 
-  const grid = monthGrid(view.y, view.m);
+  const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
   const byDay = useMemo(() => {
     const m = new Map<Day, ReturnType<typeof todosForDay>>();
     for (const row of grid) for (const d of row) if (d) m.set(d, todosForDay(db, d));
     return m;
-  }, [db, view.y, view.m]); // eslint-disable-line react-hooks/exhaustive-deps
-  const dayTodos = todosForDay(db, selected).sort((a, b) => Number(a.isDone) - Number(b.isDone) || a.sortOrder - b.sortOrder);
+  }, [db, view.y, view.m, prefs.weekStartsSunday]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dayTodos = todosForDay(db, selected).sort((a, b) => (prefs.todoSort === "done_last" ? Number(a.isDone) - Number(b.isDone) : 0) || a.sortOrder - b.sortOrder);
 
-  const weekRow = mode === "week" ? [grid[Math.max(0, parseDay(selected).m === view.m ? weekOfMonth(selected) : 0)]] : undefined;
+  const weekRow = mode === "week" ? [grid[Math.max(0, parseDay(selected).m === view.m ? weekOfMonth(selected, prefs.weekStartsSunday) : 0)]] : undefined;
   const title = mode === "month" ? `${view.y}년 ${view.m}월` : `${view.y}년 ${view.m}월 ${(weekRow ? grid.indexOf(weekRow[0]) : 0) + 1}주차`;
 
   const shift = (dir: number) => {
@@ -116,6 +118,7 @@ export function HomeScreen() {
             onSelect={(d) => { setSelected(d); setAdding(null); setEditing(null); }}
             state={(d) => dayState(byDay.get(d) ?? [], categories)}
             rows={weekRow}
+            weekStartsSunday={prefs.weekStartsSunday}
           />
         </View>
 
@@ -153,7 +156,9 @@ export function HomeScreen() {
                         color={cat.color}
                         onToggle={() => toggleTodo(t.id)}
                         onPress={() => setSheetTodo(materialize(t.id))}
-                        onDoubleTap={() => { setSheetTodo(null); setEditing(materialize(t.id)); }}
+                        onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
+                        small={prefs.smallTodoText}
+                        smallMemo={prefs.smallTodoMemo}
                       />
                     ),
                   )}

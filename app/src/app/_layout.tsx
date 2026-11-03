@@ -1,13 +1,18 @@
 import { useFonts } from "expo-font";
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { loadPrefs, usePrefs } from "../data/prefs";
 import { AuthGate } from "../features/auth/AuthGate";
 import { fontFiles, ThemeProvider, useTheme } from "../theme";
 
 function Shell() {
-  const { c, scheme } = useTheme();
+  const { c, scheme, setOverride } = useTheme();
+  const { theme } = usePrefs();
+  useEffect(() => { loadPrefs(); }, []);
+  useEffect(() => { setOverride(theme === "system" ? null : theme); }, [theme, setOverride]);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />

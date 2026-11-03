@@ -11,13 +11,21 @@ export function FieldGroup({ children }: { children: React.ReactNode }) {
 
 export function FieldRow({ title, value, onPress, right }: { title: string; value?: string; onPress?: () => void; right?: React.ReactNode }) {
   const { c } = useTheme();
-  return (
-    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={value ? `${title}, ${value}` : title}
-      style={({ pressed }) => ({ height: 64, paddingHorizontal: 20, backgroundColor: pressed ? c.surfaceRow : c.surfaceInput, flexDirection: "row", alignItems: "center", gap: 10 })}>
+  const base = { height: 64, paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, gap: 10 };
+  const inner = (
+    <>
       <AppText variant="bodyLg" style={{ flex: 1 }}>{title}</AppText>
       {right}
       {value !== undefined && <AppText variant="bodyLg" weight={700}>{value}</AppText>}
       {onPress && <ChevronRight size={20} color={c.textMuted} />}
+    </>
+  );
+  // Without an action it is a plain container, so a Toggle inside stays enabled.
+  if (!onPress) return <View style={[base, { backgroundColor: c.surfaceInput }]}>{inner}</View>;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={value ? `${title}, ${value}` : title}
+      style={({ pressed }) => [base, { backgroundColor: pressed ? c.surfaceRow : c.surfaceInput }]}>
+      {inner}
     </Pressable>
   );
 }

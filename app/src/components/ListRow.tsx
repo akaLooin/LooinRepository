@@ -8,10 +8,11 @@ type Base = { title: string; onPress?: () => void };
 
 function Row({ onPress, children, height = tokens.size.listRowHeight, bg, divider, a11y }: { onPress?: () => void; children: React.ReactNode; height?: number; bg?: string; divider?: boolean; a11y?: string }) {
   const { c } = useTheme();
+  const base = { minHeight: height, flexDirection: "row" as const, alignItems: "center" as const, gap: 14, borderBottomWidth: divider ? 1 : 0, borderBottomColor: c.divider };
+  // A row with no action of its own is a plain container, so controls inside it (a Toggle) stay enabled for screen readers.
+  if (!onPress) return <View style={[base, { backgroundColor: bg }]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={a11y}
-      style={({ pressed }) => ({ minHeight: height, flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: pressed ? c.surfaceRow : bg,
-        borderBottomWidth: divider ? 1 : 0, borderBottomColor: c.divider })}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y} style={({ pressed }) => [base, { backgroundColor: pressed ? c.surfaceRow : bg }]}>
       {children}
     </Pressable>
   );
