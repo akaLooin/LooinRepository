@@ -1,6 +1,7 @@
-import { Image, Pressable, View, type ImageSourcePropType } from "react-native";
+import { Pressable, View } from "react-native";
 import { readableOn, tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
+import { StoredImage } from "./StoredImage";
 import { Globe, Lock, Plus, Users } from "./icons";
 
 const R = tokens.radius.pill;
@@ -14,7 +15,7 @@ export function VisibilityIcon({ value, size = 18, color }: { value: Visibility;
 }
 
 /** Person chip on top of home (S03). */
-export function Chip({ label, avatar, selected, onPress }: { label: string; avatar?: ImageSourcePropType; selected?: boolean; onPress?: () => void }) {
+export function Chip({ label, avatar, selected, onPress }: { label: string; avatar?: string; selected?: boolean; onPress?: () => void }) {
   const { c } = useTheme();
   const h = tokens.size.chipHeight;
   const a = tokens.size.avatarChip;
@@ -25,7 +26,7 @@ export function Chip({ label, avatar, selected, onPress }: { label: string; avat
       accessibilityState={{ selected }}
       style={{ height: h, borderRadius: R, backgroundColor: selected ? c.selectedBg : c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 4, paddingRight: 20, gap: 10 }}
     >
-      {avatar ? <Image source={avatar} style={{ width: a, height: a, borderRadius: a / 2 }} /> : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
+      {avatar ? <StoredImage uri={avatar} label="프로필 사진" style={{ width: a, height: a, borderRadius: a / 2 }} /> : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
       <AppText variant="bodyLg" weight={600} color={selected ? "onSelected" : "text"}>{label}</AppText>
     </Pressable>
   );

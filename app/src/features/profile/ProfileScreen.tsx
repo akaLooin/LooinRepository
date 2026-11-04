@@ -1,24 +1,26 @@
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
-import { AppText, ScreenHeader, TitleInput } from "../../components";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { AppText, ScreenHeader, StoredImage, TitleInput } from "../../components";
+import { pickPhoto } from "../../lib/photos";
 import { updateProfile, useDB } from "../../data/store";
 import { fontFamily, tokens, useTheme } from "../../theme";
 
-/** S02: nickname and bio. Profile photo comes with photo upload (later). */
+/** S02: photo, nickname and bio. */
 export function ProfileScreen() {
   const { c } = useTheme();
   const insets = useInsets();
   const profile = useDB((d) => d.profile);
   const [nickname, setNickname] = useState(profile.nickname);
   const [bio, setBio] = useState(profile.bio);
+  const [avatar, setAvatar] = useState(profile.avatarUri);
   const [error, setError] = useState<string>();
   const save = () => {
     const n = nickname.trim();
     if (!n) return setError("닉네임을 입력해 주세요");
     if (n.length > 20) return setError("닉네임은 20자까지예요");
-    updateProfile({ nickname: n, bio: bio.trim().slice(0, 150) });
+    updateProfile({ nickname: n, bio: bio.trim().slice(0, 150), avatarUri: avatar });
     router.back();
   };
   return (
@@ -26,8 +28,19 @@ export function ProfileScreen() {
       <ScreenHeader title="프로필" onBack={() => router.back()} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: "center", gap: 8, marginVertical: 8 }}>
-          <View style={{ width: tokens.size.avatarProfile + 20, height: tokens.size.avatarProfile + 20, borderRadius: 60, backgroundColor: c.surfaceStrong }} />
-          <AppText variant="helper" color="textMuted">프로필 사진은 사진 기능과 함께 추가돼요</AppText>
+          <Pressable onPress={async () => { const uri = await pickPhoto().catch(() => null); if (uri) setAvatar(uri); }} accessibilityRole="button" accessibilityLabel="프로필 사진 바꾸기">
+            <StoredImage uri={avatar} label="프로필 사진" style={{ width: tokens.size.avatarProfile + 20, height: tokens.size.avatarProfile + 20, borderRadius: 60 }} />
+          </Pressable>
+          <View style={{ flexDirection: "row", gap: 16 }}>
+            <Pressable onPress={async () => { const uri = await pickPhoto().catch(() => null); if (uri) setAvatar(uri); }} accessibilityRole="button" hitSlop={8}>
+              <AppText variant="body" weight={600}>사진 바꾸기</AppText>
+            </Pressable>
+            {avatar ? (
+              <Pressable onPress={() => setAvatar(undefined)} accessibilityRole="button" hitSlop={8}>
+                <AppText variant="body" color="danger">사진 지우기</AppText>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
         <AppText variant="helper" color="textMuted" weight={600}>닉네임</AppText>
         <TitleInput value={nickname} onChangeText={(s) => { setNickname(s); setError(undefined); }} placeholder="닉네임" error={error} />

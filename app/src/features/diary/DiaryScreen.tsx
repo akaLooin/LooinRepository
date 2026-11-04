@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
-  AppText, BottomSheet, Button, ChevronDown, Image, RadioCheck, ScreenHeader, SmilePlus, useToast, VisibilityIcon, type Visibility,
+  AppText, BottomSheet, Button, ChevronDown, Image, RadioCheck, ScreenHeader, SmilePlus, StoredImage, useToast, VisibilityIcon, X, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
+import { pickPhoto } from "../../lib/photos";
 import { parseDay, today, weekday } from "../../lib/dates";
 import { contrast, fontFamily, tokens, useTheme } from "../../theme";
 import { VISIBILITY_LABEL } from "../categories/CategoryEditScreen";
@@ -29,6 +30,7 @@ export function DiaryScreen() {
   const [body, setBody] = useState(existing?.body ?? "");
   const [visibility, setVisibility] = useState<Visibility>(existing?.visibility ?? "private");
   const [bg, setBg] = useState<string | undefined>(existing?.backgroundColor);
+  const [images, setImages] = useState<string[]>(existing?.imagePaths ?? []);
   const [sheet, setSheet] = useState<null | "emoji" | "visibility" | "color">(null);
   const [toast, notice] = useToast();
 
@@ -37,7 +39,7 @@ export function DiaryScreen() {
   const inkMuted = bg ? (ink === "#FFFFFF" ? "#C8C8C8" : "#555555") : c.textMuted;
   const { y, m, d } = parseDay(date);
   const done = () => {
-    saveDiary(date, { emoji, body: body.trim(), visibility, backgroundColor: bg });
+    saveDiary(date, { emoji, body: body.trim(), visibility, backgroundColor: bg, imagePaths: images });
     router.back();
   };
 
@@ -58,7 +60,7 @@ export function DiaryScreen() {
           )}
         </Pressable>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-          <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: c.surfaceStrong }} />
+          <StoredImage uri={profile.avatarUri} label="프로필 사진" style={{ width: 46, height: 46, borderRadius: 23 }} />
           <View style={{ gap: 2 }}>
             <AppText variant="bodyLg" weight={700} raw={ink}>{profile.nickname || "나"}</AppText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -78,15 +80,32 @@ export function DiaryScreen() {
           placeholder="오늘 하루를 남겨 보세요"
           placeholderTextColor={inkMuted}
           accessibilityLabel="일기 내용"
-          style={{ minHeight: 320, color: ink, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, lineHeight: 26, textAlignVertical: "top", outlineStyle: "none" as never }}
+          style={{ minHeight: images.length ? 200 : 320, color: ink, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, lineHeight: 26, textAlignVertical: "top", outlineStyle: "none" as never }}
         />
+        {images.length ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {images.map((u, i) => (
+              <View key={u + i}>
+                <StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: 110, height: 110, borderRadius: tokens.radius.md }} />
+                <Pressable onPress={() => setImages((xs) => xs.filter((_, j) => j !== i))} accessibilityRole="button" accessibilityLabel={`일기 사진 ${i + 1} 빼기`} hitSlop={8}
+                  style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 12, backgroundColor: c.scrimSolid, alignItems: "center", justifyContent: "center" }}>
+                  <X size={14} color={c.onIcon} strokeWidth={3} />
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={{ flexDirection: "row", gap: 16, paddingHorizontal: tokens.layout.gutter, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: c.surfaceButton }}>
         <Pressable onPress={() => setSheet("color")} accessibilityRole="button" accessibilityLabel="배경색" style={{ width: 44, height: 44, borderRadius: 22, overflow: "hidden", flexDirection: "row", flexWrap: "wrap", borderWidth: 2, borderColor: c.surfaceStrong }}>
           {["#FF8A8A", "#FFD36E", "#7FE3A6", "#7FB6FF"].map((col) => <View key={col} style={{ width: "50%", height: "50%", backgroundColor: col }} />)}
         </Pressable>
-        <Pressable onPress={() => notice("사진은 사진 기능과 함께 추가돼요")} accessibilityRole="button" accessibilityLabel="사진 넣기" style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
+        <Pressable onPress={async () => {
+            if (images.length >= 4) return notice("사진은 4장까지 넣을 수 있어요");
+            const uri = await pickPhoto().catch(() => null);
+            if (uri) setImages((xs) => [...xs, uri]);
+          }} accessibilityRole="button" accessibilityLabel="사진 넣기" style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
           <Image size={22} color={c.menuPhoto} />
         </Pressable>
       </View>

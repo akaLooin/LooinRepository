@@ -8,6 +8,7 @@ import * as Crypto from "expo-crypto";
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
+import { isUploaded } from "../lib/photoPaths";
 import { rescheduleNotifications } from "./notifications";
 import { seed } from "./seed";
 import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, upgradeOutbox, type Outbox, type Remote } from "./sync";
@@ -95,6 +96,8 @@ export async function syncNow() {
   const s = session;
   setStatus({ state: "syncing" });
   try {
+    await uploadPendingPhotos(s.remote, s.userId);
+    if (session !== s) return;
     const { sent, rejected } = await push({ db, outbox, lastPulled }, s.remote, s.userId);
     if (session !== s) return; // signed out meanwhile
     outbox = settle(outbox, sent);
@@ -338,6 +341,44 @@ export const copyTodoTomorrow = (id: string) => {
   const t = db.todos.find((x) => x.id === id);
   if (t) copyTodo(id, addDays(t.date ?? today(), 1));
 };
+
+// ── photos ─────────────────────────────────────────────────
+export function setTodoPhoto(id: string, uri: string | null) {
+  id = materialize(id);
+  updateTodo(id, { photoUri: uri ?? undefined });
+}
+
+/**
+ * Uploads photos that are still only on this device and swaps their local URI for the stored path, so other devices
+ * can show them. Runs at the start of each sync; a failed upload is retried next time.
+ */
+async function uploadPendingPhotos(remote: Remote, userId: string) {
+  if (!remote.uploadImage) return;
+  const up = remote.uploadImage;
+  const stamp = Date.now();
+  for (const t of db.todos.filter((x) => x.photoUri && !isUploaded(x.photoUri))) {
+    const path = `${userId}/${t.id}-${stamp}.jpg`;
+    if (await up("todo-photos", path, t.photoUri!)) {
+      const cur = db.todos.find((x) => x.id === t.id);
+      if (cur?.photoUri === t.photoUri) updateTodo(t.id, { photoUri: `todo-photos/${path}` });
+    }
+  }
+  const avatar = db.profile.avatarUri;
+  if (avatar && !isUploaded(avatar)) {
+    const path = `${userId}/avatar-${stamp}.jpg`;
+    if (await up("avatars", path, avatar) && db.profile.avatarUri === avatar) updateProfile({ avatarUri: `avatars/${path}` });
+  }
+  for (const d of db.diaries.filter((x) => x.imagePaths.some((u) => !isUploaded(u)))) {
+    const next: string[] = [];
+    for (const [i, u] of d.imagePaths.entries()) {
+      if (isUploaded(u)) { next.push(u); continue; }
+      const path = `${userId}/${d.id}-${stamp}-${i}.jpg`;
+      next.push((await up("diary-images", path, u)) ? `diary-images/${path}` : u);
+    }
+    const cur = db.diaries.find((x) => x.id === d.id);
+    if (cur && cur.imagePaths.join() === d.imagePaths.join()) set({ ...db, diaries: db.diaries.map((x) => (x.id === d.id ? { ...x, imagePaths: next } : x)) });
+  }
+}
 
 // ── many at once (리스트 메뉴, 할 일 선택) ─────────────────
 /** 보관함: to-dos without a date. */

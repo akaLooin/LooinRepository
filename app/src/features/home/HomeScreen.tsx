@@ -111,13 +111,14 @@ export function HomeScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}>
           <IconChip label="보관함" onPress={() => router.push("/inbox" as never)}><Archive size={22} color={c.text} /></IconChip>
-          <Chip label={profile.nickname} selected />
+          <Chip label={profile.nickname} avatar={profile.avatarUri} selected />
           <IconChip label="친구" onPress={() => notice("친구 기능은 2단계에서 만들어요")}><Users size={22} color={c.text} /></IconChip>
         </ScrollView>
 
         <View style={{ paddingHorizontal: G, marginTop: 28 }}>
           <ProfileHeader
             name={profile.nickname}
+            avatar={profile.avatarUri}
             bio={profile.bio}
             dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now) } : undefined}
             onDday={() => router.push("/ddays" as never)}
@@ -191,6 +192,7 @@ export function HomeScreen() {
                         <TodoRow
                           title={t.title}
                           memo={t.memo}
+                          photo={t.photoUri}
                           done={t.isDone}
                           color={cat.color}
                           onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}

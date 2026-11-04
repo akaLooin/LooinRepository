@@ -6,7 +6,8 @@ import {
   TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown,
 } from "../../components";
 import { ensurePermission } from "../../data/notifications";
-import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, setTodoAlarm, updateTodo, useDB, type Todo } from "../../data/store";
+import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, setTodoAlarm, setTodoPhoto, updateTodo, useDB, type Todo } from "../../data/store";
+import { pickPhoto } from "../../lib/photos";
 import { parseDay, today, type Day } from "../../lib/dates";
 import { tokens, useTheme } from "../../theme";
 
@@ -49,7 +50,16 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox }: { todoId:
         <>
         <SheetMenuRow title={todo.remindAt ? `시간 알림 · ${alarmLabel(todo.remindAt)}` : "시간 알림"} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
         <SheetMenuRow title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
-        <SheetMenuRow title="사진 인증" color="menuPhoto" icon={icon(Image)} onPress={() => { close(); notice("사진 인증은 다음 단계에서 만들어요"); }} />
+        <SheetMenuRow title={todo.photoUri ? "사진 바꾸기" : "사진 인증"} color="menuPhoto" icon={icon(Image)} onPress={async () => {
+          close();
+          try {
+            const uri = await pickPhoto();
+            if (uri) { setTodoPhoto(todo.id, uri); notice("사진을 붙였어요"); }
+          } catch {
+            notice("사진을 불러오지 못했어요");
+          }
+        }} />
+        {todo.photoUri ? <SheetMenuRow title="사진 지우기" color="menuDelete" icon={icon(Trash2)} onPress={() => { setTodoPhoto(todo.id, null); close(); notice("사진을 지웠어요"); }} /> : null}
         <SheetMenuRow title="내일 또 하기" color="menuRepeat" icon={icon(ArrowRight)} onPress={() => { copyTodoTomorrow(todo.id); close(); notice("내일 할 일에 추가했어요"); }} />
         <SheetMenuRow title="다른 날 또 하기" color="menuRepeat" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "copy" })} />
         <SheetMenuRow title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />

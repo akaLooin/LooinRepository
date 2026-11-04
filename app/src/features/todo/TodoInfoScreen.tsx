@@ -1,7 +1,7 @@
 import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image, ScrollView, View } from "react-native";
-import { AppText, Clover, ScreenHeader, VisibilityIcon } from "../../components";
+import { ScrollView, View } from "react-native";
+import { AppText, Clover, ScreenHeader, StoredImage, VisibilityIcon } from "../../components";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { timerTotal, useDB } from "../../data/store";
 import { parseDay, weekday } from "../../lib/dates";
@@ -43,7 +43,7 @@ export function TodoInfoScreen() {
           <Clover size={48} state={todo.isDone ? { kind: "todoDone", color: cat.color } : { kind: "todoOpen" }} />
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-          <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: c.surfaceStrong }} />
+          <StoredImage uri={profile.avatarUri} label="프로필 사진" style={{ width: 46, height: 46, borderRadius: 23 }} />
           <View style={{ gap: 2 }}>
             <AppText variant="bodyLg" weight={700}>{profile.nickname || "나"}</AppText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -53,7 +53,7 @@ export function TodoInfoScreen() {
             </View>
           </View>
         </View>
-        {todo.photoUri ? <Image source={{ uri: todo.photoUri }} style={{ width: "100%", aspectRatio: 1.4, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} accessibilityLabel="인증 사진" /> : null}
+        {todo.photoUri ? <StoredImage uri={todo.photoUri} label="인증 사진" style={{ width: "100%", aspectRatio: 1.4, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /> : null}
         <View style={{ gap: 6 }}>
           <AppText variant="bodyLg">{todo.title}</AppText>
           {todo.memo ? <AppText variant="body" color="textSecondary">{todo.memo}</AppText> : null}

@@ -13,7 +13,7 @@ export default function Me() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 24, paddingHorizontal: tokens.layout.gutter, gap: 24 }}>
       <AppText variant="screenTitle">마이</AppText>
-      <ProfileHeader name={profile.nickname || "이름 없음"} bio={profile.bio} />
+      <ProfileHeader name={profile.nickname || "이름 없음"} bio={profile.bio} avatar={profile.avatarUri} />
       <SettingsRow title="설정" icon={<User size={24} color={c.text} />} onPress={() => router.push("/settings" as never)} />
     </View>
   );

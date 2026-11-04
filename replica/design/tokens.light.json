@@ -40,7 +40,8 @@
     "play": "#0078fc",
     "menu-info": "#c8c8cc",
     "on-icon": "#ffffff",
-    "menu-soft": "#9da3dd"
+    "menu-soft": "#9da3dd",
+    "scrim-solid": "#000000"
   },
   "_original": {
     "clover-number": "#ffffff (흰 숫자, 대비 1.4:1)",

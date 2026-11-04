@@ -58,7 +58,7 @@ export function InboxScreen() {
                       editing === t.id ? (
                         <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
                       ) : (
-                        <TodoRow title={t.title} memo={t.memo} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
+                        <TodoRow title={t.title} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
                           onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
                       )
                     } />

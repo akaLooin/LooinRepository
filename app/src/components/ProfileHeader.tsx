@@ -1,18 +1,19 @@
-import { Image, Pressable, View, type ImageSourcePropType } from "react-native";
+import { Pressable, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
+import { StoredImage } from "./StoredImage";
 import { ChevronRight, SmilePlus } from "./icons";
 
 /** Avatar, name, bio, first D-day and the status-emoji button (S03). */
 export function ProfileHeader({ name, bio, avatar, dday, onDday, onEmoji }: {
-  name: string; bio?: string; avatar?: ImageSourcePropType; dday?: { title: string; label: string }; onDday?: () => void; onEmoji?: () => void;
+  name: string; bio?: string; avatar?: string; dday?: { title: string; label: string }; onDday?: () => void; onEmoji?: () => void;
 }) {
   const { c } = useTheme();
   const a = tokens.size.avatarProfile;
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-      {avatar ? <Image source={avatar} style={{ width: a, height: a, borderRadius: a / 2 }} /> : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
+      {avatar ? <StoredImage uri={avatar} label="프로필 사진" style={{ width: a, height: a, borderRadius: a / 2 }} /> : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
       <View style={{ flex: 1, gap: 2 }}>
         <AppText variant="profileName">{name}</AppText>
         <AppText variant="body" color="textMuted" numberOfLines={2}>{bio || "자기소개를 적어 보세요"}</AppText>

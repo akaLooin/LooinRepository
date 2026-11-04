@@ -41,7 +41,8 @@ export const tokens = {
       "play": "#0078fc",
       "cloverNumber": "#ffffff",
       "onIcon": "#ffffff",
-      "menuSoft": "#9da3dd"
+      "menuSoft": "#9da3dd",
+      "scrimSolid": "#000000"
     },
     "light": {
       "bg": "#ffffff",
@@ -83,7 +84,8 @@ export const tokens = {
       "play": "#0078fc",
       "menuInfo": "#c8c8cc",
       "onIcon": "#ffffff",
-      "menuSoft": "#9da3dd"
+      "menuSoft": "#9da3dd",
+      "scrimSolid": "#000000"
     }
   },
   "type": {

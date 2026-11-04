@@ -14,6 +14,16 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
       const { error } = await sb.from(table).upsert(rows, { onConflict: "id" });
       return { error: error?.message };
     },
+    async uploadImage(bucket, path, localUri) {
+      try {
+        const body = await (await fetch(localUri)).arrayBuffer();
+        if (body.byteLength > 8 * 1024 * 1024) return false; // keep within the free plan; photos are resized before this
+        const { error } = await sb.storage.from(bucket).upload(path, body, { contentType: "image/jpeg", upsert: true });
+        return !error;
+      } catch {
+        return false;
+      }
+    },
     async softDelete(table, ids) {
       const { error } = await sb.from(table).update({ deleted_at: new Date().toISOString() }).in("id", ids);
       return { error: error?.message };
