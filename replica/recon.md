@@ -1,7 +1,7 @@
 # Recon map: 롤리즈(ROLLIE'S) 스타일 필름 카메라 앱 (Android 우선, 이후 iOS)
 
 범위: 핵심 루프. 바디·렌즈·필름을 골라 장비를 꾸리고, 실시간 뷰파인더로 찍고, 36컷 롤을 채우고, 현상한 뒤 갤러리에서 보고 저장·공유하는 흐름. 무비 모드와 뽑기는 v2로 미룸.
-대상: Looin이 직접 출시할 앱 (가정한 것이니 확정해야 함)
+대상: Looin 개인 사용용 (Android 전용, 과금 없음, Play 스토어 출시 안 함)
 날짜: 2026-11-04
 
 > 원칙: 기능과 UX 패턴만 참고합니다. 원본의 이름, 로고, UI 그래픽, 필름 이름, LUT 데이터는 가져오지 않습니다. 화면 구성은 레퍼런스로만 쓰고, 디자인은 `/replica-design`에서 새로 만듭니다.
@@ -122,7 +122,7 @@ Entitlement  pack_id, purchase_token, acquired_at, source (purchase|capsule)
 
 ## Feature matrix
 
-`features.csv`를 보세요. must: 15, should: 11, could: 5, skip: 3
+`features.csv`를 보세요. must: 15, should: 10, could: 4, skip: 5 (개인 사용용이라 과금 기능 2개를 skip으로 옮김)
 
 ## Out of scope (cannot or should not be cloned)
 

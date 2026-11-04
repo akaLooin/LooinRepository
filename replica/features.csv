@@ -24,8 +24,8 @@ feature,area,priority,original,clone,notes
 쉬면 뷰파인더 절전 (발열/배터리),camera,must,yes,no,원본 리뷰 불만 1위. 처음부터 최적화하는 게 차별점
 사진 접근 권한이 꺼졌을 때 안내 + 설정 바로가기,onboarding,must,yes,no,
 무비 모드 (Super8 / VHS / 캠코더 느낌),movie,could,yes,no,범위가 크고 난이도가 높으니 v2에서
-매일 무료 캡슐 뽑기로 필름 해금,monetization,could,yes,no,안드로이드판에만 있음
-유료 필름 팩 / 인앱 구매,monetization,should,yes,no,Play Billing
+매일 무료 캡슐 뽑기로 필름 해금,monetization,skip,yes,skip,개인 사용용이라 과금 없음. 모든 필름 기본 해금
+유료 필름 팩 / 인앱 구매,monetization,skip,yes,skip,개인 사용용이라 과금 없음. 모든 필름 기본 해금
 그리드 표시,camera,should,no,no,원본에 없어서 리뷰에서 요청됨. 차별점
 기존 사진 불러와서 필름 효과 적용,edit,should,no,no,원본에 없어서 리뷰에서 요청됨. 차별점
 가로로 찍은 사진을 가로로 저장,camera,must,partial,no,원본 리뷰 불만. 처음부터 제대로 만들기
