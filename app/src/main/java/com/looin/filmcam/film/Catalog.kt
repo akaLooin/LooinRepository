@@ -49,7 +49,7 @@ data class Catalog(val films: List<Film>, val bodies: List<Body>, val lenses: Li
 
     companion object {
         val categories = listOf(
-            "all" to "전체", "warm" to "따뜻함", "cool" to "차가움", "pastel" to "파스텔", "mono" to "흑백",
+            "all" to "전체", "warm" to "따뜻함", "cool" to "차가움", "pastel" to "파스텔", "mono" to "흑백", "special" to "특수",
         )
 
         fun load(context: Context): Catalog {

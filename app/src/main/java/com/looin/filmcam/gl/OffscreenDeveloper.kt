@@ -28,7 +28,7 @@ class OffscreenDeveloper(private val assets: AssetManager) {
     private var egl: EglCore? = null
     private lateinit var surface: EGLSurface
     private lateinit var program: FilmProgram
-    private var maxSide = 0
+    private var glMax = 0
 
     private fun ensureGl() {
         if (egl != null) return
@@ -36,14 +36,14 @@ class OffscreenDeveloper(private val assets: AssetManager) {
         surface = core.pbuffer(1, 1)
         core.makeCurrent(surface)
         program = FilmProgram(oes = false, assets = assets)
-        // 기본 최대 긴 변 3264px(약 8MP). 메모리와 GL 한계 안에서.
-        maxSide = minOf(3264, GlUtil.maxTextureSize())
+        glMax = GlUtil.maxTextureSize()
         egl = core
     }
 
-    suspend fun render(raw: File, params: FilmParams): Bitmap = withContext(dispatcher) {
+    /** @param maxSide 결과의 긴 변 상한. GL 텍스처 한계보다 크면 그 한계로 줄인다. */
+    suspend fun render(raw: File, params: FilmParams, maxSide: Int): Bitmap = withContext(dispatcher) {
         ensureGl()
-        val src = decodeUpright(raw, maxSide)
+        val src = decodeUpright(raw, minOf(maxSide, glMax))
         val w = src.width
         val h = src.height
 

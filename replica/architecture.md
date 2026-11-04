@@ -103,7 +103,7 @@ DB에서 지키는 제약:
 → 그래서 `photos`에도 `body_id`, `lens_id` 컬럼이 있습니다 (schema.sql에 반영함).
 
 Webhooks in/out: 없음.
-Jobs: `DevelopWorker`. 현상 지연 설정에 따라 즉시 / 1시간 / 다음 날 아침 9시에 실행하는 OneTime 작업이고, 롤 id를 고유 작업 이름으로 씁니다.
+Jobs: ~~`DevelopWorker`~~ **현상 지연은 사용자 결정으로 제외(2026-11-04). 찍자마자 현상한다.** 원래 계획:. 현상 지연 설정에 따라 즉시 / 1시간 / 다음 날 아침 9시에 실행하는 OneTime 작업이고, 롤 id를 고유 작업 이름으로 씁니다.
 
 ## The parts that bite
 

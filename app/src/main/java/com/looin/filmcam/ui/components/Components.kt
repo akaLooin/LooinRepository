@@ -84,18 +84,20 @@ fun BarIcon(
 }
 
 @Composable
-fun ShutterButton(enabled: Boolean, remaining: Int, onShoot: () -> Unit) {
+fun ShutterButton(enabled: Boolean, remaining: Int, countdown: Int? = null, onShoot: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     Box(
         Modifier
             .size(FilmSize.shutter)
             .clip(CircleShape)
-            .border(FilmSize.shutterRing, if (enabled) FilmColors.text else FilmColors.textMuted, CircleShape)
+            .border(FilmSize.shutterRing, when { countdown != null -> FilmColors.accent; enabled -> FilmColors.text; else -> FilmColors.textMuted }, CircleShape)
             .clickable(enabled = enabled, role = Role.Button) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onShoot()
             }
-            .semantics { contentDescription = "셔터, 남은 컷 ${remaining}장" },
+            .semantics {
+                contentDescription = if (countdown != null) "타이머 ${countdown}초, 다시 누르면 취소" else "셔터, 남은 컷 ${remaining}장"
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -103,8 +105,11 @@ fun ShutterButton(enabled: Boolean, remaining: Int, onShoot: () -> Unit) {
                 .size(FilmSize.shutter - 18.dp)
                 .scale(if (enabled) 1f else 0.9f)
                 .clip(CircleShape)
-                .background(if (enabled) FilmColors.text else FilmColors.textMuted)
-        )
+                .background(if (enabled) FilmColors.text else FilmColors.textMuted),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (countdown != null) Text("$countdown", style = FilmText.counter, color = FilmColors.onAccent)
+        }
     }
 }
 

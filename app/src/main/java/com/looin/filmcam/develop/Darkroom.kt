@@ -10,11 +10,13 @@ import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import com.looin.filmcam.data.FilmDb
 import com.looin.filmcam.data.RollStatus
+import com.looin.filmcam.data.SettingsStore
 import com.looin.filmcam.film.Catalog
 import com.looin.filmcam.film.Gear
 import com.looin.filmcam.gl.OffscreenDeveloper
 import com.looin.filmcam.gl.params
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -31,6 +33,7 @@ class Darkroom(
     private val context: Context,
     private val db: FilmDb,
     private val catalog: Catalog,
+    private val settings: SettingsStore,
     private val developer: OffscreenDeveloper,
 ) {
     private val dao = db.dao()
@@ -45,14 +48,17 @@ class Darkroom(
         if (!raw.exists()) { Log.w(TAG, "원본 없음: ${raw.path}"); return@withLock }
 
         val look = catalog.look(Gear(roll.filmId, photo.bodyId, photo.lensId), photo.exposureEv)
-        val bitmap = developer.render(raw, look.params(photo.lightLeakSeed))
+        val prefs = settings.cameraPrefs.first()
+        // 기본 긴 변 3264px(약 8MP), 고해상도 4096px(약 12MP)
+        val bitmap = developer.render(raw, look.params(photo.lightLeakSeed), if (prefs.highRes) 4096 else 3264)
+        if (prefs.dateStamp) DateStamp.draw(context, bitmap, photo.takenAt)
         val out = File(outDir, "${photo.id}.jpg")
         val w = bitmap.width
         val h = bitmap.height
         withContext(Dispatchers.IO) {
             out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
             bitmap.recycle()
-            writeExif(out, photo.takenAt)
+            writeExif(out, photo.takenAt, photo.latitude, photo.longitude)
         }
         val uri = runCatching { export(out, photo.rollId, photo.frameNo, photo.takenAt) }
             .onFailure { Log.e(TAG, "사진첩 저장 실패", it) }
@@ -73,18 +79,52 @@ class Darkroom(
         }
     }
 
+    /**
+     * 기존 사진에 지금 장착한 필름을 입혀 사진첩에 새로 저장. 원본 사진은 건드리지 않는다.
+     * @return 저장된 사진의 URI
+     */
+    suspend fun importAndDevelop(source: Uri, gear: Gear): Uri? = mutex.withLock {
+        val tmp = File(context.cacheDir, "import_${System.currentTimeMillis()}.jpg")
+        try {
+            withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(source)?.use { i -> tmp.outputStream().use { i.copyTo(it) } }
+                    ?: error("사진을 열 수 없음")
+            }
+            val prefs = settings.cameraPrefs.first()
+            val seed = kotlin.random.Random.nextLong(1, 1_000_000)
+            val bitmap = developer.render(tmp, catalog.look(gear).params(seed), if (prefs.highRes) 4096 else 3264)
+            val now = System.currentTimeMillis()
+            val takenAt = withContext(Dispatchers.IO) {
+                runCatching { ExifInterface(tmp.path).dateTimeOriginal }.getOrNull() ?: now
+            }
+            if (prefs.dateStamp) DateStamp.draw(context, bitmap, takenAt)
+            val out = File(context.cacheDir, "import_out_$now.jpg")
+            withContext(Dispatchers.IO) {
+                out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                bitmap.recycle()
+                writeExif(out, takenAt, null, null)
+            }
+            val uri = export(out, 0, 0, now)
+            out.delete()
+            uri
+        } finally {
+            tmp.delete()
+        }
+    }
+
     /** 앱이 현상 도중 꺼졌을 때 남은 컷을 이어서 현상. */
     suspend fun resumePending() {
         dao.undeveloped().forEach { runCatching { develop(it.id) }.onFailure { e -> Log.e(TAG, "재현상 실패", e) } }
     }
 
-    private fun writeExif(file: File, takenAt: Long) {
+    private fun writeExif(file: File, takenAt: Long, lat: Double?, lng: Double?) {
         val exif = ExifInterface(file.path)
         val stamp = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US).format(Date(takenAt))
         exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, stamp)
         exif.setAttribute(ExifInterface.TAG_DATETIME, stamp)
         exif.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
         exif.setAttribute(ExifInterface.TAG_SOFTWARE, "FilmCam")
+        if (lat != null && lng != null) exif.setLatLong(lat, lng)
         exif.saveAttributes()
     }
 

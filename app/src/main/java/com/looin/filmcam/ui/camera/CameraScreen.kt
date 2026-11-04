@@ -32,6 +32,8 @@ import androidx.compose.material.icons.rounded.FlashOff
 import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material.icons.rounded.GridOn
 import androidx.compose.material.icons.rounded.HourglassTop
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.TimerOff
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.AlertDialog
@@ -86,6 +88,7 @@ import com.looin.filmcam.ui.theme.FilmSize
 import com.looin.filmcam.ui.theme.FilmSpace
 import com.looin.filmcam.ui.theme.FilmText
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -97,7 +100,7 @@ private const val SLEEP_AFTER_MS = 60_000L
 fun CameraScreen(onGallery: () -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
     val app = context.applicationContext as FilmCamApp
-    val vm: CameraViewModel = viewModel { CameraViewModel(app.container) }
+    val vm: CameraViewModel = viewModel { CameraViewModel(app, app.container) }
     val owner = LocalLifecycleOwner.current
 
     val processor = remember { FilmSurfaceProcessor(context.assets) }
@@ -108,7 +111,7 @@ fun CameraScreen(onGallery: () -> Unit, onSettings: () -> Unit) {
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
-    DisposableEffect(Unit) { onDispose { controller.unbind(); processor.release() } }
+    DisposableEffect(Unit) { onDispose { controller.release(); processor.release() } }
 
     val look by vm.look.collectAsStateWithLifecycle()
     val prefs by vm.prefs.collectAsStateWithLifecycle()
@@ -143,6 +146,7 @@ fun CameraScreen(onGallery: () -> Unit, onSettings: () -> Unit) {
         controller.setZoom(look.lens.zoom)
     }
     LaunchedEffect(prefs.flash) { controller.setFlash(prefs.flash) }
+    LaunchedEffect(prefs.shutterSound) { controller.shutterSound = prefs.shutterSound }
     LaunchedEffect(Unit) { vm.messages.collect { toast = it } }
     LaunchedEffect(Unit) { vm.rollFinished.collect { finishedRoll = it } }
     LaunchedEffect(toast) { if (toast != null) { delay(2500); toast = null } }
@@ -168,7 +172,21 @@ fun CameraScreen(onGallery: () -> Unit, onSettings: () -> Unit) {
 
     val shot = roll?.shotCount ?: 0
     val capacity = roll?.capacity ?: 36
-    val shoot = { if (!dimmed) vm.shoot(controller) }
+    // 셀프 타이머: 누르면 카운트다운, 카운트다운 중 다시 누르면 취소
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var countdown by remember { mutableStateOf<Int?>(null) }
+    var countdownJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    val shoot: () -> Unit = shoot@{
+        if (dimmed) return@shoot
+        if (countdown != null) { countdownJob?.cancel(); countdown = null; return@shoot }
+        val seconds = prefs.timer
+        if (seconds == 0) { vm.shoot(controller); return@shoot }
+        countdownJob = scope.launch {
+            for (s in seconds downTo 1) { countdown = s; delay(1000) }
+            countdown = null
+            vm.shoot(controller)
+        }
+    }
 
     Column(
         Modifier
@@ -195,6 +213,12 @@ fun CameraScreen(onGallery: () -> Unit, onSettings: () -> Unit) {
                 active = prefs.flash != FlashMode.OFF,
                 enabled = hasFlash,
             ) { vm.cycleFlash() }
+            BarIcon(
+                if (prefs.timer == 0) Icons.Rounded.TimerOff else Icons.Rounded.Timer,
+                if (prefs.timer == 0) "셀프 타이머: 꺼짐" else "셀프 타이머: ${prefs.timer}초",
+                active = prefs.timer != 0,
+                badge = if (prefs.timer == 0) null else "${prefs.timer}",
+            ) { vm.cycleTimer() }
             BarIcon(Icons.Rounded.GridOn, "그리드: ${if (prefs.grid) "켜짐" else "꺼짐"}", active = prefs.grid) { vm.setGrid(!prefs.grid) }
             Spacer(Modifier.weight(1f))
             BarIcon(Icons.Rounded.Cameraswitch, if (controller.isFront) "후면 카메라로 전환" else "전면 카메라로 전환") {
@@ -277,7 +301,7 @@ fun CameraScreen(onGallery: () -> Unit, onSettings: () -> Unit) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 GalleryThumb(lastPhoto?.developedPath, onGallery)
                 Spacer(Modifier.weight(1f))
-                ShutterButton(enabled = !busy && !cameraError, remaining = capacity - shot, onShoot = shoot)
+                ShutterButton(enabled = !busy && !cameraError, remaining = capacity - shot, countdown = countdown, onShoot = shoot)
                 Spacer(Modifier.weight(1f))
                 GearButton(look.film.id, look.lens.focalMm, onClick = { showGear = true })
             }

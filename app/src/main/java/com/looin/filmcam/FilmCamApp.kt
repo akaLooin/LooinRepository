@@ -20,7 +20,7 @@ class AppContainer(app: Application) {
     val db = FilmDb.create(app)
     val settings = SettingsStore(app, catalog)
     val rolls = RollRepository(db, app.filesDir)
-    val darkroom = Darkroom(app, db, catalog, OffscreenDeveloper(app.assets))
+    val darkroom = Darkroom(app, db, catalog, settings, OffscreenDeveloper(app.assets))
 }
 
 class FilmCamApp : Application() {

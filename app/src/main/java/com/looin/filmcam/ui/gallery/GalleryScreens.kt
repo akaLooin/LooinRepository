@@ -1,6 +1,10 @@
 package com.looin.filmcam.ui.gallery
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -35,6 +39,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
@@ -117,9 +122,32 @@ fun GalleryScreen(onBack: () -> Unit, onRoll: (Long) -> Unit) {
     val dao = app.container.db.dao()
     val rolls by remember { dao.observeRolls() }.collectAsState(initial = null)
     val catalog = app.container.catalog
+    val gear by remember { app.container.settings.gear }.collectAsState(initial = catalog.defaultGear)
+    var importing by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    // 기존 사진에 필름 입히기: 사진 선택기(권한 불필요) → 지금 장착한 필름으로 렌더 → 사진첩에 새로 저장
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        importing = true
+        app.container.appScope.launch {
+            val ok = runCatching { app.container.darkroom.importAndDevelop(uri, gear) }.getOrNull() != null
+            notice = if (ok) "${catalog.film(gear.filmId).name}을 입혀 사진첩에 저장했어요" else "사진을 처리하지 못했어요"
+            importing = false
+        }
+    }
+    LaunchedEffect(notice) { if (notice != null) { kotlinx.coroutines.delay(3000); notice = null } }
 
-    Column(Modifier.fillMaxSize().background(FilmColors.bg).systemBarsPadding()) {
-        Header("갤러리", onBack)
+    Box(Modifier.fillMaxSize()) { Column(Modifier.fillMaxSize().background(FilmColors.bg).systemBarsPadding()) {
+        Header("갤러리", onBack) {
+            IconAction(Icons.Rounded.AddPhotoAlternate, "기존 사진에 필름 입히기", {
+                if (!importing) picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            })
+        }
+        if (importing) {
+            Text("${catalog.film(gear.filmId).name}을 입히는 중…", style = FilmText.xs, color = FilmColors.accent,
+                modifier = Modifier.padding(horizontal = FilmSpace.s4, vertical = FilmSpace.s1))
+        }
         val list = rolls
         when {
             list == null -> Unit
@@ -137,6 +165,12 @@ fun GalleryScreen(onBack: () -> Unit, onRoll: (Long) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(FilmSpace.s3),
             ) {
                 items(list, key = { it.id }) { r -> RollCard(r, catalog.film(r.filmId).name) { onRoll(r.id) } }
+            }
+        }
+    }
+        notice?.let {
+            Box(Modifier.fillMaxSize().systemBarsPadding().padding(bottom = FilmSpace.s6), contentAlignment = Alignment.BottomCenter) {
+                com.looin.filmcam.ui.components.Toast(it)
             }
         }
     }

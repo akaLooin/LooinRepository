@@ -1,6 +1,8 @@
 package com.looin.filmcam.camera
 
 import android.content.Context
+import android.media.MediaActionSound
+import android.os.Build
 import android.view.OrientationEventListener
 import android.view.Surface
 import androidx.camera.core.Camera
@@ -36,6 +38,9 @@ class CameraController(private val context: Context, processor: FilmSurfaceProce
         .setResolutionSelector(ratio4x3)
         .build()
     private val effect = FilmEffect(processor)
+    private val sound = MediaActionSound().apply { load(MediaActionSound.SHUTTER_CLICK) }
+    /** 셔터음을 끌 수 있는지 설정 화면에서 쓰는 값. */
+    var shutterSound = true
     private var provider: ProcessCameraProvider? = null
 
     var camera: Camera? = null
@@ -78,6 +83,11 @@ class CameraController(private val context: Context, processor: FilmSurfaceProce
                 onError(e)
             }
         }, ContextCompat.getMainExecutor(context))
+    }
+
+    fun release() {
+        unbind()
+        sound.release()
     }
 
     fun unbind() {
@@ -124,6 +134,7 @@ class CameraController(private val context: Context, processor: FilmSurfaceProce
     }
 
     suspend fun takePicture(file: File) = suspendCancellableCoroutine { cont ->
+        if (shutterSound || mustPlayShutterSound()) sound.play(MediaActionSound.SHUTTER_CLICK)
         capture.takePicture(
             ImageCapture.OutputFileOptions.Builder(file).build(),
             ContextCompat.getMainExecutor(context),
@@ -132,5 +143,11 @@ class CameraController(private val context: Context, processor: FilmSurfaceProce
                 override fun onError(e: ImageCaptureException) = cont.resumeWithException(e)
             },
         )
+    }
+
+    companion object {
+        /** 한국·일본 등 셔터음을 끌 수 없게 정한 기기. Android 13 미만은 알 수 없으므로 끌 수 있다고 본다. */
+        fun mustPlayShutterSound(): Boolean =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && MediaActionSound.mustPlayShutterSound()
     }
 }

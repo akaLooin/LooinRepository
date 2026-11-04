@@ -19,6 +19,7 @@ films.json(파라미터) -> 앱 assets:
   highs     [r,g,b] 밝은 영역에 섞는 색
   mono      bool    흑백
   mono_mix  [r,g,b] 흑백 변환 가중치
+  gain      [r,g,b] 채널별 배율 (레드스케일 같은 강한 틀어짐용)
 """
 import json, math, os, struct, sys, zlib
 
@@ -40,7 +41,8 @@ def make_look(p):
     sat = p.get("sat", 1.0)
     sh, hi = p.get("shadows", [0, 0, 0]), p.get("highs", [0, 0, 0])
     mono, mix = p.get("mono", False), p.get("mono_mix", [0.30, 0.59, 0.11])
-    gain = (1 + 0.10 * temp + 0.03 * tint, 1 - 0.05 * tint, 1 - 0.12 * temp + 0.03 * tint)
+    g2 = p.get("gain", [1, 1, 1])
+    gain = ((1 + 0.10 * temp + 0.03 * tint) * g2[0], (1 - 0.05 * tint) * g2[1], (1 - 0.12 * temp + 0.03 * tint) * g2[2])
 
     def curve(x):
         if con:

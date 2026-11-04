@@ -33,7 +33,10 @@ class RollRepository(private val db: FilmDb, filesDir: File) {
     }
 
     /** 컷 하나를 롤에 넣는다. 마지막 컷이면 롤을 마감하고 같은 필름으로 새 롤을 장착한다. */
-    suspend fun addFrame(raw: File, gear: Gear, exposureEv: Float, lensFacing: String, flash: Boolean): ShotResult {
+    suspend fun addFrame(
+        raw: File, gear: Gear, exposureEv: Float, lensFacing: String, flash: Boolean,
+        latitude: Double? = null, longitude: Double? = null,
+    ): ShotResult {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(raw.path, bounds)
         val rotation = runCatching { ExifInterface(raw.path).rotationDegrees }.getOrDefault(0)
@@ -50,6 +53,7 @@ class RollRepository(private val db: FilmDb, filesDir: File) {
                 width = bounds.outWidth, height = bounds.outHeight, rotation = rotation,
                 lensFacing = lensFacing, exposureEv = exposureEv, flash = flash,
                 lightLeakSeed = Random.nextLong(1, 1_000_000),
+                latitude = latitude, longitude = longitude,
                 takenAt = now, createdAt = now, updatedAt = now,
             )
             val id = dao.insertPhoto(photo)

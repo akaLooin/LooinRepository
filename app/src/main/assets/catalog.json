@@ -1,20 +1,443 @@
 {
   "films": [
-    {"id": "warm400",   "name": "Warm 400",   "code": "W400", "category": "warm",  "grain": 0.07, "leak": 0.35, "leakColor": [1.0, 0.45, 0.15]},
-    {"id": "harbor200", "name": "Harbor 200", "code": "H200", "category": "cool",  "grain": 0.05, "leak": 0.15, "leakColor": [0.6, 0.8, 1.0]},
-    {"id": "peach160",  "name": "Peach 160",  "code": "P160", "category": "pastel","grain": 0.04, "leak": 0.30, "leakColor": [1.0, 0.55, 0.5]},
-    {"id": "honey800",  "name": "Honey 800",  "code": "Y800", "category": "warm",  "grain": 0.11, "leak": 0.40, "leakColor": [1.0, 0.6, 0.1]},
-    {"id": "dusk200",   "name": "Dusk 200",   "code": "D200", "category": "cool",  "grain": 0.06, "leak": 0.20, "leakColor": [0.9, 0.5, 0.7]},
-    {"id": "silver400", "name": "Silver 400", "code": "S400", "category": "mono",  "grain": 0.10, "leak": 0.0,  "leakColor": [1.0, 1.0, 1.0]}
+    {
+      "id": "warm400",
+      "name": "Warm 400",
+      "code": "W400",
+      "category": "warm",
+      "grain": 0.07,
+      "leak": 0.35,
+      "leakColor": [
+        1.0,
+        0.45,
+        0.15
+      ]
+    },
+    {
+      "id": "honey800",
+      "name": "Honey 800",
+      "code": "Y800",
+      "category": "warm",
+      "grain": 0.11,
+      "leak": 0.4,
+      "leakColor": [
+        1.0,
+        0.6,
+        0.1
+      ]
+    },
+    {
+      "id": "ember100",
+      "name": "Ember 100",
+      "code": "E100",
+      "category": "warm",
+      "grain": 0.04,
+      "leak": 0.3,
+      "leakColor": [
+        1.0,
+        0.3,
+        0.1
+      ]
+    },
+    {
+      "id": "amber200",
+      "name": "Amber 200",
+      "code": "A200",
+      "category": "warm",
+      "grain": 0.06,
+      "leak": 0.35,
+      "leakColor": [
+        1.0,
+        0.55,
+        0.2
+      ]
+    },
+    {
+      "id": "sunday160",
+      "name": "Sunday 160",
+      "code": "S160",
+      "category": "warm",
+      "grain": 0.04,
+      "leak": 0.2,
+      "leakColor": [
+        1.0,
+        0.7,
+        0.4
+      ]
+    },
+    {
+      "id": "toast400",
+      "name": "Toast 400",
+      "code": "T400",
+      "category": "warm",
+      "grain": 0.08,
+      "leak": 0.25,
+      "leakColor": [
+        0.9,
+        0.5,
+        0.25
+      ]
+    },
+    {
+      "id": "marigold200",
+      "name": "Marigold 200",
+      "code": "M200",
+      "category": "warm",
+      "grain": 0.06,
+      "leak": 0.3,
+      "leakColor": [
+        1.0,
+        0.65,
+        0.1
+      ]
+    },
+    {
+      "id": "harbor200",
+      "name": "Harbor 200",
+      "code": "H200",
+      "category": "cool",
+      "grain": 0.05,
+      "leak": 0.15,
+      "leakColor": [
+        0.6,
+        0.8,
+        1.0
+      ]
+    },
+    {
+      "id": "dusk200",
+      "name": "Dusk 200",
+      "code": "D200",
+      "category": "cool",
+      "grain": 0.06,
+      "leak": 0.2,
+      "leakColor": [
+        0.9,
+        0.5,
+        0.7
+      ]
+    },
+    {
+      "id": "glacier100",
+      "name": "Glacier 100",
+      "code": "G100",
+      "category": "cool",
+      "grain": 0.03,
+      "leak": 0.1,
+      "leakColor": [
+        0.6,
+        0.9,
+        1.0
+      ]
+    },
+    {
+      "id": "rain400",
+      "name": "Rain 400",
+      "code": "R400",
+      "category": "cool",
+      "grain": 0.08,
+      "leak": 0.1,
+      "leakColor": [
+        0.5,
+        0.8,
+        0.8
+      ]
+    },
+    {
+      "id": "mint160",
+      "name": "Mint 160",
+      "code": "N160",
+      "category": "cool",
+      "grain": 0.05,
+      "leak": 0.15,
+      "leakColor": [
+        0.6,
+        1.0,
+        0.8
+      ]
+    },
+    {
+      "id": "cobalt200",
+      "name": "Cobalt 200",
+      "code": "C200",
+      "category": "cool",
+      "grain": 0.05,
+      "leak": 0.15,
+      "leakColor": [
+        0.4,
+        0.6,
+        1.0
+      ]
+    },
+    {
+      "id": "peach160",
+      "name": "Peach 160",
+      "code": "P160",
+      "category": "pastel",
+      "grain": 0.04,
+      "leak": 0.3,
+      "leakColor": [
+        1.0,
+        0.55,
+        0.5
+      ]
+    },
+    {
+      "id": "cotton100",
+      "name": "Cotton 100",
+      "code": "O100",
+      "category": "pastel",
+      "grain": 0.03,
+      "leak": 0.25,
+      "leakColor": [
+        1.0,
+        0.8,
+        0.8
+      ]
+    },
+    {
+      "id": "lilac200",
+      "name": "Lilac 200",
+      "code": "L200",
+      "category": "pastel",
+      "grain": 0.05,
+      "leak": 0.3,
+      "leakColor": [
+        0.9,
+        0.6,
+        1.0
+      ]
+    },
+    {
+      "id": "sorbet400",
+      "name": "Sorbet 400",
+      "code": "B400",
+      "category": "pastel",
+      "grain": 0.07,
+      "leak": 0.35,
+      "leakColor": [
+        1.0,
+        0.6,
+        0.6
+      ]
+    },
+    {
+      "id": "haze160",
+      "name": "Haze 160",
+      "code": "Z160",
+      "category": "pastel",
+      "grain": 0.04,
+      "leak": 0.3,
+      "leakColor": [
+        1.0,
+        0.9,
+        0.8
+      ]
+    },
+    {
+      "id": "bloom200",
+      "name": "Bloom 200",
+      "code": "F200",
+      "category": "pastel",
+      "grain": 0.05,
+      "leak": 0.35,
+      "leakColor": [
+        1.0,
+        0.5,
+        0.7
+      ]
+    },
+    {
+      "id": "silver400",
+      "name": "Silver 400",
+      "code": "S400",
+      "category": "mono",
+      "grain": 0.1,
+      "leak": 0.0,
+      "leakColor": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "ink100",
+      "name": "Ink 100",
+      "code": "K100",
+      "category": "mono",
+      "grain": 0.05,
+      "leak": 0.0,
+      "leakColor": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "fog400",
+      "name": "Fog 400",
+      "code": "Q400",
+      "category": "mono",
+      "grain": 0.09,
+      "leak": 0.15,
+      "leakColor": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "sepia200",
+      "name": "Sepia 200",
+      "code": "P200",
+      "category": "mono",
+      "grain": 0.07,
+      "leak": 0.2,
+      "leakColor": [
+        1.0,
+        0.8,
+        0.6
+      ]
+    },
+    {
+      "id": "grit3200",
+      "name": "Grit 3200",
+      "code": "X3200",
+      "category": "mono",
+      "grain": 0.2,
+      "leak": 0.0,
+      "leakColor": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "night800",
+      "name": "Night 800",
+      "code": "N800",
+      "category": "special",
+      "grain": 0.1,
+      "leak": 0.3,
+      "leakColor": [
+        1.0,
+        0.25,
+        0.15
+      ]
+    },
+    {
+      "id": "xpro200",
+      "name": "X-Pro 200",
+      "code": "XP200",
+      "category": "special",
+      "grain": 0.07,
+      "leak": 0.35,
+      "leakColor": [
+        1.0,
+        0.9,
+        0.3
+      ]
+    },
+    {
+      "id": "expired400",
+      "name": "Expired 400",
+      "code": "EX400",
+      "category": "special",
+      "grain": 0.13,
+      "leak": 0.45,
+      "leakColor": [
+        1.0,
+        0.4,
+        0.6
+      ]
+    },
+    {
+      "id": "redscale100",
+      "name": "Redscale 100",
+      "code": "RS100",
+      "category": "special",
+      "grain": 0.08,
+      "leak": 0.3,
+      "leakColor": [
+        1.0,
+        0.5,
+        0.1
+      ]
+    },
+    {
+      "id": "cyano100",
+      "name": "Cyano 100",
+      "code": "CY100",
+      "category": "special",
+      "grain": 0.05,
+      "leak": 0.1,
+      "leakColor": [
+        0.6,
+        0.8,
+        1.0
+      ]
+    },
+    {
+      "id": "chrome100",
+      "name": "Chrome 100",
+      "code": "CH100",
+      "category": "special",
+      "grain": 0.03,
+      "leak": 0.15,
+      "leakColor": [
+        1.0,
+        0.6,
+        0.3
+      ]
+    }
   ],
   "bodies": [
-    {"id": "box",    "name": "Box",    "traits": "부드러운 비네팅", "vignette": 0.35, "warmth": 0.0},
-    {"id": "slr",    "name": "SLR",    "traits": "깨끗한 프레임",   "vignette": 0.15, "warmth": 0.0},
-    {"id": "toy",    "name": "Toy",    "traits": "강한 비네팅 · 따뜻함", "vignette": 0.7, "warmth": 0.06}
+    {
+      "id": "box",
+      "name": "Box",
+      "traits": "부드러운 비네팅",
+      "vignette": 0.35,
+      "warmth": 0.0
+    },
+    {
+      "id": "slr",
+      "name": "SLR",
+      "traits": "깨끗한 프레임",
+      "vignette": 0.15,
+      "warmth": 0.0
+    },
+    {
+      "id": "toy",
+      "name": "Toy",
+      "traits": "강한 비네팅 · 따뜻함",
+      "vignette": 0.7,
+      "warmth": 0.06
+    }
   ],
   "lenses": [
-    {"id": "w28", "name": "28mm", "focalMm": 28, "traits": "넓은 화각", "zoom": 1.0, "distortion": 0.04},
-    {"id": "n40", "name": "40mm", "focalMm": 40, "traits": "표준", "zoom": 1.4, "distortion": 0.0},
-    {"id": "t85", "name": "85mm", "focalMm": 85, "traits": "인물 · 좁은 화각", "zoom": 2.8, "distortion": -0.02}
+    {
+      "id": "w28",
+      "name": "28mm",
+      "focalMm": 28,
+      "traits": "넓은 화각",
+      "zoom": 1.0,
+      "distortion": 0.04
+    },
+    {
+      "id": "n40",
+      "name": "40mm",
+      "focalMm": 40,
+      "traits": "표준",
+      "zoom": 1.4,
+      "distortion": 0.0
+    },
+    {
+      "id": "t85",
+      "name": "85mm",
+      "focalMm": 85,
+      "traits": "인물 · 좁은 화각",
+      "zoom": 2.8,
+      "distortion": -0.02
+    }
   ]
 }

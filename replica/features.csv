@@ -1,13 +1,13 @@
 feature,area,priority,original,clone,notes
 실시간 필터 뷰파인더 (카메라 프리뷰에 GPU 셰이더 적용),camera,must,yes,yes,핵심 기술. 바디+렌즈+필름 조합이 프리뷰에 바로 보여야 함 / 빌드: CameraEffect + GL 셰이더. 기기 미검증
 셔터 버튼으로 사진 촬영,camera,must,yes,yes,
-필름 선택 (필름 선반 목록에서 탭하면 바로 미리보기),film,must,yes,yes,초기 출시는 필름 20~30종이면 충분. 원본은 100종 / 빌드: 6종 (Warm/Harbor/Peach/Honey/Dusk/Silver)
+필름 선택 (필름 선반 목록에서 탭하면 바로 미리보기),film,must,yes,yes,"초기 출시는 필름 20~30종이면 충분. 원본은 100종 / 빌드: 30종 (따뜻함 7, 차가움 6, 파스텔 6, 흑백 5, 특수 6)"
 바디 선택 (색감/비네팅/프레임에 영향),gear,must,yes,yes,빌드: 3종: 비네팅/색온도
 렌즈 선택 (화각/왜곡/블러/색수차에 영향),gear,must,yes,yes,빌드: 3종: 줌 배율 + 왜곡
-필름 효과: 그레인 / 빛샘 / 비네팅 / 날짜 스탬프,film,must,yes,partial,LUT + 노이즈 텍스처 + 오버레이 레이어로 구현 / 빌드: LUT·그레인·빛샘·비네팅 완료. 날짜 스탬프 미구현
+필름 효과: 그레인 / 빛샘 / 비네팅 / 날짜 스탬프,film,must,yes,yes,LUT + 노이즈 텍스처 + 오버레이 레이어로 구현 / 빌드: LUT·그레인·빛샘·비네팅·날짜 각인 (각인은 기기 미검증)
 36컷 롤 + 남은 컷 카운터,roll,must,yes,yes,
 롤을 다 쓰면 새 롤 자동 장착,roll,must,yes,yes,빌드: S06 오버레이 포함
-현상 대기 (찍은 직후에는 결과를 볼 수 없음),roll,should,yes,no,원본은 대기 시간을 조정 중. 켜고 끌 수 있게 만들기 / 빌드: 현재는 즉시 현상. WorkManager 지연은 다음 단계
+현상 대기 (찍은 직후에는 결과를 볼 수 없음),roll,skip,yes,skip,원본은 대기 시간을 조정 중. 켜고 끌 수 있게 만들기 / 빌드: 사용자 결정으로 제외: 찍자마자 현상
 갤러리 (롤별로 묶어서 보기),gallery,must,yes,yes,
 갤러리에서 핀치/더블탭 확대,gallery,should,yes,yes,
 사진 삭제,gallery,must,yes,yes,빌드: 다중 선택 포함
@@ -16,20 +16,20 @@ feature,area,priority,original,clone,notes
 노출 보정 다이얼,camera,should,yes,yes,리뷰에서 칭찬받는 기능 / 빌드: 셰이더에서 적용 (미리보기=결과)
 전면/후면 카메라 전환,camera,must,yes,yes,
 플래시,camera,should,yes,yes,빌드: 끔/자동/켬
-셀프 타이머 (3초/10초),settings,should,yes,no,
+셀프 타이머 (3초/10초),settings,should,yes,yes,"빌드: 셔터 링에 카운트다운, 다시 누르면 취소"
 볼륨 버튼으로 셔터,settings,should,yes,yes,빌드: 카메라 화면에서만
-셔터 소리 켜기/끄기,settings,should,yes,no,국가에 따라 소리를 강제하는 기기가 있음
-고해상도 촬영 옵션,settings,could,yes,no,
-위치 태그 (선택),settings,could,yes,no,
+셔터 소리 켜기/끄기,settings,should,yes,yes,국가에 따라 소리를 강제하는 기기가 있음 / 빌드: MediaActionSound. 강제 기기(API 33+)는 토글 비활성
+고해상도 촬영 옵션,settings,could,yes,yes,빌드: 긴 변 3264 → 4096px
+위치 태그 (선택),settings,could,yes,yes,빌드: 마지막 알려진 위치 → EXIF. 켤 때만 권한 요청
 쉬면 뷰파인더 절전 (발열/배터리),camera,must,yes,yes,"원본 리뷰 불만 1위. 처음부터 최적화하는 게 차별점 / 빌드: 60초 어둡게+렌더 중지, 120초 카메라 해제. 화질 자동 저하 없음"
 사진 접근 권한이 꺼졌을 때 안내 + 설정 바로가기,onboarding,must,yes,skip,빌드: API 29+ MediaStore 저장은 권한 불필요
 무비 모드 (Super8 / VHS / 캠코더 느낌),movie,could,yes,no,범위가 크고 난이도가 높으니 v2에서
 매일 무료 캡슐 뽑기로 필름 해금,monetization,skip,yes,skip,개인 사용용이라 과금 없음. 모든 필름 기본 해금
 유료 필름 팩 / 인앱 구매,monetization,skip,yes,skip,개인 사용용이라 과금 없음. 모든 필름 기본 해금
 그리드 표시,camera,should,no,yes,원본에 없어서 리뷰에서 요청됨. 차별점
-기존 사진 불러와서 필름 효과 적용,edit,should,no,no,원본에 없어서 리뷰에서 요청됨. 차별점
+기존 사진 불러와서 필름 효과 적용,edit,should,no,yes,원본에 없어서 리뷰에서 요청됨. 차별점 / 빌드: 갤러리 상단 버튼 → 사진 선택기 → 지금 필름으로 렌더 → 사진첩에 새 파일
 가로로 찍은 사진을 가로로 저장,camera,must,partial,yes,원본 리뷰 불만. 처음부터 제대로 만들기 / 빌드: OrientationEventListener + EXIF 회전 굽기. 기기 미검증
-잠금화면 / 빠른 설정 타일에서 실행,launch,could,no,no,리뷰에서 요청됨
+잠금화면 / 빠른 설정 타일에서 실행,launch,could,no,yes,리뷰에서 요청됨 / 빌드: 빠른 설정 타일 (잠금 상태면 잠금 해제 후 실행)
 원본 앱 이름 / 로고 / UI 그래픽 / 필름 이름,brand,skip,yes,skip,원본 회사 소유. 직접 디자인하고 직접 이름 지어야 함
 실제 필름 브랜드명 (Kodak Portra / Fuji 등),brand,skip,n/a,skip,상표권. 'Warm 400' 같은 직접 지은 이름을 쓸 것
 원본의 LUT / 필터 데이터,film,skip,yes,skip,원본 회사의 자산. 직접 색 보정해서 새로 만들기

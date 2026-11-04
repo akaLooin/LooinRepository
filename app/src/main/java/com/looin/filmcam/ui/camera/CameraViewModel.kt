@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.looin.filmcam.AppContainer
 import com.looin.filmcam.camera.CameraController
+import com.looin.filmcam.camera.LocationHelper
 import com.looin.filmcam.data.CameraPrefs
 import com.looin.filmcam.data.FlashMode
 import com.looin.filmcam.data.Photo
@@ -21,12 +22,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class CameraViewModel(private val c: AppContainer) : ViewModel() {
+class CameraViewModel(private val app: android.app.Application, private val c: AppContainer) : ViewModel() {
     val catalog = c.catalog
 
     val gear: StateFlow<Gear> = c.settings.gear.stateIn(viewModelScope, SharingStarted.Eagerly, catalog.defaultGear)
     val prefs: StateFlow<CameraPrefs> = c.settings.cameraPrefs
-        .stateIn(viewModelScope, SharingStarted.Eagerly, CameraPrefs(grid = false, flash = FlashMode.OFF))
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CameraPrefs())
     val roll: StateFlow<Roll?> = c.db.dao().observeShootingRoll().stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val lastPhoto: StateFlow<Photo?> = c.db.dao().observeLatestDeveloped().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -54,10 +55,12 @@ class CameraViewModel(private val c: AppContainer) : ViewModel() {
             try {
                 val file = c.rolls.newRawFile()
                 controller.takePicture(file)
+                val where = if (prefs.value.location) LocationHelper.lastKnown(app) else null
                 val result = c.rolls.addFrame(
                     raw = file, gear = gear.value, exposureEv = exposure.value,
                     lensFacing = if (controller.isFront) "front" else "back",
                     flash = prefs.value.flash != FlashMode.OFF && controller.hasFlash(),
+                    latitude = where?.latitude, longitude = where?.longitude,
                 )
                 c.appScope.launch {
                     runCatching { c.darkroom.develop(result.photo.id) }
@@ -95,6 +98,10 @@ class CameraViewModel(private val c: AppContainer) : ViewModel() {
     fun setBody(id: String) = viewModelScope.launch { c.settings.setBody(id) }
     fun setLens(id: String) = viewModelScope.launch { c.settings.setLens(id) }
     fun setGrid(on: Boolean) = viewModelScope.launch { c.settings.setGrid(on) }
+
+    fun cycleTimer() = viewModelScope.launch {
+        c.settings.setTimer(when (prefs.value.timer) { 0 -> 3; 3 -> 10; else -> 0 })
+    }
 
     fun cycleFlash(): Int {
         val next = when (prefs.value.flash) { FlashMode.OFF -> FlashMode.AUTO; FlashMode.AUTO -> FlashMode.ON; else -> FlashMode.OFF }
