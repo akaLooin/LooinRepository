@@ -6,6 +6,7 @@ const { chromium } = require("playwright");
   const r = {};
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.evaluate(() => localStorage.clear()); await p.reload({ waitUntil: "networkidle" });
+  await p.getByLabel("11월 3일", { exact: true }).first().click(); // seed data lives on 3 Nov
   await p.getByLabel("관리 메뉴").click();
   await p.getByText("리마인더 관리").click();
   await p.waitForTimeout(500);
@@ -31,6 +32,7 @@ const { chromium } = require("playwright");
   r.deleted = (await p.getByText("매일 21:30").count()) === 0;
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.waitForTimeout(400);
+  await p.getByLabel("11월 3일", { exact: true }).first().click();
   await p.getByText("책 30쪽 읽기").click();
   await p.waitForTimeout(400);
   await p.getByText("시간 알림").click();

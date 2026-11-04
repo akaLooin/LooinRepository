@@ -19,12 +19,11 @@ export type Prefs = {
   collapsibleCategories: boolean;
   collapsedCategoryIds: string[];
   inputAtTop: boolean;
-  hideDone: boolean; // 리스트 메뉴: hide finished to-dos on home
 };
 
 export const DEFAULT_PREFS: Prefs = {
   theme: "dark", weekStartsSunday: true, doubleTapToEdit: true, use24h: true, smallTodoText: false, smallTodoMemo: false, todoSort: "done_last", uiScale: "auto",
-  calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false, hideDone: false,
+  calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false,
 };
 
 const KEY = "todomate:prefs";

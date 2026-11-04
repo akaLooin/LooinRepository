@@ -26,6 +26,10 @@ export function seed(): DB {
   const workout = { ...todo(TODO_CAT, toDay(2026, 11, 3), "💪 운동하기: 어깨", true), routineId: WORKOUT, routineDate: toDay(2026, 11, 3) };
   todos.push(workout, todo(NORMAL_CAT, toDay(2026, 11, 3), "책 30쪽 읽기", false, "에세이 - 3장"));
 
+  // 보관함 (no date)
+  todos.push({ ...todo(NORMAL_CAT, "", "이번 달 하고 싶은 것"), date: null, memo: "[진행 중]\n앱 만들기\n\n[준비 중]\n독서 모임 찾기\n여행 계획 세우기" });
+  todos.push({ ...todo(TODO_CAT, "", "언젠가 할 일"), date: null });
+
   // Keep "today" meaningful when the app runs on another date.
   const t = today();
   if (!t.startsWith("2026-11")) todos.push(todo(TODO_CAT, t, "오늘 할 일 하나"), todo(NORMAL_CAT, addDays(t, 1), "내일 할 일 하나"));

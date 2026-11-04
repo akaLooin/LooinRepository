@@ -19,7 +19,7 @@ export type Todo = {
   id: string;
   categoryId: string;
   title: string;
-  date: Day;
+  date: Day | null; // null = 보관함 (no date yet)
   sortOrder: number;
   isDone: boolean;
   doneAt?: string;

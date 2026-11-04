@@ -39,4 +39,6 @@ Routine occurrences are not stored until the user touches one. Then they become 
 ## Size fix (after the first run on the user's phone)
 
 The user saw text and icons bigger than the original. Sizes had been measured assuming 1080px = 411dp. Their phone is narrower in dp (Samsung phones are usually 360–393dp), so everything came out 5–14% too big. The app now lays out on a 411dp canvas and scales it to the phone's real width (`app/src/theme/scale.tsx`); bottom sheets and modals scale too. 설정 → 화면 → 화면 크기 shows the phone's width and lets the user pick the factor by hand.
-| S03 home options | 2026-11-03 | done | 보관함 chip | Calendar filter (▼), 리스트 메뉴 (our contents: hide done, collapse, sort, links — the original's menu is unseen), input at top, collapse, calendar category count. e2e/home-options.js |
+| S03 home options | 2026-11-03 | done | — | Calendar filter (▼), 리스트 메뉴 (our contents: hide done, collapse, sort, links — the original's menu is unseen), input at top, collapse, calendar category count. e2e/home-options.js |
+| S23 보관함 | 2026-11-04 | done | — | To-dos without a date (todos.date nullable: migration 0003). Box button and a left-to-right swipe under the calendar open it; swipe back closes. Its to-do menu: memo text, 오늘하기, 날짜 바꾸기, 정보 보기 (from the user's screenshot) |
+| 리스트 메뉴 | 2026-11-04 | done | — | Rebuilt from the user's screenshot: pick one action, then 확인. "할 일 선택" opens our selection bar (내일 하기 / 보관함 / 삭제 / 취소); "모든 할 일 복사" copies to a picked day (guess). e2e/inbox-listmenu.js |

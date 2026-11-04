@@ -33,7 +33,7 @@ export function TodoInfoScreen() {
       </View>
     );
   }
-  const { y, m, d } = parseDay(todo.date);
+  const dateLabel = todo.date ? (() => { const { y, m, d } = parseDay(todo.date); return `${y}년 ${m}월 ${d}일 ${WD[weekday(todo.date)]}요일`; })() : "보관함";
   const seconds = timerTotal(todo);
   return (
     <View style={{ flex: 1, backgroundColor: c.surfaceRaised, paddingTop: insets.top }}>
@@ -47,7 +47,7 @@ export function TodoInfoScreen() {
           <View style={{ gap: 2 }}>
             <AppText variant="bodyLg" weight={700}>{profile.nickname || "나"}</AppText>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <AppText variant="body">{`${y}년 ${m}월 ${d}일 ${WD[weekday(todo.date)]}요일`}</AppText>
+              <AppText variant="body">{dateLabel}</AppText>
               <VisibilityIcon value={cat.visibility} color={c.textMuted} size={16} />
               <AppText variant="body" color="textMuted">{VISIBILITY_LABEL[cat.visibility]}</AppText>
             </View>

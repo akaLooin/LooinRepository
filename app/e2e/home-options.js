@@ -17,21 +17,12 @@ const out = process.argv[2] || ".";
   await p.getByRole("button", { name: "확인" }).click();
   await p.waitForTimeout(400);
   r.nov4OnlyToDo = (await cell(4).innerText()).split("\n")[0]; // To Do share only
-  // list menu: hide done
-  await p.getByRole("button", { name: "리스트 메뉴" }).click();
-  await p.waitForTimeout(400);
-  await p.screenshot({ path: `${out}/home-listmenu.png` });
-  await p.getByRole("switch", { name: "완료한 할 일 숨기기" }).click();
-  await p.mouse.click(200, 40);
-  await p.waitForTimeout(300);
-  r.doneHidden = (await p.getByText("💪 운동하기: 어깨").count()) === 0;
-  // collapse
-  await p.getByRole("button", { name: "리스트 메뉴" }).click();
-  await p.waitForTimeout(300);
-  await p.getByRole("switch", { name: "완료한 할 일 숨기기" }).click();
+  // collapse (설정 → 화면 → 카테고리 접기 펼치기)
+  await p.goto("http://localhost:8765/settings/display", { waitUntil: "networkidle" });
   await p.getByRole("switch", { name: "카테고리 접기 펼치기" }).click();
-  await p.mouse.click(200, 40);
-  await p.waitForTimeout(300);
+  await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
+  await p.waitForTimeout(400);
+  await p.getByLabel("11월 3일", { exact: true }).first().click();
   await p.getByRole("button", { name: "Normal", exact: true }).click();
   await p.waitForTimeout(300);
   r.collapsed = (await p.getByText(/접힘 · 할 일/).count()) === 1 && (await p.getByText("책 30쪽 읽기").count()) === 0;
@@ -43,6 +34,7 @@ const out = process.argv[2] || ".";
   await p.getByRole("switch", { name: "할 일을 상단에서 입력" }).click();
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.waitForTimeout(400);
+  await p.getByLabel("11월 3일", { exact: true }).first().click();
   await p.getByLabel("To Do에 할 일 추가").click();
   await p.waitForTimeout(300);
   const inputY = (await p.getByLabel("할 일 입력").boundingBox()).y;

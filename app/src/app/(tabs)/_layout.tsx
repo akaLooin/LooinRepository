@@ -10,12 +10,12 @@ export default function TabsLayout() {
   const { c } = useTheme();
   const insets = useInsets();
   const path = usePathname();
-  const active = (Object.keys(PATHS) as Tab[]).find((k) => PATHS[k] === path) ?? "home";
+  const active = path === "/inbox" ? "home" : (Object.keys(PATHS) as Tab[]).find((k) => PATHS[k] === path) ?? "home";
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flex: 1 }}><Slot /></View>
       <View style={{ paddingBottom: insets.bottom, backgroundColor: c.bg }}>
-        <BottomNav active={active} onChange={(t) => t !== active && router.replace(PATHS[t] as never)} />
+        <BottomNav active={active} onChange={(t) => path !== PATHS[t] && router.replace(PATHS[t] as never)} />
       </View>
     </View>
   );

@@ -3,10 +3,10 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Archive, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users,
+  AppText, Archive, BottomSheet, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, ddayLabel, EndedCategoryError, manualRoutinesOn, materialize, reorderTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, reorderTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
@@ -16,7 +16,10 @@ import { dayState } from "./dayState";
 import { HomeMenu, MenuButton } from "./HomeMenu";
 import { InlineTodoInput } from "./InlineTodoInput";
 import { PendingRoutineRow } from "./PendingRoutineRow";
-import { CalendarFilterSheet, ListMenuSheet } from "./HomeSheets";
+import { CalendarFilterSheet, ListMenuSheet, type ListAction } from "./HomeSheets";
+import { DatePickSheet } from "./TodoSheets";
+import { SelectionBar } from "./SelectionBar";
+import { useSwipeRight } from "./useSwipeRight";
 import { setPref } from "../../data/prefs";
 import { TodoSheets } from "./TodoSheets";
 
@@ -46,7 +49,9 @@ export function HomeScreen() {
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [homeSheet, setHomeSheet] = useState<null | "filter" | "list">(null);
+  const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
+  const [selecting, setSelecting] = useState<Set<string> | null>(null);
+  const swipe = useSwipeRight(() => router.push("/inbox" as never));
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
@@ -76,6 +81,18 @@ export function HomeScreen() {
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
   const shown = categories.filter((cat) => !cat.endedAt || dayTodos.some((t) => t.categoryId === cat.id));
 
+  const undoneIds = () => dayTodos.filter((t) => !t.isDone).map((t) => t.id);
+  const allIds = () => dayTodos.map((t) => t.id);
+  const runListAction = (a: ListAction) => {
+    setHomeSheet(null);
+    if (a === "tomorrow") { const ids = undoneIds(); moveTodos(ids, addDays(selected, 1)); notice(ids.length ? `미완료 ${ids.length}개를 내일로 옮겼어요` : "미완료 할 일이 없어요"); }
+    if (a === "otherDay") setHomeSheet("pickMove");
+    if (a === "copyAll") setHomeSheet("pickCopy");
+    if (a === "deleteAll") setHomeSheet("confirmDelete");
+    if (a === "select") setSelecting(new Set());
+  };
+  const toggleSelect = (id: string) => setSelecting((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+
   const onAdd = (categoryId: string, title: string) => {
     try {
       addTodo(categoryId, selected, title);
@@ -93,7 +110,7 @@ export function HomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}>
-          <IconChip label="보관함" onPress={() => notice("보관함은 나중에 만들어요")}><Archive size={22} color={c.text} /></IconChip>
+          <IconChip label="보관함" onPress={() => router.push("/inbox" as never)}><Archive size={22} color={c.text} /></IconChip>
           <Chip label={profile.nickname} selected />
           <IconChip label="친구" onPress={() => notice("친구 기능은 2단계에서 만들어요")}><Users size={22} color={c.text} /></IconChip>
         </ScrollView>
@@ -130,7 +147,7 @@ export function HomeScreen() {
           />
         </View>
 
-        <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12 }}>
+        <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12 }} {...swipe}>
           {selected !== now ? (
             <AppText variant="helper" color="textMuted">{`${parseDay(selected).m}월 ${parseDay(selected).d}일 ${"일월화수목금토"[weekday(selected)]}요일`}</AppText>
           ) : null}
@@ -141,7 +158,7 @@ export function HomeScreen() {
             </Pressable>
           ) : null}
           {shown.map((cat) => {
-            const items = dayTodos.filter((t) => t.categoryId === cat.id && !(prefs.hideDone && t.isDone));
+            const items = dayTodos.filter((t) => t.categoryId === cat.id);
             const collapsed = prefs.collapsibleCategories && prefs.collapsedCategoryIds.includes(cat.id);
             const addInput = adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} /> : null;
             return (
@@ -176,8 +193,9 @@ export function HomeScreen() {
                           memo={t.memo}
                           done={t.isDone}
                           color={cat.color}
-                          onToggle={() => toggleTodo(t.id)}
-                          onPress={() => setSheetTodo(materialize(t.id))}
+                          onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
+                          onPress={() => (selecting ? toggleSelect(t.id) : setSheetTodo(materialize(t.id)))}
+                          selected={selecting?.has(t.id)}
                           onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
                           small={prefs.smallTodoText}
                           smallMemo={prefs.smallTodoMemo}
@@ -212,7 +230,36 @@ export function HomeScreen() {
 
       <HomeMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       {homeSheet === "filter" ? <CalendarFilterSheet open onClose={() => setHomeSheet(null)} categories={categories} /> : null}
-      <ListMenuSheet open={homeSheet === "list"} onClose={() => setHomeSheet(null)} />
+      <ListMenuSheet open={homeSheet === "list"} onClose={() => setHomeSheet(null)} onConfirm={runListAction} />
+      {homeSheet === "pickMove" || homeSheet === "pickCopy" ? (
+        <DatePickSheet
+          title={homeSheet === "pickMove" ? "미완료 할 일 다른 날 하기" : "모든 할 일 복사"}
+          initial={addDays(selected, 1)}
+          onClose={() => setHomeSheet(null)}
+          onPick={(day) => {
+            const ids = homeSheet === "pickMove" ? undoneIds() : allIds();
+            if (homeSheet === "pickMove") moveTodos(ids, day); else copyTodos(ids, day);
+            setHomeSheet(null);
+            notice(`${ids.length}개를 ${parseDay(day).m}월 ${parseDay(day).d}일에 ${homeSheet === "pickMove" ? "옮겼어요" : "복사했어요"}`);
+          }}
+        />
+      ) : null}
+      <BottomSheet visible={homeSheet === "confirmDelete"} onClose={() => setHomeSheet(null)} title="모든 할 일 삭제">
+        <AppText variant="body" color="textSecondary" center style={{ marginBottom: 20 }}>{`${parseDay(selected).m}월 ${parseDay(selected).d}일의 할 일 ${dayTodos.length}개를 모두 지울까요?`}</AppText>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Button kind="plain" flex label="취소" onPress={() => setHomeSheet(null)} />
+          <Button kind="danger" flex label="삭제" onPress={() => { const n = dayTodos.length; deleteTodos(allIds()); setHomeSheet(null); notice(`${n}개를 지웠어요`); }} />
+        </View>
+      </BottomSheet>
+      {selecting ? (
+        <SelectionBar
+          count={selecting.size}
+          onCancel={() => setSelecting(null)}
+          onTomorrow={() => { moveTodos([...selecting], addDays(selected, 1)); notice(`${selecting.size}개를 내일로 옮겼어요`); setSelecting(null); }}
+          onInbox={() => { moveTodos([...selecting], null); notice(`${selecting.size}개를 보관함으로 옮겼어요`); setSelecting(null); }}
+          onDelete={() => { deleteTodos([...selecting]); notice(`${selecting.size}개를 지웠어요`); setSelecting(null); }}
+        />
+      ) : null}
       <TodoSheets todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
       {toast}
     </View>

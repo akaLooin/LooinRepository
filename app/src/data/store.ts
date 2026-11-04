@@ -217,7 +217,7 @@ export function reorderTodos(ids: string[]) {
 // ── to-dos ─────────────────────────────────────────────────
 export class EndedCategoryError extends Error {}
 
-export function addTodo(categoryId: string, date: Day, title: string) {
+export function addTodo(categoryId: string, date: Day | null, title: string) {
   const cat = db.categories.find((c) => c.id === categoryId);
   if (cat?.endedAt) throw new EndedCategoryError("종료한 카테고리에는 할 일을 추가할 수 없어요.");
   const same = db.todos.filter((t) => t.categoryId === categoryId && t.date === date);
@@ -336,8 +336,34 @@ export function resetTimer(id: string) {
 export const copyTodoTomorrow = (id: string) => {
   id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
-  if (t) copyTodo(id, addDays(t.date, 1));
+  if (t) copyTodo(id, addDays(t.date ?? today(), 1));
 };
+
+// ── many at once (리스트 메뉴, 할 일 선택) ─────────────────
+/** 보관함: to-dos without a date. */
+export const selectInbox = (d: DB) => d.todos.filter((t) => t.date === null && !t.isSkipped);
+
+/** Moves to-dos to a day (null = 보관함). Routine occurrences become real rows first. */
+export function moveTodos(ids: string[], date: Day | null) {
+  const real = new Set(ids.map((id) => materialize(id)));
+  let order = nextOrder(db.todos.filter((x) => x.date === date));
+  set({ ...db, todos: db.todos.map((t) => (real.has(t.id) ? { ...t, date, sortOrder: order++ } : t)) });
+}
+
+/** Fresh, unchecked copies on another day. */
+export function copyTodos(ids: string[], date: Day) {
+  const real = ids.map((id) => materialize(id));
+  let order = nextOrder(db.todos.filter((x) => x.date === date));
+  const copies: Todo[] = db.todos.filter((t) => real.includes(t.id)).map((t) => ({
+    ...t, id: newId(), date, isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined, photoUri: undefined,
+    routineId: undefined, routineDate: undefined, isSkipped: undefined, sortOrder: order++, createdAt: now(),
+  }));
+  set({ ...db, todos: [...db.todos, ...copies] });
+}
+
+export function deleteTodos(ids: string[]) {
+  for (const id of ids) deleteTodo(materialize(id));
+}
 
 // ── d-days ─────────────────────────────────────────────────
 export { ddayLabel, nextOccurrence } from "./dday";
@@ -390,7 +416,7 @@ export function setTodoAlarm(id: string, timeOfDay: string | null) {
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   if (!timeOfDay) return updateTodo(id, { remindAt: undefined });
-  const [y, m, d] = t.date.split("-").map(Number);
+  const [y, m, d] = (t.date ?? today()).split("-").map(Number);
   const [hh, mm] = timeOfDay.split(":").map(Number);
   updateTodo(id, { remindAt: new Date(y, m - 1, d, hh, mm).toISOString() });
 }

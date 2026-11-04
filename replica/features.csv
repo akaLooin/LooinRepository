@@ -59,6 +59,8 @@ AI 할 일 추천,ai,could,yes,no,나중
 내 스티커,diary,could,yes,no,
 언어 선택과 폰트 선택,settings,could,yes,no,
 일부 공개 대상 고르기,privacy,could,yes,no,2단계
+"보관함 (날짜 없는 할 일, 버튼과 스와이프로 이동)",todos,must,yes,yes,이용자 스크린샷으로 확인 / 클론: S23. 서버는 migration 0003 필요
+"리스트 메뉴 일괄 작업 (미완료 내일·다른 날, 할 일 선택, 모두 복사, 모두 삭제)",todos,should,yes,yes,"이용자 스크린샷으로 확인 / 클론: 할 일 선택 후 동작 막대는 우리 방식, 모두 복사는 다른 날로 복사(추정)"
 원본의 기존 사용자와 친구 관계,social,skip,yes,skip,원본의 사용자 관계망은 가져올 수 없음
 원본 이름 로고 아이콘 일러스트,brand,skip,yes,skip,replica-brand에서 새로 만듦
 원본 AI 모델과 프롬프트,ai,skip,yes,skip,원본의 비공개 부분. 기능만 새로 설계

@@ -6,6 +6,7 @@ const { chromium } = require("playwright");
   const r = {};
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.evaluate(() => localStorage.clear()); await p.reload({ waitUntil: "networkidle" });
+  await p.getByLabel("11월 3일", { exact: true }).first().click(); // seed data lives on 3 Nov
   await p.getByText("책 30쪽 읽기").click();
   await p.waitForTimeout(500);
   await p.getByText("타이머 열기").click();

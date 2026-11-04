@@ -1,8 +1,7 @@
-import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, Clover, RadioCheck, RadioList, SettingsRow, Toggle, TextAlignStart } from "../../components";
-import { setPref, usePrefs, type Prefs } from "../../data/prefs";
+import { AppText, ArrowRight, BottomSheet, Button, Clover, Copy, List, RadioCheck, Redo2, X } from "../../components";
+import { setPref, usePrefs } from "../../data/prefs";
 import type { Category } from "../../data/store";
 import { useTheme } from "../../theme";
 
@@ -36,28 +35,38 @@ export function CalendarFilterSheet({ open, onClose, categories }: { open: boole
   );
 }
 
-const SORT: Record<Prefs["todoSort"], string> = { done_last: "완료 여부 순", manual: "추가한 순" };
+export type ListAction = "tomorrow" | "otherDay" | "select" | "copyAll" | "deleteAll";
 
-/** 리스트 메뉴 (bottom of home). The original's contents are not in the reference shots; these are our list options. */
-export function ListMenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+const LIST_ACTIONS: { key: ListAction; label: string; color: "menuSoft" | "menuEdit" | "menuDelete"; Icon: typeof ArrowRight; danger?: boolean }[] = [
+  { key: "tomorrow", label: "미완료 할 일 내일 하기", color: "menuSoft", Icon: ArrowRight },
+  { key: "otherDay", label: "미완료 할 일 다른 날 하기", color: "menuSoft", Icon: Redo2 },
+  { key: "select", label: "할 일 선택", color: "menuSoft", Icon: List },
+  { key: "copyAll", label: "모든 할 일 복사", color: "menuEdit", Icon: Copy },
+  { key: "deleteAll", label: "모든 할 일 삭제", color: "menuDelete", Icon: X, danger: true },
+];
+
+/** 리스트 메뉴 (S03 bottom): pick one action for the selected day, then 확인. Matches the reference screenshot. */
+export function ListMenuSheet({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: (a: ListAction) => void }) {
   const { c } = useTheme();
-  const prefs = usePrefs();
-  const go = (href: string) => () => { onClose(); router.push(href as never); };
+  const [picked, setPicked] = useState<ListAction | null>(null);
+  const close = () => { setPicked(null); onClose(); };
   return (
-    <BottomSheet visible={open} onClose={onClose} title="리스트 메뉴">
-      <View style={{ flexDirection: "row", alignItems: "center", height: 54 }}>
-        <AppText variant="bodyLg" style={{ flex: 1 }}>완료한 할 일 숨기기</AppText>
-        <Toggle value={prefs.hideDone} onChange={(v) => setPref("hideDone", v)} label="완료한 할 일 숨기기" />
+    <BottomSheet visible={open} onClose={close} title="리스트 메뉴">
+      <View accessibilityRole="radiogroup">
+        {LIST_ACTIONS.map(({ key, label, color, Icon, danger }) => (
+          <Pressable key={key} onPress={() => setPicked(key)} accessibilityRole="radio" accessibilityState={{ checked: picked === key }}
+            style={{ flexDirection: "row", alignItems: "center", height: 59, gap: 14 }}>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c[color], alignItems: "center", justifyContent: "center" }}>
+              <Icon size={18} color={c.onIcon} strokeWidth={2.6} />
+            </View>
+            <AppText variant="bodyLg" color={danger ? "danger" : "text"} style={{ flex: 1 }}>{label}</AppText>
+            <RadioCheck selected={picked === key} />
+          </Pressable>
+        ))}
       </View>
-      <View style={{ flexDirection: "row", alignItems: "center", height: 54 }}>
-        <AppText variant="bodyLg" style={{ flex: 1 }}>카테고리 접기 펼치기</AppText>
-        <Toggle value={prefs.collapsibleCategories} onChange={(v) => setPref("collapsibleCategories", v)} label="카테고리 접기 펼치기" />
-      </View>
-      <AppText variant="helper" color="textMuted" weight={600} style={{ marginTop: 12, marginBottom: 8 }}>할 일 정렬</AppText>
-      <RadioList value={prefs.todoSort} onChange={(v) => setPref("todoSort", v)} options={(Object.keys(SORT) as Prefs["todoSort"][]).map((v) => ({ value: v, label: SORT[v] }))} />
-      <View style={{ marginTop: 12 }}>
-        <SettingsRow title="카테고리 관리" icon={<TextAlignStart size={22} color={c.text} />} onPress={go("/categories")} />
-        <SettingsRow title="루틴 관리" icon={<TextAlignStart size={22} color={c.text} />} onPress={go("/routines")} />
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 18 }}>
+        <Button kind="sheetBlock" flex label="취소" onPress={close} />
+        <Button kind="sheetBlock" flex label="확인" disabled={!picked} onPress={() => { const p = picked; setPicked(null); if (p) onConfirm(p); }} />
       </View>
     </BottomSheet>
   );

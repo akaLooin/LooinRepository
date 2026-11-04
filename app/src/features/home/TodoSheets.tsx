@@ -3,17 +3,18 @@ import { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import {
   AppText, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
-  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton,
+  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown,
 } from "../../components";
 import { ensurePermission } from "../../data/notifications";
 import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, setTodoAlarm, updateTodo, useDB, type Todo } from "../../data/store";
-import { parseDay, type Day } from "../../lib/dates";
-import { useTheme } from "../../theme";
+import { parseDay, today, type Day } from "../../lib/dates";
+import { tokens, useTheme } from "../../theme";
 
 type Mode = { kind: "menu" } | { kind: "memo" } | { kind: "alarm" } | { kind: "date"; action: "copy" | "move" } | { kind: "closed" };
 
 /** S05 to-do menu, plus the memo sheet (S05a) and the date picker it opens. */
-export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string | null; onClose: () => void; onEdit: (id: string) => void; notice: (msg: string) => void }) {
+/** `inbox`: the 보관함 version of the menu (메모 with its text, 오늘하기, 날짜 바꾸기, 정보 보기), as in the reference. */
+export function TodoSheets({ todoId, onClose, onEdit, notice, inbox }: { todoId: string | null; onClose: () => void; onEdit: (id: string) => void; notice: (msg: string) => void; inbox?: boolean }) {
   const { c } = useTheme();
   const todo = useDB((d) => d.todos.find((t) => t.id === todoId));
   const [mode, setMode] = useState<Mode>({ kind: "closed" });
@@ -33,6 +34,19 @@ export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string
           <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
         </View>
         <SheetMenuRow title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
+        {inbox && todo.memo ? (
+          <View style={{ backgroundColor: c.surfaceInput, borderRadius: tokens.radius.lg, padding: 18, marginBottom: 6 }}>
+            <AppText variant="bodyLg">{todo.memo}</AppText>
+          </View>
+        ) : null}
+        {inbox ? (
+          <>
+            <SheetMenuRow title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, today()); close(); notice("오늘 할 일로 옮겼어요"); }} />
+            <SheetMenuRow title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
+            <SheetMenuRow title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
+          </>
+        ) : (
+        <>
         <SheetMenuRow title={todo.remindAt ? `시간 알림 · ${alarmLabel(todo.remindAt)}` : "시간 알림"} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
         <SheetMenuRow title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
         <SheetMenuRow title="사진 인증" color="menuPhoto" icon={icon(Image)} onPress={() => { close(); notice("사진 인증은 다음 단계에서 만들어요"); }} />
@@ -40,6 +54,8 @@ export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string
         <SheetMenuRow title="다른 날 또 하기" color="menuRepeat" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "copy" })} />
         <SheetMenuRow title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
         <SheetMenuRow title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
+        </>
+        )}
       </BottomSheet>
 
       {mode.kind === "memo" ? <MemoSheet todo={todo} onClose={close} /> : null}
@@ -47,7 +63,7 @@ export function TodoSheets({ todoId, onClose, onEdit, notice }: { todoId: string
       {mode.kind === "date" ? (
         <DatePickSheet
           title={mode.action === "copy" ? "다른 날 또 하기" : "날짜 바꾸기"}
-          initial={todo.date}
+          initial={todo.date ?? today()}
           onClose={close}
           onPick={(day) => {
             if (mode.action === "copy") copyTodo(todo.id, day);

@@ -39,7 +39,8 @@
     "menu-move": "#666cf0",
     "play": "#0078fc",
     "menu-info": "#c8c8cc",
-    "on-icon": "#ffffff"
+    "on-icon": "#ffffff",
+    "menu-soft": "#9da3dd"
   },
   "_original": {
     "clover-number": "#ffffff (흰 숫자, 대비 1.4:1)",
