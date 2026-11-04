@@ -1,0 +1,40 @@
+/* tokens.json에서 생성. preview.html 전용 (앱은 DesignTokens.kt를 씀) */
+:root{
+  --c-bg:#0E0D0C;
+  --c-surface:#1A1816;
+  --c-surface-raised:#26231F;
+  --c-border:#38332D;
+  --c-border-input:#7D756A;
+  --c-text:#F2EBDF;
+  --c-text-muted:#A89F92;
+  --c-accent:#FF8A3D;
+  --c-on-accent:#1A0E05;
+  --c-danger:#FF6B5E;
+  --c-success:#6FCF8E;
+  --c-warning:#F2C14E;
+  --c-viewfinder-frame:#000000;
+  --c-on-viewfinder:#F2EBDF;
+  --s-0:0px;
+  --s-1:4px;
+  --s-2:8px;
+  --s-3:12px;
+  --s-4:16px;
+  --s-5:24px;
+  --s-6:32px;
+  --s-7:48px;
+  --s-8:64px;
+  --r-sm:6px;
+  --r-md:12px;
+  --r-lg:20px;
+  --r-pill:999px;
+  --z-touch-min:48px;
+  --z-shutter:76px;
+  --z-shutter-ring:4px;
+  --z-icon:24px;
+  --z-top-bar:56px;
+  --z-control-deck:196px;
+  --m-fast:120ms;
+  --m-base:220ms;
+  --m-advance:480ms;
+  --m-ease:cubic-bezier(.2,.8,.2,1);
+}

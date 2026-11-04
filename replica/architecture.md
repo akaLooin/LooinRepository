@@ -18,7 +18,7 @@
 | 이미지 로딩 | Coil | 갤러리 썸네일 |
 | DI | 수동 (Application의 `AppContainer`) | 화면 10개 남짓이라 Hilt는 과함 |
 | 빌드 / 배포 | Gradle (AGP) + GitHub Actions에서 debug/release APK 빌드 → 폰에 직접 설치 | 스토어가 없으니 서명한 APK를 받아서 설치하면 끝 |
-| minSdk / target | minSdk 29 (Android 10), target 최신 | 29부터 발열 상태 API(`PowerManager.addThermalStatusListener`)를 쓸 수 있음. 개인 폰이면 문제없음 |
+| minSdk / target | minSdk 29 (Android 10), target 최신 | MediaStore에 권한 없이 저장할 수 있고 Photo Picker를 쓸 수 있음. 개인 폰이면 문제없음 |
 
 ## 앱 구조 (단일 모듈, 패키지로 나눔)
 
@@ -43,7 +43,7 @@ tools/
 ### 이미지 파이프라인 (핵심)
 
 ```
-CameraX Preview ──► SurfaceTexture(OES) ──► FilmRenderer ──► GLSurfaceView (720p~1080p, 30fps)
+CameraX Preview ──► SurfaceTexture(OES) ──► FilmRenderer ──► GLSurfaceView (1080p, 30fps)
                                              │  셰이더 한 패스:
                                              │  1 렌즈 왜곡 / 색수차 (lens)
                                              │  2 노출 보정 (EV)
@@ -107,7 +107,7 @@ Jobs: `DevelopWorker`. 현상 지연 설정에 따라 즉시 / 1시간 / 다음 
 
 ## The parts that bite
 
-- **발열 / 배터리 (원본 리뷰 불만 1위):** 프리뷰 해상도는 1080p 이하로, 프레임은 30fps로 제한합니다. 60초 동안 조작이 없으면 화면을 어둡게 하고 GL 렌더를 멈추고, 120초가 지나면 카메라를 unbind합니다. `ON_STOP`에서 즉시 해제하고, 발열 상태가 SEVERE 이상이면 프리뷰를 720p/24fps로 낮춥니다.
+- **발열 / 배터리 (원본 리뷰 불만 1위):** 프리뷰 해상도는 1080p 이하로, 프레임은 30fps로 제한합니다. 60초 동안 조작이 없으면 화면을 어둡게 하고 GL 렌더를 멈추고, 120초가 지나면 카메라를 unbind합니다. `ON_STOP`에서 즉시 해제합니다. **발열 상태에 따라 화질을 자동으로 낮추는 기능은 넣지 않습니다** (사용자 결정). 발열 상태는 로그만 남깁니다.
 - **미리보기와 결과가 같아야 함:** 셰이더는 하나만 두고, 그레인과 빛샘은 seed로 재현합니다. 그레인 크기는 출력 해상도에 비례하도록 정규화합니다. 안 그러면 풀해상도에서 그레인이 너무 작아집니다.
 - **방향:** `OrientationEventListener`로 `ImageCapture.targetRotation`을 갱신하고, 현상할 때 회전을 픽셀에 굽습니다. 그래야 가로 사진이 가로로 저장됩니다(원본 불만).
 - **셔터 연타 / 레이스:** 촬영 중에는 셔터를 막고, DB unique 인덱스로 한 번 더 막습니다. 마지막 컷과 롤 교체 사이에는 애니메이션을 넣어 입력을 잠급니다.
