@@ -1,0 +1,35 @@
+feature,area,priority,original,clone,notes
+실시간 필터 뷰파인더 (카메라 프리뷰에 GPU 셰이더 적용),camera,must,yes,no,핵심 기술. 바디+렌즈+필름 조합이 프리뷰에 바로 보여야 함
+셔터 버튼으로 사진 촬영,camera,must,yes,no,
+필름 선택 (필름 선반 목록에서 탭하면 바로 미리보기),film,must,yes,no,초기 출시는 필름 20~30종이면 충분. 원본은 100종
+바디 선택 (색감/비네팅/프레임에 영향),gear,must,yes,no,
+렌즈 선택 (화각/왜곡/블러/색수차에 영향),gear,must,yes,no,
+필름 효과: 그레인 / 빛샘 / 비네팅 / 날짜 스탬프,film,must,yes,no,LUT + 노이즈 텍스처 + 오버레이 레이어로 구현
+36컷 롤 + 남은 컷 카운터,roll,must,yes,no,
+롤을 다 쓰면 새 롤 자동 장착,roll,must,yes,no,
+현상 대기 (찍은 직후에는 결과를 볼 수 없음),roll,should,yes,no,원본은 대기 시간을 조정 중. 켜고 끌 수 있게 만들기
+갤러리 (롤별로 묶어서 보기),gallery,must,yes,no,
+갤러리에서 핀치/더블탭 확대,gallery,should,yes,no,
+사진 삭제,gallery,must,yes,no,
+기기 사진첩에 저장 + 공유,gallery,must,yes,no,
+탭해서 초점/노출 맞추기 + 길게 눌러 AE/AF 잠금,camera,should,yes,no,
+노출 보정 다이얼,camera,should,yes,no,리뷰에서 칭찬받는 기능
+전면/후면 카메라 전환,camera,must,yes,no,
+플래시,camera,should,yes,no,
+셀프 타이머 (3초/10초),settings,should,yes,no,
+볼륨 버튼으로 셔터,settings,should,yes,no,
+셔터 소리 켜기/끄기,settings,should,yes,no,국가에 따라 소리를 강제하는 기기가 있음
+고해상도 촬영 옵션,settings,could,yes,no,
+위치 태그 (선택),settings,could,yes,no,
+쉬면 뷰파인더 절전 (발열/배터리),camera,must,yes,no,원본 리뷰 불만 1위. 처음부터 최적화하는 게 차별점
+사진 접근 권한이 꺼졌을 때 안내 + 설정 바로가기,onboarding,must,yes,no,
+무비 모드 (Super8 / VHS / 캠코더 느낌),movie,could,yes,no,범위가 크고 난이도가 높으니 v2에서
+매일 무료 캡슐 뽑기로 필름 해금,monetization,could,yes,no,안드로이드판에만 있음
+유료 필름 팩 / 인앱 구매,monetization,should,yes,no,Play Billing
+그리드 표시,camera,should,no,no,원본에 없어서 리뷰에서 요청됨. 차별점
+기존 사진 불러와서 필름 효과 적용,edit,should,no,no,원본에 없어서 리뷰에서 요청됨. 차별점
+가로로 찍은 사진을 가로로 저장,camera,must,partial,no,원본 리뷰 불만. 처음부터 제대로 만들기
+잠금화면 / 빠른 설정 타일에서 실행,launch,could,no,no,리뷰에서 요청됨
+원본 앱 이름 / 로고 / UI 그래픽 / 필름 이름,brand,skip,yes,skip,원본 회사 소유. 직접 디자인하고 직접 이름 지어야 함
+실제 필름 브랜드명 (Kodak Portra / Fuji 등),brand,skip,n/a,skip,상표권. 'Warm 400' 같은 직접 지은 이름을 쓸 것
+원본의 LUT / 필터 데이터,film,skip,yes,skip,원본 회사의 자산. 직접 색 보정해서 새로 만들기
