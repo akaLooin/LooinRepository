@@ -32,7 +32,7 @@ feature,area,priority,original,clone,notes
 시간 선택 바텀 시트 (시 0~23 분 5분 단위),components,must,yes,yes,1단계. 루틴과 리마인더에서 같이 씀 / 클론: S07d
 할 일 타이머와 시간 기록,timer,should,yes,yes,1단계. S05 타이머 열기 / 클론: S08. 앱을 꺼도 기록 유지
 홈 화면 위젯에서 오늘 할 일 체크,widget,should,yes,no,1단계. 안드로이드 Glance 위젯
-설정 → 화면 항목들 (주 시작 요일 24시간제 정렬 작게 보기 등),settings,should,yes,partial,"1단계 / 클론: 10개 동작(상단 입력·접기·캘린더 카테고리 수 추가), 나머지 준비 중"
+설정 → 화면 항목들 (주 시작 요일 24시간제 정렬 작게 보기 등),settings,should,yes,partial,"1단계 / 클론: 10개 동작(상단 입력·접기·캘린더 카테고리 수 추가), 나머지 준비 중 / 계정 동기화(테마 등 10개)"
 다른 사용자 검색과 팔로우,social,should,yes,no,2단계
 친구 피드 (완료한 할 일과 일기),social,should,yes,no,2단계
 할 일과 일기에 이모지 반응,social,should,yes,no,2단계

@@ -24,6 +24,10 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
         return false;
       }
     },
+    async upsertSettings(row) {
+      const { error } = await sb.from("user_settings").upsert(row, { onConflict: "user_id" });
+      return !error;
+    },
     async softDelete(table, ids) {
       const { error } = await sb.from(table).update({ deleted_at: new Date().toISOString() }).in("id", ids);
       return { error: error?.message };

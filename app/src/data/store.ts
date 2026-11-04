@@ -10,6 +10,8 @@ import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
 import { isUploaded } from "../lib/photoPaths";
 import { rescheduleNotifications } from "./notifications";
+import { applyRemoteSettings, getPrefs, settingsDirty, settingsSent } from "./prefs";
+import { fromSettingsRow, toSettingsRow } from "./prefsRow";
 import { seed } from "./seed";
 import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, upgradeOutbox, type Outbox, type Remote } from "./sync";
 import type { Category, DB, DDay, Diary, Profile, Reminder, Routine, Todo, Visibility } from "./types";
@@ -98,12 +100,16 @@ export async function syncNow() {
   try {
     await uploadPendingPhotos(s.remote, s.userId);
     if (session !== s) return;
+    const pending = settingsDirty();
+    if (pending && s.remote.upsertSettings && (await s.remote.upsertSettings(toSettingsRow(getPrefs(), s.userId)))) settingsSent(pending);
     const { sent, rejected } = await push({ db, outbox, lastPulled }, s.remote, s.userId);
     if (session !== s) return; // signed out meanwhile
     outbox = settle(outbox, sent);
     const pulled = await s.remote.pull(sinceFor(lastPulled));
     if (session !== s) return;
     db = applyPull(db, outbox, pulled);
+    const remoteSettings = (pulled.tables as Record<string, Record<string, unknown>[] | undefined>).user_settings?.[0];
+    if (remoteSettings) applyRemoteSettings(fromSettingsRow(remoteSettings));
     lastPulled = pulled.serverTime;
     notify();
     persistSoon();

@@ -4,6 +4,7 @@
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSyncExternalStore } from "react";
+import { SYNCED } from "./prefsRow";
 
 export type Prefs = {
   theme: "system" | "dark" | "light";
@@ -28,22 +29,51 @@ export const DEFAULT_PREFS: Prefs = {
 
 const KEY = "todomate:prefs";
 let prefs: Prefs = DEFAULT_PREFS;
+/** Counter of unsynced changes to account-wide settings (0 = in step with the server). */
+let dirty = 0;
 const listeners = new Set<() => void>();
 
 export async function loadPrefs() {
   try {
     const raw = await AsyncStorage.getItem(KEY);
-    if (raw) prefs = { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw);
+      dirty = Number(saved.__dirty) || 0;
+      delete saved.__dirty;
+      prefs = { ...DEFAULT_PREFS, ...saved };
+    }
   } catch {
     // keep defaults
   }
   listeners.forEach((l) => l());
 }
 
+function save() {
+  listeners.forEach((l) => l());
+  AsyncStorage.setItem(KEY, JSON.stringify({ ...prefs, __dirty: dirty })).catch(() => {});
+}
+
 export function setPref<K extends keyof Prefs>(key: K, value: Prefs[K]) {
   prefs = { ...prefs, [key]: value };
-  listeners.forEach((l) => l());
-  AsyncStorage.setItem(KEY, JSON.stringify(prefs)).catch(() => {});
+  if (SYNCED.includes(key)) dirty++;
+  save();
+}
+
+export const getPrefs = () => prefs;
+export const settingsDirty = () => dirty;
+
+/** After a successful upload: clear the flag unless something changed while it was in flight. */
+export function settingsSent(counter: number) {
+  if (dirty === counter) { dirty = 0; save(); }
+}
+
+/** Settings from the server; ignored while local changes wait to be sent. */
+export function applyRemoteSettings(patch: Partial<Prefs>) {
+  if (dirty) return;
+  const next = { ...prefs, ...patch };
+  if (JSON.stringify(next) === JSON.stringify(prefs)) return;
+  prefs = next;
+  save();
 }
 
 export function usePrefs(): Prefs {

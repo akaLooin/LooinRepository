@@ -17,6 +17,8 @@ export interface Remote {
   softDelete(table: Table, ids: string[]): Promise<{ error?: string }>;
   /** Uploads a local photo to Storage; true when it worked. Optional so test servers can skip it. */
   uploadImage?(bucket: string, path: string, localUri: string): Promise<boolean>;
+  /** Upserts this user's user_settings row; true when it worked. */
+  upsertSettings?(row: Record<string, unknown>): Promise<boolean>;
 }
 
 export const emptyOutbox = (): Outbox => ({
