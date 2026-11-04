@@ -1,5 +1,12 @@
-import { useMemo, useRef, useState } from "react";
-import { Animated, PanResponder, View } from "react-native";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, PanResponder, View } from "react-native";
+import { tokens, useTheme } from "../theme";
+
+/** Measured on the original (screen recording, 30 fps): the row lifts after 0.5 s, neighbours slide in ~0.15 s. */
+const HOLD_MS = 500;
+const SLIDE_MS = 150;
+const slide = (v: Animated.Value, to: number, done?: () => void) =>
+  Animated.timing(v, { toValue: to, duration: SLIDE_MS, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(done);
 
 export type DragHandle = { onLongPress: () => void; delayLongPress: number };
 
@@ -17,10 +24,20 @@ type Props<T> = {
 
 /**
  * Hold a row, then move it up or down. Built on PanResponder (no extra library), so it works on phones and web.
+ * Like the original: the held row gets a grey band and follows the finger 1:1, the others slide out of its way,
+ * and on release it glides into its new place before the order is saved.
  * Screen readers get "위로 이동" / "아래로 이동" actions instead of dragging.
  */
 export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0 }: Props<T>) {
+  const { c } = useTheme();
   const keys = items.map(keyOf);
+  const shifts = useRef(new Map<string, Animated.Value>()).current;
+  const shiftOf = (k: string) => {
+    let v = shifts.get(k);
+    if (!v) shifts.set(k, (v = new Animated.Value(0)));
+    return v;
+  };
+  const resetAfterRender = useRef(false);
   const heights = useRef<Record<string, number>>({});
   const [active, setActive] = useState<string | null>(null);
   const [target, setTarget] = useState(0);
@@ -28,17 +45,33 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const state = useRef({ active: null as string | null, from: 0, target: 0, keys });
   state.current.keys = keys;
 
+  const rowH = (k: string) => (heights.current[k] ?? 56) + gap;
+  const clearAll = () => {
+    dy.setValue(0);
+    shifts.forEach((v) => v.setValue(0));
+  };
+
   const finish = () => {
     const { active: a, from, target: to, keys: ks } = state.current;
+    if (a === null) return;
     state.current.active = null;
-    setActive(null);
-    dy.setValue(0);
     onDragging?.(false);
-    if (a !== null && from !== to) {
-      const next = ks.filter((k) => k !== a);
-      next.splice(to, 0, a);
-      onReorder(next);
-    }
+    // glide to the slot the neighbours opened, then save the order
+    let offset = 0;
+    if (to > from) for (let i = from + 1; i <= to; i++) offset += rowH(ks[i]);
+    if (to < from) for (let i = to; i < from; i++) offset -= rowH(ks[i]);
+    slide(dy, offset, () => {
+      if (from !== to) {
+        const next = ks.filter((k) => k !== a);
+        next.splice(to, 0, a);
+        resetAfterRender.current = true; // keep the transforms until the new order is on screen
+        setActive(null);
+        onReorder(next);
+      } else {
+        clearAll();
+        setActive(null);
+      }
+    });
   };
 
   const responder = useMemo(
@@ -54,7 +87,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
           if (a === null) return;
           dy.setValue(g.dy);
           // where the held row's centre is now, measured in row heights
-          const h = (k: string) => (heights.current[k] ?? 56) + gap;
+          const h = rowH;
           let to = from;
           let moved = g.dy;
           if (moved > 0) {
@@ -91,15 +124,34 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   };
 
   const from = active ? keys.indexOf(active) : -1;
-  const activeH = active ? (heights.current[active] ?? 56) + gap : 0;
+  const activeH = active ? rowH(active) : 0;
+
+  // neighbours slide out of the way whenever the held row's place changes
+  useEffect(() => {
+    if (!active) return;
+    keys.forEach((k, i) => {
+      if (k === active) return;
+      const to = from < target && i > from && i <= target ? -activeH : from > target && i >= target && i < from ? activeH : 0;
+      slide(shiftOf(k), to);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, target]);
+
+  // after a drop the rows render in their new order; only then drop the offsets, so nothing jumps back for a frame
+  const order = keys.join();
+  useLayoutEffect(() => {
+    if (resetAfterRender.current) {
+      resetAfterRender.current = false;
+      clearAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order]);
 
   return (
     <View {...responder.panHandlers}>
       {items.map((item, i) => {
         const k = keyOf(item);
         const isActive = k === active;
-        // rows between the old and new place slide out of the way
-        const shift = active && !isActive ? (from < target && i > from && i <= target ? -activeH : from > target && i >= target && i < from ? activeH : 0) : 0;
         return (
           <Animated.View
             key={k}
@@ -110,12 +162,12 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
             style={{
               marginBottom: i < items.length - 1 ? gap : 0,
               zIndex: isActive ? 10 : 0,
-              elevation: isActive ? 6 : 0,
-              opacity: isActive ? 0.92 : 1,
-              transform: [{ translateY: isActive ? dy : shift }, { scale: isActive ? 1.02 : 1 }],
+              borderRadius: tokens.radius.sm,
+              backgroundColor: isActive ? c.surfaceRow : "transparent",
+              transform: [{ translateY: isActive ? dy : shiftOf(k) }],
             }}
           >
-            {renderItem(item, { onLongPress: () => start(k), delayLongPress: 300 }, isActive)}
+            {renderItem(item, { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}
           </Animated.View>
         );
       })}

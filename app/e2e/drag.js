@@ -6,10 +6,10 @@ async function drag(p, locator, dy) {
   const x = box.x + box.width / 2, y = box.y + box.height / 2;
   await p.mouse.move(x, y);
   await p.mouse.down();
-  await p.waitForTimeout(500); // long press
+  await p.waitForTimeout(650); // long press (0.5 s, as in the original)
   for (let i = 1; i <= 8; i++) { await p.mouse.move(x, y + (dy * i) / 8); await p.waitForTimeout(30); }
   await p.mouse.up();
-  await p.waitForTimeout(400);
+  await p.waitForTimeout(700); // 0.15 s glide into place, then the 0.3 s save delay
 }
 const order = async (p, re) => (await p.getByRole("button", { name: re }).allInnerTexts()).map((s) => s.split("\n")[0]);
 (async () => {

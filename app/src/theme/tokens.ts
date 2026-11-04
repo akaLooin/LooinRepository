@@ -176,13 +176,14 @@ export const tokens = {
     "bottomNavHeight": 64
   },
   "size": {
-    "cloverCalendar": 24,
+    "cloverCalendar": 28,
     "cloverTodo": 25,
-    "avatarProfile": 67,
+    "todayRing": 28,
+    "avatarProfile": 69,
     "avatarChip": 34,
     "chipHeight": 42,
     "categoryPillHeight": 43,
-    "pillButtonHeight": 34,
+    "pillButtonHeight": 36,
     "iconCircle": 30,
     "listRowHeight": 52,
     "fieldHeight": 52,

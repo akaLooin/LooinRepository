@@ -63,13 +63,13 @@ export function CategoryPill({ title, color, visibility, onAdd, onPress, onLongP
 }
 
 /** Outlined pill button ("주"/"월"), round icon buttons (‹ ›) and the dropdown on the calendar header. */
-export function PillButton({ label, onPress, children, round, a11y }: { label?: string; onPress?: () => void; children?: React.ReactNode; round?: boolean; a11y?: string }) {
+export function PillButton({ label, onPress, children, round, a11y, pad = 16, gap = 6 }: { label?: string; onPress?: () => void; children?: React.ReactNode; round?: boolean; a11y?: string; pad?: number; gap?: number }) {
   const { c } = useTheme();
   const h = tokens.size.pillButtonHeight;
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y ?? label}
-      style={({ pressed }) => ({ height: h, minWidth: h, paddingHorizontal: round ? 0 : 16, borderRadius: R, borderWidth: 1, borderColor: c.surfaceStrong,
-        backgroundColor: pressed ? c.surface : "transparent", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 })}>
+      style={({ pressed }) => ({ height: h, minWidth: h, paddingHorizontal: round ? 0 : pad, borderRadius: R, borderWidth: 1, borderColor: c.surfaceStrong,
+        backgroundColor: pressed ? c.surface : "transparent", flexDirection: "row", alignItems: "center", justifyContent: "center", gap })}>
       {children}
       {label ? <AppText variant="body" weight={500}>{label}</AppText> : null}
     </Pressable>

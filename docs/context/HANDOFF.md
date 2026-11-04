@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-04 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-05 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -29,14 +29,14 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - Supabase: 서울 리전 새 프로젝트, 마이그레이션 0001·0003 실행 완료(표 8개 확인, 보관함용 date nullable), `app/.env.local` 작성, 앱에서 가입·로그인 성공
 - 폰: 삼성 안드로이드, Expo Go로 실행 (PC의 `npx.cmd expo start` 필요)
 
-## 이용자가 폰에서 확인해 줘야 할 것 (아직 미확인)
-1. 글자·아이콘 크기가 원본과 맞는지 (replica-diff로 재측정해 줄였음, `replica/parity.md`) → 다르면 설정 → 화면 → 화면 크기의 dp 숫자 받기
-2. 길게 눌러 끌기 감도(지금 0.3초)
-3. 리마인더·시간 알림이 실제로 울리는지
-4. 할 일 추가 후 Supabase `todos` 표에 행이 생기는지(동기화)
-5. 사진 업로드: 사진 인증 후 Supabase Storage `todo-photos` 버킷에 파일이 생기는지, 다른 기기(웹)에서도 보이는지
-6. 시트 끌어 닫기 감도, 설정 동기화(`user_settings` 표에 행이 생기는지)
-7. 나머지 수동 점검표: `replica/test-plan.md`
+## 폰 첫 확인 결과 (2026-11-05)와 조치
+- 동기화: Supabase 표에 행 생김 ✅
+- 크기: 원본과 같은 폰 스크린샷으로 다시 맞춤(캘린더 양끝 펼침, 클로버 28 등) → 다시 확인 필요
+- 끌기: 원본 영상 분석해 0.5초 길게 누르기 + 회색 띠 + 부드럽게 비키기 → 다시 확인 필요
+- 알림: Expo Go에서 채널 오류(B7)로 권한 요청이 막혀 있었음 → 고침, 울리는지 다시 확인
+- 사진: 업로드 파일이 14바이트(B8) → expo-file-system으로 읽게 고침. 이미 올라간 사진은 다시 넣어야 함
+- 남은 확인: 시트 끌어 닫기 감도, user_settings 행, `replica/test-plan.md`의 수동 점검표
+- PC에서 `git pull` 후 **`npm.cmd install` 필요**(expo-file-system 추가)
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용

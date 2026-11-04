@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/dates";
 import { tokens, useTheme, type ColorName } from "../theme";
@@ -17,15 +18,15 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
   const { c } = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <PillButton onPress={onFilter} a11y="표시할 카테고리">
-        <View style={{ width: 26, height: 22 }}>
+      <PillButton onPress={onFilter} a11y="표시할 카테고리" pad={9} gap={8}>
+        <View style={{ width: 22, height: 22 }}>
           {filterColors.slice(0, 2).map((col, i) => (
-            <View key={i} style={{ position: "absolute", left: i * 8, top: 0 }}><Clover size={18} state={{ kind: "fill", color: col }} /></View>
+            <View key={i} style={{ position: "absolute", left: i * 4, top: i * 4 }}><Clover size={18} state={{ kind: "fill", color: col }} /></View>
           ))}
         </View>
-        <ChevronDown size={18} color={c.text} fill={c.text} />
+        <ChevronDown size={15} color={c.text} fill={c.text} />
       </PillButton>
-      <AppText variant="monthTitle" style={{ flex: 1, marginLeft: 6 }} accessibilityRole="header">{title}</AppText>
+      <AppText variant="monthTitle" style={{ flex: 1, marginLeft: 1 }} accessibilityRole="header">{title}</AppText>
       <PillButton label={mode === "month" ? "주" : "월"} onPress={onToggleMode} a11y={mode === "month" ? "주간 보기" : "월간 보기"} />
       <PillButton round onPress={onPrev} a11y="이전"><ChevronLeft size={20} color={c.text} /></PillButton>
       <PillButton round onPress={onNext} a11y="다음"><ChevronRight size={20} color={c.text} /></PillButton>
@@ -43,15 +44,21 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   const { c } = useTheme();
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
   const labels = weekdayLabels(weekStartsSunday);
+  // The original spreads the days edge to edge: the first clover touches the left margin, the last the right one.
+  // Cells stay equal (bigger tap targets), so they reach past the margins by this much on each side.
+  const [w, setW] = useState(0);
+  const k = tokens.size.cloverCalendar;
+  const bleed = picker || !w ? 0 : Math.max(0, ((w - k) / 6 - k) / 2);
+  const ringSize = tokens.size.todayRing;
   return (
-    <View>
-      <View style={{ flexDirection: "row", marginBottom: 10 }}>
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+      <View style={{ flexDirection: "row", marginBottom: picker ? 10 : 5, marginHorizontal: -bleed }}>
         {labels.map((l) => (
           <AppText key={l} variant="weekday" center color={l === "일" ? "sunday" : l === "토" ? "saturday" : "text"} style={{ flex: 1 }}>{l}</AppText>
         ))}
       </View>
       {grid.map((row, i) => (
-        <View key={i} style={{ flexDirection: "row", height: picker ? 52 : tokens.layout.calendarRowHeight }}>
+        <View key={i} style={{ flexDirection: "row", height: picker ? 52 : tokens.layout.calendarRowHeight, marginHorizontal: -bleed }}>
           {row.map((day, j) => {
             if (!day) return <View key={j} style={{ flex: 1 }} />;
             const isToday = day === today;
@@ -62,7 +69,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             return (
               <Pressable key={j} style={{ flex: 1, alignItems: "center", gap: 4 }} onPress={() => onSelect?.(day)} accessibilityRole="button" accessibilityLabel={`${month}월 ${label}일`} accessibilityState={{ selected: day === selected }}>
                 {!picker && state ? <Clover state={state(day)} /> : null}
-                <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : "transparent", borderWidth: outline ? 1.5 : 0, borderColor: c.textMuted, marginTop: picker ? 0 : -6 }}>
+                <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : "transparent", borderWidth: outline ? 1.5 : 0, borderColor: c.textMuted, marginTop: picker ? 0 : -5, transform: [{ translateY: ring && !picker ? 4 : 0 }] }}>
                   <AppText variant="date" weight={ring ? 700 : 500} color={ring ? "onSelected" : dayColor(weekday(day))}>{label}</AppText>
                 </View>
               </Pressable>

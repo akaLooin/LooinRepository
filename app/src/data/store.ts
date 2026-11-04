@@ -8,7 +8,7 @@ import * as Crypto from "expo-crypto";
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
-import { isUploaded } from "../lib/photoPaths";
+import { isUploaded, rememberLocal } from "../lib/photoPaths";
 import { rescheduleNotifications } from "./notifications";
 import { applyRemoteSettings, getPrefs, settingsDirty, settingsSent } from "./prefs";
 import { fromSettingsRow, toSettingsRow } from "./prefsRow";
@@ -366,20 +366,23 @@ async function uploadPendingPhotos(remote: Remote, userId: string) {
     const path = `${userId}/${t.id}-${stamp}.jpg`;
     if (await up("todo-photos", path, t.photoUri!)) {
       const cur = db.todos.find((x) => x.id === t.id);
+      rememberLocal(`todo-photos/${path}`, t.photoUri!);
       if (cur?.photoUri === t.photoUri) updateTodo(t.id, { photoUri: `todo-photos/${path}` });
     }
   }
   const avatar = db.profile.avatarUri;
   if (avatar && !isUploaded(avatar)) {
     const path = `${userId}/avatar-${stamp}.jpg`;
-    if (await up("avatars", path, avatar) && db.profile.avatarUri === avatar) updateProfile({ avatarUri: `avatars/${path}` });
+    if (await up("avatars", path, avatar) && db.profile.avatarUri === avatar && rememberLocal(`avatars/${path}`, avatar)) updateProfile({ avatarUri: `avatars/${path}` });
   }
   for (const d of db.diaries.filter((x) => x.imagePaths.some((u) => !isUploaded(u)))) {
     const next: string[] = [];
     for (const [i, u] of d.imagePaths.entries()) {
       if (isUploaded(u)) { next.push(u); continue; }
       const path = `${userId}/${d.id}-${stamp}-${i}.jpg`;
-      next.push((await up("diary-images", path, u)) ? `diary-images/${path}` : u);
+      const ok = await up("diary-images", path, u);
+      if (ok) rememberLocal(`diary-images/${path}`, u);
+      next.push(ok ? `diary-images/${path}` : u);
     }
     const cur = db.diaries.find((x) => x.id === d.id);
     if (cur && cur.imagePaths.join() === d.imagePaths.join()) set({ ...db, diaries: db.diaries.map((x) => (x.id === d.id ? { ...x, imagePaths: next } : x)) });

@@ -16,7 +16,7 @@ export function ProfileHeader({ name, bio, avatar, dday, onDday, onEmoji }: {
       {avatar ? <StoredImage uri={avatar} label="프로필 사진" style={{ width: a, height: a, borderRadius: a / 2 }} /> : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
       <View style={{ flex: 1, gap: 2 }}>
         <AppText variant="profileName">{name}</AppText>
-        <AppText variant="body" color="textMuted" numberOfLines={2}>{bio || "자기소개를 적어 보세요"}</AppText>
+        <AppText variant="body" color="textMuted" numberOfLines={2}>{bio || "프로필에 자기소개를 입력해보세요"}</AppText>
         {dday ? (
           <Pressable onPress={onDday} style={{ flexDirection: "row", alignItems: "center", gap: 4 }} accessibilityRole="button" accessibilityLabel={`${dday.title} ${dday.label}`}>
             <AppText variant="body" weight={700}>{dday.title} </AppText>

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Remote } from "./sync";
+import { readBytes } from "../lib/readBytes";
 
 /** The Remote the sync engine talks to: Supabase tables (RLS limits everything to the signed-in user). */
 export function supabaseRemote(sb: SupabaseClient): Remote {
@@ -16,7 +17,9 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
     },
     async uploadImage(bucket, path, localUri) {
       try {
-        const body = await (await fetch(localUri)).arrayBuffer();
+        const body = await readBytes(localUri);
+        // A real JPEG is never this small; an empty read must not replace the photo with a broken file.
+        if (body.byteLength < 1024) return false;
         if (body.byteLength > 8 * 1024 * 1024) return false; // keep within the free plan; photos are resized before this
         const { error } = await sb.storage.from(bucket).upload(path, body, { contentType: "image/jpeg", upsert: true });
         return !error;

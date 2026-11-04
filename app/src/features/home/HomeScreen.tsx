@@ -105,7 +105,7 @@ export function HomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <View style={{ height: 56, alignItems: "flex-end", justifyContent: "center", paddingHorizontal: G }}>
+        <View style={{ height: 60, alignItems: "flex-end", justifyContent: "center", paddingHorizontal: G }}>
           <MenuButton onPress={() => setMenuOpen(true)} />
         </View>
 
@@ -115,7 +115,7 @@ export function HomeScreen() {
           <IconChip label="친구" onPress={() => notice("친구 기능은 2단계에서 만들어요")}><Users size={22} color={c.text} /></IconChip>
         </ScrollView>
 
-        <View style={{ paddingHorizontal: G, marginTop: 28 }}>
+        <View style={{ paddingHorizontal: G, marginTop: 34 }}>
           <ProfileHeader
             name={profile.nickname}
             avatar={profile.avatarUri}
@@ -126,7 +126,7 @@ export function HomeScreen() {
           />
         </View>
 
-        <View style={{ paddingHorizontal: G, marginTop: 28, gap: 16 }}>
+        <View style={{ paddingHorizontal: G, marginTop: 27, gap: 16 }}>
           <CalendarHeader
             title={title}
             mode={mode}
