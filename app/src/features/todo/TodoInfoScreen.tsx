@@ -1,7 +1,8 @@
 import { useInsets } from "../../theme";
 import { router, useLocalSearchParams } from "expo-router";
-import { ScrollView, View } from "react-native";
-import { AppText, Clover, ScreenHeader, StoredImage, VisibilityIcon } from "../../components";
+import { useState } from "react";
+import { Animated, Pressable, ScrollView, View } from "react-native";
+import { AppText, Clover, ScreenHeader, StoredImage, useSheetDrag, VisibilityIcon } from "../../components";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { timerTotal, useDB } from "../../data/store";
 import { parseDay, weekday } from "../../lib/dates";
@@ -25,6 +26,9 @@ export function TodoInfoScreen() {
   const cat = useDB((d) => d.categories.find((x) => x.id === todo?.categoryId));
   const profile = useDB((d) => d.profile);
   const { use24h } = usePrefs();
+  const [open, setOpen] = useState(true);
+  const close = () => setOpen(false);
+  const { translateY, scrimOpacity, handlers } = useSheetDrag(open, () => router.back(), () => router.back());
   if (!todo || !cat) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
@@ -36,8 +40,15 @@ export function TodoInfoScreen() {
   const dateLabel = todo.date ? (() => { const { y, m, d } = parseDay(todo.date); return `${y}년 ${m}월 ${d}일 ${WD[weekday(todo.date)]}요일`; })() : "보관함";
   const seconds = timerTotal(todo);
   return (
-    <View style={{ flex: 1, backgroundColor: c.surfaceRaised, paddingTop: insets.top }}>
-      <ScreenHeader title="할 일" close onBack={() => router.back()} />
+    <View style={{ flex: 1, justifyContent: "flex-end" }}>
+      <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: tokens.scrim, opacity: scrimOpacity }}>
+        <Pressable style={{ flex: 1 }} onPress={close} accessibilityLabel="닫기" />
+      </Animated.View>
+      <Animated.View style={{ height: "92%", backgroundColor: c.surfaceRaised, borderTopLeftRadius: tokens.radius.sheet, borderTopRightRadius: tokens.radius.sheet, paddingTop: 12, transform: [{ translateY }] }}>
+      <View {...handlers} accessibilityHint="아래로 끌어 닫기">
+        <View style={{ alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: c.grabber }} />
+        <ScreenHeader title="할 일" close onBack={close} />
+      </View>
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18, paddingBottom: 40 }}>
         <View style={{ alignItems: "center", marginVertical: 8 }}>
           <Clover size={48} state={todo.isDone ? { kind: "todoDone", color: cat.color } : { kind: "todoOpen" }} />
@@ -61,6 +72,7 @@ export function TodoInfoScreen() {
           {seconds > 0 ? <AppText variant="body" color="textMuted">{`기록한 시간 ${dur(seconds)}`}</AppText> : null}
         </View>
       </ScrollView>
+      </Animated.View>
     </View>
   );
 }

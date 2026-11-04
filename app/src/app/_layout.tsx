@@ -18,7 +18,10 @@ function Shell() {
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <ScaledRoot>
         <AuthGate>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+            {/* 할 일 정보 보기 is a sheet over the current screen, as in the original */}
+            <Stack.Screen name="todo/[id]" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
+          </Stack>
         </AuthGate>
       </ScaledRoot>
     </View>
