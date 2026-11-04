@@ -1,5 +1,5 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router } from "expo-router";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { AddPill, AppText, BottomSheet, Button, PillRow, ScreenHeader, TimeGrid, Trash2, useToast } from "../../components";
@@ -30,7 +30,7 @@ export function ReminderScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="리마인더 관리" onBack={() => router.back()} />
+      <ScreenHeader title="리마인더 관리" onBack={() => goBack("/")} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 12, paddingBottom: 40 }}>
         <AppText variant="helper" color="textMuted">정한 시간마다 매일, 그날 남은 할 일을 알려 줘요.</AppText>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>

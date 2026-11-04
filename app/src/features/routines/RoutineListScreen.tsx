@@ -1,3 +1,4 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -20,7 +21,7 @@ export function RoutineListScreen() {
   const [dragging, setDragging] = useState(false);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="루틴 관리" onBack={() => router.back()} />
+      <ScreenHeader title="루틴 관리" onBack={() => goBack("/")} />
       <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ padding: tokens.layout.gutter, gap: 12, paddingBottom: 40 }}>
         <AppText variant="helper" color="textMuted">카테고리를 눌러 루틴을 만들고, 루틴을 눌러 고쳐요. 길게 눌러 끌면 순서가 바뀌어요.</AppText>
         {categories.length === 0 ? <AppText variant="body" color="textMuted">먼저 카테고리를 만들어 주세요.</AppText> : null}

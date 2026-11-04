@@ -1,5 +1,6 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Animated, Pressable, ScrollView, View } from "react-native";
 import { AppText, Clover, ScreenHeader, StoredImage, useSheetDrag, VisibilityIcon } from "../../components";
@@ -28,11 +29,11 @@ export function TodoInfoScreen() {
   const { use24h } = usePrefs();
   const [open, setOpen] = useState(true);
   const close = () => setOpen(false);
-  const { translateY, scrimOpacity, handlers } = useSheetDrag(open, () => router.back(), () => router.back());
+  const { translateY, scrimOpacity, handlers } = useSheetDrag(open, () => goBack("/"), () => goBack("/"));
   if (!todo || !cat) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-        <ScreenHeader title="할 일" close onBack={() => router.back()} />
+        <ScreenHeader title="할 일" close onBack={() => goBack("/")} />
         <AppText variant="body" color="textMuted" center style={{ marginTop: 40 }}>할 일을 찾을 수 없어요</AppText>
       </View>
     );

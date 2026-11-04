@@ -1,5 +1,6 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
@@ -34,13 +35,13 @@ export function CategoryEditScreen() {
   const save = () => {
     if (!title.trim()) return setError("이름을 입력해 주세요");
     saveCategory({ id: existing?.id, title: title.trim(), color, visibility });
-    router.back();
+    goBack("/categories");
   };
   const others = categories.filter((x) => x.id !== existing?.id && !x.endedAt);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="카테고리" onBack={() => router.back()} right={{ label: "확인", onPress: save }} />
+      <ScreenHeader title="카테고리" onBack={() => goBack("/categories")} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 7, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="카테고리 이름" underline={shown} textColor={readableOn(shown, c.bg)} error={error} autoFocus={isNew} bold />
         <View style={{ height: 6 }} />
@@ -55,7 +56,7 @@ export function CategoryEditScreen() {
           <>
             <FieldGroup><FieldRow title="다른 카테고리로 이관하기" onPress={() => setSheet("move")} /></FieldGroup>
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-              <Button kind="plain" flex height={43} label={existing?.endedAt ? "다시 사용하기" : "종료하기"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); router.back(); }} />
+              <Button kind="plain" flex height={43} label={existing?.endedAt ? "다시 사용하기" : "종료하기"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); goBack("/categories"); }} />
               <Button kind="danger" flex height={43} label="삭제" onPress={() => setSheet("delete")} />
             </View>
             <View style={{ gap: 6, marginTop: 14 }}>
@@ -104,7 +105,7 @@ export function CategoryEditScreen() {
         <AppText variant="body" color="textSecondary" center style={{ marginBottom: 20 }}>안에 있는 할 일까지 모두 지워져요.</AppText>
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Button kind="plain" flex label="취소" onPress={() => setSheet(null)} />
-          <Button kind="danger" flex label="삭제" onPress={() => { deleteCategory(existing!.id); setSheet(null); router.back(); }} />
+          <Button kind="danger" flex label="삭제" onPress={() => { deleteCategory(existing!.id); setSheet(null); goBack("/categories"); }} />
         </View>
       </BottomSheet>
     </View>

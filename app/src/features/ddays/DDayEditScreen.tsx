@@ -1,5 +1,6 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
@@ -32,12 +33,12 @@ export function DDayEditScreen() {
   const save = () => {
     if (!title.trim()) return setError("이름을 입력해 주세요");
     saveDDay({ id: existing?.id, title: title.trim(), type, repeatUnit: type === "repeat" ? unit : undefined, targetDate: date, isPrivate });
-    router.back();
+    goBack("/ddays");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="디데이" onBack={() => router.back()} right={{ label: "완료", onPress: save }} />
+      <ScreenHeader title="디데이" onBack={() => goBack("/ddays")} right={{ label: "완료", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="디데이 이름" error={error} autoFocus={!existing} />
         <AppText variant="bodyLg" weight={700} style={{ marginTop: 10 }}>타입</AppText>
@@ -78,7 +79,7 @@ export function DDayEditScreen() {
         <AppText variant="body" color="textSecondary" center style={{ marginBottom: 20 }}>{`'${existing?.title ?? ""}'을 지울까요?`}</AppText>
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Button kind="plain" flex label="취소" onPress={() => setConfirm(false)} />
-          <Button kind="danger" flex label="삭제" onPress={() => { if (existing) deleteDDay(existing.id); setConfirm(false); router.back(); }} />
+          <Button kind="danger" flex label="삭제" onPress={() => { if (existing) deleteDDay(existing.id); setConfirm(false); goBack("/ddays"); }} />
         </View>
       </BottomSheet>
     </View>

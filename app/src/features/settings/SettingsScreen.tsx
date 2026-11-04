@@ -1,3 +1,4 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -37,7 +38,7 @@ export function SettingsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="설정" onBack={() => router.back()} />
+      <ScreenHeader title="설정" onBack={() => goBack("/")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}>
         <SettingsRow title="프로필" icon={icon(User)} onPress={() => router.push("/profile" as never)} />
         <SettingsRow title="개인정보 보호" icon={icon(Lock)} onPress={later} />

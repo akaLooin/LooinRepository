@@ -1,5 +1,6 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
@@ -40,12 +41,12 @@ export function DiaryScreen() {
   const { y, m, d } = parseDay(date);
   const done = () => {
     saveDiary(date, { emoji, body: body.trim(), visibility, backgroundColor: bg, imagePaths: images });
-    router.back();
+    goBack("/");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: background, paddingTop: insets.top }}>
-      <ScreenHeader title="일기" close onBack={() => router.back()} right={{ label: "완료", onPress: done }} ink={bg ? ink : undefined} />
+      <ScreenHeader title="일기" close onBack={() => goBack("/")} right={{ label: "완료", onPress: done }} ink={bg ? ink : undefined} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <Pressable onPress={() => setSheet("emoji")} accessibilityRole="button" accessibilityLabel={emoji ? `오늘의 기분 ${emoji}, 바꾸기` : "오늘의 기분 고르기"} style={{ alignSelf: "center", marginVertical: 8 }}>
           {emoji ? (

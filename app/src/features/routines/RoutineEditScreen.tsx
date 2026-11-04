@@ -1,5 +1,6 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, TextInput, View } from "react-native";
 import {
@@ -45,12 +46,12 @@ export function RoutineEditScreen() {
     if (!title.trim()) return setError("이름을 입력해 주세요");
     if (!cat) return setError("카테고리를 찾을 수 없어요");
     saveRoutine({ id: existing?.id, categoryId, title: title.trim(), startDate, endDate, ...rule, timeOfDay: time, memo, manualAdd });
-    router.back();
+    goBack("/routines");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="루틴" onBack={() => router.back()} right={{ label: "확인", onPress: save }} />
+      <ScreenHeader title="루틴" onBack={() => goBack("/routines")} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="루틴 이름" underline={color} error={error} autoFocus={!existing} />
         <View style={{ height: 0 }} />
@@ -84,7 +85,7 @@ export function RoutineEditScreen() {
         <AppText variant="body" color="textSecondary" center style={{ marginBottom: 20 }}>앞으로의 반복만 사라지고, 이미 한 기록은 남아요.</AppText>
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Button kind="plain" flex label="취소" onPress={() => setSheet(null)} />
-          <Button kind="danger" flex label="삭제" onPress={() => { if (existing) deleteRoutine(existing.id); setSheet(null); router.back(); }} />
+          <Button kind="danger" flex label="삭제" onPress={() => { if (existing) deleteRoutine(existing.id); setSheet(null); goBack("/routines"); }} />
         </View>
       </BottomSheet>
 

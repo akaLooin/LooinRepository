@@ -1,5 +1,5 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, useWindowDimensions, View } from "react-native";
 import { AppText, BottomSheet, Button, RadioList, ScreenHeader, Toggle, ToggleRow, ValueRow } from "../../components";
@@ -36,7 +36,7 @@ export function DisplaySettingsScreen() {
   const [draftSort, setDraftSort] = useState(p.todoSort);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="화면" onBack={() => router.back()} />
+      <ScreenHeader title="화면" onBack={() => goBack("/settings")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}>
         <ToggleRow title="달력에서 일요일부터 시작" value={p.weekStartsSunday} onChange={(v) => setPref("weekStartsSunday", v)} />
         <ToggleRow title="할 일을 상단에서 입력" value={p.inputAtTop} onChange={(v) => setPref("inputAtTop", v)} />

@@ -158,6 +158,7 @@ export function Clover({
       hitSlop={10}
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
+      aria-checked={checked}
       accessibilityLabel={label}
       style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.9 : 1 }] })}
     >

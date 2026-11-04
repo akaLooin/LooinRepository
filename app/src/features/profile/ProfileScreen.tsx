@@ -1,5 +1,5 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
-import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { AppText, ScreenHeader, StoredImage, TitleInput } from "../../components";
@@ -21,11 +21,11 @@ export function ProfileScreen() {
     if (!n) return setError("닉네임을 입력해 주세요");
     if (n.length > 20) return setError("닉네임은 20자까지예요");
     updateProfile({ nickname: n, bio: bio.trim().slice(0, 150), avatarUri: avatar });
-    router.back();
+    goBack("/settings");
   };
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="프로필" onBack={() => router.back()} right={{ label: "확인", onPress: save }} />
+      <ScreenHeader title="프로필" onBack={() => goBack("/settings")} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: "center", gap: 8, marginVertical: 8 }}>
           <Pressable onPress={async () => { const uri = await pickPhoto().catch(() => null); if (uri) setAvatar(uri); }} accessibilityRole="button" accessibilityLabel="프로필 사진 바꾸기">

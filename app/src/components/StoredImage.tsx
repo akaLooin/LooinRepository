@@ -33,6 +33,6 @@ export function StoredImage({ uri, style, label }: { uri?: string; style: StyleP
     else setUrl(null);
     return () => { alive = false; };
   }, [uri]);
-  if (!url) return <View style={[style as object, { backgroundColor: c.surfaceStrong }]} accessibilityLabel={label} />;
-  return <Image source={{ uri: url }} style={style} accessibilityLabel={label} />;
+  if (!url) return <View style={[style as object, { backgroundColor: c.surfaceStrong }]} role="img" accessibilityLabel={label} />;
+  return <Image source={{ uri: url }} style={style} role="img" accessibilityLabel={label} />;
 }

@@ -1,3 +1,4 @@
+import { goBack } from "../../lib/nav";
 import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
@@ -24,7 +25,7 @@ export function InboxScreen() {
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [toast, notice] = useToast();
-  const back = useSwipeRight(() => (router.canGoBack() ? router.back() : router.replace("/" as never)), 70, -1);
+  const back = useSwipeRight(() => (router.canGoBack() ? goBack("/") : router.replace("/" as never)), 70, -1);
 
   const add = (categoryId: string, title: string) => {
     try {

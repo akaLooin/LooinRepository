@@ -1,3 +1,4 @@
+import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -14,7 +15,7 @@ export function DDayListScreen() {
   const [dragging, setDragging] = useState(false);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="디데이 관리" onBack={() => router.back()} />
+      <ScreenHeader title="디데이 관리" onBack={() => goBack("/")} />
       <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ padding: tokens.layout.gutter, gap: 12, paddingBottom: 40 }}>
         <AppText variant="helper" color="textMuted">눌러서 고치고, 길게 눌러 끌면 순서가 바뀌어요. 맨 위의 공개 디데이가 홈에 보여요.</AppText>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>

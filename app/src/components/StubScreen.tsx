@@ -1,5 +1,5 @@
+import { goBack } from "../lib/nav";
 import { useInsets } from "../theme";
-import { router } from "expo-router";
 import { View } from "react-native";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
@@ -11,7 +11,7 @@ export function StubScreen({ id, title, when, back = true }: { id: string; title
   const insets = useInsets();
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title={title} onBack={back ? () => (router.canGoBack() ? router.back() : router.replace("/")) : undefined} />
+      <ScreenHeader title={title} onBack={back ? () => goBack("/") : undefined} />
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 8, padding: tokens.layout.gutter }}>
         <AppText variant="bodyLg" weight={600}>아직 만드는 중이에요</AppText>
         <AppText variant="helper" color="textMuted" center>{`${id} · ${when}`}</AppText>

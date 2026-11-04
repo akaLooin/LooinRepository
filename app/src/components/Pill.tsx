@@ -49,10 +49,10 @@ export function CategoryPill({ title, color, visibility, onAdd, onPress, onLongP
   const h = tokens.size.categoryPillHeight;
   const plus = 34;
   return (
-    <View style={{ flexDirection: "row", alignSelf: "flex-start", alignItems: "center", height: h, borderRadius: R, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 4, gap: 8 }}>
-      <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flexDirection: "row", alignItems: "center", gap: 8 }} accessibilityRole="button" accessibilityLabel={title}>
+    <View style={{ flexDirection: "row", alignSelf: "flex-start", maxWidth: "100%", alignItems: "center", height: h, borderRadius: R, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 4, gap: 8 }}>
+      <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }} accessibilityRole="button" accessibilityLabel={title}>
         <VisibilityIcon value={visibility} color={c.textMuted} />
-        <AppText variant="category" raw={readableOn(color, c.surface)}>{title}</AppText>
+        <AppText variant="category" raw={readableOn(color, c.surface)} numberOfLines={1} style={{ flexShrink: 1 }}>{title}</AppText>
       </Pressable>
       <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${title}에 할 일 추가`}
         style={{ width: plus, height: plus, borderRadius: R, backgroundColor: c.bg, alignItems: "center", justifyContent: "center", marginLeft: 4 }}>
