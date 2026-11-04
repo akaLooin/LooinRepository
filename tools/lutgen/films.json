@@ -1,0 +1,11 @@
+{
+  "_about": "필름 룩 파라미터. 이름과 수치는 전부 직접 만든 것. 수정 후 lutgen.py를 다시 실행",
+  "films": [
+    {"id": "warm400",   "temp": 0.6,  "tint": 0.1,  "contrast": 0.35, "fade": 0.05, "roll_off": 0.04, "sat": 1.05, "shadows": [0.02, 0.0, -0.03], "highs": [0.04, 0.02, -0.04]},
+    {"id": "harbor200", "temp": -0.5, "tint": -0.15,"contrast": 0.25, "fade": 0.06, "roll_off": 0.03, "sat": 0.85, "shadows": [-0.03, 0.01, 0.04], "highs": [0.0, 0.02, 0.03]},
+    {"id": "peach160",  "temp": 0.3,  "tint": 0.35, "contrast": 0.1,  "fade": 0.12, "roll_off": 0.06, "sat": 0.8,  "shadows": [0.04, 0.0, 0.03],  "highs": [0.05, 0.02, 0.0]},
+    {"id": "honey800",  "temp": 0.8,  "tint": 0.0,  "contrast": 0.45, "fade": 0.03, "roll_off": 0.02, "sat": 1.2,  "shadows": [0.03, 0.01, -0.05],"highs": [0.06, 0.04, -0.06]},
+    {"id": "dusk200",   "temp": 0.2,  "tint": -0.3, "contrast": 0.3,  "fade": 0.08, "roll_off": 0.05, "sat": 0.7,  "shadows": [0.0, 0.03, 0.02],  "highs": [0.03, 0.03, -0.02]},
+    {"id": "silver400", "mono": true, "contrast": 0.5, "fade": 0.04, "roll_off": 0.03, "mono_mix": [0.35, 0.55, 0.10]}
+  ]
+}

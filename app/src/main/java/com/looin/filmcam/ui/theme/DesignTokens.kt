@@ -3,7 +3,6 @@ package com.looin.filmcam.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 object FilmColors {
     val bg = Color(0xFF0E0D0C)

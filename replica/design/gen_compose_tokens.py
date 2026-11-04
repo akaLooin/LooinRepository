@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """tokens.json -> DesignTokens.kt (Jetpack Compose). 표준 라이브러리만 사용.
-    python3 gen_compose_tokens.py tokens.json DesignTokens.kt
+    python3 replica/design/gen_compose_tokens.py replica/design/tokens.json \
+        app/src/main/java/com/looin/filmcam/ui/theme/DesignTokens.kt
 토큰을 바꾸면 다시 실행. 컴포넌트는 raw 색 대신 FilmColors.xxx 를 쓴다."""
 import json, sys, re
 
@@ -14,7 +15,7 @@ def main(src, dst):
          "package com.looin.filmcam.ui.theme", "",
          "import androidx.compose.ui.graphics.Color",
          "import androidx.compose.ui.unit.dp",
-         "import androidx.compose.ui.unit.sp", "",
+         "",
          "object FilmColors {"]
     for k, v in t["color"].items():
         L.append(f"    val {camel(k)} = Color(0xFF{v.lstrip('#').upper()})")

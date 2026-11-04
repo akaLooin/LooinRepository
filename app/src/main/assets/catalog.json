@@ -1,0 +1,20 @@
+{
+  "films": [
+    {"id": "warm400",   "name": "Warm 400",   "code": "W400", "category": "warm",  "grain": 0.07, "leak": 0.35, "leakColor": [1.0, 0.45, 0.15]},
+    {"id": "harbor200", "name": "Harbor 200", "code": "H200", "category": "cool",  "grain": 0.05, "leak": 0.15, "leakColor": [0.6, 0.8, 1.0]},
+    {"id": "peach160",  "name": "Peach 160",  "code": "P160", "category": "pastel","grain": 0.04, "leak": 0.30, "leakColor": [1.0, 0.55, 0.5]},
+    {"id": "honey800",  "name": "Honey 800",  "code": "Y800", "category": "warm",  "grain": 0.11, "leak": 0.40, "leakColor": [1.0, 0.6, 0.1]},
+    {"id": "dusk200",   "name": "Dusk 200",   "code": "D200", "category": "cool",  "grain": 0.06, "leak": 0.20, "leakColor": [0.9, 0.5, 0.7]},
+    {"id": "silver400", "name": "Silver 400", "code": "S400", "category": "mono",  "grain": 0.10, "leak": 0.0,  "leakColor": [1.0, 1.0, 1.0]}
+  ],
+  "bodies": [
+    {"id": "box",    "name": "Box",    "traits": "부드러운 비네팅", "vignette": 0.35, "warmth": 0.0},
+    {"id": "slr",    "name": "SLR",    "traits": "깨끗한 프레임",   "vignette": 0.15, "warmth": 0.0},
+    {"id": "toy",    "name": "Toy",    "traits": "강한 비네팅 · 따뜻함", "vignette": 0.7, "warmth": 0.06}
+  ],
+  "lenses": [
+    {"id": "w28", "name": "28mm", "focalMm": 28, "traits": "넓은 화각", "zoom": 1.0, "distortion": 0.04},
+    {"id": "n40", "name": "40mm", "focalMm": 40, "traits": "표준", "zoom": 1.4, "distortion": 0.0},
+    {"id": "t85", "name": "85mm", "focalMm": 85, "traits": "인물 · 좁은 화각", "zoom": 2.8, "distortion": -0.02}
+  ]
+}
