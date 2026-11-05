@@ -4,8 +4,9 @@ import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { AppText, CategoryPill, ReorderableList, TodoRow, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
-import { addTodo, EndedCategoryError, reorderTodos, selectActiveCategories, selectInbox, toggleTodo, updateTodo, useDB } from "../../data/store";
+import { addTodo, arrangeTodos, EndedCategoryError, selectActiveCategories, selectInbox, toggleTodo, updateTodo, useDB } from "../../data/store";
 import { tokens, useInsets, useTheme } from "../../theme";
+import { arrangeByHeaders } from "../../lib/arrange";
 import { InlineTodoInput } from "../home/InlineTodoInput";
 import { TodoSheets } from "../home/TodoSheets";
 import { useSwipeRight } from "../home/useSwipeRight";
@@ -27,6 +28,14 @@ export function InboxScreen() {
   const [toast, notice] = useToast();
   const back = useSwipeRight(() => (router.canGoBack() ? goBack("/") : router.replace("/" as never)), 70, -1);
 
+  type Cat = (typeof categories)[number];
+  type Row = { kind: "head" | "foot"; key: string; cat: Cat; last?: boolean } | { kind: "todo"; key: string; cat: Cat; t: (typeof todos)[number] };
+  const rows: Row[] = categories.flatMap((cat, i) => [
+    { kind: "head" as const, key: `h:${cat.id}`, cat },
+    ...todos.filter((t) => t.categoryId === cat.id).sort((a, b) => a.sortOrder - b.sortOrder).map((t) => ({ kind: "todo" as const, key: t.id, cat, t })),
+    { kind: "foot" as const, key: `f:${cat.id}`, cat, last: i === categories.length - 1 },
+  ]);
+
   const add = (categoryId: string, title: string) => {
     try {
       addTodo(categoryId, null, title);
@@ -46,28 +55,41 @@ export function InboxScreen() {
           {todos.length === 0 ? (
             <AppText variant="helper" color="textMuted">날짜를 정하지 않은 할 일을 모아 두는 곳이에요. 카테고리의 + 를 눌러 추가해 보세요.</AppText>
           ) : null}
-          {categories.map((cat) => {
-            const items = todos.filter((t) => t.categoryId === cat.id).sort((a, b) => a.sortOrder - b.sortOrder);
-            return (
-              <View key={cat.id} style={{ gap: 4 }}>
-                <CategoryPill title={cat.title} color={cat.color} visibility={cat.visibility}
-                  onPress={() => router.push(`/categories/${cat.id}` as never)}
-                  onAdd={() => { setEditing(null); setAdding(cat.id); }} />
-                <View style={{ marginTop: 6 }}>
-                  <ReorderableList items={items} keyOf={(t) => t.id} labelOf={(t) => t.title} onDragging={setDragging} onReorder={reorderTodos}
-                    renderItem={(t, drag) =>
-                      editing === t.id ? (
-                        <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
-                      ) : (
-                        <TodoRow title={t.title} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
-                          onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
-                      )
-                    } />
-                  {adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => add(cat.id, title)} onDone={() => setAdding(null)} /> : null}
-                </View>
-              </View>
-            );
-          })}
+          {/* one list, as on home: a held to-do can move into another category */}
+          <ReorderableList
+            items={rows}
+            keyOf={(r) => r.key}
+            labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)}
+            fixed={(r) => r.kind !== "todo"}
+            onDragging={setDragging}
+            onReorder={(keys) => { if (!arrangeTodos(arrangeByHeaders(keys, (k) => (k.startsWith("h:") || k.startsWith("f:") ? k.slice(2) : null)))) notice("종료한 카테고리로는 옮길 수 없어요"); }}
+            renderItem={(r, drag) => {
+              const cat = r.cat;
+              if (r.kind === "head") {
+                return (
+                  <View style={{ marginBottom: 10 }}>
+                    <CategoryPill title={cat.title} color={cat.color} visibility={cat.visibility}
+                      onPress={() => router.push(`/categories/${cat.id}` as never)}
+                      onAdd={() => { setEditing(null); setAdding(cat.id); }} />
+                  </View>
+                );
+              }
+              if (r.kind !== "todo") {
+                return (
+                  <View style={{ paddingBottom: r.last ? 0 : 12 }}>
+                    {adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => add(cat.id, title)} onDone={() => setAdding(null)} /> : null}
+                  </View>
+                );
+              }
+              const t = r.t;
+              return editing === t.id ? (
+                <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
+              ) : (
+                <TodoRow title={t.title} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
+                  onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
+              );
+            }}
+          />
         </View>
       </ScrollView>
       <TodoSheets inbox todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />

@@ -20,6 +20,8 @@ type Props<T> = {
   /** Tell the parent ScrollView to stop scrolling while a row is held. */
   onDragging?: (dragging: boolean) => void;
   gap?: number;
+  /** Rows that cannot be held (e.g. category titles): they still slide out of the held row's way. */
+  fixed?: (item: T) => boolean;
 };
 
 /**
@@ -28,7 +30,9 @@ type Props<T> = {
  * and on release it glides into its new place before the order is saved.
  * Screen readers get "위로 이동" / "아래로 이동" actions instead of dragging.
  */
-export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0 }: Props<T>) {
+const noDrag: DragHandle = { onLongPress: () => {}, delayLongPress: HOLD_MS };
+
+export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0, fixed }: Props<T>) {
   const { c } = useTheme();
   const keys = items.map(keyOf);
   const shifts = useRef(new Map<string, Animated.Value>()).current;
@@ -152,13 +156,14 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
       {items.map((item, i) => {
         const k = keyOf(item);
         const isActive = k === active;
+        const still = fixed?.(item) ?? false;
         return (
           <Animated.View
             key={k}
             onLayout={(e) => { heights.current[k] = e.nativeEvent.layout.height; }}
-            accessibilityActions={[{ name: "up", label: "위로 이동" }, { name: "down", label: "아래로 이동" }]}
-            onAccessibilityAction={(e) => step(k, e.nativeEvent.actionName === "up" ? -1 : 1)}
-            accessibilityHint={`${labelOf(item)}: 길게 눌러 끌면 순서를 바꿀 수 있어요`}
+            accessibilityActions={still ? undefined : [{ name: "up", label: "위로 이동" }, { name: "down", label: "아래로 이동" }]}
+            onAccessibilityAction={still ? undefined : (e) => step(k, e.nativeEvent.actionName === "up" ? -1 : 1)}
+            accessibilityHint={still ? undefined : `${labelOf(item)}: 길게 눌러 끌면 순서를 바꿀 수 있어요`}
             style={{
               marginBottom: i < items.length - 1 ? gap : 0,
               zIndex: isActive ? 10 : 0,
@@ -167,7 +172,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
               transform: [{ translateY: isActive ? dy : shiftOf(k) }],
             }}
           >
-            {renderItem(item, { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}
+            {renderItem(item, still ? noDrag : { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}
           </Animated.View>
         );
       })}

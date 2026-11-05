@@ -50,6 +50,27 @@ const order = async (p, re) => (await p.getByRole("button", { name: re }).allInn
   await p.waitForTimeout(300);
   r.todoAfterReload = await titles();
 
+  // across categories (as in the original): hold the first to-do, drop it just under the next category's title
+  const first = r.todoAfterReload[0];
+  const rowOf = () => p.getByText(first, { exact: true }).first();
+  const rowBox = await rowOf().boundingBox();
+  const pills = await p.getByRole("button", { name: /에 할 일 추가$/ }).evaluateAll((els) => els.map((e) => ({ name: e.getAttribute("aria-label").replace(/에 할 일 추가$/, ""), y: e.getBoundingClientRect().y, h: e.getBoundingClientRect().height })));
+  const next = pills.find((x) => x.y > rowBox.y);
+  r.crossTarget = next.name;
+  await drag(p, rowOf(), next.y + next.h + 8 - (rowBox.y + rowBox.height / 2));
+  const section = async () => {
+    const t = (await rowOf().boundingBox()).y;
+    const ps = await p.getByRole("button", { name: /에 할 일 추가$/ }).evaluateAll((els) => els.map((e) => ({ name: e.getAttribute("aria-label").replace(/에 할 일 추가$/, ""), y: e.getBoundingClientRect().y })));
+    return ps.filter((x) => x.y < t).pop()?.name;
+  };
+  r.crossNowIn = await section();
+  await p.reload({ waitUntil: "networkidle" });
+  await p.waitForTimeout(500);
+  await p.getByLabel("11월 4일", { exact: true }).click();
+  await p.waitForTimeout(300);
+  r.crossAfterReload = await section();
+  await p.screenshot({ path: `${out}/home-cross-drag.png`, fullPage: true });
+
   // routines
   await p.goto("http://localhost:8765/routines", { waitUntil: "networkidle" });
   await p.waitForTimeout(400);

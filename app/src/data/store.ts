@@ -223,6 +223,43 @@ export function reorderTodos(ids: string[]) {
   set({ ...db, todos: reorderRows(db.todos, real) });
 }
 
+/**
+ * After a drag across the day's list: each to-do takes the category it now sits under and its place there.
+ * An ended category takes no new to-dos (as with adding), so a to-do dropped there stays where it was.
+ * Returns false if a move was refused.
+ */
+export function arrangeTodos(entries: { id: string; categoryId: string }[]): boolean {
+  const real = entries.map((e) => ({ ...e, id: materialize(e.id) }));
+  const ended = new Set(db.categories.filter((c) => c.endedAt).map((c) => c.id));
+  let ok = true;
+  const target = new Map<string, string>();
+  for (const e of real) {
+    const cur = db.todos.find((t) => t.id === e.id);
+    if (!cur) continue;
+    if (cur.categoryId !== e.categoryId && ended.has(e.categoryId)) { ok = false; target.set(e.id, cur.categoryId); }
+    else target.set(e.id, e.categoryId);
+  }
+  const order = new Map<string, number>();
+  const counters = new Map<string, number>();
+  for (const e of real) {
+    const cat = target.get(e.id);
+    if (!cat) continue;
+    const n = (counters.get(cat) ?? 0) + 1;
+    counters.set(cat, n);
+    order.set(e.id, n);
+  }
+  set({
+    ...db,
+    todos: db.todos.map((t) => {
+      const cat = target.get(t.id);
+      const o = order.get(t.id);
+      if (cat === undefined || o === undefined || (t.categoryId === cat && t.sortOrder === o)) return t;
+      return { ...t, categoryId: cat, sortOrder: o };
+    }),
+  });
+  return ok;
+}
+
 // ── to-dos ─────────────────────────────────────────────────
 export class EndedCategoryError extends Error {}
 

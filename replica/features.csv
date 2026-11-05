@@ -7,7 +7,7 @@ feature,area,priority,original,clone,notes
 할 일 체크로 완료,todos,must,yes,yes,1단계. 핵심 흐름
 할 일 수정과 삭제,todos,must,yes,yes,1단계
 할 일 날짜 바꾸기,todos,must,yes,yes,1단계. S05 날짜 바꾸기 / 클론: S05 날짜 바꾸기
-목표 안에서 할 일 순서 바꾸기,todos,must,yes,yes,1단계 / 클론: 홈에서 길게 눌러 끌기
+목표 안에서 할 일 순서 바꾸기,todos,must,yes,yes,1단계 / 클론: 홈에서 길게 눌러 끌기. 다른 카테고리 제목 아래로 끌면 그 카테고리로 옮겨짐(이용자 영상)
 월간 캘린더에 날짜별 완료 표시,calendar,must,yes,yes,1단계 / 클론: 사용자가 확인한 규칙대로
 반복 루틴 (매일 요일별 주간 월간),routines,must,yes,yes,1단계. 시작일과 종료일 있음 / 클론: 규칙 테스트 7개 통과
 할 일 시간 알림,notifications,must,yes,yes,1단계. S05 시간 알림 / 클론: 폰 로컬 알림. 웹에서는 저장만

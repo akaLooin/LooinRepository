@@ -6,9 +6,10 @@ import {
   AppText, Archive, BottomSheet, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, reorderTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
+import { arrangeByHeaders } from "../../lib/arrange";
 import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
 import { usePrefs } from "../../data/prefs";
 import { tokens, useTheme } from "../../theme";
@@ -80,6 +81,23 @@ export function HomeScreen() {
   const calCats = categories.filter((x) => calIds.has(x.id));
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
   const shown = categories.filter((cat) => !cat.endedAt || dayTodos.some((t) => t.categoryId === cat.id));
+
+  // The day as one sequence: title, to-dos, footer (manual routines, add field) for each category
+  const isCollapsed = (id: string) => prefs.collapsibleCategories && prefs.collapsedCategoryIds.includes(id);
+  type Cat = (typeof shown)[number];
+  type DayRow = { kind: "head" | "foot"; key: string; cat: Cat; last?: boolean } | { kind: "todo"; key: string; cat: Cat; t: (typeof dayTodos)[number] };
+  const dayRows: DayRow[] = shown.flatMap((cat, i) => [
+    { kind: "head" as const, key: `h:${cat.id}`, cat },
+    ...(isCollapsed(cat.id) ? [] : dayTodos.filter((t) => t.categoryId === cat.id).map((t) => ({ kind: "todo" as const, key: t.id, cat, t }))),
+    { kind: "foot" as const, key: `f:${cat.id}`, cat, last: i === shown.length - 1 },
+  ]);
+  const onArrange = (keys: string[]) => {
+    const owner = (k: string) => (k.startsWith("h:") || k.startsWith("f:") ? k.slice(2) : null);
+    // to-dos hidden in folded categories are not in the list: put them back first, so a to-do dropped there goes last
+    const full = keys.flatMap((k) => (k.startsWith("h:") && isCollapsed(k.slice(2)) ? [k, ...dayTodos.filter((t) => t.categoryId === k.slice(2)).map((t) => t.id)] : [k]));
+    const entries = arrangeByHeaders(full, owner);
+    if (!arrangeTodos(entries)) notice("종료한 카테고리로는 옮길 수 없어요");
+  };
 
   const undoneIds = () => dayTodos.filter((t) => !t.isDone).map((t) => t.id);
   const allIds = () => dayTodos.map((t) => t.id);
@@ -158,63 +176,70 @@ export function HomeScreen() {
               <AppText variant="helper" color="textMuted">눌러서 첫 카테고리 만들기</AppText>
             </Pressable>
           ) : null}
-          {shown.map((cat) => {
-            const items = dayTodos.filter((t) => t.categoryId === cat.id);
-            const collapsed = prefs.collapsibleCategories && prefs.collapsedCategoryIds.includes(cat.id);
-            const addInput = adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} /> : null;
-            return (
-              <View key={cat.id} style={{ gap: 4 }}>
-                <CategoryPill
-                  title={cat.title}
+          {/* One list for the whole day, as in the original: a held to-do can move into another category */}
+          <ReorderableList
+            items={dayRows}
+            keyOf={(r) => r.key}
+            labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)}
+            fixed={(r) => r.kind !== "todo"}
+            onDragging={setDragging}
+            onReorder={onArrange}
+            renderItem={(r, drag) => {
+              const cat = r.cat;
+              const addInput = adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} /> : null;
+              if (r.kind === "head") {
+                const collapsed = isCollapsed(cat.id);
+                return (
+                  <View>
+                    <CategoryPill
+                      title={cat.title}
+                      color={cat.color}
+                      visibility={cat.visibility}
+                      onPress={prefs.collapsibleCategories
+                        ? () => setPref("collapsedCategoryIds", collapsed ? prefs.collapsedCategoryIds.filter((x) => x !== cat.id) : [...prefs.collapsedCategoryIds, cat.id])
+                        : () => router.push(`/categories/${cat.id}` as never)}
+                      onLongPress={() => router.push(`/categories/${cat.id}` as never)}
+                      onAdd={() => { setEditing(null); setAdding(cat.id); }}
+                    />
+                    {collapsed ? (
+                      <AppText variant="helper" color="textMuted" style={{ marginLeft: 6, marginTop: 4 }}>{`접힘 · 할 일 ${dayTodos.filter((t) => t.categoryId === cat.id).length}개`}</AppText>
+                    ) : (
+                      <View style={{ marginTop: 10 }}>{prefs.inputAtTop ? addInput : null}</View>
+                    )}
+                  </View>
+                );
+              }
+              if (r.kind !== "todo") {
+                return (
+                  <View style={{ paddingBottom: r.last ? 0 : 12 }}>
+                    {isCollapsed(cat.id) ? null : manualRoutinesOn(db, selected, cat.id).map((x) => (
+                      <PendingRoutineRow key={x.id} title={x.title} onAdd={() => addRoutineTodo(x.id, selected)} />
+                    ))}
+                    {isCollapsed(cat.id) || prefs.inputAtTop ? null : addInput}
+                  </View>
+                );
+              }
+              const t = r.t;
+              return editing === t.id ? (
+                <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
+              ) : (
+                <TodoRow
+                  title={t.title}
+                  memo={t.memo}
+                  photo={t.photoUri}
+                  done={t.isDone}
                   color={cat.color}
-                  visibility={cat.visibility}
-                  onPress={prefs.collapsibleCategories
-                    ? () => setPref("collapsedCategoryIds", collapsed ? prefs.collapsedCategoryIds.filter((x) => x !== cat.id) : [...prefs.collapsedCategoryIds, cat.id])
-                    : () => router.push(`/categories/${cat.id}` as never)}
-                  onLongPress={() => router.push(`/categories/${cat.id}` as never)}
-                  onAdd={() => { setEditing(null); setAdding(cat.id); }}
+                  onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
+                  onPress={() => (selecting ? toggleSelect(t.id) : setSheetTodo(materialize(t.id)))}
+                  selected={selecting?.has(t.id)}
+                  onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
+                  small={prefs.smallTodoText}
+                  smallMemo={prefs.smallTodoMemo}
+                  {...drag}
                 />
-                {collapsed ? (
-                  <AppText variant="helper" color="textMuted" style={{ marginLeft: 6 }}>{`접힘 · 할 일 ${items.length}개`}</AppText>
-                ) : (
-                <View style={{ marginTop: 6 }}>
-                  {prefs.inputAtTop ? addInput : null}
-                  <ReorderableList
-                    items={items}
-                    keyOf={(t) => t.id}
-                    labelOf={(t) => t.title}
-                    onDragging={setDragging}
-                    onReorder={reorderTodos}
-                    renderItem={(t, drag) =>
-                      editing === t.id ? (
-                        <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
-                      ) : (
-                        <TodoRow
-                          title={t.title}
-                          memo={t.memo}
-                          photo={t.photoUri}
-                          done={t.isDone}
-                          color={cat.color}
-                          onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
-                          onPress={() => (selecting ? toggleSelect(t.id) : setSheetTodo(materialize(t.id)))}
-                          selected={selecting?.has(t.id)}
-                          onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
-                          small={prefs.smallTodoText}
-                          smallMemo={prefs.smallTodoMemo}
-                          {...drag}
-                        />
-                      )
-                    }
-                  />
-                  {manualRoutinesOn(db, selected, cat.id).map((r) => (
-                    <PendingRoutineRow key={r.id} title={r.title} onAdd={() => addRoutineTodo(r.id, selected)} />
-                  ))}
-                  {prefs.inputAtTop ? null : addInput}
-                </View>
-                )}
-              </View>
-            );
-          })}
+              );
+            }}
+          />
 
           <Pressable onPress={() => router.push(`/diary/${selected}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
             style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>

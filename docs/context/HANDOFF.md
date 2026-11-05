@@ -32,7 +32,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 ## 폰 첫 확인 결과 (2026-11-05)와 조치
 - 동기화: Supabase 표에 행 생김 ✅
 - 크기: 원본과 같은 폰 스크린샷으로 다시 맞춤(캘린더 양끝 펼침, 클로버 28 등) → 다시 확인 필요
-- 끌기: 원본 영상 분석해 0.5초 길게 누르기 + 회색 띠 + 부드럽게 비키기 → 다시 확인 필요
+- 끌기: 원본 영상 분석해 0.5초 길게 누르기 + 회색 띠 + 부드럽게 비키기, 다른 카테고리로 옮기기(두 번째 영상) → 다시 확인 필요
 - 알림: Expo Go에서 채널 오류(B7)로 권한 요청이 막혀 있었음 → 고침, 울리는지 다시 확인
 - 사진: 업로드 파일이 14바이트(B8) → expo-file-system으로 읽게 고침. 이미 올라간 사진은 다시 넣어야 함
 - 남은 확인: 시트 끌어 닫기 감도, user_settings 행, `replica/test-plan.md`의 수동 점검표
@@ -50,7 +50,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정 메일 없음(기본 메일 서버는 템플릿 수정 불가)
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (34개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (35개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 15개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`
