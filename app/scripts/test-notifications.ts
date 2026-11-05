@@ -49,7 +49,8 @@ t("empty day gets a nudge", () => {
     routines: [{ id: "r1", categoryId: "c", title: "운동하기", startDate: "2026-11-01", repeatType: "daily", timeOfDay: "07:55", memo: "", manualAdd: false, sortOrder: 1 }],
   } as never;
   const plan2 = planNotifications(db2, now2);
-  assert.equal(plan2[0].title, "운동하기");
+  assert.equal(plan2[0].body, "운동하기"); // the to-do itself is the text, as in the original
+  assert.equal(plan2[0].title, "");
   assert.equal(plan2[0].at.getHours(), 7);
   assert.equal(plan2[0].at.getMinutes(), 55);
   assert.equal(plan2.length, 7); // one a day for the week ahead

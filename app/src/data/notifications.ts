@@ -50,7 +50,8 @@ async function scheduleOne(key: string, title: string, body: string, trigger: { 
   const base = "date" in trigger
     ? { type: Notifications.SchedulableTriggerInputTypes.DATE, date: trigger.date }
     : { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: trigger.seconds };
-  const content = { title, body, sound: "default" as const };
+  // like the original, a to-do alarm is just the to-do's text under the app name (no title line)
+  const content = { ...(title ? { title } : {}), body, sound: "default" as const };
   if (channelOk) {
     try {
       await Notifications.scheduleNotificationAsync({ identifier: key, content, trigger: { ...base, channelId: CHANNEL } as Notifications.NotificationTriggerInput });

@@ -32,9 +32,9 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 ## 폰 확인 결과와 조치 (2026-11-05, 세 번째 피드백까지)
 - 확인됨 ✅: Supabase 동기화, 사진 인증 업로드(Storage), 알림 권한 요청, 크기 대체로 비슷
 - 이번에 고침(폰 확인 필요): 캘린더 숫자 크기·클로버 숫자·선택한 날 회색 동그라미, 할 일 목록 위치, 접기 ∨ 버튼(제목 줄 오른쪽 끝), 시간 알림 시계 표시, 끌기·시트 부드럽게(UI 스레드), 추가·삭제·접기 애니메이션, 다른 카테고리로 끌기
-- 알림이 안 울림(B10) → 채널 확인 후 기본 채널로 대체, 하나씩 예약, **리마인더 관리 → 알림 점검**(10초 테스트·예약 수). 그래도 안 오면: 폰 설정 → 앱 → Expo Go → 배터리 "제한 없음"; 최종 해결은 APK
+- 알림: 정해진 시각에 잘 옴 ✅ (안 왔던 건 방해금지 모드 때문). 할 일 알림은 할 일 내용만 본문으로 바꿈(원본 모양)
 - 부드러움은 Expo Go 개발 모드라 느릴 수 있음: `npx.cmd expo start --no-dev --minify`로 실제에 가깝게 확인
-- PC에서 `git pull` 후 `npm.cmd install`
+- PC 순서: `cd C:\Users\User\LooinRepository` → `git checkout claude/replica-skill-install-ll9jb4` → `git pull` → `cd app` → `npm.cmd install` → `npx.cmd expo start --clear` (이전 서버 창은 Ctrl+C로 끄고)
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용

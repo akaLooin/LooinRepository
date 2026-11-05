@@ -24,7 +24,7 @@ export function planNotifications(db: DB, now: Date): PlannedNotification[] {
     for (const t of todos) {
       if (!isVirtual(t.id) || !t.remindAt) continue;
       const at = new Date(t.remindAt);
-      if (at > now) out.push({ key: `todo:${t.id}`, at, title: t.title, body: "할 일 시간이에요" });
+      if (at > now) out.push({ key: `todo:${t.id}`, at, title: "", body: t.title });
     }
     for (const r of db.reminders) {
       const [hh, mm] = r.timeOfDay.split(":").map(Number);
@@ -38,7 +38,7 @@ export function planNotifications(db: DB, now: Date): PlannedNotification[] {
     if (!t.remindAt || t.isDone || t.isSkipped) continue;
     const at = new Date(t.remindAt);
     if (at <= now) continue;
-    out.push({ key: `todo:${t.id}`, at, title: t.title, body: "할 일 시간이에요" });
+    out.push({ key: `todo:${t.id}`, at, title: "", body: t.title });
   }
   return out.sort((a, b) => +a.at - +b.at).slice(0, MAX);
 }
