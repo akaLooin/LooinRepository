@@ -1,4 +1,4 @@
-// Calendar category filter, 리스트 메뉴 (hide done, collapse), and "할 일을 상단에서 입력".
+// Calendar category filter, folding a category (∨ at the row end), and "할 일을 상단에서 입력".
 const { chromium } = require("playwright");
 const out = process.argv[2] || ".";
 (async () => {
@@ -23,10 +23,11 @@ const out = process.argv[2] || ".";
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.waitForTimeout(400);
   await p.getByLabel("11월 3일", { exact: true }).first().click();
-  await p.getByRole("button", { name: "Normal", exact: true }).click();
+  // the ∨ at the right end of the title row folds (original), the title itself still opens the category
+  await p.getByRole("button", { name: "Normal 접기" }).click();
   await p.waitForTimeout(300);
-  r.collapsed = (await p.getByText(/접힘 · 할 일/).count()) === 1 && (await p.getByText("책 30쪽 읽기").count()) === 0;
-  await p.getByRole("button", { name: "Normal", exact: true }).click();
+  r.collapsed = (await p.getByText("책 30쪽 읽기").count()) === 0 && (await p.getByRole("button", { name: "Normal 펼치기" }).count()) === 1;
+  await p.getByRole("button", { name: "Normal 펼치기" }).click();
   await p.waitForTimeout(300);
   r.expanded = (await p.getByText("책 30쪽 읽기").count()) === 1;
   // input at top

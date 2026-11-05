@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Archive, BottomSheet, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users,
+  AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
   addRoutineTodo, addTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
@@ -11,7 +11,7 @@ import {
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
-import { usePrefs } from "../../data/prefs";
+import { formatTime, usePrefs } from "../../data/prefs";
 import { tokens, useTheme } from "../../theme";
 import { dayState } from "./dayState";
 import { HomeMenu, MenuButton } from "./HomeMenu";
@@ -22,6 +22,7 @@ import { DatePickSheet } from "./TodoSheets";
 import { SelectionBar } from "./SelectionBar";
 import { useSwipeRight } from "./useSwipeRight";
 import { setPref } from "../../data/prefs";
+import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 
 const G = tokens.layout.gutter;
@@ -49,7 +50,6 @@ export function HomeScreen() {
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
   const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
   const [selecting, setSelecting] = useState<Set<string> | null>(null);
   const swipe = useSwipeRight(() => router.push("/inbox" as never));
@@ -122,7 +122,7 @@ export function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <DragScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ height: 60, alignItems: "flex-end", justifyContent: "center", paddingHorizontal: G }}>
           <MenuButton onPress={() => setMenuOpen(true)} />
         </View>
@@ -148,7 +148,7 @@ export function HomeScreen() {
           <CalendarHeader
             title={title}
             mode={mode}
-            onToggleMode={() => { setMode(mode === "month" ? "week" : "month"); setView({ y: parseDay(selected).y, m: parseDay(selected).m }); }}
+            onToggleMode={() => { smoothLayout(); setMode(mode === "month" ? "week" : "month"); setView({ y: parseDay(selected).y, m: parseDay(selected).m }); }}
             onPrev={() => shift(-1)}
             onNext={() => shift(1)}
             filterColors={calCats.slice(0, 2).map((x) => x.color)}
@@ -159,7 +159,7 @@ export function HomeScreen() {
             month={view.m}
             today={now}
             selected={selected}
-            onSelect={(d) => { setSelected(d); setAdding(null); setEditing(null); }}
+            onSelect={(d) => { if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); setEditing(null); }}
             state={(d) => dayState((byDay.get(d) ?? []).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
             rows={weekRow}
             weekStartsSunday={prefs.weekStartsSunday}
@@ -177,12 +177,13 @@ export function HomeScreen() {
             </Pressable>
           ) : null}
           {/* One list for the whole day, as in the original: a held to-do can move into another category */}
+          {/* the original's list sits ~3dp further right and lower than the calendar's edge (same-phone screenshots) */}
+          <View style={{ marginLeft: 3, marginTop: 3 }}>
           <ReorderableList
             items={dayRows}
             keyOf={(r) => r.key}
             labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)}
             fixed={(r) => r.kind !== "todo"}
-            onDragging={setDragging}
             onReorder={onArrange}
             renderItem={(r, drag) => {
               const cat = r.cat;
@@ -191,21 +192,27 @@ export function HomeScreen() {
                 const collapsed = isCollapsed(cat.id);
                 return (
                   <View>
-                    <CategoryPill
-                      title={cat.title}
-                      color={cat.color}
-                      visibility={cat.visibility}
-                      onPress={prefs.collapsibleCategories
-                        ? () => setPref("collapsedCategoryIds", collapsed ? prefs.collapsedCategoryIds.filter((x) => x !== cat.id) : [...prefs.collapsedCategoryIds, cat.id])
-                        : () => router.push(`/categories/${cat.id}` as never)}
-                      onLongPress={() => router.push(`/categories/${cat.id}` as never)}
-                      onAdd={() => { setEditing(null); setAdding(cat.id); }}
-                    />
-                    {collapsed ? (
-                      <AppText variant="helper" color="textMuted" style={{ marginLeft: 6, marginTop: 4 }}>{`접힘 · 할 일 ${dayTodos.filter((t) => t.categoryId === cat.id).length}개`}</AppText>
-                    ) : (
-                      <View style={{ marginTop: 10 }}>{prefs.inputAtTop ? addInput : null}</View>
-                    )}
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <View style={{ flexShrink: 1 }}>
+                        <CategoryPill
+                          title={cat.title}
+                          color={cat.color}
+                          visibility={cat.visibility}
+                          onPress={() => router.push(`/categories/${cat.id}` as never)}
+                          onLongPress={() => router.push(`/categories/${cat.id}` as never)}
+                          onAdd={() => { smoothLayout(160); setEditing(null); setAdding(cat.id); }}
+                        />
+                      </View>
+                      {prefs.collapsibleCategories ? (
+                        <View style={{ marginLeft: "auto", paddingLeft: 8 }}>
+                          <CollapseChevron collapsed={collapsed} label={cat.title} onPress={() => {
+                            smoothLayout();
+                            setPref("collapsedCategoryIds", collapsed ? prefs.collapsedCategoryIds.filter((x) => x !== cat.id) : [...prefs.collapsedCategoryIds, cat.id]);
+                          }} />
+                        </View>
+                      ) : null}
+                    </View>
+                    {collapsed ? null : <View style={{ marginTop: 10 }}>{prefs.inputAtTop ? addInput : null}</View>}
                   </View>
                 );
               }
@@ -225,6 +232,7 @@ export function HomeScreen() {
               ) : (
                 <TodoRow
                   title={t.title}
+                  alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined}
                   memo={t.memo}
                   photo={t.photoUri}
                   done={t.isDone}
@@ -240,6 +248,7 @@ export function HomeScreen() {
               );
             }}
           />
+          </View>
 
           <Pressable onPress={() => router.push(`/diary/${selected}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
             style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
@@ -253,7 +262,7 @@ export function HomeScreen() {
             <AppText variant="bodyLg">리스트 메뉴</AppText>
           </Pressable>
         </View>
-      </ScrollView>
+      </DragScrollView>
 
       <HomeMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       {homeSheet === "filter" ? <CalendarFilterSheet open onClose={() => setHomeSheet(null)} categories={categories} /> : null}

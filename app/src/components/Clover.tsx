@@ -143,7 +143,7 @@ export function Clover({
         {body}
       </Svg>
       {count !== null && (
-        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.62, lineHeight: size }}>
+        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.52, lineHeight: size }}>
           {count}
         </AppText>
       )}

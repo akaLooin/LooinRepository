@@ -1,9 +1,9 @@
 import { goBack } from "../../lib/nav";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
-import { AppText, CategoryPill, ReorderableList, TodoRow, useToast } from "../../components";
-import { usePrefs } from "../../data/prefs";
+import { View } from "react-native";
+import { AppText, CategoryPill, ReorderableList, TodoRow, useToast, DragScrollView } from "../../components";
+import { formatTime, usePrefs } from "../../data/prefs";
 import { addTodo, arrangeTodos, EndedCategoryError, selectActiveCategories, selectInbox, toggleTodo, updateTodo, useDB } from "../../data/store";
 import { tokens, useInsets, useTheme } from "../../theme";
 import { arrangeByHeaders } from "../../lib/arrange";
@@ -24,7 +24,6 @@ export function InboxScreen() {
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
   const [toast, notice] = useToast();
   const back = useSwipeRight(() => (router.canGoBack() ? goBack("/") : router.replace("/" as never)), 70, -1);
 
@@ -47,7 +46,7 @@ export function InboxScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }} {...back}>
-      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <DragScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ height: tokens.layout.headerHeight, justifyContent: "center" }}>
           <AppText variant="screenTitle" center accessibilityRole="header">보관함</AppText>
         </View>
@@ -61,7 +60,6 @@ export function InboxScreen() {
             keyOf={(r) => r.key}
             labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)}
             fixed={(r) => r.kind !== "todo"}
-            onDragging={setDragging}
             onReorder={(keys) => { if (!arrangeTodos(arrangeByHeaders(keys, (k) => (k.startsWith("h:") || k.startsWith("f:") ? k.slice(2) : null)))) notice("종료한 카테고리로는 옮길 수 없어요"); }}
             renderItem={(r, drag) => {
               const cat = r.cat;
@@ -85,13 +83,13 @@ export function InboxScreen() {
               return editing === t.id ? (
                 <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
               ) : (
-                <TodoRow title={t.title} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
+                <TodoRow title={t.title} alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
                   onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
               );
             }}
           />
         </View>
-      </ScrollView>
+      </DragScrollView>
       <TodoSheets inbox todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
       {toast}
     </View>

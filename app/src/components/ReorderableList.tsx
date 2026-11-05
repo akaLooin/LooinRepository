@@ -1,12 +1,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, PanResponder, View } from "react-native";
+import { Animated, Easing, PanResponder, Platform, StyleSheet, View } from "react-native";
 import { tokens, useTheme } from "../theme";
+import { useScrollLock } from "./DragScrollView";
 
 /** Measured on the original (screen recording, 30 fps): the row lifts after 0.5 s, neighbours slide in ~0.15 s. */
 const HOLD_MS = 500;
 const SLIDE_MS = 150;
-const slide = (v: Animated.Value, to: number, done?: () => void) =>
-  Animated.timing(v, { toValue: to, duration: SLIDE_MS, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(done);
+const BAND_MS = 120;
+// On the phone every movement runs on the UI thread, so a busy JavaScript thread (saving, redrawing) cannot stall it.
+const native = Platform.OS !== "web";
+const slide = (v: Animated.Value, to: number, done?: () => void, ms = SLIDE_MS) =>
+  Animated.timing(v, { toValue: to, duration: ms, easing: Easing.out(Easing.cubic), useNativeDriver: native }).start(done);
 
 export type DragHandle = { onLongPress: () => void; delayLongPress: number };
 
@@ -34,6 +38,7 @@ const noDrag: DragHandle = { onLongPress: () => {}, delayLongPress: HOLD_MS };
 
 export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0, fixed }: Props<T>) {
   const { c } = useTheme();
+  const lock = useScrollLock();
   const keys = items.map(keyOf);
   const shifts = useRef(new Map<string, Animated.Value>()).current;
   const shiftOf = (k: string) => {
@@ -46,12 +51,14 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const [active, setActive] = useState<string | null>(null);
   const [target, setTarget] = useState(0);
   const dy = useRef(new Animated.Value(0)).current;
+  const band = useRef(new Animated.Value(0)).current; // the grey band under the held row fades in and out
   const state = useRef({ active: null as string | null, from: 0, target: 0, keys });
   state.current.keys = keys;
 
   const rowH = (k: string) => (heights.current[k] ?? 56) + gap;
   const clearAll = () => {
     dy.setValue(0);
+    band.setValue(0);
     shifts.forEach((v) => v.setValue(0));
   };
 
@@ -59,12 +66,14 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
     const { active: a, from, target: to, keys: ks } = state.current;
     if (a === null) return;
     state.current.active = null;
-    onDragging?.(false);
-    // glide to the slot the neighbours opened, then save the order
+    // glide to the slot the neighbours opened (the band fades meanwhile), then save the order
     let offset = 0;
     if (to > from) for (let i = from + 1; i <= to; i++) offset += rowH(ks[i]);
     if (to < from) for (let i = to; i < from; i++) offset -= rowH(ks[i]);
+    slide(band, 0, undefined, SLIDE_MS);
     slide(dy, offset, () => {
+      onDragging?.(false);
+      lock?.(false);
       if (from !== to) {
         const next = ks.filter((k) => k !== a);
         next.splice(to, 0, a);
@@ -114,9 +123,12 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const start = (key: string) => {
     const from = state.current.keys.indexOf(key);
     state.current = { ...state.current, active: key, from, target: from };
+    band.setValue(0);
     setActive(key);
     setTarget(from);
+    slide(band, 1, undefined, BAND_MS);
     onDragging?.(true);
+    lock?.(true);
   };
 
   const step = (key: string, dir: -1 | 1) => {
@@ -167,11 +179,12 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
             style={{
               marginBottom: i < items.length - 1 ? gap : 0,
               zIndex: isActive ? 10 : 0,
-              borderRadius: tokens.radius.sm,
-              backgroundColor: isActive ? c.surfaceRow : "transparent",
               transform: [{ translateY: isActive ? dy : shiftOf(k) }],
             }}
           >
+            {isActive ? (
+              <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: tokens.radius.sm, backgroundColor: c.surfaceRow, opacity: band }]} />
+            ) : null}
             {renderItem(item, still ? noDrag : { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}
           </Animated.View>
         );

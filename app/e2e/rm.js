@@ -41,6 +41,7 @@ const { chromium } = require("playwright");
   await p.getByRole("radio", { name: "15분" }).click();
   await p.getByRole("button", { name: "완료" }).click();
   await p.waitForTimeout(400);
+  r.alarmOnRow = await p.getByLabel("알림 20:15").count(); // clock + time under the title, as in the original
   await p.getByText("책 30쪽 읽기").click();
   await p.waitForTimeout(400);
   r.alarmShown = await p.getByText("시간 알림 · 20:15").count();

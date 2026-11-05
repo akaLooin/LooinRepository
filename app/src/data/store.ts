@@ -9,6 +9,7 @@ import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
 import { isUploaded, rememberLocal } from "../lib/photoPaths";
+import { smoothLayout } from "../lib/motion";
 import { rescheduleNotifications } from "./notifications";
 import { applyRemoteSettings, getPrefs, settingsDirty, settingsSent } from "./prefs";
 import { fromSettingsRow, toSettingsRow } from "./prefsRow";
@@ -168,7 +169,7 @@ export const selectDDays = (d: DB) => [...d.ddays].sort(byOrder);
 export const selectRoutines = (d: DB) => [...d.routines].sort(byOrder);
 
 export { isVirtual, manualRoutinesOn, todosForDay, virtualId } from "./occurrences";
-import { isVirtual, todosForDay } from "./occurrences";
+import { isVirtual, routineAlarm, todosForDay } from "./occurrences";
 
 // ── profile ────────────────────────────────────────────────
 export function updateProfile(patch: Partial<Profile>) {
@@ -264,6 +265,7 @@ export function arrangeTodos(entries: { id: string; categoryId: string }[]): boo
 export class EndedCategoryError extends Error {}
 
 export function addTodo(categoryId: string, date: Day | null, title: string) {
+  smoothLayout();
   const cat = db.categories.find((c) => c.id === categoryId);
   if (cat?.endedAt) throw new EndedCategoryError("종료한 카테고리에는 할 일을 추가할 수 없어요.");
   const same = db.todos.filter((t) => t.categoryId === categoryId && t.date === date);
@@ -293,6 +295,7 @@ export function updateTodo(id: string, patch: Partial<Todo>) {
 }
 
 export function toggleTodo(id: string) {
+  smoothLayout();
   id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
@@ -300,6 +303,7 @@ export function toggleTodo(id: string) {
 }
 
 export function deleteTodo(id: string) {
+  smoothLayout();
   const t = db.todos.find((x) => x.id === id);
   // A routine occurrence is kept as a skipped row so the routine does not bring it back.
   if (t?.routineId) set({ ...db, todos: db.todos.map((x) => (x.id === id ? { ...x, isSkipped: true } : x)) });
@@ -308,10 +312,11 @@ export function deleteTodo(id: string) {
 
 /** Add a manual-add routine as that day's to-do, titled like the routine (the user can edit it after, e.g. "운동하기: 어깨"). */
 export function addRoutineTodo(routineId: string, day: Day, title?: string) {
+  smoothLayout();
   const r = db.routines.find((x) => x.id === routineId);
   if (!r) return;
   const row: Todo = { id: newId(), categoryId: r.categoryId, title: title ?? r.title, date: day, sortOrder: nextOrder(db.todos.filter((x) => x.date === day)), isDone: false,
-    memo: "", memoIsPrivate: false, timerSeconds: 0, routineId, routineDate: day, createdAt: now() };
+    memo: "", memoIsPrivate: false, timerSeconds: 0, routineId, routineDate: day, createdAt: now(), remindAt: routineAlarm(r.timeOfDay, day) };
   set({ ...db, todos: [...db.todos, row] });
 }
 
@@ -343,6 +348,7 @@ export function moveTodo(id: string, date: Day) {
 
 /** 내일 또 하기 / 다른 날 또 하기: a fresh, unchecked copy on another day. */
 export function copyTodo(id: string, date: Day) {
+  smoothLayout();
   id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
@@ -432,6 +438,7 @@ export const selectInbox = (d: DB) => d.todos.filter((t) => t.date === null && !
 
 /** Moves to-dos to a day (null = 보관함). Routine occurrences become real rows first. */
 export function moveTodos(ids: string[], date: Day | null) {
+  smoothLayout();
   const real = new Set(ids.map((id) => materialize(id)));
   let order = nextOrder(db.todos.filter((x) => x.date === date));
   set({ ...db, todos: db.todos.map((t) => (real.has(t.id) ? { ...t, date, sortOrder: order++ } : t)) });
@@ -439,6 +446,7 @@ export function moveTodos(ids: string[], date: Day | null) {
 
 /** Fresh, unchecked copies on another day. */
 export function copyTodos(ids: string[], date: Day) {
+  smoothLayout();
   const real = ids.map((id) => materialize(id));
   let order = nextOrder(db.todos.filter((x) => x.date === date));
   const copies: Todo[] = db.todos.filter((t) => real.includes(t.id)).map((t) => ({
@@ -449,6 +457,7 @@ export function copyTodos(ids: string[], date: Day) {
 }
 
 export function deleteTodos(ids: string[]) {
+  smoothLayout();
   for (const id of ids) deleteTodo(materialize(id));
 }
 

@@ -9,6 +9,9 @@ export const tokens = {
       "surfaceRow": "#1e1e1e",
       "surfaceButton": "#303030",
       "surfaceStrong": "#424242",
+      "selectedDay": "#363636",
+      "alarmIcon": "#ccd3db",
+      "alarmIconHands": "#404145",
       "cloverEmpty": "#333333",
       "divider": "#121212",
       "grabber": "#4e4e4e",
@@ -52,6 +55,9 @@ export const tokens = {
       "surfaceRow": "#f3f3f3",
       "surfaceButton": "#eaeaea",
       "surfaceStrong": "#dddddd",
+      "selectedDay": "#dcdcdc",
+      "alarmIcon": "#8f969e",
+      "alarmIconHands": "#ffffff",
       "cloverEmpty": "#d2d8d8",
       "cloverNumber": "#4f5555",
       "divider": "#eeeeee",
@@ -125,7 +131,7 @@ export const tokens = {
       "weight": 400
     },
     "date": {
-      "size": 13.5,
+      "size": 14.5,
       "line": 17,
       "weight": 500
     },
@@ -176,7 +182,7 @@ export const tokens = {
     "bottomNavHeight": 64
   },
   "size": {
-    "cloverCalendar": 28,
+    "cloverCalendar": 27,
     "cloverTodo": 25,
     "todayRing": 28,
     "avatarProfile": 69,

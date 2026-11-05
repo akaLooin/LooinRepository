@@ -21,6 +21,9 @@ if (supported) {
  * (a NullPointerException on empty fields), so that error is ignored: it used to stop the permission request and
  * every scheduled alarm.
  */
+let channelOk = false;
+let lastError: string | null = null;
+
 async function ensureChannel() {
   if (Platform.OS !== "android") return;
   try {
@@ -34,6 +37,29 @@ async function ensureChannel() {
   } catch {
     // see above
   }
+  // Only use our channel if the phone really has it: a notification sent to a missing channel is dropped silently.
+  try {
+    channelOk = !!(await Notifications.getNotificationChannelAsync(CHANNEL));
+  } catch {
+    channelOk = false;
+  }
+}
+
+/** Schedules one notification; falls back to Expo's default channel if ours is missing or refused. */
+async function scheduleOne(key: string, title: string, body: string, trigger: { date: Date } | { seconds: number }) {
+  const base = "date" in trigger
+    ? { type: Notifications.SchedulableTriggerInputTypes.DATE, date: trigger.date }
+    : { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: trigger.seconds };
+  const content = { title, body, sound: "default" as const };
+  if (channelOk) {
+    try {
+      await Notifications.scheduleNotificationAsync({ identifier: key, content, trigger: { ...base, channelId: CHANNEL } as Notifications.NotificationTriggerInput });
+      return;
+    } catch (e) {
+      lastError = String(e);
+    }
+  }
+  await Notifications.scheduleNotificationAsync({ identifier: key, content, trigger: base as Notifications.NotificationTriggerInput });
 }
 
 /** Asks once, when the user first sets a reminder or alarm. Returns whether notifications can be shown. */
@@ -68,16 +94,42 @@ async function drain() {
       const perm = await Notifications.getPermissionsAsync();
       if (!perm.granted) return;
       await ensureChannel();
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      for (const n of planNotifications(db, new Date())) {
-        await Notifications.scheduleNotificationAsync({
-          identifier: n.key,
-          content: { title: n.title, body: n.body },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: n.at, channelId: CHANNEL },
-        });
+      // replace only what the plan made (a pending test notification survives)
+      for (const r of await Notifications.getAllScheduledNotificationsAsync()) {
+        if (!r.identifier.startsWith("test:")) await Notifications.cancelScheduledNotificationAsync(r.identifier);
       }
-    } catch {
+      // one at a time, so a single failure cannot drop the rest
+      for (const n of planNotifications(db, new Date())) {
+        try {
+          await scheduleOne(n.key, n.title, n.body, { date: n.at });
+        } catch (e) {
+          lastError = String(e);
+        }
+      }
+    } catch (e) {
       // Scheduling is best effort; the next change or app start tries again.
+      lastError = String(e);
     }
   }
+}
+
+/** For the check on the reminder screen: is everything in place, and what is waiting to ring. */
+export async function notificationStatus(): Promise<{ allowed: boolean; scheduled: number; next: Date | null; channel: boolean; error: string | null }> {
+  if (!supported) return { allowed: false, scheduled: 0, next: null, channel: false, error: null };
+  const perm = await Notifications.getPermissionsAsync();
+  await ensureChannel();
+  let list: Notifications.NotificationRequest[] = [];
+  try { list = await Notifications.getAllScheduledNotificationsAsync(); } catch (e) { lastError = String(e); }
+  const times = list
+    .map((r) => (r.trigger && "value" in r.trigger ? Number((r.trigger as { value: number }).value) : r.trigger && "date" in r.trigger ? Number((r.trigger as { date: number }).date) : NaN))
+    .filter((x) => Number.isFinite(x) && x > Date.now())
+    .sort((a, b) => a - b);
+  return { allowed: perm.granted, scheduled: list.length, next: times.length ? new Date(times[0]) : null, channel: channelOk, error: lastError };
+}
+
+/** Sends a test notification in a few seconds (close the app to see it arrive in the background). */
+export async function sendTestNotification(seconds = 10): Promise<boolean> {
+  if (!(await ensurePermission())) return false;
+  await scheduleOne(`test:${Date.now()}`, "알림 테스트", "알림이 잘 와요", { seconds });
+  return true;
 }

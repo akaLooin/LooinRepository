@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { AddPill, AppText, BottomSheet, Button, PillRow, ScreenHeader, TimeGrid, Trash2, useToast } from "../../components";
 import { ensurePermission } from "../../data/notifications";
+import { NotificationCheck } from "./NotificationCheck";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { addReminder, deleteReminder, selectReminders, useDB } from "../../data/store";
 import { tokens, useTheme } from "../../theme";
@@ -47,6 +48,7 @@ export function ReminderScreen() {
             </Pressable>
           </View>
         ))}
+        <NotificationCheck notice={notice} />
       </ScrollView>
       <BottomSheet visible={open} onClose={() => setOpen(false)} title="리마인더 시간">
         <TimeGrid hour={time.h} minute={time.m} onChange={(h, m) => setTime({ h, m })} />

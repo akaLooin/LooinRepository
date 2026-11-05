@@ -64,12 +64,12 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             const isToday = day === today;
             const isSel = picker ? day === selected : false;
             const ring = isToday && !picker ? true : isSel;
-            const outline = !picker && !isToday && day === selected; // selected day in the home calendar (not in the reference shots; our choice)
+            const picked = !picker && !isToday && day === selected; // the original fills the selected day with grey
             const label = String(parseDay(day).d);
             return (
               <Pressable key={j} style={{ flex: 1, alignItems: "center", gap: 4 }} onPress={() => onSelect?.(day)} accessibilityRole="button" accessibilityLabel={`${month}월 ${label}일`} accessibilityState={{ selected: day === selected }}>
                 {!picker && state ? <Clover state={state(day)} /> : null}
-                <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : "transparent", borderWidth: outline ? 1.5 : 0, borderColor: c.textMuted, marginTop: picker ? 0 : -5, transform: [{ translateY: ring && !picker ? 4 : 0 }] }}>
+                <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : picked ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5, transform: [{ translateY: (ring || picked) && !picker ? 4 : 0 }] }}>
                   <AppText variant="date" weight={ring ? 700 : 500} color={ring ? "onSelected" : dayColor(weekday(day))}>{label}</AppText>
                 </View>
               </Pressable>

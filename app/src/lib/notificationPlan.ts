@@ -1,5 +1,5 @@
 // Pure: which local notifications the phone should have scheduled right now. No React Native imports.
-import { todosForDay } from "../data/occurrences";
+import { isVirtual, todosForDay } from "../data/occurrences";
 import type { DB } from "../data/types";
 import { addDays, toDay } from "./dates";
 
@@ -20,6 +20,12 @@ export function planNotifications(db: DB, now: Date): PlannedNotification[] {
     const [y, m, d] = day.split("-").map(Number);
     const todos = todosForDay(db, day);
     const left = todos.filter((t) => !t.isDone).length;
+    // routine occurrences with a time that have no row yet ring too (rows are covered below)
+    for (const t of todos) {
+      if (!isVirtual(t.id) || !t.remindAt) continue;
+      const at = new Date(t.remindAt);
+      if (at > now) out.push({ key: `todo:${t.id}`, at, title: t.title, body: "할 일 시간이에요" });
+    }
     for (const r of db.reminders) {
       const [hh, mm] = r.timeOfDay.split(":").map(Number);
       const at = new Date(y, m - 1, d, hh, mm);

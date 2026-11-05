@@ -39,3 +39,19 @@ t("empty day gets a nudge", () => {
   const day = planNotifications(base, now).find((p) => p.key === "reminder:r:2026-11-05");
   assert.equal(day?.body, "오늘 할 일을 적어 볼까요?");
 });
+
+// a routine with a time rings on its days even before the user touches it, and shows its time
+{
+  const now2 = new Date(2026, 10, 5, 6, 0);
+  const db2 = {
+    profile: { id: "u", nickname: "", bio: "" }, categories: [{ id: "c", title: "To Do", color: "#00ff7f", visibility: "public", sortOrder: 1 }],
+    todos: [], ddays: [], diaries: [], reminders: [],
+    routines: [{ id: "r1", categoryId: "c", title: "운동하기", startDate: "2026-11-01", repeatType: "daily", timeOfDay: "07:55", memo: "", manualAdd: false, sortOrder: 1 }],
+  } as never;
+  const plan2 = planNotifications(db2, now2);
+  assert.equal(plan2[0].title, "운동하기");
+  assert.equal(plan2[0].at.getHours(), 7);
+  assert.equal(plan2[0].at.getMinutes(), 55);
+  assert.equal(plan2.length, 7); // one a day for the week ahead
+  console.log("ok routine time rings on each day ahead");
+}

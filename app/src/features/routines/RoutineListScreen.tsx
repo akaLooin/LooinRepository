@@ -1,9 +1,8 @@
 import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
-import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
-import { AppText, Plus, ReorderableList, RoutineRow, ScreenHeader } from "../../components";
+import { Pressable, View } from "react-native";
+import { AppText, Plus, ReorderableList, RoutineRow, ScreenHeader, DragScrollView } from "../../components";
 import { reorderRoutines, selectActiveCategories, selectRoutines, useDB } from "../../data/store";
 import { today } from "../../lib/dates";
 import { periodLabel, routineStatus, ruleLabel } from "../../lib/routines";
@@ -18,11 +17,10 @@ export function RoutineListScreen() {
   const categories = useDB(selectActiveCategories);
   const routines = useDB(selectRoutines);
   const now = today();
-  const [dragging, setDragging] = useState(false);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="루틴 관리" onBack={() => goBack("/")} />
-      <ScrollView scrollEnabled={!dragging} contentContainerStyle={{ padding: tokens.layout.gutter, gap: 12, paddingBottom: 40 }}>
+      <DragScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 12, paddingBottom: 40 }}>
         <AppText variant="helper" color="textMuted">카테고리를 눌러 루틴을 만들고, 루틴을 눌러 고쳐요. 길게 눌러 끌면 순서가 바뀌어요.</AppText>
         {categories.length === 0 ? <AppText variant="body" color="textMuted">먼저 카테고리를 만들어 주세요.</AppText> : null}
         {categories.map((cat) => {
@@ -37,7 +35,7 @@ export function RoutineListScreen() {
                 </View>
               </Pressable>
               <View style={{ paddingHorizontal: 12 }}>
-                <ReorderableList items={items} keyOf={(r) => r.id} labelOf={(r) => r.title} onDragging={setDragging} onReorder={reorderRoutines}
+                <ReorderableList items={items} keyOf={(r) => r.id} labelOf={(r) => r.title} onReorder={reorderRoutines}
                   renderItem={(r, drag) => (
                     <RoutineRow status={STATUS[routineStatus(r, now)]} title={r.title} detail={`${periodLabel(r.startDate, r.endDate)} / ${ruleLabel(r)}`}
                       onPress={() => router.push(`/routines/${r.id}` as never)} {...drag} />
@@ -46,7 +44,7 @@ export function RoutineListScreen() {
             </View>
           );
         })}
-      </ScrollView>
+      </DragScrollView>
     </View>
   );
 }

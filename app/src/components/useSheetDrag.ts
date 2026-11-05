@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Animated, Easing, PanResponder } from "react-native";
+import { Animated, Easing, PanResponder, Platform } from "react-native";
 
 const OFFSCREEN = 900;
+// Sheets move on the UI thread on the phone, so they stay smooth while the screen behind them is busy.
+const native = Platform.OS !== "web";
 
 /**
  * Slide-up sheet motion plus drag-down-to-close, on PanResponder (no extra library).
@@ -19,7 +21,7 @@ export function useSheetDrag(open: boolean, onDismiss: () => void, onHidden?: ()
     if (open) draggedAway.current = false;
     // already slid off by a drag: no second animation, gone at once
     if (!open && draggedAway.current) { onHidden?.(); return; }
-    Animated.timing(y, { toValue: open ? 0 : OFFSCREEN, duration: open ? 260 : 200, easing: Easing.out(Easing.cubic), useNativeDriver: false })
+    Animated.timing(y, { toValue: open ? 0 : OFFSCREEN, duration: open ? 260 : 200, easing: Easing.out(Easing.cubic), useNativeDriver: native })
       .start(({ finished }) => { if (finished && !open) onHidden?.(); });
   }, [open, y]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -34,12 +36,12 @@ export function useSheetDrag(open: boolean, onDismiss: () => void, onHidden?: ()
         onPanResponderMove: (_e, g) => y.setValue(Math.max(0, g.dy)),
         onPanResponderRelease: (_e, g) => {
           if (g.dy > 90 || g.vy > 1.2) {
-            Animated.timing(y, { toValue: OFFSCREEN, duration: 180, useNativeDriver: false }).start(() => { draggedAway.current = true; dismissRef.current(); });
+            Animated.timing(y, { toValue: OFFSCREEN, duration: 180, useNativeDriver: native }).start(() => { draggedAway.current = true; dismissRef.current(); });
           } else {
-            Animated.spring(y, { toValue: 0, useNativeDriver: false, bounciness: 4 }).start();
+            Animated.spring(y, { toValue: 0, useNativeDriver: native, bounciness: 4 }).start();
           }
         },
-        onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: false }).start(),
+        onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: native }).start(),
       }).panHandlers,
     [y],
   );
