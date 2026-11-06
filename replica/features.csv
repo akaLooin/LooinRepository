@@ -1,0 +1,39 @@
+feature,area,priority,original,clone,notes
+Pick photo from gallery,import,must,yes,yes,system Photo Picker
+Pick video from gallery,import,must,yes,yes,
+Live GPU preview of edits,editor,must,yes,yes,OpenGL ES
+Colour filters grouped by category,filters,must,yes,yes,own presets
+Filter intensity slider,filters,must,yes,yes,
+VHS effect,effects,must,yes,yes,
+Glitch / RGB split effect,effects,must,yes,yes,
+Film grain / dust effect,effects,must,yes,yes,
+Light leak / neon glow effect,effects,must,yes,yes,
+Stack multiple effects,effects,must,yes,yes,
+Brightness contrast saturation exposure,adjust,must,yes,yes,
+Warmth tint highlights shadows,adjust,must,yes,yes,
+Hold to compare before/after,editor,must,yes,yes,
+Save photo to gallery full resolution,export,must,yes,yes,
+Export video with effects to gallery,export,must,yes,yes,
+Animated effects move over time,effects,must,yes,yes,uTime uniform; photo can be saved as a 5s moving clip
+Vignette sharpen fade grain adjust,adjust,should,yes,yes,
+Crop aspect ratios,crop,should,yes,partial,centred crop by ratio; no free drag-crop box
+Rotate and flip,crop,should,yes,yes,
+Video trim,video,should,yes,yes,
+Video speed,video,should,yes,yes,
+Keep audio in exported video,video,should,yes,yes,
+Reset all edits,editor,should,yes,yes,
+Recent exports on home,home,should,yes,partial,shows items this install saved; after a reinstall Android hides older ones
+Share after export,export,should,yes,yes,
+Date stamp overlay (camcorder),effects,should,yes,yes,
+Favourite presets,filters,could,yes,yes,
+Random preset (shuffle),filters,could,yes,yes,
+Export resolution choice,export,could,yes,yes,원본 / 1080p / 720p
+Effect per-preset extra parameter,effects,could,yes,no,one intensity slider per effect only
+Undo / redo,editor,could,yes,yes,
+Dark theme only UI,design,could,yes,yes,
+AI effects category,effects,skip,yes,skip,excluded by the user
+Original preset library and artwork,filters,skip,yes,skip,owned by the original; clone makes its own
+Licensed music,video,skip,yes,skip,licensed catalogue
+Creator templates,video,skip,yes,skip,the original's content
+Subscription paywall,billing,skip,yes,skip,personal use
+Account and social feed,social,skip,yes,skip,personal use
