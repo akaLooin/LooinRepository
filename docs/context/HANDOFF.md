@@ -41,7 +41,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 진행 중: APK 만들기 (2026-11-07)
 - 이용자가 결정. 순서는 `replica/backend.md` 7번. 사전 점검 완료(패키지 버전 맞춤, expo-system-ui 추가, prebuild 통과)
-- 이용자가 `eas init` 후 projectId를 보내 주면 app.json에 커밋 → 이용자는 `git checkout -- app.json` 후 pull
+- EAS projectId 20e21693-a78a-4088-8483-327b41fc12f2 app.json에 커밋함(2026-11-07). 이용자 Expo 계정은 구글 가입 → 로그인은 `eas login --sso` 또는 EXPO_TOKEN
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용

@@ -46,6 +46,11 @@
     "scheme": "todomateclone",
     "updates": {
       "fallbackToCacheTimeout": 30000
+    },
+    "extra": {
+      "eas": {
+        "projectId": "20e21693-a78a-4088-8483-327b41fc12f2"
+      }
     }
   }
 }
