@@ -1,36 +1,49 @@
-import { useRef, useState } from "react";
-import { TextInput, View, type TextInputInstance } from "react-native";
-import { Clover } from "../../components";
+import { useEffect, useRef, useState } from "react";
+import { Platform, TextInput, View, type TextInputInstance, type ViewInstance } from "react-native";
+import { Clover, useReveal } from "../../components";
 import { fontFamily, tokens, useTheme, visibleOn } from "../../theme";
 
-/** The row that turns into a text field when adding (+) or editing (double tap) a to-do (S04). */
-export function InlineTodoInput({ color, initial = "", onSubmit, onDone }: { color: string; initial?: string; onSubmit: (title: string) => void; onDone: () => void }) {
+/**
+ * The row that turns into a text field when adding (+) or editing (double tap) a to-do (S04).
+ * As in the original: the keyboard comes up at once, and the page scrolls so the row stays above it.
+ */
+export function InlineTodoInput({ color, initial = "", editing = !!initial, onSubmit, onDone, onChangeText }: {
+  color: string; initial?: string; editing?: boolean; onSubmit: (title: string) => void; onDone: () => void; onChangeText?: (text: string) => void;
+}) {
   const { c } = useTheme();
+  const reveal = useReveal();
   const [text, setText] = useState(initial);
   const input = useRef<TextInputInstance>(null);
+  const row = useRef<ViewInstance>(null);
   const closing = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textRef = useRef(text);
   textRef.current = text;
+  // autoFocus alone did not always bring the keyboard up on Android when the row appears inside the list
+  useEffect(() => {
+    const t = setTimeout(() => input.current?.focus(), Platform.OS === "android" ? 80 : 0);
+    return () => { clearTimeout(t); if (closing.current) clearTimeout(closing.current); };
+  }, []);
   // Closing waits a moment so tapping another control first does not lose the text.
   const scheduleClose = () => {
-    closing.current = setTimeout(() => { if (!textRef.current.trim() || initial) onDone(); }, 180);
+    closing.current = setTimeout(() => { if (!textRef.current.trim() || editing) onDone(); }, 180);
   };
   const submit = () => {
     const t = text.trim();
     if (t) onSubmit(t);
-    if (initial) onDone(); // editing: one shot
+    if (editing) onDone(); // editing: one shot
     else setText(""); // adding: stay open for the next one
   };
   return (
-    <View>
+    <View ref={row} collapsable={false}>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 4 }}>
       <Clover size={tokens.size.cloverTodo} state={{ kind: "todoOpen" }} />
       <TextInput
         ref={input}
         autoFocus
         value={text}
-        onChangeText={setText}
+        onChangeText={(v) => { setText(v); onChangeText?.(v); }}
         onSubmitEditing={submit}
+        onFocus={() => reveal?.(row)}
         onBlur={scheduleClose}
         submitBehavior="submit"
         returnKeyType="done"

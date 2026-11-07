@@ -32,6 +32,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 ## 폰 확인 결과와 조치 (2026-11-07, 여섯 번째 피드백까지)
 - 확인됨 ✅: 동기화, 알림, 크기, 접기 ∨, 끌기(제자리), 캘린더 표시, 할 일 메뉴 4종, 체크 색 설정, 보관함 옆 화면 스와이프(동작)
 - 이번에 고침(폰 확인 필요): 옮긴 직후 할 일이 2초쯤 안 눌림(B14: 놓는 순간 저장), 보관함 넘어갈 때 끊김(미리 만들어 두고 다시 그리지 않음)
+- 새 기능(폰 확인 필요): 캘린더 옆으로 밀어 달 넘기기, 제목 누르면 오늘, 수정 상태 유지·키보드 바로·화면 이동
 - 사진 회색(B15): Storage에 그 파일이 없음(첫 테스트의 14바이트 파일, 지워짐) → 그 할 일에 사진 다시 넣기
 - **폰 확인 방식(이용자 결정)**: 항상 실제 속도 모드 = `npm.cmd run phone` (`expo start --no-dev --minify`). **`--clear` 쓰지 않기**: 캐시를 지우면 첫 빌드가 60초 넘게 걸려 Expo Go가 기다리다 포기하고(파란 화면) 예전 버전을 띄움. 업데이트 안 보이던 원인이 이것
 - PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
@@ -49,6 +50,6 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 작업 방법
 - 단위 테스트 `cd app && npm test` (36개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
-- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 16개 (Playwright, 411×891, 체험 모드 데이터)
+- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 17개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

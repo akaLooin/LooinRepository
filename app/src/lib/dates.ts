@@ -48,3 +48,18 @@ export const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 export function weekdayLabels(weekStartsSunday = true) {
   return weekStartsSunday ? WEEKDAY_LABELS : [...WEEKDAY_LABELS.slice(1), WEEKDAY_LABELS[0]];
 }
+
+/** Months since year 0 (for paging the calendar): 2026-11 → 2026*12 + 10. */
+export const monthIndex = (y: number, m: number) => y * 12 + (m - 1);
+export const fromMonthIndex = (i: number) => ({ y: Math.floor(i / 12), m: (i % 12) + 1 });
+
+/** First day of the week that holds `day`. */
+export function weekStart(day: Day, weekStartsSunday = true): Day {
+  const back = (weekday(day) - (weekStartsSunday ? 0 : 1) + 7) % 7;
+  return addDays(day, -back);
+}
+
+/** The day the calendar picks after paging, as in the original: forward → the 1st, back → the month's last day. */
+export function pickAfterPaging(y: number, m: number, dir: 1 | -1): Day {
+  return toDay(y, m, dir === 1 ? 1 : daysInMonth(y, m));
+}

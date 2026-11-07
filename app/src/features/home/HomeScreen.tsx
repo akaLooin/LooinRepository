@@ -1,7 +1,7 @@
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { Keyboard, Pressable, ScrollView, View } from "react-native";
 import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
@@ -10,7 +10,8 @@ import {
   updateTodo, useDB,
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
-import { addDays, monthGrid, parseDay, today, weekday, type Day } from "../../lib/dates";
+import { addDays, fromMonthIndex, monthGrid, monthIndex, parseDay, pickAfterPaging, today, weekday, weekStart, type Day } from "../../lib/dates";
+import { CalendarPager, calendarJustSwiped } from "./CalendarPager";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { tokens, useTheme } from "../../theme";
 import { dayState } from "./dayState";
@@ -50,6 +51,20 @@ export function HomeScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  // As in the original, a to-do being edited stays in edit mode (with what was typed) while another day is looked
+  // at, and is back in edit mode when its day is picked again.
+  const drafts = useRef(new Map<string, string>());
+  const keepEditUntil = useRef(0);
+  const keepEditing = () => {
+    if (!editing) return;
+    keepEditUntil.current = Date.now() + 800; // the field closes itself when it loses focus; not this time
+    Keyboard.dismiss();
+  };
+  const stopEditing = (id: string) => {
+    if (Date.now() < keepEditUntil.current) return;
+    drafts.current.delete(id);
+    setEditing((e) => (e === id ? null : e));
+  };
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
   const [selecting, setSelecting] = useState<Set<string> | null>(null);
@@ -61,24 +76,56 @@ export function HomeScreen() {
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
-  const byDay = useMemo(() => {
-    const m = new Map<Day, ReturnType<typeof todosForDay>>();
-    for (const row of grid) for (const d of row) if (d) m.set(d, todosForDay(db, d));
-    return m;
-  }, [db, view.y, view.m, prefs.weekStartsSunday]); // eslint-disable-line react-hooks/exhaustive-deps
+  // to-dos per day, filled as days are drawn (the calendar strip also draws the months on either side)
+  const byDay = useMemo(() => new Map<Day, ReturnType<typeof todosForDay>>(), [db]);
+  const todosOn = (d: Day) => {
+    let list = byDay.get(d);
+    if (!list) byDay.set(d, (list = todosForDay(db, d)));
+    return list;
+  };
   const dayTodos = todosForDay(db, selected).sort((a, b) => (prefs.todoSort === "done_last" ? Number(a.isDone) - Number(b.isDone) : 0) || a.sortOrder - b.sortOrder);
 
   const weekRow = mode === "week" ? [grid[Math.max(0, parseDay(selected).m === view.m ? weekOfMonth(selected, prefs.weekStartsSunday) : 0)]] : undefined;
   const title = mode === "month" ? `${view.y}년 ${view.m}월` : `${view.y}년 ${view.m}월 ${(weekRow ? grid.indexOf(weekRow[0]) : 0) + 1}주차`;
 
-  const shift = (dir: number) => {
+  // The calendar strip: month pages (or week pages in week view). Paging forward picks the 1st, back the last day
+  // (original); in week view the same weekday a week later or earlier.
+  const epochWeek = weekStart("2000-01-02", prefs.weekStartsSunday);
+  const weekIndexOf = (d: Day) => Math.round((Date.parse(weekStart(d, prefs.weekStartsSunday)) - Date.parse(epochWeek)) / (7 * 86400000));
+  const pageIndex = mode === "month" ? monthIndex(view.y, view.m) : weekIndexOf(selected);
+  const goPage = (i: number, dir: 1 | -1) => {
+    setAdding(null);
     if (mode === "week") {
-      const next = addDays(selected, dir * 7);
+      const next = addDays(selected, dir * 7 * Math.abs(i - pageIndex || 1));
       setSelected(next);
       setView({ y: parseDay(next).y, m: parseDay(next).m });
       return;
     }
-    setView(({ y, m }) => { const t = m + dir; return { y: y + Math.floor((t - 1) / 12), m: ((t - 1 + 120) % 12) + 1 }; });
+    const { y, m } = fromMonthIndex(i);
+    setView({ y, m });
+    setSelected(pickAfterPaging(y, m, dir));
+  };
+  const shift = (dir: 1 | -1) => goPage(pageIndex + dir, dir);
+  const goToday = () => {
+    setAdding(null);
+    setSelected(now);
+    setView({ y: parseDay(now).y, m: parseDay(now).m });
+  };
+  const renderPage = (i: number) => {
+    const rows = mode === "week" ? [Array.from({ length: 7 }, (_, k) => addDays(epochWeek, i * 7 + k))] : undefined;
+    const ym = mode === "month" ? fromMonthIndex(i) : view;
+    return (
+      <Calendar
+        year={ym.y}
+        month={ym.m}
+        today={now}
+        selected={selected}
+        onSelect={(d) => { if (calendarJustSwiped()) return; if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); keepEditing(); }}
+        state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
+        rows={rows}
+        weekStartsSunday={prefs.weekStartsSunday}
+      />
+    );
   };
 
   const diary = diaries.find((x) => x.date === selected);
@@ -153,22 +200,14 @@ export function HomeScreen() {
           <CalendarHeader
             title={title}
             mode={mode}
+            onTitle={goToday}
             onToggleMode={() => { smoothLayout(); setMode(mode === "month" ? "week" : "month"); setView({ y: parseDay(selected).y, m: parseDay(selected).m }); }}
             onPrev={() => shift(-1)}
             onNext={() => shift(1)}
             filterColors={calCats.slice(0, 2).map((x) => x.color)}
             onFilter={() => setHomeSheet("filter")}
           />
-          <Calendar
-            year={view.y}
-            month={view.m}
-            today={now}
-            selected={selected}
-            onSelect={(d) => { if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); setEditing(null); }}
-            state={(d) => dayState((byDay.get(d) ?? []).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
-            rows={weekRow}
-            weekStartsSunday={prefs.weekStartsSunday}
-          />
+          <CalendarPager key={`${mode}-${prefs.weekStartsSunday}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} />
         </View>
 
         <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12 }} {...swipe}>
@@ -233,7 +272,8 @@ export function HomeScreen() {
               }
               const t = r.t;
               return editing === t.id ? (
-                <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
+                <InlineTodoInput color={cat.color} editing initial={drafts.current.get(t.id) ?? t.title} onChangeText={(v) => drafts.current.set(t.id, v)}
+                  onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => stopEditing(t.id)} />
               ) : (
                 <TodoRow
                   title={t.title}

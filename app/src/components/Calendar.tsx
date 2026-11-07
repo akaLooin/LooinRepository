@@ -12,8 +12,10 @@ function dayColor(wd: number): ColorName {
 }
 
 /** [clover ▼]  2026년 11월  [주] [‹] [›]  (S03) */
-export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filterColors, onFilter }: {
+export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filterColors, onFilter, onTitle }: {
   title: string; mode: "month" | "week"; onToggleMode: () => void; onPrev: () => void; onNext: () => void; filterColors: string[]; onFilter?: () => void;
+  /** tapping the big month title goes back to today (original) */
+  onTitle?: () => void;
 }) {
   const { c } = useTheme();
   return (
@@ -26,7 +28,9 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
         </View>
         <ChevronDown size={15} color={c.text} fill={c.text} />
       </PillButton>
-      <AppText variant="monthTitle" style={{ flex: 1, marginLeft: 1 }} accessibilityRole="header">{title}</AppText>
+      <Pressable onPress={onTitle} disabled={!onTitle} style={{ flex: 1, marginLeft: 1 }} accessibilityRole="button" accessibilityLabel={`${title}, 오늘로 이동`}>
+        <AppText variant="monthTitle" accessibilityRole="header">{title}</AppText>
+      </Pressable>
       <PillButton label={mode === "month" ? "주" : "월"} onPress={onToggleMode} a11y={mode === "month" ? "주간 보기" : "월간 보기"} />
       <PillButton round onPress={onPrev} a11y="이전"><ChevronLeft size={20} color={c.text} /></PillButton>
       <PillButton round onPress={onNext} a11y="다음"><ChevronRight size={20} color={c.text} /></PillButton>
@@ -70,7 +74,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             const wd = weekday(day);
             const numberColor = ring && wd !== 0 && wd !== 6 ? "onSelected" : dayColor(wd);
             return (
-              <Pressable key={j} style={{ flex: 1, alignItems: "center", gap: 4 }} onPress={() => onSelect?.(day)} accessibilityRole="button" accessibilityLabel={`${month}월 ${label}일`} accessibilityState={{ selected: day === selected }}>
+              <Pressable key={j} style={{ flex: 1, alignItems: "center", gap: 4 }} onPress={() => onSelect?.(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일`} accessibilityState={{ selected: day === selected }}>
                 {!picker && state ? <Clover state={state(day)} /> : null}
                 <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5, transform: [{ translateY: (ring || todayDisc) && !picker ? 4 : 0 }] }}>
                   <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>
