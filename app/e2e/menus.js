@@ -27,6 +27,16 @@ const NAMES = ["메모", "시간 알림", "타이머 열기", "사진 인증", "
   r.pastOpen = await open("책 30쪽 읽기"); await close();
   await p.getByRole("checkbox", { name: "책 30쪽 읽기, 미완료" }).click(); await p.waitForTimeout(300);
   r.pastDone = await open("책 30쪽 읽기"); await close();
+  // tapping the memo text opens the memo editor straight away; tapping the alarm time opens the time sheet
+  await p.getByText("에세이 - 3장").first().click(); await p.waitForTimeout(500);
+  r.memoTapOpensEditor = await p.getByLabel("메모를 남겨 보세요").count();
+  r.memoFocused = await p.evaluate(() => document.activeElement?.getAttribute("aria-label"));
+  await p.getByRole("button", { name: "완료" }).first().click(); await p.waitForTimeout(400);
+  await p.getByRole("button", { name: /오늘로 이동$/ }).click(); await p.waitForTimeout(300); // back to today
+  await open("메뉴 확인"); await p.getByText("시간 알림").click(); await p.waitForTimeout(400);
+  await p.getByRole("button", { name: "완료" }).last().click(); await p.waitForTimeout(500);
+  await p.getByLabel(/^알림 \d\d:\d\d$/).first().click(); await p.waitForTimeout(500);
+  r.alarmTapOpensTime = await p.getByText("시간 알림").count();
   const want = {
     todayOpen: ["메모", "시간 알림", "타이머 열기", "내일 하기", "날짜 바꾸기", "보관함으로 이동", "정보 보기"],
     todayDone: ["메모", "시간 알림", "타이머 열기", "사진 인증", "내일 또 하기", "다른 날 또 하기", "날짜 바꾸기", "정보 보기"],

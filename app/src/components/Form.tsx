@@ -1,4 +1,5 @@
-import { Pressable, TextInput, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Pressable, TextInput, View, type TextInputInstance } from "react-native";
 import { fontFamily, tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
 import { ChevronRight } from "./icons";
@@ -54,10 +55,18 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
 }
 
 /** Multi-line memo box (S05a, S07b). */
-export function MemoInput({ value, onChangeText, placeholder }: { value: string; onChangeText: (s: string) => void; placeholder: string }) {
+export function MemoInput({ value, onChangeText, placeholder, focusOnOpen }: { value: string; onChangeText: (s: string) => void; placeholder: string; focusOnOpen?: boolean }) {
   const { c } = useTheme();
+  const ref = useRef<TextInputInstance>(null);
+  // after the sheet has slid up, so the keyboard and the sheet rise together
+  useEffect(() => {
+    if (!focusOnOpen) return;
+    const t = setTimeout(() => ref.current?.focus(), 280);
+    return () => clearTimeout(t);
+  }, [focusOnOpen]);
   return (
     <TextInput
+      ref={ref}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}

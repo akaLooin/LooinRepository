@@ -15,11 +15,15 @@ type Mode = { kind: "menu" } | { kind: "memo" } | { kind: "alarm" } | { kind: "d
 
 /** S05 to-do menu, plus the memo sheet (S05a) and the date picker it opens. */
 /** `inbox`: the 보관함 version of the menu (메모 with its text, 오늘하기, 날짜 바꾸기, 정보 보기), as in the reference. */
-export function TodoSheets({ todoId, onClose, onEdit, notice, inbox }: { todoId: string | null; onClose: () => void; onEdit: (id: string) => void; notice: (msg: string) => void; inbox?: boolean }) {
+export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "menu" }: {
+  todoId: string | null; onClose: () => void; onEdit: (id: string) => void; notice: (msg: string) => void; inbox?: boolean;
+  /** open straight on the memo editor or the alarm time (tapping those on the row), instead of the menu */
+  start?: "menu" | "memo" | "alarm";
+}) {
   const { c } = useTheme();
   const todo = useDB((d) => d.todos.find((t) => t.id === todoId));
   const [mode, setMode] = useState<Mode>({ kind: "closed" });
-  useEffect(() => setMode(todoId ? { kind: "menu" } : { kind: "closed" }), [todoId]);
+  useEffect(() => setMode(todoId ? { kind: start } : { kind: "closed" }), [todoId, start]);
   if (!todo) return null;
   const close = () => {
     setMode({ kind: "closed" });
@@ -147,7 +151,7 @@ function MemoSheet({ todo, onClose }: { todo: Todo; onClose: () => void }) {
   };
   return (
     <BottomSheet visible onClose={save} title={todo.title} right={{ label: "완료", onPress: save }}>
-      <MemoInput value={memo} onChangeText={setMemo} placeholder="메모를 남겨 보세요" />
+      <MemoInput value={memo} onChangeText={setMemo} placeholder="메모를 남겨 보세요" focusOnOpen />
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 10, marginTop: 14 }}>
         <AppText variant="body">나만 보기</AppText>
         <Toggle value={priv} onChange={setPriv} label="메모 나만 보기" />

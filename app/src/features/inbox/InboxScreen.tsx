@@ -25,6 +25,8 @@ export function InboxScreen() {
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
+  const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
+  const openSheet = (id: string, start: "menu" | "memo" | "alarm" = "menu") => { setSheetStart(start); setSheetTodo(id); };
   const [toast, notice] = useToast();
   const pager = usePager();
   const routeBack = useSwipeRight(() => (router.canGoBack() ? goBack("/") : router.replace("/" as never)), 70, -1);
@@ -87,14 +89,15 @@ export function InboxScreen() {
               return editing === t.id ? (
                 <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
               ) : (
-                <TodoRow title={t.title} alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => { if (!pager?.justSwiped()) setSheetTodo(t.id); }}
+                <TodoRow title={t.title} alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => { if (!pager?.justSwiped()) openSheet(t.id); }}
+                  onMemoPress={() => openSheet(t.id, "memo")} onAlarmPress={() => openSheet(t.id, "alarm")}
                   onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
               );
             }}
           />
         </View>
       </DragScrollView>
-      <TodoSheets inbox todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
+      <TodoSheets inbox todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
       {toast}
     </View>
   );

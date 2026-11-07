@@ -98,6 +98,8 @@ export function HomeScreen() {
     setEditing((e) => (e === id ? null : e));
   };
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
+  const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
+  const openSheet = (id: string, start: "menu" | "memo" | "alarm" = "menu") => { setSheetStart(start); setSheetTodo(materialize(id)); };
   const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
   const [selecting, setSelecting] = useState<Set<string> | null>(null);
   const pager = usePager();
@@ -318,7 +320,9 @@ export function HomeScreen() {
                   done={t.isDone}
                   color={cat.color}
                   onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
-                  onPress={() => { if (pager?.justSwiped()) return; if (selecting) toggleSelect(t.id); else setSheetTodo(materialize(t.id)); }}
+                  onPress={() => { if (pager?.justSwiped()) return; if (selecting) toggleSelect(t.id); else openSheet(t.id); }}
+                  onMemoPress={selecting ? undefined : () => openSheet(t.id, "memo")}
+                  onAlarmPress={selecting ? undefined : () => openSheet(t.id, "alarm")}
                   selected={selecting?.has(t.id)}
                   onDoubleTap={prefs.doubleTapToEdit ? () => startEditing(materialize(t.id)) : undefined}
                   small={prefs.smallTodoText}
@@ -376,7 +380,7 @@ export function HomeScreen() {
           onDelete={() => { deleteTodos([...selecting]); notice(`${selecting.size}개를 지웠어요`); setSelecting(null); }}
         />
       ) : null}
-      <TodoSheets todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => startEditing(id)} notice={notice} />
+      <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => startEditing(id)} notice={notice} />
       {toast}
     </View>
   );

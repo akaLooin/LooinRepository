@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Animated, Modal, Pressable, View } from "react-native";
-import { ScaledRoot, tokens, useInsets, useTheme } from "../theme";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Dimensions, Easing, Keyboard, Modal, Platform, Pressable, View } from "react-native";
+import { ScaledRoot, tokens, useDesignScale, useInsets, useTheme } from "../theme";
 import { AppText } from "./AppText";
 import { TextButton } from "./Button";
 import { useSheetDrag } from "./useSheetDrag";
@@ -18,6 +18,20 @@ export function BottomSheet({ visible, onClose, title, right, children, inline }
   const [mounted, setMounted] = useState(visible);
   useEffect(() => { if (visible) setMounted(true); }, [visible]);
   const { translateY, scrimOpacity, handlers } = useSheetDrag(visible, onClose, () => setMounted(false));
+  // The sheet rises above the keyboard (memo field), so what is typed stays in view (user).
+  const s = useDesignScale();
+  const lift = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (Platform.OS === "web" || !mounted) return;
+    const move = (to: number, ms: number) =>
+      Animated.timing(lift, { toValue: to, duration: ms, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    const show = Keyboard.addListener("keyboardDidShow", (e) => {
+      const covered = Dimensions.get("screen").height - e.endCoordinates.screenY; // from the screen's bottom edge
+      move(-Math.max(0, covered / s - insets.bottom), 180);
+    });
+    const hide = Keyboard.addListener("keyboardDidHide", () => move(0, 160));
+    return () => { show.remove(); hide.remove(); };
+  }, [mounted, s, insets.bottom, lift]);
 
   const top = (
     <View {...(inline ? {} : handlers)} accessibilityHint={inline ? undefined : "아래로 끌어 닫기"}>
@@ -40,7 +54,7 @@ export function BottomSheet({ visible, onClose, title, right, children, inline }
           <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: tokens.scrim, opacity: scrimOpacity }}>
             <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="닫기" />
           </Animated.View>
-          <Animated.View style={[body, { transform: [{ translateY }] }]}>
+          <Animated.View style={[body, { transform: [{ translateY: Animated.add(translateY, lift) }] }]}>
             {top}
             {children}
           </Animated.View>
