@@ -47,7 +47,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 
 9. **Profile fields (2026-11-07)**, once in the Supabase SQL Editor: run `supabase/migrations/20261107000000_profile_fields.sql` (ID, 관심사, 성별, 생년월; 이름 30자, 자기소개 200자). Until then a profile with those fields set is not accepted by the server (shown under 설정 → 실험실).
 
-10. **Friends (2026-11-08)**, once in the Supabase SQL Editor: run `supabase/migrations/20261108000000_friends.sql` (팔로우, 차단, 일부 공개 대상, 반응, 알림, 개인정보 설정 5개). Nothing changes on screen yet; the app keeps working without it (privacy settings then stay on the phone).
+10. **Friends (2026-11-08)**, once in the Supabase SQL Editor: run `supabase/migrations/20261108000000_friends.sql` (팔로우, 차단, 일부 공개 대상, 반응, 알림, 개인정보 설정 5개). Safe to run again (if the editor fails halfway, just run it once more). Check: `select count(*) from information_schema.tables where table_name in ('follows','blocks','reactions','notifications','category_viewers','diary_viewers');` → 6. If the dashboard page itself breaks (e.g. "removeChild" error), turn off the browser's page translation and reload. Nothing changes on screen yet; the app keeps working without it (privacy settings then stay on the phone).
 
 ## Checklist
 

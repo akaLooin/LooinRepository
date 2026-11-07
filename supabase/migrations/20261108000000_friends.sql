@@ -1,5 +1,5 @@
 -- 2단계 친구 기능 (서버 쪽): 팔로우, 차단, 일부 공개 대상, 반응, 알림, 그리고 "누가 무엇을 볼 수 있나".
--- Supabase SQL Editor에서 한 번 실행 (앞의 마이그레이션들 다음에).
+-- Supabase SQL Editor에서 실행 (앞의 마이그레이션들 다음에). 여러 번 실행해도 안전하다(이미 있는 것은 건너뜀).
 --
 -- 원칙
 -- * 다른 사람의 행은 표에서 직접 읽을 수 없다. 1단계의 "본인만" 규칙은 그대로이고, 친구의 것은 아래 함수(RPC)로만 받는다.
@@ -19,7 +19,7 @@ alter table user_settings
 
 -- ───────────────────────── 표 ─────────────────────────
 
-create table follows (
+create table if not exists follows (
   follower_id uuid not null references profiles(id) on delete cascade,
   followee_id uuid not null references profiles(id) on delete cascade,
   status text not null check (status in ('pending','accepted')),
@@ -28,26 +28,27 @@ create table follows (
   primary key (follower_id, followee_id),
   check (follower_id <> followee_id)
 );
-create index follows_followee on follows (followee_id, status);
+create index if not exists follows_followee on follows (followee_id, status);
+drop trigger if exists follows_updated on follows;
 create trigger follows_updated before update on follows for each row execute function set_updated_at();
 
-create table blocks (
+create table if not exists blocks (
   blocker_id uuid not null references profiles(id) on delete cascade,
   blocked_id uuid not null references profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (blocker_id, blocked_id),
   check (blocker_id <> blocked_id)
 );
-create index blocks_blocked on blocks (blocked_id);
+create index if not exists blocks_blocked on blocks (blocked_id);
 
 -- 일부 공개: 카테고리·일기마다 볼 수 있는 사람. 주인이 앱에서 직접 고친다(아래 own_* 규칙).
-create table category_viewers (
+create table if not exists category_viewers (
   category_id uuid not null references categories(id) on delete cascade,
   viewer_id uuid not null references profiles(id) on delete cascade,
   owner_id uuid not null references profiles(id) on delete cascade,
   primary key (category_id, viewer_id)
 );
-create table diary_viewers (
+create table if not exists diary_viewers (
   diary_id uuid not null references diaries(id) on delete cascade,
   viewer_id uuid not null references profiles(id) on delete cascade,
   owner_id uuid not null references profiles(id) on delete cascade,
@@ -55,7 +56,7 @@ create table diary_viewers (
 );
 
 -- 반응: 할 일 또는 일기 하나에 한 사람이 하나(다시 고르면 바뀜). kind = emoji | sticker (스티커는 우리 그림 id).
-create table reactions (
+create table if not exists reactions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
   owner_id uuid not null references profiles(id) on delete cascade,  -- 할 일·일기의 주인 (읽기 규칙용)
@@ -67,13 +68,14 @@ create table reactions (
   updated_at timestamptz not null default now(),
   check ((todo_id is null) <> (diary_id is null))
 );
-create unique index reactions_one_todo on reactions (user_id, todo_id) where todo_id is not null;
-create unique index reactions_one_diary on reactions (user_id, diary_id) where diary_id is not null;
-create index reactions_todo on reactions (todo_id) where todo_id is not null;
-create index reactions_diary on reactions (diary_id) where diary_id is not null;
+create unique index if not exists reactions_one_todo on reactions (user_id, todo_id) where todo_id is not null;
+create unique index if not exists reactions_one_diary on reactions (user_id, diary_id) where diary_id is not null;
+create index if not exists reactions_todo on reactions (todo_id) where todo_id is not null;
+create index if not exists reactions_diary on reactions (diary_id) where diary_id is not null;
+drop trigger if exists reactions_updated on reactions;
 create trigger reactions_updated before update on reactions for each row execute function set_updated_at();
 
-create table notifications (
+create table if not exists notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,   -- 받는 사람
   actor_id uuid not null references profiles(id) on delete cascade,  -- 한 사람
@@ -84,7 +86,7 @@ create table notifications (
   read_at timestamptz,
   created_at timestamptz not null default now()
 );
-create index notifications_user on notifications (user_id, created_at desc);
+create index if not exists notifications_user on notifications (user_id, created_at desc);
 
 -- ───────────────────────── 접근 권한 ─────────────────────────
 alter table follows enable row level security;
@@ -95,16 +97,24 @@ alter table reactions enable row level security;
 alter table notifications enable row level security;
 
 -- 읽기만: 바꾸는 건 아래 함수로
+drop policy if exists follows_parties on follows;
 create policy follows_parties on follows for select using (auth.uid() in (follower_id, followee_id));
+drop policy if exists blocks_mine on blocks;
 create policy blocks_mine on blocks for select using (blocker_id = auth.uid());
+drop policy if exists reactions_parties on reactions;
 create policy reactions_parties on reactions for select using (auth.uid() in (user_id, owner_id));
+drop policy if exists notifications_mine on notifications;
 create policy notifications_mine on notifications for select using (user_id = auth.uid());
+drop policy if exists notifications_read on notifications;
 create policy notifications_read on notifications for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists notifications_delete on notifications;
 create policy notifications_delete on notifications for delete using (user_id = auth.uid());
 -- 일부 공개 대상은 주인이 직접 관리 (자기 카테고리·일기에만)
+drop policy if exists own_category_viewers on category_viewers;
 create policy own_category_viewers on category_viewers for all
   using (owner_id = auth.uid())
   with check (owner_id = auth.uid() and exists (select 1 from categories c where c.id = category_id and c.user_id = auth.uid()));
+drop policy if exists own_diary_viewers on diary_viewers;
 create policy own_diary_viewers on diary_viewers for all
   using (owner_id = auth.uid())
   with check (owner_id = auth.uid() and exists (select 1 from diaries d where d.id = diary_id and d.user_id = auth.uid()));
@@ -431,5 +441,6 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke execute on function can_read_photo(text, text) from public, anon;
 grant execute on function can_read_photo(text, text) to authenticated;
+drop policy if exists friend_files_read on storage.objects;
 create policy friend_files_read on storage.objects for select to authenticated
   using (bucket_id in ('todo-photos','diary-images') and public.can_read_photo(bucket_id, name));
