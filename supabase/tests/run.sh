@@ -18,7 +18,9 @@ for m in "$here"/../migrations/*.sql; do
   sed 's/^create extension if not exists pg_cron;//' "$m" | db -f - >/dev/null || { echo "FAILED migration $(basename "$m")"; exit 1; }
 done
 # the friends migration must be safe to run twice (the SQL editor can fail halfway and be re-run)
-db -f "$here/../migrations/20261108000000_friends.sql" >/dev/null || { echo "FAILED re-running friends migration"; exit 1; }
+for m in 20261108000000_friends 20261108000100_reaction_lists; do
+  db -f "$here/../migrations/$m.sql" >/dev/null || { echo "FAILED re-running $m"; exit 1; }
+done
 echo "ok migrations (friends twice)"
 for t in "$here"/*.test.sql; do
   db -f "$t" || { echo "FAILED $(basename "$t")"; exit 1; }

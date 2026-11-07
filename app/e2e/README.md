@@ -28,6 +28,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | inbox-listmenu.js | 보관함 as the page left of home (button, swipe there and back, add, 오늘하기) and 리스트 메뉴 |
 | drag.js | hold-and-drag reorder: categories, D-days, home to-dos (survives reload), a to-do dragged into another category, routines |
 | tm.js | timer start/pause, survives reload, info screen |
+| friends.js | demo people: friend chip → friend home, heart → emoji reaction and take back, 둘러보기 search → profile → follow (clovers) / request, profile's home button, 알림, 마이 counts → 친구 lists |
 | st.js | display settings (theme, week start), profile edit |
 | dy.js | diary: mood, text, background, reopen, empty removes |
 | rm.js | reminders add/duplicate/delete, to-do alarm |

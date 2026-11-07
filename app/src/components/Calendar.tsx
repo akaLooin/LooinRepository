@@ -13,7 +13,7 @@ function dayColor(wd: number): ColorName {
 
 /** [clover ▼]  2026년 11월  [주] [‹] [›]  (S03) */
 export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filterColors, onFilter, onTitle }: {
-  title: string; mode: "month" | "week"; onToggleMode: () => void; onPrev: () => void; onNext: () => void; filterColors: string[]; onFilter?: () => void;
+  title: string; mode: "month" | "week"; onToggleMode?: () => void; onPrev: () => void; onNext: () => void; filterColors: string[]; onFilter?: () => void;
   /** tapping the big month title goes back to today (original) */
   onTitle?: () => void;
 }) {
@@ -31,7 +31,7 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
       <Pressable onPress={onTitle} disabled={!onTitle} style={{ flex: 1, marginLeft: 1 }} accessibilityRole="button" accessibilityLabel={`${title}, 오늘로 이동`}>
         <AppText variant="monthTitle" accessibilityRole="header">{title}</AppText>
       </Pressable>
-      <PillButton label={mode === "month" ? "주" : "월"} onPress={onToggleMode} a11y={mode === "month" ? "주간 보기" : "월간 보기"} />
+      {onToggleMode ? <PillButton label={mode === "month" ? "주" : "월"} onPress={onToggleMode} a11y={mode === "month" ? "주간 보기" : "월간 보기"} /> : null}
       <PillButton round onPress={onPrev} a11y="이전"><ChevronLeft size={20} color={c.text} /></PillButton>
       <PillButton round onPress={onNext} a11y="다음"><ChevronRight size={20} color={c.text} /></PillButton>
     </View>

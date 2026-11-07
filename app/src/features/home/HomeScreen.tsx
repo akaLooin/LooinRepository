@@ -1,6 +1,6 @@
 import { useInsets } from "../../theme";
-import { router } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Keyboard, Pressable, ScrollView, View } from "react-native";
 import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
@@ -27,6 +27,9 @@ import { usePager } from "./pagerContext";
 import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
+import { FriendHome, ReactionLine } from "../social/FriendHome";
+import { reactionsOnMine, showFriend, useFollowing, useShownFriend, type Reaction } from "../../data/social";
+import { sessionUserId } from "../../data/store";
 
 const G = tokens.layout.gutter;
 
@@ -44,6 +47,10 @@ export function HomeScreen() {
   const prefs = usePrefs();
   const ddays = useDB(selectDDays);
   const diaries = useDB((d) => d.diaries);
+  const following = useFollowing();
+  const shownFriend = useShownFriend();
+  // a friend unfollowed or blocked meanwhile: back to my home
+  const friend = shownFriend && following.some((p) => p.id === shownFriend) ? shownFriend : null;
 
   const now = today();
   const [selected, setSelected] = useState<Day>(now);
@@ -112,6 +119,16 @@ export function HomeScreen() {
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
+  // Reactions friends left on my to-dos this month (shown under each to-do), fetched when home comes into view
+  const [received, setReceived] = useState<Record<string, Reaction[]>>({});
+  const monthKey = `${view.y}-${String(view.m).padStart(2, "0")}`;
+  useFocusEffect(useCallback(() => {
+    if (!sessionUserId()) return;
+    let alive = true;
+    const next = view.m === 12 ? `${view.y + 1}-01` : `${view.y}-${String(view.m + 1).padStart(2, "0")}`;
+    reactionsOnMine(addDays(`${monthKey}-01`, -7), addDays(`${next}-01`, 6)).then((r) => { if (alive) setReceived(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [monthKey])); // eslint-disable-line react-hooks/exhaustive-deps
   // to-dos per day, filled as days are drawn (the calendar strip also draws the months on either side)
   const byDay = useMemo(() => new Map<Day, ReturnType<typeof todosForDay>>(), [db]);
   const todosOn = (d: Day) => {
@@ -219,9 +236,14 @@ export function HomeScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}>
           <IconChip label="보관함" onPress={openInbox}><Archive size={22} color={c.text} /></IconChip>
-          <Chip label={profile.nickname} avatar={profile.avatarUri} selected />
-          <IconChip label="친구" onPress={() => notice("친구 기능은 2단계에서 만들어요")}><Users size={22} color={c.text} /></IconChip>
+          <Chip label={profile.nickname} avatar={profile.avatarUri} selected={!friend} onPress={() => { smoothLayout(160); showFriend(null); }} />
+          {following.map((p) => (
+            <Chip key={p.id} label={p.nickname} avatar={p.avatarUri} selected={friend === p.id} onPress={() => { smoothLayout(160); setEditing(null); setAdding(null); showFriend(p.id); }} />
+          ))}
+          <IconChip label="친구" onPress={() => router.push("/people" as never)}><Users size={22} color={c.text} /></IconChip>
         </ScrollView>
+
+        {friend ? <FriendHome id={friend} /> : <>
 
         <View style={{ paddingHorizontal: G, marginTop: 34 }}>
           <ProfileHeader
@@ -328,6 +350,7 @@ export function HomeScreen() {
                   onAlarmPress={selecting ? undefined : () => openSheet(t.id, "alarm")}
                   selected={selecting?.has(t.id)}
                   onDoubleTap={prefs.doubleTapToEdit ? () => startEditing(materialize(t.id)) : undefined}
+                  below={received[t.id]?.length ? <ReactionLine list={received[t.id]} /> : undefined}
                   small={prefs.smallTodoText}
                   smallMemo={prefs.smallTodoMemo}
                   smallPhoto={prefs.smallTodoPhoto}
@@ -350,6 +373,7 @@ export function HomeScreen() {
             <AppText variant="bodyLg">리스트 메뉴</AppText>
           </Pressable>
         </View>
+        </>}
       </DragScrollView>
 
       <HomeMenu open={menuOpen} onClose={() => setMenuOpen(false)} />

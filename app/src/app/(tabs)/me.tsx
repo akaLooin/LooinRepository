@@ -1,15 +1,16 @@
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { AppText, BottomSheet, Settings, StoredImage } from "../../components";
-import { useDB } from "../../data/store";
+import { sessionUserId, useDB } from "../../data/store";
+import { followList, getPerson } from "../../data/social";
 import { today } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { tokens, useInsets, useTheme } from "../../theme";
 
 /**
  * S18, laid out as the original's 마이 (user's recording): gear to settings, photo, name, e-mail, following counts
- * (friends are phase 2), and 나의 기록. Premium and the sticker shop are left out on purpose.
+ * (tap → 친구 lists), and 나의 기록. Premium and the sticker shop are left out on purpose.
  */
 export default function Me() {
   const { c } = useTheme();
@@ -20,6 +21,12 @@ export default function Me() {
   const [stats, setStats] = useState(false);
   useEffect(() => { supabase?.auth.getSession().then(({ data }) => setEmail(data.session?.user.email ?? "")); }, []);
   const a = 56;
+  const [counts, setCounts] = useState({ following: 0, followers: 0 });
+  useFocusEffect(useCallback(() => {
+    const me = sessionUserId();
+    if (me) getPerson(me).then((p) => p && setCounts({ following: p.following ?? 0, followers: p.followers ?? 0 })).catch(() => {});
+    else Promise.all([followList("following"), followList("followers")]).then(([a, b]) => setCounts({ following: a.length, followers: b.length })).catch(() => {});
+  }, []));
 
   const done = todos.filter((t) => t.isDone && !t.isSkipped);
   const month = today().slice(0, 7);
@@ -40,7 +47,14 @@ export default function Me() {
         <View style={{ flex: 1, gap: 2 }}>
           <AppText variant="bodyLg" weight={700}>{profile.nickname || "이름 없음"}</AppText>
           {email ? <AppText variant="helper" color="textMuted">{email}</AppText> : null}
-          <AppText variant="helper"><AppText variant="helper" color="textMuted">팔로잉 </AppText>0  <AppText variant="helper" color="textMuted">팔로워 </AppText>0</AppText>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <Pressable onPress={() => router.push("/people?tab=following" as never)} accessibilityRole="button" accessibilityLabel={`팔로잉 ${counts.following}`}>
+              <AppText variant="helper"><AppText variant="helper" color="textMuted">팔로잉 </AppText>{counts.following}</AppText>
+            </Pressable>
+            <Pressable onPress={() => router.push("/people?tab=followers" as never)} accessibilityRole="button" accessibilityLabel={`팔로워 ${counts.followers}`}>
+              <AppText variant="helper"><AppText variant="helper" color="textMuted">팔로워 </AppText>{counts.followers}</AppText>
+            </Pressable>
+          </View>
         </View>
       </View>
       <View style={{ flexDirection: "row", marginTop: 20, borderRadius: tokens.radius.lg, backgroundColor: c.surfaceRow, paddingVertical: 14 }}>

@@ -27,7 +27,7 @@ export function Chip({ label, avatar, selected, onPress }: { label: string; avat
       style={{ height: h, borderRadius: R, backgroundColor: selected ? c.selectedBg : c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 4, paddingRight: 20, gap: 10 }}
     >
       {avatar ? <StoredImage uri={avatar} label="프로필 사진" style={{ width: a, height: a, borderRadius: a / 2 }} /> : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
-      <AppText variant="bodyLg" weight={600} color={selected ? "onSelected" : "text"}>{label}</AppText>
+      <AppText variant="bodyLg" weight={600} color={selected ? "onSelected" : "text"} numberOfLines={1} style={{ maxWidth: 96 }}>{label}</AppText>
     </Pressable>
   );
 }
@@ -54,10 +54,10 @@ export function CategoryPill({ title, color, visibility, onAdd, onPress, onLongP
         <VisibilityIcon value={visibility} color={c.textMuted} />
         <AppText variant="category" raw={readableOn(color, c.surface)} numberOfLines={1} style={{ flexShrink: 1 }}>{title}</AppText>
       </Pressable>
-      <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${title}에 할 일 추가`}
+      {onAdd ? <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${title}에 할 일 추가`}
         style={{ width: plus, height: plus, borderRadius: R, backgroundColor: c.bg, alignItems: "center", justifyContent: "center", marginLeft: 4 }}>
         <Plus size={20} color={c.text} strokeWidth={2.4} />
-      </Pressable>
+      </Pressable> : null}
     </View>
   );
 }

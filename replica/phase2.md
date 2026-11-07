@@ -5,6 +5,24 @@ S17 보내기 (paper-plane tab), reactions (emoji, and stickers per the user), f
 (설정 → 개인정보 보호), visibility per category and per diary. **Every screen above is a guess**: recordings of the original are
 needed before building the screens (list at the end).
 
+## From the recordings (2026-11-08, user's two screen recordings of the original)
+
+Seen: 둘러보기 = search field "계정 또는 크루" + interest chips + crews + a feed of posts. Searching an account → a row → a tall
+profile sheet: big cover picture, ✕ left, 팔로우 and ⋯ right, the name below with a home button and a paper plane.
+Following → green clovers pop all over the sheet. Home: the chip row gets the friend (name cut with …); their chip shows
+their home (profile, calendar with clovers, categories, to-dos) with an outline heart at the right end of each to-do.
+The heart opens a panel: sticker packs and emoji groups as icons along the bottom (recent, stickers, hearts/medals first,
+faces, hands, nature, food, activities, objects, flags). After a pick the heart is red and the sticker sits under the
+to-do. 보내기 = 대화 (DM list) → a chat with "함께라서 특별해", text, stickers and photos. 마이 = 팔로잉 n · 팔로워 n,
+스티커샵 (paid sticker packs).
+
+Built (2026-11-08): search → profile sheet (follow / request / unfollow, 차단, home button, clovers), friend chips on home,
+friend home (read only, month calendar), heart → emoji panel (one reaction per person; the same pick takes it back),
+reactions shown under my own to-dos, 알림 tab (requests with 수락/거절, follows, reactions), 친구 screen (팔로잉/팔로워/요청)
+from the people button and 마이's counts. Demo mode has three sample people.
+Guessed (not recorded): 알림 and 친구 list layouts. Not built: crews, the 둘러보기 feed, 대화 (needs messages tables),
+stickers (own artwork later, user), a friend's diary and week view, reacting to a routine day nobody has touched yet.
+
 ## Server first (no screens needed): done 2026-11-08
 
 `supabase/migrations/20261108000000_friends.sql`, tested by `supabase/tests/run.sh`. Other people's rows are never readable from

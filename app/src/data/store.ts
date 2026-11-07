@@ -542,3 +542,6 @@ export type { Category, DDay, Diary, Profile, Reminder, Routine, Todo };
 export function setAllDiaryVisibility(visibility: Diary["visibility"]) {
   set({ ...db, diaries: db.diaries.map((d) => (d.visibility === visibility ? d : { ...d, visibility })) });
 }
+
+/** The signed-in user's id, or null in demo mode (friends features then run on sample people). */
+export const sessionUserId = () => (session.mode === "cloud" ? session.userId : null);

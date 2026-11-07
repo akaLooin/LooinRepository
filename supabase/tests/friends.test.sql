@@ -88,6 +88,10 @@ begin
   assert (select count(*) from reactions) = 1 and (select value from reactions) = '🔥', 'one reaction per person per todo';
   assert pg_temp.fails($q$ select react('todo', '20000000-0000-0000-0000-000000000004', 'emoji', '👍') $q$), 'no reaction on a private todo';
   perform react('diary', '40000000-0000-0000-0000-000000000001', 'emoji', '❤️');
+  r := friend_range('00000000-0000-0000-0000-00000000000a', '2026-11-01', '2026-11-30');
+  assert (select e->'reactions' from jsonb_array_elements(r->'todos') e where e->>'title' = 'fol todo') = '[{"kind": "emoji", "mine": true, "value": "🔥"}]'::jsonb,
+    'friend_range lists the reactions on each todo';
+  assert r->'diaries'->0->'reactions'->0->>'value' = '❤️', 'and on the diary';
   assert pg_temp.fails($q$ select react('diary', '40000000-0000-0000-0000-000000000002', 'emoji', '👍') $q$), 'no reaction on a private diary';
   assert (select count(*) from notifications) = 0, 'B cannot read A''s notifications';
 end $$;
@@ -126,6 +130,8 @@ do $$ begin
   assert (select count(*) from notifications where type = 'reaction') = 3, 'A got three reaction notifications (changing one did not add one)';
   assert my_notifications()->0->'actor'->>'nickname' = 'Carol', 'notifications carry the actor';
   assert (select count(*) from reactions) = 3, 'A sees reactions on their things';
+  assert jsonb_array_length(reactions_on_mine('2026-11-01', '2026-11-30')) = 2, 'A gets the to-do reactions on home';
+  assert reactions_on_mine('2026-11-01', '2026-11-30')->0->>'nickname' = 'Bob', 'with who sent them';
 end $$;
 reset role;
 
