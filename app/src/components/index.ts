@@ -22,3 +22,4 @@ export * from "./StoredImage";
 export * from "./useSheetDrag";
 export * from "./CollapseChevron";
 export * from "./DragScrollView";
+export * from "./Sticker";

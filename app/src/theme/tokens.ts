@@ -218,7 +218,25 @@ export const tokens = {
     "sheet": "280ms",
     "ease": "cubic-bezier(.2,.8,.2,1)"
   },
-  "scrim": "rgba(0,0,0,0.6)"
+  "scrim": "rgba(0,0,0,0.6)",
+  "sticker": {
+    "leaf": "#3ccf7e",
+    "leafDark": "#1f8a52",
+    "ink": "#1b1b1b",
+    "white": "#ffffff",
+    "cheek": "#ff8fa3",
+    "heart": "#ff4d6d",
+    "gold": "#ffc83d",
+    "goldDark": "#d99a00",
+    "tear": "#5ab0ff",
+    "fire": "#ff7a2e",
+    "fireCore": "#ffd23f",
+    "brown": "#8b5a3c",
+    "cream": "#f3e6d3",
+    "purple": "#9b7bff",
+    "gray": "#9aa0a6",
+    "band": "#ff5a5a"
+  }
 } as const;
 
 export type ColorName = keyof typeof tokens.colors.dark;

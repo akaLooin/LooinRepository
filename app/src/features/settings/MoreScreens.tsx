@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications";
 import { useCallback, useEffect, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
-import { AppText, BellRing, BottomSheet, Button, ChevronDown, ChevronUp, RadioList, ScreenHeader, ToggleRow, ValueRow, useToast } from "../../components";
+import { AppText, BellRing, BottomSheet, Button, ChevronDown, ChevronUp, RadioList, ScreenHeader, Sticker, STICKER_IDS, stickerLabel, ToggleRow, ValueRow, useToast } from "../../components";
 import { setPref, usePrefs, type Audience } from "../../data/prefs";
 import { setAllDiaryVisibility, syncNow, useSyncStatus } from "../../data/store";
 import type { Visibility } from "../../data/types";
@@ -160,7 +160,16 @@ export function NoticesScreen() {
 export function StickersScreen() {
   return (
     <Page title="내 스티커">
-      <AppText variant="body" color="textMuted" style={{ marginTop: 12 }}>스티커는 일기를 쓸 때 붙이는 그림이에요. 아직 스티커가 없어요. 우리 앱만의 스티커를 만들면 여기서 고를 수 있어요.</AppText>
+      <AppText variant="bodyLg" weight={700} style={{ marginTop: 12 }}>클로버 친구들</AppText>
+      <AppText variant="body" color="textMuted" style={{ marginTop: 4, marginBottom: 12 }}>우리 앱만의 스티커예요. 친구의 할 일에 반응하거나 대화에서 보낼 수 있어요.</AppText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+        {STICKER_IDS.map((id) => (
+          <View key={id} style={{ width: "25%", alignItems: "center", paddingVertical: 8, gap: 2 }}>
+            <Sticker id={id} size={64} />
+            <AppText variant="small" color="textMuted">{stickerLabel(id)}</AppText>
+          </View>
+        ))}
+      </View>
     </Page>
   );
 }

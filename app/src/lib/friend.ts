@@ -72,7 +72,8 @@ export function noticeText(n: NoticeLike): string {
   if (n.type === "follow_request") return `${who}이 팔로우를 요청했어요`;
   if (n.type === "follow") return `${who}이 나를 팔로우해요`;
   if (n.type === "follow_accepted") return `${who}이 팔로우 요청을 수락했어요`;
-  return n.todoTitle ? `${who}이 '${n.todoTitle}'에 ${n.value ?? ""} 반응했어요` : `${who}이 ${n.value ?? ""} 반응했어요`;
+  const what = n.value?.startsWith("clover.") ? "스티커로" : (n.value ?? "");
+  return n.todoTitle ? `${who}이 '${n.todoTitle}'에 ${what} 반응했어요` : `${who}이 ${what} 반응했어요`;
 }
 
 export function timeAgo(iso: string, now = Date.now()): string {

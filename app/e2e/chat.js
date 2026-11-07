@@ -28,8 +28,15 @@ const out = process.argv[2] || ".";
   await p.getByLabel("메시지 입력").press("Enter"); // multiline: Enter adds a line, so use the button
   await p.getByRole("button", { name: "보내기", exact: true }).click();
   await p.waitForTimeout(400);
-  await p.getByRole("button", { name: "이모지 보내기" }).click();
+  await p.getByRole("button", { name: "스티커·이모지 보내기" }).click();
   await p.waitForTimeout(500);
+  await p.getByRole("button", { name: "다 했다 반응", exact: true }).click();
+  await p.waitForTimeout(500);
+  r.stickerSent = await p.getByLabel("다 했다 스티커").count();
+  await p.getByRole("button", { name: "스티커·이모지 보내기" }).click();
+  await p.waitForTimeout(500);
+  await p.getByRole("tab", { name: "하트·축하" }).click();
+  await p.waitForTimeout(200);
   await p.getByRole("button", { name: "💜 반응", exact: true }).click();
   await p.waitForTimeout(500);
   r.emojiSent = await p.getByText("💜", { exact: true }).count();

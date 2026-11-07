@@ -51,6 +51,7 @@ t("odd follow states are ignored", () => {
 t("notice wording", () => {
   assert.equal(noticeText({ type: "follow_request", actor: { nickname: "토끼" } }), "토끼님이 팔로우를 요청했어요");
   assert.equal(noticeText({ type: "reaction", actor: { nickname: "토끼" }, value: "🔥", todoTitle: "산책" }), "토끼님이 '산책'에 🔥 반응했어요");
+  assert.equal(noticeText({ type: "reaction", actor: { nickname: "토끼" }, value: "clover.best", todoTitle: "산책" }), "토끼님이 '산책'에 스티커로 반응했어요");
   const now = Date.parse("2026-11-08T12:00:00Z");
   assert.equal(timeAgo("2026-11-08T11:59:30Z", now), "방금");
   assert.equal(timeAgo("2026-11-08T10:00:00Z", now), "2시간 전");

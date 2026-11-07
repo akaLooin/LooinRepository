@@ -23,6 +23,14 @@ from the people button and 마이's counts. Demo mode has three sample people.
 Guessed (not recorded): 알림 and 친구 list layouts. Not built: crews, the 둘러보기 feed, 대화 (needs messages tables),
 stickers (own artwork later, user), a friend's diary and week view, reacting to a routine day nobody has touched yet.
 
+## 스티커: 클로버 친구들 (built 2026-11-08)
+
+Our own sticker pack, drawn in code (`app/src/components/Sticker.tsx`, colours in `replica/design/tokens.json` → `sticker`):
+18 round four-leaf clovers with faces and one prop each (좋아해, 최고, 화이팅, 축하해, 불타오르네, 반짝반짝, 웃겨, 슬퍼, 놀랐어,
+머쓱, 졸려, 100점, 다 했다, 고마워, 커피 한잔, 공부 중, 운동 중, 궁금해). Stored as ids (`clover.best`). The reaction panel opens
+on the sticker tab (as in the original); reactions show the sticker under the to-do; 대화 sends them as `sticker` messages;
+설정 → 내 스티커 shows the pack. Not yet: stickers on diaries (need the original's diary-sticker screen first).
+
 ## 대화 (built 2026-11-08)
 
 보내기 tab = 대화 list (name, last message, time, unread count; a red dot on the tab). A conversation opens from the list

@@ -21,6 +21,9 @@ const out = process.argv[2] || ".";
   await p.getByRole("button", { name: "운동하기에 반응하기" }).click();
   await p.waitForTimeout(500);
   await p.screenshot({ path: `${out}/friend-react.png` });
+  r.stickersFirst = await p.getByRole("button", { name: "최고 반응", exact: true }).count();
+  await p.getByRole("tab", { name: "하트·축하" }).click();
+  await p.waitForTimeout(200);
   await p.getByRole("button", { name: "🔥 반응", exact: true }).click();
   await p.waitForTimeout(500);
   r.reacted = await p.getByRole("button", { name: "운동하기 반응 바꾸기" }).count();
@@ -32,6 +35,15 @@ const out = process.argv[2] || ".";
   await p.getByRole("button", { name: "🔥 반응 지우기" }).click();
   await p.waitForTimeout(400);
   r.cleared = await p.getByRole("button", { name: "운동하기에 반응하기" }).count();
+  // a sticker (our own 클로버 친구들) on another to-do
+  await p.getByRole("button", { name: "일기 쓰기에 반응하기" }).click();
+  await p.waitForTimeout(400);
+  await p.getByRole("tab", { name: "스티커" }).click();
+  await p.waitForTimeout(200);
+  await p.getByRole("button", { name: "최고 반응", exact: true }).click();
+  await p.waitForTimeout(500);
+  r.stickerShown = await p.getByLabel("반응 최고").count();
+  await p.screenshot({ path: `${out}/friend-sticker.png` });
   // back to me
   await p.getByRole("button", { name: /^(나|체험|.+)$/ }).nth(1).click(); // the chip after 보관함 is mine
   await p.waitForTimeout(400);

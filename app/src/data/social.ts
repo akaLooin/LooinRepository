@@ -37,7 +37,7 @@ const demo = {
     { id: "demo-owl", nickname: "부엉이", handle: "owl.night", bio: "밤에 공부해요", follow: null, followsMe: false, approval: true },
   ] as DemoPerson[],
   blocked: new Set<string>(),
-  reactions: new Map<string, string>(), // todo id → my emoji
+  reactions: new Map<string, Reaction>(), // todo id → my reaction
   notices: [] as Notice[],
 };
 const demoPersonJson = (p: DemoPerson) => ({
@@ -56,7 +56,7 @@ function demoRange(id: string, from: Day, to: Day) {
     return {
       id: tid, category_id: cat, title: ["아침 산책", "책 30쪽", "물 2L", "운동하기", "일기 쓰기", "장보기", "청소"][i], date, sort_order: i,
       is_done: off < 0 || i === 3, memo: i === 3 ? "스쿼트 50개" : "", created_at: date,
-      reactions: [...(i === 0 ? [{ kind: "emoji", value: "👏", mine: false }] : []), ...(mine ? [{ kind: "emoji", value: mine, mine: true }] : [])],
+      reactions: [...(i === 0 ? [{ kind: "emoji", value: "👏", mine: false }] : []), ...(mine ? [{ kind: mine.kind, value: mine.value, mine: true }] : [])],
     };
   }).filter((t) => t.date >= from && t.date <= to);
   return {
@@ -145,7 +145,7 @@ export async function myBlocks(): Promise<Person[]> {
 
 export async function react(todoId: string, pick: Reaction, clear: boolean) {
   if (isDemo()) {
-    if (clear) demo.reactions.delete(todoId); else demo.reactions.set(todoId, pick.value);
+    if (clear) demo.reactions.delete(todoId); else demo.reactions.set(todoId, pick);
     return;
   }
   if (clear) await rpc("unreact", { target_type: "todo", target: todoId });

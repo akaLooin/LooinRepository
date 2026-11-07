@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText, Calendar, CalendarHeader, CategoryPill, Heart, ProfileHeader, TodoRow, useToast } from "../../components";
+import { AppText, Calendar, CalendarHeader, CategoryPill, Heart, ProfileHeader, Sticker, stickerLabel, TodoRow, useToast } from "../../components";
 import { friendMonth, react, type FriendView, type Reaction } from "../../data/social";
 import { isVirtual, todosForDay } from "../../data/store";
 import { usePrefs } from "../../data/prefs";
@@ -18,8 +18,8 @@ const G = tokens.layout.gutter;
 export function ReactionLine({ list }: { list: Reaction[] }) {
   if (!list.length) return null;
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 }} accessibilityLabel={`반응 ${list.map((r) => r.value).join(" ")}`}>
-      {list.map((r, i) => <AppText key={i} style={{ fontSize: 22, lineHeight: 28 }}>{r.value}</AppText>)}
+    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 4, marginTop: 4 }} accessibilityLabel={`반응 ${list.map((r) => (r.kind === "sticker" ? stickerLabel(r.value) : r.value)).join(" ")}`}>
+      {list.map((r, i) => r.kind === "sticker" ? <Sticker key={i} id={r.value} size={44} /> : <AppText key={i} style={{ fontSize: 22, lineHeight: 28 }}>{r.value}</AppText>)}
     </View>
   );
 }
@@ -85,12 +85,12 @@ export function FriendHome({ id }: { id: string }) {
 
   const setReactions = (todoId: string, list: Reaction[]) =>
     setMonths((x) => ({ ...x, [pageIndex]: x[pageIndex] ? { ...x[pageIndex]!, reactions: { ...x[pageIndex]!.reactions, [todoId]: list } } : x[pageIndex] }));
-  const onPick = (todoId: string, value: string) => {
+  const onPick = (todoId: string, value: string, kind: "emoji" | "sticker") => {
     const before = current.reactions[todoId] ?? [];
-    const { list, action } = nextReaction(before, { kind: "emoji", value });
+    const { list, action } = nextReaction(before, { kind, value });
     setPicking(null);
     setReactions(todoId, list); // shows at once; put back if the server says no
-    react(todoId, { kind: "emoji", value }, action === "clear").catch((e) => {
+    react(todoId, { kind, value }, action === "clear").catch((e) => {
       setReactions(todoId, before);
       notice(e instanceof Error ? e.message : "반응을 남기지 못했어요");
     });
@@ -167,7 +167,7 @@ export function FriendHome({ id }: { id: string }) {
           </View>
         ))}
       </View>
-      <ReactionSheet visible={!!picking} current={pickingMine} onPick={(v) => picking && onPick(picking, v)} onClose={() => setPicking(null)} />
+      <ReactionSheet visible={!!picking} current={pickingMine} onPick={(v, k) => picking && onPick(picking, v, k)} onClose={() => setPicking(null)} />
       {toast}
     </View>
   );

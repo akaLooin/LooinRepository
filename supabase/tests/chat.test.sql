@@ -31,6 +31,7 @@ begin
   assert pg_temp.fails($q$ select send_message((select id from conversations limit 1), '50000000-0000-0000-0000-000000000003', 'photo', '',
     'chat-photos/00000000-0000-0000-0000-0000000000f1/x.jpg') $q$), 'photos only from my own folder';
   assert pg_temp.fails($q$ select send_message((select id from conversations limit 1), '50000000-0000-0000-0000-000000000004', 'text', '') $q$), 'no empty text';
+  assert pg_temp.fails($q$ select send_message((select id from conversations limit 1), '50000000-0000-0000-0000-000000000007', 'sticker', 'http://x') $q$), 'stickers are ids only';
   assert pg_temp.fails($q$ insert into messages (id, conversation_id, sender_id, kind, body)
     values (gen_random_uuid(), (select id from conversations limit 1), auth.uid(), 'text', 'x') $q$), 'messages are written only through send_message';
   assert my_conversations()->0->>'unread' = '0', 'my own messages are not unread';
@@ -49,7 +50,7 @@ begin
   assert jsonb_array_length(r->'messages') = 2 and r->'messages'->0->>'kind' = 'photo', 'newest first';
   assert (r->'messages'->1->>'mine')::boolean = false, 'not mine';
   assert (select count(*) from storage.objects where bucket_id = 'chat-photos') = 1, 'F can see the photo sent to them';
-  perform send_message(cid, '50000000-0000-0000-0000-000000000005', 'emoji', '🔥');
+  perform send_message(cid, '50000000-0000-0000-0000-000000000005', 'sticker', 'clover.best');
   perform mark_conversation_read(cid);
   assert unread_conversations() = 0, 'read';
   assert jsonb_array_length(conversation_messages(cid, null, (r->'messages'->0->>'created_at')::timestamptz)->'messages') = 1, 'only the new one after a time';

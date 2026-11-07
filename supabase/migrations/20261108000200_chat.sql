@@ -1,4 +1,4 @@
--- 대화 (보내기 탭): 두 사람 사이의 대화방과 메시지, 읽음 표시, 사진.
+-- 대화 (보내기 탭): 두 사람 사이의 대화방과 메시지(글, 이모지, 사진, 스티커), 읽음 표시.
 -- Supabase SQL Editor에서 실행 (20261108000100 다음). 여러 번 실행해도 안전하다.
 --
 -- 규칙
@@ -30,6 +30,11 @@ create table if not exists messages (
   check (kind = 'photo' or char_length(body) >= 1)
 );
 create index if not exists messages_conv on messages (conversation_id, created_at desc);
+-- 스티커 (우리 그림 '클로버 친구들', body = 스티커 id). 이 파일을 예전에 실행했어도 다시 실행하면 규칙이 맞춰진다.
+alter table messages drop constraint if exists messages_kind_check;
+alter table messages add constraint messages_kind_check check (kind in ('text','emoji','photo','sticker'));
+alter table messages drop constraint if exists messages_sticker_check;
+alter table messages add constraint messages_sticker_check check (kind <> 'sticker' or body ~ '^clover\.[a-z0-9_]{1,30}$');
 
 create table if not exists conversation_reads (
   conversation_id uuid not null references conversations(id) on delete cascade,

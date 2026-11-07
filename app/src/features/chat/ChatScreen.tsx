@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Dimensions, Keyboard, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronLeft, Image as ImageIcon, Send, SmilePlus, StoredImage } from "../../components";
+import { AppText, ChevronLeft, Image as ImageIcon, Send, SmilePlus, Sticker, StoredImage } from "../../components";
 import { loadThread, markRead, newMessageId, sendMessage, type Message, type Thread } from "../../data/chat";
 import { usePrefs } from "../../data/prefs";
 import { chatItems, isBigEmoji, mergeMessages } from "../../lib/chat";
@@ -15,7 +15,7 @@ const POLL_MS = 3000;
 /**
  * One conversation (user's recording of the original): back, the name in the middle and their picture on the right;
  * their picture and name at the top of the conversation; my messages on the right with 전송됨 (or 읽음) beside the last
- * one; at the bottom a photo button, the field "메시지 입력", an emoji button and send. New messages are fetched every
+ * one; at the bottom a photo button, the field "메시지 입력", a sticker/emoji button and send. New messages are fetched every
  * few seconds while the screen is open. A message that could not go out stays with "다시 보내기".
  */
 export function ChatScreen() {
@@ -178,7 +178,7 @@ export function ChatScreen() {
             <TextInput value={text} onChangeText={setText} placeholder="메시지 입력" placeholderTextColor={c.textPlaceholder} multiline maxLength={2000}
               accessibilityLabel="메시지 입력" editable={!!thread}
               style={{ flex: 1, color: c.text, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, paddingVertical: 9, maxHeight: 120, outlineStyle: "none" as never }} />
-            <Pressable onPress={() => { Keyboard.dismiss(); setEmoji(true); }} disabled={!thread} hitSlop={6} accessibilityRole="button" accessibilityLabel="이모지 보내기" style={{ height: 40, justifyContent: "center", paddingHorizontal: 4 }}>
+            <Pressable onPress={() => { Keyboard.dismiss(); setEmoji(true); }} disabled={!thread} hitSlop={6} accessibilityRole="button" accessibilityLabel="스티커·이모지 보내기" style={{ height: 40, justifyContent: "center", paddingHorizontal: 4 }}>
               <SmilePlus size={22} color={c.textMuted} />
             </Pressable>
           </View>
@@ -188,7 +188,7 @@ export function ChatScreen() {
           </Pressable>
         </View>
       )}
-      <ReactionSheet visible={emoji} onClose={() => setEmoji(false)} onPick={(e) => { setEmoji(false); send(draft("emoji", e)); }} />
+      <ReactionSheet visible={emoji} onClose={() => setEmoji(false)} onPick={(e, kind) => { setEmoji(false); send(draft(kind, e)); }} />
       <PersonSheet person={profile && other ? other : null} onClose={() => setProfile(false)} />
     </View>
   );
@@ -200,6 +200,8 @@ function Bubble({ m, time, state, onRetry, tight }: { m: Message; time?: string;
   const body = m.kind === "photo" ? (
     m.photoUri ? <StoredImage uri={m.photoUri} label="보낸 사진" style={{ width: 200, height: 200, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} />
       : <View style={{ width: 200, height: 200, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} />
+  ) : m.kind === "sticker" ? (
+    <Sticker id={m.body} size={120} />
   ) : big ? (
     <AppText style={{ fontSize: 44, lineHeight: 54 }}>{m.body}</AppText>
   ) : (
