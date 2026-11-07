@@ -20,6 +20,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | capture-for-diff.js | screenshots in the reference states for replica-diff |
 | edge.js | edge cases from replica/test-plan.md (empty/long/emoji input, double submit, back mid-edit, long names, past D-day, direct-opened edit, 360 wide) and an axe scan |
 | calendar.js | calendar swipe/arrows page months (1st / last day picked), title → today, edit mode and draft kept across days |
+| auth.js | 비밀번호 찾기 screen, e-mail check, server error message (build with dummy keys, see the file) |
 | menus.js | the to-do menu rows for today/past × done/undone match the original's four menus |
 | sheets.js | drag sheets down to close, short drag springs back, 정보 보기 as a sheet, header buttons still tap |
 | photos.js | proof photo, profile photo, diary photo (pass an image path as the 3rd argument) |

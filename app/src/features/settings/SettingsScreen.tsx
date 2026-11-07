@@ -53,6 +53,7 @@ export function SettingsScreen() {
         ) : null}
         {supabase ? (
           <>
+            <SettingsRow title="비밀번호 바꾸기" icon={icon(Lock)} onPress={() => router.push("/settings/password" as never)} />
             <SettingsRow title="로그아웃" icon={icon(User)} onPress={() => supabase?.auth.signOut()} />
             <SettingsRow title="계정 삭제" icon={icon(Lock)} onPress={() => setSheet("delete")} />
           </>

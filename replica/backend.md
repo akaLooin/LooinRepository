@@ -43,11 +43,13 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
    - Rebuild (step 5) when the code changes; the phone installs the new APK over the old one and keeps its data.
    - Checked before the first build: `expo install --check` clean (2026-11-07), `expo prebuild -p android` passes, permissions POST_NOTIFICATIONS / SCHEDULE_EXACT_ALARM / RECEIVE_BOOT_COMPLETED in the manifest.
 
+8. **Password reset (비밀번호 찾기)**, once in the Supabase dashboard: Authentication → URL Configuration → Redirect URLs → Add URL → `todomateclone://**` → Save. Without it the mail's link opens the Supabase site instead of the app. Works in the APK (Expo Go uses a different address). Supabase's built-in mailer sends only a few mails an hour.
+
 ## Checklist
 
 Auth
 - [x] Email + password (Supabase Auth). Sign-up, sign-in, clear error messages
-- [ ] Password reset by email (needs a deep link or your own SMTP)
+- [x] Password reset by email: login → 비밀번호를 잊으셨나요? → mail link `todomateclone://reset-password` → new password (AuthGate). Settings → 비밀번호 바꾸기 when signed in. Needs the redirect URL (step 8). Not yet tried on the phone
 - [x] Session stored on the device and refreshed automatically. Sign out clears this device's copy
 - [ ] Google sign-in. Needs your own Google Cloud OAuth client; can be added later
 - [x] Account deletion that really deletes (Edge Function `delete-account`: files, then the auth user, rows cascade). **Not tested against a live project**

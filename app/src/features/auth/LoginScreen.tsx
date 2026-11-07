@@ -1,5 +1,6 @@
 import { useInsets } from "../../theme";
-import { useState } from "react";
+import * as Linking from "expo-linking";
+import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
 import { AppText, Button, Clover } from "../../components";
 import { supabase } from "../../lib/supabase";
@@ -30,14 +31,15 @@ function explain(err: { message: string; status?: number }, mode: "signIn" | "si
  * S01: email + password. Chosen over email codes because Supabase's built-in mailer no longer lets the
  * template show a code without your own SMTP server (see replica/backend.md).
  */
-export function LoginScreen() {
+export function LoginScreen({ linkMessage }: { linkMessage?: string }) {
   const { c } = useTheme();
   const insets = useInsets();
-  const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
+  const [mode, setMode] = useState<"signIn" | "signUp" | "reset">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<string | undefined>(linkMessage);
+  useEffect(() => { if (linkMessage) { setError(linkMessage); setMode("signIn"); } }, [linkMessage]);
   const [info, setInfo] = useState<string>();
 
   const input = (props: React.ComponentProps<typeof TextInput>) => (
@@ -53,6 +55,7 @@ export function LoginScreen() {
     if (!supabase) return;
     const e = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return setError("이메일 주소를 확인해 주세요");
+    if (mode === "reset") return sendReset(e);
     if (password.length < MIN_PASSWORD) return setError(`비밀번호는 ${MIN_PASSWORD}자 이상이어야 해요`);
     setBusy(true); setError(undefined); setInfo(undefined);
     try {
@@ -61,6 +64,18 @@ export function LoginScreen() {
       setBusy(false);
       setError(explain(err as Error, mode));
     }
+  };
+
+  // 비밀번호 찾기: Supabase mails a link that opens this app (todomateclone://reset-password) on the new-password screen.
+  // The address must be allowed in Supabase: Authentication → URL Configuration → Redirect URLs (see backend.md).
+  const sendReset = async (e: string) => {
+    if (!supabase) return;
+    setBusy(true); setError(undefined); setInfo(undefined);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(e, { redirectTo: Linking.createURL("reset-password") });
+    setBusy(false);
+    if (err) return setError(explain(err, "signIn"));
+    setMode("signIn");
+    setInfo(`${e}로 비밀번호 재설정 메일을 보냈어요. 이 폰에서 메일의 링크를 누르면 새 비밀번호를 정할 수 있어요.`);
   };
 
   const run = async (e: string) => {
@@ -82,24 +97,30 @@ export function LoginScreen() {
   };
 
   const signUp = mode === "signUp";
+  const reset = mode === "reset";
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flex: 1, paddingTop: insets.top + 80, paddingHorizontal: tokens.layout.gutter, gap: 14 }}>
         <Clover size={48} state={{ kind: "done", color: tokens.colors.dark.accent }} />
-        <AppText variant="monthTitle" style={{ marginTop: 12 }} accessibilityRole="header">{signUp ? "계정 만들기" : "오늘 할 일을 시작해요"}</AppText>
+        <AppText variant="monthTitle" style={{ marginTop: 12 }} accessibilityRole="header">{reset ? "비밀번호 찾기" : signUp ? "계정 만들기" : "오늘 할 일을 시작해요"}</AppText>
         <AppText variant="body" color="textMuted" style={{ marginBottom: 20 }}>
-          {signUp ? "이메일과 비밀번호를 정해 주세요." : "이메일과 비밀번호로 로그인해요."}
+          {reset ? "가입한 이메일로 비밀번호 재설정 링크를 보내 드려요." : signUp ? "이메일과 비밀번호를 정해 주세요." : "이메일과 비밀번호로 로그인해요."}
         </AppText>
         {input({ value: email, onChangeText: setEmail, placeholder: "이메일", keyboardType: "email-address", autoCapitalize: "none", autoComplete: "email", accessibilityLabel: "이메일" })}
-        {input({ value: password, onChangeText: setPassword, placeholder: signUp ? `비밀번호 (${MIN_PASSWORD}자 이상)` : "비밀번호", secureTextEntry: true,
+        {reset ? null : input({ value: password, onChangeText: setPassword, placeholder: signUp ? `비밀번호 (${MIN_PASSWORD}자 이상)` : "비밀번호", secureTextEntry: true,
           autoCapitalize: "none", autoComplete: signUp ? "new-password" : "current-password", accessibilityLabel: "비밀번호", onSubmitEditing: submit })}
         {error ? <AppText variant="helper" color="danger" accessibilityLiveRegion="polite">{error}</AppText> : null}
         {info ? <AppText variant="helper" color="textSecondary" accessibilityLiveRegion="polite">{info}</AppText> : null}
         <View style={{ marginTop: 8 }}>
-          <Button kind="sheetPrimary" label={signUp ? "가입하기" : "로그인"} loading={busy} onPress={submit} />
+          <Button kind="sheetPrimary" label={reset ? "재설정 메일 보내기" : signUp ? "가입하기" : "로그인"} loading={busy} onPress={submit} />
         </View>
-        <Pressable onPress={() => { setMode(signUp ? "signIn" : "signUp"); setError(undefined); setInfo(undefined); }} accessibilityRole="button" style={{ alignSelf: "center", padding: 12 }}>
-          <AppText variant="body" color="textMuted">{signUp ? "이미 계정이 있어요 · 로그인" : "처음이에요 · 계정 만들기"}</AppText>
+        {mode === "signIn" ? (
+          <Pressable onPress={() => { setMode("reset"); setError(undefined); setInfo(undefined); }} accessibilityRole="button" style={{ alignSelf: "center", padding: 8 }}>
+            <AppText variant="body" color="textMuted">비밀번호를 잊으셨나요?</AppText>
+          </Pressable>
+        ) : null}
+        <Pressable onPress={() => { setMode(mode === "signIn" ? "signUp" : "signIn"); setError(undefined); setInfo(undefined); }} accessibilityRole="button" style={{ alignSelf: "center", padding: 12 }}>
+          <AppText variant="body" color="textMuted">{mode === "signIn" ? "처음이에요 · 계정 만들기" : "로그인으로 돌아가기"}</AppText>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

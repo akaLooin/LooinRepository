@@ -45,17 +45,17 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용
-- 홈 화면 위젯, 비밀번호 재설정, 설정의 "준비 중" 항목
+- 홈 화면 위젯, 설정의 "준비 중" 항목
 - 2단계: 친구(팔로우·피드·반응), 그다음 iOS
 - `/replica-diff`로 원본과 다시 비교
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인
 - `npm audit`: Expo 빌드 도구 쪽 moderate 8개(앱 번들 아님)
-- 비밀번호 재설정 메일 없음(기본 메일 서버는 템플릿 수정 불가)
+- 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (36개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
-- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 17개 (Playwright, 411×891, 체험 모드 데이터)
+- 단위 테스트 `cd app && npm test` (37개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 18개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`
