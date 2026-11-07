@@ -31,14 +31,17 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
    ```
 6. **Run it on your phone (development)**: `cd app && npm install && npx expo start`, then open the QR code with the Expo Go app on Android.
 
-7. **Install it as a real app (APK), so the PC is not needed day to day**:
-   - Make a free account at expo.dev.
-   - On the PC, once: `cd app`, `npx.cmd eas-cli@latest login`, `npx.cmd eas-cli@latest init`.
-   - Put the two values from `.env.local` into Expo, because `.env.local` is not uploaded:
-     `npx.cmd eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value https://<ref>.supabase.co --visibility plaintext`
-     and the same for `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-   - Build: `npx.cmd eas-cli@latest build -p android --profile preview`. It builds in Expo's cloud (about 10–20 minutes) and gives a link and a QR code. Open it on the phone and install the APK. Android asks to allow installing from that source.
-   - After that the app runs on its own. Rebuild only when the code changes.
+7. **Install it as a real app (APK), so the PC is not needed day to day** (Windows PowerShell, in `C:\Users\User\LooinRepository\app`):
+   1. Make a free account at expo.dev.
+   2. `npx.cmd eas-cli@latest login` (the expo.dev e-mail and password).
+   3. `npx.cmd eas-cli@latest init` → answer Y. It writes the project id into `app.json` (not a secret; commit it, then `git checkout -- app.json` before the next pull).
+   4. The Supabase values from `.env.local` go to Expo, because `.env.local` is never uploaded:
+      `npx.cmd eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value <URL from .env.local> --visibility plaintext`
+      `npx.cmd eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value <key from .env.local> --visibility sensitive`
+   5. `npx.cmd eas-cli@latest build -p android --profile preview` → Y to "Generate a new Android Keystore". Builds in Expo's cloud (10–30 minutes on the free plan), then shows a link and QR code.
+   6. On the phone open the link, download the APK, allow installing from that browser, install, sign in.
+   - Rebuild (step 5) when the code changes; the phone installs the new APK over the old one and keeps its data.
+   - Checked before the first build: `expo install --check` clean (2026-11-07), `expo prebuild -p android` passes, permissions POST_NOTIFICATIONS / SCHEDULE_EXACT_ALARM / RECEIVE_BOOT_COMPLETED in the manifest.
 
 ## Checklist
 

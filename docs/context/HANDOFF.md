@@ -39,6 +39,10 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - **폰 확인 방식(이용자 결정)**: 항상 실제 속도 모드 = `npm.cmd run phone` (`expo start --no-dev --minify`). **`--clear` 쓰지 않기**: 캐시를 지우면 첫 빌드가 60초 넘게 걸려 Expo Go가 기다리다 포기하고(파란 화면) 예전 버전을 띄움. 업데이트 안 보이던 원인이 이것
 - PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
 
+## 진행 중: APK 만들기 (2026-11-07)
+- 이용자가 결정. 순서는 `replica/backend.md` 7번. 사전 점검 완료(패키지 버전 맞춤, expo-system-ui 추가, prebuild 통과)
+- 이용자가 `eas init` 후 projectId를 보내 주면 app.json에 커밋 → 이용자는 `git checkout -- app.json` 후 pull
+
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용
 - 홈 화면 위젯, 비밀번호 재설정, 설정의 "준비 중" 항목
