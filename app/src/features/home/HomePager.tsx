@@ -12,6 +12,7 @@ import { HomeScreen } from "./HomeScreen";
  */
 
 const native = Platform.OS !== "web";
+const keepInbox = Platform.OS !== "web";
 const SETTLE_MS = 260;
 const horizontal = (dx: number, dy: number, dir: number) => dx * dir > 12 && Math.abs(dx) > Math.abs(dy) * 1.5;
 
@@ -19,8 +20,14 @@ export function HomePager() {
   const { c } = useTheme();
   const [w, setW] = useState(0);
   const [page, setPage] = useState<0 | 1>(1);
-  // 보관함 is only built while it can be seen (from the first touch of a swipe until back home), so home stays light
+  // On the phone 보관함 is built once, shortly after home has appeared, and kept: building it at the moment a swipe
+  // started made the first part of the slide stutter (user). On the web (tests) it is only built while in view.
   const [inboxOn, setInboxOn] = useState(false);
+  useEffect(() => {
+    if (!keepInbox) return;
+    const timer = setTimeout(() => setInboxOn(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
   const x = useRef(new Animated.Value(0)).current; // translateX of the two-page strip: 0 = 보관함, -w = home
   const wRef = useRef(0);
   const pageRef = useRef<0 | 1>(1);
@@ -31,7 +38,7 @@ export function HomePager() {
     setPage(to);
     if (to === 0) setInboxOn(true);
     Animated.timing(x, { toValue: -to * wRef.current, duration: SETTLE_MS, easing: Easing.out(Easing.cubic), useNativeDriver: native })
-      .start(({ finished }) => { if (finished && to === 1 && pageRef.current === 1) setInboxOn(false); });
+      .start(({ finished }) => { if (!keepInbox && finished && to === 1 && pageRef.current === 1) setInboxOn(false); });
   }, [x]);
 
   // Android back on 보관함 returns home, like a page you came from
@@ -51,7 +58,7 @@ export function HomePager() {
         onMoveShouldSetPanResponderCapture: (_e, g) => horizontal(g.dx, g.dy, dir),
         onMoveShouldSetPanResponder: (_e, g) => horizontal(g.dx, g.dy, dir),
         onPanResponderGrant: () => {
-          setInboxOn(true);
+          if (!keepInbox) setInboxOn(true);
           x.stopAnimation();
           start = -pageRef.current * wRef.current;
         },
@@ -73,6 +80,10 @@ export function HomePager() {
     return { 1: make(1), [-1]: make(-1) } as Record<1 | -1, ReturnType<typeof make>>;
   }, [x, settle]);
 
+  // the screens themselves never change when the page does, so they are not redrawn while sliding
+  const inboxPage = useMemo(() => (inboxOn ? <InboxScreen /> : null), [inboxOn]);
+  const homePage = useMemo(() => <HomeScreen />, []);
+
   const pager = useMemo<Pager>(() => ({ open: settle, swipe: (dir) => responders[dir], justSwiped: () => Date.now() - swipedAt.current < 400 }), [settle, responders]);
 
   return (
@@ -90,11 +101,11 @@ export function HomePager() {
           {/* the page out of view is hidden from screen readers and from touches */}
           <View style={{ width: w || "50%", flex: w ? undefined : 1 }} pointerEvents={page === 0 ? "auto" : "none"}
             aria-hidden={page !== 0} importantForAccessibility={page === 0 ? "auto" : "no-hide-descendants"}>
-            {inboxOn ? <InboxScreen /> : null}
+            {inboxPage}
           </View>
           <View style={{ width: w || "50%", flex: w ? undefined : 1 }} pointerEvents={page === 1 ? "auto" : "none"}
             aria-hidden={page !== 1} importantForAccessibility={page === 1 ? "auto" : "no-hide-descendants"}>
-            <HomeScreen />
+            {homePage}
           </View>
         </Animated.View>
       </PagerContext.Provider>

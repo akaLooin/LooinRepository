@@ -29,12 +29,12 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - Supabase: 서울 리전 새 프로젝트, 마이그레이션 0001·0003 실행 완료(표 8개 확인, 보관함용 date nullable), `app/.env.local` 작성, 앱에서 가입·로그인 성공
 - 폰: 삼성 안드로이드, Expo Go로 실행 (PC의 `npx.cmd expo start` 필요)
 
-## 폰 확인 결과와 조치 (2026-11-07, 다섯 번째 피드백까지)
-- 확인됨 ✅: 동기화, 알림(할 일 내용), 숫자 크기, 접기 ∨, 끌기 부드러움·다른 카테고리로 옮기기(제자리 들어감), 캘린더 선택/오늘 표시, 할 일 메뉴 4종, 흰/검은 체크 설정, 보관함 스와이프 동작
-- 이번에 고침(폰 확인 필요): 보관함을 홈 옆 화면처럼 손가락 따라 밀기(HomePager), 체크 누름 효과 없앰, 옮긴 직후 할 일이 안 눌리던 문제(알림 재예약을 바뀐 것만 → 가벼움, 추정 원인), 회색 사진에 이유·파일 이름 표시
-- 예전 사진 회색: Storage 파일은 130KB 정상 → 회색 칸에 뜨는 이유와 파일 이름을 받아 원인 확인 예정
-- PC: `app` 안에 있던 저장소 복사본은 `C:\Users\User\LooinRepository-old`로 옮김. 실행은 `C:\Users\User\LooinRepository\app`에서 `npx.cmd expo start --clear --no-dev --minify`
-- "Failed to download asset bundle"(폰이 PC에서 못 받음): 홈 버튼 → 다시 열기로 해결됨. 계속되면 `--tunnel`
+## 폰 확인 결과와 조치 (2026-11-07, 여섯 번째 피드백까지)
+- 확인됨 ✅: 동기화, 알림, 크기, 접기 ∨, 끌기(제자리), 캘린더 표시, 할 일 메뉴 4종, 체크 색 설정, 보관함 옆 화면 스와이프(동작)
+- 이번에 고침(폰 확인 필요): 옮긴 직후 할 일이 2초쯤 안 눌림(B14: 놓는 순간 저장), 보관함 넘어갈 때 끊김(미리 만들어 두고 다시 그리지 않음)
+- 사진 회색(B15): Storage에 그 파일이 없음(첫 테스트의 14바이트 파일, 지워짐) → 그 할 일에 사진 다시 넣기
+- **업데이트가 안 보이던 이유**: `--no-dev`로 열면 Expo Go가 지난번 버전을 먼저 띄우고 새 버전은 뒤에서 받아 **다음에 열 때** 보여 줌 → 기능 확인은 `npx.cmd expo start --clear`(개발 모드, 창에서 `r`로 새로고침), 부드러움 확인만 `--no-dev --minify`(두 번 열기)
+- PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용

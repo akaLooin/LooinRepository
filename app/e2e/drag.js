@@ -64,6 +64,12 @@ const order = async (p, re) => (await p.getByRole("button", { name: re }).allInn
     return ps.filter((x) => x.y < t).pop()?.name;
   };
   r.crossNowIn = await section();
+  // the moved row opens its menu right away (it used to need a few seconds on the phone)
+  await rowOf().click();
+  await p.waitForTimeout(400);
+  r.tapRightAfterDrop = await p.getByText("날짜 바꾸기").count();
+  await p.mouse.click(200, 40);
+  await p.waitForTimeout(400);
   await p.reload({ waitUntil: "networkidle" });
   await p.waitForTimeout(500);
   await p.getByLabel("11월 4일", { exact: true }).click();

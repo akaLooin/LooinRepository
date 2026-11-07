@@ -31,7 +31,7 @@ type Props<T> = {
 /**
  * Hold a row, then move it up or down. Built on PanResponder (no extra library), so it works on phones and web.
  * Like the original: the held row gets a grey band and follows the finger 1:1, the others slide out of its way,
- * and on release it glides into its new place before the order is saved.
+ * and on release the order is saved at once while the row glides into its new place.
  * Screen readers get "위로 이동" / "아래로 이동" actions instead of dragging.
  */
 const noDrag: DragHandle = { onLongPress: () => {}, delayLongPress: HOLD_MS };
@@ -49,40 +49,53 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const resetAfterRender = useRef(false);
   const heights = useRef<Record<string, number>>({});
   const [active, setActive] = useState<string | null>(null);
+  const [fading, setFading] = useState<string | null>(null); // the row whose band is fading out after a drop
+  const glide = useRef<{ key: string; from: number } | null>(null); // a dropped row still to glide into its new place
+  const lastDy = useRef(0);
   const [target, setTarget] = useState(0);
   const band = useRef(new Animated.Value(0)).current; // the grey band under the held row fades in and out
   const state = useRef({ active: null as string | null, from: 0, target: 0, keys });
   state.current.keys = keys;
 
   const rowH = (k: string) => (heights.current[k] ?? 56) + gap;
-  const clearAll = () => {
-    band.setValue(0);
-    shifts.forEach((v) => v.setValue(0));
+  const clearAll = () => shifts.forEach((v) => v.setValue(0));
+  /** Runs the pending glide: the dropped row starts where the finger left it and slides into its slot. */
+  const runGlide = () => {
+    const g = glide.current;
+    if (!g) return;
+    glide.current = null;
+    clearAll();
+    shiftOf(g.key).setValue(g.from);
+    slide(shiftOf(g.key), 0);
   };
 
   const finish = () => {
     const { active: a, from, target: to, keys: ks } = state.current;
     if (a === null) return;
     state.current.active = null;
-    // glide to the slot the neighbours opened (the band fades meanwhile), then save the order
+    onDragging?.(false);
+    lock?.(false);
+    // The order is saved the moment the finger lifts. It used to wait for the glide's "finished" signal, which in
+    // Expo Go arrived seconds late: until then the list was still in drag mode and the moved row could not be tapped
+    // (user's video). The glide now runs on its own after the save.
     let offset = 0;
     if (to > from) for (let i = from + 1; i <= to; i++) offset += rowH(ks[i]);
     if (to < from) for (let i = to; i < from; i++) offset -= rowH(ks[i]);
-    slide(band, 0, undefined, SLIDE_MS);
-    slide(shiftOf(a), offset, () => {
-      onDragging?.(false);
-      lock?.(false);
-      if (from !== to) {
-        const next = ks.filter((k) => k !== a);
-        next.splice(to, 0, a);
-        resetAfterRender.current = true; // keep the transforms until the new order is on screen
-        setActive(null);
-        onReorder(next);
-      } else {
-        clearAll();
-        setActive(null);
-      }
-    });
+    slide(band, 0);
+    setFading(a);
+    setTimeout(() => setFading((f) => (f === a ? null : f)), SLIDE_MS + 50);
+    setActive(null);
+    if (from !== to) {
+      const next = ks.filter((k) => k !== a);
+      next.splice(to, 0, a);
+      glide.current = { key: a, from: lastDy.current - offset }; // where the row is now, measured from its new slot
+      resetAfterRender.current = true;
+      onReorder(next);
+      // if the save did not change the order on screen (e.g. refused), glide back from where it is
+      requestAnimationFrame(() => { if (glide.current?.key === a) runGlide(); });
+    } else {
+      slide(shiftOf(a), 0);
+    }
   };
 
   const responder = useMemo(
@@ -99,6 +112,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
           // the held row moves with its own value: every row keeps one value for its whole life, because swapping
           // a row from one value to another left it stuck at the old offset after a drop (user's video)
           shiftOf(a).setValue(g.dy);
+          lastDy.current = g.dy;
           // where the held row's centre is now, measured in row heights
           const h = rowH;
           let to = from;
@@ -123,6 +137,8 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const start = (key: string) => {
     const from = state.current.keys.indexOf(key);
     state.current = { ...state.current, active: key, from, target: from };
+    lastDy.current = 0;
+    glide.current = null;
     band.setValue(0);
     setActive(key);
     setTarget(from);
@@ -159,7 +175,8 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
     // also whenever the list changes while nothing is held, so no row can ever stay displaced
     if (resetAfterRender.current || state.current.active === null) {
       resetAfterRender.current = false;
-      clearAll();
+      if (glide.current) runGlide();
+      else clearAll();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order]);
@@ -169,6 +186,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
       {items.map((item, i) => {
         const k = keyOf(item);
         const isActive = k === active;
+        const banded = isActive || k === fading;
         const still = fixed?.(item) ?? false;
         return (
           <Animated.View
@@ -179,11 +197,11 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
             accessibilityHint={still ? undefined : `${labelOf(item)}: 길게 눌러 끌면 순서를 바꿀 수 있어요`}
             style={{
               marginBottom: i < items.length - 1 ? gap : 0,
-              zIndex: isActive ? 10 : 0,
+              zIndex: banded ? 10 : 0,
               transform: [{ translateY: shiftOf(k) }],
             }}
           >
-            {isActive ? (
+            {banded ? (
               <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: tokens.radius.sm, backgroundColor: c.surfaceRow, opacity: band }]} />
             ) : null}
             {renderItem(item, still ? noDrag : { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}

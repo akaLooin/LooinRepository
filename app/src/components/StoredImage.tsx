@@ -43,6 +43,12 @@ async function resolve(uri: string, fresh = false): Promise<string | null> {
   return null;
 }
 
+/** A plain reason for the grey box. A missing file (deleted in Storage) needs the photo added again. */
+const whyNot = (uri: string) => {
+  const e = lastError.get(uri) ?? "";
+  return /not.?found/i.test(e) ? "서버에 사진 파일이 없어요. 사진을 다시 넣어 주세요" : `링크를 만들지 못했어요 (${e || "?"})`;
+};
+
 /** What to show first: the photo on this device if there is one, else nothing until the stored one resolves. */
 const initial = (uri?: string) => (!uri ? null : isUploaded(uri) ? (localCopy(uri) ?? null) : uri);
 
@@ -57,7 +63,7 @@ export function StoredImage({ uri, style, label }: { uri?: string; style: StyleP
     setUrl(first);
     setFailed(null);
     retried.current = false;
-    if (uri && !first) resolve(uri).then((u) => { if (!alive) return; setUrl(u); if (!u) setFailed(`링크를 만들지 못했어요 (${lastError.get(uri) ?? "?"})`); });
+    if (uri && !first) resolve(uri).then((u) => { if (!alive) return; setUrl(u); if (!u) setFailed(whyNot(uri)); });
     return () => { alive = false; };
   }, [uri]);
   // The local copy may be gone (cache cleared) or a link may have expired: fetch a fresh link once.
@@ -66,7 +72,7 @@ export function StoredImage({ uri, style, label }: { uri?: string; style: StyleP
     if (!isUploaded(uri)) { setUrl(null); setFailed("이 폰에 없는 사진이에요 (아직 업로드되지 않음)"); return; }
     if (retried.current) { setUrl(null); setFailed("내려받지 못했어요"); return; }
     retried.current = true;
-    resolve(uri, true).then((u) => { setUrl(u); if (!u) setFailed(`링크를 만들지 못했어요 (${lastError.get(uri) ?? "?"})`); });
+    resolve(uri, true).then((u) => { setUrl(u); if (!u) setFailed(whyNot(uri)); });
   };
   if (!url) {
     // When a photo cannot be shown, say why (and which file), so it can be checked against Supabase Storage
