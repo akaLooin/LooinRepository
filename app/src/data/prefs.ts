@@ -5,6 +5,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSyncExternalStore } from "react";
 import { SYNCED } from "./prefsRow";
+import type { FontFace } from "../theme/fonts";
 
 export type Prefs = {
   theme: "system" | "dark" | "light";
@@ -28,6 +29,8 @@ export type Prefs = {
   likesTodo: Audience; likesDiary: Audience; chatFrom: Audience;
   searchable: boolean;
   notifyMarketing: boolean; notifyLikes: boolean; notifyFollowing: boolean;
+  font: FontFace; // 설정 → 화면 → 폰트
+  feedMemoLines: number; // 피드에서 메모 줄 제한: 0 = 무제한 (feed is phase 2)
 };
 
 export type Audience = "all" | "followers" | "none";
@@ -38,6 +41,7 @@ export const DEFAULT_PREFS: Prefs = {
   smallTodoPhoto: false, showLikesInFeed: true,
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true,
+  font: "pretendard", feedMemoLines: 0,
 };
 
 const KEY = "todomate:prefs";

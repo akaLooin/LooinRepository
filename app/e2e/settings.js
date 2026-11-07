@@ -58,7 +58,18 @@ const out = process.argv[2] || ".";
   // 화면: small photo switch exists
   await p.goto("http://localhost:8765/settings/display", { waitUntil: "networkidle" });
   r.smallPhoto = await p.getByRole("switch", { name: "할 일 사진 작게 보기" }).count();
-  // 마이 tab: gear goes to settings
+  // 폰트: pick 나눔손글씨 펜, every text switches (and back)
+  await p.getByRole("button", { name: /^폰트, / }).click(); await p.waitForTimeout(300);
+  await p.getByRole("radio", { name: "나눔손글씨 펜" }).click();
+  await p.getByRole("button", { name: "확인" }).click(); await p.waitForTimeout(1500);
+  r.fontRow = await p.getByRole("button", { name: "폰트, 나눔손글씨 펜" }).count();
+  r.fontUsed = await p.getByText("달력에서 일요일부터 시작").evaluate((e) => getComputedStyle(e).fontFamily);
+  await p.screenshot({ path: `${out}/font-pen.png` });
+  await p.getByRole("button", { name: /^폰트, / }).click(); await p.waitForTimeout(300);
+  await p.getByRole("radio", { name: "기본" }).click();
+  await p.getByRole("button", { name: "확인" }).click(); await p.waitForTimeout(800);
+  r.fontBack = await p.getByText("달력에서 일요일부터 시작").evaluate((e) => getComputedStyle(e).fontFamily);
+    // 마이 tab: gear goes to settings
   await p.goto("http://localhost:8765/me", { waitUntil: "networkidle" });
   await p.getByRole("button", { name: "설정" }).click(); await p.waitForTimeout(400);
   r.gear = p.url().endsWith("/settings");

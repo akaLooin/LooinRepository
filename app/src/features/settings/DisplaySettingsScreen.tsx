@@ -2,9 +2,11 @@ import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { useState } from "react";
 import { ScrollView, useWindowDimensions, View } from "react-native";
-import { AppText, BottomSheet, Button, RadioList, ScreenHeader, Toggle, ToggleRow, ValueRow } from "../../components";
+import { AppText, BottomSheet, Button, RadioList, ScreenHeader, Toggle, ToggleRow, ValueRow, useToast } from "../../components";
 import { setPref, usePrefs, type Prefs } from "../../data/prefs";
-import { DESIGN_WIDTH, tokens, useDesignScale, useTheme } from "../../theme";
+import { DESIGN_WIDTH, FONT_LABEL, tokens, useDesignScale, useTheme, type FontFace } from "../../theme";
+
+const MEMO_LINES: Record<number, string> = { 0: "무제한", 1: "1줄", 2: "2줄", 3: "3줄", 5: "5줄" };
 
 const THEME: Record<Prefs["theme"], string> = { system: "시스템", dark: "다크", light: "라이트" };
 const SORT: Record<Prefs["todoSort"], string> = { done_last: "완료 여부 순", manual: "추가한 순" };
@@ -26,7 +28,10 @@ export function DisplaySettingsScreen() {
   const { c } = useTheme();
   const insets = useInsets();
   const p = usePrefs();
-  const [sheet, setSheet] = useState<null | "theme" | "sort" | "scale">(null);
+  const [sheet, setSheet] = useState<null | "theme" | "sort" | "scale" | "font" | "lines">(null);
+  const [draftFont, setDraftFont] = useState<FontFace>(p.font);
+  const [draftLines, setDraftLines] = useState("0");
+  const [toast, notice] = useToast();
   const { width } = useWindowDimensions();
   const scale = useDesignScale();
   const [draftScale, setDraftScale] = useState<string>(String(p.uiScale));
@@ -48,9 +53,9 @@ export function DisplaySettingsScreen() {
         <ToggleRow title="할 일 메모 작게 보기" value={p.smallTodoMemo} onChange={(v) => setPref("smallTodoMemo", v)} />
         <ToggleRow title="할 일 더블 탭으로 편집" value={p.doubleTapToEdit} onChange={(v) => setPref("doubleTapToEdit", v)} />
         <ValueRow title="테마" value={THEME[p.theme]} onPress={() => { setDraftTheme(p.theme); setSheet("theme"); }} />
-        <Later title="언어" value="한국어" />
-        <Later title="폰트" value="기본" />
-        <Later title="피드에서 메모 줄 제한" value="무제한" />
+        <ValueRow title="언어" value="한국어" onPress={() => notice("지금은 한국어만 있어요")} />
+        <ValueRow title="폰트" value={FONT_LABEL[p.font]} onPress={() => { setDraftFont(p.font); setSheet("font"); }} />
+        <ValueRow title="피드에서 메모 줄 제한" value={MEMO_LINES[p.feedMemoLines] ?? "무제한"} onPress={() => { setDraftLines(String(p.feedMemoLines)); setSheet("lines"); }} />
         <ValueRow title="할 일 정렬" value={SORT[p.todoSort]} onPress={() => { setDraftSort(p.todoSort); setSheet("sort"); }} />
         <Later title="월별 할 일 캘린더의 최대 항목 개수" value="10" />
         <Later title="주별 할 일 캘린더의 최대 항목 개수" value="무제한" />
@@ -70,6 +75,16 @@ export function DisplaySettingsScreen() {
         </AppText>
         <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setPref("uiScale", draftScale === "auto" ? "auto" : Number(draftScale)); setSheet(null); }} /></View>
       </BottomSheet>
+      <BottomSheet visible={sheet === "font"} onClose={() => setSheet(null)} title="폰트">
+        <RadioList value={draftFont} onChange={setDraftFont} options={(Object.keys(FONT_LABEL) as FontFace[]).map((v) => ({ value: v, label: FONT_LABEL[v] }))} />
+        <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setPref("font", draftFont); setSheet(null); }} /></View>
+      </BottomSheet>
+      <BottomSheet visible={sheet === "lines"} onClose={() => setSheet(null)} title="피드에서 메모 줄 제한">
+        <RadioList value={draftLines} onChange={setDraftLines} options={Object.entries(MEMO_LINES).map(([v, label]) => ({ value: v, label }))} />
+        <AppText variant="helper" color="textMuted" style={{ marginTop: 12 }}>친구 피드(2단계)에서 메모를 몇 줄까지 보여 줄지 정해요.</AppText>
+        <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setPref("feedMemoLines", Number(draftLines)); setSheet(null); }} /></View>
+      </BottomSheet>
+      {toast}
       <BottomSheet visible={sheet === "sort"} onClose={() => setSheet(null)} title="할 일 정렬">
         <RadioList value={draftSort} onChange={setDraftSort} options={(Object.keys(SORT) as Prefs["todoSort"][]).map((v) => ({ value: v, label: SORT[v] }))} />
         <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setPref("todoSort", draftSort); setSheet(null); }} /></View>

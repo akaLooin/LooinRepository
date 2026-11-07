@@ -4,7 +4,7 @@ import type { Prefs } from "./prefs";
 
 export const SYNCED: (keyof Prefs)[] = [
   "theme", "weekStartsSunday", "doubleTapToEdit", "use24h", "smallTodoText", "smallTodoMemo", "todoSort",
-  "calendarCategoryCount", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed",
+  "calendarCategoryCount", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed", "font", "feedMemoLines",
 ];
 
 export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown> {
@@ -22,6 +22,8 @@ export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown>
     input_at_top: p.inputAtTop,
     small_todo_photo: p.smallTodoPhoto,
     show_likes_in_feed: p.showLikesInFeed,
+    font: p.font === "pretendard" ? "default" : p.font, // the column's default is 'default'
+    feed_memo_line_limit: p.feedMemoLines || null, // null = 무제한
   };
 }
 
@@ -42,5 +44,9 @@ export function fromSettingsRow(r: Record<string, unknown>): Partial<Prefs> {
   bool("input_at_top", "inputAtTop");
   bool("small_todo_photo", "smallTodoPhoto");
   bool("show_likes_in_feed", "showLikesInFeed");
+  if (r.font === "default") out.font = "pretendard";
+  else if (r.font === "system" || r.font === "nanumGothic" || r.font === "nanumPen") out.font = r.font;
+  if (r.feed_memo_line_limit === null) out.feedMemoLines = 0;
+  else if ([1, 2, 3, 5].includes(Number(r.feed_memo_line_limit))) out.feedMemoLines = Number(r.feed_memo_line_limit);
   return out;
 }
