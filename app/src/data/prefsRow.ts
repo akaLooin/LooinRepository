@@ -7,13 +7,16 @@ export const SYNCED: (keyof Prefs)[] = [
   "calendarCategoryCount", "monthCalendarMax", "weekCalendarMax", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed", "font", "feedMemoLines",
   // privacy: other people's apps (and the database rules) must respect these
   "followApproval", "likesTodo", "likesDiary", "chatFrom", "searchable",
+  // the push server must respect these
+  "notifyChat", "notifyLikes", "notifyFollowing",
 ];
 
 /** Choices for the 할 일 캘린더 limits (0 = 무제한). */
 export const CALENDAR_MAX = [3, 5, 7, 10, 15, 20, 0];
 
-/** Columns added by the friends migration (20261108000000). A server without them still takes the others. */
-export const PRIVACY_COLUMNS = ["follow_approval", "likes_todo", "likes_diary", "chat_from", "searchable"];
+/** Columns added by later migrations (friends 20261108000000, push 20261108000300). A server without them still
+ * takes the others. */
+export const PRIVACY_COLUMNS = ["follow_approval", "likes_todo", "likes_diary", "chat_from", "searchable", "notify_chat", "notify_likes", "notify_following"];
 
 export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown> {
   return {
@@ -39,6 +42,9 @@ export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown>
     likes_diary: p.likesDiary,
     chat_from: p.chatFrom,
     searchable: p.searchable,
+    notify_chat: p.notifyChat,
+    notify_likes: p.notifyLikes,
+    notify_following: p.notifyFollowing,
   };
 }
 
@@ -61,6 +67,9 @@ export function fromSettingsRow(r: Record<string, unknown>): Partial<Prefs> {
   bool("show_likes_in_feed", "showLikesInFeed");
   bool("follow_approval", "followApproval");
   bool("searchable", "searchable");
+  bool("notify_chat", "notifyChat");
+  bool("notify_likes", "notifyLikes");
+  bool("notify_following", "notifyFollowing");
   const audience = (k: string, key: "likesTodo" | "likesDiary" | "chatFrom") => {
     if (r[k] === "all" || r[k] === "followers" || r[k] === "none") out[key] = r[k];
   };

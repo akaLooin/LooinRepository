@@ -29,6 +29,7 @@ export type Prefs = {
   likesTodo: Audience; likesDiary: Audience; chatFrom: Audience;
   searchable: boolean;
   notifyMarketing: boolean; notifyLikes: boolean; notifyFollowing: boolean;
+  notifyChat: boolean; // 대화 메시지 푸시 (this app's own row)
   font: FontFace; // 설정 → 화면 → 폰트
   feedMemoLines: number; // 피드에서 메모 줄 제한: 0 = 무제한 (feed is phase 2)
   // 할 일 캘린더: how many to-dos one day shows before "+n" (0 = 무제한)
@@ -42,7 +43,7 @@ export const DEFAULT_PREFS: Prefs = {
   calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false, checkColor: "white",
   smallTodoPhoto: false, showLikesInFeed: true,
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
-  notifyMarketing: false, notifyLikes: true, notifyFollowing: true,
+  notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };

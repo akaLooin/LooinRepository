@@ -5,6 +5,7 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import { planNotifications } from "../lib/notificationPlan";
+import { isOpenChat } from "../lib/push";
 import type { DB } from "./types";
 
 const CHANNEL = "todo-reminders";
@@ -12,7 +13,11 @@ const supported = Platform.OS === "android" || Platform.OS === "ios";
 
 if (supported) {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({ shouldPlaySound: true, shouldSetBadge: false, shouldShowBanner: true, shouldShowList: true }),
+    // a chat message for the conversation that is open on screen does not pop up (it is already showing)
+    handleNotification: async (n) => {
+      const quiet = isOpenChat((n.request.content.data as { url?: unknown } | null)?.url);
+      return { shouldPlaySound: !quiet, shouldSetBadge: false, shouldShowBanner: !quiet, shouldShowList: !quiet };
+    },
   });
 }
 

@@ -6,6 +6,7 @@ import { loadThread, markRead, newMessageId, sendMessage, type Message, type Thr
 import { usePrefs } from "../../data/prefs";
 import { chatItems, isBigEmoji, mergeMessages } from "../../lib/chat";
 import { pickPhoto } from "../../lib/photos";
+import { setOpenChat } from "../../lib/push";
 import { fontFamily, tokens, useDesignScale, useInsets, useTheme } from "../../theme";
 import { PersonSheet } from "../social/PersonSheet";
 import { ReactionSheet } from "../social/ReactionSheet";
@@ -47,6 +48,7 @@ export function ChatScreen() {
   useFocusEffect(useCallback(() => {
     if (!id) return;
     let alive = true;
+    setOpenChat(`/chat/${id}`); // pushes for this conversation stay quiet while it is open
     loadThread(id).then((t) => {
       if (!alive) return;
       if (!t) { setError("볼 수 없는 대화예요"); return; }
@@ -62,7 +64,7 @@ export function ChatScreen() {
         if (fresh) markRead(id);
       }).catch(() => {}); // offline: try again next time
     }, POLL_MS);
-    return () => { alive = false; clearInterval(timer); };
+    return () => { alive = false; clearInterval(timer); setOpenChat(null); };
   }, [id, apply]));
 
   // the field rides on top of the keyboard

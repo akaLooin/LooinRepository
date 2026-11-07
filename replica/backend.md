@@ -51,6 +51,15 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 
 11. **Reaction lists (2026-11-08)**, once in the SQL Editor: run `supabase/migrations/20261108000100_reaction_lists.sql` (친구 홈의 할 일·일기마다 반응 목록, 내 할 일·일기에 받은 반응). Safe to run again. Without it the friend home still opens but reactions do not show under to-dos.
 12. **대화 (2026-11-08)**, once in the SQL Editor: run `supabase/migrations/20261108000200_chat.sql` (대화방, 메시지, 읽음, 사진 버킷 `chat-photos`). Safe to run again. Until then 보내기 shows "서버에 대화 SQL을 먼저 실행해 주세요".
+13. **Push notifications (2026-11-08)**: messages and friend news reach the phone when the app is closed. Needs a PC, about 30 minutes, in this order. Nothing secret goes into the repository or the chat.
+    1. SQL Editor: run `supabase/migrations/20261108000300_push.sql` (phone addresses, 알림 settings on the account).
+    2. Firebase (Google's push service for Android): https://console.firebase.google.com → 프로젝트 추가 (any name, Analytics off) → Android 앱 추가, package name `com.looin.todomateclone` → download `google-services.json` → put it in `C:\Users\User\LooinRepository\app\` (git ignores it).
+    3. Give that file to EAS builds: in `app`, `npx.cmd eas-cli env:create --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --visibility secret --environment preview`.
+    4. Let Expo send through Firebase: Firebase → 프로젝트 설정 → 서비스 계정 → 새 비공개 키 생성 (a .json file; keep it outside the repository) → `npx.cmd eas-cli credentials` → Android → preview → Google Service Account → "Push Notifications (FCM V1)" → upload that file.
+    5. The sender: in the repository folder, `npx.cmd supabase login`, `npx.cmd supabase link --project-ref <your project id>` (dashboard URL, after /project/), `npx.cmd supabase functions deploy push --no-verify-jwt`. Make a secret word: PowerShell `[guid]::NewGuid().ToString("N")`, then `npx.cmd supabase secrets set PUSH_WEBHOOK_SECRET=<that word>`.
+    6. Dashboard → Database → Webhooks → Create: name `push-messages`, table `messages`, event Insert, type Supabase Edge Functions → `push`, method POST, add header `x-push-secret` = the same word. Make a second one, `push-notifications`, for table `notifications`.
+    7. Build a new APK (step 7). After signing in, 설정 → 알림 → "이 폰의 푸시 알림" says 켜져 있어요, or why not.
+    Expo Go and the web never get pushes (Expo Go has no push on Android since SDK 53).
 ## Checklist
 
 Auth
@@ -65,6 +74,7 @@ Database
 - [x] Migrations checked in (`supabase/migrations`), applied in order
 - [x] Row level security on every table. Tested on local Postgres 16 with Supabase's `auth` schema stubbed: a second user gets nothing back
 - [x] 대화 rules: `supabase/tests/chat.test.sql` (one room per pair, re-sent message counted once, photos only from your own folder and only for the two people, unread/read, 대화 수신 허용, stranger sees nothing, block hides the room)
+- [x] Push: `supabase/tests/push.test.sql` (phone addresses only through functions, own only, a phone moves with the sign-in); the push wording and batching are unit-tested (`app/scripts/test-push.ts`); the function itself runs only on Supabase
 - [x] Friends rules: `supabase/tests/run.sh` runs every migration on a throwaway Postgres 16 and `friends.test.sql` (owner, follower, stranger, requester: visibility levels, private memos, photos, reactions and the 좋아요 setting, approval, block, search opt-out, signed out)
 - [x] To-dos and routines can only point at the user's own categories (trigger). Ended categories refuse new to-dos (trigger)
 - [x] New accounts get a profile, settings and a "To Do" category (trigger)

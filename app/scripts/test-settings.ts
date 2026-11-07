@@ -6,7 +6,7 @@ const p: Prefs = {
   theme: "light", weekStartsSunday: false, doubleTapToEdit: true, use24h: false, smallTodoText: true, smallTodoMemo: false, todoSort: "manual",
   uiScale: 0.9, calendarCategoryIds: ["c1"], calendarCategoryCount: 3, collapsibleCategories: true, collapsedCategoryIds: ["c2"], inputAtTop: true,
   checkColor: "black", smallTodoPhoto: true, showLikesInFeed: false, followApproval: true, likesTodo: "followers", likesDiary: "none", chatFrom: "all",
-  searchable: false, notifyMarketing: true, notifyLikes: false, notifyFollowing: true, font: "nanumGothic", feedMemoLines: 2, monthCalendarMax: 15, weekCalendarMax: 0,
+  searchable: false, notifyMarketing: true, notifyLikes: false, notifyFollowing: true, font: "nanumGothic", feedMemoLines: 2, monthCalendarMax: 15, weekCalendarMax: 0, notifyChat: false,
 };
 const t = (n: string, f: () => void) => { f(); console.log("ok", n); };
 t("synced settings survive a round trip", () => {

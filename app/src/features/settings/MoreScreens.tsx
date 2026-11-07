@@ -7,6 +7,7 @@ import { setAllDiaryVisibility, syncNow, useSyncStatus } from "../../data/store"
 import type { Visibility } from "../../data/types";
 import { goBack } from "../../lib/nav";
 import { supabase } from "../../lib/supabase";
+import { registerPush, usePushStatus } from "../../lib/push";
 import { tokens, useInsets, useTheme } from "../../theme";
 import { Explain, SectionTitle } from "./parts";
 
@@ -124,11 +125,23 @@ export function PermissionsScreen() {
 /** 알림 (original's three switches). They are about friends, so they take effect in phase 2. */
 export function NotificationSettingsScreen() {
   const p = usePrefs();
+  const push = usePushStatus();
   return (
     <Page title="알림">
       <ToggleRow title="마케팅 정보 알림" value={p.notifyMarketing} onChange={(v) => setPref("notifyMarketing", v)} />
       <ToggleRow title="좋아요 소식 받기" value={p.notifyLikes} onChange={(v) => setPref("notifyLikes", v)} />
-      <ToggleRow title="팔로잉의 소식 받기" value={p.notifyFollowing} onChange={(v) => setPref("notifyFollowing", v)} divider={false} />
+      <ToggleRow title="팔로잉의 소식 받기" value={p.notifyFollowing} onChange={(v) => setPref("notifyFollowing", v)} />
+      {/* not in the original's list: added with 대화 */}
+      <ToggleRow title="대화 메시지 받기" value={p.notifyChat} onChange={(v) => setPref("notifyChat", v)} divider={false} />
+      <SectionTitle title="이 폰의 푸시 알림" />
+      <AppText variant="body" color={push.state === "on" ? "text" : "textMuted"}>
+        {push.state === "on" ? "켜져 있어요. 앱을 닫아도 메시지와 친구 소식이 와요." : push.state === "working" ? "확인하는 중…" : `꺼져 있어요: ${push.reason ?? ""}`}
+      </AppText>
+      {push.state === "off" && supabase ? (
+        <Pressable onPress={() => registerPush()} accessibilityRole="button" style={{ alignSelf: "flex-start", paddingVertical: 10 }}>
+          <AppText variant="body" color="saturday">다시 시도</AppText>
+        </Pressable>
+      ) : null}
       <AppText variant="helper" color="textMuted" style={{ marginTop: 20 }}>할 일 시간 알림과 리마인더는 ≡ 메뉴 → 리마인더 관리에서 정해요.</AppText>
     </Page>
   );

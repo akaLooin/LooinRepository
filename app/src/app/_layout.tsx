@@ -1,7 +1,10 @@
 import * as Font from "expo-font";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
+import { pushTarget } from "../lib/push";
 import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -20,6 +23,14 @@ function Shell() {
     return () => { alive = false; };
   }, [font, setFont]);
   useEffect(() => { loadPrefs(); }, []);
+  // tapping a push opens its chat or the 알림 tab (also when the tap started the app)
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const go = (data: unknown) => { const to = pushTarget(data); if (to) setTimeout(() => router.push(to as never), 300); };
+    Notifications.getLastNotificationResponseAsync().then((r) => r && go(r.notification.request.content.data)).catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener((r) => go(r.notification.request.content.data));
+    return () => sub.remove();
+  }, []);
   useEffect(() => { setOverride(theme === "system" ? null : theme); }, [theme, setOverride]);
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>

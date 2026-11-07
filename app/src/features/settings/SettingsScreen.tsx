@@ -8,6 +8,7 @@ import { useDB } from "../../data/store";
 import { goBack } from "../../lib/nav";
 import { supabase } from "../../lib/supabase";
 import { tokens, useInsets, useTheme } from "../../theme";
+import { unregisterPush } from "../../lib/push";
 
 /** S12, laid out as the original's list (user's recording, 2026-11-07). Premium is left out on purpose (no payments). */
 export function SettingsScreen() {
@@ -40,7 +41,7 @@ export function SettingsScreen() {
           <AppText variant="bodyLg" color="textMuted">{version}</AppText>
         </View>
         {supabase ? (
-          <Pressable onPress={() => supabase?.auth.signOut()} accessibilityRole="button" style={{ height: 56, justifyContent: "center" }}>
+          <Pressable onPress={async () => { await unregisterPush(); await supabase?.auth.signOut(); }} accessibilityRole="button" style={{ height: 56, justifyContent: "center" }}>
             <AppText variant="bodyLg">로그아웃</AppText>
           </Pressable>
         ) : null}

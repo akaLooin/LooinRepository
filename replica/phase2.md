@@ -32,6 +32,14 @@ Our own sticker pack, drawn in code (`app/src/components/Sticker.tsx`, colours i
 on the sticker tab (as in the original); reactions show the sticker under the to-do; 대화 sends them as `sticker` messages;
 설정 → 내 스티커 shows the pack. Not yet: stickers on diaries (need the original's diary-sticker screen first).
 
+## Push notifications (prepared 2026-11-08)
+
+Server: `20261108000300_push.sql` (push_tokens, notify_chat/likes/following on user_settings) + Edge Function
+`supabase/functions/push` called by Database Webhooks on new `messages` and `notifications` rows; it respects 설정 → 알림,
+sends through Expo's push service and forgets phones that are gone. App (`lib/push.ts`): saves this phone's address after
+sign-in, removes it on 로그아웃, tapping a push opens the chat or 알림, a chat open on screen stays quiet, 설정 → 알림 shows
+whether this phone gets pushes and why not. Turning it on needs Firebase + EAS + deploy steps on a PC (backend.md 13).
+
 ## 대화 (built 2026-11-08)
 
 보내기 tab = 대화 list (name, last message, time, unread count; a red dot on the tab). A conversation opens from the list

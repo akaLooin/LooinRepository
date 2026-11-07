@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { parseAuthLink } from "../../lib/authLink";
 import { NewPasswordScreen } from "./NewPasswordScreen";
 import { endSession, startSession } from "../../data/store";
+import { registerPush } from "../../lib/push";
 import { supabase, supabaseConfigError } from "../../lib/supabase";
 import { ConfigErrorScreen } from "./ConfigErrorScreen";
 import { supabaseRemote } from "../../data/supabaseRemote";
@@ -48,8 +49,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const uid = s?.user.id ?? null;
       if (uid !== current) {
         current = uid;
-        if (uid) await startSession({ mode: "cloud", userId: uid, remote: supabaseRemote(sb) });
-        else await endSession();
+        if (uid) {
+          await startSession({ mode: "cloud", userId: uid, remote: supabaseRemote(sb) });
+          registerPush(); // this phone gets the account's chat and friend pushes (in the installed app)
+        } else await endSession();
       }
       setSession(s);
       setReady(true);
