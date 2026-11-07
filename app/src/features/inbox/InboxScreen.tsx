@@ -91,7 +91,7 @@ export function InboxScreen() {
               ) : (
                 <TodoRow title={t.title} alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => { if (!pager?.justSwiped()) openSheet(t.id); }}
                   onMemoPress={() => openSheet(t.id, "memo")} onAlarmPress={() => openSheet(t.id, "alarm")}
-                  onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
+                  onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto} {...drag} />
               );
             }}
           />

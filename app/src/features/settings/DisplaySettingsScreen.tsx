@@ -40,16 +40,14 @@ export function DisplaySettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}>
         <ToggleRow title="달력에서 일요일부터 시작" value={p.weekStartsSunday} onChange={(v) => setPref("weekStartsSunday", v)} />
         <ToggleRow title="할 일을 상단에서 입력" value={p.inputAtTop} onChange={(v) => setPref("inputAtTop", v)} />
-        <Later title="피드에서 좋아요 보이기" />
+        <ToggleRow title="피드에서 좋아요 보이기" value={p.showLikesInFeed} onChange={(v) => setPref("showLikesInFeed", v)} />
         <ToggleRow title="시간을 24시간제로 표시" value={p.use24h} onChange={(v) => setPref("use24h", v)} />
         <ToggleRow title="카테고리 접기 펼치기" value={p.collapsibleCategories} onChange={(v) => setPref("collapsibleCategories", v)} />
         <ToggleRow title="할 일 텍스트 작게 보기" value={p.smallTodoText} onChange={(v) => setPref("smallTodoText", v)} />
-        <Later title="할 일 사진 작게 보기" />
+        <ToggleRow title="할 일 사진 작게 보기" value={p.smallTodoPhoto} onChange={(v) => setPref("smallTodoPhoto", v)} />
         <ToggleRow title="할 일 메모 작게 보기" value={p.smallTodoMemo} onChange={(v) => setPref("smallTodoMemo", v)} />
         <ToggleRow title="할 일 더블 탭으로 편집" value={p.doubleTapToEdit} onChange={(v) => setPref("doubleTapToEdit", v)} />
-        <ValueRow title="체크 표시 색" value={p.checkColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("checkColor", p.checkColor === "black" ? "white" : "black")} />
         <ValueRow title="테마" value={THEME[p.theme]} onPress={() => { setDraftTheme(p.theme); setSheet("theme"); }} />
-        <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} />
         <Later title="언어" value="한국어" />
         <Later title="폰트" value="기본" />
         <Later title="피드에서 메모 줄 제한" value="무제한" />
@@ -57,6 +55,9 @@ export function DisplaySettingsScreen() {
         <Later title="월별 할 일 캘린더의 최대 항목 개수" value="10" />
         <Later title="주별 할 일 캘린더의 최대 항목 개수" value="무제한" />
         <ValueRow title="할 일 캘린더에서 표시할 카테고리" value={String(p.calendarCategoryCount)} onPress={() => setPref("calendarCategoryCount", (p.calendarCategoryCount % 4) + 1)} />
+        {/* not in the original: added for this app */}
+        <ValueRow title="체크 표시 색" value={p.checkColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("checkColor", p.checkColor === "black" ? "white" : "black")} />
+        <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} divider={false} />
       </ScrollView>
       <BottomSheet visible={sheet === "theme"} onClose={() => setSheet(null)} title="테마">
         <RadioList value={draftTheme} onChange={setDraftTheme} options={(Object.keys(THEME) as Prefs["theme"][]).map((v) => ({ value: v, label: THEME[v] }))} />

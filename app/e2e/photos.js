@@ -38,9 +38,11 @@ async function pick(p, trigger) {
   r.infoPhoto = await p.getByLabel("인증 사진").count();
 
   await p.goto("http://localhost:8765/profile", { waitUntil: "networkidle" });
-  await pick(p, () => p.getByRole("button", { name: "프로필 사진 바꾸기", exact: true }).click());
-  await p.getByRole("button", { name: "확인" }).click();
+  // the original's profile: tap the photo → 수정 (saved at once)
+  await p.getByRole("button", { name: "프로필 이미지 바꾸기" }).click(); await p.waitForTimeout(300);
+  await pick(p, () => p.getByRole("button", { name: "수정", exact: true }).click());
   await p.waitForTimeout(500);
+  await p.goto("http://localhost:8765/", { waitUntil: "networkidle" }); await p.waitForTimeout(500);
   r.homeAvatar = await p.getByLabel("프로필 사진").count();
 
   await p.goto("http://localhost:8765/diary/2026-11-03", { waitUntil: "networkidle" });

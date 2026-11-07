@@ -518,3 +518,8 @@ export function setTodoAlarm(id: string, timeOfDay: string | null) {
 }
 
 export type { Category, DDay, Diary, Profile, Reminder, Routine, Todo };
+
+/** 개인정보 보호 → 모든 일기의 공개설정 변경 (original): one visibility for every diary at once. */
+export function setAllDiaryVisibility(visibility: Diary["visibility"]) {
+  set({ ...db, diaries: db.diaries.map((d) => (d.visibility === visibility ? d : { ...d, visibility })) });
+}

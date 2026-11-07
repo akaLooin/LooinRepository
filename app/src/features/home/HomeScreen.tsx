@@ -327,6 +327,7 @@ export function HomeScreen() {
                   onDoubleTap={prefs.doubleTapToEdit ? () => startEditing(materialize(t.id)) : undefined}
                   small={prefs.smallTodoText}
                   smallMemo={prefs.smallTodoMemo}
+                  smallPhoto={prefs.smallTodoPhoto}
                   {...drag}
                 />
               );

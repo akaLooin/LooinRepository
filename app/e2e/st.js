@@ -25,10 +25,13 @@ const { chromium } = require("playwright");
   await p.screenshot({ path: "home-light.png" });
   await p.goto("http://localhost:8765/profile", { waitUntil: "networkidle" });
   await p.waitForTimeout(300);
-  await p.getByLabel("닉네임").fill("루인2");
-  await p.getByLabel("자기소개").fill("오늘도 한 칸씩");
-  await p.getByRole("button", { name: "확인" }).click();
-  await p.waitForTimeout(400);
+  // the original's profile: each field on its own screen with 확인
+  await p.getByRole("button", { name: /^이름, / }).click(); await p.waitForTimeout(300);
+  await p.getByLabel("이름", { exact: true }).fill("루인2");
+  await p.getByRole("button", { name: "확인" }).click(); await p.waitForTimeout(400);
+  await p.getByRole("button", { name: /^자기소개, / }).click(); await p.waitForTimeout(300);
+  await p.getByLabel("자기소개", { exact: true }).fill("오늘도 한 칸씩");
+  await p.getByRole("button", { name: "확인" }).click(); await p.waitForTimeout(400);
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.waitForTimeout(500);
   r.nickname = await p.getByText("루인2").count();

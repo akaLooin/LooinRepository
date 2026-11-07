@@ -45,6 +45,8 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 
 8. **Password reset (비밀번호 찾기)**, once in the Supabase dashboard: Authentication → URL Configuration → Redirect URLs → Add URL → `todomateclone://**` → Save. Without it the mail's link opens the Supabase site instead of the app. Works in the APK (Expo Go uses a different address). Supabase's built-in mailer sends only a few mails an hour.
 
+9. **Profile fields (2026-11-07)**, once in the Supabase SQL Editor: run `supabase/migrations/20261107000000_profile_fields.sql` (ID, 관심사, 성별, 생년월; 이름 30자, 자기소개 200자). Until then a profile with those fields set is not accepted by the server (shown under 설정 → 실험실).
+
 ## Checklist
 
 Auth

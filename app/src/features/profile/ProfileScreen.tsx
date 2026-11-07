@@ -1,62 +1,56 @@
-import { goBack } from "../../lib/nav";
-import { useInsets } from "../../theme";
+import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
-import { AppText, ScreenHeader, StoredImage, TitleInput } from "../../components";
-import { pickPhoto } from "../../lib/photos";
+import { Pressable, ScrollView, View } from "react-native";
+import { AppText, ScreenHeader, StoredImage, useToast } from "../../components";
 import { updateProfile, useDB } from "../../data/store";
-import { fontFamily, tokens, useTheme } from "../../theme";
+import { goBack } from "../../lib/nav";
+import { pickPhoto } from "../../lib/photos";
+import { tokens, useInsets, useTheme } from "../../theme";
+import { ActionSheet, BoxRow } from "../settings/parts";
 
-/** S02: photo, nickname and bio. */
+/** S02, as the original's 프로필 (user's recording): photo with 프로필 이미지 (수정/삭제), then 이름, 자기소개, 관심사, ID. */
 export function ProfileScreen() {
   const { c } = useTheme();
   const insets = useInsets();
   const profile = useDB((d) => d.profile);
-  const [nickname, setNickname] = useState(profile.nickname);
-  const [bio, setBio] = useState(profile.bio);
-  const [avatar, setAvatar] = useState(profile.avatarUri);
-  const [error, setError] = useState<string>();
-  const save = () => {
-    const n = nickname.trim();
-    if (!n) return setError("닉네임을 입력해 주세요");
-    if (n.length > 20) return setError("닉네임은 20자까지예요");
-    updateProfile({ nickname: n, bio: bio.trim().slice(0, 150), avatarUri: avatar });
-    goBack("/settings");
+  const [sheet, setSheet] = useState(false);
+  const [toast, notice] = useToast();
+  const size = tokens.size.avatarProfile + 20;
+  const pick = async () => {
+    try {
+      const uri = await pickPhoto();
+      if (uri) updateProfile({ avatarUri: uri });
+    } catch {
+      notice("사진을 불러오지 못했어요");
+    }
   };
+  const edit = (field: string) => () => router.push(`/settings/edit/${field}` as never);
+  const interests = profile.interests ?? [];
+
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="프로필" onBack={() => goBack("/settings")} right={{ label: "확인", onPress: save }} />
-      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18 }} keyboardShouldPersistTaps="handled">
-        <View style={{ alignItems: "center", gap: 8, marginVertical: 8 }}>
-          <Pressable onPress={async () => { const uri = await pickPhoto().catch(() => null); if (uri) setAvatar(uri); }} accessibilityRole="button" accessibilityLabel="프로필 사진 바꾸기">
-            <StoredImage uri={avatar} label="프로필 사진" style={{ width: tokens.size.avatarProfile + 20, height: tokens.size.avatarProfile + 20, borderRadius: 60 }} />
+      <ScreenHeader title="프로필" onBack={() => goBack("/settings")} />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40, gap: 10 }}>
+        <View style={{ alignItems: "center", gap: 10, marginTop: 12, marginBottom: 24 }}>
+          <Pressable onPress={() => setSheet(true)} accessibilityRole="button" accessibilityLabel="프로필 이미지 바꾸기">
+            {profile.avatarUri
+              ? <StoredImage uri={profile.avatarUri} label="프로필 사진" style={{ width: size, height: size, borderRadius: size / 2 }} />
+              : <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: c.surfaceStrong }} />}
           </Pressable>
-          <View style={{ flexDirection: "row", gap: 16 }}>
-            <Pressable onPress={async () => { const uri = await pickPhoto().catch(() => null); if (uri) setAvatar(uri); }} accessibilityRole="button" hitSlop={8}>
-              <AppText variant="body" weight={600}>사진 바꾸기</AppText>
-            </Pressable>
-            {avatar ? (
-              <Pressable onPress={() => setAvatar(undefined)} accessibilityRole="button" hitSlop={8}>
-                <AppText variant="body" color="danger">사진 지우기</AppText>
-              </Pressable>
-            ) : null}
-          </View>
+          <Pressable onPress={() => setSheet(true)} accessibilityRole="button" hitSlop={8}>
+            <AppText variant="helper" color="saturday" style={{ textDecorationLine: "underline" }}>프로필 이미지</AppText>
+          </Pressable>
         </View>
-        <AppText variant="helper" color="textMuted" weight={600}>닉네임</AppText>
-        <TitleInput value={nickname} onChangeText={(s) => { setNickname(s); setError(undefined); }} placeholder="닉네임" error={error} />
-        <AppText variant="helper" color="textMuted" weight={600} style={{ marginTop: 10 }}>자기소개</AppText>
-        <TextInput
-          value={bio}
-          onChangeText={(s) => setBio(s.slice(0, 150))}
-          placeholder="나를 한 줄로 소개해 보세요"
-          placeholderTextColor={c.textPlaceholder}
-          multiline
-          accessibilityLabel="자기소개"
-          style={{ minHeight: 100, borderRadius: tokens.radius.lg, backgroundColor: c.surfaceInput, color: c.text, padding: 18, textAlignVertical: "top",
-            fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, outlineStyle: "none" as never }}
-        />
-        <AppText variant="helper" color="textMuted" style={{ alignSelf: "flex-end" }}>{`${bio.length}/150`}</AppText>
+        <BoxRow label="이름" value={profile.nickname} onPress={edit("nickname")} />
+        <BoxRow label="자기소개" value={profile.bio ? profile.bio.split("\n")[0] : "등록안됨"} onPress={edit("bio")} />
+        <BoxRow label="관심사" value={interests.length ? interests.join(", ") : "등록안됨"} onPress={() => router.push("/settings/interests" as never)} />
+        <BoxRow label="ID" value={profile.handle || "등록안됨"} onPress={edit("handle")} />
       </ScrollView>
+      <ActionSheet visible={sheet} onClose={() => setSheet(false)} options={[
+        { label: "수정", onPress: pick },
+        ...(profile.avatarUri ? [{ label: "삭제", danger: true, onPress: () => updateProfile({ avatarUri: undefined }) }] : []),
+      ]} />
+      {toast}
     </View>
   );
 }

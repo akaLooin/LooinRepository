@@ -4,7 +4,14 @@ import type { RepeatRule } from "../lib/routines";
 
 export type Visibility = "public" | "followers" | "partial" | "private";
 
-export type Profile = { id: string; nickname: string; bio: string; avatarUri?: string; statusEmoji?: string };
+export type Gender = "male" | "female" | "nonbinary";
+export type Profile = {
+  id: string; nickname: string; bio: string; avatarUri?: string; statusEmoji?: string;
+  /** 설정 → 프로필 (original): ID for friends to find you (phase 2), interests (up to 10) */
+  handle?: string; interests?: string[];
+  /** 설정 → 계정 (original) */
+  gender?: Gender; birthMonth?: string; // "YYYY-MM"
+};
 
 export type Category = {
   id: string;

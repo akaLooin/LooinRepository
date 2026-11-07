@@ -43,7 +43,10 @@ export function CalendarPager({ index, onIndexChange, renderPage, gutter = 0 }: 
   // a page change that did not come from a swipe (arrows, title → today) jumps at once
   useEffect(() => {
     indexRef.current = index;
-    if (placed.current !== index && wRef.current) x.setValue(-(index - base) * wRef.current);
+    // moved the same way a swipe moves it (a zero-length animation on the UI thread): setting the value directly left
+    // the dates not answering taps on the phone until the next swipe (user, first APK)
+    if (placed.current !== index && wRef.current)
+      Animated.timing(x, { toValue: -(index - base) * wRef.current, duration: 0, useNativeDriver: native }).start();
     placed.current = index;
   }, [index, x, base]);
 

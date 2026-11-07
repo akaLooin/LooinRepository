@@ -20,11 +20,13 @@ function AlarmClock({ size = 14 }: { size?: number }) {
 }
 
 /** One to-do: clover checkbox, title, optional alarm time, memo and proof photo (S03). */
-export function TodoRow({ onMemoPress, onAlarmPress, title, alarm, memo, done, color, photo, onToggle, onPress, onDoubleTap, small, smallMemo, onLongPress, delayLongPress, selected, largeMemo }: {
+export function TodoRow({ smallPhoto, onMemoPress, onAlarmPress, title, alarm, memo, done, color, photo, onToggle, onPress, onDoubleTap, small, smallMemo, onLongPress, delayLongPress, selected, largeMemo }: {
   title: string; alarm?: string; memo?: string; done: boolean; color: string; photo?: string; onToggle: () => void; onPress?: () => void; onDoubleTap?: () => void;
   small?: boolean; smallMemo?: boolean; onLongPress?: () => void; delayLongPress?: number; selected?: boolean; largeMemo?: boolean;
   /** tapping the memo text opens the memo editor, tapping the alarm time opens the time sheet (user) */
   onMemoPress?: () => void; onAlarmPress?: () => void;
+  /** 설정 → 화면 → 할 일 사진 작게 보기 */
+  smallPhoto?: boolean;
 }) {
   const { c } = useTheme();
   // With double-tap editing on, a single tap waits a moment to see if a second one follows, so a double tap
@@ -58,7 +60,7 @@ export function TodoRow({ onMemoPress, onAlarmPress, title, alarm, memo, done, c
             <AppText variant={largeMemo ? "body" : smallMemo ? "small" : "helper"} color="textSecondary">{memo}</AppText>
           </Pressable>
         ) : null}
-        {photo ? <StoredImage uri={photo} label="인증 사진" style={{ marginTop: 8, width: "100%", aspectRatio: 2, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /> : null}
+        {photo ? <StoredImage uri={photo} label="인증 사진" style={{ marginTop: 8, width: smallPhoto ? "45%" : "100%", aspectRatio: smallPhoto ? 1.4 : 2, borderRadius: smallPhoto ? tokens.radius.md : tokens.radius.lg, backgroundColor: c.surface }} /> : null}
       </Pressable>
     </View>
   );

@@ -1,20 +1,62 @@
-import { useInsets } from "../../theme";
 import { router } from "expo-router";
-import { View } from "react-native";
-import { AppText, ProfileHeader, SettingsRow, User } from "../../components";
+import { useEffect, useState } from "react";
+import { Pressable, View } from "react-native";
+import { AppText, BottomSheet, Settings, StoredImage } from "../../components";
 import { useDB } from "../../data/store";
-import { tokens, useTheme } from "../../theme";
+import { today } from "../../lib/dates";
+import { supabase } from "../../lib/supabase";
+import { tokens, useInsets, useTheme } from "../../theme";
 
-/** S18 (partial): who you are and the way into settings. */
+/**
+ * S18, laid out as the original's 마이 (user's recording): gear to settings, photo, name, e-mail, following counts
+ * (friends are phase 2), and 나의 기록. Premium and the sticker shop are left out on purpose.
+ */
 export default function Me() {
   const { c } = useTheme();
   const insets = useInsets();
   const profile = useDB((d) => d.profile);
+  const todos = useDB((d) => d.todos);
+  const [email, setEmail] = useState("");
+  const [stats, setStats] = useState(false);
+  useEffect(() => { supabase?.auth.getSession().then(({ data }) => setEmail(data.session?.user.email ?? "")); }, []);
+  const a = 56;
+
+  const done = todos.filter((t) => t.isDone && !t.isSkipped);
+  const month = today().slice(0, 7);
+  const thisMonth = done.filter((t) => (t.date ?? "").startsWith(month)).length;
+  const days = new Set(done.map((t) => t.date).filter(Boolean)).size;
+
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 24, paddingHorizontal: tokens.layout.gutter, gap: 24 }}>
-      <AppText variant="screenTitle">마이</AppText>
-      <ProfileHeader name={profile.nickname || "이름 없음"} bio={profile.bio} avatar={profile.avatarUri} />
-      <SettingsRow title="설정" icon={<User size={24} color={c.text} />} onPress={() => router.push("/settings" as never)} />
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top, paddingHorizontal: tokens.layout.gutter }}>
+      <View style={{ height: 52, alignItems: "flex-end", justifyContent: "center" }}>
+        <Pressable onPress={() => router.push("/settings" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="설정">
+          <Settings size={24} color={c.text} />
+        </Pressable>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+        {profile.avatarUri
+          ? <StoredImage uri={profile.avatarUri} label="프로필 사진" style={{ width: a, height: a, borderRadius: a / 2 }} />
+          : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}
+        <View style={{ flex: 1, gap: 2 }}>
+          <AppText variant="bodyLg" weight={700}>{profile.nickname || "이름 없음"}</AppText>
+          {email ? <AppText variant="helper" color="textMuted">{email}</AppText> : null}
+          <AppText variant="helper"><AppText variant="helper" color="textMuted">팔로잉 </AppText>0  <AppText variant="helper" color="textMuted">팔로워 </AppText>0</AppText>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", marginTop: 20, borderRadius: tokens.radius.lg, backgroundColor: c.surfaceRow, paddingVertical: 14 }}>
+        <Pressable onPress={() => setStats(true)} accessibilityRole="button" style={{ flex: 1, alignItems: "center", gap: 6 }}>
+          <AppText variant="bodyLg" weight={700}>{done.length}</AppText>
+          <AppText variant="helper">나의 기록</AppText>
+        </Pressable>
+      </View>
+      <BottomSheet visible={stats} onClose={() => setStats(false)} title="나의 기록">
+        {[["지금까지 완료한 할 일", `${done.length}개`], ["이번 달 완료한 할 일", `${thisMonth}개`], ["할 일을 끝낸 날", `${days}일`]].map(([k, v]) => (
+          <View key={k} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 12 }}>
+            <AppText variant="bodyLg">{k}</AppText>
+            <AppText variant="bodyLg" weight={700}>{v}</AppText>
+          </View>
+        ))}
+      </BottomSheet>
     </View>
   );
 }

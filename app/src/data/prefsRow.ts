@@ -4,7 +4,7 @@ import type { Prefs } from "./prefs";
 
 export const SYNCED: (keyof Prefs)[] = [
   "theme", "weekStartsSunday", "doubleTapToEdit", "use24h", "smallTodoText", "smallTodoMemo", "todoSort",
-  "calendarCategoryCount", "collapsibleCategories", "inputAtTop",
+  "calendarCategoryCount", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed",
 ];
 
 export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown> {
@@ -20,6 +20,8 @@ export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown>
     calendar_category_count: p.calendarCategoryCount,
     collapsible_categories: p.collapsibleCategories,
     input_at_top: p.inputAtTop,
+    small_todo_photo: p.smallTodoPhoto,
+    show_likes_in_feed: p.showLikesInFeed,
   };
 }
 
@@ -38,5 +40,7 @@ export function fromSettingsRow(r: Record<string, unknown>): Partial<Prefs> {
   bool("small_todo_memo", "smallTodoMemo");
   bool("collapsible_categories", "collapsibleCategories");
   bool("input_at_top", "inputAtTop");
+  bool("small_todo_photo", "smallTodoPhoto");
+  bool("show_likes_in_feed", "showLikesInFeed");
   return out;
 }

@@ -21,11 +21,23 @@ export type Prefs = {
   collapsedCategoryIds: string[];
   inputAtTop: boolean;
   checkColor: "white" | "black"; // the tick on a finished clover (user request: white by default, black as an option)
+  smallTodoPhoto: boolean; // 할 일 사진 작게 보기
+  showLikesInFeed: boolean; // 피드에서 좋아요 보이기 (feed is phase 2)
+  // 개인정보 보호 and 알림 (original's screens). They take effect with friends (phase 2); kept on this device until then.
+  followApproval: boolean;
+  likesTodo: Audience; likesDiary: Audience; chatFrom: Audience;
+  searchable: boolean;
+  notifyMarketing: boolean; notifyLikes: boolean; notifyFollowing: boolean;
 };
+
+export type Audience = "all" | "followers" | "none";
 
 export const DEFAULT_PREFS: Prefs = {
   theme: "dark", weekStartsSunday: true, doubleTapToEdit: true, use24h: true, smallTodoText: false, smallTodoMemo: false, todoSort: "done_last", uiScale: "auto",
   calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false, checkColor: "white",
+  smallTodoPhoto: false, showLikesInFeed: true,
+  followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
+  notifyMarketing: false, notifyLikes: true, notifyFollowing: true,
 };
 
 const KEY = "todomate:prefs";
