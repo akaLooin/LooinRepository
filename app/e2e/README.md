@@ -22,7 +22,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | menus.js | the to-do menu rows for today/past × done/undone match the original's four menus |
 | sheets.js | drag sheets down to close, short drag springs back, 정보 보기 as a sheet, header buttons still tap |
 | photos.js | proof photo, profile photo, diary photo (pass an image path as the 3rd argument) |
-| inbox-listmenu.js | 보관함 (button, swipe, add, 오늘하기) and 리스트 메뉴 |
+| inbox-listmenu.js | 보관함 as the page left of home (button, swipe there and back, add, 오늘하기) and 리스트 메뉴 |
 | drag.js | hold-and-drag reorder: categories, D-days, home to-dos (survives reload), a to-do dragged into another category, routines |
 | tm.js | timer start/pause, survives reload, info screen |
 | st.js | display settings (theme, week start), profile edit |

@@ -1,3 +1,4 @@
-import { HomeScreen } from "../../features/home/HomeScreen";
+import { HomePager } from "../../features/home/HomePager";
 
-export default HomeScreen;
+// Home with 보관함 as the page to its left (swipe or the box button)
+export default HomePager;

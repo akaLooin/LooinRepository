@@ -24,8 +24,13 @@ if (supported) {
 let channelOk = false;
 let lastError: string | null = null;
 
-async function ensureChannel() {
+let channelChecked = false;
+
+async function ensureChannel(force = false) {
   if (Platform.OS !== "android") return;
+  // once per app run: in Expo Go the call fails with an exception every time, which is slow, and it ran after every change
+  if (channelChecked && !force) return;
+  channelChecked = true;
   try {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
       name: "할 일 알림",
@@ -77,6 +82,9 @@ export async function ensurePermission(): Promise<boolean> {
 }
 
 let running: Promise<void> | null = null;
+/** What this app has scheduled on the phone: key → time|title|body ("?" until known). */
+const scheduled = new Map<string, string>();
+let scheduledKnown = false;
 let pending: DB | null = null;
 let last: DB | null = null;
 
@@ -95,14 +103,30 @@ async function drain() {
       const perm = await Notifications.getPermissionsAsync();
       if (!perm.granted) return;
       await ensureChannel();
-      // replace only what the plan made (a pending test notification survives)
-      for (const r of await Notifications.getAllScheduledNotificationsAsync()) {
-        if (!r.identifier.startsWith("test:")) await Notifications.cancelScheduledNotificationAsync(r.identifier);
+      // Only touch what changed since the last run. Re-scheduling everything after every tap, drag or check kept the
+      // phone busy for a moment after each change (user: a moved to-do could not be opened right away).
+      const plan = planNotifications(db, new Date());
+      const want = new Map(plan.map((n) => [n.key, `${+n.at}|${n.title}|${n.body}`]));
+      if (!scheduledKnown) {
+        scheduled.clear();
+        for (const r of await Notifications.getAllScheduledNotificationsAsync()) {
+          if (!r.identifier.startsWith("test:")) scheduled.set(r.identifier, "?");
+        }
+        scheduledKnown = true;
+      }
+      for (const [key, sig] of [...scheduled]) {
+        if (want.get(key) !== sig) {
+          await Notifications.cancelScheduledNotificationAsync(key).catch(() => {});
+          scheduled.delete(key);
+        }
       }
       // one at a time, so a single failure cannot drop the rest
-      for (const n of planNotifications(db, new Date())) {
+      for (const n of plan) {
+        const sig = want.get(n.key)!;
+        if (scheduled.get(n.key) === sig) continue;
         try {
           await scheduleOne(n.key, n.title, n.body, { date: n.at });
+          scheduled.set(n.key, sig);
         } catch (e) {
           lastError = String(e);
         }
@@ -118,7 +142,7 @@ async function drain() {
 export async function notificationStatus(): Promise<{ allowed: boolean; scheduled: number; next: Date | null; channel: boolean; error: string | null }> {
   if (!supported) return { allowed: false, scheduled: 0, next: null, channel: false, error: null };
   const perm = await Notifications.getPermissionsAsync();
-  await ensureChannel();
+  await ensureChannel(true);
   let list: Notifications.NotificationRequest[] = [];
   try { list = await Notifications.getAllScheduledNotificationsAsync(); } catch (e) { lastError = String(e); }
   const times = list

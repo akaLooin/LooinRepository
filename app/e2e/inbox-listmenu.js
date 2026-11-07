@@ -20,21 +20,23 @@ async function swipe(p, x, y, dx) {
   r.inboxTitle = await p.getByRole("heading", { name: "보관함" }).count();
   r.memoShown = await p.getByText("독서 모임 찾기", { exact: false }).count();
   await p.screenshot({ path: `${out}/S23.png` });
-  await p.getByLabel("Normal에 할 일 추가").click();
+  // home stays in the page next to 보관함 (hidden from screen readers), so look things up by role: only the page in view counts
+  const row = () => p.getByRole("button", { name: "날짜 없는 할 일" });
+  await p.getByRole("button", { name: "Normal에 할 일 추가" }).click();
   await p.getByLabel("할 일 입력").fill("날짜 없는 할 일");
   await p.getByLabel("할 일 입력").press("Enter");
   await p.waitForTimeout(300);
   await p.mouse.click(200, 20);
-  r.added = await p.getByText("날짜 없는 할 일").count();
-  await p.getByText("날짜 없는 할 일").click();
+  r.added = await row().count();
+  await row().click();
   await p.waitForTimeout(400);
   await p.screenshot({ path: `${out}/S23-sheet.png` });
   await p.getByText("오늘하기").click();
   await p.waitForTimeout(400);
-  r.leftInbox = (await p.getByText("날짜 없는 할 일").count()) === 0;
+  r.leftInbox = (await row().count()) === 0;
   // swipe left on the inbox goes back home
   await swipe(p, 300, 500, -200);
-  r.backHome = await p.getByText("날짜 없는 할 일").count(); // today's list on home
+  r.backHome = await row().count(); // today's list on home
   // swipe right under the calendar opens 보관함
   const y = (await p.getByLabel("To Do에 할 일 추가").boundingBox()).y + 60;
   await swipe(p, 150, y, 220); // from a row's text (a touch that starts on the checkbox stays with the checkbox)

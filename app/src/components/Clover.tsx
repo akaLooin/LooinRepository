@@ -1,5 +1,5 @@
-import { useId, useRef } from "react";
-import { Animated, Easing, Platform, Pressable, View } from "react-native";
+import { useId } from "react";
+import { Pressable, View } from "react-native";
 import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
 import { contrast, fontFamily, onColor, tokens, useTheme, visibleOn } from "../theme";
@@ -64,7 +64,7 @@ export function Clover({
   // only when the category colour is almost the tick colour (white on a white category) use the other one;
   // bright greens keep the white tick, as in the original
   const tickOn = (bg: string) => (contrast(chosen, bg) < 1.15 ? other : chosen);
-  const press = useRef(new Animated.Value(0)).current;
+
   const clipId = "clip" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const empty = c.cloverEmpty;
   const fill = (col: string) => visibleOn(col, c.bg, c.text);
@@ -169,12 +169,9 @@ export function Clover({
       accessibilityState={{ checked }}
       aria-checked={checked}
       accessibilityLabel={label}
-      // The original shows a grey dot on the clover that fades out; no shrinking (that read as a "click")
-      onPressIn={() => press.setValue(1)}
-      onPressOut={() => Animated.timing(press, { toValue: 0, duration: 160, easing: Easing.out(Easing.quad), useNativeDriver: Platform.OS !== "web" }).start()}
+      // no press effect at all: the original just flips (user's check, 2026-11-07)
     >
       {shape}
-      <Animated.View pointerEvents="none" style={{ position: "absolute", left: size * 0.14, top: size * 0.14, width: size * 0.72, height: size * 0.72, borderRadius: size, backgroundColor: c.pressDot, opacity: press }} />
     </Pressable>
   );
 }

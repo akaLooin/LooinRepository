@@ -29,11 +29,12 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - Supabase: 서울 리전 새 프로젝트, 마이그레이션 0001·0003 실행 완료(표 8개 확인, 보관함용 date nullable), `app/.env.local` 작성, 앱에서 가입·로그인 성공
 - 폰: 삼성 안드로이드, Expo Go로 실행 (PC의 `npx.cmd expo start` 필요)
 
-## 폰 확인 결과와 조치 (2026-11-07, 네 번째 피드백까지)
-- 확인됨 ✅: 동기화, 사진 업로드, 알림(정시에 옴, 할 일 내용으로), 숫자 크기, 접기 ∨ 버튼, 끌기 부드러움, 다른 카테고리로 옮기기, 시간 알림 시계 표시
-- 이번에 고침(폰 확인 필요): 다른 카테고리로 놓은 뒤 줄이 엉뚱한 곳에 남던 문제(B12), 캘린더 선택한 날 흰 동그라미·오늘 회색, 할 일 메뉴 원본 4종, 클로버 회색·흰 체크·체크 색 설정·누를 때 회색 점, 사진이 회색으로 남던 문제(로그인 기다렸다 재시도)
-- 11월 5일 "오늘" 할 일 사진은 첫 테스트 때의 14바이트 파일일 가능성 큼 → Supabase에서 크기 확인, 그렇다면 사진 다시 넣기
-- PC 순서: `cd C:\Users\User\LooinRepository` → `git pull` → `cd app` → `npm.cmd install` → `npx.cmd expo start --clear --no-dev --minify` (이전 서버 창은 Ctrl+C)
+## 폰 확인 결과와 조치 (2026-11-07, 다섯 번째 피드백까지)
+- 확인됨 ✅: 동기화, 알림(할 일 내용), 숫자 크기, 접기 ∨, 끌기 부드러움·다른 카테고리로 옮기기(제자리 들어감), 캘린더 선택/오늘 표시, 할 일 메뉴 4종, 흰/검은 체크 설정, 보관함 스와이프 동작
+- 이번에 고침(폰 확인 필요): 보관함을 홈 옆 화면처럼 손가락 따라 밀기(HomePager), 체크 누름 효과 없앰, 옮긴 직후 할 일이 안 눌리던 문제(알림 재예약을 바뀐 것만 → 가벼움, 추정 원인), 회색 사진에 이유·파일 이름 표시
+- 예전 사진 회색: Storage 파일은 130KB 정상 → 회색 칸에 뜨는 이유와 파일 이름을 받아 원인 확인 예정
+- PC: `app` 안에 있던 저장소 복사본은 `C:\Users\User\LooinRepository-old`로 옮김. 실행은 `C:\Users\User\LooinRepository\app`에서 `npx.cmd expo start --clear --no-dev --minify`
+- "Failed to download asset bundle"(폰이 PC에서 못 받음): 홈 버튼 → 다시 열기로 해결됨. 계속되면 `--tunnel`
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용

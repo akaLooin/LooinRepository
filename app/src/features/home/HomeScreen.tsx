@@ -21,6 +21,7 @@ import { CalendarFilterSheet, ListMenuSheet, type ListAction } from "./HomeSheet
 import { DatePickSheet } from "./TodoSheets";
 import { SelectionBar } from "./SelectionBar";
 import { useSwipeRight } from "./useSwipeRight";
+import { usePager } from "./pagerContext";
 import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
@@ -52,7 +53,11 @@ export function HomeScreen() {
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
   const [selecting, setSelecting] = useState<Set<string> | null>(null);
-  const swipe = useSwipeRight(() => router.push("/inbox" as never));
+  const pager = usePager();
+  const routeSwipe = useSwipeRight(() => router.push("/inbox" as never));
+  // inside the home/보관함 pager the swipe drags the pages with the finger; on its own it just opens the screen
+  const swipe = pager ? pager.swipe(1) : routeSwipe;
+  const openInbox = () => (pager ? pager.open(0) : router.push("/inbox" as never));
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
@@ -128,7 +133,7 @@ export function HomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}>
-          <IconChip label="보관함" onPress={() => router.push("/inbox" as never)}><Archive size={22} color={c.text} /></IconChip>
+          <IconChip label="보관함" onPress={openInbox}><Archive size={22} color={c.text} /></IconChip>
           <Chip label={profile.nickname} avatar={profile.avatarUri} selected />
           <IconChip label="친구" onPress={() => notice("친구 기능은 2단계에서 만들어요")}><Users size={22} color={c.text} /></IconChip>
         </ScrollView>
@@ -238,7 +243,7 @@ export function HomeScreen() {
                   done={t.isDone}
                   color={cat.color}
                   onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
-                  onPress={() => (selecting ? toggleSelect(t.id) : setSheetTodo(materialize(t.id)))}
+                  onPress={() => { if (pager?.justSwiped()) return; if (selecting) toggleSelect(t.id); else setSheetTodo(materialize(t.id)); }}
                   selected={selecting?.has(t.id)}
                   onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
                   small={prefs.smallTodoText}

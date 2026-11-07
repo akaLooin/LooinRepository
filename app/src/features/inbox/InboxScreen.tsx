@@ -10,6 +10,7 @@ import { arrangeByHeaders } from "../../lib/arrange";
 import { InlineTodoInput } from "../home/InlineTodoInput";
 import { TodoSheets } from "../home/TodoSheets";
 import { useSwipeRight } from "../home/useSwipeRight";
+import { usePager } from "../home/pagerContext";
 
 /**
  * S23 보관함: to-dos without a date, by category, with their memos in full.
@@ -25,7 +26,10 @@ export function InboxScreen() {
   const [editing, setEditing] = useState<string | null>(null);
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [toast, notice] = useToast();
-  const back = useSwipeRight(() => (router.canGoBack() ? goBack("/") : router.replace("/" as never)), 70, -1);
+  const pager = usePager();
+  const routeBack = useSwipeRight(() => (router.canGoBack() ? goBack("/") : router.replace("/" as never)), 70, -1);
+  // in the pager, swiping left drags the pages back to home with the finger
+  const back = pager ? pager.swipe(-1) : routeBack;
 
   type Cat = (typeof categories)[number];
   type Row = { kind: "head" | "foot"; key: string; cat: Cat; last?: boolean } | { kind: "todo"; key: string; cat: Cat; t: (typeof todos)[number] };
@@ -83,7 +87,7 @@ export function InboxScreen() {
               return editing === t.id ? (
                 <InlineTodoInput color={cat.color} initial={t.title} onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => setEditing(null)} />
               ) : (
-                <TodoRow title={t.title} alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => setSheetTodo(t.id)}
+                <TodoRow title={t.title} alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined} memo={t.memo} photo={t.photoUri} done={t.isDone} color={cat.color} onToggle={() => toggleTodo(t.id)} onPress={() => { if (!pager?.justSwiped()) setSheetTodo(t.id); }}
                   onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(t.id); } : undefined} small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} largeMemo={!prefs.smallTodoMemo} {...drag} />
               );
             }}
