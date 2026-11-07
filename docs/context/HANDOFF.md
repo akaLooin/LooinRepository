@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-05 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-07 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -29,12 +29,11 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - Supabase: 서울 리전 새 프로젝트, 마이그레이션 0001·0003 실행 완료(표 8개 확인, 보관함용 date nullable), `app/.env.local` 작성, 앱에서 가입·로그인 성공
 - 폰: 삼성 안드로이드, Expo Go로 실행 (PC의 `npx.cmd expo start` 필요)
 
-## 폰 확인 결과와 조치 (2026-11-05, 세 번째 피드백까지)
-- 확인됨 ✅: Supabase 동기화, 사진 인증 업로드(Storage), 알림 권한 요청, 크기 대체로 비슷
-- 이번에 고침(폰 확인 필요): 캘린더 숫자 크기·클로버 숫자·선택한 날 회색 동그라미, 할 일 목록 위치, 접기 ∨ 버튼(제목 줄 오른쪽 끝), 시간 알림 시계 표시, 끌기·시트 부드럽게(UI 스레드), 추가·삭제·접기 애니메이션, 다른 카테고리로 끌기
-- 알림: 정해진 시각에 잘 옴 ✅ (안 왔던 건 방해금지 모드 때문). 할 일 알림은 할 일 내용만 본문으로 바꿈(원본 모양)
-- 부드러움은 Expo Go 개발 모드라 느릴 수 있음: `npx.cmd expo start --no-dev --minify`로 실제에 가깝게 확인
-- PC 순서: `cd C:\Users\User\LooinRepository` → `git checkout claude/replica-skill-install-ll9jb4` → `git pull` → `cd app` → `npm.cmd install` → `npx.cmd expo start --clear` (이전 서버 창은 Ctrl+C로 끄고)
+## 폰 확인 결과와 조치 (2026-11-07, 네 번째 피드백까지)
+- 확인됨 ✅: 동기화, 사진 업로드, 알림(정시에 옴, 할 일 내용으로), 숫자 크기, 접기 ∨ 버튼, 끌기 부드러움, 다른 카테고리로 옮기기, 시간 알림 시계 표시
+- 이번에 고침(폰 확인 필요): 다른 카테고리로 놓은 뒤 줄이 엉뚱한 곳에 남던 문제(B12), 캘린더 선택한 날 흰 동그라미·오늘 회색, 할 일 메뉴 원본 4종, 클로버 회색·흰 체크·체크 색 설정·누를 때 회색 점, 사진이 회색으로 남던 문제(로그인 기다렸다 재시도)
+- 11월 5일 "오늘" 할 일 사진은 첫 테스트 때의 14바이트 파일일 가능성 큼 → Supabase에서 크기 확인, 그렇다면 사진 다시 넣기
+- PC 순서: `cd C:\Users\User\LooinRepository` → `git pull` → `cd app` → `npm.cmd install` → `npx.cmd expo start --clear --no-dev --minify` (이전 서버 창은 Ctrl+C)
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용
@@ -49,6 +48,6 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 작업 방법
 - 단위 테스트 `cd app && npm test` (36개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
-- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 15개 (Playwright, 411×891, 체험 모드 데이터)
+- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 16개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

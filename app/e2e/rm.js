@@ -32,7 +32,12 @@ const { chromium } = require("playwright");
   r.deleted = (await p.getByText("매일 21:30").count()) === 0;
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.waitForTimeout(400);
-  await p.getByLabel("11월 3일", { exact: true }).first().click();
+  // 시간 알림 is offered for today and later (not for past days, as in the original): add a to-do today
+  await p.getByLabel("To Do에 할 일 추가").click();
+  await p.getByLabel("할 일 입력").fill("책 30쪽 읽기");
+  await p.getByLabel("할 일 입력").press("Enter");
+  await p.getByLabel("할 일 입력").blur().catch(() => {});
+  await p.waitForTimeout(400);
   await p.getByText("책 30쪽 읽기").click();
   await p.waitForTimeout(400);
   await p.getByText("시간 알림").click();

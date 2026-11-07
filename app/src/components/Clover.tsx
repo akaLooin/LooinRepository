@@ -1,7 +1,8 @@
-import { useId } from "react";
-import { Pressable, View } from "react-native";
+import { useId, useRef } from "react";
+import { Animated, Easing, Platform, Pressable, View } from "react-native";
+import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
-import { fontFamily, onColor, tokens, useTheme, visibleOn } from "../theme";
+import { contrast, fontFamily, onColor, tokens, useTheme, visibleOn } from "../theme";
 import { AppText } from "./AppText";
 
 export type CloverState =
@@ -55,7 +56,15 @@ export function Clover({
   onPress?: () => void;
   label?: string;
 }) {
-  const { c, scheme } = useTheme();
+  const { c } = useTheme();
+  const { checkColor } = usePrefs();
+  // the tick is white unless the user picked black (설정 → 화면 → 체크 표시 색)
+  const chosen = checkColor === "black" ? c.checkBlack : c.checkWhite;
+  const other = checkColor === "black" ? c.checkWhite : c.checkBlack;
+  // only when the category colour is almost the tick colour (white on a white category) use the other one;
+  // bright greens keep the white tick, as in the original
+  const tickOn = (bg: string) => (contrast(chosen, bg) < 1.15 ? other : chosen);
+  const press = useRef(new Animated.Value(0)).current;
   const clipId = "clip" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const empty = c.cloverEmpty;
   const fill = (col: string) => visibleOn(col, c.bg, c.text);
@@ -88,7 +97,7 @@ export function Clover({
               <Lobes size={size} fill={fill(col)} />
             </G>
           ))}
-          {state.left === 0 ? <Tick size={size} color={onColor(fill(state.colors[0]))} /> : null}
+          {state.left === 0 ? <Tick size={size} color={tickOn(fill(state.colors[0]))} /> : null}
         </>
       );
       if (state.left > 0) {
@@ -101,14 +110,14 @@ export function Clover({
       body = <Lobes size={size} fill={fill(state.color)} />;
       break;
     case "todoOpen":
-      body = <Lobes size={size} fill={scheme === "dark" ? c.text : empty} />;
+      body = <Lobes size={size} fill={empty} />; // grey until done, as in the original
       break;
     case "done":
     case "todoDone":
       body = (
         <>
           <Lobes size={size} fill={fill(state.color)} />
-          <Tick size={size} color={onColor(fill(state.color))} />
+          <Tick size={size} color={tickOn(fill(state.color))} />
         </>
       );
       break;
@@ -130,7 +139,7 @@ export function Clover({
           <G clipPath={`url(#${clipId})`}>
             <Lobes size={size} fill={fill(state.color)} />
           </G>
-          <Tick size={size} color={onColor(fill(state.color))} />
+          <Tick size={size} color={tickOn(fill(state.color))} />
         </>
       );
       break;
@@ -160,9 +169,12 @@ export function Clover({
       accessibilityState={{ checked }}
       aria-checked={checked}
       accessibilityLabel={label}
-      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.9 : 1 }] })}
+      // The original shows a grey dot on the clover that fades out; no shrinking (that read as a "click")
+      onPressIn={() => press.setValue(1)}
+      onPressOut={() => Animated.timing(press, { toValue: 0, duration: 160, easing: Easing.out(Easing.quad), useNativeDriver: Platform.OS !== "web" }).start()}
     >
       {shape}
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: size * 0.14, top: size * 0.14, width: size * 0.72, height: size * 0.72, borderRadius: size, backgroundColor: c.pressDot, opacity: press }} />
     </Pressable>
   );
 }

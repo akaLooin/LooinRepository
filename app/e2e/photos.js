@@ -16,6 +16,9 @@ async function pick(p, trigger) {
   await p.evaluate(() => localStorage.clear()); await p.reload({ waitUntil: "networkidle" });
   await p.getByLabel("11월 3일", { exact: true }).first().click();
 
+  // as in the original, 사진 인증 is offered once the to-do is done
+  await p.getByRole("checkbox", { name: "책 30쪽 읽기, 미완료" }).click();
+  await p.waitForTimeout(300);
   await p.getByText("책 30쪽 읽기").click();
   await p.waitForTimeout(400);
   await pick(p, () => p.getByText("사진 인증").click());

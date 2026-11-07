@@ -20,11 +20,12 @@ export type Prefs = {
   collapsibleCategories: boolean;
   collapsedCategoryIds: string[];
   inputAtTop: boolean;
+  checkColor: "white" | "black"; // the tick on a finished clover (user request: white by default, black as an option)
 };
 
 export const DEFAULT_PREFS: Prefs = {
   theme: "dark", weekStartsSunday: true, doubleTapToEdit: true, use24h: true, smallTodoText: false, smallTodoMemo: false, todoSort: "done_last", uiScale: "auto",
-  calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false,
+  calendarCategoryIds: null, calendarCategoryCount: 2, collapsibleCategories: false, collapsedCategoryIds: [], inputAtTop: false, checkColor: "white",
 };
 
 const KEY = "todomate:prefs";

@@ -50,14 +50,12 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const heights = useRef<Record<string, number>>({});
   const [active, setActive] = useState<string | null>(null);
   const [target, setTarget] = useState(0);
-  const dy = useRef(new Animated.Value(0)).current;
   const band = useRef(new Animated.Value(0)).current; // the grey band under the held row fades in and out
   const state = useRef({ active: null as string | null, from: 0, target: 0, keys });
   state.current.keys = keys;
 
   const rowH = (k: string) => (heights.current[k] ?? 56) + gap;
   const clearAll = () => {
-    dy.setValue(0);
     band.setValue(0);
     shifts.forEach((v) => v.setValue(0));
   };
@@ -71,7 +69,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
     if (to > from) for (let i = from + 1; i <= to; i++) offset += rowH(ks[i]);
     if (to < from) for (let i = to; i < from; i++) offset -= rowH(ks[i]);
     slide(band, 0, undefined, SLIDE_MS);
-    slide(dy, offset, () => {
+    slide(shiftOf(a), offset, () => {
       onDragging?.(false);
       lock?.(false);
       if (from !== to) {
@@ -98,7 +96,9 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
         onPanResponderMove: (_e, g) => {
           const { active: a, from, keys: ks } = state.current;
           if (a === null) return;
-          dy.setValue(g.dy);
+          // the held row moves with its own value: every row keeps one value for its whole life, because swapping
+          // a row from one value to another left it stuck at the old offset after a drop (user's video)
+          shiftOf(a).setValue(g.dy);
           // where the held row's centre is now, measured in row heights
           const h = rowH;
           let to = from;
@@ -156,7 +156,8 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   // after a drop the rows render in their new order; only then drop the offsets, so nothing jumps back for a frame
   const order = keys.join();
   useLayoutEffect(() => {
-    if (resetAfterRender.current) {
+    // also whenever the list changes while nothing is held, so no row can ever stay displaced
+    if (resetAfterRender.current || state.current.active === null) {
       resetAfterRender.current = false;
       clearAll();
     }
@@ -179,7 +180,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
             style={{
               marginBottom: i < items.length - 1 ? gap : 0,
               zIndex: isActive ? 10 : 0,
-              transform: [{ translateY: isActive ? dy : shiftOf(k) }],
+              transform: [{ translateY: shiftOf(k) }],
             }}
           >
             {isActive ? (

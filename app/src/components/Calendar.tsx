@@ -62,15 +62,18 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
           {row.map((day, j) => {
             if (!day) return <View key={j} style={{ flex: 1 }} />;
             const isToday = day === today;
-            const isSel = picker ? day === selected : false;
-            const ring = isToday && !picker ? true : isSel;
-            const picked = !picker && !isToday && day === selected; // the original fills the selected day with grey
+            // As in the original: the picked day is a white disc (black number, red/blue kept on Sun/Sat),
+            // today is a grey disc when another day is picked. The date picker sheet only marks the picked day.
+            const ring = day === selected || (!picker && !selected && isToday);
+            const todayDisc = !picker && isToday && !ring;
             const label = String(parseDay(day).d);
+            const wd = weekday(day);
+            const numberColor = ring && wd !== 0 && wd !== 6 ? "onSelected" : dayColor(wd);
             return (
               <Pressable key={j} style={{ flex: 1, alignItems: "center", gap: 4 }} onPress={() => onSelect?.(day)} accessibilityRole="button" accessibilityLabel={`${month}월 ${label}일`} accessibilityState={{ selected: day === selected }}>
                 {!picker && state ? <Clover state={state(day)} /> : null}
-                <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : picked ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5, transform: [{ translateY: (ring || picked) && !picker ? 4 : 0 }] }}>
-                  <AppText variant="date" weight={ring ? 700 : 500} color={ring ? "onSelected" : dayColor(weekday(day))}>{label}</AppText>
+                <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5, transform: [{ translateY: (ring || todayDisc) && !picker ? 4 : 0 }] }}>
+                  <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>
                 </View>
               </Pressable>
             );

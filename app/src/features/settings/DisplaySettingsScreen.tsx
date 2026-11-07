@@ -47,6 +47,7 @@ export function DisplaySettingsScreen() {
         <Later title="할 일 사진 작게 보기" />
         <ToggleRow title="할 일 메모 작게 보기" value={p.smallTodoMemo} onChange={(v) => setPref("smallTodoMemo", v)} />
         <ToggleRow title="할 일 더블 탭으로 편집" value={p.doubleTapToEdit} onChange={(v) => setPref("doubleTapToEdit", v)} />
+        <ValueRow title="체크 표시 색" value={p.checkColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("checkColor", p.checkColor === "black" ? "white" : "black")} />
         <ValueRow title="테마" value={THEME[p.theme]} onPress={() => { setDraftTheme(p.theme); setSheet("theme"); }} />
         <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} />
         <Later title="언어" value="한국어" />

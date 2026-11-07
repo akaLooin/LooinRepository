@@ -37,7 +37,7 @@ async function swipe(p, x, y, dx) {
   r.backHome = await p.getByText("날짜 없는 할 일").count(); // today's list on home
   // swipe right under the calendar opens 보관함
   const y = (await p.getByLabel("To Do에 할 일 추가").boundingBox()).y + 60;
-  await swipe(p, 60, y, 220);
+  await swipe(p, 150, y, 220); // from a row's text (a touch that starts on the checkbox stays with the checkbox)
   r.swipedToInbox = await p.getByRole("heading", { name: "보관함" }).count();
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.waitForTimeout(400);

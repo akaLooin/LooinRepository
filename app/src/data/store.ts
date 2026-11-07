@@ -295,7 +295,7 @@ export function updateTodo(id: string, patch: Partial<Todo>) {
 }
 
 export function toggleTodo(id: string) {
-  smoothLayout();
+  // no layout animation here: it made the clover's lobes jump on the phone (user's video); the original just flips
   id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;

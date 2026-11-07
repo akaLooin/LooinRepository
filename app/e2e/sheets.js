@@ -19,7 +19,7 @@ async function dragDown(p, x, y, dy) {
   const title = p.getByRole("heading", { name: "책 30쪽 읽기" });
   const tb = await title.boundingBox();
   await dragDown(p, tb.x + tb.width / 2, tb.y + tb.height / 2, 40); // short: springs back
-  r.shortKeepsOpen = await p.getByText("다른 날 또 하기").isVisible();
+  r.shortKeepsOpen = await p.getByText("날짜 바꾸기").isVisible();
   await dragDown(p, tb.x + tb.width / 2, tb.y + tb.height / 2, 260); // long: closes
   r.longCloses = (await p.getByText("다른 날 또 하기").count()) === 0;
   // backdrop tap still closes, after the slide-out
@@ -27,7 +27,7 @@ async function dragDown(p, x, y, dy) {
   await p.waitForTimeout(600);
   await p.mouse.click(200, 40);
   await p.waitForTimeout(500);
-  r.tapCloses = (await p.getByText("다른 날 또 하기").count()) === 0;
+  r.tapCloses = (await p.getByText("날짜 바꾸기").count()) === 0;
   // 정보 보기 as a sheet over home
   await p.getByText("책 30쪽 읽기").first().click();
   await p.waitForTimeout(600);
