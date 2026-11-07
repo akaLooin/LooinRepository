@@ -42,20 +42,23 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * Month or week grid. `state` gives each day's clover; pass `picker` for the plain date picker (S21b).
  * `rows` lets the week view pass just one row.
  */
-export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows }: {
+export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width }: {
   year: number; month: number; today: Day; selected?: Day; onSelect?: (d: Day) => void; state?: (d: Day) => CloverState; picker?: boolean; weekStartsSunday?: boolean; rows?: (Day | null)[][];
+  /** known width (calendar pager): the dates are placed right away instead of after measuring */
+  width?: number;
 }) {
   const { c } = useTheme();
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
   const labels = weekdayLabels(weekStartsSunday);
   // The original spreads the days edge to edge: the first clover touches the left margin, the last the right one.
   // Cells stay equal (bigger tap targets), so they reach past the margins by this much on each side.
-  const [w, setW] = useState(0);
+  const [measured, setW] = useState(0);
+  const w = width ?? measured;
   const k = tokens.size.cloverCalendar;
   const bleed = picker || !w ? 0 : Math.max(0, ((w - k) / 6 - k) / 2);
   const ringSize = tokens.size.todayRing;
   return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+    <View onLayout={width ? undefined : (e) => setW(e.nativeEvent.layout.width)}>
       <View style={{ flexDirection: "row", marginBottom: picker ? 10 : 5, marginHorizontal: -bleed }}>
         {labels.map((l) => (
           <AppText key={l} variant="weekday" center color={l === "일" ? "sunday" : l === "토" ? "saturday" : "text"} style={{ flex: 1 }}>{l}</AppText>

@@ -7,8 +7,11 @@ import { fontFamily, tokens, useTheme, visibleOn } from "../../theme";
  * The row that turns into a text field when adding (+) or editing (double tap) a to-do (S04).
  * As in the original: the keyboard comes up at once, and the page scrolls so the row stays above it.
  */
-export function InlineTodoInput({ color, initial = "", editing = !!initial, onSubmit, onDone, onChangeText }: {
-  color: string; initial?: string; editing?: boolean; onSubmit: (title: string) => void; onDone: () => void; onChangeText?: (text: string) => void;
+export function InlineTodoInput({ color, initial = "", editing = !!initial, focusOnOpen = true, onSubmit, onDone, onChangeText, onFocusChange }: {
+  color: string; initial?: string; editing?: boolean;
+  /** false when the field comes back on its day: shown in edit mode, keyboard only after a tap */
+  focusOnOpen?: boolean;
+  onSubmit: (title: string) => void; onDone: () => void; onChangeText?: (text: string) => void; onFocusChange?: (focused: boolean) => void;
 }) {
   const { c } = useTheme();
   const reveal = useReveal();
@@ -20,8 +23,13 @@ export function InlineTodoInput({ color, initial = "", editing = !!initial, onSu
   textRef.current = text;
   // autoFocus alone did not always bring the keyboard up on Android when the row appears inside the list
   useEffect(() => {
-    const t = setTimeout(() => input.current?.focus(), Platform.OS === "android" ? 80 : 0);
-    return () => { clearTimeout(t); if (closing.current) clearTimeout(closing.current); };
+    const t = focusOnOpen ? setTimeout(() => input.current?.focus(), Platform.OS === "android" ? 80 : 0) : undefined;
+    return () => {
+      if (t) clearTimeout(t);
+      if (closing.current) clearTimeout(closing.current);
+      onFocusChange?.(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // Closing waits a moment so tapping another control first does not lose the text.
   const scheduleClose = () => {
@@ -39,12 +47,12 @@ export function InlineTodoInput({ color, initial = "", editing = !!initial, onSu
       <Clover size={tokens.size.cloverTodo} state={{ kind: "todoOpen" }} />
       <TextInput
         ref={input}
-        autoFocus
+        autoFocus={focusOnOpen}
         value={text}
         onChangeText={(v) => { setText(v); onChangeText?.(v); }}
         onSubmitEditing={submit}
-        onFocus={() => reveal?.(row)}
-        onBlur={scheduleClose}
+        onFocus={() => { onFocusChange?.(true); reveal?.(row); }}
+        onBlur={() => { onFocusChange?.(false); scheduleClose(); }}
         submitBehavior="submit"
         returnKeyType="done"
         placeholder="할 일 입력"

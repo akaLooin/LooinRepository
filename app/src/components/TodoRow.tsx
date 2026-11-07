@@ -1,10 +1,12 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Pressable, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
 import { Clover } from "./Clover";
 import { StoredImage } from "./StoredImage";
+
+const DOUBLE_TAP_MS = 260;
 
 /** The small filled clock in front of a to-do's alarm time (user's screenshot of the original). */
 function AlarmClock({ size = 14 }: { size?: number }) {
@@ -23,12 +25,19 @@ export function TodoRow({ title, alarm, memo, done, color, photo, onToggle, onPr
   small?: boolean; smallMemo?: boolean; onLongPress?: () => void; delayLongPress?: number; selected?: boolean; largeMemo?: boolean;
 }) {
   const { c } = useTheme();
-  const last = useRef(0);
+  // With double-tap editing on, a single tap waits a moment to see if a second one follows, so a double tap
+  // goes straight to editing without the menu flashing in between (user).
+  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (pending.current) clearTimeout(pending.current); }, []);
   const press = () => {
-    const now = Date.now();
-    if (onDoubleTap && now - last.current < 300) onDoubleTap();
-    else onPress?.();
-    last.current = now;
+    if (!onDoubleTap) return onPress?.();
+    if (pending.current) {
+      clearTimeout(pending.current);
+      pending.current = null;
+      onDoubleTap();
+      return;
+    }
+    pending.current = setTimeout(() => { pending.current = null; onPress?.(); }, DOUBLE_TAP_MS);
   };
   return (
     <View style={{ flexDirection: "row", gap: 12, paddingVertical: 8, paddingHorizontal: selected === undefined ? 0 : 6, marginHorizontal: selected === undefined ? 0 : -6, borderRadius: tokens.radius.md, backgroundColor: selected ? c.surfaceButton : "transparent" }} accessibilityState={selected === undefined ? undefined : { selected }}>

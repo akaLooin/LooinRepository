@@ -29,7 +29,7 @@ export function DragScrollView({ scrollEnabled = true, onScroll, ...props }: Scr
     const top = keyboardTop.current;
     if (!row || top === null) return;
     row.measureInWindow((_x: number, rowY: number, _w: number, h: number) => {
-      const margin = 28 * s;
+      const margin = 64 * s; // room for the coloured underline under the text and a little air above the keyboard
       const below = rowY + h + margin - top;
       const above = 80 * s - rowY; // also keep it clear of the top of the screen
       if (below > 0) scroll.current?.scrollTo({ y: y.current + below / s, animated: true });

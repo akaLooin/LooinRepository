@@ -55,11 +55,43 @@ export function HomeScreen() {
   // at, and is back in edit mode when its day is picked again.
   const drafts = useRef(new Map<string, string>());
   const keepEditUntil = useRef(0);
+  // the keyboard comes up when editing starts, not when the day is picked again (user)
+  const [editFocus, setEditFocus] = useState(true);
+  const editFocused = useRef(false);
+  const editStartedAt = useRef(0);
+  const startEditing = (id: string) => {
+    setSheetTodo(null);
+    setEditFocus(true);
+    editStartedAt.current = Date.now();
+    setEditing(id);
+  };
   const keepEditing = () => {
     if (!editing) return;
     keepEditUntil.current = Date.now() + 800; // the field closes itself when it loses focus; not this time
+    setEditFocus(false);
     Keyboard.dismiss();
   };
+  // A tap on empty space ends editing, also when the field is shown without the keyboard (back on its day).
+  // Calendar dates keep it (see keepEditing); a tap on the field itself focuses it and keeps it.
+  // Watched without taking part: the capture handlers always answer "no", so every touch still goes to its target.
+  const touch = useRef({ moved: false, t: 0 });
+  const rootWatch = {
+    onStartShouldSetResponderCapture: () => {
+      if (editing && Date.now() - editStartedAt.current > 500) {
+        const id = editing;
+        const t = Date.now();
+        touch.current = { moved: false, t };
+        // after the tap has done its work: a picked date keeps editing, a tap on the field focuses it
+        setTimeout(() => {
+          if (touch.current.t !== t || touch.current.moved) return;
+          if (!editFocused.current && Date.now() >= keepEditUntil.current) stopEditing(id);
+        }, 350);
+      }
+      return false;
+    },
+    onMoveShouldSetResponderCapture: () => { touch.current.moved = true; return false; },
+  };
+
   const stopEditing = (id: string) => {
     if (Date.now() < keepEditUntil.current) return;
     drafts.current.delete(id);
@@ -95,6 +127,7 @@ export function HomeScreen() {
   const pageIndex = mode === "month" ? monthIndex(view.y, view.m) : weekIndexOf(selected);
   const goPage = (i: number, dir: 1 | -1) => {
     setAdding(null);
+    smoothLayout(200); // 5 ↔ 6 week rows: what is below the calendar glides to its new place
     if (mode === "week") {
       const next = addDays(selected, dir * 7 * Math.abs(i - pageIndex || 1));
       setSelected(next);
@@ -111,7 +144,7 @@ export function HomeScreen() {
     setSelected(now);
     setView({ y: parseDay(now).y, m: parseDay(now).m });
   };
-  const renderPage = (i: number) => {
+  const renderPage = (i: number, width: number) => {
     const rows = mode === "week" ? [Array.from({ length: 7 }, (_, k) => addDays(epochWeek, i * 7 + k))] : undefined;
     const ym = mode === "month" ? fromMonthIndex(i) : view;
     return (
@@ -124,6 +157,7 @@ export function HomeScreen() {
         state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
         rows={rows}
         weekStartsSunday={prefs.weekStartsSunday}
+        width={width}
       />
     );
   };
@@ -173,7 +207,7 @@ export function HomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: c.bg }} {...rootWatch}>
       <DragScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ height: 60, alignItems: "flex-end", justifyContent: "center", paddingHorizontal: G }}>
           <MenuButton onPress={() => setMenuOpen(true)} />
@@ -207,7 +241,7 @@ export function HomeScreen() {
             filterColors={calCats.slice(0, 2).map((x) => x.color)}
             onFilter={() => setHomeSheet("filter")}
           />
-          <CalendarPager key={`${mode}-${prefs.weekStartsSunday}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} />
+          <CalendarPager key={`${mode}-${prefs.weekStartsSunday}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} gutter={G} />
         </View>
 
         <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12 }} {...swipe}>
@@ -272,7 +306,8 @@ export function HomeScreen() {
               }
               const t = r.t;
               return editing === t.id ? (
-                <InlineTodoInput color={cat.color} editing initial={drafts.current.get(t.id) ?? t.title} onChangeText={(v) => drafts.current.set(t.id, v)}
+                <InlineTodoInput color={cat.color} editing focusOnOpen={editFocus} onFocusChange={(f) => { editFocused.current = f; }}
+                  initial={drafts.current.get(t.id) ?? t.title} onChangeText={(v) => drafts.current.set(t.id, v)}
                   onSubmit={(title) => updateTodo(t.id, { title })} onDone={() => stopEditing(t.id)} />
               ) : (
                 <TodoRow
@@ -285,7 +320,7 @@ export function HomeScreen() {
                   onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
                   onPress={() => { if (pager?.justSwiped()) return; if (selecting) toggleSelect(t.id); else setSheetTodo(materialize(t.id)); }}
                   selected={selecting?.has(t.id)}
-                  onDoubleTap={prefs.doubleTapToEdit ? () => { setSheetTodo(null); setEditing(materialize(t.id)); } : undefined}
+                  onDoubleTap={prefs.doubleTapToEdit ? () => startEditing(materialize(t.id)) : undefined}
                   small={prefs.smallTodoText}
                   smallMemo={prefs.smallTodoMemo}
                   {...drag}
@@ -341,7 +376,7 @@ export function HomeScreen() {
           onDelete={() => { deleteTodos([...selecting]); notice(`${selecting.size}개를 지웠어요`); setSelecting(null); }}
         />
       ) : null}
-      <TodoSheets todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
+      <TodoSheets todoId={sheetTodo} onClose={() => setSheetTodo(null)} onEdit={(id) => startEditing(id)} notice={notice} />
       {toast}
     </View>
   );

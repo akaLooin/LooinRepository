@@ -43,6 +43,9 @@
       ],
       "expo-notifications"
     ],
-    "scheme": "todomateclone"
+    "scheme": "todomateclone",
+    "updates": {
+      "fallbackToCacheTimeout": 30000
+    }
   }
 }

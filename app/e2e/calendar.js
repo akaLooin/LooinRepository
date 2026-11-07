@@ -38,7 +38,10 @@ async function swipe(p, x, y, dx) {
   // edit mode kept across days: double tap a to-do on 3 Nov, type, pick 4 Nov, back to 3 Nov
   await p.getByLabel("11월 3일", { exact: true }).first().click(); await p.waitForTimeout(300);
   const row = p.getByText("책 30쪽 읽기", { exact: true }).first();
-  await row.dblclick(); await p.waitForTimeout(500);
+  await row.dblclick(); await p.waitForTimeout(150);
+  r.noMenuOnDoubleTap = (await p.getByText("삭제하기").count()) === 0; // the menu must not flash on a double tap
+  await p.waitForTimeout(350);
+  r.noMenuAfter = (await p.getByText("삭제하기").count()) === 0;
   r.editOpen = await p.getByLabel("할 일 입력").count();
   r.editFocused = await p.evaluate(() => document.activeElement?.getAttribute("aria-label"));
   await p.getByLabel("할 일 입력").fill("책 40쪽 읽기");
@@ -47,6 +50,13 @@ async function swipe(p, x, y, dx) {
   await p.getByLabel("11월 3일", { exact: true }).first().click(); await p.waitForTimeout(500);
   r.editBack = await p.getByLabel("할 일 입력").count();
   r.draftKept = await p.getByLabel("할 일 입력").inputValue().catch(() => null);
+  r.noKeyboardOnReturn = await p.evaluate(() => document.activeElement?.getAttribute("aria-label") !== "할 일 입력");
+  // a tap on empty space ends editing even without the keyboard
+  await p.getByText(/^11월 3일 .요일$/).click(); await p.waitForTimeout(500);
+  r.tapOutsideEnds = (await p.getByLabel("할 일 입력").count()) === 0;
+  // a single tap still opens the menu (after the double-tap wait)
+  await p.getByText("책 30쪽 읽기", { exact: true }).first().click(); await p.waitForTimeout(600);
+  r.singleTapMenu = await p.getByText("삭제하기").count();
   r.errs = errs;
   console.log(JSON.stringify(r, null, 1));
   await b.close();
