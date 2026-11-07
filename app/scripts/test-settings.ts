@@ -6,7 +6,7 @@ const p: Prefs = {
   theme: "light", weekStartsSunday: false, doubleTapToEdit: true, use24h: false, smallTodoText: true, smallTodoMemo: false, todoSort: "manual",
   uiScale: 0.9, calendarCategoryIds: ["c1"], calendarCategoryCount: 3, collapsibleCategories: true, collapsedCategoryIds: ["c2"], inputAtTop: true,
   checkColor: "black", smallTodoPhoto: true, showLikesInFeed: false, followApproval: true, likesTodo: "followers", likesDiary: "none", chatFrom: "all",
-  searchable: false, notifyMarketing: true, notifyLikes: false, notifyFollowing: true, font: "nanumGothic", feedMemoLines: 2,
+  searchable: false, notifyMarketing: true, notifyLikes: false, notifyFollowing: true, font: "nanumGothic", feedMemoLines: 2, monthCalendarMax: 15, weekCalendarMax: 0,
 };
 const t = (n: string, f: () => void) => { f(); console.log("ok", n); };
 t("synced settings survive a round trip", () => {
@@ -32,4 +32,11 @@ t("privacy settings go to the account (other people's apps respect them)", () =>
   const row = toSettingsRow(p, "u1");
   for (const c of PRIVACY_COLUMNS) assert.ok(c in row, c);
   assert.deepEqual(fromSettingsRow({ likes_todo: "everyone", chat_from: "none", follow_approval: true }), { chatFrom: "none", followApproval: true });
+});
+t("할 일 캘린더 limits: null = 무제한, odd values ignored", () => {
+  const row = toSettingsRow({ ...p, monthCalendarMax: 0, weekCalendarMax: 5 }, "u1");
+  assert.equal(row.month_calendar_max, null);
+  assert.equal(row.week_calendar_max, 5);
+  assert.deepEqual(fromSettingsRow({ month_calendar_max: null, week_calendar_max: 7 }), { monthCalendarMax: 0, weekCalendarMax: 7 });
+  assert.deepEqual(fromSettingsRow({ month_calendar_max: 4, week_calendar_max: -1 }), {});
 });

@@ -27,6 +27,7 @@ import { usePager } from "./pagerContext";
 import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
+import { takeHomeDay } from "../../lib/todoCalendar";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
 import { reactionsOnMine, showFriend, useFollowing, useShownFriend, type Received } from "../../data/social";
 
@@ -118,6 +119,14 @@ export function HomeScreen() {
   const [toast, notice] = useToast();
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
+  // a day tapped in the 할 일 캘린더: home opens on it (my home, not a friend's)
+  useFocusEffect(useCallback(() => {
+    const d = takeHomeDay();
+    if (!d) return;
+    showFriend(null);
+    setSelected(d);
+    setView({ y: parseDay(d).y, m: parseDay(d).m });
+  }, []));
   // Reactions friends left on my to-dos this month (shown under each to-do), fetched when home comes into view
   const [received, setReceived] = useState<Received>({ todos: {}, diaries: {} });
   const monthKey = `${view.y}-${String(view.m).padStart(2, "0")}`;

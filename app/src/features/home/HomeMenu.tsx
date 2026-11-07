@@ -29,6 +29,7 @@ export function HomeMenu({ open, onClose }: { open: boolean; onClose: () => void
         <View style={{ position: "absolute", top: insets.top + 8, right: tokens.layout.gutter - 4 }}>
           <PopupMenu
             items={[
+              { label: "할 일 캘린더", onPress: go("/todo-calendar") },
               { label: "카테고리 관리", onPress: go("/categories") },
               { label: "루틴 관리", onPress: go("/routines") },
               { label: "디데이 관리", onPress: go("/ddays") },

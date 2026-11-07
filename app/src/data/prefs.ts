@@ -31,6 +31,8 @@ export type Prefs = {
   notifyMarketing: boolean; notifyLikes: boolean; notifyFollowing: boolean;
   font: FontFace; // 설정 → 화면 → 폰트
   feedMemoLines: number; // 피드에서 메모 줄 제한: 0 = 무제한 (feed is phase 2)
+  // 할 일 캘린더: how many to-dos one day shows before "+n" (0 = 무제한)
+  monthCalendarMax: number; weekCalendarMax: number;
 };
 
 export type Audience = "all" | "followers" | "none";
@@ -42,6 +44,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true,
   font: "pretendard", feedMemoLines: 0,
+  monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 
 const KEY = "todomate:prefs";

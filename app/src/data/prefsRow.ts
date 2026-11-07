@@ -4,10 +4,13 @@ import type { Prefs } from "./prefs";
 
 export const SYNCED: (keyof Prefs)[] = [
   "theme", "weekStartsSunday", "doubleTapToEdit", "use24h", "smallTodoText", "smallTodoMemo", "todoSort",
-  "calendarCategoryCount", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed", "font", "feedMemoLines",
+  "calendarCategoryCount", "monthCalendarMax", "weekCalendarMax", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed", "font", "feedMemoLines",
   // privacy: other people's apps (and the database rules) must respect these
   "followApproval", "likesTodo", "likesDiary", "chatFrom", "searchable",
 ];
+
+/** Choices for the 할 일 캘린더 limits (0 = 무제한). */
+export const CALENDAR_MAX = [3, 5, 7, 10, 15, 20, 0];
 
 /** Columns added by the friends migration (20261108000000). A server without them still takes the others. */
 export const PRIVACY_COLUMNS = ["follow_approval", "likes_todo", "likes_diary", "chat_from", "searchable"];
@@ -29,6 +32,8 @@ export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown>
     show_likes_in_feed: p.showLikesInFeed,
     font: p.font === "pretendard" ? "default" : p.font, // the column's default is 'default'
     feed_memo_line_limit: p.feedMemoLines || null, // null = 무제한
+    month_calendar_max: p.monthCalendarMax || null, // null = 무제한
+    week_calendar_max: p.weekCalendarMax || null,
     follow_approval: p.followApproval,
     likes_todo: p.likesTodo,
     likes_diary: p.likesDiary,
@@ -64,6 +69,12 @@ export function fromSettingsRow(r: Record<string, unknown>): Partial<Prefs> {
   audience("chat_from", "chatFrom");
   if (r.font === "default") out.font = "pretendard";
   else if (r.font === "system" || r.font === "nanumGothic" || r.font === "nanumPen") out.font = r.font;
+  const max = (k: string, key: "monthCalendarMax" | "weekCalendarMax") => {
+    if (r[k] === null) out[key] = 0;
+    else if (CALENDAR_MAX.includes(Number(r[k])) && Number(r[k]) > 0) out[key] = Number(r[k]);
+  };
+  max("month_calendar_max", "monthCalendarMax");
+  max("week_calendar_max", "weekCalendarMax");
   if (r.feed_memo_line_limit === null) out.feedMemoLines = 0;
   else if ([1, 2, 3, 5].includes(Number(r.feed_memo_line_limit))) out.feedMemoLines = Number(r.feed_memo_line_limit);
   return out;
