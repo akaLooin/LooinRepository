@@ -23,6 +23,15 @@ from the people button and 마이's counts. Demo mode has three sample people.
 Guessed (not recorded): 알림 and 친구 list layouts. Not built: crews, the 둘러보기 feed, 대화 (needs messages tables),
 stickers (own artwork later, user), a friend's diary and week view, reacting to a routine day nobody has touched yet.
 
+## 대화 (built 2026-11-08)
+
+보내기 tab = 대화 list (name, last message, time, unread count; a red dot on the tab). A conversation opens from the list
+or from a profile's paper plane: back / name / their picture, their picture and name at the top, day labels, my
+messages on the right with 전송됨 → 읽음 beside the last one, photos, emoji alone drawn large, an emoji panel (stickers
+later). New messages are fetched every 3 s while a conversation is open and every 10–30 s elsewhere (no push yet).
+Server: `20261108000200_chat.sql` (send only through `send_message`: blocks and 대화 수신 허용 apply; the same message id
+twice is stored once). Not built: push notifications for messages, deleting messages or conversations.
+
 ## Server first (no screens needed): done 2026-11-08
 
 `supabase/migrations/20261108000000_friends.sql`, tested by `supabase/tests/run.sh`. Other people's rows are never readable from

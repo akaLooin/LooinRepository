@@ -51,7 +51,8 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용
 - **2단계 친구 기능 진행 중** — 계획 `replica/phase2.md`. 서버 완료(2026-11-08): `supabase/migrations/20261108000000_friends.sql`(팔로우·차단·일부 공개·반응·알림, 읽기는 함수로만), 테스트 `supabase/tests/run.sh`(로컬 Postgres 16, 4계정). 개인정보 설정 5개가 계정으로 동기화(SQL 안 돌렸으면 폰에만 남음)
 - **친구 화면 1차 완료(2026-11-08, 원본 영상 2개 기준)**: 둘러보기 검색 → 프로필 시트(팔로우·요청·차단·홈 버튼·클로버 효과), 홈 친구 칩 → 친구 홈(읽기 전용) + 하트 → 이모지 반응, 내 할 일 아래 받은 반응, 알림 탭, 친구 목록(/people). 체험 모드 샘플 3명. e2e `friends.js`. 자세히 `replica/phase2.md`
-- **다음**: 이용자가 SQL 20261108000100 실행(backend.md 11) + 두 번째 계정으로 실제 확인. 남은 것: 대화(DM), 크루, 스티커(우리 그림), 친구 일기·주간 보기. 대화·크루를 만들지 이용자에게 묻는 중
+- **대화(DM) 완료(2026-11-08, 이용자 요청)**: 보내기 탭 = 대화 목록(안 읽은 수, 탭의 빨간 점), 대화 화면(글·이모지·사진, 전송됨/읽음, 3초마다 새 메시지), 프로필 종이비행기로 시작. 서버 `20261108000200_chat.sql` + 테스트 `chat.test.sql`. e2e `chat.js`
+- **다음**: 이용자가 SQL 20261108000100(backend.md 11)·20261108000200(backend.md 12) 실행 + 두 번째 계정으로 실제 확인 + 새 APK. 남은 것: 크루, 스티커(우리 그림), 친구 일기·주간 보기, 메시지 푸시 알림
 - SQL 20261108000000(친구) Supabase에서 실행 완료 ✅ (2026-11-08)
 - 2단계: 친구(팔로우·피드·반응), 그다음 iOS
 - `/replica-diff`로 원본과 다시 비교
@@ -62,7 +63,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (47개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
-- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 21개 (Playwright, 411×891, 체험 모드 데이터)
+- 단위 테스트 `cd app && npm test` (53개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 22개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

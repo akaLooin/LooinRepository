@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { AppText, BottomSheet, Ellipsis, House, Send, StoredImage, useToast, X } from "../../components";
 import { block, getPerson, follow, removeFollower, showFriend, unblock, unfollow, type Person } from "../../data/social";
 import { ActionSheet } from "../settings/parts";
+import { openConversation } from "../../data/chat";
 import { tokens, useTheme } from "../../theme";
 import { CloverBurst } from "./CloverBurst";
 
@@ -80,7 +81,11 @@ export function PersonSheet({ person: initial, onClose, onChange }: { person: Pe
                 {p.handle ? <AppText variant="helper" color="textMuted">@{p.handle}</AppText> : null}
               </View>
               <RoundButton label={`${p.nickname}의 홈`} onPress={() => { onClose(); showFriend(p.id); router.replace("/" as never); }}><House size={20} color={c.text} /></RoundButton>
-              <RoundButton label="대화" onPress={() => notice("대화는 아직 준비 중이에요")}><Send size={20} color={c.text} /></RoundButton>
+              <RoundButton label="대화" onPress={() => run(async () => {
+                const conv = await openConversation(p.id);
+                onClose();
+                router.push(`/chat/${conv}` as never);
+              })}><Send size={20} color={c.text} /></RoundButton>
             </View>
             {p.bio ? <AppText variant="body" color="textSecondary">{p.bio}</AppText> : null}
             {p.followers !== undefined ? (

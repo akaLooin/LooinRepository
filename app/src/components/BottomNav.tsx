@@ -11,7 +11,8 @@ const TABS: { key: Tab; label: string; Icon: typeof House; filled?: boolean }[] 
   { key: "me", label: "마이", Icon: User, filled: true },
 ];
 
-export function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+/** `dots`: a small dot on a tab (보내기: unread messages). */
+export function BottomNav({ active, onChange, dots }: { active: Tab; onChange: (t: Tab) => void; dots?: Partial<Record<Tab, boolean>> }) {
   const { c } = useTheme();
   return (
     <View style={{ height: tokens.layout.bottomNavHeight, flexDirection: "row", alignItems: "center", backgroundColor: c.bg }} accessibilityRole="tablist">
@@ -20,8 +21,9 @@ export function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab
         const col = on ? c.text : c.iconInactive;
         return (
           <Pressable key={key} onPress={() => onChange(key)} style={{ flex: 1, alignItems: "center", height: "100%", justifyContent: "center" }}
-            accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={label}>
+            accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={dots?.[key] ? `${label}, 새 메시지` : label}>
             <Icon size={tokens.size.navIcon} color={col} fill={filled ? col : "none"} strokeWidth={on ? 2.2 : 2} />
+            {dots?.[key] ? <View style={{ position: "absolute", top: "26%", left: "56%", width: 7, height: 7, borderRadius: 4, backgroundColor: c.sunday }} /> : null}
           </Pressable>
         );
       })}
