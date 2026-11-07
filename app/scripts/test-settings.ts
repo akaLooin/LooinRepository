@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { fromSettingsRow, SYNCED, toSettingsRow } from "../src/data/prefsRow";
+import { fromSettingsRow, PRIVACY_COLUMNS, SYNCED, toSettingsRow } from "../src/data/prefsRow";
 import type { Prefs } from "../src/data/prefs";
 
 const p: Prefs = {
@@ -27,4 +27,9 @@ t("default font and no memo limit map to the server's defaults", () => {
 });
 t("odd server values are ignored", () => {
   assert.deepEqual(fromSettingsRow({ theme: "purple", todo_sort: "created", calendar_category_count: 9, use_24h: "yes" }), {});
+});
+t("privacy settings go to the account (other people's apps respect them)", () => {
+  const row = toSettingsRow(p, "u1");
+  for (const c of PRIVACY_COLUMNS) assert.ok(c in row, c);
+  assert.deepEqual(fromSettingsRow({ likes_todo: "everyone", chat_from: "none", follow_approval: true }), { chatFrom: "none", followApproval: true });
 });

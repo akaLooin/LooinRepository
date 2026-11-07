@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-07 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-08 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -49,7 +49,9 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용
-- **다음: 2단계 친구 기능** — 계획 `replica/phase2.md`(서버 먼저, 화면은 원본 영상 받은 뒤). 스티커는 반응·일기용으로 함께 따로 만들기 (이용자 결정)
+- **2단계 친구 기능 진행 중** — 계획 `replica/phase2.md`. 서버 완료(2026-11-08): `supabase/migrations/20261108000000_friends.sql`(팔로우·차단·일부 공개·반응·알림, 읽기는 함수로만), 테스트 `supabase/tests/run.sh`(로컬 Postgres 16, 4계정). 개인정보 설정 5개가 계정으로 동기화(SQL 안 돌렸으면 폰에만 남음)
+- **다음**: 원본 친구 화면 영상 6개 받기(phase2.md 끝) → 친구 홈, 반응, 검색·팔로우, 알림 탭 화면. 스티커는 반응·일기용으로 우리 그림을 따로 (이용자 결정)
+- 이용자가 할 일 추가: SQL 20261108000000 실행(backend.md 10)
 - 2단계: 친구(팔로우·피드·반응), 그다음 iOS
 - `/replica-diff`로 원본과 다시 비교
 
@@ -59,7 +61,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (39개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (40개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 19개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

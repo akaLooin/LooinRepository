@@ -5,7 +5,26 @@ S17 보내기 (paper-plane tab), reactions (emoji, and stickers per the user), f
 (설정 → 개인정보 보호), visibility per category and per diary. **Every screen above is a guess**: recordings of the original are
 needed before building the screens (list at the end).
 
-## Server first (no screens needed)
+## Server first (no screens needed): done 2026-11-08
+
+`supabase/migrations/20261108000000_friends.sql`, tested by `supabase/tests/run.sh`. Other people's rows are never readable from
+the tables; everything about someone else comes from these functions (all `security definer`, signed-in only):
+
+| function | for |
+| --- | --- |
+| `search_people(q)` | 검색: ID prefix or name; skips 검색 허용 off, blocks, me |
+| `person(uid)` | a profile + follower/following counts + my relation (null when blocked) |
+| `friend_range(uid, from, to)` | friend home: visible categories, to-dos (private memo blank, no alarm), routines, diaries, reaction counts |
+| `follow_list(uid, 'following' / 'followers' / 'requests')` | 팔로잉/팔로워 lists; requests are mine only |
+| `my_notifications(before, max)` | 알림 tab, with the actor |
+| `my_blocks()` | 차단 관리 |
+| `follow`, `unfollow`, `respond_follow`, `remove_follower`, `block`, `unblock` | writes (follow returns `pending` or `accepted`) |
+| `react(type, id, kind, value)`, `unreact`, `reactions_of` | reactions: one per person per to-do/diary, 좋아요 허용 respected |
+
+Partial visibility: `category_viewers` / `diary_viewers`, written by the owner directly. Friends' photos: a storage policy lets a
+signed-in user read a to-do or diary photo only while they can see that to-do or diary.
+
+Original plan:
 
 New tables (migration `2026111x_friends.sql`), all with row level security:
 

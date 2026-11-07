@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Remote } from "./sync";
 import { readBytes } from "../lib/readBytes";
+import { PRIVACY_COLUMNS } from "./prefsRow";
 
 /** The Remote the sync engine talks to: Supabase tables (RLS limits everything to the signed-in user). */
 export function supabaseRemote(sb: SupabaseClient): Remote {
@@ -29,7 +30,11 @@ export function supabaseRemote(sb: SupabaseClient): Remote {
     },
     async upsertSettings(row) {
       const { error } = await sb.from("user_settings").upsert(row, { onConflict: "user_id" });
-      return !error;
+      if (!error) return true;
+      // the friends SQL has not been run yet: send the display settings anyway, privacy stays on this device
+      if (!/column/i.test(error.message)) return false;
+      const older = Object.fromEntries(Object.entries(row).filter(([k]) => !PRIVACY_COLUMNS.includes(k)));
+      return !(await sb.from("user_settings").upsert(older, { onConflict: "user_id" })).error;
     },
     async softDelete(table, ids) {
       const { error } = await sb.from(table).update({ deleted_at: new Date().toISOString() }).in("id", ids);

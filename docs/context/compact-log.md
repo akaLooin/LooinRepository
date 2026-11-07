@@ -9,3 +9,11 @@
   - c6c6fb4 test: test plan, edge cases and axe scan; fix long category names, direct-opened edit screens, checkbox state, image role
   - 33c47c8 build: sync display settings with the account (user_settings)
   - cc438a3 build: drag bottom sheets down to close; 할 일 정보 보기 as a sheet
+
+## 2026-11-07 14:01 UTC · auto
+- 브랜치: claude/replica-skill-install-ll9jb4 · HEAD d81d439
+- 커밋 안 된 파일: 0개
+- 최근 커밋:
+  - d81d439 docs: phase 2 (friends) plan and the recordings it needs
+  - 7f1e531 build: font choice and feed memo line limit in display settings
+  - c03bb2b build: 오늘 할 일 home-screen widget (Android)

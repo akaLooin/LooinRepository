@@ -5,7 +5,12 @@ import type { Prefs } from "./prefs";
 export const SYNCED: (keyof Prefs)[] = [
   "theme", "weekStartsSunday", "doubleTapToEdit", "use24h", "smallTodoText", "smallTodoMemo", "todoSort",
   "calendarCategoryCount", "collapsibleCategories", "inputAtTop", "smallTodoPhoto", "showLikesInFeed", "font", "feedMemoLines",
+  // privacy: other people's apps (and the database rules) must respect these
+  "followApproval", "likesTodo", "likesDiary", "chatFrom", "searchable",
 ];
+
+/** Columns added by the friends migration (20261108000000). A server without them still takes the others. */
+export const PRIVACY_COLUMNS = ["follow_approval", "likes_todo", "likes_diary", "chat_from", "searchable"];
 
 export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown> {
   return {
@@ -24,6 +29,11 @@ export function toSettingsRow(p: Prefs, userId: string): Record<string, unknown>
     show_likes_in_feed: p.showLikesInFeed,
     font: p.font === "pretendard" ? "default" : p.font, // the column's default is 'default'
     feed_memo_line_limit: p.feedMemoLines || null, // null = 무제한
+    follow_approval: p.followApproval,
+    likes_todo: p.likesTodo,
+    likes_diary: p.likesDiary,
+    chat_from: p.chatFrom,
+    searchable: p.searchable,
   };
 }
 
@@ -44,6 +54,14 @@ export function fromSettingsRow(r: Record<string, unknown>): Partial<Prefs> {
   bool("input_at_top", "inputAtTop");
   bool("small_todo_photo", "smallTodoPhoto");
   bool("show_likes_in_feed", "showLikesInFeed");
+  bool("follow_approval", "followApproval");
+  bool("searchable", "searchable");
+  const audience = (k: string, key: "likesTodo" | "likesDiary" | "chatFrom") => {
+    if (r[k] === "all" || r[k] === "followers" || r[k] === "none") out[key] = r[k];
+  };
+  audience("likes_todo", "likesTodo");
+  audience("likes_diary", "likesDiary");
+  audience("chat_from", "chatFrom");
   if (r.font === "default") out.font = "pretendard";
   else if (r.font === "system" || r.font === "nanumGothic" || r.font === "nanumPen") out.font = r.font;
   if (r.feed_memo_line_limit === null) out.feedMemoLines = 0;

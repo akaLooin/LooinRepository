@@ -47,6 +47,8 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 
 9. **Profile fields (2026-11-07)**, once in the Supabase SQL Editor: run `supabase/migrations/20261107000000_profile_fields.sql` (ID, 관심사, 성별, 생년월; 이름 30자, 자기소개 200자). Until then a profile with those fields set is not accepted by the server (shown under 설정 → 실험실).
 
+10. **Friends (2026-11-08)**, once in the Supabase SQL Editor: run `supabase/migrations/20261108000000_friends.sql` (팔로우, 차단, 일부 공개 대상, 반응, 알림, 개인정보 설정 5개). Nothing changes on screen yet; the app keeps working without it (privacy settings then stay on the phone).
+
 ## Checklist
 
 Auth
@@ -60,6 +62,7 @@ Auth
 Database
 - [x] Migrations checked in (`supabase/migrations`), applied in order
 - [x] Row level security on every table. Tested on local Postgres 16 with Supabase's `auth` schema stubbed: a second user gets nothing back
+- [x] Friends rules: `supabase/tests/run.sh` runs every migration on a throwaway Postgres 16 and `friends.test.sql` (owner, follower, stranger, requester: visibility levels, private memos, photos, reactions and the 좋아요 setting, approval, block, search opt-out, signed out)
 - [x] To-dos and routines can only point at the user's own categories (trigger). Ended categories refuse new to-dos (trigger)
 - [x] New accounts get a profile, settings and a "To Do" category (trigger)
 - [x] Seed data is made up (`app/src/data/seed.ts`, demo mode only)
