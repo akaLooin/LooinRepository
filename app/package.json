@@ -1,7 +1,7 @@
 {
   "name": "todomate-clone",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.118.0",
@@ -22,6 +22,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
+    "react-native-android-widget": "^0.26.0",
     "react-native-safe-area-context": "~5.11.1",
     "react-native-screens": "~4.30.1",
     "react-native-svg": "15.16.0",
@@ -41,7 +42,7 @@
     "web": "expo start --web",
     "tokens": "node scripts/gen-tokens.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts && tsx scripts/test-url.ts && tsx scripts/test-dday.ts && tsx scripts/test-notifications.ts && tsx scripts/test-photos.ts && tsx scripts/test-settings.ts && tsx scripts/test-arrange.ts && tsx scripts/test-authlink.ts"
+    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts && tsx scripts/test-url.ts && tsx scripts/test-dday.ts && tsx scripts/test-notifications.ts && tsx scripts/test-photos.ts && tsx scripts/test-settings.ts && tsx scripts/test-arrange.ts && tsx scripts/test-authlink.ts && tsx scripts/test-widget.ts"
   },
   "private": true
 }

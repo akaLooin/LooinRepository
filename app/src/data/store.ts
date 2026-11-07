@@ -10,6 +10,7 @@ import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
 import { isUploaded, rememberLocal } from "../lib/photoPaths";
 import { smoothLayout } from "../lib/motion";
+import { refreshWidget, setWidgetSource, takeWidgetChecks } from "../lib/widget";
 import { rescheduleNotifications } from "./notifications";
 import { applyRemoteSettings, getPrefs, settingsDirty, settingsSent } from "./prefs";
 import { fromSettingsRow, toSettingsRow } from "./prefsRow";
@@ -47,6 +48,7 @@ function persistSoon() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
     AsyncStorage.setItem(storageKey(), JSON.stringify({ v: 1, db, outbox, lastPulled })).catch(() => {});
+    refreshWidget(db); // the home-screen widget follows the app
   }, 300);
 }
 
@@ -64,13 +66,30 @@ export async function startSession(next: Session) {
   lastPulled = parsed?.lastPulled ?? null;
   notify();
   notificationsSoon();
+  await setWidgetSource(storageKey());
+  await applyWidgetChecks();
+  refreshWidget(db);
   if (next.mode === "cloud") startSync();
+  widgetWatch?.remove();
+  widgetWatch = AppState.addEventListener("change", (s) => { if (s === "active") applyWidgetChecks(); });
+}
+
+/** To-dos checked on the home-screen widget while the app was closed: applied as if checked here, then synced. */
+let widgetWatch: { remove: () => void } | null = null;
+async function applyWidgetChecks() {
+  const ids = await takeWidgetChecks();
+  for (const id of ids) {
+    const exists = id.startsWith("r:") || db.todos.some((t) => t.id === id);
+    if (exists) toggleTodo(id);
+  }
 }
 
 /** Signing out forgets this device's copy (the server keeps everything). */
 export async function endSession() {
   stopSync();
   if (session.mode === "cloud") await AsyncStorage.removeItem(storageKey()).catch(() => {});
+  await setWidgetSource(null);
+  refreshWidget(null);
   session = { mode: "demo" };
   db = emptyDB("signed-out");
   outbox = emptyOutbox();

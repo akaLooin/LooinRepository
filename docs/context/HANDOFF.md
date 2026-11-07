@@ -40,7 +40,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
 
 ## APK (2026-11-07): 첫 빌드 설치·로그인 성공 ✅, 앱 이름 표시 ✅
-- 다음 빌드에 들어갈 것: 날짜 누르기 속도, 비밀번호 찾기·바꾸기, 설정 전체(원본대로), 캘린더 < > 후 날짜 안 눌리던 문제
+- 다음 빌드에 들어갈 것: 날짜 누르기 속도, 비밀번호 찾기·바꾸기, 설정 전체(원본대로), 캘린더 < > 후 날짜 안 눌리던 문제, 상태 이모지, **홈 화면 위젯**(새 네이티브 부품 → `npm.cmd install` 필수)
 - 이용자가 해 줄 것: Supabase Redirect URL `todomateclone://**`(backend.md 8), SQL 마이그레이션 20261107000000(backend.md 9)
 
 ## (기록) APK 만들기
@@ -49,7 +49,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - APK 빌드(EAS, `app/eas.json` 준비됨, 순서는 `replica/backend.md` 7번) → PC 없이 사용
-- 홈 화면 위젯, 일기 스티커, 화면 설정 남은 5개(언어·폰트·피드 메모 줄·캘린더 최대 개수)
+- 일기 스티커, 화면 설정 남은 5개(언어·폰트·피드 메모 줄·캘린더 최대 개수)
 - 2단계: 친구(팔로우·피드·반응), 그다음 iOS
 - `/replica-diff`로 원본과 다시 비교
 
@@ -59,7 +59,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (37개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (38개), 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 19개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`
