@@ -12,6 +12,7 @@ import {
 import { arrangeByHeaders } from "../../lib/arrange";
 import { addDays, fromMonthIndex, monthGrid, monthIndex, parseDay, pickAfterPaging, today, weekday, weekStart, type Day } from "../../lib/dates";
 import { CalendarPager, calendarJustSwiped } from "./CalendarPager";
+import { StatusEmojiSheet } from "./StatusEmojiSheet";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { tokens, useTheme } from "../../theme";
 import { dayState } from "./dayState";
@@ -98,6 +99,7 @@ export function HomeScreen() {
     setEditing((e) => (e === id ? null : e));
   };
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
   const openSheet = (id: string, start: "menu" | "memo" | "alarm" = "menu") => { setSheetStart(start); setSheetTodo(materialize(id)); };
   const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
@@ -228,7 +230,8 @@ export function HomeScreen() {
             bio={profile.bio}
             dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now) } : undefined}
             onDday={() => router.push("/ddays" as never)}
-            onEmoji={() => notice("상태 이모지는 다음 단계에서 만들어요")}
+            emoji={profile.statusEmoji}
+            onEmoji={() => setEmojiOpen(true)}
           />
         </View>
 
@@ -350,6 +353,7 @@ export function HomeScreen() {
       </DragScrollView>
 
       <HomeMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <StatusEmojiSheet open={emojiOpen} current={profile.statusEmoji} onClose={() => setEmojiOpen(false)} />
       {homeSheet === "filter" ? <CalendarFilterSheet open onClose={() => setHomeSheet(null)} categories={categories} /> : null}
       <ListMenuSheet open={homeSheet === "list"} onClose={() => setHomeSheet(null)} onConfirm={runListAction} />
       {homeSheet === "pickMove" || homeSheet === "pickCopy" ? (
