@@ -44,6 +44,36 @@ const out = process.argv[2] || ".";
   await p.waitForTimeout(500);
   r.stickerShown = await p.getByLabel("반응 최고").count();
   await p.screenshot({ path: `${out}/friend-sticker.png` });
+  // their diary of the day, with its own heart
+  await p.getByRole("button", { name: "토끼의 일기 보기" }).click();
+  await p.waitForTimeout(500);
+  r.diaryText = await p.getByText("날씨가 좋아서 기분도 좋았다", { exact: false }).count();
+  await p.getByRole("button", { name: "일기에 반응하기" }).click();
+  await p.waitForTimeout(500);
+  await p.getByRole("tab", { name: "스티커" }).click();
+  await p.waitForTimeout(200);
+  await p.getByRole("button", { name: "고마워 반응", exact: true }).click();
+  await p.waitForTimeout(500);
+  r.diaryReacted = await p.getByRole("button", { name: "일기 반응 바꾸기" }).count();
+  r.diarySticker = await p.getByLabel("반응 고마워").count();
+  await p.screenshot({ path: `${out}/friend-diary.png` });
+  await p.mouse.click(200, 60); // tap the dimmed area above the sheet to close it
+  await p.waitForTimeout(500);
+  // week view, as on my home
+  await p.getByRole("button", { name: "주간 보기" }).click();
+  await p.waitForTimeout(500);
+  r.weekTitle = await p.getByText(/주차$/).count();
+  const t1 = await p.getByText(/주차$/).first().textContent();
+  await p.getByRole("button", { name: "다음" }).click();
+  await p.waitForTimeout(500);
+  r.weekMoved = (await p.getByText(/주차$/).first().textContent()) !== t1 || (await p.getByText(/월 \d+일 .요일$/).count()) > 0;
+  await p.screenshot({ path: `${out}/friend-week.png` });
+  await p.getByRole("button", { name: "이전" }).click();
+  await p.waitForTimeout(400);
+  await p.getByRole("button", { name: "월간 보기" }).click();
+  await p.waitForTimeout(400);
+  r.monthBack = await p.getByText(/^\d{4}년 \d+월$/).count();
+
   // back to me
   await p.getByRole("button", { name: /^(나|체험|.+)$/ }).nth(1).click(); // the chip after 보관함 is mine
   await p.waitForTimeout(400);

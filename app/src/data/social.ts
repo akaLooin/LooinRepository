@@ -63,7 +63,12 @@ function demoRange(id: string, from: Day, to: Day) {
     person: demoPersonJson(p),
     categories: p.follow === "accepted" || !p.approval ? [{ id: cat, title: "To Do", color: "#7FB2FF", sort_order: 1 }] : [],
     todos: p.follow === "accepted" || !p.approval ? todos : [],
-    routines: [], diaries: [],
+    routines: [],
+    // a diary today, shared with followers
+    diaries: p.follow === "accepted" && t0 >= from && t0 <= to ? [{
+      id: `${id}-d0`, date: t0, emoji: "😊", body: `${p.nickname}의 하루: 오늘은 산책을 오래 했다.\n날씨가 좋아서 기분도 좋았다.`, background_color: null, image_paths: [],
+      reactions: demo.reactions.has(`${id}-d0`) ? [{ kind: demo.reactions.get(`${id}-d0`)!.kind, value: demo.reactions.get(`${id}-d0`)!.value, mine: true }] : [],
+    }] : [],
   };
 }
 
@@ -143,13 +148,14 @@ export async function myBlocks(): Promise<Person[]> {
   return (await rpc<unknown[]>("my_blocks")).map(toPerson);
 }
 
-export async function react(todoId: string, pick: Reaction, clear: boolean) {
+/** A reaction on a friend's to-do or diary (one per person; `clear` takes it back). */
+export async function react(targetId: string, pick: Reaction, clear: boolean, target: "todo" | "diary" = "todo") {
   if (isDemo()) {
-    if (clear) demo.reactions.delete(todoId); else demo.reactions.set(todoId, pick);
+    if (clear) demo.reactions.delete(targetId); else demo.reactions.set(targetId, pick);
     return;
   }
-  if (clear) await rpc("unreact", { target_type: "todo", target: todoId });
-  else await rpc("react", { target_type: "todo", target: todoId, kind: pick.kind, value: pick.value });
+  if (clear) await rpc("unreact", { target_type: target, target: targetId });
+  else await rpc("react", { target_type: target, target: targetId, kind: pick.kind, value: pick.value });
 }
 
 /** Reactions friends left on my to-dos in a date range (my home). */

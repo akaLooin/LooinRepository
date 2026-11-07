@@ -29,7 +29,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | drag.js | hold-and-drag reorder: categories, D-days, home to-dos (survives reload), a to-do dragged into another category, routines |
 | tm.js | timer start/pause, survives reload, info screen |
 | chat.js | 대화 (demo): unread dot on 보내기, list → conversation, send text / big emoji / emoji panel, 전송됨 on the last one, read after opening, new conversation from a profile |
-| friends.js | demo people: friend chip → friend home, heart → emoji reaction and take back, 둘러보기 search → profile → follow (clovers) / request, profile's home button, 알림, 마이 counts → 친구 lists |
+| friends.js | demo people: friend chip → friend home, heart → emoji/sticker reaction and take back, their diary (sheet, sticker reaction), 주간 보기, 둘러보기 search → profile → follow (clovers) / request, profile's home button, 알림, 마이 counts → 친구 lists |
 | st.js | display settings (theme, week start), profile edit |
 | dy.js | diary: mood, text, background, reopen, empty removes |
 | rm.js | reminders add/duplicate/delete, to-do alarm |

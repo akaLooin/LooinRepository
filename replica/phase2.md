@@ -20,8 +20,9 @@ Built (2026-11-08): search → profile sheet (follow / request / unfollow, 차�
 friend home (read only, month calendar), heart → emoji panel (one reaction per person; the same pick takes it back),
 reactions shown under my own to-dos, 알림 tab (requests with 수락/거절, follows, reactions), 친구 screen (팔로잉/팔로워/요청)
 from the people button and 마이's counts. Demo mode has three sample people.
-Guessed (not recorded): 알림 and 친구 list layouts. Not built: crews, the 둘러보기 feed, 대화 (needs messages tables),
-stickers (own artwork later, user), a friend's diary and week view, reacting to a routine day nobody has touched yet.
+Guessed (not recorded): 알림 and 친구 list layouts. Not built: crews, the 둘러보기 feed, reacting to a routine day nobody has touched yet.
+Added later the same day: 대화, stickers, and on the friend home the 주 (week) view and their diary of the day (card under
+the list → read-only sheet in the diary's colour, with a heart for a sticker/emoji reaction; our layout, not recorded).
 
 ## 스티커: 클로버 친구들 (built 2026-11-08)
 
