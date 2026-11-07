@@ -3,8 +3,8 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "../lib/supabase";
 import { addDays, today, type Day } from "../lib/dates";
-import { groupByTodo, toFriendView, toPerson, type FriendView, type Person, type Reaction } from "../lib/friend";
-import { sessionUserId } from "./store";
+import { groupReactions, toFriendView, toPerson, type FriendView, type Person, type Reaction } from "../lib/friend";
+import { getDB, sessionUserId } from "./store";
 
 export type { FriendView, Person, Reaction } from "../lib/friend";
 export type Notice = {
@@ -158,10 +158,16 @@ export async function react(targetId: string, pick: Reaction, clear: boolean, ta
   else await rpc("react", { target_type: target, target: targetId, kind: pick.kind, value: pick.value });
 }
 
-/** Reactions friends left on my to-dos in a date range (my home). */
-export async function reactionsOnMine(from: Day, to: Day): Promise<Record<string, Reaction[]>> {
-  if (isDemo()) return {};
-  return groupByTodo(await rpc<unknown[]>("reactions_on_mine", { from_day: from, to_day: to }));
+export type Received = { todos: Record<string, Reaction[]>; diaries: Record<string, Reaction[]> };
+/** Reactions friends left on my to-dos and diaries in a date range (my home, my diary). */
+export async function reactionsOnMine(from: Day, to: Day): Promise<Received> {
+  if (isDemo()) {
+    // demo: 토끼 has left a sticker on each of my diaries
+    const diaries = Object.fromEntries(getDB().diaries.filter((d) => d.date >= from && d.date <= to)
+      .map((d) => [d.id, [{ kind: "sticker" as const, value: "clover.thanks", nickname: "토끼" }]]));
+    return { todos: {}, diaries };
+  }
+  return groupReactions(await rpc<unknown[]>("reactions_on_mine", { from_day: from, to_day: to }));
 }
 
 export async function myNotices(): Promise<Notice[]> {

@@ -41,15 +41,19 @@ $$;
 revoke execute on function friend_range(uuid, date, date) from public, anon;
 grant execute on function friend_range(uuid, date, date) to authenticated;
 
--- 내 홈: 날짜 범위 안 내 할 일에 받은 반응 (차단한 사람 것은 빠짐). [{todo_id, kind, value, nickname}]
+-- 내 홈과 내 일기: 날짜 범위 안 내 할 일·일기에 받은 반응 (차단한 사람 것은 빠짐).
+-- [{todo_id 또는 diary_id, kind, value, nickname}]
 create or replace function reactions_on_mine(from_day date, to_day date) returns jsonb
 language sql stable security definer set search_path = public as $$
-  select coalesce(jsonb_agg(jsonb_build_object('todo_id', r.todo_id, 'kind', r.kind, 'value', r.value, 'nickname', p.nickname)
+  select coalesce(jsonb_agg(jsonb_build_object('todo_id', r.todo_id, 'diary_id', r.diary_id, 'kind', r.kind, 'value', r.value, 'nickname', p.nickname)
                             order by r.created_at), '[]')
   from reactions r
-  join todos t on t.id = r.todo_id
+  left join todos t on t.id = r.todo_id
+  left join diaries d on d.id = r.diary_id
   join profiles p on p.id = r.user_id
-  where r.owner_id = auth.uid() and t.user_id = auth.uid() and t.date between from_day and to_day
+  where r.owner_id = auth.uid()
+    and ((t.user_id = auth.uid() and t.date between from_day and to_day)
+      or (d.user_id = auth.uid() and d.deleted_at is null and d.date between from_day and to_day))
     and not is_blocked(r.user_id, auth.uid())
 $$;
 revoke execute on function reactions_on_mine(date, date) from public, anon;

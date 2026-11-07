@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { groupByTodo, nextReaction, noticeText, timeAgo, toFriendView, toPerson } from "../src/lib/friend";
+import { groupReactions, nextReaction, noticeText, timeAgo, toFriendView, toPerson } from "../src/lib/friend";
 import { todosForDay } from "../src/data/occurrences";
 
 const t = (n: string, f: () => void) => { f(); console.log("ok", n); };
@@ -40,10 +40,14 @@ t("one reaction per person: a new pick replaces, the same pick takes it back", (
   assert.equal(b.action, "clear");
   assert.deepEqual(b.list.map((r) => r.value), ["👏"]);
 });
-t("reactions on my to-dos are grouped by to-do", () => {
-  const g = groupByTodo([{ todo_id: "x", kind: "emoji", value: "👍", nickname: "토끼" }, { todo_id: "x", kind: "emoji", value: "🔥" }, { bad: 1 }]);
-  assert.deepEqual(Object.keys(g), ["x"]);
-  assert.equal(g.x[0].nickname, "토끼");
+t("reactions on my to-dos and diaries are grouped by id", () => {
+  const g = groupReactions([
+    { todo_id: "x", kind: "emoji", value: "👍", nickname: "토끼" }, { todo_id: "x", kind: "emoji", value: "🔥" },
+    { diary_id: "d", kind: "sticker", value: "clover.thanks", nickname: "다람쥐" }, { bad: 1 },
+  ]);
+  assert.deepEqual(Object.keys(g.todos), ["x"]);
+  assert.equal(g.todos.x[0].nickname, "토끼");
+  assert.deepEqual(g.diaries.d, [{ kind: "sticker", value: "clover.thanks", nickname: "다람쥐" }]);
 });
 t("odd follow states are ignored", () => {
   assert.equal(toPerson({ id: 1, nickname: "x", i_follow: "maybe" }).iFollow, null);

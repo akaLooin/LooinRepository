@@ -124,6 +124,20 @@ const out = process.argv[2] || ".";
   await p.waitForTimeout(400);
   r.followers = await p.getByRole("button", { name: "토끼 프로필" }).count();
 
+  // reactions friends left on my diary (demo: 토끼 leaves 고마워 on every diary of mine)
+  await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
+  await p.waitForTimeout(800);
+  await p.getByRole("button", { name: "일기 쓰기" }).click();
+  await p.waitForTimeout(600);
+  await p.getByLabel("일기 내용").fill("오늘도 잘 해냈다");
+  await p.getByRole("button", { name: "완료" }).click();
+  await p.waitForTimeout(800);
+  r.homeDiaryReaction = await p.getByLabel("반응 고마워").count();
+  await p.getByRole("button", { name: "일기 보기" }).click();
+  await p.waitForTimeout(800);
+  r.diaryReceived = await p.getByText("받은 반응 1").count();
+  r.diaryFrom = await p.getByText("토끼", { exact: true }).count();
+  await p.screenshot({ path: `${out}/my-diary-received.png` });
   r.errors = errs;
   console.log(JSON.stringify(r, null, 1));
   await b.close();

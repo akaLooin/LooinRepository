@@ -28,8 +28,7 @@ import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
-import { reactionsOnMine, showFriend, useFollowing, useShownFriend, type Reaction } from "../../data/social";
-import { sessionUserId } from "../../data/store";
+import { reactionsOnMine, showFriend, useFollowing, useShownFriend, type Received } from "../../data/social";
 
 const G = tokens.layout.gutter;
 
@@ -120,10 +119,9 @@ export function HomeScreen() {
 
   const grid = monthGrid(view.y, view.m, prefs.weekStartsSunday);
   // Reactions friends left on my to-dos this month (shown under each to-do), fetched when home comes into view
-  const [received, setReceived] = useState<Record<string, Reaction[]>>({});
+  const [received, setReceived] = useState<Received>({ todos: {}, diaries: {} });
   const monthKey = `${view.y}-${String(view.m).padStart(2, "0")}`;
   useFocusEffect(useCallback(() => {
-    if (!sessionUserId()) return;
     let alive = true;
     const next = view.m === 12 ? `${view.y + 1}-01` : `${view.y}-${String(view.m + 1).padStart(2, "0")}`;
     reactionsOnMine(addDays(`${monthKey}-01`, -7), addDays(`${next}-01`, 6)).then((r) => { if (alive) setReceived(r); }).catch(() => {});
@@ -350,7 +348,7 @@ export function HomeScreen() {
                   onAlarmPress={selecting ? undefined : () => openSheet(t.id, "alarm")}
                   selected={selecting?.has(t.id)}
                   onDoubleTap={prefs.doubleTapToEdit ? () => startEditing(materialize(t.id)) : undefined}
-                  below={received[t.id]?.length ? <ReactionLine list={received[t.id]} /> : undefined}
+                  below={received.todos[t.id]?.length ? <ReactionLine list={received.todos[t.id]} /> : undefined}
                   small={prefs.smallTodoText}
                   smallMemo={prefs.smallTodoMemo}
                   smallPhoto={prefs.smallTodoPhoto}
@@ -365,6 +363,7 @@ export function HomeScreen() {
             style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
             <AppText variant="bodyLg">{diary?.emoji ?? "📔"}</AppText>
             <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : "이날의 일기 쓰기"}</AppText>
+            {diary && received.diaries[diary.id]?.length ? <ReactionLine list={received.diaries[diary.id].slice(-3)} size={28} /> : null}
           </Pressable>
 
           <View style={{ borderTopWidth: 1, borderStyle: "dashed", borderColor: c.surfaceStrong, marginTop: 16 }} />

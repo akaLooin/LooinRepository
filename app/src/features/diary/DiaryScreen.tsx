@@ -1,13 +1,14 @@
 import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
-  AppText, BottomSheet, Button, ChevronDown, Image, RadioCheck, ScreenHeader, SmilePlus, StoredImage, useToast, VisibilityIcon, X, type Visibility,
+  AppText, BottomSheet, Button, ChevronDown, Image, RadioCheck, ScreenHeader, SmilePlus, Sticker, StoredImage, useToast, VisibilityIcon, X, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
+import { reactionsOnMine, type Reaction } from "../../data/social";
 import { pickPhoto } from "../../lib/photos";
 import { parseDay, today, weekday } from "../../lib/dates";
 import { contrast, fontFamily, tokens, useTheme } from "../../theme";
@@ -34,6 +35,14 @@ export function DiaryScreen() {
   const [images, setImages] = useState<string[]>(existing?.imagePaths ?? []);
   const [sheet, setSheet] = useState<null | "emoji" | "visibility" | "color">(null);
   const [toast, notice] = useToast();
+  // stickers and emoji friends left on this diary (shown under it, with who sent them)
+  const [received, setReceived] = useState<Reaction[]>([]);
+  useEffect(() => {
+    if (!existing) return;
+    let alive = true;
+    reactionsOnMine(date, date).then((r) => { if (alive) setReceived(r.diaries[existing.id] ?? []); }).catch(() => {});
+    return () => { alive = false; };
+  }, [date, existing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const background = bg ?? c.bg;
   const ink = bg ? (contrast("#FFFFFF", bg) >= 4.5 ? "#FFFFFF" : "#111111") : c.text;
@@ -94,6 +103,19 @@ export function DiaryScreen() {
                 </Pressable>
               </View>
             ))}
+          </View>
+        ) : null}
+        {received.length ? (
+          <View style={{ gap: 10, marginTop: 8 }} accessibilityLabel="받은 반응">
+            <AppText variant="helper" raw={inkMuted}>받은 반응 {received.length}</AppText>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              {received.map((r, i) => (
+                <View key={i} style={{ alignItems: "center", gap: 2, width: 64 }}>
+                  {r.kind === "sticker" ? <Sticker id={r.value} size={52} /> : <AppText style={{ fontSize: 34, lineHeight: 52 }}>{r.value}</AppText>}
+                  <AppText variant="small" raw={inkMuted} numberOfLines={1}>{r.nickname ?? ""}</AppText>
+                </View>
+              ))}
+            </View>
           </View>
         ) : null}
       </ScrollView>

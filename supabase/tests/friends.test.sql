@@ -130,7 +130,8 @@ do $$ begin
   assert (select count(*) from notifications where type = 'reaction') = 3, 'A got three reaction notifications (changing one did not add one)';
   assert my_notifications()->0->'actor'->>'nickname' = 'Carol', 'notifications carry the actor';
   assert (select count(*) from reactions) = 3, 'A sees reactions on their things';
-  assert jsonb_array_length(reactions_on_mine('2026-11-01', '2026-11-30')) = 2, 'A gets the to-do reactions on home';
+  assert jsonb_array_length(reactions_on_mine('2026-11-01', '2026-11-30')) = 3, 'A gets the to-do and diary reactions';
+  assert (select count(*) from jsonb_array_elements(reactions_on_mine('2026-11-08', '2026-11-08')) e where e->>'diary_id' is not null) = 1, 'the diary one is marked';
   assert reactions_on_mine('2026-11-01', '2026-11-30')->0->>'nickname' = 'Bob', 'with who sent them';
 end $$;
 reset role;

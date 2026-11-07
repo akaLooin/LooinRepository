@@ -49,7 +49,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 
 10. **Friends (2026-11-08)**, once in the Supabase SQL Editor: run `supabase/migrations/20261108000000_friends.sql` (팔로우, 차단, 일부 공개 대상, 반응, 알림, 개인정보 설정 5개). Safe to run again (if the editor fails halfway, just run it once more). Check: `select count(*) from information_schema.tables where table_name in ('follows','blocks','reactions','notifications','category_viewers','diary_viewers');` → 6. If the dashboard page itself breaks (e.g. "removeChild" error), turn off the browser's page translation and reload. Nothing changes on screen yet; the app keeps working without it (privacy settings then stay on the phone).
 
-11. **Reaction lists (2026-11-08)**, once in the SQL Editor: run `supabase/migrations/20261108000100_reaction_lists.sql` (친구 홈의 할 일마다 반응 목록, 내 할 일에 받은 반응). Safe to run again. Without it the friend home still opens but reactions do not show under to-dos.
+11. **Reaction lists (2026-11-08)**, once in the SQL Editor: run `supabase/migrations/20261108000100_reaction_lists.sql` (친구 홈의 할 일·일기마다 반응 목록, 내 할 일·일기에 받은 반응). Safe to run again. Without it the friend home still opens but reactions do not show under to-dos.
 12. **대화 (2026-11-08)**, once in the SQL Editor: run `supabase/migrations/20261108000200_chat.sql` (대화방, 메시지, 읽음, 사진 버킷 `chat-photos`). Safe to run again. Until then 보내기 shows "서버에 대화 SQL을 먼저 실행해 주세요".
 ## Checklist
 

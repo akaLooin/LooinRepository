@@ -56,12 +56,13 @@ export function nextReaction(list: Reaction[], pick: Reaction): { list: Reaction
   return { list: [...others, { ...pick, mine: true }], action: "set" };
 }
 
-/** reactions_on_mine's answer → reactions per to-do id. */
-export function groupByTodo(rows: R[]): Record<string, Reaction[]> {
-  const out: Record<string, Reaction[]> = {};
+/** reactions_on_mine's answer → reactions per to-do id and per diary id. */
+export function groupReactions(rows: R[]): { todos: Record<string, Reaction[]>; diaries: Record<string, Reaction[]> } {
+  const out = { todos: {} as Record<string, Reaction[]>, diaries: {} as Record<string, Reaction[]> };
   for (const r of rows ?? []) {
-    if (!r?.todo_id || typeof r.value !== "string") continue;
-    (out[r.todo_id] ??= []).push({ kind: r.kind === "sticker" ? "sticker" : "emoji", value: r.value, nickname: r.nickname ?? undefined });
+    if (typeof r?.value !== "string") continue;
+    const into = r.todo_id ? (out.todos[r.todo_id] ??= []) : r.diary_id ? (out.diaries[r.diary_id] ??= []) : null;
+    into?.push({ kind: r.kind === "sticker" ? "sticker" : "emoji", value: r.value, nickname: r.nickname ?? undefined });
   }
   return out;
 }

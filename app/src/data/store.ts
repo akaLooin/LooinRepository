@@ -545,3 +545,6 @@ export function setAllDiaryVisibility(visibility: Diary["visibility"]) {
 
 /** The signed-in user's id, or null in demo mode (friends features then run on sample people). */
 export const sessionUserId = () => (session.mode === "cloud" ? session.userId : null);
+
+/** This device's data right now (outside React). */
+export const getDB = () => db;
