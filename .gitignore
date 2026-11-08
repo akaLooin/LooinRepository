@@ -6,3 +6,4 @@ graphify-out/cache/stat-index.json
 
 # Android SDK path for this machine only
 local.properties
+graphify-out/cache/hook_sessions/
