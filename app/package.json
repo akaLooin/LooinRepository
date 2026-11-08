@@ -1,0 +1,22 @@
+{
+  "name": "talestopia-tycoon",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tokens": "node scripts/build-tokens.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "break_infinity.js": "^2.2.0",
+    "galmuri": "^2.40.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  }
+}
