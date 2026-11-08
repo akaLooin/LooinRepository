@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
-import { AppText, StoredImage } from "../../components";
+import { AppText, pressedBg, ripple, StoredImage } from "../../components";
 import { myConversations, type Conversation } from "../../data/chat";
 import { previewText } from "../../lib/chat";
 import { timeAgo } from "../../lib/friend";
@@ -43,7 +43,7 @@ export function ConversationsScreen() {
           : list.map((cv) => (
             <Pressable key={cv.id} onPress={() => router.push(`/chat/${cv.id}` as never)} accessibilityRole="button"
               accessibilityLabel={`${cv.other.nickname}와의 대화${cv.unread ? `, 안 읽은 메시지 ${cv.unread}개` : ""}`}
-              style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: G, paddingVertical: 10, backgroundColor: pressed ? c.surfaceRow : "transparent" })}>
+              {...ripple(c.pressRipple)} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: G, paddingVertical: 10, backgroundColor: pressedBg(pressed, c.pressRipple, "transparent") })}>
               {cv.other.avatarUri
                 ? <StoredImage uri={cv.other.avatarUri} label="" style={{ width: a, height: a, borderRadius: a / 2 }} />
                 : <View style={{ width: a, height: a, borderRadius: a / 2, backgroundColor: c.surfaceStrong }} />}

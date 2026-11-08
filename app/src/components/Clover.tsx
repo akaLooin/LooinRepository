@@ -2,7 +2,7 @@ import { useId } from "react";
 import { Pressable, View } from "react-native";
 import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
-import { contrast, fontFamily, onColor, tokens, useTheme, visibleOn } from "../theme";
+import { contrast, fontFamily, tokens, useTheme, visibleOn } from "../theme";
 import { AppText } from "./AppText";
 
 export type CloverState =
@@ -16,17 +16,31 @@ export type CloverState =
   | { kind: "fill"; color: string }
   | { kind: "split"; colors: string[]; left: number }; // any done: bands by category order; number left, or tick when 0
 
-/** Four overlapping circles: our own four-leaf shape (drawn fresh, not taken from the original). */
+/**
+ * Four overlapping circles at the corners: a soft square with a small dip in the middle of each side, as the
+ * original's calendar clover looks (measured on the user's screen recording: radius 31.4% of the width, centres at
+ * 31.4% / 68.6%). Drawn here as plain circles; no image from the original.
+ */
+export const LOBE_R = 0.314;
+const LOBE_AT = [[LOBE_R, LOBE_R], [1 - LOBE_R, LOBE_R], [LOBE_R, 1 - LOBE_R], [1 - LOBE_R, 1 - LOBE_R]] as const; // TL, TR, BL, BR
+
 function Lobes({ size, fill }: { size: number; fill: string }) {
-  const r = size * 0.34;
-  const m = size / 2;
-  const d = size * 0.16;
   return (
     <G fill={fill}>
-      <Circle cx={m - d} cy={m} r={r} />
-      <Circle cx={m + d} cy={m} r={r} />
-      <Circle cx={m} cy={m - d} r={r} />
-      <Circle cx={m} cy={m + d} r={r} />
+      {LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}
+    </G>
+  );
+}
+
+/** Several categories: each circle takes a category colour in order (top pair first), and the overlaps show through. */
+export const lobeColors = (colors: string[]) => LOBE_AT.map((_, i) => colors[Math.floor((i * colors.length) / 4)]);
+function SplitLobes({ size, colors }: { size: number; colors: string[] }) {
+  if (new Set(colors).size <= 1) return <Lobes size={size} fill={colors[0]} />;
+  return (
+    <G>
+      {lobeColors(colors).map((col, i) => (
+        <Circle key={i} cx={LOBE_AT[i][0] * size} cy={LOBE_AT[i][1] * size} r={LOBE_R * size} fill={col} opacity={0.85} />
+      ))}
     </G>
   );
 }
@@ -57,13 +71,18 @@ export function Clover({
   label?: string;
 }) {
   const { c } = useTheme();
-  const { checkColor } = usePrefs();
+  const { checkColor, cloverNumberColor } = usePrefs();
   // the tick is white unless the user picked black (설정 → 화면 → 체크 표시 색)
   const chosen = checkColor === "black" ? c.checkBlack : c.checkWhite;
   const other = checkColor === "black" ? c.checkWhite : c.checkBlack;
   // only when the category colour is almost the tick colour (white on a white category) use the other one;
   // bright greens keep the white tick, as in the original
   const tickOn = (bg: string) => (contrast(chosen, bg) < 1.15 ? other : chosen);
+  // the number left on a coloured clover: white by default, black if picked (설정 → 화면 → 캘린더 숫자 색), with the
+  // same fallback when the category colour is almost that colour
+  const num = cloverNumberColor === "black" ? c.checkBlack : c.checkWhite;
+  const numOther = cloverNumberColor === "black" ? c.checkWhite : c.checkBlack;
+  const numberOn = (bg: string) => (contrast(num, bg) < 1.15 ? numOther : num);
 
   const clipId = "clip" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const empty = c.cloverEmpty;
@@ -71,6 +90,7 @@ export function Clover({
   let body: React.ReactNode;
   let count: number | null = null;
   let countColor = c.cloverNumber;
+  let countHalo: string | null = null; // a faint outline when part of the clover is close to the number's colour
 
   switch (state.kind) {
     case "empty":
@@ -81,28 +101,17 @@ export function Clover({
       count = state.count;
       break;
     case "split": {
-      const n = Math.max(1, state.colors.length);
-      const band = size / n;
+      const cols = state.colors.length ? state.colors.map(fill) : [fill(c.text)];
       body = (
         <>
-          <Defs>
-            {state.colors.map((_, i) => (
-              <ClipPath key={i} id={`${clipId}b${i}`}>
-                <Rect x={0} y={i * band} width={size} height={i === n - 1 ? size - i * band : band} />
-              </ClipPath>
-            ))}
-          </Defs>
-          {state.colors.map((col, i) => (
-            <G key={i} clipPath={`url(#${clipId}b${i})`}>
-              <Lobes size={size} fill={fill(col)} />
-            </G>
-          ))}
-          {state.left === 0 ? <Tick size={size} color={tickOn(fill(state.colors[0]))} /> : null}
+          <SplitLobes size={size} colors={cols} />
+          {state.left === 0 ? <Tick size={size} color={tickOn(cols[0])} /> : null}
         </>
       );
       if (state.left > 0) {
         count = state.left;
-        countColor = onColor(fill(state.colors[0]));
+        countColor = numberOn(cols[0]);
+        if (cols.some((x) => contrast(countColor, x) < 1.6)) countHalo = countColor === c.checkWhite ? c.checkBlack : c.checkWhite;
       }
       break;
     }
@@ -124,7 +133,7 @@ export function Clover({
     case "doneCount":
       body = <Lobes size={size} fill={fill(state.color)} />;
       count = state.count;
-      countColor = onColor(fill(state.color));
+      countColor = numberOn(fill(state.color));
       break;
     case "partial": {
       const h = size * Math.max(0, Math.min(1, state.ratio));
@@ -152,7 +161,8 @@ export function Clover({
         {body}
       </Svg>
       {count !== null && (
-        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.52, lineHeight: size }}>
+        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.52, lineHeight: size,
+          ...(countHalo ? { textShadowColor: countHalo, textShadowRadius: 3, textShadowOffset: { width: 0, height: 0 } } : null) }}>
           {count}
         </AppText>
       )}

@@ -3,6 +3,7 @@ import { tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 import { Radio, Toggle } from "./controls";
 import { ChevronRight } from "./icons";
+import { pressedBg, ripple } from "./press";
 
 type Base = { title: string; onPress?: () => void };
 
@@ -14,7 +15,7 @@ function Row({ onPress, onLongPress, delayLongPress, children, height = tokens.s
   // A row with no action of its own is a plain container, so controls inside it (a Toggle) stay enabled for screen readers.
   if (!onPress) return <View style={[base, { backgroundColor: bg }]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={a11y} style={({ pressed }) => [base, { backgroundColor: pressed ? c.surfaceRow : bg }]}>
+    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={a11y} {...ripple(c.pressRipple)} style={({ pressed }) => [base, { backgroundColor: pressedBg(pressed, c.pressRipple, bg) }]}>
       {children}
     </Pressable>
   );

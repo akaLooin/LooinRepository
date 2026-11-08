@@ -48,7 +48,8 @@ export const tokens = {
       "cloverNumber": "#ffffff",
       "onIcon": "#ffffff",
       "menuSoft": "#9da3dd",
-      "scrimSolid": "#000000"
+      "scrimSolid": "#000000",
+      "pressRipple": "rgba(255,255,255,0.07)"
     },
     "light": {
       "bg": "#ffffff",
@@ -97,7 +98,8 @@ export const tokens = {
       "menuInfo": "#c8c8cc",
       "onIcon": "#ffffff",
       "menuSoft": "#9da3dd",
-      "scrimSolid": "#000000"
+      "scrimSolid": "#000000",
+      "pressRipple": "rgba(0,0,0,0.06)"
     }
   },
   "type": {

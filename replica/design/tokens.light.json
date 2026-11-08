@@ -47,7 +47,8 @@
     "menu-info": "#c8c8cc",
     "on-icon": "#ffffff",
     "menu-soft": "#9da3dd",
-    "scrim-solid": "#000000"
+    "scrim-solid": "#000000",
+    "press-ripple": "rgba(0,0,0,0.06)"
   },
   "_original": {
     "clover-number": "#ffffff (흰 숫자, 대비 1.4:1)",

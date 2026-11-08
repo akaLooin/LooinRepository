@@ -53,6 +53,7 @@ export function DisplaySettingsScreen() {
         <ValueRow title="할 일 캘린더에서 표시할 카테고리" value={String(p.calendarCategoryCount)} onPress={() => setPref("calendarCategoryCount", (p.calendarCategoryCount % 4) + 1)} />
         {/* not in the original: added for this app */}
         <ValueRow title="체크 표시 색" value={p.checkColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("checkColor", p.checkColor === "black" ? "white" : "black")} />
+        <ValueRow title="캘린더 숫자 색" value={p.cloverNumberColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("cloverNumberColor", p.cloverNumberColor === "black" ? "white" : "black")} />
         <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} divider={false} />
       </ScrollView>
       <BottomSheet visible={sheet === "theme"} onClose={() => setSheet(null)} title="테마">

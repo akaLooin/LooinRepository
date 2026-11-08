@@ -9,8 +9,8 @@ const EMPTY = "#333333";
 
 /** Our four-leaf clover (same shape as the app's), as SVG for the widget. */
 function clover(fill: string, tick: boolean) {
-  const lobes = `<circle cx="8.16" cy="12" r="8.16" fill="${fill}"/><circle cx="15.84" cy="12" r="8.16" fill="${fill}"/>` +
-    `<circle cx="12" cy="8.16" r="8.16" fill="${fill}"/><circle cx="12" cy="15.84" r="8.16" fill="${fill}"/>`;
+  // the same shape as the app's clover (components/Clover.tsx): four circles at the corners
+  const lobes = [[7.54, 7.54], [16.46, 7.54], [7.54, 16.46], [16.46, 16.46]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="7.54" fill="${fill}"/>`).join("");
   const check = tick ? `<path d="M7 12.5 L10.5 16 L17 8.5" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${lobes}${check}</svg>`;
 }
