@@ -19,10 +19,10 @@ const out = process.argv[2] || ".";
   await p.getByRole("button", { name: "최고 반응", exact: true }).click();
   await p.waitForTimeout(400);
   r.sticker = await p.getByLabel("최고 스티커").count();
-  // 기분 온도: tap the sticker, slide, 확인
-  await p.getByRole("button", { name: "오늘의 기분, 기분 온도 정하기" }).click();
+  // 기분 온도 from the bottom button (original), slide, 확인
+  await p.getByRole("button", { name: "기분 온도", exact: true }).click();
   await p.waitForTimeout(500);
-  const slider = p.getByRole("adjustable", { name: "기분 온도" }).or(p.getByLabel("기분 온도", { exact: true })).first();
+  const slider = p.getByRole("slider", { name: "기분 온도" });
   const box = await slider.boundingBox();
   await p.mouse.click(box.x + box.width * 0.33, box.y + box.height / 2);
   await p.waitForTimeout(200);
@@ -39,11 +39,19 @@ const out = process.argv[2] || ".";
   await p.waitForTimeout(300);
   await p.getByLabel("일기 내용").fill("좋아요");
   await p.screenshot({ path: `${out}/diary-write.png` });
-  // closing with changes asks
+  // closing with changes asks; 임시 저장 keeps a draft that comes back next time
   await p.getByRole("button", { name: "닫기" }).first().click();
   await p.waitForTimeout(300);
-  r.asks = await p.getByText("작성을 완료하시겠습니까?").count();
-  await p.getByRole("button", { name: "완료" }).last().click();
+  r.asks = await p.getByText("임시 저장하지 않고 나갈까요?").count();
+  await p.getByRole("button", { name: "임시 저장" }).click();
+  await p.waitForTimeout(800);
+  r.notSavedYet = await p.getByRole("button", { name: "오늘의 일기 보기" }).count() === 0;
+  await p.getByRole("button", { name: "일기 쓰기" }).first().click();
+  await p.waitForTimeout(800);
+  r.draftBack = await p.getByLabel("일기 내용").inputValue();
+  r.draftToast = await p.getByText("임시 저장한 일기를 불러왔어요").count();
+  r.stickerTopOpensPicker = await p.getByRole("button", { name: "오늘의 기분 스티커 바꾸기" }).count();
+  await p.getByRole("button", { name: "완료" }).click();
   await p.waitForTimeout(800);
   r.besideProfile = await p.getByRole("button", { name: "오늘의 일기 보기" }).count();
   await p.screenshot({ path: `${out}/diary-home.png` });

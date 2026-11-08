@@ -21,7 +21,7 @@ async function resolve(uri: string, fresh = false): Promise<string | null> {
   if (!fresh && hit && hit.until > Date.now()) return hit.url;
   if (!supabase) return null;
   const { bucket, path } = splitStored(uri);
-  if (bucket === "avatars") {
+  if (bucket === "avatars" || bucket === "crew-images") { // public buckets: a plain link
     const url = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
     cache.set(uri, { url, until: Date.now() + 86400000 });
     return url;

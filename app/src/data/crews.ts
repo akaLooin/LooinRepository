@@ -71,10 +71,10 @@ export async function createCrew(input: { name: string; description: string; cat
     const me = sessionUserId();
     const body = await readBytes(input.localImage);
     const path = `${me}/${newId()}.jpg`;
-    if (supabase && body.byteLength >= 1024) {
-      const { error } = await supabase.storage.from("crew-images").upload(path, body, { contentType: "image/jpeg", upsert: true });
-      if (!error) imagePath = `crew-images/${path}`;
-    }
+    const error = !supabase || body.byteLength < 1024 ? "사진을 읽지 못했어요"
+      : (await supabase.storage.from("crew-images").upload(path, body, { contentType: "image/jpeg", upsert: true })).error?.message;
+    if (error) setCrewFlash(`크루는 만들었지만 사진을 올리지 못했어요 (${error})`);
+    else imagePath = `crew-images/${path}`;
   }
   return rpc<string>("create_crew", { name: input.name, description: input.description, image_path: imagePath, category: input.categoryId });
 }

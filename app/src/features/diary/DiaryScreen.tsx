@@ -1,11 +1,12 @@
 import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { useLocalSearchParams } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
-  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, Image, MoodGauge, MoodMark, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage,
+  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, Image, MoodGauge, MoodMark, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage, Thermometer,
   useToast, VisibilityIcon, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
@@ -23,8 +24,9 @@ const WD = "일월화수목금토";
 /**
  * S09, as in the user's recording of the original: the mood on top is a sticker (or an emoji) picked from the panel,
  * with its 기분 온도 (0–100°) under it; name, date and who can see it; the text; photos full width with a "−" to take
- * them out. At the bottom: background colour (a big grid, previewed live, 확인 to keep), photo, sticker. Closing with
- * changes asks "작성을 완료하시겠습니까?". Opens on the date in the route ("today" works too).
+ * them out. At the bottom: background colour (a big grid, previewed live, 확인 to keep), photo, 기분 온도 (original:
+ * the sticker is picked on top, the temperature from the bottom button, user's correction). Closing with changes
+ * asks whether to leave without a 임시 저장 (draft kept on this phone and offered back next time; user's request).
  */
 export function DiaryScreen() {
   const params = useLocalSearchParams<{ date: string }>();
@@ -53,6 +55,19 @@ export function DiaryScreen() {
     return () => { alive = false; };
   }, [date, existing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 임시 저장: a draft kept on this phone per day, offered back when the diary is opened again
+  const draftKey = `todomate:diary-draft:${date}`;
+  useEffect(() => {
+    AsyncStorage.getItem(draftKey).then((v) => {
+      if (!v) return;
+      const d = JSON.parse(v) as { emoji?: string; temp?: number | null; body: string; visibility: Visibility; bg?: string; images: string[] };
+      setEmoji(d.emoji); setTemp(d.temp ?? undefined); setBody(d.body ?? ""); setVisibility(d.visibility ?? "private"); setBg(d.bg); setImages(d.images ?? []);
+      notice("임시 저장한 일기를 불러왔어요");
+    }).catch(() => {});
+  }, [draftKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const saveDraft = () => AsyncStorage.setItem(draftKey, JSON.stringify({ emoji, temp, body, visibility, bg, images })).catch(() => {});
+  const dropDraft = () => AsyncStorage.removeItem(draftKey).catch(() => {});
+
   const shownBg = sheet === "color" ? draftBg : bg;
   const background = shownBg ?? c.bg;
   const ink = shownBg ? (contrast(c.checkWhite, shownBg) >= 4.5 ? c.checkWhite : c.onSelected) : c.text;
@@ -61,6 +76,7 @@ export function DiaryScreen() {
   const changed = (emoji ?? "") !== (existing?.emoji ?? "") || (temp ?? null) !== (existing?.moodTemp ?? null) || body !== (existing?.body ?? "")
     || visibility !== (existing?.visibility ?? "private") || (bg ?? "") !== (existing?.backgroundColor ?? "") || images.join() !== (existing?.imagePaths ?? []).join();
   const done = () => {
+    dropDraft();
     saveDiary(date, { emoji, body: body.trim(), visibility, backgroundColor: bg, imagePaths: images, ...(temp !== undefined ? { moodTemp: temp } : {}) });
     goBack("/");
   };
@@ -71,8 +87,7 @@ export function DiaryScreen() {
       <ScreenHeader title="일기" close onBack={close} right={{ label: "완료", onPress: done }} ink={shownBg ? ink : undefined} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ alignItems: "center", gap: 8, marginVertical: 8 }}>
-          <Pressable onPress={() => (emoji ? (setDraftTemp(temp ?? 50), setSheet("temp")) : setSheet("mood"))} onLongPress={() => setSheet("mood")}
-            accessibilityRole="button" accessibilityLabel={emoji ? "오늘의 기분, 기분 온도 정하기" : "오늘의 기분 고르기"} accessibilityHint={emoji ? "길게 누르면 스티커를 바꿔요" : undefined}>
+          <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" accessibilityLabel={emoji ? "오늘의 기분 스티커 바꾸기" : "오늘의 기분 고르기"}>
             {emoji ? <MoodMark value={emoji} size={72} /> : (
               <View style={{ width: 72, height: 72, alignItems: "center", justifyContent: "center" }}>
                 <Svg width={72} height={72} style={{ position: "absolute" }}>
@@ -82,7 +97,7 @@ export function DiaryScreen() {
               </View>
             )}
           </Pressable>
-          {emoji && typeof temp === "number" ? (
+          {typeof temp === "number" ? (
             <Pressable onPress={() => { setDraftTemp(temp); setSheet("temp"); }} accessibilityRole="button" accessibilityLabel={`기분 온도 ${temp}도, 바꾸기`}>
               <MoodGauge temp={temp} ink={ink} track={inkMuted} />
             </Pressable>
@@ -146,8 +161,9 @@ export function DiaryScreen() {
           }} accessibilityRole="button" accessibilityLabel="사진 넣기" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
           <Image size={21} color={c.menuPhoto} />
         </Pressable>
-        <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" accessibilityLabel="스티커 고르기" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
-          <Sticker id="clover.love" size={30} />
+        <Pressable onPress={() => { setDraftTemp(temp ?? 50); setSheet("temp"); }} accessibilityRole="button" accessibilityLabel="기분 온도"
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
+          <Thermometer size={21} color={tokens.sticker.heart} />
         </Pressable>
       </View>
 
@@ -165,9 +181,6 @@ export function DiaryScreen() {
           {typeof temp === "number" ? <View style={{ flex: 1 }}><Button kind="danger" label="지우기" onPress={() => { setTemp(null); setSheet(null); }} /></View> : null}
           <View style={{ flex: 1 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setTemp(draftTemp); setSheet(null); }} /></View>
         </View>
-        <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" style={{ alignSelf: "center", paddingTop: 14 }}>
-          <AppText variant="helper" color="textMuted">스티커 바꾸기</AppText>
-        </Pressable>
       </BottomSheet>
 
       <BottomSheet visible={sheet === "visibility"} onClose={() => setSheet(null)} title="공개설정">
@@ -200,8 +213,9 @@ export function DiaryScreen() {
         <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setBg(draftBg); setSheet(null); }} /></View>
       </BottomSheet>
 
-      <ConfirmDialog visible={asking} message="작성을 완료하시겠습니까?" onCancel={() => { setAsking(false); goBack("/"); }} cancel="저장 안 함"
-        ok="완료" onOk={() => { setAsking(false); done(); }} />
+      <ConfirmDialog visible={asking} message="임시 저장하지 않고 나갈까요?" cancel="임시 저장" ok="나가기" danger
+        onCancel={() => { setAsking(false); saveDraft().then(() => goBack("/")); }}
+        onOk={() => { setAsking(false); dropDraft(); goBack("/"); }} />
       {toast}
     </View>
   );
