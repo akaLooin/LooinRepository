@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
-  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, Image, MoodGauge, MoodMark, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage, Thermometer,
+  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, Image, MoodGauge, MoodMark, KeyboardSpacer, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage, Thermometer,
   useToast, VisibilityIcon, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
@@ -166,6 +166,7 @@ export function DiaryScreen() {
           <Thermometer size={21} color={tokens.sticker.heart} />
         </Pressable>
       </View>
+      <KeyboardSpacer />
 
       <ReactionSheet visible={sheet === "mood"} current={emoji} onClose={() => setSheet(null)}
         onPick={(v) => { setSheet(null); if (v === emoji) { setEmoji(undefined); setTemp(temp === undefined ? undefined : null); } else setEmoji(v); }} />

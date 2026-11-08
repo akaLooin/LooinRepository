@@ -9,6 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadPrefs, usePrefs } from "../data/prefs";
+import { KeyboardRoot } from "../components/KeyboardSpacer";
 import { AuthGate } from "../features/auth/AuthGate";
 import { extraFontFiles, fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
 
@@ -52,9 +53,11 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
   return (
     <SafeAreaProvider>
-      <ThemeProvider initial="dark">
-        <Shell />
-      </ThemeProvider>
+      <KeyboardRoot>
+        <ThemeProvider initial="dark">
+          <Shell />
+        </ThemeProvider>
+      </KeyboardRoot>
     </SafeAreaProvider>
   );
 }

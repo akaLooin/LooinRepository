@@ -52,7 +52,8 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - **일기 원본처럼(2026-11-09)**: 스티커 기분 + 기분 온도, 색 격자, 프로필 옆 = 그날 일기(시트 ⋯ 수정·삭제). SQL `20261109000100_diary_mood.sql`
 - **크루(2026-11-09, 원본 영상)**: 둘러보기 크루 줄, 크루 화면(순위·메달·크루장), 참가 신청(메시지+공유 카테고리)·취소, 크루장 수락, 만들기, 가이드. SQL `20261109000200_crews.sql`
 - **크루 2차·일기 정정(2026-11-09, 이용자 영상)**: 크루 대화방, ⋯(멤버 보기·카테고리 변경·링크 복사·모집 중단·수정/삭제), 홈 크루 칩 → 크루 홈, 크루 사진 버그 수정. 일기: 위=스티커, 아래 버튼=기분 온도, 임시 저장. SQL `20261109000300_crews2.sql`
-- **다음(이용자, PC)**: SQL 20261109000300 실행(000000~000200은 실행함), push 함수 재배포 + 세 번째 Webhook(crew_messages, backend.md 17), 새 APK(expo-clipboard 추가 → `npm.cmd install`)
+- **대화 키보드 가림(B16, 2026-11-09)**: react-native-keyboard-controller + reanimated로 입력칸이 키보드 위로(대화·일기). 폰 확인 필요
+- **다음(이용자, PC)**: SQL 20261109000300 실행, push 재배포 + Webhook crew_messages(backend.md 17), 새 APK(새 네이티브 부품 clipboard·keyboard-controller·reanimated → `npm.cmd install` 필수)
 - SQL 실행 완료 ✅ (2026-11-08): 20261107000000, 20261108000000·000100·000200·000300 (이용자 확인)
 
 ## 알려진 한계
@@ -61,7 +62,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (66개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (65개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

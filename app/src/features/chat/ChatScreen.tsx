@@ -1,13 +1,13 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Dimensions, Keyboard, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronLeft, Image as ImageIcon, Send, SmilePlus, Sticker, StoredImage } from "../../components";
+import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
+import { AppText, KeyboardSpacer, ChevronLeft, Image as ImageIcon, Send, SmilePlus, Sticker, StoredImage } from "../../components";
 import { loadThread, markRead, newMessageId, sendMessage, type Message, type Thread } from "../../data/chat";
 import { usePrefs } from "../../data/prefs";
 import { chatItems, isBigEmoji, mergeMessages } from "../../lib/chat";
 import { pickPhoto } from "../../lib/photos";
 import { setOpenChat } from "../../lib/push";
-import { fontFamily, tokens, useDesignScale, useInsets, useTheme } from "../../theme";
+import { fontFamily, tokens, useInsets, useTheme } from "../../theme";
 import { PersonSheet } from "../social/PersonSheet";
 import { ReactionSheet } from "../social/ReactionSheet";
 
@@ -22,7 +22,6 @@ const POLL_MS = 3000;
 export function ChatScreen() {
   const { c } = useTheme();
   const insets = useInsets();
-  const s = useDesignScale();
   const prefs = usePrefs();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [thread, setThread] = useState<Omit<Thread, "messages"> | null>(null);
@@ -32,7 +31,6 @@ export function ChatScreen() {
   const [emoji, setEmoji] = useState(false);
   const [profile, setProfile] = useState(false);
   const [olderLeft, setOlderLeft] = useState(false);
-  const [keyboard, setKeyboard] = useState(0);
   const scroll = useRef<ScrollViewInstance>(null);
   const stick = useRef(true); // keep the newest message in view unless the user scrolled up
   const latest = useRef<string | undefined>(undefined);
@@ -67,16 +65,12 @@ export function ChatScreen() {
     return () => { alive = false; clearInterval(timer); setOpenChat(null); };
   }, [id, apply]));
 
-  // the field rides on top of the keyboard
+  // when the keyboard opens, keep the newest messages in view (the field itself rides on KeyboardSpacer below)
   useEffect(() => {
     if (Platform.OS === "web") return;
-    const show = Keyboard.addListener("keyboardDidShow", (e) => {
-      setKeyboard(Math.max(0, (Dimensions.get("screen").height - e.endCoordinates.screenY) / s - insets.bottom));
-      setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
-    });
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboard(0));
-    return () => { show.remove(); hide.remove(); };
-  }, [s, insets.bottom]);
+    const show = Keyboard.addListener("keyboardDidShow", () => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50));
+    return () => show.remove();
+  }, []);
 
   const send = async (m: Message, local?: string) => {
     if (!id) return;
@@ -178,7 +172,7 @@ export function ChatScreen() {
           <AppText variant="body" color="textMuted" center>지금은 메시지를 보낼 수 없는 상대예요</AppText>
         </View>
       ) : (
-        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + (keyboard || insets.bottom), backgroundColor: c.bg }}>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + insets.bottom, backgroundColor: c.bg }}>
           <Pressable onPress={sendPhoto} disabled={!thread} hitSlop={6} accessibilityRole="button" accessibilityLabel="사진 보내기" style={{ height: 40, justifyContent: "center" }}>
             <ImageIcon size={24} color={c.textMuted} />
           </Pressable>
@@ -196,6 +190,7 @@ export function ChatScreen() {
           </Pressable>
         </View>
       )}
+      <KeyboardSpacer />
       <ReactionSheet visible={emoji} onClose={() => setEmoji(false)} onPick={(e, kind) => { setEmoji(false); send(draft(kind, e)); }} />
       <PersonSheet person={profile && other ? other : null} onClose={() => setProfile(false)} />
     </View>

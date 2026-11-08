@@ -27,3 +27,4 @@ export * from "./press";
 export * from "./Slider";
 export * from "./Mood";
 export * from "./ConfirmDialog";
+export * from "./KeyboardSpacer";
