@@ -1,0 +1,236 @@
+# Recon map: Realm Grinder (Android / Steam / Web)
+
+Scope: 게임 시스템 전체의 **기능·구조·흐름** — 초반 판(첫 환생 전)부터 환생·연구·유물까지. 원작의 이름·캐릭터·그림·문구는 가져오지 않고, 각 시스템마다 테일즈토피아 쪽 대응 이름을 붙인다.
+For: Looin — 테일즈토피아 타이쿤(Talestopia Tycoon) 개발. 원작과 기능을 1:1로 대조하며 이후 수정하기 위한 기준.
+Date: 2026-11-08
+
+> 읽는 법: 각 표의 **원작** 칸은 원작 시스템을 설명하는 용어(비교용)이고, **테일즈토피아** 칸이 우리 게임에 실제로 들어갈 이름·표현이다. 우리 이름은 가안이며 `/replica-brand` 단계에서 확정한다.
+> 신뢰도: **high** = 공개 출처 2곳 이상 확인, **medium** = 출처 1곳 또는 커뮤니티 글, **guess** = 기억·추정이라 원작 실행으로 확인 필요.
+
+## Sources
+
+| # | source | URL | notes |
+| --- | --- | --- | --- |
+| 1 | 팬 위키 (Fandom) — 진영 | https://realm-grinder.fandom.com/wiki/Factions | 이 세션 네트워크에서 차단, 검색 요약으로만 확인 |
+| 2 | 팬 위키 — 건물 | https://realm-grinder.fandom.com/wiki/Buildings | 건물 11단계, 성향별 4~10단계 |
+| 3 | 팬 위키 — 퇴위(Abdication) | https://realm-grinder.fandom.com/wiki/Abdication | 보석 공식 n(n+1)·5e11 |
+| 4 | 팬 위키 — 환생(Reincarnation) | https://realm-grinder.fandom.com/wiki/Reincarnation | 첫 환생 1e27 보석, 이후 ×1000 |
+| 5 | 팬 위키 — 소프트 리셋 | https://realm-grinder.fandom.com/wiki/Soft_Resets | 퇴위·환생·승천 3단 리셋 |
+| 6 | 팬 위키 — 연구 | https://realm-grinder.fandom.com/wiki/Research | R16 해금, 진영별 연구 시설 |
+| 7 | 팬 위키 — 주문 | https://realm-grinder.fandom.com/wiki/Spells | 주문 목록·자동 시전 |
+| 8 | 팬 위키 — 진영 업그레이드 효과별 | https://realm-grinder.fandom.com/wiki/Faction_Upgrades_by_Effect | 진영별 역할 |
+| 9 | 팬 위키 — 도전 | https://realm-grinder.fandom.com/wiki/Challenges | 도전 과제 |
+| 10 | 팬 위키 — 혈통 | https://realm-grinder.fandom.com/wiki/Bloodline | 혈통(계보) |
+| 11 | 팬 위키 — 진영 코인 | https://realm-grinder.fandom.com/wiki/Faction_Coins | |
+| 12 | Not-a-Wiki (musicfamily.org) | http://musicfamily.org/realm/ | 가장 최신 커뮤니티 자료, 이 세션에서 차단 |
+| 13 | PC Gamer 초보 가이드 | https://www.pcgamer.com/realm-grinder-guide/ | 차단, 검색 요약만 |
+| 14 | Steam 상점 페이지 | https://store.steampowered.com/app/610080/ | 소개 문구·기능 목록 |
+| 15 | App Store 페이지 | https://apps.apple.com/us/app/-/id1110149506 | 무료 + 인앱 결제 |
+| 16 | Steam 가이드: Factions | https://steamcommunity.com/sharedfiles/filedetails/?id=1565440672 | |
+| 17 | Steam 토론 — 자동 시전 | https://steamcommunity.com/app/610080/discussions/0/1471967615842020880/ | 우선순위 자동 시전 |
+| 18 | NamuWiki — 건물 | https://en.namu.wiki/w/Realm%20Grinder/%EA%B1%B4%EB%AC%BC | 한국어 자료 |
+| 19 | 사용자 본인 플레이 | Google Play 앱 | **가장 중요.** 아래 guess 항목 확인 + `screens/`에 캡처 |
+
+## Core loop
+
+탭과 건물로 금화를 벌고 → 성향과 진영을 골라 그 진영의 업그레이드·주문으로 생산을 키운 뒤 → 퇴위해서 보석(영구 보너스)을 받고 다시 시작한다. 이 순환을 더 큰 리셋(환생 → 승천)이 감싼다.
+
+## 시스템 대응표 (원작 → 테일즈토피아)
+
+### 화폐·자원
+
+| 원작 | 역할 | 테일즈토피아 (가안) | 신뢰도 |
+| --- | --- | --- | --- |
+| Coins | 기본 화폐, 탭·건물로 획득 | 금화 | high |
+| Mana | 주문 자원, 초당 회복, 최대치 있음 | 영감 | high |
+| Faction Coins (진영마다 1종 + 하나 더) | 탭·조수 생산 중 확률적으로 발견. 진영 가입·업그레이드·왕실 교환에 사용 | 이야기 조각 (진영별 색깔 조각) | high |
+| Gems | 퇴위로 얻는 영구 보너스 (보석 1개당 생산 +%) | 전설 | high |
+| Rubies | 업적·이벤트·결제로 얻는 프리미엄 화폐. 퇴위 없이 보석 획득 등 | 별사탕 | medium |
+| Reincarnation Power | 환생 횟수에 따라 오르는 영구 배율 | 시리즈 권수 보너스 | medium |
+| Research Points | 연구 해금 후 시간에 따라 쌓임 | 집필 포인트 | medium |
+
+### 건물 (11단계)
+
+원작 구조: 1~3단계는 모든 성향 공통, 4~10단계는 **성향(선/악/중립)마다 다른 건물 7종**, 11단계는 업적 수에 비례해 생산하는 공통 최상위 건물. 기본 가격은 10부터 단계마다 급증. 가격 증가율과 정확한 수치는 원작에서 확인 필요 (guess: 단계별 ×1.1대 증가).
+
+| 단계 | 원작 역할 | 테일즈토피아: 공통 / 밝은 이야기 / 어두운 이야기 / 옛 전설 |
+| --- | --- | --- |
+| 1 | 공통 최하위 | 떠돌이 이야기꾼 |
+| 2 | 공통 | 버섯 오두막 |
+| 3 | 공통 (성향 결정 전 최강) | 과자 공방 |
+| 4 | 성향별 | 콩나무 농장 / 고양이 우체국 / 저주받은 물레방아 |
+| 5 | 성향별 | 무도회장 / 늑대의 숲 / 돌다리 요새 |
+| 6 | 성향별 | 마법 도서관 / 마녀의 오두막 / 연금술 공방 |
+| 7 | 성향별 | 구름 항구 / 해골 선착장 / 별점 수도원 |
+| 8 | 성향별 | 유리 성 / 거울 미궁 / 시간의 미로 |
+| 9 | 성향별 | 별빛 극장 / 그림자 극장 / 용의 보물고 |
+| 10 | 성향별 | 하늘 정원 / 끝없는 밤의 탑 / 고대 석상 |
+| 11 | 업적 수에 비례 | 이야기의 나무 (명장면 1개당 생산) |
+
+### 성향 (Alignment)
+
+| 원작 | 효과 | 테일즈토피아 | 신뢰도 |
+| --- | --- | --- | --- |
+| Good | 선 진영 3종 + 선 건물 4~10단계 해금 | 밝은 이야기 (동화) | high |
+| Evil | 악 진영 3종 + 악 건물 해금 | 어두운 이야기 (괴담) | high |
+| Neutral | 중립 진영 3종 (선·악 진영 하나씩과 짝) + 중립 건물 | 옛 전설 | high |
+| Order / Chaos (패치 3.4 이후 2차 성향) | 진영 조합에 추가 축 | 정석 / 반전 | medium |
+
+### 진영 (Faction) — 역할만 같고 이름·캐릭터는 새로
+
+| 원작 | 성향 | 원작 플레이 역할 | 테일즈토피아 (가안) | 신뢰도 |
+| --- | --- | --- | --- | --- |
+| Fairy | 선 | 조수 증가, 하위 3단계 건물 강화·할인 | 숲속 친구들 | high |
+| Elf | 선 | 탭 강화, 진영 코인 발견 확률 | 음유시인 | high |
+| Angel | 선 | 마나 회복·주문 시전 중심 | 별의 마법사 | high |
+| Goblin | 악 | 건물 할인, 금화·진영 코인 기반 생산 | 도적단 | high |
+| Undead | 악 | 시간 경과·오프라인 기반 생산, 조수 | 유령 | high |
+| Demon | 악 | 상위 3단계 건물 강화, 업적 기반 | 마녀 | high |
+| Titan | 중립 (천사+고블린) | 탭/진영 코인 계열 (guess) | 거인 아닌 다른 이름: 해적 | medium |
+| Druid | 중립 (엘프+악마) | 자원 균형 기반 생산 (guess) | 현자 | medium |
+| Faceless | 중립 (요정+언데드) | 무작위·우연 기반 (guess) | 꼭두각시 | medium |
+| Dwarf | 프리스티지 선 | 기존 진영과 함께 추가 가입, 발굴 | 시계장인 | medium |
+| Drow | 프리스티지 악 | 〃 | 그림자 극단 | medium |
+| Dragon | 프리스티지 중립 | 〃, 진영 업그레이드 복사 | 불사조 | medium |
+| Mercenary | 특수 | 다른 진영의 업그레이드·주문을 골라 조합 | 떠돌이 작가 | high |
+| Archon / Djinn / Makers | 엘리트 (승천 2 이후) | 후반 콘텐츠 | 후순위 (could) | medium |
+
+진영 가입: 성향 업그레이드를 산 뒤 해당 진영의 '조약' 업그레이드를 금화로 산다. 한 판에 한 진영(+후반에는 프리스티지 1개). 가입 비용·해금 조건 수치는 guess라서 원작에서 확인해야 한다.
+
+### 주문
+
+원작: 공통 주문 4종(금화 즉시 획득, 탭 강화, 건물 생산 강화, 보석 효과 강화 등) + 진영마다 고유 주문 1종. 마나를 써서 지속 시간 동안 효과. 자동 시전은 우선순위(금/은)와 최소 마나 임계값을 설정할 수 있다.
+
+| 원작 | 효과 (일반화) | 테일즈토피아 | 신뢰도 |
+| --- | --- | --- | --- |
+| 공통 주문 1 (즉시 금화) | 일정 초 분량 생산을 즉시 획득 | 인세 정산 | high |
+| 공통 주문 2 (탭 강화) | 지속 시간 동안 탭 배율 | 낭독회 | high |
+| 공통 주문 3 (건물 생산) | 지속 시간 동안 건물 생산 배율 | 베스트셀러 | high |
+| 공통 주문 4 (보석 효과) | 보석 보너스 증가 | 전설의 메아리 | medium |
+| 진영 고유 주문 ×12+ | 진영 역할 강화 | 진영마다 1종 새로 설계 | high |
+| 자동 시전 + 우선순위 + 임계값 | 방치 플레이 지원 | 자동 낭독 | high |
+
+### 리셋·영구 성장
+
+| 원작 | 조건·효과 | 테일즈토피아 | 신뢰도 |
+| --- | --- | --- | --- |
+| Abdication | 금화·건물·업그레이드·진영 초기화, 보석 획득. 보석 n개에 필요한 금화 = n(n+1)·5e11 | 다시 쓰기 (이미 구현, 공식은 원작 형태로 교체) | high |
+| Reincarnation | 첫 환생은 보석 1e27 필요, 이후 매번 ×1000. 보석·발굴 초기화, 업적·해금 유지 | 새 시리즈 | high |
+| Ascension | 환생보다 위 단계 리셋, 단계마다 퇴위 공식 상수 변화 | 고전 등극 | high |
+| Trophies | 조건 달성 업적, 일부 업그레이드 효과가 업적 수에 비례 | 명장면 (구현됨) | high |
+| Research (R16 해금) | 진영과 연결된 연구 시설, 연구 슬롯 | 집필 연구 | high |
+| Artifacts + Excavations | 발굴(금화 소모)로 무작위 유물 발견, 영구 보너스 | 서고 탐사 → 고서 | medium |
+| Bloodline / Lineage | 환생 시 선택하는 계보, 진영별 영구 효과 | 작가 가문 | medium |
+| Challenges | 특수 조건 판, 완료 시 보상 | 특별 원고 | high |
+| Assistants | 자동 탭을 해 주는 조수 | 견습생 | high |
+| Royal Exchange | 진영 코인을 써서 영구 생산 배율 구매 | 출판 계약 | high |
+| 오프라인 생산 | 꺼져 있는 동안 생산. 주문 자동 시전은 꺼진 동안 효과 없음 | 구현됨 (규칙은 원작에 맞춰 조정) | high |
+
+## Screens
+
+원작 PC/모바일 레이아웃 (guess, 사용자 캡처로 확인 필요): 상단 자원 바, 왼쪽 건물 목록, 가운데 영토 그림 + 탭 영역, 오른쪽 업그레이드 격자와 주문 버튼, 하단·측면 탭으로 통계·업적·연구 등.
+
+| ID | screen | how to reach | purpose | key components | states |
+| --- | --- | --- | --- | --- | --- |
+| S01 | 메인 화면 | 시작 | 탭, 자원 확인 | 자원 바, 탭 영역, 떠오르는 숫자 | 첫 시작, 진영 가입 후, 주문 발동 중 |
+| S02 | 건물 목록 | S01 왼쪽 / 모바일 탭 | 건물 구매 | 건물 행(아이콘·보유 수·가격·생산), 구매 수량 x1/x10/x100/최대 | 잠김, 살 수 없음, 살 수 있음 |
+| S03 | 업그레이드 격자 | S01 오른쪽 | 업그레이드 구매 | 아이콘 격자, 툴팁(이름·효과·가격) | 없음, 살 수 없음, 살 수 있음, 구매함 |
+| S04 | 성향·진영 선택 | 업그레이드 격자에 등장 | 한 판의 방향 결정 | 성향 업그레이드, 진영 조약 업그레이드 | 해금 전, 선택 가능, 선택됨 |
+| S05 | 주문 바 | S01 | 주문 시전, 자동 시전 설정 | 주문 버튼, 마나 바, 남은 시간, 자동 시전 토글 | 마나 부족, 발동 중, 자동 |
+| S06 | 퇴위 확인 | 메뉴 | 다시 시작 | 얻을 보석 수, 확인 모달 | 보석 0, 획득 가능 |
+| S07 | 통계 | 탭 | 기록 확인 | 숫자 표 | — |
+| S08 | 업적(트로피) | 탭 | 업적 목록 | 아이콘 격자, 잠김/달성 | 잠김, 달성 |
+| S09 | 왕실 교환 | 탭 (진영 코인 보유 시) | 영구 배율 구매 | 진영 코인 목록, 교환 버튼 | 잠김, 가능 |
+| S10 | 환생 | 메뉴 (보석 조건) | 큰 리셋 | 요구 보석, 혈통 선택 | 잠김, 가능 |
+| S11 | 연구 | 탭 (R16) | 연구 배치 | 시설·연구 슬롯 | 잠김, 진행 중 |
+| S12 | 발굴·유물 | 탭 | 발굴, 유물 목록 | 발굴 버튼, 유물 카드 | 잠김, 발견 |
+| S13 | 도전 | 탭 | 도전 시작 | 도전 목록, 조건 | 잠김, 진행 중, 완료 |
+| S14 | 오프라인 보고 | 앱 재실행 | 자리 비운 동안 수익 | 모달 | — |
+| S15 | 옵션 | 메뉴 | 저장·숫자 표기·사운드 | 저장 코드 내보내기/불러오기, 숫자 표기 방식 | — |
+| S16 | 상점 | 메뉴 | 루비·결제 | 상품 카드 | — |
+
+## Flows
+
+```
+F01 첫 판: 탭으로 첫 건물 사기
+    S01 탭 x10 -> S02 1단계 건물 구매
+    happy path clicks: 11
+F02 성향과 진영 고르기
+    S03 성향 업그레이드 구매 -> S04 진영 조약 구매 -> S03 진영 업그레이드 등장
+    happy path clicks: 2 (금화 조건 충족 후)
+    edge: 금화 부족, 진영 코인 부족, 이미 가입함
+F03 주문 쓰기
+    S05 주문 버튼 1회 / 자동 시전 토글
+    edge: 마나 부족, 이미 발동 중
+F04 퇴위하고 보석 받기
+    S06 확인 -> S01 초기화
+    happy path clicks: 2
+F05 진영 코인으로 왕실 교환
+    S09 교환 1회
+F06 환생
+    S10 혈통 선택 -> 확인 -> S01
+F07 오프라인 복귀
+    S14 확인
+```
+
+## Components
+
+| component | variants | states | used on |
+| --- | --- | --- | --- |
+| 자원 바 | 금화, 초당, 마나, 보석, 진영 코인 | 기본, 증가 애니메이션 | S01 |
+| 건물 행 | 공통 / 성향별 | 잠김, 불가, 가능 | S02 |
+| 업그레이드 아이콘 | 건물·탭·진영·성향 | 불가, 가능, 구매함, 툴팁 | S03, S04 |
+| 주문 버튼 | 공통, 진영 | 쿨/발동 중(남은 시간), 마나 부족, 자동 | S05 |
+| 탭/패널 전환 | — | 활성, 알림 점 | 전체 |
+| 모달 | 확인, 정보 | — | S06, S10, S14 |
+| 떠오르는 숫자 | 일반, 치명 | — | S01 |
+| 툴팁 | — | — | S02, S03, S08 |
+| 토스트 | 업적 달성 등 | — | 전체 |
+
+## Inferred data model
+
+```
+Save        coins, mana, gems, rubies, factionCoins{faction:n}, buildings{id:n},
+            upgrades[], alignment, faction, prestigeFaction, spells{id:{endAt,autocast}},
+            trophies[], stats{clicks, timePlayed, ...}, abdications, reincarnations,
+            ascension, bloodline, research{}, artifacts[], excavations, challenges{}
+            evidence: S01~S13, 위키 리셋 문서(무엇이 유지/초기화되는지)
+            confidence: medium
+Building    id, tier, alignment(null=공통), baseCost, baseProduction
+            evidence: 위키 Buildings 표   confidence: high
+Upgrade     id, kind(building|click|faction|alignment|spell|trophy), cost, currency, requirement, effect
+            confidence: medium
+Faction     id, alignment, spellId, upgrades[]       confidence: high
+Spell       id, faction|null, manaCost, duration, effect   confidence: medium
+Trophy      id, condition, (일부 업그레이드가 개수 참조)   confidence: high
+```
+
+Relationships: Alignment 1-n Faction, Alignment 1-n Building(4~10), Faction 1-1 Spell, Faction 1-n Upgrade, Save n-n Trophy.
+
+## Feature matrix
+
+See `features.csv`. Must: 22, should: 14, could: 7, skip: 4.
+
+## Out of scope (cannot or should not be cloned)
+
+- 원작의 이름·진영명·캐릭터·건물 그림·업그레이드 문구·음악·UI 그래픽 — 우리 것으로 새로 만든다 (대응표의 테일즈토피아 칸).
+- Kongregate 계정·랭킹·서버 이벤트·기존 플레이어 커뮤니티.
+- 원작 결제 상품 구성과 가격 그대로 복사 — 상점 '기능'만 만들고 상품은 새로 설계.
+- 엘리트 진영·승천 2 이상 콘텐츠는 기능은 가능하지만 분량이 커서 후순위.
+
+## Size
+
+Screens 16, flows 7, entities 6. Hard parts:
+1. 진영 12종 이상 × 업그레이드 수십 개 = 밸런스 설계 분량
+2. 리셋 3단(퇴위/환생/승천) 사이에 무엇이 유지되는지에 대한 정확한 규칙
+3. 큰 수 처리 (1e27 이상 → 일반 숫자 한계 1.8e308 근처까지 가므로 후반엔 큰 수 라이브러리 필요)
+
+Size: **L** (초반 판 — 성향·진영 9종·주문·퇴위·업적·왕실 교환 — 은 M).
+
+## 원작에서 직접 확인이 필요한 것 (guess 항목)
+
+1. 건물 11종 각각의 기본 가격·생산량과 가격 증가율
+2. 성향 업그레이드와 진영 조약의 가격·해금 조건
+3. 진영 코인 발견 확률과 공식
+4. 공통 주문 4종의 마나 비용·지속 시간
+5. 실제 화면 배치 (모바일 세로 화면) → `replica/screens/S01-main.png` 등으로 캡처해 주면 가장 정확함
