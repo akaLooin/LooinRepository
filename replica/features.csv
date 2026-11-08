@@ -1,39 +1,39 @@
 feature,area,priority,original,clone,notes
-탭으로 금화 획득,core,must,yes,partial,프로토타입에 있음
-떠오르는 숫자·탭 피드백,core,must,yes,partial,
-건물 11단계 구매,buildings,must,yes,partial,현재 11종 단일 세트
-1~3단계 공통 + 4~10단계 성향별 건물,buildings,must,yes,no,성향 3종 × 7종 = 21종 추가
-11단계 건물 생산이 업적 수에 비례,buildings,must,yes,no,
-구매 수량 x1/x10/x100/최대,buildings,must,yes,partial,
-건물 보유 수 기반 업그레이드,upgrades,must,yes,partial,
-탭 업그레이드,upgrades,must,yes,partial,
-업그레이드 격자 + 툴팁 UI,upgrades,must,yes,no,현재는 목록형
-성향 선택 (밝은/어두운/옛 전설),factions,must,yes,no,
-성향별 진영 3종씩 (총 9종),factions,must,yes,no,현재 장르 6종은 교체 대상
-진영 조약으로 가입 (한 판에 하나),factions,must,yes,partial,
-진영별 업그레이드 세트,factions,must,yes,partial,진영당 3개 → 원작 수준으로 확대
-진영 코인 발견 (탭·생산 중 확률),currency,must,yes,no,
-마나와 공통 주문 4종,spells,must,yes,no,
-진영 고유 주문,spells,must,yes,partial,
-퇴위: 보석 획득·초기화,reset,must,yes,partial,공식을 n(n+1)·상수 형태로 교체
-보석 1개당 생산 보너스,reset,must,yes,partial,
-업적(트로피),meta,must,yes,partial,
-오프라인 생산 + 복귀 보고,meta,must,yes,partial,
-자동 저장·저장 코드,meta,must,yes,partial,
-픽셀 아트 그래픽 전체,art,must,yes,no,우리가 새로 그림
-주문 자동 시전 (우선순위·임계값),spells,should,yes,no,
-왕실 교환 (진영 코인 → 영구 배율),currency,should,yes,no,
-조수 (자동 탭),core,should,yes,no,
-통계 화면,meta,should,yes,partial,
+탭으로 금화 획득,core,must,yes,yes,프로토타입에 있음
+떠오르는 숫자·탭 피드백,core,must,yes,yes,
+건물 11단계 구매,buildings,must,yes,yes,현재 11종 단일 세트
+1~3단계 공통 + 4~10단계 성향별 건물,buildings,must,yes,yes,성향 3종 × 7종 = 21종 추가
+11단계 건물 생산이 업적 수에 비례,buildings,must,yes,yes,
+구매 수량 x1/x10/x100/최대,buildings,must,yes,yes,
+건물 보유 수 기반 업그레이드,upgrades,must,yes,yes,
+탭 업그레이드,upgrades,must,yes,yes,
+업그레이드 격자 + 툴팁 UI,upgrades,must,yes,yes,현재는 목록형
+성향 선택 (밝은/어두운/옛 전설),factions,must,yes,yes,
+성향별 진영 3종씩 (총 9종),factions,must,yes,yes,현재 장르 6종은 교체 대상
+진영 조약으로 가입 (한 판에 하나),factions,must,yes,yes,
+진영별 업그레이드 세트,factions,must,yes,yes,진영당 3개 → 원작 수준으로 확대
+진영 코인 발견 (탭·생산 중 확률),currency,must,yes,yes,
+마나와 공통 주문 4종,spells,must,yes,partial,공통 2종 + 성향 3종 (원작 공통 3·4번은 환생 이후)
+진영 고유 주문,spells,must,yes,yes,
+퇴위: 보석 획득·초기화,reset,must,yes,yes,공식을 n(n+1)·상수 형태로 교체
+보석 1개당 생산 보너스,reset,must,yes,yes,
+업적(트로피),meta,must,yes,yes,
+오프라인 생산 + 복귀 보고,meta,must,yes,yes,
+자동 저장·저장 코드,meta,must,yes,yes,
+픽셀 아트 그래픽 전체,art,must,yes,partial,"1차: 건물 25종×3단계, 지도, 아이콘 26종, 패널 질감"
+주문 자동 시전 (우선순위·임계값),spells,should,yes,yes,
+왕실 교환 (진영 코인 → 영구 배율),currency,should,yes,yes,
+조수 (자동 탭),core,should,yes,yes,
+통계 화면,meta,should,yes,yes,
 환생 (보석 1e27 필요·×1000),reset,should,yes,no,
 환생 시 유지/초기화 규칙,reset,should,yes,no,
 혈통(계보) 선택,reset,should,yes,no,
-중립 진영 3종 (선·악 진영과 짝),factions,should,yes,no,
+중립 진영 3종 (선·악 진영과 짝),factions,should,yes,yes,
 도전 과제,meta,should,yes,no,
 연구 (R16 해금),endgame,should,yes,no,
 발굴과 유물,endgame,should,yes,no,
-큰 수 처리 (1e308 이상),core,should,yes,no,
-숫자 표기 옵션,meta,should,yes,no,
+큰 수 처리 (1e308 이상),core,should,yes,yes,
+숫자 표기 옵션,meta,should,yes,yes,
 효과음·배경음,audio,should,yes,no,우리가 새로 만듦
 프리스티지 진영 3종,factions,could,yes,no,
 용병 진영 (다른 진영 조합),factions,could,yes,no,
