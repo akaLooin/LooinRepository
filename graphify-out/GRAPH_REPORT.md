@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-08)
 
 ## Corpus Check
-- 35 files · ~25,261 words
+- 35 files · ~26,206 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: (none) 3, .csv 2, .css 1)
 
 ## Summary
-- 318 nodes · 451 edges · 29 communities (22 shown, 7 thin omitted)
+- 326 nodes · 459 edges · 29 communities (22 shown, 7 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 31 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `04cd71dd`
+- Built from commit: `205e0756`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,7 +19,7 @@
 - engine.js
 - imgdiff.py
 - json
-- reviews.py
+- listing.py
 - ui.js
 - contrast.py
 - replica-recon
@@ -46,7 +46,7 @@
 - screens/README.md
 
 ## God Nodes (most connected - your core abstractions)
-1. `Recon map: Realm Grinder (Android / Steam / Web)` - 12 edges
+1. `Recon map: Realm Grinder (Android / Steam / Web)` - 13 edges
 2. `replica-recon` - 12 edges
 3. `compare()` - 10 edges
 4. `Recon map: {{app}} ({{platform}})` - 10 edges
@@ -55,16 +55,14 @@
 7. `render()` - 9 edges
 8. `replica-backend` - 9 edges
 9. `replica-build` - 9 edges
-10. `globalMult()` - 8 edges
+10. `위키로 확인된 원작 수치 (2026-11-08, Fandom 위키 공식 API로 확인)` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `argparse`  [EXTRACTED]
   .claude/skills/replica-diff/imgdiff.py →   _Bridges community 1 → community 2_
-- `build_patterns()` --calls--> `re`  [EXTRACTED]
-  .claude/skills/replica-brand/sweep.py →   _Bridges community 2 → community 3_
+- `lint()` --calls--> `re`  [EXTRACTED]
+  .claude/skills/replica-launch/listing.py →   _Bridges community 3 → community 2_
 - `default_pairs()` --calls--> `re`  [EXTRACTED]
-  .claude/skills/replica-design/contrast.py →   _Bridges community 5 → community 3_
-- `main()` --calls--> `argparse`  [EXTRACTED]
   .claude/skills/replica-design/contrast.py →   _Bridges community 5 → community 2_
 
 ## Import Cycles
@@ -81,19 +79,19 @@ Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
 ### Community 2 - "json"
-Cohesion: 0.11
-Nodes (19): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+11 more)
+Cohesion: 0.10
+Nodes (25): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+17 more)
 
-### Community 3 - "reviews.py"
-Cohesion: 0.20
-Nodes (12): analyse(), FeedbackError, _host(), load_reviews(), load_themes(), main(), parse_date(), parse_rating() (+4 more)
+### Community 3 - "listing.py"
+Cohesion: 0.33
+Nodes (6): has_emoji(), length(), lint(), main(), render(), words()
 
 ### Community 4 - "ui.js"
 Cohesion: 0.26
 Nodes (12): buildBuildingRows(), load(), loop(), render(), renderBuildings(), renderGenres(), renderHighlights(), renderRewrite() (+4 more)
 
 ### Community 5 - "contrast.py"
-Cohesion: 0.26
+Cohesion: 0.23
 Nodes (9): check(), colours(), default_pairs(), flatten(), luminance(), main(), parse_hex(), ratio() (+1 more)
 
 ### Community 6 - "replica-recon"
@@ -117,8 +115,8 @@ Cohesion: 0.22
 Nodes (8): Output, replica-brand, Step 1: the name, Step 2: the checks, run, not assumed, Step 3: palette, Step 4: logo brief, Step 5: voice, Step 6: the sweep
 
 ### Community 11 - "Recon map: Realm Grinder (Android / Steam / Web)"
-Cohesion: 0.11
-Nodes (18): Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: Realm Grinder (Android / Steam / Web), Screens (+10 more)
+Cohesion: 0.07
+Nodes (26): Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: Realm Grinder (Android / Steam / Web), Screens (+18 more)
 
 ### Community 12 - "replica-deploy"
 Cohesion: 0.22
@@ -167,12 +165,12 @@ Nodes (5): 다음 단계 (출시까지), 실행, 테일즈토피아 타이쿤 (T
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `main()` connect `imgdiff.py` to `json`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **Should `engine.js` be split into smaller, more focused modules?**
   _Cohesion score 0.12063492063492064 - nodes in this community are weakly interconnected._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
-  _Cohesion score 0.11260504201680673 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
 - **Should `Recon map: Realm Grinder (Android / Steam / Web)` be split into smaller, more focused modules?**
-  _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
