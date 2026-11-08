@@ -43,9 +43,9 @@ insert into todos (id, user_id, category_id, title, date, memo, memo_is_private,
 insert into routines (id, user_id, category_id, title, start_date, repeat_type) values
   ('30000000-0000-0000-0000-000000000001', auth.uid(), '10000000-0000-0000-0000-000000000002', 'fol routine', '2026-11-01', 'daily'),
   ('30000000-0000-0000-0000-000000000002', auth.uid(), '10000000-0000-0000-0000-000000000004', 'priv routine', '2026-11-01', 'daily');
-insert into diaries (id, user_id, date, body, visibility) values
-  ('40000000-0000-0000-0000-000000000001', auth.uid(), '2026-11-08', 'followers diary', 'followers'),
-  ('40000000-0000-0000-0000-000000000002', auth.uid(), '2026-11-09', 'private diary', 'private');
+insert into diaries (id, user_id, date, body, visibility, emoji, mood_temp) values
+  ('40000000-0000-0000-0000-000000000001', auth.uid(), '2026-11-08', 'followers diary', 'followers', 'clover.best', 33),
+  ('40000000-0000-0000-0000-000000000002', auth.uid(), '2026-11-09', 'private diary', 'private', null, null);
 insert into category_viewers (category_id, viewer_id, owner_id) values
   ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-00000000000c', auth.uid());
 do $$ begin
@@ -80,6 +80,7 @@ begin
   assert not (r->'todos'->0 ? 'remind_at'), 'alarm times are not sent';
   assert (select array_agg(e->>'title') from jsonb_array_elements(r->'routines') e) = array['fol routine'], 'routines follow their category';
   assert jsonb_array_length(r->'diaries') = 1 and r->'diaries'->0->>'body' = 'followers diary', 'followers diary only';
+  assert r->'diaries'->0->>'emoji' = 'clover.best' and (r->'diaries'->0->>'mood_temp')::int = 33, 'mood sticker and 기분 온도 come along';
   assert (r->'person'->>'i_follow') = 'accepted' and (r->'person'->>'followers')::int = 1, 'person shows the follow';
   assert (select count(*) from storage.objects where name like '%p1.jpg') = 1, 'B can read the followers todo photo';
   assert (select count(*) from storage.objects where name like '%p2.jpg') = 0, 'but not the private one';

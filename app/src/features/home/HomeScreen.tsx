@@ -3,16 +3,16 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Keyboard, Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, IconChip, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
+  AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { addDays, fromMonthIndex, monthGrid, monthIndex, parseDay, pickAfterPaging, today, weekday, weekStart, type Day } from "../../lib/dates";
 import { CalendarPager, calendarJustSwiped } from "./CalendarPager";
-import { StatusEmojiSheet } from "./StatusEmojiSheet";
+import { FriendDiarySheet } from "../social/FriendDiarySheet";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { tokens, useTheme } from "../../theme";
 import { dayState } from "./dayState";
@@ -106,7 +106,8 @@ export function HomeScreen() {
     setEditing((e) => (e === id ? null : e));
   };
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
-  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [diaryOpen, setDiaryOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
   const openSheet = (id: string, start: "menu" | "memo" | "alarm" = "menu") => { setSheetStart(start); setSheetTodo(materialize(id)); };
   const [homeSheet, setHomeSheet] = useState<null | "filter" | "list" | "pickMove" | "pickCopy" | "confirmDelete">(null);
@@ -259,8 +260,8 @@ export function HomeScreen() {
             bio={profile.bio}
             dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now) } : undefined}
             onDday={() => router.push("/ddays" as never)}
-            emoji={profile.statusEmoji}
-            onEmoji={() => setEmojiOpen(true)}
+            emoji={diary?.emoji}
+            onEmoji={() => (diary ? setDiaryOpen(true) : router.push(`/diary/${selected}` as never))}
           />
         </View>
 
@@ -368,9 +369,9 @@ export function HomeScreen() {
           />
           </View>
 
-          <Pressable onPress={() => router.push(`/diary/${selected}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
+          <Pressable onPress={() => (diary ? setDiaryOpen(true) : router.push(`/diary/${selected}` as never))} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
             style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
-            <AppText variant="bodyLg">{diary?.emoji ?? "📔"}</AppText>
+            {diary?.emoji ? <MoodMark value={diary.emoji} size={26} /> : <AppText variant="bodyLg">📔</AppText>}
             <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : "이날의 일기 쓰기"}</AppText>
             {diary && received.diaries[diary.id]?.length ? <ReactionLine list={received.diaries[diary.id].slice(-3)} size={28} /> : null}
           </Pressable>
@@ -385,7 +386,12 @@ export function HomeScreen() {
       </DragScrollView>
 
       <HomeMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <StatusEmojiSheet open={emojiOpen} current={profile.statusEmoji} onClose={() => setEmojiOpen(false)} />
+      <FriendDiarySheet diary={diaryOpen ? diary ?? null : null} person={profile} reactions={diary ? received.diaries[diary.id] ?? [] : []}
+        onClose={() => setDiaryOpen(false)}
+        onEdit={() => { setDiaryOpen(false); router.push(`/diary/${selected}` as never); }}
+        onDelete={() => { setDiaryOpen(false); setDeleting(true); }} />
+      <ConfirmDialog visible={deleting} message="일기를 삭제할까요?" ok="삭제" danger onCancel={() => setDeleting(false)}
+        onOk={() => { setDeleting(false); deleteDiary(selected); notice("일기를 삭제했어요"); }} />
       {homeSheet === "filter" ? <CalendarFilterSheet open onClose={() => setHomeSheet(null)} categories={categories} /> : null}
       <ListMenuSheet open={homeSheet === "list"} onClose={() => setHomeSheet(null)} onConfirm={runListAction} />
       {homeSheet === "pickMove" || homeSheet === "pickCopy" ? (

@@ -61,6 +61,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
     7. Build a new APK (step 7). After signing in, 설정 → 알림 → "이 폰의 푸시 알림" says 켜져 있어요, or why not.
     Expo Go and the web never get pushes (Expo Go has no push on Android since SDK 53).
 14. **친구 피드 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000000_feed.sql`. Safe to run again. Until then 둘러보기 shows "서버에 친구 기능 SQL을 먼저 실행해 주세요" where 친구 소식 would be.
+15. **일기 기분 온도 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000100_diary_mood.sql`. Safe to run again. Until then a diary keeps its 기분 온도 on the phone only.
 ## Checklist
 
 Auth

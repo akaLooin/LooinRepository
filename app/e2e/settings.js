@@ -73,16 +73,6 @@ const out = process.argv[2] || ".";
   await p.goto("http://localhost:8765/me", { waitUntil: "networkidle" });
   await p.getByRole("button", { name: "설정" }).click(); await p.waitForTimeout(400);
   r.gear = p.url().endsWith("/settings");
-  // 상태 이모지 on home: pick one, it replaces the 😊+ button; take it off again
-  await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
-  await p.getByRole("button", { name: "상태 이모지 추가" }).click(); await p.waitForTimeout(400);
-  await p.getByRole("button", { name: "상태 이모지 📚" }).click(); await p.waitForTimeout(500);
-  r.emojiShown = await p.getByRole("button", { name: "상태 이모지 📚, 바꾸기" }).count();
-  await p.reload({ waitUntil: "networkidle" }); await p.waitForTimeout(500);
-  r.emojiKept = await p.getByRole("button", { name: "상태 이모지 📚, 바꾸기" }).count();
-  await p.getByRole("button", { name: "상태 이모지 📚, 바꾸기" }).click(); await p.waitForTimeout(400);
-  await p.getByRole("button", { name: "이모지 없애기" }).click(); await p.waitForTimeout(500);
-  r.emojiRemoved = await p.getByRole("button", { name: "상태 이모지 추가" }).count();
   r.errs = errs;
   console.log(JSON.stringify(r, null, 1));
   await b.close();

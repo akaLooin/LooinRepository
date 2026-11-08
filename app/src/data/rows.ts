@@ -31,6 +31,8 @@ export const toRow = {
   reminders: (r: Reminder, user_id: string): Row => ({ id: r.id, user_id, time_of_day: r.timeOfDay }),
   diaries: (d: Diary, user_id: string): Row => ({
     id: d.id, user_id, date: d.date, emoji: n(d.emoji), body: d.body, visibility: d.visibility, background_color: n(d.backgroundColor), image_paths: d.imagePaths,
+    // only once set: a server without the column (SQL 20261109000100 not run yet) still takes the diary
+    ...(d.moodTemp !== undefined ? { mood_temp: d.moodTemp } : {}),
   }),
   ddays: (d: DDay, user_id: string): Row => ({ id: d.id, user_id, title: d.title, type: d.type, target_date: d.targetDate, repeat_unit: n(d.type === "repeat" ? d.repeatUnit ?? "yearly" : undefined), is_private: d.isPrivate, sort_order: d.sortOrder }),
 };
@@ -57,6 +59,7 @@ export const fromRow = {
   reminders: (r: R): Reminder => ({ id: r.id, timeOfDay: String(r.time_of_day).slice(0, 5) }),
   diaries: (r: R): Diary => ({
     id: r.id, date: r.date, emoji: u(r.emoji), body: r.body ?? "", visibility: r.visibility, backgroundColor: u(r.background_color), imagePaths: r.image_paths ?? [],
+    ...(typeof r.mood_temp === "number" ? { moodTemp: r.mood_temp } : {}),
   }),
   ddays: (r: R): DDay => ({ id: r.id, title: r.title, type: r.type, targetDate: r.target_date, repeatUnit: u(r.repeat_unit), isPrivate: !!r.is_private, sortOrder: Number(r.sort_order) }),
 };

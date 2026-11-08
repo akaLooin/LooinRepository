@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText, Calendar, CalendarHeader, CategoryPill, Heart, ProfileHeader, TodoRow, useToast } from "../../components";
+import { AppText, Calendar, CalendarHeader, CategoryPill, Heart, ProfileHeader, TodoRow, useToast, MoodMark } from "../../components";
 import type { Diary } from "../../data/types";
 import { friendMonth, react, type FriendView, type Reaction } from "../../data/social";
 import { isVirtual, todosForDay } from "../../data/store";
@@ -147,7 +147,7 @@ export function FriendHome({ id }: { id: string }) {
   return (
     <View>
       <View style={{ paddingHorizontal: G, marginTop: 34 }}>
-        <ProfileHeader name={p.nickname} avatar={p.avatarUri} bio={p.bio} emoji={p.statusEmoji} readOnly />
+        <ProfileHeader name={p.nickname} avatar={p.avatarUri} bio={p.bio} emoji={diary?.emoji} onEmoji={() => setDiaryOpen(true)} readOnly />
       </View>
       <View style={{ paddingHorizontal: G, marginTop: 27, gap: 16 }}>
         <CalendarHeader
@@ -200,7 +200,7 @@ export function FriendHome({ id }: { id: string }) {
         {diary ? (
           <Pressable onPress={() => setDiaryOpen(true)} accessibilityRole="button" accessibilityLabel={`${p.nickname}의 일기 보기`}
             style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
-            <AppText variant="bodyLg">{diary.emoji ?? "📔"}</AppText>
+            {diary.emoji ? <MoodMark value={diary.emoji} size={26} /> : <AppText variant="bodyLg">📔</AppText>}
             <AppText variant="body" numberOfLines={1} style={{ flex: 1 }}>{diary.body || "기분을 남겼어요"}</AppText>
             {diaryMine ? <Heart size={18} color={c.sunday} fill={c.sunday} /> : null}
           </Pressable>

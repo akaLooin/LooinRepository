@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
-  AppText, BottomSheet, Button, ChevronDown, Image, RadioCheck, ScreenHeader, SmilePlus, Sticker, StoredImage, useToast, VisibilityIcon, X, type Visibility,
+  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, Image, MoodGauge, MoodMark, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage,
+  useToast, VisibilityIcon, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
 import { reactionsOnMine, type Reaction } from "../../data/social";
@@ -13,14 +14,18 @@ import { pickPhoto } from "../../lib/photos";
 import { parseDay, today, weekday } from "../../lib/dates";
 import { contrast, fontFamily, tokens, useTheme } from "../../theme";
 import { VISIBILITY_LABEL } from "../categories/CategoryEditScreen";
+import { ReactionSheet } from "../social/ReactionSheet";
+import { DIARY_COLORS } from "./colors";
 
-const MOODS = ["😀", "😊", "🥰", "😌", "🙂", "😐", "😴", "🥱", "😢", "😭", "😡", "😰", "🤒", "🥳", "🤩", "😎", "🤔", "😇"];
-// Background tints a diary can take (user content, so not theme tokens). null = the theme background.
-const BACKGROUNDS: (string | null)[] = [null, "#2E2A3D", "#1F3A33", "#3A2A2A", "#3A3420", "#1E2F45", "#F4EDE1", "#E3F1E8", "#FCE8EC"];
 const ORDER: Visibility[] = ["public", "followers", "partial", "private"];
 const WD = "일월화수목금토";
 
-/** S09: one diary per day. Opens on the date in the route ("today" works too). */
+/**
+ * S09, as in the user's recording of the original: the mood on top is a sticker (or an emoji) picked from the panel,
+ * with its 기분 온도 (0–100°) under it; name, date and who can see it; the text; photos full width with a "−" to take
+ * them out. At the bottom: background colour (a big grid, previewed live, 확인 to keep), photo, sticker. Closing with
+ * changes asks "작성을 완료하시겠습니까?". Opens on the date in the route ("today" works too).
+ */
 export function DiaryScreen() {
   const params = useLocalSearchParams<{ date: string }>();
   const date = params.date && params.date !== "today" ? params.date : today();
@@ -29,11 +34,15 @@ export function DiaryScreen() {
   const existing = useDB(selectDiary(date));
   const profile = useDB((d) => d.profile);
   const [emoji, setEmoji] = useState(existing?.emoji);
+  const [temp, setTemp] = useState<number | null | undefined>(existing?.moodTemp);
   const [body, setBody] = useState(existing?.body ?? "");
   const [visibility, setVisibility] = useState<Visibility>(existing?.visibility ?? "private");
   const [bg, setBg] = useState<string | undefined>(existing?.backgroundColor);
   const [images, setImages] = useState<string[]>(existing?.imagePaths ?? []);
-  const [sheet, setSheet] = useState<null | "emoji" | "visibility" | "color">(null);
+  const [sheet, setSheet] = useState<null | "mood" | "temp" | "visibility" | "color">(null);
+  const [draftBg, setDraftBg] = useState<string | undefined>(bg);
+  const [draftTemp, setDraftTemp] = useState(50);
+  const [asking, setAsking] = useState(false);
   const [toast, notice] = useToast();
   // stickers and emoji friends left on this diary (shown under it, with who sent them)
   const [received, setReceived] = useState<Reaction[]>([]);
@@ -44,31 +53,41 @@ export function DiaryScreen() {
     return () => { alive = false; };
   }, [date, existing?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const background = bg ?? c.bg;
-  const ink = bg ? (contrast("#FFFFFF", bg) >= 4.5 ? "#FFFFFF" : "#111111") : c.text;
-  const inkMuted = bg ? (ink === "#FFFFFF" ? "#C8C8C8" : "#555555") : c.textMuted;
+  const shownBg = sheet === "color" ? draftBg : bg;
+  const background = shownBg ?? c.bg;
+  const ink = shownBg ? (contrast(c.checkWhite, shownBg) >= 4.5 ? c.checkWhite : c.onSelected) : c.text;
+  const inkMuted = shownBg ? (ink === c.checkWhite ? c.textSecondary : c.surfaceStrong) : c.textMuted;
   const { y, m, d } = parseDay(date);
+  const changed = (emoji ?? "") !== (existing?.emoji ?? "") || (temp ?? null) !== (existing?.moodTemp ?? null) || body !== (existing?.body ?? "")
+    || visibility !== (existing?.visibility ?? "private") || (bg ?? "") !== (existing?.backgroundColor ?? "") || images.join() !== (existing?.imagePaths ?? []).join();
   const done = () => {
-    saveDiary(date, { emoji, body: body.trim(), visibility, backgroundColor: bg, imagePaths: images });
+    saveDiary(date, { emoji, body: body.trim(), visibility, backgroundColor: bg, imagePaths: images, ...(temp !== undefined ? { moodTemp: temp } : {}) });
     goBack("/");
   };
+  const close = () => (changed ? setAsking(true) : goBack("/"));
 
   return (
     <View style={{ flex: 1, backgroundColor: background, paddingTop: insets.top }}>
-      <ScreenHeader title="일기" close onBack={() => goBack("/")} right={{ label: "완료", onPress: done }} ink={bg ? ink : undefined} />
+      <ScreenHeader title="일기" close onBack={close} right={{ label: "완료", onPress: done }} ink={shownBg ? ink : undefined} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={() => setSheet("emoji")} accessibilityRole="button" accessibilityLabel={emoji ? `오늘의 기분 ${emoji}, 바꾸기` : "오늘의 기분 고르기"} style={{ alignSelf: "center", marginVertical: 8 }}>
-          {emoji ? (
-            <AppText variant="timer" style={{ fontSize: 64, lineHeight: 80 }}>{emoji}</AppText>
-          ) : (
-            <View style={{ width: 80, height: 80, alignItems: "center", justifyContent: "center" }}>
-              <Svg width={80} height={80} style={{ position: "absolute" }}>
-                <Circle cx={40} cy={40} r={36} stroke={inkMuted} strokeWidth={2.5} strokeDasharray="6 6" fill="none" />
-              </Svg>
-              <SmilePlus size={36} color={inkMuted} />
-            </View>
-          )}
-        </Pressable>
+        <View style={{ alignItems: "center", gap: 8, marginVertical: 8 }}>
+          <Pressable onPress={() => (emoji ? (setDraftTemp(temp ?? 50), setSheet("temp")) : setSheet("mood"))} onLongPress={() => setSheet("mood")}
+            accessibilityRole="button" accessibilityLabel={emoji ? "오늘의 기분, 기분 온도 정하기" : "오늘의 기분 고르기"} accessibilityHint={emoji ? "길게 누르면 스티커를 바꿔요" : undefined}>
+            {emoji ? <MoodMark value={emoji} size={72} /> : (
+              <View style={{ width: 72, height: 72, alignItems: "center", justifyContent: "center" }}>
+                <Svg width={72} height={72} style={{ position: "absolute" }}>
+                  <Circle cx={36} cy={36} r={32} stroke={inkMuted} strokeWidth={2.5} strokeDasharray="6 6" fill="none" />
+                </Svg>
+                <SmilePlus size={32} color={inkMuted} />
+              </View>
+            )}
+          </Pressable>
+          {emoji && typeof temp === "number" ? (
+            <Pressable onPress={() => { setDraftTemp(temp); setSheet("temp"); }} accessibilityRole="button" accessibilityLabel={`기분 온도 ${temp}도, 바꾸기`}>
+              <MoodGauge temp={temp} ink={ink} track={inkMuted} />
+            </Pressable>
+          ) : null}
+        </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
           <StoredImage uri={profile.avatarUri} label="프로필 사진" style={{ width: 46, height: 46, borderRadius: 23 }} />
           <View style={{ gap: 2 }}>
@@ -83,28 +102,24 @@ export function DiaryScreen() {
             </View>
           </View>
         </View>
+        {images.map((u, i) => (
+          <View key={u + i}>
+            <StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: "100%", aspectRatio: 1, borderRadius: tokens.radius.lg }} />
+            <Pressable onPress={() => setImages((xs) => xs.filter((_, j) => j !== i))} accessibilityRole="button" accessibilityLabel={`일기 사진 ${i + 1} 빼기`} hitSlop={8}
+              style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: c.surfaceButton, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 12, height: 2.5, borderRadius: 1, backgroundColor: c.text }} />
+            </Pressable>
+          </View>
+        ))}
         <TextInput
           value={body}
           onChangeText={setBody}
           multiline
-          placeholder="오늘 하루를 남겨 보세요"
+          placeholder="오늘은 어떤 하루였나요?"
           placeholderTextColor={inkMuted}
           accessibilityLabel="일기 내용"
-          style={{ minHeight: images.length ? 200 : 320, color: ink, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, lineHeight: 26, textAlignVertical: "top", outlineStyle: "none" as never }}
+          style={{ minHeight: images.length ? 120 : 320, color: ink, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, lineHeight: 26, textAlignVertical: "top", outlineStyle: "none" as never }}
         />
-        {images.length ? (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {images.map((u, i) => (
-              <View key={u + i}>
-                <StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: 110, height: 110, borderRadius: tokens.radius.md }} />
-                <Pressable onPress={() => setImages((xs) => xs.filter((_, j) => j !== i))} accessibilityRole="button" accessibilityLabel={`일기 사진 ${i + 1} 빼기`} hitSlop={8}
-                  style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: 12, backgroundColor: c.scrimSolid, alignItems: "center", justifyContent: "center" }}>
-                  <X size={14} color={c.onIcon} strokeWidth={3} />
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        ) : null}
         {received.length ? (
           <View style={{ gap: 10, marginTop: 8 }} accessibilityLabel="받은 반응">
             <AppText variant="helper" raw={inkMuted}>받은 반응 {received.length}</AppText>
@@ -120,29 +135,39 @@ export function DiaryScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={{ flexDirection: "row", gap: 16, paddingHorizontal: tokens.layout.gutter, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: c.surfaceButton }}>
-        <Pressable onPress={() => setSheet("color")} accessibilityRole="button" accessibilityLabel="배경색" style={{ width: 44, height: 44, borderRadius: 22, overflow: "hidden", flexDirection: "row", flexWrap: "wrap", borderWidth: 2, borderColor: c.surfaceStrong }}>
-          {["#FF8A8A", "#FFD36E", "#7FE3A6", "#7FB6FF"].map((col) => <View key={col} style={{ width: "50%", height: "50%", backgroundColor: col }} />)}
+      <View style={{ flexDirection: "row", gap: 14, paddingHorizontal: tokens.layout.gutter, paddingTop: 10, paddingBottom: insets.bottom + 10, backgroundColor: c.surfaceButton }}>
+        <Pressable onPress={() => { setDraftBg(bg); setSheet("color"); }} accessibilityRole="button" accessibilityLabel="배경색" style={{ width: 40, height: 40, borderRadius: 20, overflow: "hidden", flexDirection: "row", flexWrap: "wrap" }}>
+          {[DIARY_COLORS[1], DIARY_COLORS[20], DIARY_COLORS[33], DIARY_COLORS[39]].map((col) => <View key={col} style={{ width: "50%", height: "50%", backgroundColor: col ?? c.bg }} />)}
         </Pressable>
         <Pressable onPress={async () => {
             if (images.length >= 4) return notice("사진은 4장까지 넣을 수 있어요");
             const uri = await pickPhoto().catch(() => null);
             if (uri) setImages((xs) => [...xs, uri]);
-          }} accessibilityRole="button" accessibilityLabel="사진 넣기" style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
-          <Image size={22} color={c.menuPhoto} />
+          }} accessibilityRole="button" accessibilityLabel="사진 넣기" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
+          <Image size={21} color={c.menuPhoto} />
+        </Pressable>
+        <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" accessibilityLabel="스티커 고르기" style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" }}>
+          <Sticker id="clover.love" size={30} />
         </Pressable>
       </View>
 
-      <BottomSheet visible={sheet === "emoji"} onClose={() => setSheet(null)} title="오늘의 기분">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12 }}>
-          {MOODS.map((e) => (
-            <Pressable key={e} onPress={() => { setEmoji(e); setSheet(null); }} accessibilityRole="button" accessibilityLabel={e}
-              style={{ width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", backgroundColor: e === emoji ? c.surfaceStrong : "transparent" }}>
-              <AppText variant="monthTitle" style={{ fontSize: 30, lineHeight: 38 }}>{e}</AppText>
-            </Pressable>
-          ))}
+      <ReactionSheet visible={sheet === "mood"} current={emoji} onClose={() => setSheet(null)}
+        onPick={(v) => { setSheet(null); if (v === emoji) { setEmoji(undefined); setTemp(temp === undefined ? undefined : null); } else setEmoji(v); }} />
+
+      <BottomSheet visible={sheet === "temp"} onClose={() => setSheet(null)} title="기분 온도">
+        <AppText center style={{ fontSize: 40, lineHeight: 52, fontFamily: fontFamily(700), marginVertical: 8 }} accessibilityLiveRegion="polite">{`${draftTemp}°`}</AppText>
+        <Slider value={draftTemp} onChange={setDraftTemp} label="기분 온도" color={tokens.sticker.heart} />
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+          <AppText variant="small" color="textMuted">0°</AppText>
+          <AppText variant="small" color="textMuted">100°</AppText>
         </View>
-        {emoji ? <View style={{ marginTop: 16 }}><Button kind="plain" label="기분 지우기" onPress={() => { setEmoji(undefined); setSheet(null); }} /></View> : null}
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {typeof temp === "number" ? <View style={{ flex: 1 }}><Button kind="danger" label="지우기" onPress={() => { setTemp(null); setSheet(null); }} /></View> : null}
+          <View style={{ flex: 1 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setTemp(draftTemp); setSheet(null); }} /></View>
+        </View>
+        <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" style={{ alignSelf: "center", paddingTop: 14 }}>
+          <AppText variant="helper" color="textMuted">스티커 바꾸기</AppText>
+        </Pressable>
       </BottomSheet>
 
       <BottomSheet visible={sheet === "visibility"} onClose={() => setSheet(null)} title="공개설정">
@@ -156,14 +181,27 @@ export function DiaryScreen() {
         ))}
       </BottomSheet>
 
-      <BottomSheet visible={sheet === "color"} onClose={() => setSheet(null)} title="배경색">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-          {BACKGROUNDS.map((col) => (
-            <Pressable key={col ?? "none"} onPress={() => { setBg(col ?? undefined); setSheet(null); }} accessibilityRole="button" accessibilityLabel={col ? `배경 ${col}` : "기본 배경"}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: col ?? c.bg, borderWidth: (bg ?? null) === col ? 3 : 1, borderColor: (bg ?? null) === col ? c.text : c.surfaceStrong }} />
-          ))}
+      <BottomSheet visible={sheet === "color"} onClose={() => setSheet(null)} title="색상 선택">
+        <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 12 }}>
+          {DIARY_COLORS.map((col) => {
+            const on = (draftBg ?? null) === col;
+            return (
+              <Pressable key={col ?? "none"} onPress={() => setDraftBg(col ?? undefined)} accessibilityRole="radio" accessibilityState={{ checked: on }}
+                accessibilityLabel={col ? `배경 ${col}` : "배경 없음"} style={{ width: "16.66%", alignItems: "center" }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: on ? 2.5 : 0, borderColor: c.text }}>
+                  <View style={{ width: on ? 30 : 34, height: on ? 30 : 34, borderRadius: 17, backgroundColor: col ?? c.surfaceButton, alignItems: "center", justifyContent: "center" }}>
+                    {col ? null : <View style={{ width: 20, height: 2, backgroundColor: c.textMuted, transform: [{ rotate: "-45deg" }] }} />}
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
+        <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setBg(draftBg); setSheet(null); }} /></View>
       </BottomSheet>
+
+      <ConfirmDialog visible={asking} message="작성을 완료하시겠습니까?" onCancel={() => { setAsking(false); goBack("/"); }} cancel="저장 안 함"
+        ok="완료" onOk={() => { setAsking(false); done(); }} />
       {toast}
     </View>
   );

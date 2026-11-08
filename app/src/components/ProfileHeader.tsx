@@ -2,13 +2,14 @@ import { Pressable, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
+import { MoodMark } from "./Mood";
 import { StoredImage } from "./StoredImage";
 import { ChevronRight, SmilePlus } from "./icons";
 
 /** Avatar, name, bio, first D-day and the status-emoji button (S03). */
 export function ProfileHeader({ name, bio, avatar, dday, onDday, onEmoji, emoji, readOnly }: {
   name: string; bio?: string; avatar?: string; dday?: { title: string; label: string }; onDday?: () => void; onEmoji?: () => void;
-  /** 상태 이모지: shown in place of the dashed 😊+ button once picked */
+  /** the selected day's diary mood (sticker or emoji), in place of the dashed 😊+ that opens the diary (original) */
   emoji?: string;
   /** someone else's profile: no placeholder bio, no emoji button */
   readOnly?: boolean;
@@ -29,10 +30,10 @@ export function ProfileHeader({ name, bio, avatar, dday, onDday, onEmoji, emoji,
           </Pressable>
         ) : null}
       </View>
-      {readOnly && !emoji ? null : <Pressable onPress={onEmoji} disabled={readOnly} hitSlop={8} accessibilityRole="button" accessibilityLabel={emoji ? `상태 이모지 ${emoji}, 바꾸기` : "상태 이모지 추가"} style={{ alignSelf: "flex-start", marginTop: 18 }}>
+      {readOnly && !emoji ? null : <Pressable onPress={onEmoji} disabled={!onEmoji} hitSlop={8} accessibilityRole="button" accessibilityLabel={emoji ? "오늘의 일기 보기" : "일기 쓰기"} style={{ alignSelf: "flex-start", marginTop: 18 }}>
         {emoji ? (
-          <View style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-            <AppText style={{ fontSize: 30, lineHeight: 38 }}>{emoji}</AppText>
+          <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+            <MoodMark value={emoji} size={40} />
           </View>
         ) : (
         <View style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center" }}>

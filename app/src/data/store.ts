@@ -512,6 +512,10 @@ export function saveDiary(day: Day, patch: Partial<Omit<Diary, "id" | "date">>) 
   set({ ...db, diaries: existing ? db.diaries.map((x) => (x.id === existing.id ? next : x)) : [...db.diaries, next] });
 }
 
+export function deleteDiary(day: Day) {
+  set({ ...db, diaries: db.diaries.filter((x) => x.date !== day) });
+}
+
 // ── reminders and alarms ───────────────────────────────────
 export const selectReminders = (d: DB) => [...d.reminders].sort((a, b) => a.timeOfDay.localeCompare(b.timeOfDay));
 

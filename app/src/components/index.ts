@@ -24,3 +24,6 @@ export * from "./CollapseChevron";
 export * from "./DragScrollView";
 export * from "./Sticker";
 export * from "./press";
+export * from "./Slider";
+export * from "./Mood";
+export * from "./ConfirmDialog";

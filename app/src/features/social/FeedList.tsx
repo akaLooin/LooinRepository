@@ -1,7 +1,7 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText, Clover, Heart, StoredImage, useToast } from "../../components";
+import { AppText, Clover, Heart, StoredImage, useToast, MoodMark } from "../../components";
 import { friendFeed, react, type FeedItem, type Person } from "../../data/social";
 import { usePrefs } from "../../data/prefs";
 import { nextReaction, timeAgo } from "../../lib/friend";
@@ -79,7 +79,7 @@ export function FeedList({ onPerson }: { onPerson: (p: Person) => void }) {
               </View>
             ) : (
               <View style={{ borderRadius: tokens.radius.lg, padding: 14, gap: 6, backgroundColor: c.surface }}>
-                <AppText variant="bodyLg">{`${it.emoji ?? "📔"}  일기`}</AppText>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>{it.emoji ? <MoodMark value={it.emoji} size={28} /> : <AppText variant="bodyLg">📔</AppText>}<AppText variant="bodyLg">일기</AppText></View>
                 {it.body ? <AppText variant="body" numberOfLines={lines ?? 6}>{it.body}</AppText> : null}
                 {it.imagePaths?.length ? (
                   <View style={{ flexDirection: "row", gap: 6 }}>

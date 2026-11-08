@@ -59,7 +59,8 @@ export type DDay = { id: string; title: string; type: "fixed" | "repeat"; target
 export type Diary = {
   id: string;
   date: Day; // one per day
-  emoji?: string;
+  emoji?: string; // 오늘의 기분: a sticker id ("clover.best") or an emoji
+  moodTemp?: number | null; // 기분 온도 0–100° (null = taken away, undefined = never set)
   body: string;
   visibility: Visibility;
   backgroundColor?: string; // #RRGGBB
