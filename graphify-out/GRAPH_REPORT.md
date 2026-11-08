@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-08)
 
 ## Corpus Check
-- 37 files · ~28,103 words
+- 46 files · ~30,875 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 6 file(s) not represented in the graph (top: (none) 3, .csv 2, .css 1)
+- Unclassified: 11 file(s) not represented in the graph (top: (none) 4, .woff2 3, .csv 2)
 
 ## Summary
-- 341 nodes · 480 edges · 31 communities (24 shown, 7 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.87)
+- 404 nodes · 548 edges · 37 communities (29 shown, 8 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a8166e14`
+- Built from commit: `77818f02`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -46,15 +46,21 @@
 - screens/README.md
 - Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)
 - save-schema.ts
+- package.json
+- design.ts
+- compilerOptions
+- SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+- build-tokens.mjs
+- components.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `Recon map: Realm Grinder (Android / Steam / Web)` - 13 edges
 2. `replica-recon` - 12 edges
 3. `compare()` - 10 edges
 4. `Recon map: {{app}} ({{platform}})` - 10 edges
-5. `API (엔진 액션)` - 9 edges
-6. `read_png()` - 9 edges
-7. `load_reviews()` - 9 edges
+5. `read_png()` - 9 edges
+6. `load_reviews()` - 9 edges
+7. `compilerOptions` - 9 edges
 8. `render()` - 9 edges
 9. `replica-backend` - 9 edges
 10. `replica-build` - 9 edges
@@ -62,11 +68,11 @@
 ## Surprising Connections (you probably didn't know these)
 - `API (엔진 액션)` --references--> `serialize()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
-- `API (엔진 액션)` --references--> `applyOffline()`  [INFERRED]
-  replica/architecture.md → game/js/engine.js
 - `API (엔진 액션)` --references--> `buyBuilding()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
 - `API (엔진 액션)` --references--> `buyUpgrade()`  [INFERRED]
+  replica/architecture.md → game/js/engine.js
+- `API (엔진 액션)` --references--> `click()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
 - `API (엔진 액션)` --references--> `castSpell()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
@@ -74,7 +80,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (31 total, 7 thin omitted)
+## Communities (37 total, 8 thin omitted)
 
 ### Community 0 - "engine.js"
 Cohesion: 0.13
@@ -172,21 +178,43 @@ Nodes (6): Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를
 Cohesion: 0.29
 Nodes (6): Alignment, AutocastTier, Big, CoinType, FactionId, SaveV1
 
+### Community 31 - "package.json"
+Cohesion: 0.10
+Nodes (22): dependencies, break_infinity.js@^2.2.0, galmuri@^2.40.3, devDependencies, typescript@^7.0.2, vite@^8.3.6, vitest@^5.1.0, name (+14 more)
+
+### Community 32 - "design.ts"
+Cohesion: 0.22
+Nodes (8): cache, PALETTE, SPRITES, spriteURL(), box, canvas, house, ic()
+
+### Community 33 - "compilerOptions"
+Cohesion: 0.18
+Nodes (10): compilerOptions, lib, module, moduleResolution, noEmit, skipLibCheck, strict, target (+2 more)
+
+### Community 34 - "SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007"
+Cohesion: 0.29
+Nodes (6): DEFINITIONS, DISCLAIMER, PERMISSION & CONDITIONS, PREAMBLE, SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007, TERMINATION
+
+### Community 35 - "build-tokens.mjs"
+Cohesion: 0.40
+Nodes (3): lines, src, t
+
 ## Knowledge Gaps
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `API (엔진 액션)` connect `engine.js` to `Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `vitest` connect `package.json` to `design.ts`?**
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **Should `engine.js` be split into smaller, more focused modules?**
   _Cohesion score 0.12612612612612611 - nodes in this community are weakly interconnected._
-- **Why does `Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)` connect `Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)` to `engine.js`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **Why does `API (엔진 액션)` connect `engine.js` to `Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)`?**
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
   _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
 - **Should `Recon map: Realm Grinder (Android / Steam / Web)` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
+- **Should `package.json` be split into smaller, more focused modules?**
+  _Cohesion score 0.09666666666666666 - nodes in this community are weakly interconnected._

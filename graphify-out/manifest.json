@@ -298,5 +298,83 @@
     "seen": 1794139802.5880144,
     "ast_hash": "e6c002e85580d77767a101f1c21b97c2",
     "semantic_hash": ""
+  },
+  "app/package.json": {
+    "mtime": 1794140114.000833,
+    "seen": 1794140318.998164,
+    "ast_hash": "401949e1547e2ee39f97bbfcc2a67404",
+    "semantic_hash": ""
+  },
+  "app/scripts/build-tokens.mjs": {
+    "mtime": 1794140127.2013724,
+    "seen": 1794140318.998166,
+    "ast_hash": "8026e1e1cfe80dc8f12450a6583c56e9",
+    "semantic_hash": ""
+  },
+  "app/src/art/sprites.ts": {
+    "mtime": 1794140171.7328365,
+    "seen": 1794140318.9981673,
+    "ast_hash": "f7fa74d5ff242590d9f4cee4434b9acd",
+    "semantic_hash": ""
+  },
+  "app/src/design.ts": {
+    "mtime": 1794140275.0368426,
+    "seen": 1794140318.998168,
+    "ast_hash": "b3d88064db713ed3a4a8700b6474bea9",
+    "semantic_hash": ""
+  },
+  "app/tests/sprites.test.ts": {
+    "mtime": 1794140174.4365363,
+    "seen": 1794140318.998169,
+    "ast_hash": "bcba802e94af90914a9a66b2a830cf40",
+    "semantic_hash": ""
+  },
+  "app/tsconfig.json": {
+    "mtime": 1794140274.9992056,
+    "seen": 1794140318.9981697,
+    "ast_hash": "5cb513084f2ceb5ad71d1eb9522c6065",
+    "semantic_hash": ""
+  },
+  "app/vite.config.ts": {
+    "mtime": 1794140275.0006883,
+    "seen": 1794140318.9981706,
+    "ast_hash": "9b851835487113e418cbab6cf0405eba",
+    "semantic_hash": ""
+  },
+  "app/design.html": {
+    "mtime": 1794140274.9974961,
+    "seen": 1794140318.9981992,
+    "ast_hash": "d24a0a4bc0e6b68deaaa70f85b3e3010",
+    "semantic_hash": ""
+  },
+  "app/index.html": {
+    "mtime": 1794140280.948843,
+    "seen": 1794140318.9982002,
+    "ast_hash": "f92b7a1d55cac31963bc84de5d0f99cd",
+    "semantic_hash": ""
+  },
+  "app/public/fonts/OFL.md": {
+    "mtime": 1794140274.9955084,
+    "seen": 1794140318.998201,
+    "ast_hash": "bc7c2891ea27b7deaff02f2cf9eb8797",
+    "semantic_hash": ""
+  },
+  "replica/design/components.md": {
+    "mtime": 1794140205.3288386,
+    "seen": 1794140318.998205,
+    "ast_hash": "5b7d6aa2ec21efbdc034124fbc65c478",
+    "semantic_hash": ""
+  },
+  "replica/design/design-check.png": {
+    "mtime": 1794140317.3488376,
+    "seen": 1794140318.9982092,
+    "ast_hash": "9777b53531dfb127fd4d20c712b8fb0f",
+    "semantic_hash": ""
+  },
+  "app/package-lock.json": {
+    "mtime": 1794140114.016833,
+    "seen": 1794140318.9982233,
+    "ast_hash": "6501622542419aec662b2116b034e507",
+    "semantic_hash": ""
   }
 }
