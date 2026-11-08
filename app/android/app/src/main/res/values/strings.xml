@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Talestopia Tycoon</string>
+    <string name="title_activity_main">Talestopia Tycoon</string>
+    <string name="package_name">com.looin.talestopia</string>
+    <string name="custom_url_scheme">com.looin.talestopia</string>
+</resources>

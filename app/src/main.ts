@@ -63,6 +63,7 @@ app.innerHTML = `
   <div class="map" id="map">
     <canvas class="realm" id="realm"></canvas>
     <button class="tap" id="tap" aria-label="왕국 두드리기"></button>
+    <div class="dust" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i * 0.7) % 6}s;animation-duration:${5 + (i % 4)}s"></i>`).join('')}</div>
     <div class="floaters" id="floaters"></div>
     <div class="effects" id="effects"></div>
     <div class="autocast">
@@ -106,7 +107,7 @@ function drawMap(force = false) {
   const key = owned.map((o) => o.id + levelFor(o.count) + (o.count > 0 ? 1 : 0)).join(',');
   const box = $('#map').getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  const scale = Math.max(1, Math.ceil(Math.max((box.width * dpr) / MAP_W, (box.height * dpr) / MAP_H)));
+  const scale = Math.max(1, Math.round(Math.max((box.width * dpr) / MAP_W, (box.height * dpr) / MAP_H)));
   const sizeKey = key + '|' + scale;
   if (!force && sizeKey === mapKey) return;
   mapKey = sizeKey;

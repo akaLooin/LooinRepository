@@ -8,13 +8,21 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "tokens": "node scripts/build-tokens.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "android:sync": "npm run build && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:bundle": "npm run android:sync && cd android && ./gradlew bundleRelease",
+    "icons": "npm run build:pages && (vite preview --port 4173 --strictPort > /dev/null & sleep 3; node scripts/export-icons.cjs; pkill -f 'vite preview')",
+    "build:pages": "tsc --noEmit && PAGES=all vite build"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
     "break_infinity.js": "^2.2.0",
     "galmuri": "^2.40.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"

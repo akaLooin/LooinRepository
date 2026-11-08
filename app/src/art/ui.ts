@@ -9,25 +9,30 @@ function tile(w: number, h: number, f: (x: number, y: number) => RGB): string {
 }
 
 export function installTextures(root: HTMLElement = document.documentElement) {
-  const stone = tile(48, 48, (x, y) => {
-    const row = Math.floor(y / 12), off = row % 2 ? 8 : 0, col = Math.floor((x + off) / 16);
-    const mortar = y % 12 === 0 || (x + off) % 16 === 0;
-    const base = hex('#221d22');
-    if (mortar) return shade(base, 0.6);
-    const n = noise(x, y, 3) * 0.12 + (noise(col, row, 5) - 0.5) * 0.18;
-    const edge = y % 12 === 1 || (x + off) % 16 === 1 ? 0.12 : 0;
-    return shade(base, 1 + n + edge);
+  // parchment page with faint ruled lines and fibres
+  const page = tile(64, 64, (x, y) => {
+    const fib = (noise(x >> 2, y, 3) - 0.5) * 0.06 + (noise(x, y, 4) - 0.5) * 0.05;
+    const blot = noise(x >> 4, y >> 4, 5) * 0.06;
+    return shade(hex('#efe3c4'), 1 + fib - blot + (y % 16 === 15 ? -0.035 : 0));
   });
-  const leather = tile(32, 32, (x, y) => shade(hex('#2e1e19'), 1 + (noise(x >> 1, y >> 1, 7) - 0.5) * 0.25 + (noise(x, y, 8) - 0.5) * 0.1));
-  const wood = tile(64, 16, (x, y) => {
-    const grain = Math.sin((x + noise(0, y, 2) * 30) / 5 + y * 0.3) * 0.08;
-    return shade(hex('#4a3020'), 1 + grain + (y % 8 === 0 ? -0.3 : 0) + (noise(x, y, 4) - 0.5) * 0.1);
+  // navy velvet with tiny star specks
+  const velvet = tile(48, 48, (x, y) => {
+    const n = (noise(x >> 1, y >> 1, 7) - 0.5) * 0.18;
+    const star = noise(x, y, 11) > 0.985 ? 1.9 : 1;
+    return shade(hex('#2c2350'), (1 + n) * star);
+  });
+  // book-spine band: navy leather with gold tooling lines
+  const spine = tile(16, 60, (x, y) => {
+    if (y === 6 || y === 9 || y === 50 || y === 53) return hex('#e2b85a');
+    if (y === 7 || y === 51) return hex('#8a6420');
+    return shade(hex('#30265a'), 1 + (noise(x >> 1, y >> 1, 2) - 0.5) * 0.2);
   });
   const parchment = tile(32, 32, (x, y) => shade(hex('#3a3026'), 1 + (noise(x >> 2, y >> 2, 9) - 0.5) * 0.2 + (noise(x, y, 10) - 0.5) * 0.08));
-  root.style.setProperty('--tex-stone', `url(${stone})`);
-  root.style.setProperty('--tex-leather', `url(${leather})`);
-  root.style.setProperty('--tex-wood', `url(${wood})`);
+  root.style.setProperty('--tex-stone', `url(${page})`);
+  root.style.setProperty('--tex-leather', `url(${velvet})`);
+  root.style.setProperty('--tex-wood', `url(${spine})`);
   root.style.setProperty('--tex-parchment', `url(${parchment})`);
+  void bayer; void mix;
 }
 
 const FRAME: Record<string, [string, string, string]> = {
