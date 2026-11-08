@@ -90,7 +90,6 @@ export function Clover({
   let body: React.ReactNode;
   let count: number | null = null;
   let countColor = c.cloverNumber;
-  let countHalo: string | null = null; // a faint outline when part of the clover is close to the number's colour
 
   switch (state.kind) {
     case "empty":
@@ -111,7 +110,6 @@ export function Clover({
       if (state.left > 0) {
         count = state.left;
         countColor = numberOn(cols[0]);
-        if (cols.some((x) => contrast(countColor, x) < 1.6)) countHalo = countColor === c.checkWhite ? c.checkBlack : c.checkWhite;
       }
       break;
     }
@@ -161,8 +159,7 @@ export function Clover({
         {body}
       </Svg>
       {count !== null && (
-        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.52, lineHeight: size,
-          ...(countHalo ? { textShadowColor: countHalo, textShadowRadius: 3, textShadowOffset: { width: 0, height: 0 } } : null) }}>
+        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.52, lineHeight: size }}>
           {count}
         </AppText>
       )}

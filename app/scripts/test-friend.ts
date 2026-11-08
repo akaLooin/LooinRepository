@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { groupReactions, nextReaction, noticeText, timeAgo, toFriendView, toPerson } from "../src/lib/friend";
+import { toFeedItem, groupReactions, nextReaction, noticeText, timeAgo, toFriendView, toPerson } from "../src/lib/friend";
 import { todosForDay } from "../src/data/occurrences";
 
 const t = (n: string, f: () => void) => { f(); console.log("ok", n); };
@@ -60,4 +60,16 @@ t("notice wording", () => {
   assert.equal(timeAgo("2026-11-08T11:59:30Z", now), "방금");
   assert.equal(timeAgo("2026-11-08T10:00:00Z", now), "2시간 전");
   assert.equal(timeAgo("2026-11-06T12:00:00Z", now), "2일 전");
+});
+t("feed entries: to-dos and diaries, odd rows dropped", () => {
+  const person = { id: "a", nickname: "토끼" };
+  const todo = toFeedItem({ kind: "todo", id: "t", at: "2026-11-08T10:00:00Z", person, reactions: [{ kind: "sticker", value: "clover.best", mine: true }],
+    title: "산책", memo: "", date: "2026-11-08", category: { title: "To Do", color: "#7FB2FF" } })!;
+  assert.equal(todo.title, "산책");
+  assert.equal(todo.category?.color, "#7FB2FF");
+  assert.equal(todo.reactions[0].kind, "sticker");
+  const diary = toFeedItem({ kind: "diary", id: "d", at: "x", person, reactions: [], body: "좋은 날", image_paths: ["diary-images/a/1.jpg"], date: "2026-11-08" })!;
+  assert.deepEqual(diary.imagePaths, ["diary-images/a/1.jpg"]);
+  assert.equal(toFeedItem({ kind: "crew", id: "x", person }), null);
+  assert.equal(toFeedItem({ kind: "todo", id: "x" }), null);
 });

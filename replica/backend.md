@@ -60,6 +60,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
     6. Dashboard → Database → Webhooks → Create: name `push-messages`, table `messages`, event Insert, type Supabase Edge Functions → `push`, method POST, add header `x-push-secret` = the same word. Make a second one, `push-notifications`, for table `notifications`.
     7. Build a new APK (step 7). After signing in, 설정 → 알림 → "이 폰의 푸시 알림" says 켜져 있어요, or why not.
     Expo Go and the web never get pushes (Expo Go has no push on Android since SDK 53).
+14. **친구 피드 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000000_feed.sql`. Safe to run again. Until then 둘러보기 shows "서버에 친구 기능 SQL을 먼저 실행해 주세요" where 친구 소식 would be.
 ## Checklist
 
 Auth
@@ -74,6 +75,7 @@ Database
 - [x] Migrations checked in (`supabase/migrations`), applied in order
 - [x] Row level security on every table. Tested on local Postgres 16 with Supabase's `auth` schema stubbed: a second user gets nothing back
 - [x] 대화 rules: `supabase/tests/chat.test.sql` (one room per pair, re-sent message counted once, photos only from your own folder and only for the two people, unread/read, 대화 수신 허용, stranger sees nothing, block hides the room)
+- [x] Feed: `supabase/tests/feed.test.sql` (followed people only, visibility, private memo, newest first, paging, reactions)
 - [x] Push: `supabase/tests/push.test.sql` (phone addresses only through functions, own only, a phone moves with the sign-in); the push wording and batching are unit-tested (`app/scripts/test-push.ts`); the function itself runs only on Supabase
 - [x] Friends rules: `supabase/tests/run.sh` runs every migration on a throwaway Postgres 16 and `friends.test.sql` (owner, follower, stranger, requester: visibility levels, private memos, photos, reactions and the 좋아요 setting, approval, block, search opt-out, signed out)
 - [x] To-dos and routines can only point at the user's own categories (trigger). Ended categories refuse new to-dos (trigger)

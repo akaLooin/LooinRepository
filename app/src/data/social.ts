@@ -3,10 +3,10 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "../lib/supabase";
 import { addDays, today, type Day } from "../lib/dates";
-import { groupReactions, toFriendView, toPerson, type FriendView, type Person, type Reaction } from "../lib/friend";
+import { groupReactions, toFeedItem, toFriendView, toPerson, type FeedItem, type FriendView, type Person, type Reaction } from "../lib/friend";
 import { getDB, sessionUserId } from "./store";
 
-export type { FriendView, Person, Reaction } from "../lib/friend";
+export type { FeedItem, FriendView, Person, Reaction } from "../lib/friend";
 export type Notice = {
   id: string; type: "follow_request" | "follow" | "follow_accepted" | "reaction"; actor: Person; value?: string; todoTitle?: string;
   readAt?: string; createdAt: string;
@@ -168,6 +168,28 @@ export async function reactionsOnMine(from: Day, to: Day): Promise<Received> {
     return { todos: {}, diaries };
   }
   return groupReactions(await rpc<unknown[]>("reactions_on_mine", { from_day: from, to_day: to }));
+}
+
+/** 친구 피드: finished to-dos and diaries of people I follow, newest first; `before` = the oldest one shown (더 보기). */
+export async function friendFeed(before?: string): Promise<FeedItem[]> {
+  if (isDemo()) {
+    const raw = demo.people.filter((p) => p.follow === "accepted" && !demo.blocked.has(p.id)).flatMap((p) => {
+      const r = demoRange(p.id, addDays(today(), -14), today());
+      if (!r) return [];
+      const cat = r.categories[0];
+      const todos = r.todos.filter((t) => t.is_done).map((t, i) => ({
+        kind: "todo", id: t.id, at: new Date(Date.parse(`${t.date}T21:00:00`) - i * 60000).toISOString(), person: r.person, reactions: t.reactions,
+        title: t.title, memo: t.memo, date: t.date, category: cat ? { title: cat.title, color: cat.color } : null,
+      }));
+      const diaries = r.diaries.map((d) => ({ kind: "diary", id: d.id, at: new Date(Date.parse(`${d.date}T08:00:00`)).toISOString(), person: r.person,
+        reactions: d.reactions, emoji: d.emoji, body: d.body, date: d.date, image_paths: [] }));
+      return [...todos, ...diaries];
+    });
+    return raw.map(toFeedItem).filter((x): x is FeedItem => !!x && (!before || x.at < before)).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 30);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = await rpc<any[]>("friend_feed", { before: before ?? null, max_rows: 30 });
+  return rows.map(toFeedItem).filter((x): x is FeedItem => !!x);
 }
 
 export async function myNotices(): Promise<Notice[]> {

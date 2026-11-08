@@ -5,10 +5,12 @@ import { searchPeople, type Person } from "../../data/social";
 import { fontFamily, tokens, useInsets, useTheme } from "../../theme";
 import { PersonRow } from "./PersonRow";
 import { PersonSheet } from "./PersonSheet";
+import { FeedList } from "./FeedList";
 
 /**
  * 둘러보기 (S15), as far as the recording shows it: a search field "계정 또는 크루" on top; typing finds people by
- * ID or name, tapping one opens their profile (follow, their home). Crews and the feed are not built.
+ * ID or name, tapping one opens their profile (follow, their home). With the field empty: 친구 소식 (FeedList).
+ * Crews are not built.
  */
 export function ExploreScreen() {
   const { c } = useTheme();
@@ -46,7 +48,7 @@ export function ExploreScreen() {
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40 }}>
         {error ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>{error}</AppText>
-          : results === null ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>ID나 이름으로 친구를 찾아보세요</AppText>
+          : results === null ? <FeedList onPerson={setOpen} />
           : results.length === 0 ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>찾는 사람이 없어요</AppText>
           : results.map((p) => <PersonRow key={p.id} p={p} onPress={() => setOpen(p)} />)}
       </ScrollView>

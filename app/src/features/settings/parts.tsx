@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronRight, pressedBg, ripple, ScreenHeader } from "../../components";
+import { AppText, ChevronRight, RipplePressable, ScreenHeader } from "../../components";
 import { fontFamily, ScaledRoot, tokens, useInsets, useTheme } from "../../theme";
 
 /** A rounded row with a label, its value and ›, as on the original's 프로필 and 계정 screens. */
 export function BoxRow({ label, value, onPress, strong }: { label: string; value?: string; onPress?: () => void; strong?: boolean }) {
   const { c } = useTheme();
   return (
-    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole="button" accessibilityLabel={value ? `${label}, ${value}` : label}
-      {...ripple(c.pressRipple)} style={({ pressed }) => ({ minHeight: 52, borderRadius: tokens.radius.md, overflow: "hidden", backgroundColor: pressedBg(pressed, c.surfaceButton, c.surfaceRow),
-        flexDirection: "row", alignItems: "center", paddingHorizontal: 18, gap: 8 })}>
+    <RipplePressable onPress={onPress} disabled={!onPress} accessibilityRole="button" accessibilityLabel={value ? `${label}, ${value}` : label}
+      style={{ minHeight: 52, borderRadius: tokens.radius.md, overflow: "hidden", backgroundColor: c.surfaceRow,
+        flexDirection: "row", alignItems: "center", paddingHorizontal: 18, gap: 8 }}>
       <AppText variant="body" weight={strong ? 600 : 400} style={{ flex: 1 }}>{label}</AppText>
       {value ? <AppText variant="body" weight={600} numberOfLines={1} style={{ maxWidth: "60%" }}>{value}</AppText> : null}
       <ChevronRight size={18} color={c.textMuted} />
-    </Pressable>
+    </RipplePressable>
   );
 }
 
@@ -38,14 +38,14 @@ export function ActionSheet({ visible, options, onClose }: {
         <Pressable style={{ flex: 1, backgroundColor: tokens.scrim }} onPress={onClose} accessibilityLabel="닫기" />
         <View style={{ position: "absolute", left: 14, right: 14, bottom: 14 + insets.bottom, borderRadius: tokens.radius.lg, backgroundColor: c.surfaceRaised, overflow: "hidden" }}>
           {options.map((o) => (
-            <Pressable key={o.label} onPress={() => { onClose(); o.onPress(); }} accessibilityRole="button"
-              {...ripple(c.pressRipple)} style={({ pressed }) => ({ height: 56, alignItems: "center", justifyContent: "center", backgroundColor: pressedBg(pressed, c.pressRipple, "transparent") })}>
+            <RipplePressable key={o.label} onPress={() => { onClose(); o.onPress(); }} accessibilityRole="button"
+              style={{ height: 56, alignItems: "center", justifyContent: "center" }}>
               <AppText variant="bodyLg" color={o.danger ? "danger" : "text"}>{o.label}</AppText>
-            </Pressable>
+            </RipplePressable>
           ))}
-          <Pressable onPress={onClose} accessibilityRole="button" {...ripple(c.pressRipple)} style={({ pressed }) => ({ height: 56, alignItems: "center", justifyContent: "center", backgroundColor: pressedBg(pressed, c.pressRipple, "transparent") })}>
+          <RipplePressable onPress={onClose} accessibilityRole="button" style={{ height: 56, alignItems: "center", justifyContent: "center" }}>
             <AppText variant="bodyLg" color="saturday">취소</AppText>
-          </Pressable>
+          </RipplePressable>
         </View>
       </ScaledRoot>
     </Modal>

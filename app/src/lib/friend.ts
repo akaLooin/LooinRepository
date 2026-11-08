@@ -87,3 +87,21 @@ export function timeAgo(iso: string, now = Date.now()): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+
+/** One entry of the friend feed: a finished to-do or a diary of someone I follow. */
+export type FeedItem = {
+  kind: "todo" | "diary"; id: string; at: string; person: Person; reactions: Reaction[]; date: string;
+  title?: string; memo?: string; photoUri?: string; category?: { title: string; color: string };
+  emoji?: string; body?: string; imagePaths?: string[]; backgroundColor?: string;
+};
+
+export function toFeedItem(r: R): FeedItem | null {
+  if (!r || (r.kind !== "todo" && r.kind !== "diary") || !r.id || !r.person) return null;
+  return {
+    kind: r.kind, id: String(r.id), at: String(r.at), person: toPerson(r.person), reactions: reactionList(r.reactions), date: String(r.date ?? ""),
+    title: r.title ?? undefined, memo: r.memo ?? undefined, photoUri: r.photo_path ?? undefined,
+    category: r.category?.title ? { title: String(r.category.title), color: String(r.category.color ?? "#FFFFFF") } : undefined,
+    emoji: r.emoji ?? undefined, body: r.body ?? undefined, imagePaths: Array.isArray(r.image_paths) ? r.image_paths.map(String) : undefined,
+    backgroundColor: r.background_color ?? undefined,
+  };
+}

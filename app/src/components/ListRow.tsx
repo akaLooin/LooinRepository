@@ -3,7 +3,7 @@ import { tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 import { Radio, Toggle } from "./controls";
 import { ChevronRight } from "./icons";
-import { pressedBg, ripple } from "./press";
+import { useRipple } from "./press";
 
 type Base = { title: string; onPress?: () => void };
 
@@ -11,11 +11,14 @@ function Row({ onPress, onLongPress, delayLongPress, children, height = tokens.s
   onPress?: () => void; onLongPress?: () => void; delayLongPress?: number; children: React.ReactNode; height?: number; bg?: string; divider?: boolean; a11y?: string;
 }) {
   const { c } = useTheme();
+  // rows sit inside the page's side margin; the ripple spreads past it to both screen edges
+  const r = useRipple(c.pressRipple, tokens.layout.gutter);
   const base = { minHeight: height, flexDirection: "row" as const, alignItems: "center" as const, gap: 14, borderBottomWidth: divider ? 1 : 0, borderBottomColor: c.divider };
   // A row with no action of its own is a plain container, so controls inside it (a Toggle) stay enabled for screen readers.
   if (!onPress) return <View style={[base, { backgroundColor: bg }]}>{children}</View>;
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={a11y} {...ripple(c.pressRipple)} style={({ pressed }) => [base, { backgroundColor: pressedBg(pressed, c.pressRipple, bg) }]}>
+    <Pressable onPress={onPress} onLongPress={onLongPress} delayLongPress={delayLongPress} accessibilityRole="button" accessibilityLabel={a11y} onPressIn={r.onPressIn} onPressOut={r.onPressOut} style={[base, { backgroundColor: bg }]}>
+      {r.layer}
       {children}
     </Pressable>
   );
