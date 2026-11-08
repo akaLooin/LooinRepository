@@ -32,6 +32,16 @@ Our own sticker pack, drawn in code (`app/src/components/Sticker.tsx`, colours i
 on the sticker tab (as in the original); reactions show the sticker under the to-do; 대화 sends them as `sticker` messages;
 설정 → 내 스티커 shows the pack. Not yet: stickers on diaries (need the original's diary-sticker screen first).
 
+## 크루 (built 2026-11-09, user's recording)
+
+둘러보기: "크루" with 만들기 / 크루란?, crew cards side by side; search also finds crews. Crew page: picture, name,
+description, 멤버 n명, 참가 신청하기 → 참가 신청 (message ≤200, one category to share; "공개 설정과 관계없이 크루 멤버에게
+공개") → 참가 신청 중 (tap: cancel). Members ranked by what they finished in the shared category in the last 7 days
+("○○에서 n개의 할 일을 완료 · 1일 전"), medals for the top three, a crown on the leader. Members also see each other's
+shared to-dos of the day. The leader accepts or refuses requests on the crew page (and gets a notice), can change the
+shared category, delete the crew; members can leave. 크루란? = our own guide text and FAQ. Not recorded, so ours:
+만들기 form, the leader's request list, the rank period (7 days). Server: `20261109000200_crews.sql`.
+
 ## Push notifications (prepared 2026-11-08)
 
 Server: `20261108000300_push.sql` (push_tokens, notify_chat/likes/following on user_settings) + Edge Function

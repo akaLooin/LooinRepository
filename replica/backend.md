@@ -62,6 +62,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
     Expo Go and the web never get pushes (Expo Go has no push on Android since SDK 53).
 14. **친구 피드 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000000_feed.sql`. Safe to run again. Until then 둘러보기 shows "서버에 친구 기능 SQL을 먼저 실행해 주세요" where 친구 소식 would be.
 15. **일기 기분 온도 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000100_diary_mood.sql`. Safe to run again. Until then a diary keeps its 기분 온도 on the phone only.
+16. **크루 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000200_crews.sql` (crews, members and requests, crew notices, the public `crew-images` bucket). Safe to run again. For crew pushes, deploy the push function again (`npx.cmd supabase functions deploy push --no-verify-jwt --remote=<id>`).
 ## Checklist
 
 Auth
@@ -76,6 +77,7 @@ Database
 - [x] Migrations checked in (`supabase/migrations`), applied in order
 - [x] Row level security on every table. Tested on local Postgres 16 with Supabase's `auth` schema stubbed: a second user gets nothing back
 - [x] 대화 rules: `supabase/tests/chat.test.sql` (one room per pair, re-sent message counted once, photos only from your own folder and only for the two people, unread/read, 대화 수신 허용, stranger sees nothing, block hides the room)
+- [x] Crews: `supabase/tests/crews.test.sql` (own category only, picture from own folder, apply/cancel, only the leader sees and answers requests, members see each other's shared to-dos even from a private category, strangers see the ranking only, leave, delete)
 - [x] Feed: `supabase/tests/feed.test.sql` (followed people only, visibility, private memo, newest first, paging, reactions)
 - [x] Push: `supabase/tests/push.test.sql` (phone addresses only through functions, own only, a phone moves with the sign-in); the push wording and batching are unit-tested (`app/scripts/test-push.ts`); the function itself runs only on Supabase
 - [x] Friends rules: `supabase/tests/run.sh` runs every migration on a throwaway Postgres 16 and `friends.test.sql` (owner, follower, stranger, requester: visibility levels, private memos, photos, reactions and the 좋아요 setting, approval, block, search opt-out, signed out)

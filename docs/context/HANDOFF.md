@@ -35,13 +35,9 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - **폰 확인 방식(이용자 결정)**: 항상 실제 속도 모드 = `npm.cmd run phone` (`expo start --no-dev --minify`). **`--clear` 쓰지 않기**: 캐시를 지우면 첫 빌드가 60초 넘게 걸려 Expo Go가 기다리다 포기하고(파란 화면) 예전 버전을 띄움. 업데이트 안 보이던 원인이 이것
 - PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
 
-## APK (2026-11-07): 첫 빌드 설치·로그인 성공 ✅, 앱 이름 표시 ✅
-- 다음 빌드에 들어갈 것: 날짜 누르기 속도, 비밀번호 찾기·바꾸기, 설정 전체(원본대로), 캘린더 < > 후 날짜 안 눌리던 문제, 상태 이모지, **홈 화면 위젯**(새 네이티브 부품 → `npm.cmd install` 필수)
-- 이용자가 해 줄 것: Supabase Redirect URL `todomateclone://**`(backend.md 8), SQL 마이그레이션 20261107000000(backend.md 9)
-
-## (기록) APK 만들기
-- 이용자가 결정. 순서는 `replica/backend.md` 7번. 사전 점검 완료(패키지 버전 맞춤, expo-system-ui 추가, prebuild 통과)
-- EAS projectId 20e21693-a78a-4088-8483-327b41fc12f2 app.json에 커밋함(2026-11-07). 이용자 Expo 계정은 구글 가입 → 로그인은 `eas login --sso` 또는 EXPO_TOKEN
+## APK
+- EAS로 빌드(`cd app` → `npx.cmd eas-cli build --platform android --profile preview`), 순서 `replica/backend.md` 7번. projectId는 app.json. 푸시용 google-services.json은 EAS 파일 변수(저장소에 없음)
+- 이용자 할 일 남음: Supabase Redirect URL `todomateclone://**`(backend.md 8)
 
 ## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
 - **2단계 친구 기능** — `replica/phase2.md`. 서버 `20261108000000_friends.sql`(읽기는 함수로만), DB 테스트 `supabase/tests/run.sh`
@@ -55,7 +51,8 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - **친구 피드(2026-11-09)**: 둘러보기 검색칸 아래 '친구 소식'(팔로우한 친구의 완료 할 일·공개 일기, 반응, 더 보기, 피드 설정 2개 적용). SQL `20261109000000_feed.sql` 이용자 실행 필요(backend.md 14)
 - **터치 효과 2차(2026-11-09)**: 이용자 피드백(연한 상자, 좌우 덜 참) → 손가락에서 퍼지는 원을 직접 그림(`components/press.tsx`, 화면 끝까지). 클로버 숫자 테두리 제거
 - **일기 원본처럼(2026-11-09)**: 스티커 기분 + 기분 온도, 색 격자, 프로필 옆 = 그날 일기(시트 ⋯ 수정·삭제). SQL `20261109000100_diary_mood.sql`
-- **다음**: 크루(원본 영상 받음, 작업 중). 이용자 할 일: SQL 20261109000000·000100 실행, 새 APK, 두 번째 계정 확인
+- **크루(2026-11-09, 원본 영상)**: 둘러보기 크루 줄, 크루 화면(순위·메달·크루장), 참가 신청(메시지+공유 카테고리)·취소, 크루장 수락, 만들기, 가이드. SQL `20261109000200_crews.sql`
+- **다음(이용자, PC)**: SQL 20261109000000(피드)·000100(기분 온도)·000200(크루) 실행, push 함수 다시 배포(크루 알림), 새 APK, 두 번째 계정으로 확인
 - SQL 실행 완료 ✅ (2026-11-08): 20261107000000, 20261108000000·000100·000200·000300 (이용자 확인)
 
 ## 알려진 한계
@@ -64,7 +61,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (61개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
-- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 24개 (Playwright, 411×891, 체험 모드 데이터)
+- 단위 테스트 `cd app && npm test` (64개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

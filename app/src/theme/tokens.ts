@@ -49,7 +49,12 @@ export const tokens = {
       "onIcon": "#ffffff",
       "menuSoft": "#9da3dd",
       "scrimSolid": "#000000",
-      "pressRipple": "rgba(255,255,255,0.07)"
+      "pressRipple": "rgba(255,255,255,0.07)",
+      "medalGold": "#f2c230",
+      "medalSilver": "#c3c7cc",
+      "medalBronze": "#d98a4a",
+      "onMedal": "#1b1b1b",
+      "crown": "#21c45a"
     },
     "light": {
       "bg": "#ffffff",
@@ -99,7 +104,12 @@ export const tokens = {
       "onIcon": "#ffffff",
       "menuSoft": "#9da3dd",
       "scrimSolid": "#000000",
-      "pressRipple": "rgba(0,0,0,0.06)"
+      "pressRipple": "rgba(0,0,0,0.06)",
+      "medalGold": "#f2c230",
+      "medalSilver": "#c3c7cc",
+      "medalBronze": "#d98a4a",
+      "onMedal": "#1b1b1b",
+      "crown": "#21c45a"
     }
   },
   "type": {

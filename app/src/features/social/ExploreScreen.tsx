@@ -6,6 +6,8 @@ import { fontFamily, tokens, useInsets, useTheme } from "../../theme";
 import { PersonRow } from "./PersonRow";
 import { PersonSheet } from "./PersonSheet";
 import { FeedList } from "./FeedList";
+import { crewList, type CrewCard } from "../../data/crews";
+import { CrewCardView, CrewRow } from "../crew/parts";
 
 /**
  * 둘러보기 (S15), as far as the recording shows it: a search field "계정 또는 크루" on top; typing finds people by
@@ -17,6 +19,7 @@ export function ExploreScreen() {
   const insets = useInsets();
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Person[] | null>(null);
+  const [crews, setCrews] = useState<CrewCard[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<Person | null>(null);
@@ -26,6 +29,7 @@ export function ExploreScreen() {
     const n = ++asked.current;
     const t = setTimeout(() => {
       setBusy(true);
+      crewList(q).then((cr) => { if (n === asked.current) setCrews(cr); }).catch(() => setCrews([]));
       searchPeople(q)
         .then((r) => { if (n === asked.current) { setResults(r); setError(null); } })
         .catch((e) => { if (n === asked.current) setError(e instanceof Error ? e.message : "찾지 못했어요"); })
@@ -48,9 +52,18 @@ export function ExploreScreen() {
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40 }}>
         {error ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>{error}</AppText>
-          : results === null ? <FeedList onPerson={setOpen} />
-          : results.length === 0 ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>찾는 사람이 없어요</AppText>
-          : results.map((p) => <PersonRow key={p.id} p={p} onPress={() => setOpen(p)} />)}
+          : results === null ? <><CrewRow /><FeedList onPerson={setOpen} /></>
+          : <>
+            {crews.length ? (
+              <View style={{ marginBottom: 12 }}>
+                <AppText variant="helper" color="textMuted" style={{ marginBottom: 8 }}>크루</AppText>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>{crews.map((cr) => <CrewCardView key={cr.id} crew={cr} />)}</ScrollView>
+              </View>
+            ) : null}
+            {results.length === 0 && !crews.length ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>찾는 사람이나 크루가 없어요</AppText> : null}
+            {results.length && crews.length ? <AppText variant="helper" color="textMuted" style={{ marginBottom: 4 }}>계정</AppText> : null}
+            {results.map((p) => <PersonRow key={p.id} p={p} onPress={() => setOpen(p)} />)}
+          </>}
       </ScrollView>
       <PersonSheet person={open} onClose={() => setOpen(null)} onChange={(p) => setResults((r) => r?.map((x) => (x.id === p.id ? p : x)) ?? r)} />
     </View>

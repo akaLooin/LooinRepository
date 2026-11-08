@@ -1,4 +1,4 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import { AppText, useToast } from "../../components";
@@ -36,7 +36,7 @@ export function AlertsScreen() {
           : list.length === 0 ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>아직 알림이 없어요</AppText>
           : list.map((n) => (
             <View key={n.id} style={{ opacity: n.readAt ? 0.75 : 1 }}>
-              <PersonRow p={n.actor} onPress={() => setOpen(n.actor)} sub={`${noticeText(n)} · ${timeAgo(n.createdAt)}`}
+              <PersonRow p={n.actor} onPress={() => (n.crewId ? router.push(`/crew/${n.crewId}` as never) : setOpen(n.actor))} sub={`${noticeText(n)} · ${timeAgo(n.createdAt)}`}
                 action={n.type === "follow_request" ? [{ label: "수락", strong: true, onPress: () => answer(n, true) }, { label: "거절", onPress: () => answer(n, false) }] : undefined} />
             </View>
           ))}

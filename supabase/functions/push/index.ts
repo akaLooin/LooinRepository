@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
     const { data: settings } = await admin.from("user_settings").select("notify_likes, notify_following").eq("user_id", to).maybeSingle();
     if (!wants(noticeKind(r.type), settings)) return Response.json({ skipped: "turned off" });
     const todo = r.todo_id ? (await admin.from("todos").select("title").eq("id", r.todo_id).maybeSingle()).data : null;
-    const text = noticeBody(r.type, actor?.nickname ?? "누군가", r.value, todo?.title);
+    const crew = r.crew_id ? (await admin.from("crews").select("name").eq("id", r.crew_id).maybeSingle()).data : null;
+    const text = noticeBody(r.type, actor?.nickname ?? "누군가", r.value, todo?.title, crew?.name);
     if (!text) return Response.json({ skipped: "unknown type" });
     title = "새 소식";
     body = text;

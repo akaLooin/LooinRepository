@@ -48,7 +48,12 @@
     "on-icon": "#ffffff",
     "menu-soft": "#9da3dd",
     "scrim-solid": "#000000",
-    "press-ripple": "rgba(0,0,0,0.06)"
+    "press-ripple": "rgba(0,0,0,0.06)",
+    "medal-gold": "#f2c230",
+    "medal-silver": "#c3c7cc",
+    "medal-bronze": "#d98a4a",
+    "on-medal": "#1b1b1b",
+    "crown": "#21c45a"
   },
   "_original": {
     "clover-number": "#ffffff (흰 숫자, 대비 1.4:1)",

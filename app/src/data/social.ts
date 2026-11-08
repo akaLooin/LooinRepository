@@ -8,7 +8,8 @@ import { getDB, sessionUserId } from "./store";
 
 export type { FeedItem, FriendView, Person, Reaction } from "../lib/friend";
 export type Notice = {
-  id: string; type: "follow_request" | "follow" | "follow_accepted" | "reaction"; actor: Person; value?: string; todoTitle?: string;
+  id: string; type: "follow_request" | "follow" | "follow_accepted" | "reaction" | "crew_request" | "crew_accepted"; actor: Person; value?: string; todoTitle?: string;
+  crewId?: string; crewName?: string;
   readAt?: string; createdAt: string;
 };
 type ListKind = "following" | "followers" | "requests";
@@ -198,6 +199,7 @@ export async function myNotices(): Promise<Notice[]> {
   const rows = await rpc<any[]>("my_notifications", {});
   return rows.map((r) => ({
     id: r.id, type: r.type, actor: toPerson(r.actor), value: r.value ?? undefined, todoTitle: r.todo_title ?? undefined,
+    crewId: r.crew_id ?? undefined, crewName: r.crew_name ?? undefined,
     readAt: r.read_at ?? undefined, createdAt: r.created_at,
   }));
 }
