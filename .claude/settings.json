@@ -9,5 +9,52 @@
   },
   "enabledPlugins": {
     "ponytail@ponytail": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x /root/.local/bin/graphify ]; then exec /root/.local/bin/graphify hook-guard search; fi",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x /root/.local/bin/graphify ]; then exec /root/.local/bin/graphify hook-guard read; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x /root/.local/bin/graphify ]; then exec /root/.local/bin/graphify hook-guard compact; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 60,
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -x /root/.local/bin/graphify ] && [ -f graphify-out/graph.json ]; then /root/.local/bin/graphify update . >/dev/null 2>&1; fi; true"
+          }
+        ]
+      }
+    ]
   }
 }
