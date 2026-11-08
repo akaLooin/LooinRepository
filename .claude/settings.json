@@ -50,8 +50,8 @@
         "hooks": [
           {
             "type": "command",
-            "timeout": 60,
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if [ -x /root/.local/bin/graphify ] && [ -f graphify-out/graph.json ]; then /root/.local/bin/graphify update . >/dev/null 2>&1; fi; true"
+            "timeout": 90,
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/graphify-stop.sh\""
           }
         ]
       }
