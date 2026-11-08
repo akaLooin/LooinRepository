@@ -2,7 +2,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "../lib/supabase";
 import { readBytes } from "../lib/readBytes";
-import { toMessage, type Message, type MessageKind } from "../lib/chat";
+import { crewOfRoom, crewRoomId, toMessage, type Message, type MessageKind } from "../lib/chat";
 import { toPerson, type Person } from "../lib/friend";
 import { newId, sessionUserId } from "./store";
 import { getPerson } from "./social";
@@ -10,9 +10,15 @@ import { getPerson } from "./social";
 export type { Message } from "../lib/chat";
 export type Conversation = {
   id: string; other: Person; unread: number; canSend: boolean; lastAt?: string;
-  last?: { kind: MessageKind; body: string; mine: boolean; createdAt: string };
+  last?: { kind: MessageKind; body: string; mine: boolean; createdAt: string; nickname?: string };
+  /** a crew's group room (id "crew-<crew id>"); `other` then stands for the crew */
+  crew?: boolean;
 };
-export type Thread = { other: Person; canSend: boolean; otherReadAt?: string; messages: Message[] };
+export type Thread = { other: Person; canSend: boolean; otherReadAt?: string; messages: Message[]; crew?: { id: string; members: number } };
+
+/** A crew shown where a person would be (room list, chat header). */
+const crewAsPerson = (id: string, name: string, image?: string): Person =>
+  ({ id, nickname: name, bio: "", avatarUri: image, iFollow: null, followsMe: null, blockedByMe: false });
 
 const isDemo = () => sessionUserId() === null;
 async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -49,14 +55,20 @@ export async function myConversations(): Promise<Conversation[]> {
       out.push({ id, other, canSend: true, lastAt: last.createdAt, unread: th.messages.filter((m) => !m.mine && m.createdAt > th.read).length,
         last: { kind: last.kind, body: last.body, mine: last.mine, createdAt: last.createdAt } });
     }
+    for (const cr of await demoCrewRooms()) out.push(cr);
     return out.sort((a, b) => (b.lastAt ?? "").localeCompare(a.lastAt ?? ""));
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rows = await rpc<any[]>("my_conversations");
-  return rows.map((r) => ({
+  const [rows, crews] = await Promise.all([rpc<any[]>("my_conversations"), rpc<any[]>("my_crew_rooms").catch(() => [] as any[])]);
+  const rooms: Conversation[] = crews.map((r) => ({
+    id: crewRoomId(r.id), crew: true, other: crewAsPerson(r.id, r.name, r.image_path ?? undefined), unread: Number(r.unread ?? 0), canSend: true,
+    lastAt: r.last_message_at ?? undefined,
+    last: r.last ? { kind: r.last.kind, body: r.last.body ?? "", mine: !!r.last.mine, createdAt: r.last.created_at, nickname: r.last.nickname ?? undefined } : undefined,
+  }));
+  return [...rooms, ...rows.map((r) => ({
     id: r.id, other: toPerson(r.other), unread: Number(r.unread ?? 0), canSend: r.can_send !== false, lastAt: r.last_message_at ?? undefined,
     last: r.last ? { kind: r.last.kind, body: r.last.body ?? "", mine: !!r.last.mine, createdAt: r.last.created_at } : undefined,
-  }));
+  }) as Conversation)].sort((a, b) => (b.lastAt ?? "").localeCompare(a.lastAt ?? ""));
 }
 
 /** The conversation with someone (made if needed). Throws when they do not take messages from me. */
@@ -72,6 +84,23 @@ export async function openConversation(otherId: string): Promise<string> {
 
 /** Messages newest last. `after` = only newer ones (polling), `before` = older ones (scrolling up). */
 export async function loadThread(id: string, opts: { after?: string; before?: string } = {}): Promise<Thread | null> {
+  const crewId = crewOfRoom(id);
+  if (crewId && !isDemo()) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = await rpc<any>("crew_chat", { crew: crewId, after: opts.after ?? null, before: opts.before ?? null, max_rows: 50 });
+    if (!r) return null;
+    return { other: crewAsPerson(crewId, r.crew?.name ?? "크루", r.crew?.image_path ?? undefined), canSend: true, crew: { id: crewId, members: Number(r.crew?.members ?? 0) },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      messages: (r.messages ?? []).map(toMessage).reverse() };
+  }
+  if (crewId) {
+    const room = (await demoCrewRooms()).find((x) => x.id === id);
+    if (!room) return null;
+    const th = demoThreads.get(id) ?? { otherId: crewId, messages: [], read: new Date().toISOString() };
+    demoThreads.set(id, th);
+    const list = th.messages.filter((m) => (!opts.after || m.createdAt > opts.after) && (!opts.before || m.createdAt < opts.before));
+    return { other: room.other, canSend: true, crew: { id: crewId, members: 1 }, messages: list };
+  }
   if (isDemo()) {
     demoSeed();
     const th = demoThreads.get(id);
@@ -90,7 +119,8 @@ export async function loadThread(id: string, opts: { after?: string; before?: st
 /** Sends one message; for a photo, `local` is the picked file on this phone. Returns the server's time. */
 export async function sendMessage(conv: string, m: { id: string; kind: MessageKind; body: string; local?: string }): Promise<string> {
   if (isDemo()) {
-    const th = demoThreads.get(conv);
+    const th = demoThreads.get(conv) ?? (crewOfRoom(conv) ? { otherId: crewOfRoom(conv)!, messages: [], read: "" } : undefined);
+    if (th && !demoThreads.has(conv)) demoThreads.set(conv, th);
     const at = new Date().toISOString();
     th?.messages.push({ id: m.id, kind: m.kind, body: m.body, photoUri: m.local, mine: true, createdAt: at });
     if (th) th.read = at;
@@ -107,13 +137,17 @@ export async function sendMessage(conv: string, m: { id: string; kind: MessageKi
     if (error) throw new Error("사진을 올리지 못했어요");
     photoPath = `chat-photos/${path}`;
   }
-  const at = await rpc<string>("send_message", { conv, msg_id: m.id, kind: m.kind, body: m.body, photo_path: photoPath });
+  const crewId = crewOfRoom(conv);
+  const at = crewId
+    ? await rpc<string>("send_crew_message", { crew: crewId, msg_id: m.id, kind: m.kind, body: m.body, photo_path: photoPath })
+    : await rpc<string>("send_message", { conv, msg_id: m.id, kind: m.kind, body: m.body, photo_path: photoPath });
   refreshUnread();
   return at;
 }
 
 export async function markRead(conv: string) {
   if (isDemo()) { const th = demoThreads.get(conv); if (th) th.read = new Date().toISOString(); }
+  else if (crewOfRoom(conv)) await rpc("mark_crew_read", { crew: crewOfRoom(conv) }).catch(() => {});
   else await rpc("mark_conversation_read", { conv }).catch(() => {});
   refreshUnread();
 }
@@ -126,7 +160,8 @@ const listeners = new Set<() => void>();
 export function refreshUnread() {
   const p = isDemo()
     ? myConversations().then((l) => l.filter((c) => c.unread > 0).length)
-    : rpc<number>("unread_conversations");
+    : Promise.all([rpc<number>("unread_conversations"), rpc<{ unread: number }[]>("my_crew_rooms").catch(() => [])])
+      .then(([n, rooms]) => n + rooms.filter((r) => Number(r.unread) > 0).length);
   p.then((n) => { if (n !== unread) { unread = n; listeners.forEach((l) => l()); } }).catch(() => {});
 }
 export function useUnreadConversations(): number {
@@ -136,4 +171,16 @@ export function useUnreadConversations(): number {
     return () => clearInterval(t);
   }, []);
   return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => unread, () => unread);
+}
+
+/** Demo: a room for each sample crew I am a member of. */
+async function demoCrewRooms(): Promise<Conversation[]> {
+  const { crewList } = await import("./crews");
+  const crews = (await crewList()).filter((c) => c.myStatus === "member");
+  return crews.map((c) => {
+    const th = demoThreads.get(crewRoomId(c.id));
+    const last = th?.messages[th.messages.length - 1];
+    return { id: crewRoomId(c.id), crew: true, other: crewAsPerson(c.id, c.name, c.imageUri), unread: 0, canSend: true, lastAt: last?.createdAt,
+      last: last ? { kind: last.kind, body: last.body, mine: last.mine, createdAt: last.createdAt } : undefined };
+  });
 }

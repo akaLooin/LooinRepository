@@ -30,8 +30,8 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | tm.js | timer start/pause, survives reload, info screen |
 | chat.js | 대화 (demo): unread dot on 보내기, list → conversation, send text / big emoji / emoji panel, 전송됨 on the last one, read after opening, new conversation from a profile |
 | todo-calendar.js | 할 일 캘린더 from the home menu: to-dos in each day, 설정 → 화면 limit → "+n", week view, tapping a day opens home on it |
-| crew.js | 크루: row in 둘러보기, crew page ranking/medal/crown, 참가 신청 (message + category) → 참가 신청 중 → cancel, 크루란? FAQ, search, 만들기 → my crew |
-| diary.js | 일기 from the button next to the profile: sticker mood, 기분 온도, colour grid, ask on close, sticker beside the profile, sheet ⋯ → 삭제 |
+| crew.js | 크루: row in 둘러보기, crew page ranking/medal/crown, 참가 신청 → 참가 신청 중 → cancel, 크루란? FAQ, search, 만들기 (confirm, toast), crew chat, ⋯ menu, 모집 중단, 수정, crew chip → crew home + add |
+| diary.js | 일기 from the button next to the profile: sticker on top, 기분 온도 from the bottom button, colour grid, 임시 저장 on leaving and back next time, sticker beside the profile, sheet ⋯ → 삭제 |
 | feed.js | 친구 소식 in 둘러보기: a followed friend's finished to-dos and diary, sticker reaction, 피드에서 좋아요 보이기 off, search replaces it |
 | friends.js | demo people: friend chip → friend home, heart → emoji/sticker reaction and take back, their diary (sheet, sticker reaction), 주간 보기, 둘러보기 search → profile → follow (clovers) / request, profile's home button, 알림, 마이 counts → 친구 lists |
 | st.js | display settings (theme, week start), profile edit |

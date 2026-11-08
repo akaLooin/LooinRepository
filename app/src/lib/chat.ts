@@ -5,13 +5,18 @@ export type Message = {
   id: string; kind: MessageKind; body: string; photoUri?: string; mine: boolean; createdAt: string;
   /** only on this device: still on its way, or the server refused / the network failed */
   status?: "sending" | "failed";
+  /** crew rooms: who sent it */
+  sender?: { id: string; nickname: string; avatarUri?: string };
 };
 export type ChatItem = { type: "day"; key: string; label: string } | { type: "msg"; key: string; m: Message; time?: string; last: boolean };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toMessage(r: any): Message {
   const kind: MessageKind = r.kind === "emoji" || r.kind === "photo" || r.kind === "sticker" ? r.kind : "text";
-  return { id: String(r.id), kind, body: String(r.body ?? ""), photoUri: r.photo_path ?? undefined, mine: !!r.mine, createdAt: String(r.created_at) };
+  return {
+    id: String(r.id), kind, body: String(r.body ?? ""), photoUri: r.photo_path ?? undefined, mine: !!r.mine, createdAt: String(r.created_at),
+    ...(r.sender?.id ? { sender: { id: String(r.sender.id), nickname: String(r.sender.nickname ?? ""), avatarUri: r.sender.avatar_path ?? undefined } } : {}),
+  };
 }
 
 /** Puts new messages into the list: one copy per id (the server's wins over this device's), oldest first. */
@@ -79,9 +84,14 @@ export function isBigEmoji(text: string): boolean {
 }
 
 /** The line under a name in the conversation list. */
-export function previewText(last: { kind?: string; body?: string; mine?: boolean } | null | undefined): string {
+export function previewText(last: { kind?: string; body?: string; mine?: boolean; nickname?: string } | null | undefined): string {
   if (!last) return "";
+  if (last.nickname && !last.mine) return `${last.nickname}: ${previewText({ ...last, nickname: undefined })}`;
   if (last.kind === "photo") return "사진을 보냈어요";
   if (last.kind === "sticker") return "스티커를 보냈어요";
   return String(last.body ?? "").replace(/\s+/g, " ").trim();
 }
+
+/** Crew rooms share the chat screen: their conversation id is "crew-<crew id>". */
+export const crewRoomId = (crewId: string) => `crew-${crewId}`;
+export const crewOfRoom = (id: string) => (id.startsWith("crew-") ? id.slice(5) : null);

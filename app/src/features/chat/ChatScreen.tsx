@@ -38,7 +38,7 @@ export function ChatScreen() {
   const latest = useRef<string | undefined>(undefined);
 
   const apply = useCallback((t: Thread, replace = false) => {
-    setThread({ other: t.other, canSend: t.canSend, otherReadAt: t.otherReadAt });
+    setThread({ other: t.other, canSend: t.canSend, otherReadAt: t.otherReadAt, crew: t.crew });
     setMessages((old) => mergeMessages(replace ? old.filter((m) => m.status) : old, t.messages));
     const last = t.messages[t.messages.length - 1];
     if (last && (!latest.current || last.createdAt > latest.current)) latest.current = last.createdAt;
@@ -125,7 +125,8 @@ export function ChatScreen() {
           <ChevronLeft size={28} color={c.text} strokeWidth={2.2} />
         </Pressable>
         <AppText variant="screenTitle" center numberOfLines={1} style={{ flex: 1 }} accessibilityRole="header">{other?.nickname ?? ""}</AppText>
-        <Pressable onPress={() => other && setProfile(true)} accessibilityRole="button" accessibilityLabel="프로필 보기" style={{ width: 32, height: 32 }}>
+        <Pressable onPress={() => (thread?.crew ? router.push(`/crew/${thread.crew.id}` as never) : other && setProfile(true))} accessibilityRole="button"
+          accessibilityLabel={thread?.crew ? "크루 보기" : "프로필 보기"} style={{ width: 32, height: 32 }}>
           {other?.avatarUri ? <StoredImage uri={other.avatarUri} label="" style={{ width: 32, height: 32, borderRadius: 16 }} />
             : <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c.surfaceStrong }} />}
         </Pressable>
@@ -152,16 +153,21 @@ export function ChatScreen() {
             {other.avatarUri ? <StoredImage uri={other.avatarUri} label="" style={{ width: 72, height: 72, borderRadius: 36 }} />
               : <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: c.surfaceStrong }} />}
             <AppText variant="bodyLg" weight={700}>{other.nickname}</AppText>
-            <AppText variant="helper" color="textMuted">{other.handle ? `@${other.handle} · ` : ""}{other.nickname}님과의 대화예요</AppText>
+            {thread?.crew ? (
+              <View style={{ marginTop: 6, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: c.surface }}>
+                <AppText variant="small" color="textMuted">{`대화방이 생성되었습니다 · 멤버 ${thread.crew.members}명`}</AppText>
+              </View>
+            ) : <AppText variant="helper" color="textMuted">{other.handle ? `@${other.handle} · ` : ""}{other.nickname}님과의 대화예요</AppText>}
           </View>
         ) : null}
         {!thread && !error ? <ActivityIndicator style={{ marginTop: 40 }} color={c.textMuted} /> : null}
-        {items.map((it) => it.type === "day" ? (
+        {items.map((it, k) => it.type === "day" ? (
           <View key={it.key} style={{ alignSelf: "center", marginVertical: 12, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: c.surface }}>
             <AppText variant="small" color="textMuted">{it.label}</AppText>
           </View>
         ) : (
           <Bubble key={it.key} m={it.m} time={it.time} state={it.m === lastMine || it.m.status ? stateOf(it.m) : undefined}
+            who={thread?.crew && !it.m.mine && it.m.sender && (() => { const p = items[k - 1]; return !(p && p.type === "msg" && p.m.sender?.id === it.m.sender?.id); })() ? it.m.sender : undefined}
             onRetry={it.m.status === "failed" ? () => retry(it.m) : undefined} tight={!it.last} />
         ))}
       </ScrollView>
@@ -196,7 +202,7 @@ export function ChatScreen() {
   );
 }
 
-function Bubble({ m, time, state, onRetry, tight }: { m: Message; time?: string; state?: string; onRetry?: () => void; tight: boolean }) {
+function Bubble({ m, time, state, onRetry, tight, who }: { m: Message; time?: string; state?: string; onRetry?: () => void; tight: boolean; who?: Message["sender"] }) {
   const { c } = useTheme();
   const big = m.kind === "emoji" || (m.kind === "text" && isBigEmoji(m.body));
   const body = m.kind === "photo" ? (
@@ -221,11 +227,22 @@ function Bubble({ m, time, state, onRetry, tight }: { m: Message; time?: string;
       {time ? <AppText variant="small" color="textMuted">{time}</AppText> : null}
     </View>
   );
-  return (
+  const row = (
     <View style={{ flexDirection: "row", justifyContent: m.mine ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 6, marginBottom: tight ? 3 : 10, opacity: m.status === "sending" ? 0.6 : 1 }}>
       {m.mine ? side : null}
       {body}
       {m.mine ? null : side}
+    </View>
+  );
+  // crew rooms: the sender's picture and name above the first of their messages
+  if (!who) return row;
+  return (
+    <View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+        {who.avatarUri ? <StoredImage uri={who.avatarUri} label="" style={{ width: 22, height: 22, borderRadius: 11 }} /> : <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c.surfaceStrong }} />}
+        <AppText variant="small" color="textSecondary">{who.nickname}</AppText>
+      </View>
+      {row}
     </View>
   );
 }

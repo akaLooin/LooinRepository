@@ -32,6 +32,16 @@ Our own sticker pack, drawn in code (`app/src/components/Sticker.tsx`, colours i
 on the sticker tab (as in the original); reactions show the sticker under the to-do; 대화 sends them as `sticker` messages;
 설정 → 내 스티커 shows the pack. Not yet: stickers on diaries (need the original's diary-sticker screen first).
 
+## 크루 2차 (2026-11-09, user's second recording)
+
+크루 만들기: "크루 이미지" link, 확인 → "크루 생성을 완료하시겠습니까?" → "크루가 성공적으로 생성되었습니다". A member's crew page has
+대화하기 (a crew group room in the 대화 list: "대화방이 생성되었습니다", sender name and picture above their messages). ⋯:
+멤버 보기 (참여 n), 나의 카테고리 변경, 크루 링크 복사 (todomateclone://crew/<id>, "클립보드에 복사되었습니다"), 모집 중단하기 /
+재개하기 (leader; confirm text from the recording), 수정 (leader; with 크루 삭제), 크루 나가기 (member). Home chip row gets
+the crews I belong to; a crew chip shows the crew home: crew picture/name/description, a calendar over every member's
+shared category, and per member their category (avatar, crown) with the day's to-dos; mine has "+" and working checks.
+Crew pictures now show (crew-images is a public bucket; the app did not treat it as uploaded). Server `20261109000300_crews2.sql`.
+
 ## 크루 (built 2026-11-09, user's recording)
 
 둘러보기: "크루" with 만들기 / 크루란?, crew cards side by side; search also finds crews. Crew page: picture, name,

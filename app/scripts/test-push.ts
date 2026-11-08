@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { deadTokens, expoBatches, messageText, noticeBody, noticeKind, wants } from "../../supabase/functions/push/payload";
+import { crewMessageText, deadTokens, expoBatches, messageText, noticeBody, noticeKind, wants } from "../../supabase/functions/push/payload";
 
 const t = (n: string, f: () => void) => { f(); console.log("ok", n); };
 t("chat message lines", () => {
@@ -7,6 +7,7 @@ t("chat message lines", () => {
   assert.equal(messageText("photo", ""), "사진을 보냈어요");
   assert.equal(messageText("sticker", "clover.best"), "스티커를 보냈어요");
   assert.equal(messageText("text", "가".repeat(200)).length, 120);
+  assert.equal(crewMessageText("토끼", "sticker", "clover.best"), "토끼: 스티커를 보냈어요");
 });
 t("follow and reaction lines match the 알림 tab", () => {
   assert.equal(noticeBody("follow_request", "토끼"), "토끼님이 팔로우를 요청했어요");

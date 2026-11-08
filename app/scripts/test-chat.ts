@@ -43,6 +43,8 @@ t("list preview and server rows", () => {
   assert.equal(previewText({ kind: "photo", body: "", mine: false }), "사진을 보냈어요");
   assert.equal(previewText({ kind: "text", body: "줄\n바꿈", mine: true }), "줄 바꿈");
   assert.equal(previewText(null), "");
+  assert.equal(previewText({ kind: "text", body: "안녕", mine: false, nickname: "토끼" }), "토끼: 안녕");
+  assert.equal(previewText({ kind: "text", body: "안녕", mine: true, nickname: "나" }), "안녕");
   assert.equal(previewText({ kind: "sticker", body: "clover.best", mine: false }), "스티커를 보냈어요");
   assert.equal(toMessage({ id: "s", kind: "sticker", body: "clover.best", created_at: "x" }).kind, "sticker");
   const m = toMessage({ id: "x", kind: "weird", body: null, mine: 1, created_at: "2026-11-08T00:00:00Z" });

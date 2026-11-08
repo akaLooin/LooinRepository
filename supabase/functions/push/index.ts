@@ -1,9 +1,9 @@
-// Edge Function: sends push notifications for new chat messages and new 알림 (follows, reactions).
-// Called by two Supabase Database Webhooks (INSERT on public.messages and on public.notifications) with the header
+// Edge Function: sends push notifications for new chat messages, crew chat messages and new 알림 (follows, reactions,
+// crews). Called by Supabase Database Webhooks (INSERT on public.messages, public.crew_messages, public.notifications) with the header
 // x-push-secret = the PUSH_WEBHOOK_SECRET set for this function. Setup: replica/backend.md 13.
 // Deploy: supabase functions deploy push --no-verify-jwt   (the webhook sends the secret instead of a user token)
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { deadTokens, expoBatches, messageText, noticeBody, noticeKind, wants } from "./payload.ts";
+import { crewMessageText, deadTokens, expoBatches, messageText, noticeBody, noticeKind, wants } from "./payload.ts";
 
 const EXPO = "https://exp.host/--/api/v2/push/send";
 
@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
   const r = event.record;
 
   let to: string | null = null, title = "", body = "", url = "/", channel = "social";
+  let many: string[] | null = null; // crew chat: every other member
   if (event.table === "messages") {
     const { data: conv } = await admin.from("conversations").select("user_a, user_b").eq("id", r.conversation_id).single();
     if (!conv) return Response.json({ skipped: "no conversation" });
@@ -29,6 +30,18 @@ Deno.serve(async (req) => {
     title = sender?.nickname ?? "새 메시지";
     body = messageText(r.kind, r.body);
     url = `/chat/${r.conversation_id}`;
+    channel = "messages";
+  } else if (event.table === "crew_messages") {
+    const { data: crew } = await admin.from("crews").select("name").eq("id", r.crew_id).single();
+    const { data: members } = await admin.from("crew_members").select("user_id").eq("crew_id", r.crew_id).eq("status", "member");
+    const ids = (members ?? []).map((m) => m.user_id).filter((u) => u !== r.sender_id);
+    const { data: off } = await admin.from("user_settings").select("user_id").in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]).eq("notify_chat", false);
+    const quiet = new Set((off ?? []).map((x) => x.user_id));
+    many = ids.filter((u) => !quiet.has(u));
+    const { data: sender } = await admin.from("profiles").select("nickname").eq("id", r.sender_id).single();
+    title = crew?.name ?? "크루";
+    body = crewMessageText(sender?.nickname ?? "", r.kind, r.body);
+    url = `/chat/crew-${r.crew_id}`;
     channel = "messages";
   } else if (event.table === "notifications") {
     to = r.user_id;
@@ -46,7 +59,9 @@ Deno.serve(async (req) => {
     return Response.json({ skipped: "other table" });
   }
 
-  const { data: rows } = await admin.from("push_tokens").select("token").eq("user_id", to);
+  const targets = many ?? (to ? [to] : []);
+  if (!targets.length) return Response.json({ sent: 0 });
+  const { data: rows } = await admin.from("push_tokens").select("token").in("user_id", targets);
   const batches = expoBatches((rows ?? []).map((x) => x.token), title, body, url, channel);
   let sent = 0;
   for (const batch of batches) {

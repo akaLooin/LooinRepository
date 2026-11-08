@@ -11,6 +11,9 @@ export function messageText(kind: string, body: string): string {
   return t.length > 120 ? `${t.slice(0, 119)}…` : t;
 }
 
+/** A crew chat message: who said it, then the line. */
+export const crewMessageText = (nickname: string, kind: string, body: string) => `${nickname ? `${nickname}: ` : ""}${messageText(kind, body)}`;
+
 /** A follow / reaction notification as one sentence (same wording as the app's 알림 tab). */
 export function noticeBody(type: string, actor: string, value?: string | null, todoTitle?: string | null, crewName?: string | null): string | null {
   const who = `${actor}님`;

@@ -42,7 +42,7 @@ export function ConversationsScreen() {
           )
           : list.map((cv) => (
             <RipplePressable key={cv.id} onPress={() => router.push(`/chat/${cv.id}` as never)} accessibilityRole="button"
-              accessibilityLabel={`${cv.other.nickname}와의 대화${cv.unread ? `, 안 읽은 메시지 ${cv.unread}개` : ""}`}
+              accessibilityLabel={`${cv.other.nickname}${cv.crew ? " 크루 대화방" : "와의 대화"}${cv.unread ? `, 안 읽은 메시지 ${cv.unread}개` : ""}`}
               style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: G, paddingVertical: 10 }}>
               {cv.other.avatarUri
                 ? <StoredImage uri={cv.other.avatarUri} label="" style={{ width: a, height: a, borderRadius: a / 2 }} />

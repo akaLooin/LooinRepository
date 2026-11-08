@@ -29,6 +29,8 @@ import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 import { takeHomeDay } from "../../lib/todoCalendar";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
+import { CrewHome } from "../crew/CrewHome";
+import { useMyCrews } from "../../data/crews";
 import { reactionsOnMine, showFriend, useFollowing, useShownFriend, type Received } from "../../data/social";
 
 const G = tokens.layout.gutter;
@@ -49,8 +51,10 @@ export function HomeScreen() {
   const diaries = useDB((d) => d.diaries);
   const following = useFollowing();
   const shownFriend = useShownFriend();
-  // a friend unfollowed or blocked meanwhile: back to my home
-  const friend = shownFriend && following.some((p) => p.id === shownFriend) ? shownFriend : null;
+  const myCrews = useMyCrews();
+  // a friend unfollowed or blocked meanwhile, or a crew left: back to my home. Crews are shown as "crew:<id>".
+  const shownCrew = shownFriend?.startsWith("crew:") && myCrews.some((x) => `crew:${x.id}` === shownFriend) ? shownFriend.slice(5) : null;
+  const friend = shownCrew ? null : shownFriend && following.some((p) => p.id === shownFriend) ? shownFriend : null;
 
   const now = today();
   const [selected, setSelected] = useState<Day>(now);
@@ -244,14 +248,17 @@ export function HomeScreen() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: G, gap: 8 }}>
           <IconChip label="보관함" onPress={openInbox}><Archive size={22} color={c.text} /></IconChip>
-          <Chip label={profile.nickname} avatar={profile.avatarUri} selected={!friend} onPress={() => { smoothLayout(160); showFriend(null); }} />
+          <Chip label={profile.nickname} avatar={profile.avatarUri} selected={!friend && !shownCrew} onPress={() => { smoothLayout(160); showFriend(null); }} />
           {following.map((p) => (
             <Chip key={p.id} label={p.nickname} avatar={p.avatarUri} selected={friend === p.id} onPress={() => { smoothLayout(160); setEditing(null); setAdding(null); showFriend(p.id); }} />
+          ))}
+          {myCrews.map((cr) => (
+            <Chip key={cr.id} label={cr.name} avatar={cr.imageUri} selected={shownCrew === cr.id} onPress={() => { smoothLayout(160); setEditing(null); setAdding(null); showFriend(`crew:${cr.id}`); }} />
           ))}
           <IconChip label="친구" onPress={() => router.push("/people" as never)}><Users size={22} color={c.text} /></IconChip>
         </ScrollView>
 
-        {friend ? <FriendHome id={friend} /> : <>
+        {shownCrew ? <CrewHome id={shownCrew} /> : friend ? <FriendHome id={friend} /> : <>
 
         <View style={{ paddingHorizontal: G, marginTop: 34 }}>
           <ProfileHeader

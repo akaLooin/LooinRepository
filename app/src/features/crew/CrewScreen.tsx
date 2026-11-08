@@ -1,9 +1,11 @@
+import * as Clipboard from "expo-clipboard";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { AppText, Check, ChevronLeft, ConfirmDialog, Crown, Ellipsis, StoredImage, useToast } from "../../components";
-import { cancelCrewApplication, crewDetail, takeCrewFlash, deleteCrew, leaveCrew, respondCrew, setCrewCategory, type CrewDetail } from "../../data/crews";
-import { medalOf } from "../../lib/crew";
+import { cancelCrewApplication, crewDetail, takeCrewFlash, deleteCrew, leaveCrew, respondCrew, setCrewCategory, setRecruiting, type CrewDetail } from "../../data/crews";
+import { crewLink, medalOf } from "../../lib/crew";
+import { crewRoomId } from "../../lib/chat";
 import { timeAgo } from "../../lib/friend";
 import { today } from "../../lib/dates";
 import { goBack } from "../../lib/nav";
@@ -27,7 +29,7 @@ export function CrewScreen() {
   const [toast, notice] = useToast();
   const [error, setError] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
-  const [ask, setAsk] = useState<null | "cancel" | "leave" | "delete">(null);
+  const [ask, setAsk] = useState<null | "cancel" | "leave" | "delete" | "stop">(null);
   const [picking, setPicking] = useState(false);
   const [person, setPerson] = useState<Person | null>(null);
   const load = useCallback(() => {
@@ -56,14 +58,21 @@ export function CrewScreen() {
             <CrewImage uri={crew.imageUri} size={96} round />
             <AppText variant="sheetTitle" accessibilityRole="header" style={{ marginTop: 8 }}>{crew.name}</AppText>
             {crew.description ? <AppText variant="body" color="textSecondary" center>{crew.description}</AppText> : null}
-            <AppText variant="helper" color="textMuted">{`멤버 ${crew.memberList.length}명`}</AppText>
+            <AppText variant="helper" color="textMuted">{`멤버 ${crew.memberList.length}명${crew.recruiting ? "" : " · 모집 중단"}`}</AppText>
           </View>
-          {crew.isOwner ? null : crew.myStatus === "member" ? null : (
-            <Pressable onPress={() => (crew.myStatus === "pending" ? setAsk("cancel") : router.push(`/crew/apply?id=${crew.id}` as never))} accessibilityRole="button"
+          {crew.isOwner || crew.myStatus === "member" ? (
+            <Pressable onPress={() => router.push(`/chat/${crewRoomId(crew.id)}` as never)} accessibilityRole="button"
               style={{ height: 46, borderRadius: tokens.radius.md, alignItems: "center", justifyContent: "center", backgroundColor: c.surface, marginBottom: 18 }}>
-              <AppText variant="body" weight={600}>{crew.myStatus === "pending" ? "참가 신청 중" : "참가 신청하기"}</AppText>
+              <AppText variant="body" weight={600}>대화하기</AppText>
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => (crew.myStatus === "pending" ? setAsk("cancel") : router.push(`/crew/apply?id=${crew.id}` as never))} accessibilityRole="button"
+              disabled={!crew.recruiting && crew.myStatus !== "pending"}
+              style={{ height: 46, borderRadius: tokens.radius.md, alignItems: "center", justifyContent: "center", backgroundColor: c.surface, marginBottom: 18, opacity: !crew.recruiting && crew.myStatus !== "pending" ? 0.5 : 1 }}>
+              <AppText variant="body" weight={600}>{crew.myStatus === "pending" ? "참가 신청 중" : crew.recruiting ? "참가 신청하기" : "모집이 중단된 크루예요"}</AppText>
             </Pressable>
           )}
+          {crew.isOwner && !crew.recruiting ? <AppText variant="helper" color="textMuted" center style={{ marginTop: -8, marginBottom: 16 }}>모집 중단 중이에요. ⋯ 메뉴에서 다시 열 수 있어요.</AppText> : null}
 
           {crew.requests?.length ? (
             <View style={{ marginBottom: 18, gap: 10 }}>
@@ -134,13 +143,20 @@ export function CrewScreen() {
         </ScrollView>
       )}
       <ActionSheet visible={menu} onClose={() => setMenu(false)} options={crew ? [
-        { label: "공유할 카테고리 바꾸기", onPress: () => setPicking(true) },
-        crew.isOwner ? { label: "크루 삭제", danger: true, onPress: () => setAsk("delete") } : { label: "크루 나가기", danger: true, onPress: () => setAsk("leave") },
+        { label: "멤버 보기", onPress: () => router.push(`/crew/members?id=${crew.id}` as never) },
+        { label: "나의 카테고리 변경", onPress: () => setPicking(true) },
+        { label: "크루 링크 복사", onPress: () => { Clipboard.setStringAsync(crewLink(crew.id)).then(() => notice("클립보드에 복사되었습니다")).catch(() => notice("복사하지 못했어요")); } },
+        ...(crew.isOwner ? [
+          crew.recruiting ? { label: "모집 중단하기", onPress: () => setAsk("stop") } : { label: "모집 재개하기", onPress: () => act(() => setRecruiting(crew.id, true), "모집을 다시 시작했어요") },
+          { label: "수정", onPress: () => router.push(`/crew/new?id=${crew.id}` as never) },
+        ] : [{ label: "크루 나가기", danger: true, onPress: () => setAsk("leave") }]),
       ] : []} />
       <CategoryPickSheet visible={picking} value={crew?.myCategoryId} onClose={() => setPicking(false)}
         onPick={(cat) => crew && act(() => setCrewCategory(crew.id, cat), "공유할 카테고리를 바꿨어요")} />
       <ConfirmDialog visible={ask === "cancel"} message="참가 신청을 취소하시겠습니까?" ok="삭제" danger onCancel={() => setAsk(null)}
         onOk={() => { setAsk(null); if (crew) act(() => cancelCrewApplication(crew.id), "참가 신청을 취소했어요"); }} />
+      <ConfirmDialog visible={ask === "stop"} message="모집을 중단하시겠습니까? 중단한 후에도 우측 상단 메뉴를 통해 모집을 재개할 수 있습니다." ok="중단하기"
+        onCancel={() => setAsk(null)} onOk={() => { setAsk(null); if (crew) act(() => setRecruiting(crew.id, false), "모집을 중단했어요"); }} />
       <ConfirmDialog visible={ask === "leave"} message="크루에서 나갈까요?" ok="나가기" danger onCancel={() => setAsk(null)}
         onOk={() => { setAsk(null); if (crew) act(() => leaveCrew(crew.id), "크루에서 나왔어요"); }} />
       <ConfirmDialog visible={ask === "delete"} message="크루를 삭제할까요? 멤버와 순위가 모두 사라져요." ok="삭제" danger onCancel={() => setAsk(null)}
