@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-08)
 
 ## Corpus Check
-- 33 files · ~22,758 words
+- 35 files · ~25,261 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 6 file(s) not represented in the graph (top: (none) 3, .csv 1, .css 1)
+- Unclassified: 6 file(s) not represented in the graph (top: (none) 3, .csv 2, .css 1)
 
 ## Summary
-- 297 nodes · 432 edges · 28 communities (22 shown, 6 thin omitted)
+- 318 nodes · 451 edges · 29 communities (22 shown, 7 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 31 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `457a4e28`
+- Built from commit: `04cd71dd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -27,7 +27,7 @@
 - replica-backend
 - replica-build
 - replica-brand
-- sweep.py
+- Recon map: Realm Grinder (Android / Steam / Web)
 - replica-deploy
 - replica-entrepreneur
 - replica-test
@@ -43,35 +43,34 @@
 - graphify-stop.sh
 - bug-report.md
 - test-plan.md
+- screens/README.md
 
 ## God Nodes (most connected - your core abstractions)
-1. `replica-recon` - 12 edges
-2. `compare()` - 10 edges
-3. `Recon map: {{app}} ({{platform}})` - 10 edges
-4. `read_png()` - 9 edges
-5. `load_reviews()` - 9 edges
-6. `render()` - 9 edges
-7. `replica-backend` - 9 edges
-8. `replica-build` - 9 edges
-9. `main()` - 8 edges
-10. `main()` - 8 edges
+1. `Recon map: Realm Grinder (Android / Steam / Web)` - 12 edges
+2. `replica-recon` - 12 edges
+3. `compare()` - 10 edges
+4. `Recon map: {{app}} ({{platform}})` - 10 edges
+5. `read_png()` - 9 edges
+6. `load_reviews()` - 9 edges
+7. `render()` - 9 edges
+8. `replica-backend` - 9 edges
+9. `replica-build` - 9 edges
+10. `globalMult()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `build_patterns()` --calls--> `re`  [EXTRACTED]
-  .claude/skills/replica-brand/sweep.py →   _Bridges community 11 → community 3_
 - `main()` --calls--> `argparse`  [EXTRACTED]
-  .claude/skills/replica-brand/sweep.py →   _Bridges community 11 → community 2_
+  .claude/skills/replica-diff/imgdiff.py →   _Bridges community 1 → community 2_
+- `build_patterns()` --calls--> `re`  [EXTRACTED]
+  .claude/skills/replica-brand/sweep.py →   _Bridges community 2 → community 3_
 - `default_pairs()` --calls--> `re`  [EXTRACTED]
   .claude/skills/replica-design/contrast.py →   _Bridges community 5 → community 3_
 - `main()` --calls--> `argparse`  [EXTRACTED]
   .claude/skills/replica-design/contrast.py →   _Bridges community 5 → community 2_
-- `main()` --calls--> `argparse`  [EXTRACTED]
-  .claude/skills/replica-diff/imgdiff.py →   _Bridges community 1 → community 2_
 
 ## Import Cycles
 - None detected.
 
-## Communities (28 total, 6 thin omitted)
+## Communities (29 total, 7 thin omitted)
 
 ### Community 0 - "engine.js"
 Cohesion: 0.12
@@ -82,8 +81,8 @@ Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
 ### Community 2 - "json"
-Cohesion: 0.15
-Nodes (13): combine(), load(), main(), MatrixError, render(), score(), visual_scores(), has_emoji() (+5 more)
+Cohesion: 0.11
+Nodes (19): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+11 more)
 
 ### Community 3 - "reviews.py"
 Cohesion: 0.20
@@ -117,9 +116,9 @@ Nodes (9): Definition of done, per screen, Output, replica-build, Step 1: the sh
 Cohesion: 0.22
 Nodes (8): Output, replica-brand, Step 1: the name, Step 2: the checks, run, not assumed, Step 3: palette, Step 4: logo brief, Step 5: voice, Step 6: the sweep
 
-### Community 11 - "sweep.py"
-Cohesion: 0.39
-Nodes (6): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep()
+### Community 11 - "Recon map: Realm Grinder (Android / Steam / Web)"
+Cohesion: 0.11
+Nodes (18): Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: Realm Grinder (Android / Steam / Web), Screens (+10 more)
 
 ### Community 12 - "replica-deploy"
 Cohesion: 0.22
@@ -162,7 +161,7 @@ Cohesion: 0.33
 Nodes (5): 다음 단계 (출시까지), 실행, 테일즈토피아 타이쿤 (Talestopia Tycoon), 파일 구성, 핵심 시스템
 
 ## Knowledge Gaps
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -174,4 +173,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
-  _Cohesion score 0.1476923076923077 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11260504201680673 - nodes in this community are weakly interconnected._
+- **Should `Recon map: Realm Grinder (Android / Steam / Web)` be split into smaller, more focused modules?**
+  _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
