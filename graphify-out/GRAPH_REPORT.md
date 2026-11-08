@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-08)
 
 ## Corpus Check
-- 46 files · ~30,875 words
+- 63 files · ~49,329 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 4, .woff2 3, .csv 2)
 
 ## Summary
-- 404 nodes · 548 edges · 37 communities (29 shown, 8 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.87)
+- 646 nodes · 1206 edges · 41 communities (34 shown, 7 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 77 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `77818f02`
+- Built from commit: `36dc0d3d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,9 +19,9 @@
 - engine.js
 - imgdiff.py
 - json
-- listing.py
+- map.ts
 - ui.js
-- contrast.py
+- engine.ts
 - replica-recon
 - Recon map: {{app}} ({{platform}})
 - replica-backend
@@ -37,42 +37,46 @@
 - replica-launch
 - Architecture: {{your app}} (a rebuild of {{app}}'s core features)
 - Deploy checklist: {{your app}}
-- engine.test.js
+- factions.ts
 - 테일즈토피아 타이쿤 (Talestopia Tycoon)
 - CLAUDE.md
 - graphify-stop.sh
 - bug-report.md
 - test-plan.md
 - screens/README.md
-- Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)
+- castSpell
 - save-schema.ts
 - package.json
-- design.ts
+- main.ts
 - compilerOptions
 - SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
 - build-tokens.mjs
 - components.md
+- general.ts
+- engine.test.ts
+- allUpgrades
+- visibleBuildings
 
 ## God Nodes (most connected - your core abstractions)
-1. `Recon map: Realm Grinder (Android / Steam / Web)` - 13 edges
-2. `replica-recon` - 12 edges
-3. `compare()` - 10 edges
-4. `Recon map: {{app}} ({{platform}})` - 10 edges
-5. `read_png()` - 9 edges
-6. `load_reviews()` - 9 edges
-7. `compilerOptions` - 9 edges
-8. `render()` - 9 edges
-9. `replica-backend` - 9 edges
-10. `replica-build` - 9 edges
+1. `Raster` - 21 edges
+2. `renderMap()` - 19 edges
+3. `S()` - 15 edges
+4. `shade()` - 14 edges
+5. `hex()` - 13 edges
+6. `noise()` - 13 edges
+7. `framedIcon()` - 13 edges
+8. `Alignment` - 13 edges
+9. `Recon map: Realm Grinder (Android / Steam / Web)` - 13 edges
+10. `replica-recon` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `API (엔진 액션)` --references--> `serialize()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
+- `API (엔진 액션)` --references--> `applyOffline()`  [INFERRED]
+  replica/architecture.md → game/js/engine.js
 - `API (엔진 액션)` --references--> `buyBuilding()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
 - `API (엔진 액션)` --references--> `buyUpgrade()`  [INFERRED]
-  replica/architecture.md → game/js/engine.js
-- `API (엔진 액션)` --references--> `click()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
 - `API (엔진 액션)` --references--> `castSpell()`  [INFERRED]
   replica/architecture.md → game/js/engine.js
@@ -80,31 +84,31 @@
 ## Import Cycles
 - None detected.
 
-## Communities (37 total, 8 thin omitted)
+## Communities (41 total, 7 thin omitted)
 
 ### Community 0 - "engine.js"
-Cohesion: 0.13
-Nodes (35): allUpgrades(), applyOffline(), availableUpgrades(), buildingCost(), buildingCps(), buildingMult(), buyBuilding(), buyUpgrade() (+27 more)
+Cohesion: 0.08
+Nodes (43): allUpgrades(), applyOffline(), availableUpgrades(), buildingCost(), buildingCps(), buildingMult(), buyBuilding(), buyUpgrade() (+35 more)
 
 ### Community 1 - "imgdiff.py"
 Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
 ### Community 2 - "json"
-Cohesion: 0.10
-Nodes (25): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+17 more)
+Cohesion: 0.06
+Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), check(), colours() (+32 more)
 
-### Community 3 - "listing.py"
-Cohesion: 0.33
-Nodes (6): has_emoji(), length(), lint(), main(), render(), words()
+### Community 3 - "map.ts"
+Cohesion: 0.07
+Nodes (51): BUILDING_ART, buildingSprite(), cache, Maker, thumbs, DOOR, Extra, IsoCanvas (+43 more)
 
 ### Community 4 - "ui.js"
 Cohesion: 0.26
 Nodes (12): buildBuildingRows(), load(), loop(), render(), renderBuildings(), renderGenres(), renderHighlights(), renderRewrite() (+4 more)
 
-### Community 5 - "contrast.py"
-Cohesion: 0.23
-Nodes (9): check(), colours(), default_pairs(), flatten(), luminance(), main(), parse_hex(), ratio() (+1 more)
+### Community 5 - "engine.ts"
+Cohesion: 0.10
+Nodes (27): BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY, BUILDING_BY_ID, BuildingDef (+19 more)
 
 ### Community 6 - "replica-recon"
 Cohesion: 0.15
@@ -166,13 +170,17 @@ Nodes (6): API, Architecture: {{your app}} (a rebuild of {{app}}'s core features
 Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
+### Community 21 - "factions.ts"
+Cohesion: 0.16
+Nodes (22): AlignmentDef, ALIGNMENTS, COST, FACTION_BY_ID, FactionDef, FactionUpgrade, GATE, Row (+14 more)
+
 ### Community 22 - "테일즈토피아 타이쿤 (Talestopia Tycoon)"
 Cohesion: 0.33
 Nodes (5): 다음 단계 (출시까지), 실행, 테일즈토피아 타이쿤 (Talestopia Tycoon), 파일 구성, 핵심 시스템
 
-### Community 29 - "Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)"
-Cohesion: 0.29
-Nodes (6): Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임), Build order, Schema (저장 데이터), Stack, The parts that bite, 화면 구조 (원작 녹화 영상 기준)
+### Community 29 - "castSpell"
+Cohesion: 0.21
+Nodes (19): applyOffline(), assistantsCps(), autocast(), availableSpells(), buildingMult(), buildingProd(), buildingsCps(), castSpell() (+11 more)
 
 ### Community 30 - "save-schema.ts"
 Cohesion: 0.29
@@ -180,11 +188,11 @@ Nodes (6): Alignment, AutocastTier, Big, CoinType, FactionId, SaveV1
 
 ### Community 31 - "package.json"
 Cohesion: 0.10
-Nodes (22): dependencies, break_infinity.js@^2.2.0, galmuri@^2.40.3, devDependencies, typescript@^7.0.2, vite@^8.3.6, vitest@^5.1.0, name (+14 more)
+Nodes (21): dependencies, break_infinity.js@^2.2.0, galmuri@^2.40.3, devDependencies, typescript@^7.0.2, vite@^8.3.6, vitest@^5.1.0, name (+13 more)
 
-### Community 32 - "design.ts"
-Cohesion: 0.22
-Nodes (8): cache, PALETTE, SPRITES, spriteURL(), box, canvas, house, ic()
+### Community 32 - "main.ts"
+Cohesion: 0.07
+Nodes (56): buildingThumb(), levelFor(), MAP_H, MAP_W, cache, PALETTE, SPRITES, spriteURL() (+48 more)
 
 ### Community 33 - "compilerOptions"
 Cohesion: 0.18
@@ -198,23 +206,39 @@ Nodes (6): DEFINITIONS, DISCLAIMER, PERMISSION & CONDITIONS, PREAMBLE, SIL OPEN 
 Cohesion: 0.40
 Nodes (3): lines, src, t
 
+### Community 37 - "general.ts"
+Cohesion: 0.21
+Nodes (8): GENERAL_UPGRADES, GeneralUpgrade, SUF, TROPHIES, TrophyDef, Snapshot, Mods, SaveState
+
+### Community 38 - "engine.test.ts"
+Cohesion: 0.27
+Nodes (8): BUILDINGS, FACTION_UPGRADES, FACTIONS, deserialize(), newGame(), newRun(), game(), break_infinity.js
+
+### Community 39 - "allUpgrades"
+Cohesion: 0.24
+Nodes (10): allUpgrades(), assistantCount(), baseCtx(), buyAllUpgrades(), buyUpgrade(), checkTrophies(), fcAffordable(), has() (+2 more)
+
+### Community 40 - "visibleBuildings"
+Cohesion: 0.36
+Nodes (8): buildingsFor(), buildingCost(), buyAllBuildings(), buyBuilding(), canSeeBuilding(), costMult(), maxAffordable(), visibleBuildings()
+
 ## Knowledge Gaps
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `vitest` connect `package.json` to `design.ts`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
+- **Why does `break_infinity.js` connect `engine.test.ts` to `main.ts`, `factions.ts`, `engine.ts`, `package.json`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Are the 4 inferred relationships involving `renderMap()` (e.g. with `.draw()` and `.rect()`) actually correct?**
+  _`renderMap()` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Should `engine.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.12612612612612611 - nodes in this community are weakly interconnected._
-- **Why does `API (엔진 액션)` connect `engine.js` to `Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
+  _Cohesion score 0.07918367346938776 - nodes in this community are weakly interconnected._
+- **Why does `renderMap()` connect `map.ts` to `main.ts`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Are the 15 inferred relationships involving `S()` (e.g. with `main.ts` and `abdicateFlow()`) actually correct?**
+  _`S()` has 15 INFERRED edges - model-reasoned connections that need verification._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
-  _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
-- **Should `Recon map: Realm Grinder (Android / Steam / Web)` be split into smaller, more focused modules?**
-  _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
-- **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.09666666666666666 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0642243328810493 - nodes in this community are weakly interconnected._

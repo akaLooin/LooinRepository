@@ -312,9 +312,9 @@
     "semantic_hash": ""
   },
   "app/src/art/sprites.ts": {
-    "mtime": 1794140171.7328365,
-    "seen": 1794140318.9981673,
-    "ast_hash": "f7fa74d5ff242590d9f4cee4434b9acd",
+    "mtime": 1794141422.4975662,
+    "seen": 1794141698.9554272,
+    "ast_hash": "b709320e35da2918430d1467b367d921",
     "semantic_hash": ""
   },
   "app/src/design.ts": {
@@ -336,9 +336,9 @@
     "semantic_hash": ""
   },
   "app/vite.config.ts": {
-    "mtime": 1794140275.0006883,
-    "seen": 1794140318.9981706,
-    "ast_hash": "9b851835487113e418cbab6cf0405eba",
+    "mtime": 1794141265.4224145,
+    "seen": 1794141698.9554472,
+    "ast_hash": "e50a3e89d8535c88271c5e8ed7123d71",
     "semantic_hash": ""
   },
   "app/design.html": {
@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "app/index.html": {
-    "mtime": 1794140280.948843,
-    "seen": 1794140318.9982002,
-    "ast_hash": "f92b7a1d55cac31963bc84de5d0f99cd",
+    "mtime": 1794141612.2766795,
+    "seen": 1794141698.955487,
+    "ast_hash": "50f09014fdca94718d06e2cd7246fe12",
     "semantic_hash": ""
   },
   "app/public/fonts/OFL.md": {
@@ -369,6 +369,126 @@
     "mtime": 1794140317.3488376,
     "seen": 1794140318.9982092,
     "ast_hash": "9777b53531dfb127fd4d20c712b8fb0f",
+    "semantic_hash": ""
+  },
+  "app/src/art/buildings.ts": {
+    "mtime": 1794141255.3606584,
+    "seen": 1794141698.95542,
+    "ast_hash": "91bb386bfa30a1972d298cb06861284c",
+    "semantic_hash": ""
+  },
+  "app/src/art/iso.ts": {
+    "mtime": 1794141344.7504025,
+    "seen": 1794141698.9554224,
+    "ast_hash": "b9c476e0b14f1842c09433887e9d93d0",
+    "semantic_hash": ""
+  },
+  "app/src/art/map.ts": {
+    "mtime": 1794141375.8755717,
+    "seen": 1794141698.9554238,
+    "ast_hash": "f67e5a67150a4a7c602124c970fd0dfa",
+    "semantic_hash": ""
+  },
+  "app/src/art/raster.ts": {
+    "mtime": 1794141275.7810688,
+    "seen": 1794141698.955425,
+    "ast_hash": "2894d003ec6b279867e768c8b9a5ca2b",
+    "semantic_hash": ""
+  },
+  "app/src/art/ui.ts": {
+    "mtime": 1794141456.7006702,
+    "seen": 1794141698.9554284,
+    "ast_hash": "ec7eaf4ceb27c51a77cd80dd18d1e6c1",
+    "semantic_hash": ""
+  },
+  "app/src/artcheck.ts": {
+    "mtime": 1794141354.481714,
+    "seen": 1794141698.9554296,
+    "ast_hash": "39f19d5ffd478bbcafc4be8a96228259",
+    "semantic_hash": ""
+  },
+  "app/src/data/buildings.ts": {
+    "mtime": 1794140775.1806297,
+    "seen": 1794141698.955431,
+    "ast_hash": "1b1fe49eba7c16191a2e14662503febe",
+    "semantic_hash": ""
+  },
+  "app/src/data/factions.ts": {
+    "mtime": 1794140851.4846344,
+    "seen": 1794141698.955432,
+    "ast_hash": "709b6678ebf2eeeb3e3455b31d0ddd02",
+    "semantic_hash": ""
+  },
+  "app/src/data/general.ts": {
+    "mtime": 1794140892.6166368,
+    "seen": 1794141698.955433,
+    "ast_hash": "ac06b2ed82ccde852bd64edf05e30991",
+    "semantic_hash": ""
+  },
+  "app/src/data/spells.ts": {
+    "mtime": 1794140878.664636,
+    "seen": 1794141698.9554338,
+    "ast_hash": "8f9e79ff63ab11a00da105d266801505",
+    "semantic_hash": ""
+  },
+  "app/src/data/types.ts": {
+    "mtime": 1794140776.90463,
+    "seen": 1794141698.9554348,
+    "ast_hash": "f92224e9f76cb51c6f23a450b65d9089",
+    "semantic_hash": ""
+  },
+  "app/src/engine/engine.ts": {
+    "mtime": 1794141052.5533314,
+    "seen": 1794141698.955438,
+    "ast_hash": "8657e04ae4fc6e7fad0789f729c8a4c0",
+    "semantic_hash": ""
+  },
+  "app/src/engine/format.ts": {
+    "mtime": 1794141037.0499024,
+    "seen": 1794141698.9554389,
+    "ast_hash": "5559923f75b823fbea56d6ae44cf8476",
+    "semantic_hash": ""
+  },
+  "app/src/engine/mods.ts": {
+    "mtime": 1794140797.5886312,
+    "seen": 1794141698.9554398,
+    "ast_hash": "d72de21d88a619d7a0134c10c74f0155",
+    "semantic_hash": ""
+  },
+  "app/src/engine/state.ts": {
+    "mtime": 1794140926.2766387,
+    "seen": 1794141698.9554405,
+    "ast_hash": "fbbc432b36d148c14530490661627c06",
+    "semantic_hash": ""
+  },
+  "app/src/main.ts": {
+    "mtime": 1794141610.4926794,
+    "seen": 1794141698.955442,
+    "ast_hash": "5d264d92ff629daee4703e46b5b6fc3f",
+    "semantic_hash": ""
+  },
+  "app/tests/engine.test.ts": {
+    "mtime": 1794141046.8747208,
+    "seen": 1794141698.955443,
+    "ast_hash": "eb260f1af1d6083927b85dd608804fb9",
+    "semantic_hash": ""
+  },
+  "app/art.html": {
+    "mtime": 1794141265.412659,
+    "seen": 1794141698.9554832,
+    "ast_hash": "483a38bcd2325836d830a201f3ed5633",
+    "semantic_hash": ""
+  },
+  "replica/design/game-buildings.png": {
+    "mtime": 1794141696.199737,
+    "seen": 1794141698.9555001,
+    "ast_hash": "4d63d36b54488295d159b67c7ab05716",
+    "semantic_hash": ""
+  },
+  "replica/design/game-upgrades.png": {
+    "mtime": 1794141696.201692,
+    "seen": 1794141698.9555013,
+    "ast_hash": "0ee796e803517b0e950b5a12d80d4962",
     "semantic_hash": ""
   },
   "app/package-lock.json": {
