@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "app/src/data/general.ts": {
-    "mtime": 1794199009.9505494,
-    "seen": 1794199099.817262,
-    "ast_hash": "d17b4d18ccf56ea13ba9882d56b6a703",
+    "mtime": 1794201193.1631544,
+    "seen": 1794201213.1019716,
+    "ast_hash": "ad2b4d0d308ec13359100449d64ec177",
     "semantic_hash": ""
   },
   "app/src/data/spells.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794200708.7673454,
-    "seen": 1794200727.5344424,
-    "ast_hash": "dcfce075c4256df9f06379d138ce8cde",
+    "mtime": 1794201193.1638212,
+    "seen": 1794201213.1019785,
+    "ast_hash": "f412d24003c736993fd3a2851af49ae7",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/state.ts": {
-    "mtime": 1794199595.8228083,
-    "seen": 1794199841.973637,
-    "ast_hash": "948688de31516fc6dd4c1b96faa7ff72",
+    "mtime": 1794201193.1634035,
+    "seen": 1794201213.1019814,
+    "ast_hash": "c072325385fde6bb85c5d3bdd20f8b71",
     "semantic_hash": ""
   },
   "app/src/main.ts": {

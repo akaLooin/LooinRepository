@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-09)
 
 ## Corpus Check
-- 87 files · ~78,178 words
+- 87 files · ~78,441 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 29 file(s) not represented in the graph (top: .xml 10, (none) 6, .woff2 3)
 
 ## Summary
-- 936 nodes · 1910 edges · 64 communities (47 shown, 17 thin omitted)
+- 936 nodes · 1912 edges · 63 communities (47 shown, 16 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 100 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a29fd903`
+- Built from commit: `26b566e2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -63,14 +63,13 @@
 - data/buildings.ts
 - allUpgrades
 - assistantCount
-- spells.ts
+- state.ts
 - endgame.ts
 - state.ts
-- content.ts
+- FactionId
 - trophyups.ts
 - endgame.test.ts
 - 밸런스 점검 1차 (2026-11-09)
-- EndCtx
 - allUpgrades
 
 ## God Nodes (most connected - your core abstractions)
@@ -100,7 +99,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (64 total, 17 thin omitted)
+## Communities (63 total, 16 thin omitted)
 
 ### Community 0 - "engine.js"
 Cohesion: 0.10
@@ -204,7 +203,7 @@ Nodes (6): Alignment, AutocastTier, Big, CoinType, FactionId, SaveV1
 
 ### Community 31 - "package.json"
 Cohesion: 0.06
-Nodes (33): config, dependencies, break_infinity.js@^2.2.0, @capacitor/android@^8.6.0, @capacitor/core@^8.6.0, galmuri@^2.40.3, devDependencies, @capacitor/cli@^8.6.0 (+25 more)
+Nodes (37): config, dependencies, break_infinity.js@^2.2.0, @capacitor/android@^8.6.0, @capacitor/core@^8.6.0, galmuri@^2.40.3, devDependencies, @capacitor/cli@^8.6.0 (+29 more)
 
 ### Community 32 - "main.ts"
 Cohesion: 0.08
@@ -243,8 +242,8 @@ Cohesion: 0.40
 Nodes (4): Talestopia Tycoon (app), 개발, 관리자 패널 (용어·설명·수치 편집), 안드로이드
 
 ### Community 51 - "factions.ts"
-Cohesion: 0.11
-Nodes (16): HeritageDef, AlignmentDef, ALIGNMENTS, FACTION_COSTS, FactionDef, FactionKind, FactionUpgrade, GATE (+8 more)
+Cohesion: 0.12
+Nodes (20): EndCtx, AlignmentDef, ALIGNMENTS, FACTION_COSTS, FactionKind, GATE, GATE_FC, LOW (+12 more)
 
 ### Community 52 - "data/buildings.ts"
 Cohesion: 0.12
@@ -258,25 +257,25 @@ Nodes (15): buyMercPick(), buyMercSpell(), canAutocast(), coinPool(), has(), mer
 Cohesion: 0.33
 Nodes (7): assistantCount(), baseCtx(), challengeAvailable(), checkChallenges(), checkTrophies(), ownedTotal(), totalExchanges()
 
-### Community 55 - "spells.ts"
-Cohesion: 0.25
-Nodes (12): ActiveSpell, SpellDef, Alignment, COIN_TYPES, VANILLA_COINS, Ctx, ln(), lowTiers() (+4 more)
+### Community 55 - "state.ts"
+Cohesion: 0.23
+Nodes (11): BUILDINGS, FACTION_UPGRADES, FACTIONS, AutocastTier, DEC_RUN, deserialize(), newGame(), newPerm() (+3 more)
 
 ### Community 56 - "endgame.ts"
-Cohesion: 0.09
-Nodes (27): ARCHAEOLOGY, ARTIFACT_TOTAL_BONUS, BLOODLINE_UPGRADES_NEEDED, BloodlineDef, ChallengeDef, ChallengeView, Eff, EXCAVATION_FC_CHANCE (+19 more)
+Cohesion: 0.06
+Nodes (34): BASE_LABELS, Field, FieldType, ARCHAEOLOGY, ARTIFACT_TOTAL_BONUS, ARTIFACTS, ASCENSION, BLOODLINE_UPGRADES_NEEDED (+26 more)
 
 ### Community 57 - "state.ts"
-Cohesion: 0.07
-Nodes (36): vitest@^5.1.0, botStep(), days, events, lastGain, log(), milestones, pickAlignment() (+28 more)
-
-### Community 58 - "content.ts"
 Cohesion: 0.10
-Nodes (16): BASE_LABELS, Field, FieldType, ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES (+8 more)
+Nodes (25): botStep(), days, events, lastGain, log(), milestones, pickAlignment(), pickFaction() (+17 more)
+
+### Community 58 - "FactionId"
+Cohesion: 0.19
+Nodes (13): BloodlineDef, ChallengeDef, ChallengeView, FacilityDef, HeritageDef, LexDef, UniqueDef, FactionDef (+5 more)
 
 ### Community 59 - "trophyups.ts"
-Cohesion: 0.11
-Nodes (21): SPELL_TIERS, FACTIONS, GENERAL_UPGRADES, GeneralUpgrade, SUF, TROPHIES, TrophyDef, SPELL_BY_ID (+13 more)
+Cohesion: 0.10
+Nodes (23): LineageDef, SPELL_TIERS, UnionDef, GENERAL_UPGRADES, GeneralUpgrade, SUF, TROPHIES, TrophyDef (+15 more)
 
 ### Community 60 - "endgame.test.ts"
 Cohesion: 0.22
@@ -291,12 +290,12 @@ Cohesion: 0.25
 Nodes (11): activeUniques(), allUpgrades(), brilliance(), buyAllUpgrades(), buyUpgrade(), fcAffordable(), spellCategory(), tierCoin() (+3 more)
 
 ## Knowledge Gaps
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `break_infinity.js` connect `state.ts` to `main.ts`, `engine.ts`, `spells.ts`, `endgame.test.ts`, `package.json`?**
+- **Why does `break_infinity.js` connect `package.json` to `main.ts`, `engine.ts`, `state.ts`, `state.ts`, `endgame.test.ts`?**
   _High betweenness centrality (0.042) - this node is a cross-community bridge._
 - **Are the 24 inferred relationships involving `S()` (e.g. with `main.ts` and `abdicateFlow()`) actually correct?**
   _`S()` has 24 INFERRED edges - model-reasoned connections that need verification._
