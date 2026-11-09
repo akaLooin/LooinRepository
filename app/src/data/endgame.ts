@@ -74,7 +74,7 @@ export const BLOODLINES: BloodlineDef[] = [
   { faction: 'minstrel', ko: '노래의 혈통', desc: '이번 판 {fcShort} 수에 따라 발견 확률 증가, 초당 3회 자동 두드리기', autoclick: 3,
     effect: (m, c) => { m.fcChance *= 1 + Math.floor(15 * ln(1 + c.fcFoundRun) ** 1.75) / 100; } },
   { faction: 'starmage', ko: '별의 혈통', desc: '이번 판 시전한 주문 수에 따라 {mana} 회복 증가', effect: (m, c) => { m.manaRegenMult *= 1 + 0.01 * c.spellsRun; } }, // GUESS (original: spell duration)
-  { faction: 'thieves', ko: '도둑의 혈통', desc: '건물 가격 증가율 감소 (1.15 → 최소 1.13)', effect: (m) => { m.costMult *= 0.98; } },
+  { faction: 'thieves', ko: '도둑의 혈통', desc: '모든 건물 가격 증가율 -0.02 (1.15 → 1.13)', effect: (m) => { m.costRed += 0.02; } },
   { faction: 'ghost', ko: '망령의 혈통', desc: '환생 횟수에 따라 {assistant} 배율 증가 (8·R^0.8)', effect: (m, c) => { m.assistantsMult *= 1 + Math.floor(8 * c.reincarnations ** 0.8); } },
   { faction: 'witch', ko: '마녀의 혈통', desc: '주문 시전 수가 더 크게 계산됨 (GUESS: 전체 생산 +2%/주문)', effect: (m, c) => { m.global *= 1 + 0.02 * c.spellsRun; } },
   { faction: 'pirate', ko: '바다의 혈통', desc: '{exchange} 횟수에 따라 전체 생산 증가 (15·x^0.85 %)', effect: (m, c) => { m.global *= 1 + (15 * c.exchangesRun ** 0.85) / 100; } },
@@ -248,7 +248,7 @@ export const CHALLENGES: ChallengeDef[] = [
   { id: 'ch_puppet4', faction: 'puppet', tier: 4, minR: 16, ko: '끝나지 않는 막', clue: '개선 30개 이하로 금화 1No를 벌어라.', check: (c) => c.upgradesRun <= 30 && c.coinsRun >= 1e30, reward: '꼭두각시: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
   // prestige factions (played on top of a base faction)
   { id: 'ch_clockmaker1', faction: 'clockmaker', tier: 1, minR: 10, ko: '첫 톱니', clue: '시계장인과 함께 금화 1Qad를 벌어라.', check: (c) => c.coinsRun >= 1e45, reward: '시계장인: 두드리기 x3', effect: (m) => { m.click *= 3; } },
-  { id: 'ch_clockmaker2', faction: 'clockmaker', tier: 2, minR: 14, ko: '정밀한 하루', clue: '한 판에 15,000번 두드려라.', check: (c) => c.clicksRun >= 15000, reward: '시계장인: {fcShort} 확률 x2', effect: (m) => { m.fcChance *= 2; } },
+  { id: 'ch_clockmaker2', faction: 'clockmaker', tier: 2, minR: 14, ko: '정밀한 하루', clue: '한 판에 15,000번 두드려라.', check: (c) => c.clicksRun >= 15000, reward: '2·3단계 건물 가격 증가율 -0.01 (1.15 → 1.14)', effect: (m) => { m.costRedB.c2 = (m.costRedB.c2 ?? 0) + 0.01; m.costRedB.c3 = (m.costRedB.c3 ?? 0) + 0.01; } },
   { id: 'ch_clockmaker3', faction: 'clockmaker', tier: 3, minR: 20, ko: '거대한 시계탑', clue: '건물 5,000채를 모아라.', check: (c) => c.ownedTotal >= 5000, reward: '시계장인: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
   { id: 'ch_clockmaker4', faction: 'clockmaker', tier: 4, minR: 27, ko: '영원의 태엽', clue: '한 판을 48시간 이상 이어가라.', check: (c) => c.runSeconds >= 48 * 3600, reward: '시계장인: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
   { id: 'ch_shadow1', faction: 'shadow', tier: 1, minR: 10, ko: '첫 연습', clue: '그림자 극단과 함께 주문을 100번 시전하라.', check: (c) => c.spellsRun >= 100, reward: '그림자 극단: 전체 생산 x2', effect: (m) => { m.global *= 2; } },

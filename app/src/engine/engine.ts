@@ -121,6 +121,7 @@ export function snapshot(s: SaveState, now: number): Snapshot {
   const ctx = { ...c0, manaRegen, assistants: assistantCount(s, m0), fcChance: fc0, manaMax: BASE.mana + m0.manaMaxAdd };
   const mods = applyAll(s, now, ctx);
   if (s.perm.ascensions > 0) shiftValues(mods);
+  costRedCache.set(s, { red: mods.costRed, redB: mods.costRedB });
   const gemFactor = has(s, 'gempower') || s.perm.ascensions > 0 ? s.gems.mul((BASE.gemBonus + mods.gemBonusAdd) * mods.gemBonusMult).add(1) : D(1);
   return { mods, ctx, manaRegen: (BASE.manaRegen + mods.manaRegenAdd) * mods.manaRegenMult, manaMax: BASE.mana + mods.manaMaxAdd, gemFactor, assistants: assistantCount(s, mods) };
 }
@@ -134,6 +135,15 @@ function shiftValues(m: Mods) {
   for (const k in m.building) m.building[k] = f(m.building[k]);
 }
 export const costGrowth = (s: SaveState) => (s.perm.ascensions > 0 ? ASCENSION.costGrowth : BASE.costGrowth);
+// cost multiplier reductions from the last snapshot (WIKI: "reduces cost multiplier by r"; reductions add up, GUESS: floor 1.10; not after ascending)
+const costRedCache = new WeakMap<SaveState, { red: number; redB: Record<string, number> }>();
+export const MIN_COST_GROWTH = 1.1;
+export function buildingGrowth(s: SaveState, id: string): number {
+  const g = costGrowth(s);
+  if (s.perm.ascensions > 0) return g;
+  const r = costRedCache.get(s);
+  return r ? Math.max(MIN_COST_GROWTH, g - r.red - (r.redB[id] ?? 0)) : g;
+}
 export const gemDivisor = (s: SaveState) => (s.perm.ascensions === 0 ? BASE.gemDivisor : ASCENSION.gemDivisor[Math.min(s.perm.ascensions, 4)]);
 
 export function buildingMult(b: BuildingDef, snap: Snapshot): number {
@@ -226,7 +236,7 @@ export function costMult(s: SaveState): number { return snapshot(s, s.lastSeen).
 
 export function buildingCost(s: SaveState, id: string, n = 1, cm = costMult(s)): Decimal {
   const b = BUILDING_BY_ID[id];
-  const g = costGrowth(s);
+  const g = buildingGrowth(s, id);
   const first = D(b.cost).mul(D(g).pow(s.run.buildings[id])).mul(cm);
   return first.mul(D(g).pow(n).sub(1)).div(g - 1);
 }
@@ -234,7 +244,7 @@ export function buildingCost(s: SaveState, id: string, n = 1, cm = costMult(s)):
 export function maxAffordable(s: SaveState, id: string, cm = costMult(s)): number {
   const first = buildingCost(s, id, 1, cm);
   if (s.run.coins.lt(first)) return 0;
-  const g = costGrowth(s);
+  const g = buildingGrowth(s, id);
   let n = Math.floor(Decimal.log10(s.run.coins.mul(g - 1).div(first).add(1)) / Math.log10(g));
   while (n > 0 && buildingCost(s, id, n, cm).gt(s.run.coins)) n--;
   return n;

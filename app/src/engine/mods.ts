@@ -39,6 +39,8 @@ export interface Mods {
   manaMaxAdd: number;
   fcChance: number;                     // multiplier
   costMult: number;                     // building cost multiplier
+  costRed: number;                      // subtracted from the cost growth of every building (WIKI MultiplierReduction)
+  costRedB: Record<string, number>;     // subtracted from one building's cost growth
   gemBonusMult: number;
   gemBonusAdd: number;                  // added to the per-gem bonus (0.01 = +1%p)
   clickBase: number;                    // added to the base click reward
@@ -53,7 +55,7 @@ export function newMods(): Mods {
   return {
     global: 1, tier: new Array(12).fill(1), align: { bright: 1, dark: 1, legend: 1, common: 1 }, building: {},
     click: 1, clickShare: 0, clickShareLow: 0, assistantsAdd: 0, assistantsMult: 1, manaRegenAdd: 0, manaRegenMult: 1, manaMaxAdd: 0,
-    fcChance: 1, costMult: 1, gemBonusMult: 1, gemBonusAdd: 0, clickBase: 0, baseAdd: {}, autoclick: 0, taxSeconds: 0, exchangeBonus: 0.1, offline: 1,
+    fcChance: 1, costMult: 1, costRed: 0, costRedB: {}, gemBonusMult: 1, gemBonusAdd: 0, clickBase: 0, baseAdd: {}, autoclick: 0, taxSeconds: 0, exchangeBonus: 0.1, offline: 1,
   };
 }
 

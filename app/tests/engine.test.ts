@@ -40,6 +40,15 @@ describe('clicking and buildings', () => {
     expect(E.buildingCost(s, 'c1').toNumber()).toBeCloseTo(11.5);
     expect(E.totalCps(s, E.snapshot(s, T0)).toNumber()).toBeCloseTo(2);
   });
+  it('cost multiplier reductions lower the growth rate, not just the price', () => {
+    const s = game(); rich(s, 1e6); s.run.buildings.c1 = 100;
+    const before = E.buildingCost(s, 'c1').toNumber();
+    s.run.bloodline = 'thieves';
+    E.snapshot(s, T0);
+    expect(E.buildingGrowth(s, 'c1')).toBeCloseTo(1.13);
+    expect(E.buildingCost(s, 'c1').toNumber()).toBeCloseTo(10 * 1.13 ** 100, -3);
+    expect(E.buildingCost(s, 'c1').toNumber()).toBeLessThan(before);
+  });
   it('aligned buildings need the alignment', () => {
     const s = game(); rich(s, 1e9);
     expect(E.buyBuilding(s, 'b4', 1)).toBe(0);

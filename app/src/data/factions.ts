@@ -188,7 +188,7 @@ export const FACTION_UPGRADES: FactionUpgrade[] = [
   ]),
   ...faction('clockmaker', [
     ['톱니 맥주', '3단계 건물 수에 따라 {fcShort} 발견 확률 +(2·√x)%', (m, c) => { m.fcChance *= 1 + 0.02 * Math.sqrt(c.buildings.c3 ?? 0); }],
-    ['정밀 석공술', '건물 가격 -10%', (m) => { m.costMult *= 0.9; }],
+    ['정밀 석공술', '모든 건물 가격 증가율 -0.01 (1.15 → 1.14)', (m) => { m.costRed += 0.01; }],
     ['깊은 갱도', '탐사 깊이에 따라 전체 생산 증가 (40·x^0.4 %)', (m, c) => { m.global *= 1 + (40 * (c.excavations ?? 0) ** 0.4) / 100; }],
     ['지하 성채', '{gem}에 따라 {mana} 회복 증가', (m, c) => { m.manaRegenMult *= 1 + (1.5 * Math.log10(1 + c.gems) ** 1.5) / 100; }],
     ['부서지지 않는 보물', '이번 판 건물 수에 따라 두드리기 보상 증가', (m, c) => { m.click *= 1 + (0.5 * c.ownedTotal ** 0.65) / 100; }],
