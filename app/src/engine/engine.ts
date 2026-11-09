@@ -7,7 +7,7 @@ import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
 import { AUTOCAST_UPGRADES, GEM_UPGRADES, MANA_UPGRADES, RUBY_UPGRADES, SECRETS, SPELL_UPGRADES, rubyPower, rubyUpgradeCost, type TrophyUpgrade } from '../data/trophyups';
-import { LINEAGE, LINEAGES, SPELL_TIERS, RESEARCH_COST, LEGES, LEGES_MIN_R, UNIQUES, UNIQUE_MULT, type UniqueDef, ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
+import { UNION, UNIONS, LINEAGE, LINEAGES, SPELL_TIERS, RESEARCH_COST, LEGES, LEGES_MIN_R, UNIQUES, UNIQUE_MULT, type UniqueDef, ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
 export const BASE = {
@@ -69,6 +69,7 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   if (s.run.bloodline) BLOODLINES.find((b) => b.faction === s.run.bloodline)?.effect(m, c);
   if (s.run.faction) for (const f of FACILITIES) if (f.factions.includes(s.run.faction)) m.global *= 1 + facilityBonus(s.perm.research[f.id] ?? 0);
   for (const u of UNIQUES) if (has(s, u.id)) { const b = uniqueBuilding(s, u); m.building[b] = (m.building[b] ?? 1) * UNIQUE_MULT; }
+  for (const u of UNIONS) if (has(s, 'unionup_' + u.faction)) u.effect(m, c, s.run.buildings[u.building] ?? 0);
   for (const id of s.perm.researchActive) { const r = RESEARCH_BY_ID[id]; if (r && researchUnlocked(s, r.id)) r.effect(m, c); }
   m.global *= rubyPower(s.perm.rubiesFound);
   const lin = activeLineage(s);
@@ -264,7 +265,7 @@ export function buyAllBuildings(s: SaveState, limit = 1000): number {
 }
 
 // ---------------------------------------------------------------- upgrades
-export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique' | 'secret' | 'spellup' | 'tier';
+export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique' | 'secret' | 'spellup' | 'tier' | 'union';
 export interface UpgradeView {
   id: string; kind: UpgradeKind; ko: string; desc: string; icon: string; cost: Decimal;
   fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean; reqOk?: boolean;
@@ -279,7 +280,7 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
   const out: UpgradeView[] = [];
   const free = s.perm.ascensions > 0; // after ascending, upgrades that cost gold are free (WIKI)
   const add = (u: Omit<UpgradeView, 'purchased' | 'affordable'>) => {
-    const v = free && u.kind !== 'lex' && u.kind !== 'tier' ? { ...u, cost: D(0) } : u;
+    const v = free && u.kind !== 'lex' && u.kind !== 'tier' && u.kind !== 'union' ? { ...u, cost: D(0) } : u;
     out.push({ ...v, purchased: has(s, v.id), affordable: (v.reqOk ?? true) && s.run.coins.gte(v.cost) && fcAffordable(s, v.fcCost) });
   };
 
@@ -347,6 +348,17 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
   const spells = new Set(availableSpells(s).map((x) => x.id));
   for (const x of SPELL_UPGRADES) if (s.trophies.includes('spt_' + x.spell) && spells.has(x.spell))
     add({ id: 'su_' + x.spell, kind: 'spellup', ko: x.ko, desc: x.desc, icon: SPELL_BY_ID[x.spell].icon, cost: D(x.cost), color: '#2a4a8a', tier: 2 });
+  // tiered autocasting (needed to cast above tier 1)
+  if (s.perm.ascensions > 0 && (s.stats.manaProduced >= SPELL_TIERS.tieredAutocast.mana || has(s, 'autotier')))
+    add({ id: 'autotier', kind: 'tier', ko: '등급 자동 낭독', desc: '2등급 이상으로 주문을 시전할 수 있어요 (누적 {mana} 200M 생산 시 열림).', icon: 'hourglass', cost: D(SPELL_TIERS.tieredAutocast.cost), color: '#3a5aa0', tier: 3 });
+  // faction unions (A2): faction's Leges proof + its Leges unique building
+  for (const u of UNIONS) {
+    if (s.perm.ascensions < 2 || (s.run.faction !== u.faction) || !has(s, 'uq2_' + u.faction)) continue;
+    const f = FACTION_BY_ID[u.faction];
+    add({ id: 'union_' + u.faction, kind: 'union', ko: `${f.ko} 연합`, desc: `${f.ko}과(와) 진영 연합을 맺어 연합 개선을 열어요.`, icon: f.emblem, cost: D(0),
+      fcCost: Object.fromEntries(f.coinTypes.map((c) => [c, UNION.fcCost])), color: f.color, tier: 5 });
+    if (has(s, 'union_' + u.faction)) add({ id: 'unionup_' + u.faction, kind: 'union', ko: u.ko, desc: u.desc, icon: f.emblem, cost: D(UNION.coinCost), color: f.color, tier: 5 });
+  }
   // spell tier upgrades (after the first ascension)
   const maxT = SPELL_TIERS.maxTier(s.perm.ascensions);
   if (maxT > 1) for (const sp of availableSpells(s)) {
@@ -354,7 +366,7 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
     for (let k = 2; k <= maxT; k++) {
       const id = `tier_${sp.id}_${k}`;
       if (!has(s, id) && !(k === 2 || has(s, `tier_${sp.id}_${k - 1}`))) break;
-      const need = SPELL_TIERS.unlockSeconds(k - 1, s.perm.reincarnations), have = s.perm.spellActive[sp.id] ?? 0;
+      const need = SPELL_TIERS.unlockSeconds(k - 1, s.perm.reincarnations, brilliance(s)), have = s.perm.spellActive[sp.id] ?? 0;
       const cat = spellCategory(sp.id), fc = SPELL_TIERS.fc(SPELL_TIERS.fcBase[cat], k), coin = tierCoin(s, sp.id);
       add({ id, kind: 'tier', ko: `${sp.ko} ${k}등급`, desc: `${sp.ko}을(를) ${k}번 겹쳐 시전할 수 있어요 ({mana} 비용 x${2 ** k - 1}). 누적 발동 ${Math.floor(have / 60)}/${Math.ceil(need / 60)}분`,
         icon: sp.icon, cost: D(SPELL_TIERS.coins(SPELL_TIERS.coinBase[cat], k)), fcCost: fc ? { [coin]: Math.ceil(fc) } : undefined, color: '#3a5aa0', tier: Math.min(5, k), reqOk: have >= need });
@@ -769,7 +781,12 @@ function tierCoin(s: SaveState, id: string): CoinType {
 /** Highest tier bought this run for a spell (1 = base). */
 export function spellMaxTier(s: SaveState, id: string) { let k = 1; while (has(s, `tier_${id}_${k + 1}`)) k++; return k; }
 /** Tier used when casting: the chosen tier (tiered autocasting) capped by the bought tier. */
-export function spellTier(s: SaveState, id: string) { return Math.max(1, Math.min(spellMaxTier(s, id), s.settings.spellTier[id] ?? 99)); }
+export function spellTier(s: SaveState, id: string) {
+  if (!has(s, 'autotier')) return 1;   // WIKI: without Tiered Autocasting spells stay at tier 1
+  return Math.max(1, Math.min(spellMaxTier(s, id), s.settings.spellTier[id] ?? 99));
+}
+/** Arcane Brilliance trophies earned (each one shortens tier unlock times). */
+export function brilliance(s: SaveState) { return s.trophies.filter((t) => t.startsWith('brill')).length; }
 export function setSpellTier(s: SaveState, id: string, k: number) { s.settings.spellTier[id] = Math.max(1, Math.min(spellMaxTier(s, id), k)); }
 
 // ---------------------------------------------------------------- lineages

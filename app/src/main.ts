@@ -205,7 +205,7 @@ function renderSpells(now: number) {
 }
 function showSpellInfo(id: string) {
   const sp = SPELL_BY_ID[id], max = E.spellMaxTier(S, id), cur = E.spellTier(S, id);
-  const tiers = max > 1 ? `<p>시전 등급 (자동 시전에도 적용)</p><div class="uptop">${Array.from({ length: max }, (_, i) => i + 1)
+  const tiers = max > 1 && !E.has(S, 'autotier') ? '<p class="dim">2등급 이상으로 시전하려면 \'등급 자동 낭독\' 개선이 필요해요.</p>' : max > 1 ? `<p>시전 등급 (자동 시전에도 적용)</p><div class="uptop">${Array.from({ length: max }, (_, i) => i + 1)
     .map((k) => `<button class="btn ${k === cur ? 'primary' : 'accent'} sm" data-k="${k}">${k}등급</button>`).join('')}</div>` : '';
   const up = E.spellUpgraded(S, id) ? '<p class="gold">강화됨</p>' : '';
   const layer = modal(sp.ko, `<p>${esc(sp.desc)}</p>${up}<p>{mana} ${E.spellCost(S, id)}${sp.duration ? ` · ${sp.duration}초` : ' · 즉시'} · 누적 발동 ${Math.floor((S.perm.spellActive[id] ?? 0) / 60)}분</p>${tiers}`, [
@@ -306,7 +306,7 @@ function upgradeIcon(u: E.UpgradeView) {
   if (u.kind === 'faction') return framedIcon(u.icon, u.color!, u.tier === 3 ? 'gold' : u.tier === 2 ? 'silver' : 'bronze');
   if (u.kind === 'unique') return framedIcon('star', u.color!, 'gold');
   if (u.kind === 'secret' || u.kind === 'spellup') return framedIcon(u.icon, u.color!, 'silver');
-  if (u.kind === 'tier') return framedIcon(u.icon, u.color!, 'gold');
+  if (u.kind === 'tier' || u.kind === 'union') return framedIcon(u.icon, u.color!, 'gold');
   if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline' || u.kind === 'merc' || u.kind === 'lex') return framedIcon(u.icon, u.color!, u.kind === 'merc' ? 'silver' : 'gold');
   return framedIcon(u.icon, '#3a3040', 'plain');
 }

@@ -382,7 +382,9 @@ export const LEGES_MIN_R = 100;
 export const SPELL_TIERS = {
   maxTier: (a: number) => (a >= 2 ? 7 : a >= 1 ? 6 : 1),
   /** seconds of total active time needed to unlock tier n+1 (WIKI formula, without Arcane Brilliance) */
-  unlockSeconds: (n: number, r: number) => Math.max(0, 43200 * (n * n - n) * 0.98 ** (r - n - 42)),
+  /** WIKI: 43200*((n-0.5A)^2-(n-0.5A))*0.98^(R-(n-0.5(A+1))-42), A = Arcane Brilliance trophies */
+  unlockSeconds: (n: number, r: number, a = 0) => { const m = n - 0.5 * a; return Math.max(0, 43200 * (m * m - m) * 0.98 ** (r - (n - 0.5 * (a + 1)) - 42)); },
+  tieredAutocast: { cost: 1e33, mana: 2e8 },   // WIKI: 200M mana produced unlocks Tiered Autocasting (cost GUESS)
   coinBase: { call: 5.1e52, surge: 6.6e67, alignment: 5.4e55, faction: 5.4e55, lex: 5.4e55 } as Record<string, number>,
   fcBase: { call: 0, surge: 1e13, alignment: 1e9, faction: 1e9, lex: 1e9 } as Record<string, number>,
   coins: (x: number, k: number) => (k >= 7 ? 0 : x ** (1 + 0.25 * (k - 2))),     // WIKI: x^(1+0.25(n-1)); tier 7 free
@@ -405,4 +407,19 @@ export const LINEAGES: LineageDef[] = [
   { faction: 'clockmaker', ko: '태엽의 계보', perLevel: '두드리기 +15%/레벨', level: (m, L) => { m.click *= 1 + 0.15 * L; } },
   { faction: 'shadow', ko: '그림자의 계보', perLevel: '전체 생산 +5%/레벨', level: (m, L) => { m.global *= 1 + 0.05 * L; } },
   { faction: 'phoenix', ko: '불꽃의 계보', perLevel: '전체 생산 +7%/레벨', level: (m, L) => { m.global *= 1 + 0.07 * L; } },
+];
+
+// ---------------------------------------------------------------- faction unions (WIKI: after A2, needs the faction's Leges proof and its Leges unique building)
+export interface UnionDef { faction: FactionId; ko: string; desc: string; building: string; effect: (m: Mods, c: EndCtx, x: number) => void }
+export const UNION = { fcCost: 1e18, coinCost: 1e60 };   // WIKI: union 1 Qi of the faction's coins, upgrade 1 Nod coins
+export const UNIONS: UnionDef[] = [
+  { faction: 'woodland', ko: '거품 무리', building: 'b6', desc: '날개 달린 도서관 수에 따라 {mana} 최대치 증가 (100·x^0.45)', effect: (m, _c, x) => { m.manaMaxAdd += 100 * x ** 0.45; } },
+  { faction: 'minstrel', ko: '나무 주사위', building: 'b8', desc: '나무 위 유리 성 수에 따라 생산(6·x^0.6 %)과 {fcShort} 확률(x^0.7 %) 증가', effect: (m, _c, x) => { m.global *= 1 + (6 * x ** 0.6) / 100; m.fcChance *= 1 + x ** 0.7 / 100; } },
+  { faction: 'starmage', ko: '천사의 인내', building: 'b7', desc: '구름 위 성당 수에 따라 주문 배율 증가 (0.6·x^0.6)', effect: (m, _c, x) => { m.global *= 1 + (0.6 * x ** 0.6) / 100; } },
+  { faction: 'thieves', ko: '검은 시장', building: 'd4', desc: '검은 물레방아 시장 수에 따라 {gem} 보너스 증가 (x^0.5 %)', effect: (m, _c, x) => { m.gemBonusMult *= 1 + x ** 0.5 / 100; } },
+  { faction: 'ghost', ko: '살아 있는 하인', building: 'd5', desc: '살아 있는 숲 수에 따라 {assistant} 증가 (1.2·x^0.65)', effect: (m, _c, x) => { m.assistantsAdd += Math.floor(1.2 * x ** 0.65); } },
+  { faction: 'witch', ko: '심연의 화로', building: 'c11', desc: '책나무 수에 따라 모든 건물 증가, 높은 단계일수록 더 큼 (t²·x^0.5 %)', effect: (m, _c, x) => { for (let t = 1; t <= 11; t++) m.tier[t] *= 1 + (t * t * x ** 0.5) / 100; } },
+  { faction: 'pirate', ko: '거인의 시장', building: 'l4', desc: '산속 궁전 수에 따라 {exchange} 횟수 증가 (1.5·x^0.5)', effect: (m, _c, x) => { m.global *= 1 + m.exchangeBonus * 1.5 * x ** 0.5; } },
+  { faction: 'sage', ko: '덩굴 건물', building: 'l10', desc: '지구라트 석상 수에 따라 고유 건물이 아닌 건물 수가 늘어난 효과 (1.5·x^0.5)', effect: (m, c, x) => { const add = 1.5 * x ** 0.5; for (const [id, n] of Object.entries(c.buildings)) if (n > 0 && !c.uniques.includes(id)) m.building[id] = (m.building[id] ?? 1) * ((n + add) / n); } },
+  { faction: 'puppet', ko: '태고의 지식', building: 'l7', desc: '금지된 서고 수에 따라 {fcShort} 확률 배율 증가, 15분마다 다시 자라요', effect: (m, c, x) => { m.fcChance *= 1 + (((c.runSeconds % 900) / 60) * x ** 0.4) / 100; } },
 ];

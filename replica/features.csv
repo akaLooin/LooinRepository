@@ -56,3 +56,5 @@ Kongregate 계정·랭킹·이벤트,platform,skip,yes,skip,원작 플랫폼 소
 별사탕(루비) 강화,monetization,should,yes,yes,"루비 파워 x2/x3, 강화 5종 n+1개, 영구"
 주문 등급 (Tier 2~7),spells,should,yes,yes,"승천 후, 해금 시간 공식·가격 공식 원작, 등급 선택"
 계보 (Lineage),reset,should,yes,yes,"R60, 조건 원작, 레벨 가격 2.5e(15+L), 특전 5/10/15/20/30"
+비전의 광휘 업적 + 등급 자동 낭독,spells,could,yes,yes,"업적 6개가 등급 해금 시간을 줄임 (원작 공식), 등급 자동 낭독 없으면 1등급"
+진영 연합 (Faction Union),factions,could,yes,yes,"승천 2, 연합 조각 1Qi, 개선 1e60, 9종"

@@ -57,6 +57,9 @@ describe('spell tiers', () => {
     const t2 = E.allUpgrades(s).find((u) => u.id === 'tier_frenzy_2')!;
     expect(t2).toBeTruthy();
     expect(E.buyUpgrade(s, 'tier_frenzy_2', T0)).toBe(true);   // tier 2 needs no active time
+    expect(E.spellCost(s, 'frenzy')).toBe(600);                 // tiers need Tiered Autocasting
+    s.stats.manaProduced = 2e8;
+    expect(E.buyUpgrade(s, 'autotier', T0)).toBe(true);
     expect(E.spellCost(s, 'frenzy')).toBe(600 * 3);
     expect(E.allUpgrades(s).find((u) => u.id === 'tier_frenzy_3')!.affordable).toBe(false); // needs active time
     s.run.buildings.d4 = 10; s.run.mana = 1e6;
@@ -83,5 +86,23 @@ describe('lineage', () => {
     expect(E.availableSpells(s).some((x) => x.id === 'woodland')).toBe(true);
     s.perm.lineage.woodland = 20;
     expect(E.checkTrophies(s).map((t) => t.id)).toContain('grand_woodland');
+  });
+});
+
+describe('arcane brilliance and faction unions', () => {
+  it('brilliance shortens tier unlock times', async () => {
+    const { SPELL_TIERS } = await import('../src/data/endgame');
+    expect(SPELL_TIERS.unlockSeconds(2, 50, 1)).toBeLessThan(SPELL_TIERS.unlockSeconds(2, 50, 0));
+  });
+  it('a faction union needs A2, the Leges unique building, 1Qi faction coins, then the union upgrade', () => {
+    const s = newGame(T0); s.perm.ascensions = 2; s.perm.reincarnations = 100; s.run.alignment = 'dark'; s.run.faction = 'ghost';
+    s.run.upgrades.push('ghost_g1', 'lex_order'); s.run.lex = 'order';
+    s.run.coins = new Decimal('1e70'); s.run.coinsRun = new Decimal('1e70'); s.run.fc.ghost = 2e18;
+    expect(E.allUpgrades(s).some((u) => u.id === 'union_ghost')).toBe(false);
+    s.run.upgrades.push('uq2_ghost'); s.run.buildings.d5 = 100;
+    expect(E.buyUpgrade(s, 'union_ghost', T0)).toBe(true);
+    const before = E.snapshot(s, T0).assistants;
+    expect(E.buyUpgrade(s, 'unionup_ghost', T0)).toBe(true);
+    expect(E.snapshot(s, T0).assistants).toBeGreaterThan(before);
   });
 });

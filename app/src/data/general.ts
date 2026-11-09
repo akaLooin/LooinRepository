@@ -3,7 +3,8 @@ import type { Mods } from '../engine/mods';
 import type { SaveState } from '../engine/state';
 import { FACTIONS } from './factions';
 import { SECRETS, SPELL_UPGRADES } from './trophyups';
-import { SPELL_BY_ID } from './spells';
+import { SPELL_BY_ID, SPELLS } from './spells';
+import { SPELL_TIERS } from './endgame';
 
 export interface GeneralUpgrade {
   id: string; ko: string; desc: string; icon: string; cost: number;
@@ -44,6 +45,10 @@ export const TROPHIES: TrophyDef[] = [
   ...FACTIONS.filter((f) => f.kind !== 'mercenary').map((f) => ({ id: 'champ_' + f.id, ko: `${f.ko}의 영웅`, desc: `한 판에 ${f.ko} 개선 12개 모두 구매`,
     check: (s: SaveState) => s.run.upgrades.filter((u) => u.startsWith(f.id + '_')).length >= 12 })),
   ...FACTIONS.filter((f) => f.kind !== 'mercenary').map((f) => ({ id: 'grand_' + f.id, ko: `${f.ko}의 대영웅`, desc: `${f.ko} 계보 20레벨 달성`, check: (s: SaveState) => (s.perm.lineage[f.id] ?? 0) >= 20 })),
+  // Arcane Brilliance 1-6 (WIKI): unlock tier k+1 for all spells (total active time reaches the unlock time)
+  ...[1, 2, 3, 4, 5, 6].map((k) => ({ id: 'brill' + k, ko: `비전의 광휘 ${k}`, desc: `모든 주문의 ${k + 1}등급 해금 (누적 발동 시간) — 다음 등급 해금 시간이 줄어요`,
+    check: (s: SaveState) => s.perm.ascensions > 0 && SPELLS.filter((sp) => sp.duration > 0 && !sp.lex).every((sp) =>
+      (s.perm.spellActive[sp.id] ?? 0) >= SPELL_TIERS.unlockSeconds(k, s.perm.reincarnations, k - 1)) })),
   ...SECRETS.map((x) => ({ id: 'sec_' + x.id, ko: x.ko, desc: x.hint, secret: true, check: x.check })),
   ...SPELL_UPGRADES.map((x) => ({ id: 'spt_' + x.spell, ko: `${SPELL_BY_ID[x.spell].ko}의 달인`, desc: x.hint, check: (s: SaveState) => !!s.stats.flags['spt_' + x.spell] })),
 ];
