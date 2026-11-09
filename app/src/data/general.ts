@@ -44,6 +44,6 @@ export const TROPHIES: TrophyDef[] = [
   ...[1, 10, 50].map((n) => ({ id: 'abd' + n, ko: `다시 쓰기 ${n}번`, desc: `${n}번 다시 쓰기(퇴위)`, check: (s: SaveState) => s.stats.abdications >= n })),
   ...[1, 1000, 1e6, 1e9].map((n) => ({ id: 'gem' + n, ko: `전설 ${n.toLocaleString()}`, desc: `전설 ${n.toLocaleString()}개 보유`, check: (s: SaveState) => s.gems.gte(n) })),
   ...FACTIONS.map((f) => ({ id: 'ally_' + f.id, ko: `${f.ko}의 친구`, desc: `${f.ko} 진영에 가입`, check: (s: SaveState) => (s.stats.allied[f.id] ?? 0) > 0 })),
-  ...FACTIONS.map((f) => ({ id: 'champ_' + f.id, ko: `${f.ko}의 영웅`, desc: `한 판에 ${f.ko} 개선 12개 모두 구매`,
+  ...FACTIONS.filter((f) => f.kind !== 'mercenary').map((f) => ({ id: 'champ_' + f.id, ko: `${f.ko}의 영웅`, desc: `한 판에 ${f.ko} 개선 12개 모두 구매`,
     check: (s: SaveState) => s.run.upgrades.filter((u) => u.startsWith(f.id + '_')).length >= 12 })),
 ];

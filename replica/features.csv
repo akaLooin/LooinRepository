@@ -11,7 +11,7 @@ feature,area,priority,original,clone,notes
 성향 선택 (밝은/어두운/옛 전설),factions,must,yes,yes,
 성향별 진영 3종씩 (총 9종),factions,must,yes,yes,현재 장르 6종은 교체 대상
 진영 조약으로 가입 (한 판에 하나),factions,must,yes,yes,
-진영별 업그레이드 세트,factions,must,yes,yes,진영당 3개 → 원작 수준으로 확대
+진영별 업그레이드 세트,factions,must,yes,yes,"관문 비용(조각)·개선 금화 가격은 원작 수치, 효과는 역할 동일한 자체 설계"
 진영 코인 발견 (탭·생산 중 확률),currency,must,yes,yes,
 마나와 공통 주문 4종,spells,must,yes,yes,공통 3종(R14 영혼의 물결 포함) + 성향 3종
 진영 고유 주문,spells,must,yes,yes,
@@ -36,8 +36,8 @@ feature,area,priority,original,clone,notes
 큰 수 처리 (1e308 이상),core,should,yes,yes,
 숫자 표기 옵션,meta,should,yes,yes,
 효과음·배경음,audio,should,yes,no,우리가 새로 만듦
-프리스티지 진영 3종,factions,could,yes,no,
-용병 진영 (다른 진영 조합),factions,could,yes,no,
+프리스티지 진영 3종,factions,could,yes,yes,시계장인·그림자 극단·불사조(R46). 관문·가격은 원작 수치
+용병 진영 (다른 진영 조합),factions,could,yes,yes,"R3, 첫 계약 50Spd, 마법 계약 + 단계별 4칸 선택"
 승천,reset,could,yes,no,
 2차 성향 (정석/반전),factions,could,yes,no,
 루비(프리미엄 화폐)와 상점,monetization,could,yes,no,상품 구성은 새로 설계
@@ -47,3 +47,4 @@ feature,area,priority,original,clone,notes
 Kongregate 계정·랭킹·이벤트,platform,skip,yes,skip,원작 플랫폼 소유
 원작 이름·캐릭터·그림·문구,brand,skip,yes,skip,저작권 — 우리 것으로 대체
 원작 결제 상품 구성 그대로,monetization,skip,yes,skip,기능만 만들고 상품은 새로
+관리자 패널 (용어·설명·수치 편집),tooling,should,no,yes,원작에 없는 우리 기능. overrides.json으로 빌드 반영

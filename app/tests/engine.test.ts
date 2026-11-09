@@ -17,7 +17,7 @@ describe('data', () => {
     expect(buildingsFor('bright').map((b) => b.tier)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
   it('every faction has 12 upgrades in 3 tiers', () => {
-    for (const f of FACTIONS) expect(FACTION_UPGRADES.filter((u) => u.faction === f.id).length).toBe(12);
+    for (const f of FACTIONS.filter((x) => x.kind !== 'mercenary')) expect(FACTION_UPGRADES.filter((u) => u.faction === f.id).length).toBe(12);
   });
 });
 

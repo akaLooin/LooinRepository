@@ -94,3 +94,52 @@ describe('challenges and research', () => {
     expect(t.perm.rubies).toBe(3);
   });
 });
+
+describe('prestige factions and mercenary', () => {
+  const allied = (f: 'woodland' | 'thieves') => {
+    const s = newGame(T0); s.run.coins = new Decimal('1e80'); s.run.coinsRun = new Decimal('1e80');
+    s.run.alignment = f === 'woodland' ? 'bright' : 'dark';
+    for (const c of Object.keys(s.run.fc)) s.run.fc[c as keyof typeof s.run.fc] = 1e12;
+    expect(E.buyUpgrade(s, `${f}_g1`, T0)).toBe(true);
+    return s;
+  };
+  it('vanilla gates cost 20/100/500 faction coins and no gold', () => {
+    const s = allied('woodland');
+    expect(s.run.fc.woodland).toBe(1e12 - 20);
+    expect(E.buyUpgrade(s, 'woodland_g2', T0)).toBe(true);
+    expect(s.run.fc.woodland).toBe(1e12 - 120);
+    const u = E.allUpgrades(s).find((x) => x.id === 'woodland_11')!;
+    expect(u.cost.toNumber()).toBe(50e6);
+  });
+  it('the prestige faction appears after the alliance and joins on top', () => {
+    const s = allied('woodland');
+    expect(E.allUpgrades(s).some((u) => u.id === 'clockmaker_g1')).toBe(false);
+    E.buyUpgrade(s, 'woodland_g2', T0); E.buyUpgrade(s, 'woodland_g3', T0);
+    expect(E.buyUpgrade(s, 'clockmaker_g1', T0)).toBe(true);
+    expect(s.run.faction).toBe('woodland');
+    expect(s.run.prestige).toBe('clockmaker');
+    expect(s.run.fc.clockmaker).toBe(1e12 - 3000);
+    expect(E.availableSpells(s).map((x) => x.id)).toEqual(expect.arrayContaining(['woodland', 'clockmaker']));
+  });
+  it('mercenary (R3) picks a spell and upgrades from other factions', () => {
+    const s = newGame(T0); s.perm.reincarnations = 3; s.run.alignment = 'dark';
+    s.run.coins = new Decimal('1e80'); s.run.coinsRun = new Decimal('1e80'); s.run.fc.ghost = 1e6; s.run.fc.witch = 1e6;
+    expect(E.buyUpgrade(s, 'freelancer_g1', T0)).toBe(true);
+    expect(s.run.faction).toBe('freelancer');
+    expect(E.buyMercSpell(s, 'witch')).toBe(true);
+    expect(E.availableSpells(s).some((x) => x.id === 'witch')).toBe(true);
+    expect(E.mercCandidates(s, 'merc_t1_1').every((u) => ['thieves', 'ghost', 'witch'].includes(u.faction))).toBe(true);
+    expect(E.buyMercPick(s, 'merc_t1_1', 'ghost_11')).toBe(true);
+    expect(s.run.upgrades).toContain('ghost_11');
+    expect(s.run.fc.ghost).toBe(1e6 - 1500);
+    expect(E.buyMercPick(s, 'merc_t1_2', 'ghost_11')).toBe(false);
+  });
+  it('shadow spell grows with casts this game', () => {
+    const s = allied('thieves'); s.run.mana = 1e9;
+    E.buyUpgrade(s, 'thieves_g2', T0); E.buyUpgrade(s, 'thieves_g3', T0); E.buyUpgrade(s, 'shadow_g1', T0);
+    s.run.buildings.c1 = 10;
+    const base = E.buildingsCps(s, E.snapshot(s, T0)).toNumber();
+    E.castSpell(s, 'shadow', T0);
+    expect(E.buildingsCps(s, E.snapshot(s, T0 + 1)).toNumber()).toBeCloseTo(base * 1.3);
+  });
+});

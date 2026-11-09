@@ -26,6 +26,10 @@ export interface RunState {
   spells: number;
   bloodline: FactionId | null;
   autoclickFraction: number;
+  prestige: FactionId | null;
+  mercSpell: string | null;
+  mercPicks: Record<string, string>;
+  spellCasts: Record<string, number>;
 }
 
 /** Progress that survives abdication (and mostly reincarnation). */
@@ -61,7 +65,7 @@ export function newRun(now: number): RunState {
     buildings: Object.fromEntries(BUILDINGS.map((b) => [b.id, 0])),
     upgrades: [], alignment: null, faction: null,
     fc: Object.fromEntries(COIN_TYPES.map((c) => [c, 0])) as Record<CoinType, number>,
-    fcFound: 0, fcFraction: 0, activeSpells: {}, exchanges: {}, start: now, clicks: 0, spells: 0, bloodline: null, autoclickFraction: 0,
+    fcFound: 0, fcFraction: 0, activeSpells: {}, exchanges: {}, start: now, clicks: 0, spells: 0, bloodline: null, autoclickFraction: 0, prestige: null, mercSpell: null, mercPicks: {}, spellCasts: {},
   };
 }
 

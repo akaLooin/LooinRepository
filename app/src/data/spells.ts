@@ -2,7 +2,7 @@
 import type { Alignment, FactionId } from './types';
 import { type Ctx, type Mods, ln, lowTiers } from '../engine/mods';
 
-export interface ActiveSpell { start: number; end: number; target?: string }
+export interface ActiveSpell { start: number; end: number; target?: string; n?: number }
 export interface SpellDef {
   id: string; ko: string; icon: string; mana: number; duration: number;
   alignment?: Alignment; faction?: FactionId; minR?: number;
@@ -45,5 +45,11 @@ export const SPELLS: SpellDef[] = [
     } },
   { id: 'puppet', ko: '파도치는 생각', icon: 'mask', mana: 600, duration: 600, faction: 'puppet', desc: '600초 동안 전체 생산이 초당 2%씩 누적 증가.',
     effect: (m, _c, a, now) => { m.global *= 1 + 0.02 * Math.max(0, (now - a.start) / 1000); } },
+  { id: 'clockmaker', ko: '다이아몬드 곡괭이', icon: 'shovel', mana: 1000, duration: 12, faction: 'clockmaker', desc: '12초 동안 탐사 깊이 1당 두드리기 +25%, 조각 발견 확률 +200%.',
+    effect: (m, c) => { m.click *= 1 + 0.25 * (c.excavations ?? 0); m.fcChance *= 3; } },
+  { id: 'shadow', ko: '연속 공연', icon: 'mask', mana: 800, duration: 20, faction: 'shadow', desc: '20초 동안 전체 생산 증가. 이번 판에 이 주문을 많이 쓸수록 강해져요 (30·x^0.9 %).',
+    effect: (m, _c, a) => { m.global *= 1 + (30 * (a.n ?? 1) ** 0.9) / 100; } },
+  { id: 'phoenix', ko: '불사조의 숨결', icon: 'sun', mana: 1500, duration: 20, faction: 'phoenix', desc: '20초 동안 다섯 가지 숨결 중 하나가 무작위로 발동해요.',
+    effect: (m, _c, a) => { switch (a.target) { case 'b1': m.global *= 3; break; case 'b2': m.click *= 10; break; case 'b3': m.manaRegenMult *= 3; break; case 'b4': m.fcChance *= 3; break; default: m.assistantsMult *= 3; } } },
 ];
 export const SPELL_BY_ID = Object.fromEntries(SPELLS.map((s) => [s.id, s]));

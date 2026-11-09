@@ -16,6 +16,8 @@ export interface Ctx {
   upgradesRun: number;
   exchanges: number;
   alignment: Alignment | null;
+  manaMax?: number;
+  excavations?: number;
 }
 
 export interface Mods {

@@ -15,15 +15,21 @@ import { SPELL_BY_ID } from './data/spells';
 import { TROPHIES } from './data/general';
 import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, UNLOCKS, facilityBonus } from './data/endgame';
 import { COIN_TYPES, type CoinType } from './data/types';
+import { installContent } from './data/content';
+import { t } from './data/terms';
+
+installContent();
+const ADMIN = import.meta.env.DEV || import.meta.env.VITE_ADMIN === '1';
 
 const SAVE_KEY = 'talestopia-tycoon-v1';
-const COIN_COLOR: Record<CoinType, string> = { woodland: '#7fbf6a', minstrel: '#d8b04a', starmage: '#7cc0ff', thieves: '#a8a060', ghost: '#8c6cc8', witch: '#d4553a' };
-const COIN_KO: Record<CoinType, string> = { woodland: '숲', minstrel: '음유', starmage: '별', thieves: '도적', ghost: '유령', witch: '마녀' };
+const COIN_COLOR: Record<CoinType, string> = { woodland: '#7fbf6a', minstrel: '#d8b04a', starmage: '#7cc0ff', thieves: '#a8a060', ghost: '#8c6cc8', witch: '#d4553a', clockmaker: '#c8a060', shadow: '#6a5a9a' };
+const COIN_KO: Record<CoinType, string> = { woodland: '숲', minstrel: '음유', starmage: '별', thieves: '도적', ghost: '유령', witch: '마녀', clockmaker: '시계', shadow: '그림자' };
 type Tab = 'buildings' | 'upgrades' | 'explore' | 'trophies' | 'challenges' | 'events' | 'stats';
-const TABS: { id: Tab; ko: string; icon: string }[] = [
-  { id: 'buildings', ko: '건물', icon: 'house' }, { id: 'upgrades', ko: '개선', icon: 'hammer' }, { id: 'explore', ko: '탐사', icon: 'shovel' },
-  { id: 'trophies', ko: '명장면', icon: 'trophy' }, { id: 'challenges', ko: '도전', icon: 'star' }, { id: 'events', ko: '이벤트', icon: 'flag' },
-  { id: 'stats', ko: '기록', icon: 'book' },
+const TABS: { id: Tab; readonly ko: string; icon: string }[] = [
+  { id: 'buildings', get ko() { return t('tabBuildings'); }, icon: 'house' }, { id: 'upgrades', get ko() { return t('tabUpgrades'); }, icon: 'hammer' },
+  { id: 'explore', get ko() { return t('tabExplore'); }, icon: 'shovel' }, { id: 'trophies', get ko() { return t('tabTrophies'); }, icon: 'trophy' },
+  { id: 'challenges', get ko() { return t('tabChallenges'); }, icon: 'star' }, { id: 'events', get ko() { return t('tabEvents'); }, icon: 'flag' },
+  { id: 'stats', get ko() { return t('tabStats'); }, icon: 'book' },
 ];
 
 installTextures();
@@ -55,9 +61,9 @@ const app = $('#app');
 app.innerHTML = `
   <header class="topbar">
     <div class="money"><img class="ic2" src="${spriteURL('coin', 2)}" alt=""><div class="money-text"><span class="coins" id="coins">0</span><span class="cps" id="cps">0 /초</span></div></div>
-    <div class="res"><span title="전설"><img class="ic" src="${spriteURL('legend')}" alt="전설"><b id="gems">0</b></span>
-      <span title="견습생"><img class="ic" src="${spriteURL('ghost')}" alt="견습생"><b id="assist">0</b></span>
-      <span title="별사탕"><img class="ic" src="${spriteURL('candy')}" alt="별사탕"><b id="rubies">0</b></span></div>
+    <div class="res"><span title="${t('gem')}"><img class="ic" src="${spriteURL('legend')}" alt="${t('gem')}"><b id="gems">0</b></span>
+      <span title="${t('assistant')}"><img class="ic" src="${spriteURL('ghost')}" alt="${t('assistant')}"><b id="assist">0</b></span>
+      <span title="${t('ruby')}"><img class="ic" src="${spriteURL('candy')}" alt="${t('ruby')}"><b id="rubies">0</b></span></div>
     <button class="round" id="btn-settings" style="width:30px;height:30px" aria-label="설정"><img class="ic" src="${spriteURL('gear')}" alt=""></button>
   </header>
   <div class="manabar" role="progressbar" id="manabar"><div class="fill" id="mana-fill"></div><span class="label shadow-text" id="mana-text"></span></div>
@@ -69,14 +75,14 @@ app.innerHTML = `
     <div class="floaters" id="floaters"></div>
     <div class="effects" id="effects"></div>
     <div class="autocast">
-      <button class="round" id="ac-gold" aria-pressed="false" aria-label="자동 시전 1순위 지정"><img class="ic" src="${spriteURL('coin')}" alt=""><span class="lbl shadow-text">1순위</span></button>
-      <button class="round" id="ac-silver" aria-pressed="false" aria-label="자동 시전 2순위 지정" style="margin-top:8px"><img class="ic" src="${spriteURL('mana')}" alt=""><span class="lbl shadow-text">2순위</span></button>
+      <button class="round" id="ac-gold" aria-pressed="false" aria-label="자동 시전 1순위 지정"><img class="ic" src="${spriteURL('coin')}" alt=""><span class="lbl shadow-text">${t('autocast1')}</span></button>
+      <button class="round" id="ac-silver" aria-pressed="false" aria-label="자동 시전 2순위 지정" style="margin-top:8px"><img class="ic" src="${spriteURL('mana')}" alt=""><span class="lbl shadow-text">${t('autocast2')}</span></button>
       <button class="round" id="ac-thr" aria-label="자동 시전 시작 영감" style="margin-top:8px"><img class="ic" src="${spriteURL('hourglass')}" alt=""><span class="lbl shadow-text" id="ac-thr-l">0%</span></button>
     </div>
-    <button class="corner left" id="btn-scry"><span class="round"><img class="ic2" src="${spriteURL('orb', 2)}" alt=""></span><span class="shadow-text">점술</span></button>
-    <div class="ribbon shadow-text" id="ribbon">건물</div>
-    <button class="btn accent sm buyall" id="buyall">모두 구매</button>
-    <button class="corner right" id="btn-shop"><span class="round"><img class="ic2" src="${spriteURL('bag', 2)}" alt=""></span><span class="shadow-text">상점</span></button>
+    <button class="corner left" id="btn-scry"><span class="round"><img class="ic2" src="${spriteURL('orb', 2)}" alt=""></span><span class="shadow-text">${t('scry')}</span></button>
+    <div class="ribbon shadow-text" id="ribbon">${t('tabBuildings')}</div>
+    <button class="btn accent sm buyall" id="buyall">${t('buyAll')}</button>
+    <button class="corner right" id="btn-shop"><span class="round"><img class="ic2" src="${spriteURL('bag', 2)}" alt=""></span><span class="shadow-text">${t('shop')}</span></button>
   </div>
   <section class="panel" id="panel"></section>
   <nav class="bottomnav" role="tablist" id="nav">${TABS.map((t) =>
@@ -267,7 +273,7 @@ function upgradeIcon(u: E.UpgradeView) {
     return framedIcon('hammer', bg, u.tier! >= 5 ? 'gold' : u.tier! >= 2 ? 'silver' : 'bronze');
   }
   if (u.kind === 'faction') return framedIcon(u.icon, u.color!, u.tier === 3 ? 'gold' : u.tier === 2 ? 'silver' : 'bronze');
-  if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline') return framedIcon(u.icon, u.color!, 'gold');
+  if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline' || u.kind === 'merc') return framedIcon(u.icon, u.color!, u.kind === 'merc' ? 'silver' : 'gold');
   return framedIcon(u.icon, '#3a3040', 'plain');
 }
 function costHTML(u: E.UpgradeView) {
@@ -275,8 +281,25 @@ function costHTML(u: E.UpgradeView) {
   for (const [k, v] of Object.entries(u.fcCost ?? {})) parts.push(`<span><i style="display:inline-block;width:8px;height:8px;background:${COIN_COLOR[k as CoinType]}"></i> ${COIN_KO[k as CoinType]} 조각 ${v}</span>`);
   return `<div class="cost">${parts.join('')}</div>`;
 }
+function mercPicker(u: E.UpgradeView) {
+  if (u.id === 'merc_spell') {
+    if (S.run.mercSpell) { modal(esc(u.ko), `<p>${esc(u.desc)}</p>`); return; }
+    const list = E.mercSpellCandidates(S);
+    const layer = modal('마법 계약', `<p>주문 하나를 골라요. 금화 ${F(E.MERC.spellCoins)} + 그 진영 조각 ${E.MERC.spellFC}개</p>
+      <table class="dtable">${list.map((sp) => `<tr><td><b>${esc(sp.ko)}</b><br><span class="dim">${esc(sp.desc)}</span></td><td><button class="btn primary sm" data-sp="${sp.id}">선택</button></td></tr>`).join('')}</table>`, [{ label: '닫기', cls: 'accent' }]);
+    layer.querySelectorAll<HTMLButtonElement>('[data-sp]').forEach((b) => { b.onclick = () => { closeModal(); toast(E.buyMercSpell(S, b.dataset.sp!) ? '🔮 마법 계약 완료' : '금화나 조각이 부족해요'); spellKey = ''; panelKey = ''; }; });
+    return;
+  }
+  if (S.run.mercPicks[u.id]) { modal(esc(u.ko), `<p>${esc(u.desc)}</p><p class="gold">계약함</p>`); return; }
+  const [, t, k] = u.id.match(/merc_t(\d)_(\d)/)!.map(Number);
+  const list = E.mercCandidates(S, u.id);
+  const layer = modal('계약 개선 고르기', `<p>${t}단계 진영 개선 하나를 골라요. 그 진영 조각 ${E.mercSlotFC(t, k)}개</p>
+    <table class="dtable">${list.map((x) => `<tr><td><b>${esc(x.ko)}</b> <span class="dim">(${FACTION_BY_ID[x.faction].ko})</span><br><span class="dim">${esc(x.desc)}</span></td><td><button class="btn primary sm" data-u="${x.id}">선택</button></td></tr>`).join('')}</table>`, [{ label: '닫기', cls: 'accent' }]);
+  layer.querySelectorAll<HTMLButtonElement>('[data-u]').forEach((b) => { b.onclick = () => { closeModal(); toast(E.buyMercPick(S, u.id, b.dataset.u!) ? '✍ 계약했어요' : '조각이 부족해요'); panelKey = ''; }; });
+}
 function showUpgrade(id: string) {
   const u = E.allUpgrades(S).find((x) => x.id === id); if (!u) return;
+  if (u.kind === 'merc') { mercPicker(u); return; }
   modal(esc(u.ko), `<div class="head"><img src="${upgradeIcon(u)}" alt=""><p>${esc(u.desc)}</p></div>${u.purchased ? '<p class="gold">구매함</p>' : costHTML(u)}`,
     u.purchased ? [{ label: '닫기' }] : [{ label: '구매', disabled: !u.affordable, run: () => { if (E.buyUpgrade(S, id, Date.now())) { toast('✨ ' + esc(u.ko)); if (u.kind === 'alignment') { panelKey = ''; drawMap(true); } } } }, { label: '닫기', cls: 'accent' }]);
 }
@@ -286,12 +309,12 @@ function renderUpgrades(p: HTMLElement) {
   const todo = ups.filter((u) => !u.purchased).sort((a, b) => (a.cost.lt(b.cost) ? -1 : 1));
   const done = ups.filter((u) => u.purchased);
   const gems = E.gemsOnAbdicate(S);
-  const key = 'u' + todo.map((u) => u.id).join() + '|' + done.length + JSON.stringify(upCollapsed) + (S.run.faction ?? '');
+  const key = 'u' + todo.map((u) => u.id).join() + '|' + done.length + JSON.stringify(upCollapsed) + (S.run.faction ?? '') + JSON.stringify(S.run.mercPicks) + S.run.mercSpell;
   if (key !== panelKey) {
     panelKey = key;
     p.innerHTML = `<div class="uppanel">
       <div class="coincol" id="coincol">${COIN_TYPES.map((c) => `<span class="fc" data-c="${c}"><i style="background:${COIN_COLOR[c]}"></i><b></b></span>`).join('')}
-        <button class="btn accent sm" id="btn-ex" style="margin-top:4px;padding:0 4px" ${E.canExchange(S) ? '' : 'disabled'}>출판 계약</button></div>
+        <button class="btn accent sm" id="btn-ex" style="margin-top:4px;padding:0 4px" ${E.canExchange(S) ? '' : 'disabled'}>${t('exchange')}</button></div>
       <div>
         <div class="uptop"><button class="btn primary sm" id="btn-abd"></button><button class="btn special sm" id="btn-rei"></button></div>
         <section class="gsection"><header>미구매 개선 (${todo.length}) <button data-c="todo">${upCollapsed.todo ? '▼' : '▲'}</button></header>
@@ -306,9 +329,9 @@ function renderUpgrades(p: HTMLElement) {
     $('#btn-rei', p).onclick = reincarnateFlow;
   }
   const abd = $<HTMLButtonElement>('#btn-abd', p);
-  abd.textContent = `다시 쓰기 +${F(gems)} 전설`; abd.disabled = gems.lt(1);
+  abd.textContent = `${t('abdicate')} +${F(gems)} ${t('gem')}`; abd.disabled = gems.lt(1);
   const rei = $<HTMLButtonElement>('#btn-rei', p);
-  rei.textContent = E.canReincarnate(S) ? `새 시리즈 R${S.perm.reincarnations + 1}` : `새 시리즈 (전설 ${F(E.reincarnationCost(S))})`;
+  rei.textContent = E.canReincarnate(S) ? `${t('reincarnate')} R${S.perm.reincarnations + 1}` : `${t('reincarnate')} (${t('gem')} ${F(E.reincarnationCost(S))})`;
   rei.disabled = !E.canReincarnate(S);
   p.querySelectorAll<HTMLElement>('.fc').forEach((e) => { const v = S.run.fc[e.dataset.c as CoinType]; $('b', e).textContent = F(v); e.classList.toggle('zero', v === 0); });
   const byId = new Map(todo.map((u) => [u.id, u]));
@@ -450,7 +473,8 @@ $('#btn-settings').onclick = () => {
     <div class="row"><button class="btn primary sm" id="s-save">저장</button><button class="btn accent sm" id="s-export">내보내기</button><button class="btn accent sm" id="s-import">불러오기</button></div>
     <textarea id="s-code" rows="3" placeholder="저장 코드"></textarea>
     <div class="row"><button class="btn danger sm" id="s-reset">모든 기록 초기화</button></div>
-    <p class="dim">Talestopia Tycoon v0.2 · 글꼴 갈무리(OFL)</p></div>`, [{ label: '닫기' }]);
+    ${ADMIN ? '<div class="row"><a class="btn accent sm" style="display:inline-flex;align-items:center;text-decoration:none" href="./admin.html">관리자 패널</a></div>' : ''}
+    <p class="dim">Talestopia Tycoon v0.4 · 글꼴 갈무리(OFL)</p></div>`, [{ label: '닫기' }]);
   layer.querySelectorAll<HTMLInputElement>('input[name=nf]').forEach((i) => { i.onchange = () => { S.settings.numberFormat = i.value as 'short'; panelKey = ''; }; });
   $('#s-save', layer).onclick = () => toast(save() ? '💾 저장했어요' : '이 브라우저에서는 저장할 수 없어요');
   $('#s-export', layer).onclick = () => { const c = btoa(unescape(encodeURIComponent(serialize(S)))); ($('#s-code', layer) as HTMLTextAreaElement).value = c; navigator.clipboard?.writeText(c).then(() => toast('📋 복사했어요'), () => {}); };
@@ -471,15 +495,18 @@ function renderTop(now: number) {
   const snap = E.snapshot(S, now);
   $('#coins').textContent = F(S.run.coins);
   $('#cps').textContent = F(E.totalCps(S, snap)) + ' /초';
+  document.title = t('gameTitle');
   $('#gems').textContent = F(S.gems);
   $('#assist').textContent = String(snap.assistants);
   $('#rubies').textContent = String(S.perm.rubies);
   $('#mana-fill').style.width = Math.min(100, (S.run.mana / snap.manaMax) * 100) + '%';
-  $('#mana-text').textContent = `영감 ${Math.floor(S.run.mana)} / ${snap.manaMax} · +${snap.manaRegen.toFixed(1)}/초`;
+  $('#mana-text').textContent = `${t('mana')} ${Math.floor(S.run.mana)} / ${snap.manaMax} · +${snap.manaRegen.toFixed(1)}/초`;
   $('#ac-thr-l').textContent = Math.round(S.autocastThreshold * 100) + '%';
   const fx: string[] = [];
-  if (S.run.alignment) fx.push({ bright: '☀ 밝은 이야기', dark: '☾ 어두운 이야기', legend: '⌛ 옛 전설' }[S.run.alignment]);
+  if (S.run.alignment) fx.push({ bright: '☀ ' + t('alignBright'), dark: '☾ ' + t('alignDark'), legend: '⌛ ' + t('alignLegend') }[S.run.alignment]);
   if (S.run.faction) fx.push(FACTION_BY_ID[S.run.faction].ko);
+  if (S.run.prestige) fx.push('+ ' + FACTION_BY_ID[S.run.prestige].ko);
+  if (S.run.bloodline) fx.push('혈통: ' + FACTION_BY_ID[S.run.bloodline].ko);
   $('#effects').innerHTML = fx.map((t) => `<span class="shadow-text">${t}</span>`).join('');
   // badges: affordable upgrades
   const n = E.allUpgrades(S).filter((u) => !u.purchased && u.affordable).length;

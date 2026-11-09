@@ -1,10 +1,10 @@
 // Talestopia Tycoon rules. Pure functions over SaveState; time comes in as `now` (ms).
 import Decimal from 'break_infinity.js';
-import { BUILDINGS, BUILDING_BY_ID, BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY, COST_GROWTH, buildingsFor, type BuildingDef } from '../data/buildings';
-import { ALIGNMENTS, FACTIONS, FACTION_BY_ID, FACTION_UPGRADES, type FactionUpgrade } from '../data/factions';
+import { BUILDINGS, BUILDING_BY_ID, BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY, buildingsFor, type BuildingDef } from '../data/buildings';
+import { ALIGNMENTS, FACTIONS, FACTION_BY_ID, FACTION_UPGRADES, type FactionDef, type FactionUpgrade } from '../data/factions';
 import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
-import { COIN_TYPES, type Alignment, type CoinType, type FactionId } from '../data/types';
+import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
 import { ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
@@ -15,6 +15,7 @@ export const BASE = {
   gemDivisor: 5e11,        // gems: n(n+1)*5e11 coins
   offlineRate: 0.5,        // GUESS
   offlineCapSec: 7 * 24 * 3600,
+  costGrowth: 1.15,        // building price x1.15 per building owned (WIKI)
 };
 
 const FACTION_UP_BY_ID: Record<string, FactionUpgrade> = Object.fromEntries(FACTION_UPGRADES.map((u) => [u.id, u]));
@@ -135,10 +136,20 @@ function earn(s: SaveState, amount: Decimal) {
 }
 
 function coinPool(s: SaveState): CoinType[] {
-  if (s.run.faction) return FACTION_BY_ID[s.run.faction].coinTypes;
+  const prestige = prestigeCoins(s);
+  if (s.run.faction && s.run.faction !== 'freelancer') return [...FACTION_BY_ID[s.run.faction].coinTypes, ...prestige];
   if (s.run.alignment === 'bright') return ['woodland', 'minstrel', 'starmage'];
   if (s.run.alignment === 'dark') return ['thieves', 'ghost', 'witch'];
-  return COIN_TYPES;
+  return VANILLA_COINS;
+}
+
+/** Prestige faction coins become findable once the base faction's alliance is bought (or while allied with a prestige faction). */
+function prestigeCoins(s: SaveState): CoinType[] {
+  if (s.run.prestige) return FACTION_BY_ID[s.run.prestige].coinTypes;
+  if (!s.run.faction || !has(s, `${s.run.faction}_g3`)) return [];
+  if (s.run.alignment === 'bright') return ['clockmaker'];
+  if (s.run.alignment === 'dark') return ['shadow'];
+  return s.perm.reincarnations >= 46 ? ['clockmaker', 'shadow'] : [];
 }
 
 function findCoins(s: SaveState, n: number, rng: () => number): CoinType | null {
@@ -167,14 +178,15 @@ export function costMult(s: SaveState): number { return snapshot(s, s.lastSeen).
 
 export function buildingCost(s: SaveState, id: string, n = 1, cm = costMult(s)): Decimal {
   const b = BUILDING_BY_ID[id];
-  const first = D(b.cost).mul(D(COST_GROWTH).pow(s.run.buildings[id])).mul(cm);
-  return first.mul(D(COST_GROWTH).pow(n).sub(1)).div(COST_GROWTH - 1);
+  const g = BASE.costGrowth;
+  const first = D(b.cost).mul(D(g).pow(s.run.buildings[id])).mul(cm);
+  return first.mul(D(g).pow(n).sub(1)).div(g - 1);
 }
 
 export function maxAffordable(s: SaveState, id: string, cm = costMult(s)): number {
   const first = buildingCost(s, id, 1, cm);
   if (s.run.coins.lt(first)) return 0;
-  let n = Math.floor(Decimal.log10(s.run.coins.mul(COST_GROWTH - 1).div(first).add(1)) / Math.log10(COST_GROWTH));
+  let n = Math.floor(Decimal.log10(s.run.coins.mul(BASE.costGrowth - 1).div(first).add(1)) / Math.log10(BASE.costGrowth));
   while (n > 0 && buildingCost(s, id, n, cm).gt(s.run.coins)) n--;
   return n;
 }
@@ -210,7 +222,7 @@ export function buyAllBuildings(s: SaveState, limit = 1000): number {
 }
 
 // ---------------------------------------------------------------- upgrades
-export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline';
+export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc';
 export interface UpgradeView {
   id: string; kind: UpgradeKind; ko: string; desc: string; icon: string; cost: Decimal;
   fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean;
@@ -234,17 +246,22 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
       add({ id: 'align_' + a.id, kind: 'alignment', ko: a.ko, desc: a.desc, icon: a.id === 'bright' ? 'sun' : a.id === 'dark' ? 'moon' : 'hourglass', cost: D(a.cost), color: a.color });
     }
   }
-  // factions
+  // factions: vanilla/neutral of the chosen alignment, mercenary (R3), then a prestige faction on top
   if (s.run.alignment) {
-    for (const f of FACTIONS.filter((x) => x.alignment === s.run.alignment)) {
-      if (s.run.faction && s.run.faction !== f.id) continue;
+    const R = s.perm.reincarnations;
+    const chain = (f: FactionDef, joined: FactionId | null) => {
+      if (joined && joined !== f.id) return;
       for (const u of FACTION_UPGRADES.filter((x) => x.faction === f.id)) {
-        const visible = u.slot === 0
-          ? (u.tier === 1 ? !s.run.faction : has(s, `${f.id}_g${u.tier - 1}`))
-          : has(s, `${f.id}_g${u.tier}`);
+        const visible = u.slot === 0 ? (u.tier === 1 ? !joined : has(s, `${f.id}_g${u.tier - 1}`)) : has(s, `${f.id}_g${u.tier}`);
         if (!visible && !has(s, u.id)) continue;
         add({ id: u.id, kind: 'faction', ko: u.ko, desc: u.desc, icon: f.emblem, cost: D(u.cost), fcCost: u.fcCost, color: f.color, tier: u.tier });
       }
+    };
+    for (const f of FACTIONS.filter((x) => (x.kind === 'vanilla' || x.kind === 'neutral') && x.alignment === s.run.alignment)) chain(f, s.run.faction);
+    if (R >= MERC.minR && (!s.run.faction || s.run.faction === 'freelancer')) mercUpgrades(s, add);
+    const base = s.run.faction && s.run.faction !== 'freelancer' ? FACTION_BY_ID[s.run.faction] : null;
+    if (base && has(s, `${base.id}_g3`)) {
+      for (const f of FACTIONS.filter((x) => x.kind === 'prestige' && x.alignment === s.run.alignment && R >= (x.minR ?? 0))) chain(f, s.run.prestige);
     }
   }
   // building upgrades
@@ -274,16 +291,16 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
 
 export function buyUpgrade(s: SaveState, id: string, now: number): boolean {
   const u = allUpgrades(s).find((x) => x.id === id);
-  if (!u || u.purchased || !u.affordable) return false;
+  if (!u || u.purchased || !u.affordable || u.kind === 'merc') return false;
   s.run.coins = s.run.coins.sub(u.cost);
   if (u.fcCost) for (const [k, v] of Object.entries(u.fcCost)) s.run.fc[k as CoinType] -= v ?? 0;
   if (u.kind === 'alignment') { s.run.alignment = id.slice(6) as Alignment; }
   if (u.kind === 'faction' && id.endsWith('_g1')) {
     const f = id.slice(0, -3) as FactionId;
-    s.run.faction = f;
+    if (FACTION_BY_ID[f].kind === 'prestige') s.run.prestige = f; else s.run.faction = f;
     s.stats.allied[f] = (s.stats.allied[f] ?? 0) + 1;
   }
-  if (u.kind === 'faction') { const f = FACTION_UP_BY_ID[id].faction; s.perm.factionUpgrades[f] = (s.perm.factionUpgrades[f] ?? 0) + 1; }
+  if (u.kind === 'faction') { const f = (FACTION_UP_BY_ID[id]?.faction ?? 'freelancer') as FactionId; s.perm.factionUpgrades[f] = (s.perm.factionUpgrades[f] ?? 0) + 1; }
   if (u.kind === 'bloodline') s.run.bloodline = id.slice(6) as FactionId;
   s.run.upgrades.push(id);
   void now;
@@ -293,7 +310,7 @@ export function buyUpgrade(s: SaveState, id: string, now: number): boolean {
 export function buyAllUpgrades(s: SaveState, now: number): number {
   let n = 0;
   for (;;) {
-    const next = allUpgrades(s).filter((u) => !u.purchased && u.affordable && u.kind !== 'alignment' && u.kind !== 'bloodline' && u.kind !== 'heritage' && !(u.kind === 'faction' && u.id.endsWith('_g1')))
+    const next = allUpgrades(s).filter((u) => !u.purchased && u.affordable && u.kind !== 'alignment' && u.kind !== 'bloodline' && u.kind !== 'heritage' && u.kind !== 'merc' && !(u.kind === 'faction' && u.id.endsWith('_g1')))
       .sort((a, b) => (a.cost.lt(b.cost) ? -1 : 1))[0];
     if (!next || !buyUpgrade(s, next.id, now)) break;
     n++;
@@ -308,8 +325,8 @@ export function availableSpells(s: SaveState): SpellDef[] {
   const extra = s.run.bloodline ? granted[s.run.bloodline] : undefined;
   return SPELLS.filter((sp) => {
     if (sp.minR && s.perm.reincarnations < sp.minR) return false;
-    if (sp.id === extra) return true;
-    return (!sp.alignment && !sp.faction) || (sp.alignment && sp.alignment === s.run.alignment) || (sp.faction && sp.faction === s.run.faction);
+    if (sp.id === extra || sp.id === s.run.mercSpell) return true;
+    return (!sp.alignment && !sp.faction) || (sp.alignment && sp.alignment === s.run.alignment) || (sp.faction && (sp.faction === s.run.faction || sp.faction === s.run.prestige));
   });
 }
 
@@ -323,9 +340,12 @@ export function castSpell(s: SaveState, id: string, now: number, rng: () => numb
   s.run.spells++; s.stats.spells++;
   const res: { gained?: Decimal; coins?: number } = {};
   if (sp.duration > 0) {
-    const a = { start: now, end: now + sp.duration * 1000 } as { start: number; end: number; target?: string };
+    const a = { start: now, end: now + sp.duration * 1000 } as { start: number; end: number; target?: string; n?: number };
     const owned = visibleBuildings(s).filter((b) => s.run.buildings[b.id] > 0);
     if (id === 'pirate' && owned.length) a.target = owned[Math.floor(rng() * owned.length)].id;
+    s.run.spellCasts[id] = (s.run.spellCasts[id] ?? 0) + 1;
+    a.n = s.run.spellCasts[id];
+    if (id === 'phoenix') a.target = 'b' + (1 + Math.floor(rng() * 5));
     if (id === 'sage' && owned.length) a.target = owned.reduce((lo, b) => (buildingProd(s, b, snap).lt(buildingProd(s, lo, snap)) ? b : lo)).id;
     s.run.activeSpells[id] = a;
   }
@@ -508,4 +528,57 @@ export function assignResearch(s: SaveState, facility: string, delta: 1 | -1): b
   if (delta > 0 && researchPoints(s).free < 1) return false;
   if (delta < 0 && cur < 1) return false;
   s.perm.research[facility] = cur + delta; return true;
+}
+
+// ---------------------------------------------------------------- mercenary (WIKI structure: R3, any alignment, pick spells and upgrades)
+export const MERC = {
+  minR: 3,
+  gates: [5e55, 5e60, 5e66],          // first contract 50 Spd (WIKI); later contracts GUESS
+  spellCoins: 5e58, spellFC: 1000,     // magic contract 50 Ocd + 1000 FC (WIKI)
+  slotFC: [1500, 3000, 4500, 6000],    // tier-1 pick costs (WIKI); tiers 2-3 multiply by 4^(tier-1) (GUESS)
+};
+type AddFn = (u: Omit<UpgradeView, 'purchased' | 'affordable'>) => void;
+function mercUpgrades(s: SaveState, add: AddFn) {
+  const joined = s.run.faction === 'freelancer';
+  for (let t = 1; t <= 3; t++) {
+    const gid = `freelancer_g${t}`;
+    if (t === 1 ? !joined && !has(s, gid) : !has(s, `freelancer_g${t - 1}`) && !has(s, gid)) { if (t === 1 && !joined) add({ id: gid, kind: 'faction', ko: '떠돌이 작가 첫 계약', desc: '떠돌이 작가와 계약해요. 다른 진영의 주문 1개와 개선을 골라 쓸 수 있어요.', icon: 'book', cost: D(MERC.gates[0]), color: '#9a9a9a', tier: 1 }); continue; }
+    add({ id: gid, kind: 'faction', ko: `떠돌이 작가 ${['첫', '두 번째', '세 번째'][t - 1]} 계약`, desc: t === 1 ? '떠돌이 작가와 계약해요.' : `${t}단계 개선을 고를 수 있는 칸 4개가 열려요.`, icon: 'book', cost: D(MERC.gates[t - 1]), color: '#9a9a9a', tier: t });
+    if (!has(s, gid)) continue;
+    if (t === 1) add({ id: 'merc_spell', kind: 'merc', ko: '마법 계약', desc: s.run.mercSpell ? `선택한 주문: ${SPELL_BY_ID[s.run.mercSpell].ko}` : '같은 성향 진영의 주문 하나를 골라 쓸 수 있어요.', icon: 'wand', cost: D(MERC.spellCoins), color: '#9a9a9a', tier: 3 });
+    for (let k = 1; k <= 4; k++) {
+      const sid = `merc_t${t}_${k}`, pick = s.run.mercPicks[sid];
+      add({ id: sid, kind: 'merc', ko: pick ? FACTION_UP_BY_ID[pick].ko : `계약 개선 ${t}-${k}`, desc: pick ? FACTION_UP_BY_ID[pick].desc : `${t}단계 진영 개선 하나를 골라요. 조각 ${mercSlotFC(t, k)}개 (그 진영 조각)`,
+        icon: pick ? FACTION_BY_ID[FACTION_UP_BY_ID[pick].faction].emblem : 'book', cost: D(0), color: pick ? FACTION_BY_ID[FACTION_UP_BY_ID[pick].faction].color : '#6a6a6a', tier: t });
+    }
+  }
+}
+export const mercSlotFC = (tier: number, k: number) => MERC.slotFC[k - 1] * 4 ** (tier - 1);
+function mercFactions(s: SaveState) {
+  return FACTIONS.filter((f) => (f.kind === 'vanilla' && f.alignment === s.run.alignment) || (f.kind === 'neutral' && s.run.alignment === 'legend'));
+}
+export function mercCandidates(s: SaveState, slot: string) {
+  const tier = +slot.split('_')[1].slice(1);
+  const taken = new Set(Object.values(s.run.mercPicks));
+  return FACTION_UPGRADES.filter((u) => u.tier === tier && u.slot > 0 && !taken.has(u.id) && mercFactions(s).some((f) => f.id === u.faction));
+}
+export function mercSpellCandidates(s: SaveState) { return mercFactions(s).map((f) => SPELL_BY_ID[f.spell]).filter(Boolean); }
+function payFC(s: SaveState, f: FactionDef, n: number) {
+  if (!f.coinTypes.every((c) => s.run.fc[c] >= n)) return false;
+  for (const c of f.coinTypes) s.run.fc[c] -= n; return true;
+}
+export function buyMercPick(s: SaveState, slot: string, upgradeId: string): boolean {
+  if (s.run.faction !== 'freelancer' || s.run.mercPicks[slot]) return false;
+  const [, t, k] = slot.match(/merc_t(\d)_(\d)/)!.map(Number) as unknown as [string, number, number];
+  if (!has(s, `freelancer_g${t}`) || !mercCandidates(s, slot).some((u) => u.id === upgradeId)) return false;
+  if (!payFC(s, FACTION_BY_ID[FACTION_UP_BY_ID[upgradeId].faction], mercSlotFC(t, k))) return false;
+  s.run.mercPicks[slot] = upgradeId; s.run.upgrades.push(slot, upgradeId);
+  return true;
+}
+export function buyMercSpell(s: SaveState, spellId: string): boolean {
+  if (s.run.faction !== 'freelancer' || s.run.mercSpell || !has(s, 'freelancer_g1')) return false;
+  const sp = mercSpellCandidates(s).find((x) => x.id === spellId); if (!sp || s.run.coins.lt(MERC.spellCoins)) return false;
+  if (!payFC(s, FACTION_BY_ID[sp.faction!], MERC.spellFC)) return false;
+  s.run.coins = s.run.coins.sub(MERC.spellCoins); s.run.mercSpell = sp.id; s.run.upgrades.push('merc_spell');
+  return true;
 }
