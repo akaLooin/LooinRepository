@@ -44,6 +44,7 @@ export interface PermState {
   rubies: number;
   rubiesFound: number;
   research: Record<string, number>;
+  researchActive: string[];
   maxOwned: number;
 }
 
@@ -71,7 +72,7 @@ export function newRun(now: number): RunState {
 }
 
 export function newPerm(): PermState {
-  return { reincarnations: 0, ascensions: 0, factionUpgrades: {}, challenges: [], artifacts: [], archaeology: false, excavations: 0, rubies: 0, rubiesFound: 0, research: {}, maxOwned: 0 };
+  return { reincarnations: 0, ascensions: 0, factionUpgrades: {}, challenges: [], artifacts: [], archaeology: false, excavations: 0, rubies: 0, rubiesFound: 0, research: {}, researchActive: [], maxOwned: 0 };
 }
 
 export function newGame(now: number): SaveState {

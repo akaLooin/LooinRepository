@@ -13,7 +13,7 @@ import { BUILDING_BY_ID } from './data/buildings';
 import { FACTIONS, FACTION_BY_ID } from './data/factions';
 import { SPELL_BY_ID } from './data/spells';
 import { TROPHIES } from './data/general';
-import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, UNLOCKS, facilityBonus } from './data/endgame';
+import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, RESEARCH_UPGRADES, UNLOCKS, facilityBonus, researchSlots } from './data/endgame';
 import { COIN_TYPES, type CoinType } from './data/types';
 import { installContent } from './data/content';
 import { t, watchTerms, setCurrencyTier } from './data/terms';
@@ -397,14 +397,22 @@ function renderStats(p: HTMLElement) {
   const research = R < UNLOCKS.research ? `<p class="dim">{research}는 R${UNLOCKS.research}부터 열려요.</p>`
     : `<p>{researchPoint} ${rp.free} / ${rp.total}</p><table class="dtable">${FACILITIES.map((f) => `<tr><td>${f.ko}<br><span class="dim">${f.factions.map((x) => FACTION_BY_ID[x].ko).join(', ')}</span></td>
       <td>${S.perm.research[f.id] ?? 0}점 · +${Math.round(facilityBonus(S.perm.research[f.id] ?? 0) * 100)}%</td>
-      <td><button class="btn accent sm" data-r="${f.id}" data-d="-1">−</button> <button class="btn primary sm" data-r="${f.id}" data-d="1" ${rp.free < 1 ? 'disabled' : ''}>+</button></td></tr>`).join('')}</table>`;
-  const key = 's' + rp.free + JSON.stringify(S.perm.research) + R;
+      <td><button class="btn accent sm" data-r="${f.id}" data-d="-1">−</button> <button class="btn primary sm" data-r="${f.id}" data-d="1" ${rp.free < 1 ? 'disabled' : ''}>+</button></td></tr>
+      <tr><td colspan="3"><div class="rchips"><span class="dim">칸 ${E.researchSlotsUsed(S, f.id)}/${researchSlots(R)}</span>${RESEARCH_UPGRADES.filter((x) => x.facility === f.id).map((x) => {
+        const on = S.perm.researchActive.includes(x.id), open = E.researchUnlocked(S, x.id);
+        return `<button class="rchip ${on ? 'on' : open ? '' : 'locked'}" data-ru="${x.id}" title="${x.desc}">${open ? x.ko : x.rp + '점'}</button>`; }).join('')}</div></td></tr>`).join('')}</table>`;
+  const key = 's' + rp.free + JSON.stringify(S.perm.research) + R + S.perm.researchActive.join();
   const html = `<section class="gsection"><header>기록</header><dl class="stats" style="padding:6px">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>
     <section class="gsection"><header>{research} (연구)</header><div style="padding:6px">${research}</div></section>
     <section class="gsection"><header>{reincarnationPower} (환생 보너스)</header><ul style="margin:6px;padding-left:16px">${perks}</ul></section>`;
   if (panelKey !== key) {
     const st = p.scrollTop; panelKey = key; p.innerHTML = html; p.scrollTop = st;
     p.querySelectorAll<HTMLButtonElement>('[data-r]').forEach((b) => { b.onclick = () => { E.assignResearch(S, b.dataset.r!, +b.dataset.d! as 1 | -1); panelKey = ''; renderPanel(); }; });
+    p.querySelectorAll<HTMLButtonElement>('[data-ru]').forEach((b) => { b.onclick = () => {
+      const x = RESEARCH_UPGRADES.find((r) => r.id === b.dataset.ru)!;
+      if (!E.researchUnlocked(S, x.id)) { toast(`${x.ko}: 이 시설에 {researchPoint} ${x.rp}점이 필요해요`); return; }
+      if (!E.toggleResearch(S, x.id)) toast('칸이 가득 찼어요. 다른 연구를 빼 주세요'); else toast(`${S.perm.researchActive.includes(x.id) ? '✔' : '✖'} ${x.ko}: ${x.desc}`);
+      panelKey = ''; renderPanel(); }; });
   } else { const dl = $('dl.stats', p); if (dl) dl.innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join(''); }
 }
 
@@ -470,7 +478,7 @@ function renderChallenges(p: HTMLElement) {
   if (S.perm.reincarnations < UNLOCKS.challenges) {
     p.innerHTML = `<div class="locked-panel"><img class="ic2" src="${spriteURL('star', 2)}" alt=""><p>{challenge}(도전)는 <b>{reincarnate} R${UNLOCKS.challenges}</b>부터 열려요.</p></div>`; return;
   }
-  const groups = FACTIONS.map((f) => {
+  const groups = FACTIONS.filter((f) => CHALLENGES.some((c) => c.faction === f.id)).map((f) => {
     const list = CHALLENGES.filter((c) => c.faction === f.id);
     return `<section class="gsection"><header>${f.ko} (${list.filter((c) => S.perm.challenges.includes(c.id)).length}/${list.length})</header><div class="tgrid">${list.map((c) => {
       const done = S.perm.challenges.includes(c.id), open = E.challengeAvailable(S, c);

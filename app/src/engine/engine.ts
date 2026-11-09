@@ -6,7 +6,7 @@ import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
-import { ASCENSION, reincarnationGems, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
+import { ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
 export const BASE = {
@@ -49,6 +49,7 @@ function baseCtx(s: SaveState, now: number, manaRegen: number): EndCtx {
 export function totalExchanges(s: SaveState) { let n = 0; for (const k in s.run.exchanges) n += s.run.exchanges[k as CoinType] ?? 0; return n; }
 
 const HERITAGE_BY_ID = Object.fromEntries(HERITAGES.map((h) => [`her_${h.faction}`, h]));
+const RESEARCH_BY_ID = Object.fromEntries(RESEARCH_UPGRADES.map((r) => [r.id, r]));
 const ARTIFACT_BY_ID = Object.fromEntries(ARTIFACTS.map((a) => [a.id, a]));
 
 // ---------------------------------------------------------------- modifiers
@@ -57,9 +58,11 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   const R = s.perm.reincarnations;
   for (const p of REINCARNATION_PERKS) if (R >= p.r) p.effect(m, c);
   for (const id of s.perm.artifacts) ARTIFACT_BY_ID[id]?.effect?.(m, c);
-  for (const ch of CHALLENGES) if (s.run.faction === ch.faction && s.perm.challenges.includes(ch.id)) ch.effect(m, c);
+  m.global *= 1 + ARTIFACT_TOTAL_BONUS * s.perm.artifacts.length;
+  for (const ch of CHALLENGES) if ((s.run.faction === ch.faction || s.run.prestige === ch.faction) && s.perm.challenges.includes(ch.id)) ch.effect(m, c);
   if (s.run.bloodline) BLOODLINES.find((b) => b.faction === s.run.bloodline)?.effect(m, c);
   if (s.run.faction) for (const f of FACILITIES) if (f.factions.includes(s.run.faction)) m.global *= 1 + facilityBonus(s.perm.research[f.id] ?? 0);
+  for (const id of s.perm.researchActive) { const r = RESEARCH_BY_ID[id]; if (r && researchUnlocked(s, r.id)) r.effect(m, c); }
   for (const id of s.run.upgrades) {
     const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
     const f = FACTION_UP_BY_ID[id]; if (f?.effect) { f.effect(m, c); continue; }
@@ -544,7 +547,7 @@ export function checkChallenges(s: SaveState, now: number): ChallengeDef[] {
     owned: s.run.buildings, ownedTotal: snap.ctx.ownedTotal, upgradesRun: s.run.upgrades.length, assistants: snap.assistants, fcFoundRun: s.run.fcFound, exchangesRun: totalExchanges(s) };
   const done: ChallengeDef[] = [];
   for (const ch of CHALLENGES) {
-    if (ch.faction !== s.run.faction || s.perm.challenges.includes(ch.id) || !challengeAvailable(s, ch)) continue;
+    if ((ch.faction !== s.run.faction && ch.faction !== s.run.prestige) || s.perm.challenges.includes(ch.id) || !challengeAvailable(s, ch)) continue;
     if (ch.check(view)) { s.perm.challenges.push(ch.id); done.push(ch); }
   }
   return done;
@@ -559,9 +562,23 @@ export function researchPoints(s: SaveState) {
 export function assignResearch(s: SaveState, facility: string, delta: 1 | -1): boolean {
   if (!FACILITIES.some((f) => f.id === facility)) return false;
   const cur = s.perm.research[facility] ?? 0;
-  if (delta > 0 && researchPoints(s).free < 1) return false;
+  if (delta > 0 && (researchPoints(s).free < 1 || cur >= RESEARCH_POINT_CAP)) return false;
   if (delta < 0 && cur < 1) return false;
-  s.perm.research[facility] = cur + delta; return true;
+  s.perm.research[facility] = cur + delta;
+  // upgrades whose RP threshold is no longer met drop out of their slot
+  s.perm.researchActive = s.perm.researchActive.filter((id) => researchUnlocked(s, id));
+  return true;
+}
+export function researchUnlocked(s: SaveState, id: string) {
+  const r = RESEARCH_BY_ID[id]; return !!r && s.perm.reincarnations >= UNLOCKS.research && (s.perm.research[r.facility] ?? 0) >= r.rp;
+}
+export function researchSlotsUsed(s: SaveState, facility: string) { return s.perm.researchActive.filter((id) => RESEARCH_BY_ID[id]?.facility === facility).length; }
+/** Put a research upgrade into (or take it out of) one of its facility's slots. */
+export function toggleResearch(s: SaveState, id: string): boolean {
+  const r = RESEARCH_BY_ID[id]; if (!r) return false;
+  if (s.perm.researchActive.includes(id)) { s.perm.researchActive = s.perm.researchActive.filter((x) => x !== id); return true; }
+  if (!researchUnlocked(s, id) || researchSlotsUsed(s, r.facility) >= researchSlots(s.perm.reincarnations)) return false;
+  s.perm.researchActive.push(id); return true;
 }
 
 // ---------------------------------------------------------------- mercenary (WIKI structure: R3, any alignment, pick spells and upgrades)

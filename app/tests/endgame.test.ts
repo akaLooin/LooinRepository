@@ -168,3 +168,24 @@ describe('ascension', () => {
     expect(E.reincarnationCost(s).log10()).toBeCloseTo(31);
   });
 });
+
+describe('research slots and expanded content', () => {
+  it('RP = R(R+1)/2; upgrades unlock at facility RP and fill 4 slots', () => {
+    const s = newGame(T0); s.perm.reincarnations = 16;
+    expect(E.researchPoints(s).total).toBe(136);
+    expect(E.toggleResearch(s, 'r_craft1')).toBe(false);          // needs 1 RP in craft
+    E.assignResearch(s, 'craft', 1);
+    expect(E.toggleResearch(s, 'r_craft1')).toBe(true);
+    for (let i = 0; i < 200; i++) E.assignResearch(s, 'craft', 1);
+    for (const id of ['r_craft2', 'r_craft3', 'r_craft4']) expect(E.toggleResearch(s, id)).toBe(true);
+    expect(E.toggleResearch(s, 'r_craft5')).toBe(false);           // 4 slots at R16
+    E.assignResearch(s, 'craft', -1);
+    const before = E.snapshot(s, T0).mods.click;
+    expect(before).toBeGreaterThan(1);
+  });
+  it('prestige challenges complete while the prestige faction is joined', () => {
+    const s = newGame(T0); s.perm.reincarnations = 10; s.run.alignment = 'bright'; s.run.faction = 'woodland'; s.run.prestige = 'clockmaker';
+    s.run.coinsRun = new Decimal('1e45');
+    expect(E.checkChallenges(s, T0).map((c) => c.id)).toContain('ch_clockmaker1');
+  });
+});

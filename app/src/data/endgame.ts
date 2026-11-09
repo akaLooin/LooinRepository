@@ -84,6 +84,8 @@ export const BLOODLINES: BloodlineDef[] = [
 export const BLOODLINE_UPGRADES_NEEDED = 100;
 
 // ---------------------------------------------------------------- excavation (WIKI)
+/** Every artifact found adds +2% production (GUESS; the original's lore artifacts mostly count toward totals). */
+export const ARTIFACT_TOTAL_BONUS = 0.02;
 export const ARCHAEOLOGY = { gems: 1e9, cost: 1e29 };     // 100 Oc coins, needs 1B gems
 export const excavationCost = (x: number, a = 0) => (a > 0 ? ASCENSION.excavationBase * ASCENSION.excavationGrowth ** x : 1e27 * 1.2 ** x);
 export const EXCAVATION_FC_CHANCE = 0.35;
@@ -109,6 +111,40 @@ export const ARTIFACTS: ArtifactDef[] = [
   { id: 'a_lamp', ko: '소원 램프', chance: 0.004, desc: '전체 생산 x1.5', effect: (m) => { m.global *= 1.5; } },
   { id: 'a_page', ko: '첫 장의 원본', chance: 0.003, desc: '{gem} 보너스 +10%', effect: (m) => { m.gemBonusMult *= 1.1; } },
   { id: 'a_crown', ko: '이야기 왕의 왕관', chance: 0.002, desc: '전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'l_01', ko: '빛바랜 표지', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 150 },
+  { id: 'l_02', ko: '잃어버린 첫 문장', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 250 },
+  { id: 'l_03', ko: '고양이 발자국 책갈피', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 300 },
+  { id: 'l_04', ko: '마녀의 장보기 목록', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 350 },
+  { id: 'l_05', ko: '용의 비늘 한 조각', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 450 },
+  { id: 'l_06', ko: '물에 젖은 동화책', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 500 },
+  { id: 'l_07', ko: '유리 펜촉', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 600 },
+  { id: 'l_08', ko: '먼지 쌓인 지구의', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 700 },
+  { id: 'l_09', ko: '은하수 지도', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 900 },
+  { id: 'l_10', ko: '반쯤 탄 촛대', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 1000 },
+  { id: 'l_11', ko: '말라붙은 잉크병', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 1200 },
+  { id: 'l_12', ko: '작은 왕관 장식', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 1500 },
+  { id: 'l_13', ko: '부엉이 깃털 펜', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 2000 },
+  { id: 'l_14', ko: '금이 간 모래시계', desc: '책 속 오래된 이야기의 흔적. ({artifact} 수 보너스에 더해져요)', at: 3000 },
+  { id: 'l_15', ko: '거꾸로 쓰인 편지', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_16', ko: '이름 없는 열쇠', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_17', ko: '달빛 리본', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_18', ko: '요정 날개 비늘', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_19', ko: '멈춘 회중시계', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_20', ko: '해적의 나침반', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_21', ko: '현자의 안경', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_22', ko: '꼭두각시 실타래', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_23', ko: '그림자 극장 표', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_24', ko: '불사조의 재', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.01 },
+  { id: 'l_25', ko: '첫 번째 판본', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_26', ko: '마지막 페이지', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_27', ko: '도서관 출입증', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_28', ko: '별사탕 포장지', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_29', ko: '작은 세계수 씨앗', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_30', ko: '비밀 서가 지도', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_31', ko: '오래된 필사본', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_32', ko: '봉인된 두루마리', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_33', ko: '노래하는 조개', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_34', ko: '시간의 책갈피', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
 ];
 
 // ---------------------------------------------------------------- challenges (structure WIKI: per-faction tiers, met during a run as that faction)
@@ -133,6 +169,34 @@ export const CHALLENGES: ChallengeDef[] = [
   { id: 'ch_pirate1', faction: 'pirate', tier: 1, minR: 4, ko: '보물섬', clue: '한 판에 {fcShort} 2,000개를 찾아라.', check: (c) => c.fcFoundRun >= 2000, reward: '해적: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
   { id: 'ch_sage1', faction: 'sage', tier: 1, minR: 4, ko: '완벽한 균형', clue: '모든 건물을 같은 수(100채 이상)로 맞춰라.', check: (c) => { const v = Object.values(c.owned).filter((x) => x > 0); return v.length >= 11 && Math.min(...v) >= 100 && Math.min(...v) === Math.max(...v); }, reward: '현자: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
   { id: 'ch_puppet1', faction: 'puppet', tier: 1, minR: 4, ko: '하루 공연', clue: '한 판을 24시간 이상 이어가라.', check: (c) => c.runSeconds >= 24 * 3600, reward: '꼭두각시: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  // tier 3 of the vanilla factions
+  { id: 'ch_woodland3', faction: 'woodland', tier: 3, minR: 6, ko: '숲 전체의 잔치', clue: '1~3단계 건물을 각각 500채 이상 지어라.', check: (c) => (c.owned.c1 ?? 0) >= 500 && (c.owned.c2 ?? 0) >= 500 && (c.owned.c3 ?? 0) >= 500, reward: '숲속 친구들: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'ch_minstrel3', faction: 'minstrel', tier: 3, minR: 6, ko: '만 번의 박수', clue: '한 판에 10,000번 두드려라.', check: (c) => c.clicksRun >= 10000, reward: '음유시인: 두드리기 x5', effect: (m) => { m.click *= 5; } },
+  { id: 'ch_starmage3', faction: 'starmage', tier: 3, minR: 6, ko: '천 개의 별', clue: '한 판에 주문을 300번 시전하라.', check: (c) => c.spellsRun >= 300, reward: '별의 마법사: {mana} 회복 x2', effect: (m) => { m.manaRegenMult *= 2; } },
+  { id: 'ch_thieves3', faction: 'thieves', tier: 3, minR: 6, ko: '왕실 금고', clue: '{exchange}을 100번 맺어라.', check: (c) => c.exchangesRun >= 100, reward: '도적단: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'ch_ghost3', faction: 'ghost', tier: 3, minR: 6, ko: '사흘 밤', clue: '한 판을 72시간 이상 이어가라.', check: (c) => c.runSeconds >= 72 * 3600, reward: '유령: {assistant} 생산 x3', effect: (m) => { m.assistantsMult *= 3; } },
+  { id: 'ch_witch3', faction: 'witch', tier: 3, minR: 6, ko: '백 개의 탑', clue: '끝없는 밤의 탑을 100채 지어라.', check: (c) => (c.owned.d10 ?? 0) >= 100, reward: '마녀: 8~10단계 x3', effect: (m) => { m.tier[8] *= 3; m.tier[9] *= 3; m.tier[10] *= 3; } },
+  // neutral tiers 2-4
+  { id: 'ch_pirate2', faction: 'pirate', tier: 2, minR: 8, ko: '폭풍 속 항해', clue: '한 판에 주문을 100번 시전하라.', check: (c) => c.spellsRun >= 100, reward: '해적: {fcShort} 확률 x2', effect: (m) => { m.fcChance *= 2; } },
+  { id: 'ch_pirate3', faction: 'pirate', tier: 3, minR: 12, ko: '전설의 보물', clue: '용의 보물고를 300채 지어라.', check: (c) => (c.owned.l9 ?? 0) >= 300, reward: '해적: 옛 전설 건물 x3', effect: (m) => { m.align.legend *= 3; } },
+  { id: 'ch_pirate4', faction: 'pirate', tier: 4, minR: 16, ko: '일곱 바다의 왕', clue: '한 판에 {fcShort} 20,000개를 찾아라.', check: (c) => c.fcFoundRun >= 20000, reward: '해적: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  { id: 'ch_sage2', faction: 'sage', tier: 2, minR: 8, ko: '느린 사색', clue: '두드리지 않고 금화 1Sx를 벌어라.', check: (c) => c.clicksRun === 0 && c.coinsRun >= 1e21, reward: '현자: {mana} 회복 x2', effect: (m) => { m.manaRegenMult *= 2; } },
+  { id: 'ch_sage3', faction: 'sage', tier: 3, minR: 12, ko: '천 채의 조화', clue: '건물 3,000채를 모아라.', check: (c) => c.ownedTotal >= 3000, reward: '현자: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'ch_sage4', faction: 'sage', tier: 4, minR: 16, ko: '현자의 침묵', clue: '주문 없이 금화 1Oc를 벌어라.', check: (c) => c.spellsRun === 0 && c.coinsRun >= 1e27, reward: '현자: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  { id: 'ch_puppet2', faction: 'puppet', tier: 2, minR: 8, ko: '무대 인사', clue: '{assistant} 100명을 모아라.', check: (c) => c.assistants >= 100, reward: '꼭두각시: {assistant} +20', effect: (m) => { m.assistantsAdd += 20; } },
+  { id: 'ch_puppet3', faction: 'puppet', tier: 3, minR: 12, ko: '일주일 공연', clue: '한 판을 7일 이상 이어가라.', check: (c) => c.runSeconds >= 7 * 86400, reward: '꼭두각시: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'ch_puppet4', faction: 'puppet', tier: 4, minR: 16, ko: '끝나지 않는 막', clue: '개선 30개 이하로 금화 1No를 벌어라.', check: (c) => c.upgradesRun <= 30 && c.coinsRun >= 1e30, reward: '꼭두각시: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  // prestige factions (played on top of a base faction)
+  { id: 'ch_clockmaker1', faction: 'clockmaker', tier: 1, minR: 10, ko: '첫 톱니', clue: '시계장인과 함께 금화 1Qad를 벌어라.', check: (c) => c.coinsRun >= 1e45, reward: '시계장인: 두드리기 x3', effect: (m) => { m.click *= 3; } },
+  { id: 'ch_clockmaker2', faction: 'clockmaker', tier: 2, minR: 14, ko: '정밀한 하루', clue: '한 판에 15,000번 두드려라.', check: (c) => c.clicksRun >= 15000, reward: '시계장인: {fcShort} 확률 x2', effect: (m) => { m.fcChance *= 2; } },
+  { id: 'ch_clockmaker3', faction: 'clockmaker', tier: 3, minR: 20, ko: '거대한 시계탑', clue: '건물 5,000채를 모아라.', check: (c) => c.ownedTotal >= 5000, reward: '시계장인: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'ch_clockmaker4', faction: 'clockmaker', tier: 4, minR: 27, ko: '영원의 태엽', clue: '한 판을 48시간 이상 이어가라.', check: (c) => c.runSeconds >= 48 * 3600, reward: '시계장인: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  { id: 'ch_shadow1', faction: 'shadow', tier: 1, minR: 10, ko: '첫 연습', clue: '그림자 극단과 함께 주문을 100번 시전하라.', check: (c) => c.spellsRun >= 100, reward: '그림자 극단: 전체 생산 x2', effect: (m) => { m.global *= 2; } },
+  { id: 'ch_shadow2', faction: 'shadow', tier: 2, minR: 14, ko: '완벽한 연속 공연', clue: '{exchange}을 200번 맺어라.', check: (c) => c.exchangesRun >= 200, reward: '그림자 극단: {exchange} +5%p', effect: (m) => { m.exchangeBonus += 0.05; } },
+  { id: 'ch_shadow3', faction: 'shadow', tier: 3, minR: 20, ko: '어둠 속의 무대', clue: '두드리지 않고 금화 1Qid를 벌어라.', check: (c) => c.clicksRun === 0 && c.coinsRun >= 1e48, reward: '그림자 극단: {assistant} 생산 x3', effect: (m) => { m.assistantsMult *= 3; } },
+  { id: 'ch_shadow4', faction: 'shadow', tier: 4, minR: 27, ko: '천 번의 커튼콜', clue: '한 판에 주문을 1,000번 시전하라.', check: (c) => c.spellsRun >= 1000, reward: '그림자 극단: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  { id: 'ch_phoenix1', faction: 'phoenix', tier: 1, minR: 46, ko: '첫 불꽃', clue: '불사조와 함께 금화 1e70을 벌어라.', check: (c) => c.coinsRun >= 1e70, reward: '불사조: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  { id: 'ch_phoenix2', faction: 'phoenix', tier: 2, minR: 50, ko: '다시 태어나는 날개', clue: '한 판을 24시간 이상 이어가라.', check: (c) => c.runSeconds >= 24 * 3600, reward: '불사조: {assistant} 생산 x3', effect: (m) => { m.assistantsMult *= 3; } },
 ];
 
 // ---------------------------------------------------------------- research (WIKI: R16, 6 facilities, facility bonus 350*x^0.75 %)
@@ -145,5 +209,63 @@ export const FACILITIES: FacilityDef[] = [
   { id: 'alchemy', ko: '연금학', factions: ['ghost', 'sage'] },
   { id: 'war', ko: '전략학', factions: ['witch', 'pirate'] },
 ];
-export const researchPointsFor = (r: number) => (r < UNLOCKS.research ? 0 : Math.floor(5 * (r - UNLOCKS.research + 1) ** 1.2)); // GUESS
+export const researchPointsFor = (r: number) => (r < UNLOCKS.research ? 0 : (r * (r + 1)) / 2); // WIKI: R(R+1)/2 (136 at R16)
+export const RESEARCH_POINT_CAP = 5000; // WIKI: per facility
+export const researchSlots = (r: number) => (r < UNLOCKS.research ? 0 : 4 + (r >= 20 ? 1 : 0) + (r >= 29 ? 1 : 0)); // WIKI: 4 default, +1 around R17-20, prestige +R29
 export const facilityBonus = (rp: number) => (rp > 0 ? 3.5 * rp ** 0.75 : 0); // multiplier add: 350*x^0.75 %
+
+// Research upgrades: unlock at facility RP thresholds (WIKI thresholds), placed into limited slots per facility.
+export interface ResearchUpgradeDef { id: string; facility: string; rp: number; ko: string; desc: string; effect: Eff }
+const RT = [1, 10, 30, 50, 105, 135];
+type RU = [string, string, Eff];
+const ru = (facility: string, rows: RU[]): ResearchUpgradeDef[] => rows.map(([ko, desc, effect], i) => ({ id: `r_${facility}${i + 1}`, facility, rp: RT[i], ko, desc, effect }));
+export const RESEARCH_UPGRADES: ResearchUpgradeDef[] = [
+  ...ru('spell', [
+    ['마력 엮기', '이번 판 시전한 주문 수에 따라 1~3단계 건물 증가', (m, c) => lowTiers(m, 1 + 0.02 * c.spellsRun)],
+    ['고요한 서재', '이번 판 시간에 따라 {mana} 최대치 증가', (m, c) => { m.manaMaxAdd += Math.floor(45 * (c.runSeconds / 3600)); }],
+    ['주문 각인', '{mana} 회복 +25%', (m) => { m.manaRegenMult *= 1.25; }],
+    ['마력의 숨', '{mana} 최대치에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + (2 * (c.manaMax ?? 1000) ** 0.8) / 100; }],
+    ['차가운 마법진', '{mana} 회복 x2', (m) => { m.manaRegenMult *= 2; }],
+    ['울림', '주문 수에 따라 전체 생산 증가 (강화)', (m, c) => { m.global *= 1 + 0.05 * c.spellsRun; }],
+  ]),
+  ...ru('craft', [
+    ['장인의 손', '두드리기 보상 x2', (m) => { m.click *= 2; }],
+    ['단단한 망치', '건물 수에 따라 두드리기 보상 증가', (m, c) => { m.click *= 1 + (0.5 * c.ownedTotal ** 0.65) / 100; }],
+    ['정밀 도구', '건물 가격 -5%', (m) => { m.costMult *= 0.95; }],
+    ['명품 공방', '전체 두드리기 수에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + 0.01 * ln(1 + c.clicksTotal) ** 2; }],
+    ['자동 망치', '{assistant} +15', (m) => { m.assistantsAdd += 15; }],
+    ['걸작', '전체 생산 x2', (m) => { m.global *= 2; }],
+  ]),
+  ...ru('divine', [
+    ['축복받은 책장', '{gem} 보너스 +10%', (m) => { m.gemBonusMult *= 1.1; }],
+    ['빛의 문장', '두드리기 x3', (m) => { m.click *= 3; }],
+    ['천상의 합창', '{mana} 회복 +1', (m) => { m.manaRegenAdd += 1; }],
+    ['성스러운 인장', '{trophy} 수에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + 0.02 * c.trophies; }],
+    ['신의 손길', '{gem} 보너스 +25%', (m) => { m.gemBonusMult *= 1.25; }],
+    ['영원의 빛', '전체 생산 x2', (m) => { m.global *= 2; }],
+  ]),
+  ...ru('econ', [
+    ['복리', '보유 {gem}에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + Math.log10(1 + c.gems) * 0.05; }],
+    ['도매 거래', '건물 가격 -5%', (m) => { m.costMult *= 0.95; }],
+    ['시간은 금', '이번 판 시간에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + (c.runSeconds / 3600) ** 0.6; }],
+    ['계약 전문가', '{exchange} 보너스 +2%p', (m) => { m.exchangeBonus += 0.02; }],
+    ['투자 조합', '건물 수에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + 0.0005 * c.ownedTotal; }],
+    ['황금 시대', '전체 생산 x2', (m) => { m.global *= 2; }],
+  ]),
+  ...ru('alchemy', [
+    ['약초 증류', '{assistant} 생산 x1.5', (m) => { m.assistantsMult *= 1.5; }],
+    ['현자의 물약', '{assistant} 수에 따라 {mana} 회복 증가', (m, c) => { m.manaRegenAdd += Math.floor(13 * c.assistants ** 0.6) / 10; }],
+    ['연금 용광로', '8~10단계 건물 x2', (m) => { m.tier[8] *= 2; m.tier[9] *= 2; m.tier[10] *= 2; }],
+    ['변환의 원', '이번 판 {fcShort} 수에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + 0.02 * ln(1 + c.fcFoundRun) ** 2; }],
+    ['영약', '{assistant} +20', (m) => { m.assistantsAdd += 20; }],
+    ['황금 변환', '전체 생산 x2', (m) => { m.global *= 2; }],
+  ]),
+  ...ru('war', [
+    ['행군', '건물 수에 따라 전체 생산 증가', (m, c) => { m.global *= 1 + 0.001 * c.ownedTotal; }],
+    ['전략 회의', '{exchange} 보너스 +2%p', (m) => { m.exchangeBonus += 0.02; }],
+    ['포위', '어두운 건물·옛 전설 건물 x2', (m) => { m.align.dark *= 2; m.align.legend *= 2; }],
+    ['정찰', '{fcShort} 발견 확률 x1.5', (m) => { m.fcChance *= 1.5; }],
+    ['총공격', '9~10단계 건물 x3', (m) => { m.tier[9] *= 3; m.tier[10] *= 3; }],
+    ['승전보', '전체 생산 x2', (m) => { m.global *= 2; }],
+  ]),
+];

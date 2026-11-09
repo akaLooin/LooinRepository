@@ -4,7 +4,7 @@ import { BUILDINGS } from './buildings';
 import { ALIGNMENTS, FACTIONS, FACTION_UPGRADES } from './factions';
 import { SPELLS } from './spells';
 import { GENERAL_UPGRADES, TROPHIES } from './general';
-import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES } from './endgame';
+import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES, RESEARCH_UPGRADES } from './endgame';
 import { TERMS, TERM_LABELS } from './terms';
 import { BASE } from '../engine/engine';
 import baked from './overrides.json';
@@ -42,6 +42,7 @@ export const COLLECTIONS: Collection[] = [
   { id: 'artifacts', label: '유물', fields: [T('ko'), L('desc'), N('at', '확정 발견 깊이'), N('chance', '발견 확률')], items: list(ARTIFACTS, (a) => a.id) },
   { id: 'challenges', label: '도전', fields: [T('ko'), L('clue', '단서'), L('reward', '보상 설명'), N('minR', '최소 환생')], items: list(CHALLENGES, (c) => c.id) },
   { id: 'facilities', label: '연구 시설', fields: [T('ko')], items: list(FACILITIES, (f) => f.id) },
+  { id: 'research', label: '연구 개선', fields: [T('ko'), L('desc'), N('rp', '필요 포인트')], items: list(RESEARCH_UPGRADES, (r) => r.id, (r) => r.facility) },
 ];
 
 const BASE_LABELS: Record<string, string> = {
