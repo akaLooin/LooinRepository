@@ -3,3 +3,7 @@ graphify-out/.graphify_*
 !graphify-out/.graphify_labels.json
 graphify-out/.needs_update
 graphify-out/cache/stat-index.json
+
+# Android SDK path for this machine only
+local.properties
+graphify-out/cache/hook_sessions/

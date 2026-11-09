@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#2b1e3f">
+  <title>Talestopia Tycoon</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div class="brand">
+        <span class="brand-ko">테일즈토피아 타이쿤</span>
+        <span class="brand-en">Talestopia Tycoon</span>
+      </div>
+      <div class="money">
+        <div class="coins"><span class="coin-icon">🪙</span><span id="coins">0</span></div>
+        <div class="cps"><span id="cps">0</span> / 초</div>
+      </div>
+      <div class="mana">
+        <div class="mana-bar"><div id="mana-fill"></div><span id="mana-text">100 / 100</span></div>
+        <button id="spell-btn" class="spell-btn" disabled>장르를 고르면 주문이 열려요</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="stage">
+        <div class="stage-info">
+          <span id="edition">제 1판</span>
+          <span id="genre-badge" class="genre-badge hidden"></span>
+        </div>
+        <button id="book" class="book" aria-label="이야기책 두드리기">
+          <svg viewBox="0 0 200 160" aria-hidden="true">
+            <defs>
+              <linearGradient id="pg" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#fff8e6"/><stop offset="1" stop-color="#f1dfb5"/>
+              </linearGradient>
+            </defs>
+            <path d="M10 30 Q55 10 100 30 L100 150 Q55 130 10 150 Z" fill="#7b3f61"/>
+            <path d="M190 30 Q145 10 100 30 L100 150 Q145 130 190 150 Z" fill="#7b3f61"/>
+            <path d="M18 32 Q58 16 100 34 L100 144 Q58 126 18 142 Z" fill="url(#pg)"/>
+            <path d="M182 32 Q142 16 100 34 L100 144 Q142 126 182 142 Z" fill="url(#pg)"/>
+            <g stroke="#c9ad7a" stroke-width="3" stroke-linecap="round" fill="none">
+              <path d="M32 54 Q60 44 88 56"/><path d="M32 72 Q60 62 88 74"/><path d="M32 90 Q60 80 88 92"/>
+              <path d="M112 56 Q140 44 168 54"/><path d="M112 74 Q140 62 168 72"/>
+            </g>
+            <g class="sparkle" fill="#ffd34d">
+              <path d="M140 92 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5z"/>
+              <circle cx="60" cy="112" r="4"/><circle cx="118" cy="120" r="3"/>
+            </g>
+          </svg>
+        </button>
+        <p class="tap-hint">책을 두드려 이야기를 팔아요 · 한 번에 <b id="click-val">1</b></p>
+        <div id="effects" class="effects"></div>
+        <div id="floaters" class="floaters" aria-hidden="true"></div>
+      </section>
+
+      <section class="panel">
+        <nav class="tabs" role="tablist">
+          <button data-tab="buildings" class="active">🏘️ 건물</button>
+          <button data-tab="upgrades">✨ 개선<span id="up-dot" class="dot hidden"></span></button>
+          <button data-tab="genre">📖 장르<span id="genre-dot" class="dot hidden"></span></button>
+          <button data-tab="rewrite">🪶 다시 쓰기</button>
+          <button data-tab="highlights">🏅 명장면</button>
+          <button data-tab="settings">⚙️</button>
+        </nav>
+
+        <div class="tab-body" id="tab-buildings">
+          <div class="buy-amount">
+            <span>구매 수량</span>
+            <button data-amt="1" class="active">x1</button>
+            <button data-amt="10">x10</button>
+            <button data-amt="100">x100</button>
+            <button data-amt="max">최대</button>
+          </div>
+          <div id="building-list" class="list"></div>
+        </div>
+
+        <div class="tab-body hidden" id="tab-upgrades">
+          <div id="upgrade-list" class="list"></div>
+          <p id="upgrade-empty" class="empty">지금 살 수 있는 개선이 없어요. 건물을 더 모아 보세요.</p>
+        </div>
+
+        <div class="tab-body hidden" id="tab-genre">
+          <p id="genre-intro" class="intro"></p>
+          <div id="genre-list" class="genre-grid"></div>
+        </div>
+
+        <div class="tab-body hidden" id="tab-rewrite">
+          <div class="rewrite-card">
+            <h3>이야기를 처음부터 다시 쓰기</h3>
+            <p>지금까지의 금화·건물·개선·장르를 모두 내려놓고 새 판본을 시작해요.
+               대신 <b>전설</b>을 얻어 영원히 강해져요. 전설 1개당 생산 +2%, 영감 최대치 +1.</p>
+            <dl class="stats">
+              <dt>보유한 전설</dt><dd id="legends">0</dd>
+              <dt>지금 다시 쓰면 얻는 전설</dt><dd id="legend-gain">0</dd>
+              <dt>다음 전설까지 필요한 누적 금화</dt><dd id="legend-next">-</dd>
+              <dt>지금까지 쓴 판본</dt><dd id="rewrites">0</dd>
+            </dl>
+            <button id="rewrite-btn" class="big-btn" disabled>다시 쓰기</button>
+          </div>
+        </div>
+
+        <div class="tab-body hidden" id="tab-highlights">
+          <p class="intro">명장면 하나당 생산 +1%. 다시 써도 사라지지 않아요. (<span id="hl-count">0</span>/<span id="hl-total">0</span>)</p>
+          <div id="highlight-list" class="hl-grid"></div>
+        </div>
+
+        <div class="tab-body hidden" id="tab-settings">
+          <div class="settings">
+            <button id="save-btn">지금 저장</button>
+            <button id="export-btn">저장 코드 복사</button>
+            <button id="import-btn">저장 코드 불러오기</button>
+            <button id="reset-btn" class="danger">처음부터 시작 (모든 기록 삭제)</button>
+            <textarea id="save-code" rows="3" placeholder="저장 코드를 여기에 붙여넣으세요"></textarea>
+            <dl class="stats">
+              <dt>누적 금화</dt><dd id="st-lifetime">0</dd>
+              <dt>책 두드린 횟수</dt><dd id="st-clicks">0</dd>
+              <dt>주문 사용 횟수</dt><dd id="st-spells">0</dd>
+              <dt>최고 판본 수입</dt><dd id="st-best">0</dd>
+            </dl>
+            <p class="credit">Talestopia Tycoon · © Looin</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h3 id="modal-title"></h3>
+        <p id="modal-text"></p>
+        <div class="modal-actions">
+          <button id="modal-cancel" class="ghost">취소</button>
+          <button id="modal-ok">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

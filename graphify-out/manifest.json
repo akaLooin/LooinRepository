@@ -1,0 +1,818 @@
+{
+  ".claude/hooks/graphify-stop.sh": {
+    "mtime": 1794134930.7119675,
+    "seen": 1794135780.8415177,
+    "ast_hash": "673b496dfe672cdb8e78fedc230fadc3",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1794134930.7119675,
+    "seen": 1794135780.841526,
+    "ast_hash": "e4566ed31fd6e146ad998dc0bd467e51",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/sweep.py": {
+    "mtime": 1794134930.7124283,
+    "seen": 1794135780.8415298,
+    "ast_hash": "6e72239d135e70b85f5eb029560645e7",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/contrast.py": {
+    "mtime": 1794134930.7127244,
+    "seen": 1794135780.841532,
+    "ast_hash": "be1cc9f80abcff530e3047e43cc7418b",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/imgdiff.py": {
+    "mtime": 1794134930.712879,
+    "seen": 1794135780.8415337,
+    "ast_hash": "89423d275a22901d45d1dded2bbf0a89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/parity.py": {
+    "mtime": 1794134930.712879,
+    "seen": 1794135780.841535,
+    "ast_hash": "b038abcd7358f9267f243cf25e337f79",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/reviews.py": {
+    "mtime": 1794134930.71313,
+    "seen": 1794135780.8415368,
+    "ast_hash": "30484811d165ea8e8f26ea27b468e258",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/themes.json": {
+    "mtime": 1794134930.71313,
+    "seen": 1794135780.841538,
+    "ast_hash": "2f131b47a08b6f829a3a7b9b310c0d89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.example.json": {
+    "mtime": 1794134930.7133343,
+    "seen": 1794135780.8415391,
+    "ast_hash": "7f333f8243827641e47a0afaebf858dc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.py": {
+    "mtime": 1794134930.7133343,
+    "seen": 1794135780.84154,
+    "ast_hash": "af4d4a7b06701afb767de7ef763ddda8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/e2e.example.spec.ts": {
+    "mtime": 1794134930.713656,
+    "seen": 1794135780.8415413,
+    "ast_hash": "1a6d12fef3cbe97dfa1b0dc42c3a8881",
+    "semantic_hash": ""
+  },
+  "game/js/data.js": {
+    "mtime": 1794135488.3441663,
+    "seen": 1794135780.8415852,
+    "ast_hash": "a9bfce0cf56e431a21d616fee093fc86",
+    "semantic_hash": ""
+  },
+  "game/js/engine.js": {
+    "mtime": 1794135694.1379402,
+    "seen": 1794135780.841588,
+    "ast_hash": "5bd68189bc72f07e4056672785d879c0",
+    "semantic_hash": ""
+  },
+  "game/js/ui.js": {
+    "mtime": 1794135678.2681777,
+    "seen": 1794135780.8415897,
+    "ast_hash": "7bf2791d10feccb61b41f5aa959f66e8",
+    "semantic_hash": ""
+  },
+  "game/tests/engine.test.js": {
+    "mtime": 1794135558.0641706,
+    "seen": 1794135780.8415914,
+    "ast_hash": "e45100f41d5535123ce8e42a14c3a6df",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/SKILL.md": {
+    "mtime": 1794134930.7121499,
+    "seen": 1794135780.8415926,
+    "ast_hash": "68b9b40ecc837f79cd8a1f9f55bb69e9",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/architecture.md": {
+    "mtime": 1794134930.7122169,
+    "seen": 1794135780.8415942,
+    "ast_hash": "0da9e8d3bb2bcfaaca00da1d7652b3f8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-backend/SKILL.md": {
+    "mtime": 1794134930.7122169,
+    "seen": 1794135780.8415956,
+    "ast_hash": "6cf582652afdfa7a4d93be9c0b678acc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/SKILL.md": {
+    "mtime": 1794134930.7122169,
+    "seen": 1794135780.8415976,
+    "ast_hash": "52f8859b2bd72803f0f22f6504ceb5d2",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-build/SKILL.md": {
+    "mtime": 1794134930.7124283,
+    "seen": 1794135780.8415987,
+    "ast_hash": "5ff1211352611a1b0ca4261bbf802914",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/SKILL.md": {
+    "mtime": 1794134930.7124283,
+    "seen": 1794135780.8415997,
+    "ast_hash": "68ca163f75008916d771db003e9e9d2f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/preflight.md": {
+    "mtime": 1794134930.7126071,
+    "seen": 1794135780.8416011,
+    "ast_hash": "e08376a3e4b2137083d9cac67e5213d8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/SKILL.md": {
+    "mtime": 1794134930.7126071,
+    "seen": 1794135780.8416028,
+    "ast_hash": "6cb2089c8fef9f8ff7cfdb437beb4335",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/SKILL.md": {
+    "mtime": 1794134930.7127244,
+    "seen": 1794135780.8416045,
+    "ast_hash": "4388136945068abb2403b78f646f1ff4",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/SKILL.md": {
+    "mtime": 1794134930.712879,
+    "seen": 1794135780.8416054,
+    "ast_hash": "f8991e2948128c6b7747c5a54984c763",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/SKILL.md": {
+    "mtime": 1794134930.71313,
+    "seen": 1794135780.8416066,
+    "ast_hash": "45df2bb5bc5cea98a442026a8ff9f948",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/SKILL.md": {
+    "mtime": 1794134930.7133343,
+    "seen": 1794135780.841608,
+    "ast_hash": "6d9392e82e61935f37ac1bb95ef909c5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/recon-map.md": {
+    "mtime": 1794134930.7134926,
+    "seen": 1794135780.8416092,
+    "ast_hash": "d23e672474a29ec1ea49ec43ddfff8b5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/SKILL.md": {
+    "mtime": 1794134930.7134926,
+    "seen": 1794135780.8416104,
+    "ast_hash": "c9a62a0d332c47e75f43f0b30a4a8af1",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/bug-report.md": {
+    "mtime": 1794134930.713656,
+    "seen": 1794135780.841612,
+    "ast_hash": "96a2f82bee687b61cdcab4cae30f3b74",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/test-plan.md": {
+    "mtime": 1794134930.713656,
+    "seen": 1794135780.841613,
+    "ast_hash": "63d7dea8bd03011a3cd8b62c78e0c762",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1794134930.713656,
+    "seen": 1794135780.8416142,
+    "ast_hash": "0082dfb26d459e9bafa72031729e3693",
+    "semantic_hash": ""
+  },
+  "game/README.md": {
+    "mtime": 1794135776.9721835,
+    "seen": 1794135780.8416154,
+    "ast_hash": "17f767ee5fad86d1ec7178e396e8e67f",
+    "semantic_hash": ""
+  },
+  "game/index.html": {
+    "mtime": 1794135752.3368979,
+    "seen": 1794135780.8416166,
+    "ast_hash": "57f0b7fd7867f967a9d9f7359b5857ea",
+    "semantic_hash": ""
+  },
+  "Logo/LooinLogo.png": {
+    "mtime": 1794134930.713656,
+    "seen": 1794135780.8416178,
+    "ast_hash": "cecee7e00251e27ba618aa679eaa3d56",
+    "semantic_hash": ""
+  },
+  "replica/recon.md": {
+    "mtime": 1794196201.9176295,
+    "seen": 1794196241.91297,
+    "ast_hash": "540d1e2379be57f7a3755b5cfb27161d",
+    "semantic_hash": ""
+  },
+  "replica/screens/README.md": {
+    "mtime": 1794138273.3902805,
+    "seen": 1794138325.3205974,
+    "ast_hash": "0bb1785e113135ce15206f51616926e6",
+    "semantic_hash": ""
+  },
+  "replica/save-schema.ts": {
+    "mtime": 1794139790.168814,
+    "seen": 1794139802.5879693,
+    "ast_hash": "9283c09fe8d9ec086c7cce9297546810",
+    "semantic_hash": ""
+  },
+  "replica/architecture.md": {
+    "mtime": 1794139780.6048133,
+    "seen": 1794139802.587998,
+    "ast_hash": "1ebc2e75b0861a39af6eb27a308d61da",
+    "semantic_hash": ""
+  },
+  "replica/screens/S01-main.jpg": {
+    "mtime": 1794139724.034637,
+    "seen": 1794139802.5880032,
+    "ast_hash": "fbb6aed4ec255352094365f99ad32912",
+    "semantic_hash": ""
+  },
+  "replica/screens/S02-buildings.jpg": {
+    "mtime": 1794139724.1301115,
+    "seen": 1794139802.5880044,
+    "ast_hash": "1d0f050afb7b7dd176383989255c7165",
+    "semantic_hash": ""
+  },
+  "replica/screens/S03-upgrades.jpg": {
+    "mtime": 1794139724.2311227,
+    "seen": 1794139802.588005,
+    "ast_hash": "6b14383d36a466ee102b1852ec2d4266",
+    "semantic_hash": ""
+  },
+  "replica/screens/S08-trophies.jpg": {
+    "mtime": 1794139724.330168,
+    "seen": 1794139802.5880065,
+    "ast_hash": "1348ba608b19daf8f1f5336524c124f1",
+    "semantic_hash": ""
+  },
+  "replica/screens/S09-royal-exchange.jpg": {
+    "mtime": 1794139724.417083,
+    "seen": 1794139802.5880086,
+    "ast_hash": "2d79c9cf6533e7e7d632b6ea0c7162bc",
+    "semantic_hash": ""
+  },
+  "replica/screens/S12-excavation.jpg": {
+    "mtime": 1794139724.524225,
+    "seen": 1794139802.5880098,
+    "ast_hash": "458bd438c3725d8887767a0e1871ea22",
+    "semantic_hash": ""
+  },
+  "replica/screens/S13-challenges.jpg": {
+    "mtime": 1794139724.6268337,
+    "seen": 1794139802.5880108,
+    "ast_hash": "f5eea12d4c643c39897154953be89af2",
+    "semantic_hash": ""
+  },
+  "replica/screens/S15-options.jpg": {
+    "mtime": 1794139724.7155833,
+    "seen": 1794139802.5880115,
+    "ast_hash": "f2135ec84040fd96e62fa76cd915ceff",
+    "semantic_hash": ""
+  },
+  "replica/screens/S16-shop.jpg": {
+    "mtime": 1794139724.8108346,
+    "seen": 1794139802.5880125,
+    "ast_hash": "be2dfd287d56a668082b16f077c28828",
+    "semantic_hash": ""
+  },
+  "replica/screens/S17-scrying.jpg": {
+    "mtime": 1794139724.9030578,
+    "seen": 1794139802.5880134,
+    "ast_hash": "e7511eec07c6e7c3baf2938936585556",
+    "semantic_hash": ""
+  },
+  "replica/screens/S18-events.jpg": {
+    "mtime": 1794139724.9951468,
+    "seen": 1794139802.5880144,
+    "ast_hash": "e6c002e85580d77767a101f1c21b97c2",
+    "semantic_hash": ""
+  },
+  "app/package.json": {
+    "mtime": 1794199403.1916225,
+    "seen": 1794199841.9736116,
+    "ast_hash": "bba87af4ee5798f6cdc347ecc057db09",
+    "semantic_hash": ""
+  },
+  "app/scripts/build-tokens.mjs": {
+    "mtime": 1794140127.2013724,
+    "seen": 1794140318.998166,
+    "ast_hash": "8026e1e1cfe80dc8f12450a6583c56e9",
+    "semantic_hash": ""
+  },
+  "app/src/art/sprites.ts": {
+    "mtime": 1794141422.4975662,
+    "seen": 1794141698.9554272,
+    "ast_hash": "b709320e35da2918430d1467b367d921",
+    "semantic_hash": ""
+  },
+  "app/src/design.ts": {
+    "mtime": 1794140275.0368426,
+    "seen": 1794140318.998168,
+    "ast_hash": "b3d88064db713ed3a4a8700b6474bea9",
+    "semantic_hash": ""
+  },
+  "app/tests/sprites.test.ts": {
+    "mtime": 1794140174.4365363,
+    "seen": 1794140318.998169,
+    "ast_hash": "bcba802e94af90914a9a66b2a830cf40",
+    "semantic_hash": ""
+  },
+  "app/tsconfig.json": {
+    "mtime": 1794196128.1516318,
+    "seen": 1794196241.9129338,
+    "ast_hash": "0472ca71d2594f15dd599a349a246158",
+    "semantic_hash": ""
+  },
+  "app/vite.config.ts": {
+    "mtime": 1794196152.5549424,
+    "seen": 1794196241.912935,
+    "ast_hash": "7e364a2cf8f6ae3af6810e9fc14e2968",
+    "semantic_hash": ""
+  },
+  "app/design.html": {
+    "mtime": 1794140274.9974961,
+    "seen": 1794140318.9981992,
+    "ast_hash": "d24a0a4bc0e6b68deaaa70f85b3e3010",
+    "semantic_hash": ""
+  },
+  "app/index.html": {
+    "mtime": 1794141612.2766795,
+    "seen": 1794141698.955487,
+    "ast_hash": "50f09014fdca94718d06e2cd7246fe12",
+    "semantic_hash": ""
+  },
+  "app/public/fonts/OFL.md": {
+    "mtime": 1794140274.9955084,
+    "seen": 1794140318.998201,
+    "ast_hash": "bc7c2891ea27b7deaff02f2cf9eb8797",
+    "semantic_hash": ""
+  },
+  "replica/design/components.md": {
+    "mtime": 1794140205.3288386,
+    "seen": 1794140318.998205,
+    "ast_hash": "5b7d6aa2ec21efbdc034124fbc65c478",
+    "semantic_hash": ""
+  },
+  "replica/design/design-check.png": {
+    "mtime": 1794140317.3488376,
+    "seen": 1794140318.9982092,
+    "ast_hash": "9777b53531dfb127fd4d20c712b8fb0f",
+    "semantic_hash": ""
+  },
+  "app/src/art/buildings.ts": {
+    "mtime": 1794141255.3606584,
+    "seen": 1794141698.95542,
+    "ast_hash": "91bb386bfa30a1972d298cb06861284c",
+    "semantic_hash": ""
+  },
+  "app/src/art/iso.ts": {
+    "mtime": 1794141344.7504025,
+    "seen": 1794141698.9554224,
+    "ast_hash": "b9c476e0b14f1842c09433887e9d93d0",
+    "semantic_hash": ""
+  },
+  "app/src/art/map.ts": {
+    "mtime": 1794197859.2914732,
+    "seen": 1794197995.0733666,
+    "ast_hash": "7a8156b539aadc77fa51bc97e4cd7ba1",
+    "semantic_hash": ""
+  },
+  "app/src/art/raster.ts": {
+    "mtime": 1794141275.7810688,
+    "seen": 1794141698.955425,
+    "ast_hash": "2894d003ec6b279867e768c8b9a5ca2b",
+    "semantic_hash": ""
+  },
+  "app/src/art/ui.ts": {
+    "mtime": 1794142473.642181,
+    "seen": 1794142957.030041,
+    "ast_hash": "3b33dc65515c84f5f1b439a9f98f3eee",
+    "semantic_hash": ""
+  },
+  "app/src/artcheck.ts": {
+    "mtime": 1794141354.481714,
+    "seen": 1794141698.9554296,
+    "ast_hash": "39f19d5ffd478bbcafc4be8a96228259",
+    "semantic_hash": ""
+  },
+  "app/src/data/buildings.ts": {
+    "mtime": 1794200708.7667994,
+    "seen": 1794200727.534425,
+    "ast_hash": "0e1ec8ec16fb8b603e3c2b34037fbe84",
+    "semantic_hash": ""
+  },
+  "app/src/data/factions.ts": {
+    "mtime": 1794222061.0204172,
+    "seen": 1794222112.7951066,
+    "ast_hash": "bc581e4799eb39b7707801794ad08c7c",
+    "semantic_hash": ""
+  },
+  "app/src/data/general.ts": {
+    "mtime": 1794221915.4427662,
+    "seen": 1794222112.795108,
+    "ast_hash": "76c9f9f73c96b13a99c897475a984e5f",
+    "semantic_hash": ""
+  },
+  "app/src/data/spells.ts": {
+    "mtime": 1794221915.4436722,
+    "seen": 1794222112.795111,
+    "ast_hash": "5b6066e93645a6883b670bbaad569466",
+    "semantic_hash": ""
+  },
+  "app/src/data/types.ts": {
+    "mtime": 1794195915.0718145,
+    "seen": 1794196241.9129221,
+    "ast_hash": "47662472b6e9fbf9a3128e01a0b03df2",
+    "semantic_hash": ""
+  },
+  "app/src/engine/engine.ts": {
+    "mtime": 1794221963.6320827,
+    "seen": 1794222112.7951183,
+    "ast_hash": "927c2bd5d254cefb651f8a0269b96cc4",
+    "semantic_hash": ""
+  },
+  "app/src/engine/format.ts": {
+    "mtime": 1794141037.0499024,
+    "seen": 1794141698.9554389,
+    "ast_hash": "5559923f75b823fbea56d6ae44cf8476",
+    "semantic_hash": ""
+  },
+  "app/src/engine/mods.ts": {
+    "mtime": 1794208366.5967228,
+    "seen": 1794208421.2073607,
+    "ast_hash": "1f40c883dda89267ae418ed6d689d712",
+    "semantic_hash": ""
+  },
+  "app/src/engine/state.ts": {
+    "mtime": 1794201193.1634035,
+    "seen": 1794201213.1019814,
+    "ast_hash": "c072325385fde6bb85c5d3bdd20f8b71",
+    "semantic_hash": ""
+  },
+  "app/src/main.ts": {
+    "mtime": 1794199020.3333285,
+    "seen": 1794199099.8172786,
+    "ast_hash": "4cf012cb08bd7df4e90bb6f990e8a7d5",
+    "semantic_hash": ""
+  },
+  "app/tests/engine.test.ts": {
+    "mtime": 1794208388.9099784,
+    "seen": 1794208421.2073653,
+    "ast_hash": "4a9cf039cfd7553ef5695cfd91230d3a",
+    "semantic_hash": ""
+  },
+  "app/art.html": {
+    "mtime": 1794141265.412659,
+    "seen": 1794141698.9554832,
+    "ast_hash": "483a38bcd2325836d830a201f3ed5633",
+    "semantic_hash": ""
+  },
+  "replica/design/game-buildings.png": {
+    "mtime": 1794142954.749515,
+    "seen": 1794142957.0301325,
+    "ast_hash": "549f50c5960c98adc550df9b42c69d94",
+    "semantic_hash": ""
+  },
+  "replica/design/game-upgrades.png": {
+    "mtime": 1794142954.7527206,
+    "seen": 1794142957.0301335,
+    "ast_hash": "844aa4402d88cdced4b0322f4cfda8b9",
+    "semantic_hash": ""
+  },
+  "app/android/app/build.gradle": {
+    "mtime": 1794142381.0903246,
+    "seen": 1794142957.030012,
+    "ast_hash": "df0d983948d2123bfb089bb6867f23e1",
+    "semantic_hash": ""
+  },
+  "app/android/app/capacitor.build.gradle": {
+    "mtime": 1794199086.56456,
+    "seen": 1794199099.8172183,
+    "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java": {
+    "mtime": 1793204073.0,
+    "seen": 1794142957.0300152,
+    "ast_hash": "fbaf7cc870c663eb52dcf218531c439d",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/java/com/looin/talestopia/MainActivity.java": {
+    "mtime": 1794142381.0903246,
+    "seen": 1794142957.0300162,
+    "ast_hash": "a7ab42c0c264e506a5bd1374eff03759",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java": {
+    "mtime": 1793204073.0,
+    "seen": 1794142957.0300207,
+    "ast_hash": "e91b4501c14da821682fa5c26a16d616",
+    "semantic_hash": ""
+  },
+  "app/android/build.gradle": {
+    "mtime": 1794142486.3711686,
+    "seen": 1794142957.0300217,
+    "ast_hash": "fce2e37683ae2946252a81b81e7d1b61",
+    "semantic_hash": ""
+  },
+  "app/android/capacitor.settings.gradle": {
+    "mtime": 1794199086.56456,
+    "seen": 1794199099.817228,
+    "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
+    "semantic_hash": ""
+  },
+  "app/android/gradlew": {
+    "mtime": 1793204073.0,
+    "seen": 1794142957.0300236,
+    "ast_hash": "794669d78aef1dd5c7d889ef618b311a",
+    "semantic_hash": ""
+  },
+  "app/android/settings.gradle": {
+    "mtime": 1793204073.0,
+    "seen": 1794142957.030025,
+    "ast_hash": "f6cd925b3f859e23c3d819fe2459e0e4",
+    "semantic_hash": ""
+  },
+  "app/android/variables.gradle": {
+    "mtime": 1793204073.0,
+    "seen": 1794142957.0300262,
+    "ast_hash": "4b3fce8ea2a515a9d2e47e74757172ec",
+    "semantic_hash": ""
+  },
+  "app/capacitor.config.ts": {
+    "mtime": 1794142379.5678844,
+    "seen": 1794142957.030027,
+    "ast_hash": "82aa6fb7bae8a8b31bdc208d0ebc392a",
+    "semantic_hash": ""
+  },
+  "app/scripts/export-icons.cjs": {
+    "mtime": 1794142766.5095503,
+    "seen": 1794142957.0300322,
+    "ast_hash": "ca0c67460dc4ba264a4e99c48ec47d67",
+    "semantic_hash": ""
+  },
+  "app/src/iconpage.ts": {
+    "mtime": 1794142840.776821,
+    "seen": 1794142957.0300543,
+    "ast_hash": "8f1d4e15f1d0abe5ef3f53d638d1f996",
+    "semantic_hash": ""
+  },
+  "app/README.md": {
+    "mtime": 1794196201.8896296,
+    "seen": 1794196241.9129586,
+    "ast_hash": "cd86fbecf563d18a3012286b15e04ec0",
+    "semantic_hash": ""
+  },
+  "app/icon.html": {
+    "mtime": 1794142744.732464,
+    "seen": 1794142957.0300944,
+    "ast_hash": "87d3b6d120c406b642b41ad988a1a4f6",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-land-hdpi/splash.png": {
+    "mtime": 1794142845.7578094,
+    "seen": 1794142957.030106,
+    "ast_hash": "948b027bd79a2a49142f85db8a2527a8",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-land-mdpi/splash.png": {
+    "mtime": 1794142845.7618093,
+    "seen": 1794142957.0301075,
+    "ast_hash": "c52768a5b66d057ab520f68cc9a09cf1",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-land-xhdpi/splash.png": {
+    "mtime": 1794142845.7778094,
+    "seen": 1794142957.0301082,
+    "ast_hash": "f6f649b27230203d3f9233554cec6f08",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-land-xxhdpi/splash.png": {
+    "mtime": 1794142845.8007424,
+    "seen": 1794142957.030109,
+    "ast_hash": "b73de6329b3b5c9f0b2736a665a6a818",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-land-xxxhdpi/splash.png": {
+    "mtime": 1794142845.8309298,
+    "seen": 1794142957.03011,
+    "ast_hash": "14df5466503e24069803f2b4aa74d357",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-port-hdpi/splash.png": {
+    "mtime": 1794142845.8418095,
+    "seen": 1794142957.030111,
+    "ast_hash": "31f3b6555f0346ce3a39f52c5719f3cc",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-port-mdpi/splash.png": {
+    "mtime": 1794142845.8458095,
+    "seen": 1794142957.0301118,
+    "ast_hash": "416e85adfed36242bfa4679a8b28f733",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-port-xhdpi/splash.png": {
+    "mtime": 1794142845.8628235,
+    "seen": 1794142957.0301127,
+    "ast_hash": "4f88050d12389395607eb9a825fb3e03",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-port-xxhdpi/splash.png": {
+    "mtime": 1794142845.882944,
+    "seen": 1794142957.0301135,
+    "ast_hash": "269e9980b98800959b2750b9d12f3605",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable-port-xxxhdpi/splash.png": {
+    "mtime": 1794142845.9138095,
+    "seen": 1794142957.0301144,
+    "ast_hash": "4eca7bace29abe2e188638a5f1a1940d",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/drawable/splash.png": {
+    "mtime": 1794142845.7498095,
+    "seen": 1794142957.0301151,
+    "ast_hash": "c52768a5b66d057ab520f68cc9a09cf1",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.030116,
+    "ast_hash": "2a303031affd2563d47f1180b5a9f554",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.0301168,
+    "ast_hash": "da27de845ae0446430fafe8b1d55240e",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.030118,
+    "ast_hash": "948c56062555511586a54497564898cd",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+    "mtime": 1794142845.7338095,
+    "seen": 1794142957.0301187,
+    "ast_hash": "b59192756116022f790e0d811c1a7998",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.03012,
+    "ast_hash": "a328a0c1392d3d527b16d776562f38f7",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.0301208,
+    "ast_hash": "195162459cf7bf41c8a6e74339ab601f",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.030122,
+    "ast_hash": "2a026cf363c0160ac8838ec2369ff3d2",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301232,
+    "ast_hash": "ac0cbc658e6135d82ad574d43199043a",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png": {
+    "mtime": 1794142845.7378094,
+    "seen": 1794142957.0301242,
+    "ast_hash": "b47edf0126e96b24ffb53bea2a263b5a",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301251,
+    "ast_hash": "f03a542ce21e7600fdd2f76ea17d1169",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301259,
+    "ast_hash": "812c4b948807ef78e98bf04d677ae435",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301268,
+    "ast_hash": "c3491ad5743ea58b3ff451c31754364c",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301275,
+    "ast_hash": "eb6dcc9ec2baf657a1555cc49c97922c",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301285,
+    "ast_hash": "253344c2ee40924774b4b8e98d7f51d8",
+    "semantic_hash": ""
+  },
+  "app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301294,
+    "ast_hash": "d002158ebf3b4184bae65d8f7a778ea0",
+    "semantic_hash": ""
+  },
+  "app/store/icon-512.png": {
+    "mtime": 1794142845.7418094,
+    "seen": 1794142957.0301304,
+    "ast_hash": "20c18d4b8bbaa3690cfe8328fe8d9db0",
+    "semantic_hash": ""
+  },
+  "app/src/data/endgame.ts": {
+    "mtime": 1794208384.4190238,
+    "seen": 1794208421.2073486,
+    "ast_hash": "352f96938d6ccac1f5f9d8df97b44fda",
+    "semantic_hash": ""
+  },
+  "app/tests/endgame.test.ts": {
+    "mtime": 1794197898.7515686,
+    "seen": 1794197995.0733895,
+    "ast_hash": "efbfe6fd270b789a1c4f9284daf8f133",
+    "semantic_hash": ""
+  },
+  "app/src/admin.ts": {
+    "mtime": 1794197059.263302,
+    "seen": 1794197383.09276,
+    "ast_hash": "9309b81f997b013f1320b1382f4efe33",
+    "semantic_hash": ""
+  },
+  "app/src/data/content.ts": {
+    "mtime": 1794199020.3339434,
+    "seen": 1794199099.8172567,
+    "ast_hash": "9c8a2acb2636664cbf5b0b7dafef6682",
+    "semantic_hash": ""
+  },
+  "app/src/data/overrides.json": {
+    "mtime": 1794196128.1498735,
+    "seen": 1794196241.9129193,
+    "ast_hash": "8a80554c91d9fca8acb82f023de02f11",
+    "semantic_hash": ""
+  },
+  "app/src/data/terms.ts": {
+    "mtime": 1794198467.4780073,
+    "seen": 1794198525.4680343,
+    "ast_hash": "e83c6617d342d8b37b166abd41e9afb3",
+    "semantic_hash": ""
+  },
+  "app/admin.html": {
+    "mtime": 1794196128.1524944,
+    "seen": 1794196241.9129596,
+    "ast_hash": "99c46e1158366f3a513e86ac01b41c88",
+    "semantic_hash": ""
+  },
+  "app/src/data/trophyups.ts": {
+    "mtime": 1794221936.6478326,
+    "seen": 1794222112.795114,
+    "ast_hash": "2a1ab2f08cc1e2aa1d5f4423c3500682",
+    "semantic_hash": ""
+  },
+  "app/tests/trophyups.test.ts": {
+    "mtime": 1794199009.9512024,
+    "seen": 1794199099.8172843,
+    "ast_hash": "52f412bfbdeb566df38f0dd16217b181",
+    "semantic_hash": ""
+  },
+  "app/scripts/sim.ts": {
+    "mtime": 1794222073.1644962,
+    "seen": 1794222112.795082,
+    "ast_hash": "cbb778986866ca580001edc959caada0",
+    "semantic_hash": ""
+  },
+  "replica/balance.md": {
+    "mtime": 1794222965.3053794,
+    "seen": 1794222966.8118594,
+    "ast_hash": "fa074604d0c56b53c525760b21b92d7b",
+    "semantic_hash": ""
+  },
+  "app/package-lock.json": {
+    "mtime": 1794199403.2156224,
+    "seen": 1794199841.9737127,
+    "ast_hash": "044feb8b4b9cf7d0eefe4bab870c3f4b",
+    "semantic_hash": ""
+  }
+}
