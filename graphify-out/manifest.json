@@ -798,9 +798,9 @@
     "semantic_hash": ""
   },
   "app/scripts/sim.ts": {
-    "mtime": 1794200240.0130744,
-    "seen": 1794200260.5194478,
-    "ast_hash": "6133b954d0d9658a170366a390ed5832",
+    "mtime": 1794202667.1204634,
+    "seen": 1794202680.1514208,
+    "ast_hash": "0d50e86a5e9e3bd35946cbd2e0686478",
     "semantic_hash": ""
   },
   "replica/balance.md": {
