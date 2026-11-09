@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794199595.823546,
-    "seen": 1794199841.9736342,
-    "ast_hash": "0c434226ed32a2fa29f80e3e2897c642",
+    "mtime": 1794199963.3188753,
+    "seen": 1794199987.7605379,
+    "ast_hash": "de49bc60e6e2c0b0aa70b333d97ead36",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
@@ -798,9 +798,9 @@
     "semantic_hash": ""
   },
   "app/scripts/sim.ts": {
-    "mtime": 1794199820.530992,
-    "seen": 1794199841.9736152,
-    "ast_hash": "6d25b254976aa6c85a04d9862a2d0d03",
+    "mtime": 1794199973.7703888,
+    "seen": 1794199987.7605128,
+    "ast_hash": "0f84406ed280c2b16f273ceebddd1a6b",
     "semantic_hash": ""
   },
   "app/package-lock.json": {

@@ -1,7 +1,7 @@
 # Graph Report - LooinRepository  (2026-11-09)
 
 ## Corpus Check
-- 86 files · ~77,327 words
+- 86 files · ~77,350 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 29 file(s) not represented in the graph (top: .xml 10, (none) 6, .woff2 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8b9ce5ae`
+- Built from commit: `559f937e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -76,11 +76,11 @@
 3. `FactionId` - 22 edges
 4. `renderMap()` - 21 edges
 5. `shade()` - 17 edges
-6. `hex()` - 16 edges
-7. `noise()` - 16 edges
-8. `Mods` - 16 edges
-9. `framedIcon()` - 15 edges
-10. `D()` - 15 edges
+6. `Mods` - 16 edges
+7. `hex()` - 16 edges
+8. `noise()` - 16 edges
+9. `D()` - 15 edges
+10. `framedIcon()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `API (엔진 액션)` --references--> `buyAllBuildings()`  [INFERRED]
