@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "app/src/data/factions.ts": {
-    "mtime": 1794201733.2282455,
-    "seen": 1794201751.8689733,
-    "ast_hash": "a92666948971c78572f307be370ac66d",
+    "mtime": 1794208366.5979464,
+    "seen": 1794208421.2073505,
+    "ast_hash": "39eaed844376cec9beb692be40a8df5c",
     "semantic_hash": ""
   },
   "app/src/data/general.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794201193.1638212,
-    "seen": 1794201213.1019785,
-    "ast_hash": "f412d24003c736993fd3a2851af49ae7",
+    "mtime": 1794208366.5976033,
+    "seen": 1794208421.207359,
+    "ast_hash": "f51b1defd0350d82e976644e5579a613",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
@@ -450,9 +450,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/mods.ts": {
-    "mtime": 1794199582.1413078,
-    "seen": 1794199841.973636,
-    "ast_hash": "e665c9fd6fdb6b401cf6063affe0a472",
+    "mtime": 1794208366.5967228,
+    "seen": 1794208421.2073607,
+    "ast_hash": "1f40c883dda89267ae418ed6d689d712",
     "semantic_hash": ""
   },
   "app/src/engine/state.ts": {
@@ -468,9 +468,9 @@
     "semantic_hash": ""
   },
   "app/tests/engine.test.ts": {
-    "mtime": 1794198315.506671,
-    "seen": 1794198525.4680438,
-    "ast_hash": "d699fa40c47d0df8aaf9f1df7f679eeb",
+    "mtime": 1794208388.9099784,
+    "seen": 1794208421.2073653,
+    "ast_hash": "4a9cf039cfd7553ef5695cfd91230d3a",
     "semantic_hash": ""
   },
   "app/art.html": {
@@ -744,9 +744,9 @@
     "semantic_hash": ""
   },
   "app/src/data/endgame.ts": {
-    "mtime": 1794199009.9488897,
-    "seen": 1794199099.8172588,
-    "ast_hash": "23c63278faf3d8e35ae34379cd2ac091",
+    "mtime": 1794208384.4190238,
+    "seen": 1794208421.2073486,
+    "ast_hash": "352f96938d6ccac1f5f9d8df97b44fda",
     "semantic_hash": ""
   },
   "app/tests/endgame.test.ts": {
