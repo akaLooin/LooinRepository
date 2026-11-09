@@ -86,7 +86,7 @@ function botStep() {
   const runMin = (now - s.run.start) / 60000;
   if (Math.floor(runMin) % 30 === 0 && Math.floor((now - STEP * 1000 - s.run.start) / 60000) % 30 !== 0) { lastGain.push(gain); if (lastGain.length > 2) lastGain.shift(); }
   const stalled = lastGain.length === 2 && gain.gt(0) && gain.lt(lastGain[0].mul(1.2).add(1));
-  if (runMin > 30 && gain.gte(1) && gain.gte(s.gems.div(2)) && (stalled || gain.gte(s.gems.mul(10).add(1000)))) {
+  if (runMin > 30 && gain.gte(1) && ((stalled && gain.gte(s.gems.div(10))) || gain.gte(s.gems.mul(10).add(1000)))) {
     lastGain.length = 0;
     const before = s.gems;
     E.abdicate(s, now);
