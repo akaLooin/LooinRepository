@@ -49,6 +49,8 @@ function baseCtx(s: SaveState, now: number, manaRegen: number): EndCtx {
     reincarnations: s.perm.reincarnations, excavations: s.perm.excavations, artifacts: s.perm.artifacts.length,
     hoursTotal: s.stats.playSeconds / 3600, maxOwned: Math.max(s.perm.maxOwned, owned), fcChance: BASE.fcChance, manaMax: BASE.mana,
     exchangesRun: totalExchanges(s), c11: s.run.buildings.c11 ?? 0, uniques: uniqueBuildingIds(s),
+    activeSpells: Object.values(s.run.activeSpells).filter((a) => a.end > now).length, spellTime: s.run.spellTime,
+    coinsLog10: s.run.coins.gt(0) ? s.run.coins.log10() : 0, alignSeconds: s.run.alignment ? Math.max(0, (now - s.run.start) / 1000) : 0,
   };
 }
 
@@ -140,7 +142,7 @@ export function buildingMult(b: BuildingDef, snap: Snapshot): number {
 export function buildingProd(s: SaveState, b: BuildingDef, snap: Snapshot): Decimal {
   const count = s.run.buildings[b.id];
   if (!count) return D(0);
-  const base = b.tier === 11 ? b.prod * Math.max(1, snap.ctx.trophies) : b.prod;
+  const base = (b.tier === 11 ? b.prod * Math.max(1, snap.ctx.trophies) : b.prod) + (snap.mods.baseAdd[b.id] ?? 0);
   return snap.gemFactor.mul(count * base * buildingMult(b, snap));
 }
 
@@ -152,7 +154,9 @@ export function buildingsCps(s: SaveState, snap: Snapshot): Decimal {
 
 export function clickReward(s: SaveState, snap: Snapshot, cps?: Decimal): Decimal {
   const m = snap.mods;
-  return (cps ?? buildingsCps(s, snap)).mul(m.clickShare).add(1 + m.clickBase).mul(m.click);
+  let low = D(0);
+  if (m.clickShareLow) for (const id of ['c1', 'c2', 'c3']) low = low.add(buildingProd(s, BUILDING_BY_ID[id], snap));
+  return (cps ?? buildingsCps(s, snap)).mul(m.clickShare).add(low.mul(m.clickShareLow)).add(1 + m.clickBase).mul(m.click);
 }
 
 export function assistantsCps(s: SaveState, snap: Snapshot, cps?: Decimal): Decimal {
@@ -456,7 +460,7 @@ export function castSpell(s: SaveState, id: string, now: number, rng: () => numb
   }
   s.run.spellCasts[id] = (s.run.spellCasts[id] ?? 0) + 1;
   if (su && su.castCheck(s, { assistants: snap.assistants, active: activeOthers, now, owned: snap.ctx.ownedTotal, gems: snap.ctx.gems })) s.stats.flags['spt_' + id] = true;
-  if (id === 'tax') { res.gained = totalCps(s, snap).mul(30); earn(s, res.gained); }
+  if (id === 'tax') { res.gained = totalCps(s, snap).mul(30 + snap.mods.taxSeconds); earn(s, res.gained); }
   if (id === 'tax' && spellUpgraded(s, 'tax')) { const n = Math.max(1, Math.round(30 * (1 + snap.assistants) * fcChance(s, snap))); findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
   if (id === 'phoenix' && spellUpgraded(s, 'phoenix')) { const n = Math.round(1.5 * Math.log(1 + snap.ctx.gems) ** 3) + 10; findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
   if (id !== 'starmage' && spellUpgraded(s, 'starmage') && spellActive(s, 'starmage', now)) { const n = Math.floor(snap.manaRegen ** 1.1); findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
@@ -494,7 +498,7 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
   s.run.fcFraction += snap.assistants * snap.mods.assistantsMult * fcChance(s, snap) * BASE.assistantShare * dt;
   if (s.run.fcFraction >= 1) { const n = Math.floor(s.run.fcFraction); s.run.fcFraction -= n; findCoins(s, n, rng); }
   // bloodline auto-clicks (counted as clicks, like the original's Elven bloodline)
-  const auto = (BLOODLINES.find((b) => b.faction === s.run.bloodline)?.autoclick ?? 0) + (spellUpgraded(s, 'minstrel') && spellActive(s, 'minstrel', now) ? 15 : 0);
+  const auto = (BLOODLINES.find((b) => b.faction === s.run.bloodline)?.autoclick ?? 0) + (spellUpgraded(s, 'minstrel') && spellActive(s, 'minstrel', now) ? 15 : 0) + snap.mods.autoclick;
   if (auto) {
     s.run.autoclickFraction += auto * dt;
     const n = Math.floor(s.run.autoclickFraction);
@@ -508,7 +512,7 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
     }
   }
   for (const [id, a] of Object.entries(s.run.activeSpells)) {
-    if (a.end > now - dt * 1000) s.perm.spellActive[id] = (s.perm.spellActive[id] ?? 0) + Math.min(dt, (a.end - (now - dt * 1000)) / 1000);
+    if (a.end > now - dt * 1000) { const t = Math.min(dt, (a.end - (now - dt * 1000)) / 1000); s.perm.spellActive[id] = (s.perm.spellActive[id] ?? 0) + t; s.run.spellTime[id] = (s.run.spellTime[id] ?? 0) + t; }
     if (a.end <= now) delete s.run.activeSpells[id];
   }
   s.perm.maxOwned = Math.max(s.perm.maxOwned, snap.ctx.ownedTotal);
