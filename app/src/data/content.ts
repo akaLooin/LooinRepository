@@ -4,7 +4,7 @@ import { BUILDINGS } from './buildings';
 import { ALIGNMENTS, FACTIONS, FACTION_UPGRADES } from './factions';
 import { SPELLS } from './spells';
 import { GENERAL_UPGRADES, TROPHIES } from './general';
-import { ARTIFACTS, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES } from './endgame';
+import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES } from './endgame';
 import { TERMS, TERM_LABELS } from './terms';
 import { BASE } from '../engine/engine';
 import baked from './overrides.json';
@@ -27,6 +27,9 @@ export const COLLECTIONS: Collection[] = [
     items: () => (Object.keys(TERMS) as (keyof typeof TERMS)[]).map((k) => ({ id: k, title: TERM_LABELS[k], obj: { get value() { return TERMS[k]; }, set value(v: unknown) { TERMS[k] = String(v); } } })) },
   { id: 'base', label: '기본 수치', fields: [N('value', '값')],
     items: () => (Object.keys(BASE) as (keyof typeof BASE)[]).map((k) => ({ id: k, title: BASE_LABELS[k] ?? k, obj: { get value() { return BASE[k]; }, set value(v: unknown) { BASE[k] = Number(v); } } })) },
+  { id: 'ascension', label: '승천 수치', fields: [N('value', '값')],
+    items: () => (['valueShift', 'costGrowth', 'excavationGrowth'] as const).map((k) => ({ id: k, title: ({ valueShift: '승천 후 보너스 배율 지수 (0.1 = x^0.1)', costGrowth: '승천 후 건물 가격 증가율', excavationGrowth: '승천 후 발굴 가격 증가율' })[k],
+      obj: { get value() { return ASCENSION[k]; }, set value(v: unknown) { ASCENSION[k] = Number(v); } } })) },
   { id: 'buildings', label: '건물', fields: [T('ko'), N('cost', '기본 가격'), N('prod', '기본 생산/초')], items: list(BUILDINGS, (b) => b.id, (b) => `${b.tier}단계 ${b.alignment ?? '공통'}`) },
   { id: 'alignments', label: '성향', fields: [T('ko'), L('desc'), N('cost', '금화 가격'), T('color', '색')], items: list(ALIGNMENTS, (a) => a.id) },
   { id: 'factions', label: '진영', fields: [T('ko'), L('role', '역할 설명'), T('color', '색')], items: list(FACTIONS, (f) => f.id, (f) => `${f.id} (${f.kind})`) },

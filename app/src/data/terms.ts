@@ -2,6 +2,11 @@
 export const TERMS = {
   gameTitle: '테일즈토피아 타이쿤',
   coin: '금화',
+  coinAsc1: '수정 금화',
+  coinAsc2: '비취 금화',
+  coinAsc3: '별빛 금화',
+  coinAsc4: '태초의 금화',
+  ascend: '고전 등극',
   mana: '영감',
   gem: '전설',
   fc: '이야기 조각',
@@ -40,18 +45,22 @@ export const TERMS = {
 };
 export type TermKey = keyof typeof TERMS;
 export const TERM_LABELS: Record<TermKey, string> = {
-  gameTitle: '게임 이름', coin: '기본 화폐', mana: '마나', gem: '퇴위 화폐(보석)', fc: '진영 코인', fcShort: '진영 코인 (짧게)', assistant: '조수', ruby: '루비(프리미엄)',
+  gameTitle: '게임 이름', coin: '기본 화폐', coinAsc1: '승천 1 화폐 (다이아)', coinAsc2: '승천 2 화폐 (에메랄드)', coinAsc3: '승천 3 화폐', coinAsc4: '승천 4 화폐', ascend: '승천', mana: '마나', gem: '퇴위 화폐(보석)', fc: '진영 코인', fcShort: '진영 코인 (짧게)', assistant: '조수', ruby: '루비(프리미엄)',
   abdicate: '퇴위', reincarnate: '환생', reincarnationPower: '환생의 힘', exchange: '왕실 교환', trophy: '업적', challenge: '도전', research: '연구',
   researchPoint: '연구 포인트', excavation: '발굴', artifact: '유물', heritage: '유산', bloodline: '혈통', alignment: '성향', faction: '진영',
   scry: '점술', shop: '상점', autocast1: '자동 시전 1순위', autocast2: '자동 시전 2순위', tabBuildings: '탭: 건물', tabUpgrades: '탭: 업그레이드',
   tabExplore: '탭: 발굴', tabTrophies: '탭: 업적', tabChallenges: '탭: 도전', tabEvents: '탭: 이벤트', tabStats: '탭: 통계', buyAll: '모두 구매 버튼',
   alignBright: '선 성향', alignDark: '악 성향', alignLegend: '중립 성향',
 };
-export const t = (k: TermKey) => TERMS[k];
+export const t = (k: TermKey) => term(k);
 
 /** Replaces {term} tokens in any text with the current term (data and UI strings use these tokens). */
+let currencyTier = 0;
+/** After ascending, {coin} shows that ascension's currency name. */
+export function setCurrencyTier(a: number) { currencyTier = Math.max(0, Math.min(4, a)); }
+const term = (k: string) => (k === 'coin' && currencyTier > 0 ? TERMS[`coinAsc${currencyTier}` as TermKey] : TERMS[k as TermKey]);
 export function tr(s: string): string {
-  return s.indexOf('{') < 0 ? s : s.replace(/\{(\w+)\}/g, (m, k: string) => (k in TERMS ? TERMS[k as TermKey] : m));
+  return s.indexOf('{') < 0 ? s : s.replace(/\{(\w+)\}/g, (m, k: string) => (k in TERMS ? term(k) : m));
 }
 
 const ATTRS = ['title', 'alt', 'aria-label', 'placeholder'];

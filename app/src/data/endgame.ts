@@ -29,6 +29,23 @@ export const REINCARNATION_PERKS: RPerk[] = [
 ];
 export const UNLOCKS = { challenges: 2, mercenary: 3, bloodline: 7, spiritual: 14, research: 16 };
 
+// ---------------------------------------------------------------- ascension (WIKI)
+// At R39, R99, R159, R219 the reincarnation button becomes Ascension. Keeps the reincarnation count,
+// opens a new main currency, makes gold upgrades free and shifts every production bonus to a smaller range.
+export const ASCENSION = {
+  at: [39, 99, 159, 219],
+  valueShift: 0.1,          // production multipliers are raised to this power after ascending (WIKI: x^(1/10))
+  costGrowth: 1.03,         // building price growth after ascending (WIKI: 1.03^x)
+  excavationBase: 1e27 ** 0.75, excavationGrowth: 1.04, // WIKI: 1e27^0.75 * 1.04^x
+  gemDivisor: [5e11, 5e11, 5e3, 5e3, 5e26],              // WIKI: [5e3 in A2, 5e26 in A4]; A3 GUESS
+};
+/** Reincarnation (or ascension) gem requirement. A0: 1e27*1000^R. After: 1e27^(A^0.75)*100^(R-firstR) (WIKI). */
+export function reincarnationGems(r: number, a: number): { mant: number; exp10: number } {
+  if (a === 0) return { mant: 1, exp10: 27 + 3 * r };
+  const first = ASCENSION.at[a - 1] + 1;
+  return { mant: 1, exp10: 27 * a ** 0.75 + 2 * Math.max(0, r - first) };
+}
+
 // ---------------------------------------------------------------- heritages (WIKI: unlocked by champion trophy, bought with coins each run)
 export interface HeritageDef { faction: FactionId; ko: string; desc: string; cost: Partial<Record<CoinType, number>>; effect: Eff }
 const V = 5000, N2 = 25000;
@@ -68,7 +85,7 @@ export const BLOODLINE_UPGRADES_NEEDED = 100;
 
 // ---------------------------------------------------------------- excavation (WIKI)
 export const ARCHAEOLOGY = { gems: 1e9, cost: 1e29 };     // 100 Oc coins, needs 1B gems
-export const excavationCost = (x: number) => 1e27 * 1.2 ** x; // coins (number is enough below ~1e308)
+export const excavationCost = (x: number, a = 0) => (a > 0 ? ASCENSION.excavationBase * ASCENSION.excavationGrowth ** x : 1e27 * 1.2 ** x);
 export const EXCAVATION_FC_CHANCE = 0.35;
 export const excavationCoins = (x: number) => Math.floor(2 * ln(1 + 5e6 * 1.15 ** x) ** 3);
 export const rubyAt = (n: number) => 25 * n * (n + 1);    // excavations needed for the n-th ruby

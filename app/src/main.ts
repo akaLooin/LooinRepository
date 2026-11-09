@@ -16,7 +16,7 @@ import { TROPHIES } from './data/general';
 import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, UNLOCKS, facilityBonus } from './data/endgame';
 import { COIN_TYPES, type CoinType } from './data/types';
 import { installContent } from './data/content';
-import { t, watchTerms } from './data/terms';
+import { t, watchTerms, setCurrencyTier } from './data/terms';
 
 installContent();
 watchTerms(document.body);
@@ -332,8 +332,13 @@ function renderUpgrades(p: HTMLElement) {
   const abd = $<HTMLButtonElement>('#btn-abd', p);
   abd.textContent = `${t('abdicate')} +${F(gems)} ${t('gem')}`; abd.disabled = gems.lt(1);
   const rei = $<HTMLButtonElement>('#btn-rei', p);
-  rei.textContent = E.canReincarnate(S) ? `${t('reincarnate')} R${S.perm.reincarnations + 1}` : `${t('reincarnate')} (${t('gem')} ${F(E.reincarnationCost(S))})`;
-  rei.disabled = !E.canReincarnate(S);
+  if (E.ascensionDue(S)) {
+    rei.textContent = E.canAscend(S) ? `${t('ascend')} A${S.perm.ascensions + 1}` : `${t('ascend')} (${t('gem')} ${F(E.reincarnationCost(S))})`;
+    rei.disabled = !E.canAscend(S);
+  } else {
+    rei.textContent = E.canReincarnate(S) ? `${t('reincarnate')} R${S.perm.reincarnations + 1}` : `${t('reincarnate')} (${t('gem')} ${F(E.reincarnationCost(S))})`;
+    rei.disabled = !E.canReincarnate(S);
+  }
   p.querySelectorAll<HTMLElement>('.fc').forEach((e) => { const v = S.run.fc[e.dataset.c as CoinType]; $('b', e).textContent = F(v); e.classList.toggle('zero', v === 0); });
   const byId = new Map(todo.map((u) => [u.id, u]));
   p.querySelectorAll<HTMLButtonElement>('.uslot').forEach((b) => {
@@ -385,7 +390,7 @@ function renderStats(p: HTMLElement) {
     ['이번 판 시간', fmtTime((Date.now() - S.run.start) / 1000)], ['누적 {coin}', F(S.stats.totalCoins)], ['최고 판 {coin}', F(Decimal.max(S.stats.bestRun, S.run.coinsRun))],
     ['{gem}', F(S.gems)], ['{abdicate}', String(S.stats.abdications)], ['총 두드리기', F(S.stats.clicks)], ['총 주문', F(S.stats.spells)],
   ];
-  rows.unshift(['시리즈 (환생)', 'R' + S.perm.reincarnations]);
+  rows.unshift(['{reincarnate}', 'R' + S.perm.reincarnations], ['{ascend}', 'A' + S.perm.ascensions]);
   const R = S.perm.reincarnations;
   const perks = REINCARNATION_PERKS.map((x) => `<li class="${R >= x.r ? '' : 'dim'}">R${x.r}: ${esc(x.ko)}</li>`).join('');
   const rp = E.researchPoints(S);
@@ -405,9 +410,20 @@ function renderStats(p: HTMLElement) {
 
 // ------------------------------------------------------------ reincarnation, excavation, challenges
 function reincarnateFlow() {
+  if (E.ascensionDue(S)) { ascendFlow(); return; }
   modal('{reincarnate} (환생)', `<p>지금까지 모은 {gem}·건물·{fc}·발굴 기록을 모두 내려놓고 {reincarnate}를 시작해요.
 {trophy}·{challenge}·유물·{ruby}·연구는 남아요.</p><p class="gold">{reincarnationPower}이 R${S.perm.reincarnations + 1}로 강해져요.</p>`, [
     { label: '{reincarnate} 시작', cls: 'special', disabled: !E.canReincarnate(S), run: () => { E.reincarnate(S, Date.now()); save(); reset(); toast(`📚 {reincarnate} R${S.perm.reincarnations} 시작!`); } },
+    { label: '취소', cls: 'accent' }]);
+}
+function ascendFlow() {
+  const A = S.perm.ascensions + 1;
+  setCurrencyTier(A); const next = t('coin'); setCurrencyTier(A - 1);
+  modal(`{ascend} ${A}`, `<p>{reincarnate}처럼 모두 내려놓되, {reincarnate} 횟수(R${S.perm.reincarnations})는 그대로 이어져요.</p>
+<p>새 화폐 <b class="gold">${next}</b>가 생기고, {coin}로 사던 개선은 모두 무료가 돼요.
+대신 모든 생산 보너스가 훨씬 작은 범위로 조정돼요 (배율 x → x^0.1).
+건물 가격 증가율은 1.15 → 1.03으로 줄어요.</p>`, [
+    { label: `{ascend} ${A}`, cls: 'special', disabled: !E.canAscend(S), run: () => { E.ascend(S, Date.now()); setCurrencyTier(S.perm.ascensions); save(); reset(); toast(`✨ {ascend} ${S.perm.ascensions}! 이제 {coin}의 시대예요`); } },
     { label: '취소', cls: 'accent' }]);
 }
 const ART_ICONS = ['book', 'flag', 'gear', 'book', 'mana', 'trophy', 'orb', 'hourglass', 'leaf', 'legend', 'mask', 'star', 'leaf', 'orb', 'book', 'sun'];
@@ -493,6 +509,7 @@ function reset() { panelKey = ''; spellKey = ''; mapKey = ''; drawMap(true); ren
 
 // ------------------------------------------------------------ top bar + loop
 function renderTop(now: number) {
+  setCurrencyTier(S.perm.ascensions);
   const snap = E.snapshot(S, now);
   $('#coins').textContent = F(S.run.coins);
   $('#cps').textContent = F(E.totalCps(S, snap)) + ' /초';

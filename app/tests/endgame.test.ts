@@ -143,3 +143,28 @@ describe('prestige factions and mercenary', () => {
     expect(E.buildingsCps(s, E.snapshot(s, T0 + 1)).toNumber()).toBeCloseTo(base * 1.3);
   });
 });
+
+describe('ascension', () => {
+  it('replaces reincarnation at R39, keeps the count, shifts values and frees gold upgrades', () => {
+    const s = newGame(T0);
+    s.perm.reincarnations = 39; s.gems = new Decimal('1e200');
+    expect(E.ascensionDue(s)).toBe(true);
+    expect(E.canReincarnate(s)).toBe(false);
+    expect(E.canAscend(s)).toBe(true);
+    s.run.buildings.c1 = 1;
+    const before = E.buildingsCps(s, E.snapshot(s, T0)).div(E.snapshot(s, T0).gemFactor).toNumber();
+    expect(E.ascend(s, T0)).toBe(true);
+    expect(s.perm.ascensions).toBe(1);
+    expect(s.perm.reincarnations).toBe(40);
+    expect(s.gems.toNumber()).toBe(0);
+    s.run.buildings.c1 = 1;
+    const after = E.buildingsCps(s, E.snapshot(s, T0)).toNumber();
+    expect(after).toBeLessThan(before);                       // x -> x^0.1
+    expect(E.costGrowth(s)).toBe(1.03);
+    s.run.coinsRun = new Decimal(1e6);
+    expect(E.allUpgrades(s).find((u) => u.id === 'align_bright')!.cost.toNumber()).toBe(0);
+    expect(E.reincarnationCost(s).toString()).toBe('1e+27');  // 1e27^(1^0.75) * 100^(40-40)
+    s.perm.reincarnations = 42;
+    expect(E.reincarnationCost(s).log10()).toBeCloseTo(31);
+  });
+});

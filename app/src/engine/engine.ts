@@ -6,7 +6,7 @@ import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
-import { ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
+import { ASCENSION, reincarnationGems, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
 export const BASE = {
@@ -88,9 +88,21 @@ export function snapshot(s: SaveState, now: number): Snapshot {
   const fc0 = Math.min(1, BASE.fcChance * m0.fcChance);
   const ctx = { ...c0, manaRegen, assistants: assistantCount(s, m0), fcChance: fc0, manaMax: BASE.mana + m0.manaMaxAdd };
   const mods = applyAll(s, now, ctx);
+  if (s.perm.ascensions > 0) shiftValues(mods);
   const gemFactor = s.gems.mul(BASE.gemBonus * mods.gemBonusMult).add(1);
   return { mods, ctx, manaRegen: (BASE.manaRegen + mods.manaRegenAdd) * mods.manaRegenMult, manaMax: BASE.mana + mods.manaMaxAdd, gemFactor, assistants: assistantCount(s, mods) };
 }
+
+/** Ascension value shift: production multipliers x become x^0.1 (gem bonus is not affected). */
+function shiftValues(m: Mods) {
+  const p = ASCENSION.valueShift, f = (x: number) => (x > 0 ? x ** p : x);
+  m.global = f(m.global); m.click = f(m.click); m.assistantsMult = f(m.assistantsMult);
+  m.tier = m.tier.map(f);
+  for (const k in m.align) m.align[k] = f(m.align[k]);
+  for (const k in m.building) m.building[k] = f(m.building[k]);
+}
+export const costGrowth = (s: SaveState) => (s.perm.ascensions > 0 ? ASCENSION.costGrowth : BASE.costGrowth);
+export const gemDivisor = (s: SaveState) => (s.perm.ascensions === 0 ? BASE.gemDivisor : ASCENSION.gemDivisor[Math.min(s.perm.ascensions, 4)]);
 
 export function buildingMult(b: BuildingDef, snap: Snapshot): number {
   const m = snap.mods;
@@ -178,7 +190,7 @@ export function costMult(s: SaveState): number { return snapshot(s, s.lastSeen).
 
 export function buildingCost(s: SaveState, id: string, n = 1, cm = costMult(s)): Decimal {
   const b = BUILDING_BY_ID[id];
-  const g = BASE.costGrowth;
+  const g = costGrowth(s);
   const first = D(b.cost).mul(D(g).pow(s.run.buildings[id])).mul(cm);
   return first.mul(D(g).pow(n).sub(1)).div(g - 1);
 }
@@ -186,7 +198,8 @@ export function buildingCost(s: SaveState, id: string, n = 1, cm = costMult(s)):
 export function maxAffordable(s: SaveState, id: string, cm = costMult(s)): number {
   const first = buildingCost(s, id, 1, cm);
   if (s.run.coins.lt(first)) return 0;
-  let n = Math.floor(Decimal.log10(s.run.coins.mul(BASE.costGrowth - 1).div(first).add(1)) / Math.log10(BASE.costGrowth));
+  const g = costGrowth(s);
+  let n = Math.floor(Decimal.log10(s.run.coins.mul(g - 1).div(first).add(1)) / Math.log10(g));
   while (n > 0 && buildingCost(s, id, n, cm).gt(s.run.coins)) n--;
   return n;
 }
@@ -235,8 +248,11 @@ function fcAffordable(s: SaveState, fc?: Partial<Record<CoinType, number>>) {
 
 export function allUpgrades(s: SaveState): UpgradeView[] {
   const out: UpgradeView[] = [];
-  const add = (u: Omit<UpgradeView, 'purchased' | 'affordable'>) =>
-    out.push({ ...u, purchased: has(s, u.id), affordable: s.run.coins.gte(u.cost) && fcAffordable(s, u.fcCost) });
+  const free = s.perm.ascensions > 0; // after ascending, upgrades that cost gold are free (WIKI)
+  const add = (u: Omit<UpgradeView, 'purchased' | 'affordable'>) => {
+    const v = free ? { ...u, cost: D(0) } : u;
+    out.push({ ...v, purchased: has(s, v.id), affordable: s.run.coins.gte(v.cost) && fcAffordable(s, v.fcCost) });
+  };
 
   // alignment proofs
   if (!s.run.alignment) {
@@ -423,12 +439,12 @@ export function applyOffline(s: SaveState, now: number) {
 
 // ---------------------------------------------------------------- abdication
 /** total gems for a run's coins: largest n with n(n+1)*5e11 <= coins */
-export function gemsFor(coins: Decimal): Decimal {
-  const x = coins.div(BASE.gemDivisor);
+export function gemsFor(coins: Decimal, divisor = BASE.gemDivisor): Decimal {
+  const x = coins.div(divisor);
   if (x.lt(2)) return D(0);
   return x.mul(4).add(1).sqrt().sub(1).div(2).floor();
 }
-export function gemsOnAbdicate(s: SaveState) { return gemsFor(s.run.coinsRun); }
+export function gemsOnAbdicate(s: SaveState) { return gemsFor(s.run.coinsRun, gemDivisor(s)); }
 
 export function abdicate(s: SaveState, now: number): Decimal {
   const gain = gemsOnAbdicate(s);
@@ -449,17 +465,35 @@ export function checkTrophies(s: SaveState): TrophyDef[] {
 }
 
 // ---------------------------------------------------------------- reincarnation
-export function reincarnationCost(s: SaveState): Decimal { return D(REINCARNATION_BASE).mul(D(1000).pow(s.perm.reincarnations)); }
-export function canReincarnate(s: SaveState) { return s.gems.gte(reincarnationCost(s)); }
-/** Resets gems, the run, excavations and most stats. Keeps trophies, challenges, artifacts, rubies, research, allied stats. */
-export function reincarnate(s: SaveState, now: number): boolean {
-  if (!canReincarnate(s)) return false;
+export function reincarnationCost(s: SaveState): Decimal {
+  const { mant, exp10 } = reincarnationGems(s.perm.reincarnations, s.perm.ascensions);
+  void REINCARNATION_BASE;
+  return D(mant).mul(Decimal.pow(10, exp10));
+}
+/** True when the next step is an ascension (R39, R99, R159, R219) instead of a reincarnation. */
+export function ascensionDue(s: SaveState) { return ASCENSION.at[s.perm.ascensions] === s.perm.reincarnations; }
+export function canReincarnate(s: SaveState) { return !ascensionDue(s) && s.gems.gte(reincarnationCost(s)); }
+export function canAscend(s: SaveState) { return ascensionDue(s) && s.gems.gte(reincarnationCost(s)); }
+/** Ascension: resets like a reincarnation, keeps the count (R+1), A+1, new currency, value shift. */
+export function ascend(s: SaveState, now: number): boolean {
+  if (!canAscend(s)) return false;
+  s.perm.ascensions++;
   s.perm.reincarnations++;
+  resetForReincarnation(s, now);
+  return true;
+}
+function resetForReincarnation(s: SaveState, now: number) {
   s.gems = D(0);
   s.run = newRun(now);
   s.perm.excavations = 0;
   s.stats = { ...s.stats, clicks: 0, spells: 0, abdications: 0, totalCoins: D(0), bestRun: D(0) };
   s.lastSeen = now;
+}
+/** Resets gems, the run, excavations and most stats. Keeps trophies, challenges, artifacts, rubies, research, allied stats. */
+export function reincarnate(s: SaveState, now: number): boolean {
+  if (!canReincarnate(s)) return false;
+  s.perm.reincarnations++;
+  resetForReincarnation(s, now);
   return true;
 }
 
@@ -470,7 +504,7 @@ export function buyArchaeology(s: SaveState) {
   s.run.coins = s.run.coins.sub(ARCHAEOLOGY.cost); s.perm.archaeology = true; return true;
 }
 export function nextExcavationCost(s: SaveState, n = 1): Decimal {
-  let t = D(0); for (let i = 0; i < n; i++) t = t.add(excavationCost(s.perm.excavations + i)); return t;
+  let t = D(0); for (let i = 0; i < n; i++) t = t.add(excavationCost(s.perm.excavations + i, s.perm.ascensions)); return t;
 }
 export interface DigResult { coins: number; rubies: number; artifacts: ArtifactDef[] }
 export function excavate(s: SaveState, n: number, rng: () => number = Math.random): DigResult | null {

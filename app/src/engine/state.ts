@@ -35,6 +35,7 @@ export interface RunState {
 /** Progress that survives abdication (and mostly reincarnation). */
 export interface PermState {
   reincarnations: number;
+  ascensions: number;
   factionUpgrades: Partial<Record<FactionId, number>>; // total faction upgrades bought (bloodline unlocks)
   challenges: string[];
   artifacts: string[];
@@ -70,7 +71,7 @@ export function newRun(now: number): RunState {
 }
 
 export function newPerm(): PermState {
-  return { reincarnations: 0, factionUpgrades: {}, challenges: [], artifacts: [], archaeology: false, excavations: 0, rubies: 0, rubiesFound: 0, research: {}, maxOwned: 0 };
+  return { reincarnations: 0, ascensions: 0, factionUpgrades: {}, challenges: [], artifacts: [], archaeology: false, excavations: 0, rubies: 0, rubiesFound: 0, research: {}, maxOwned: 0 };
 }
 
 export function newGame(now: number): SaveState {
