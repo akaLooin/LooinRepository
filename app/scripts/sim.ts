@@ -27,7 +27,7 @@ const log = (key: string, text: string) => { if (seen.has(key)) return; seen.add
 
 // faction choice by gems, following the original's community progression guide (Elf first, neutral after 1B gems)
 function pickAlignment() {
-  if (s.gems.gte(1e9)) return 'legend';
+  if (s.gems.gte(1e9) && !process.env.NOLEGEND) return 'legend';
   return profile === 'idle' ? 'dark' : 'bright';
 }
 function pickFaction(): FactionId[] {
