@@ -119,6 +119,9 @@ describe('abdication', () => {
     expect(s.gems.toNumber()).toBe(2);
     expect(s.trophies).toContain('clk100');
     s.run.buildings.c1 = 1;
+    expect(E.totalCps(s, E.snapshot(s, T0)).toNumber()).toBeCloseTo(2);          // gem bonus needs the Gem Power upgrade
+    s.run.coins = new Decimal(10);
+    expect(E.buyUpgrade(s, 'gempower', T0)).toBe(true);
     expect(E.totalCps(s, E.snapshot(s, T0)).toNumber()).toBeCloseTo(2 * 1.04);
   });
 });

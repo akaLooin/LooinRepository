@@ -13,6 +13,7 @@ import { BUILDING_BY_ID } from './data/buildings';
 import { FACTIONS, FACTION_BY_ID } from './data/factions';
 import { SPELL_BY_ID } from './data/spells';
 import { TROPHIES } from './data/general';
+import { RUBY_UPGRADES, rubyPower } from './data/trophyups';
 import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, RESEARCH_UPGRADES, UNLOCKS, facilityBonus, researchSlots } from './data/endgame';
 import { COIN_TYPES, type CoinType } from './data/types';
 import { installContent } from './data/content';
@@ -64,7 +65,7 @@ app.innerHTML = `
     <div class="money"><img class="ic2" src="${spriteURL('coin', 2)}" alt=""><div class="money-text"><span class="coins" id="coins">0</span><span class="cps" id="cps">0 /초</span></div></div>
     <div class="res"><span title="${t('gem')}"><img class="ic" src="${spriteURL('legend')}" alt="${t('gem')}"><b id="gems">0</b></span>
       <span title="${t('assistant')}"><img class="ic" src="${spriteURL('ghost')}" alt="${t('assistant')}"><b id="assist">0</b></span>
-      <span title="${t('ruby')}"><img class="ic" src="${spriteURL('candy')}" alt="${t('ruby')}"><b id="rubies">0</b></span></div>
+      <button class="resbtn" id="btn-ruby" title="${t('ruby')}"><img class="ic" src="${spriteURL('candy')}" alt="${t('ruby')}"><b id="rubies">0</b></button></div>
     <button class="round" id="btn-settings" style="width:30px;height:30px" aria-label="설정"><img class="ic" src="${spriteURL('gear')}" alt=""></button>
   </header>
   <div class="manabar" role="progressbar" id="manabar"><div class="fill" id="mana-fill"></div><span class="label shadow-text" id="mana-text"></span></div>
@@ -197,8 +198,8 @@ function renderSpells(now: number) {
     const sp = SPELL_BY_ID[b.dataset.id!], a = S.run.activeSpells[sp.id];
     const on = !!a && a.end > now;
     b.classList.toggle('on', on);
-    b.classList.toggle('short', !on && S.run.mana < sp.mana);
-    $('.pill', b).textContent = on ? Math.ceil((a.end - now) / 1000) + '초' : String(sp.mana);
+    b.classList.toggle('short', !on && S.run.mana < E.spellCost(S, sp.id));
+    $('.pill', b).textContent = on ? Math.ceil((a.end - now) / 1000) + '초' : String(E.spellCost(S, sp.id));
     ($('.cover', b) as HTMLElement).style.height = on ? `${(1 - (now - a.start) / (a.end - a.start)) * 36}px` : '0';
   });
 }
@@ -208,6 +209,7 @@ function showSpellInfo(id: string) {
     { label: '시전', disabled: S.run.mana < sp.mana || E.spellActive(S, id, Date.now()), run: () => E.castSpell(S, id, Date.now()) }, { label: '닫기', cls: 'accent' }]);
 }
 function setAssign(m: 'gold' | 'silver') {
+  if (!E.canAutocast(S)) { toast('자동 시전은 \'자동 낭독\' 개선을 사야 쓸 수 있어요 (누적 {mana} 60,000 생산 후 열림)'); return; }
   assignMode = assignMode === m ? null : m;
   $('#ac-gold').setAttribute('aria-pressed', String(assignMode === 'gold'));
   $('#ac-silver').setAttribute('aria-pressed', String(assignMode === 'silver'));
@@ -299,6 +301,7 @@ function upgradeIcon(u: E.UpgradeView) {
   }
   if (u.kind === 'faction') return framedIcon(u.icon, u.color!, u.tier === 3 ? 'gold' : u.tier === 2 ? 'silver' : 'bronze');
   if (u.kind === 'unique') return framedIcon('star', u.color!, 'gold');
+  if (u.kind === 'secret' || u.kind === 'spellup') return framedIcon(u.icon, u.color!, 'silver');
   if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline' || u.kind === 'merc' || u.kind === 'lex') return framedIcon(u.icon, u.color!, u.kind === 'merc' ? 'silver' : 'gold');
   return framedIcon(u.icon, '#3a3040', 'plain');
 }
@@ -396,11 +399,13 @@ function renderTrophies(p: HTMLElement) {
   p.innerHTML = `<div class="t-sm" style="text-align:center">{trophy} ${S.trophies.length} / ${TROPHIES.length}</div>
     <section class="gsection"><header>전체 {trophy}</header><div class="tgrid">${TROPHIES.map((t) => {
       const got = S.trophies.includes(t.id);
-      const icon = t.id.startsWith('ally_') || t.id.startsWith('champ_') ? FACTION_BY_ID[t.id.split('_')[1] as keyof typeof FACTION_BY_ID].emblem : 'trophy';
+      const icon = t.id.startsWith('ally_') || t.id.startsWith('champ_') ? FACTION_BY_ID[t.id.split('_')[1] as keyof typeof FACTION_BY_ID].emblem : t.secret ? 'star' : t.id.startsWith('spt_') ? 'wand' : 'trophy';
       return `<button class="tslot ${got ? '' : 'locked'}" data-id="${t.id}"><img src="${framedIcon(icon, '#3a2a1a', got ? 'gold' : 'plain')}" alt="${esc(t.ko)}"></button>`;
     }).join('')}</div></section>`;
   p.querySelectorAll<HTMLButtonElement>('.tslot').forEach((b) => {
-    b.onclick = () => { const t = TROPHIES.find((x) => x.id === b.dataset.id)!; modal(esc(t.ko), `<p>${esc(t.desc)}</p><p class="${S.trophies.includes(t.id) ? 'gold' : 'dim'}">${S.trophies.includes(t.id) ? '달성!' : '아직 달성하지 못했어요'}</p>`); };
+    b.onclick = () => { const t = TROPHIES.find((x) => x.id === b.dataset.id)!, got = S.trophies.includes(t.id);
+      const reward = t.secret ? '보상 개선이 열려요' : t.id.startsWith('spt_') ? '주문 강화 개선이 열려요' : '';
+      modal(got || !t.secret ? esc(t.ko) : '비밀 {trophy}', `<p>${esc(t.desc)}</p>${reward ? `<p class="gold">${reward}</p>` : ''}<p class="${got ? 'gold' : 'dim'}">${got ? '달성!' : '아직 달성하지 못했어요'}</p>`); };
   });
 }
 
@@ -538,6 +543,20 @@ $('#btn-settings').onclick = () => {
   $('#s-reset', layer).onclick = () => modal('정말 초기화할까요?', '<p>{gem}과 {trophy}까지 모두 사라져요. 되돌릴 수 없어요.</p>', [
     { label: '초기화', cls: 'danger', run: () => { S = newGame(Date.now()); save(); reset(); } }, { label: '취소', cls: 'accent' }]);
 };
+$('#btn-ruby').onclick = rubyFlow;
+function rubyFlow() {
+  const draw = () => {
+    const p = rubyPowerNow();
+    const rows = RUBY_UPGRADES.map((r) => `<tr><td><b>${r.ko}</b><br><span class="dim">${r.desc} · ${S.perm.rubyUps[r.id] ?? 0}회</span></td>
+      <td>${E.rubyUpgradePrice(S, r.id)}개</td><td><button class="btn primary sm" data-ru="${r.id}" ${S.perm.rubiesFound < 1 || S.perm.rubies < E.rubyUpgradePrice(S, r.id) ? 'disabled' : ''}>구매</button></td></tr>`).join('');
+    const layer = modal('{ruby}', `<p>{ruby}은 {excavation}에서 찾을 수 있어요. 여기서 산 강화는 {abdicate}·{reincarnate}에도 사라지지 않아요.</p>
+      <p class="gold">{ruby}의 힘: 전체 생산 x${p} (찾은 {ruby} ${S.perm.rubiesFound}개 · 50개부터 x3)</p><p>보유 {ruby} ${S.perm.rubies}개</p>
+      <table class="dtable">${rows}</table>`, [{ label: '닫기' }]);
+    layer.querySelectorAll<HTMLButtonElement>('[data-ru]').forEach((b) => { b.onclick = () => { E.buyRubyUpgrade(S, b.dataset.ru!); draw(); }; });
+  };
+  draw();
+}
+const rubyPowerNow = () => rubyPower(S.perm.rubiesFound);
 $('#btn-scry').onclick = () => modal('점술', '<p>수정구로 앞날을 엿보고 4시간 동안 이어지는 축복 하나를 고를 수 있어요.\n(광고 연동 후 열려요)</p>');
 $('#btn-shop').onclick = () => modal('상점', '<p>{ruby}과 특별 상품은 정식 출시 때 열려요.</p>');
 

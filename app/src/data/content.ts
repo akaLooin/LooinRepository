@@ -6,6 +6,7 @@ import { SPELLS } from './spells';
 import { GENERAL_UPGRADES, TROPHIES } from './general';
 import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES, LEGES, RESEARCH_COST, RESEARCH_UPGRADES, UNIQUES } from './endgame';
 import { TERMS, TERM_LABELS } from './terms';
+import { AUTOCAST_UPGRADES, GEM_UPGRADES, MANA_UPGRADES, RUBY_UPGRADES, SECRETS, SPELL_UPGRADES } from './trophyups';
 import { BASE } from '../engine/engine';
 import baked from './overrides.json';
 
@@ -36,6 +37,10 @@ export const COLLECTIONS: Collection[] = [
   { id: 'factionUpgrades', label: '진영 개선', fields: [T('ko'), L('desc'), N('cost', '금화 가격')], items: list(FACTION_UPGRADES, (u) => u.id, (u) => `${u.faction} ${u.tier}-${u.slot}`) },
   { id: 'spells', label: '주문', fields: [T('ko'), L('desc'), N('mana', '영감 비용'), N('duration', '지속(초)')], items: list(SPELLS, (s) => s.id) },
   { id: 'general', label: '일반 개선', fields: [T('ko'), L('desc'), N('cost', '금화 가격')], items: list(GENERAL_UPGRADES, (g) => g.id) },
+  { id: 'trophyUps', label: '업적 개선 (영감·전설·자동 시전)', fields: [T('ko'), L('desc'), N('cost', '가격')], items: list([...MANA_UPGRADES, ...GEM_UPGRADES, ...AUTOCAST_UPGRADES], (u) => u.id) },
+  { id: 'secrets', label: '비밀 업적', fields: [T('ko'), L('hint', '조건 설명'), L('reward', '보상 설명'), N('cost', '보상 개선 가격')], items: list(SECRETS, (x) => x.id) },
+  { id: 'spellUps', label: '주문 강화', fields: [T('ko'), L('hint', '업적 조건'), L('desc'), N('cost', '가격'), N('manaDelta', '영감 비용 변화')], items: list(SPELL_UPGRADES, (x) => x.spell) },
+  { id: 'rubyUps', label: '별사탕 강화', fields: [T('ko'), L('desc')], items: list(RUBY_UPGRADES, (x) => x.id) },
   { id: 'trophies', label: '명장면(업적)', fields: [T('ko'), L('desc')], items: list(TROPHIES, (x) => x.id) },
   { id: 'heritages', label: '유산', fields: [T('ko'), L('desc')], items: list(HERITAGES, (h) => h.faction) },
   { id: 'bloodlines', label: '혈통', fields: [T('ko'), L('desc')], items: list(BLOODLINES, (b) => b.faction) },

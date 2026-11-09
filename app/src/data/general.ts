@@ -2,6 +2,8 @@
 import type { Mods } from '../engine/mods';
 import type { SaveState } from '../engine/state';
 import { FACTIONS } from './factions';
+import { SECRETS, SPELL_UPGRADES } from './trophyups';
+import { SPELL_BY_ID } from './spells';
 
 export interface GeneralUpgrade {
   id: string; ko: string; desc: string; icon: string; cost: number;
@@ -13,10 +15,6 @@ const click = (n: number, cost: number, share: number): GeneralUpgrade => ({
   id: 'click' + n, ko: `낭독 기술 ${n}`, desc: `두드리기에 초당 생산의 ${share * 100}% 추가`, icon: 'book', cost,
   visible: (s) => s.run.coinsRun.gte(cost / 20), effect: (m) => { m.clickShare += share; },
 });
-const regen = (n: number, cost: number): GeneralUpgrade => ({
-  id: 'regen' + n, ko: `{mana}의 샘 ${n}`, desc: '{mana} 회복 +0.5/초', icon: 'mana', cost,
-  visible: (s) => s.run.coinsRun.gte(cost / 20), effect: (m) => { m.manaRegenAdd += 0.5; },
-});
 const cap = (n: number, cost: number): GeneralUpgrade => ({
   id: 'cap' + n, ko: `넓은 서재 ${n}`, desc: '{mana} 최대치 +250', icon: 'orb', cost,
   visible: (s) => s.run.coinsRun.gte(cost / 20), effect: (m) => { m.manaMaxAdd += 250; },
@@ -24,11 +22,10 @@ const cap = (n: number, cost: number): GeneralUpgrade => ({
 
 export const GENERAL_UPGRADES: GeneralUpgrade[] = [
   click(1, 500, 0.01), click(2, 5e4, 0.01), click(3, 5e6, 0.02), click(4, 5e9, 0.02), click(5, 5e12, 0.03), click(6, 5e16, 0.05),
-  regen(1, 1e4), regen(2, 1e7), regen(3, 1e10), regen(4, 1e14),
   cap(1, 5e4), cap(2, 5e8), cap(3, 5e12),
 ];
 
-export interface TrophyDef { id: string; ko: string; desc: string; check: (s: SaveState, x: { owned: number; assistants: number }) => boolean }
+export interface TrophyDef { id: string; ko: string; desc: string; secret?: boolean; check: (s: SaveState, x: { owned: number; assistants: number; visibleTiers: number[] }) => boolean }
 
 const SUF = ['1K', '1M', '1B', '1T', '1Qa', '1Qi', '1Sx', '1Sp', '1Oc', '1No', '1Dc', '1UDc', '1DDc', '1TDc', '1QaDc'];
 export const TROPHIES: TrophyDef[] = [
@@ -46,4 +43,6 @@ export const TROPHIES: TrophyDef[] = [
   ...FACTIONS.map((f) => ({ id: 'ally_' + f.id, ko: `${f.ko}의 친구`, desc: `${f.ko} 진영에 가입`, check: (s: SaveState) => (s.stats.allied[f.id] ?? 0) > 0 })),
   ...FACTIONS.filter((f) => f.kind !== 'mercenary').map((f) => ({ id: 'champ_' + f.id, ko: `${f.ko}의 영웅`, desc: `한 판에 ${f.ko} 개선 12개 모두 구매`,
     check: (s: SaveState) => s.run.upgrades.filter((u) => u.startsWith(f.id + '_')).length >= 12 })),
+  ...SECRETS.map((x) => ({ id: 'sec_' + x.id, ko: x.ko, desc: x.hint, secret: true, check: x.check })),
+  ...SPELL_UPGRADES.map((x) => ({ id: 'spt_' + x.spell, ko: `${SPELL_BY_ID[x.spell].ko}의 달인`, desc: x.hint, check: (s: SaveState) => !!s.stats.flags['spt_' + x.spell] })),
 ];

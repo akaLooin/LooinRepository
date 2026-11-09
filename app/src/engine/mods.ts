@@ -35,6 +35,8 @@ export interface Mods {
   fcChance: number;                     // multiplier
   costMult: number;                     // building cost multiplier
   gemBonusMult: number;
+  gemBonusAdd: number;                  // added to the per-gem bonus (0.01 = +1%p)
+  clickBase: number;                    // added to the base click reward
   exchangeBonus: number;                // per exchange, fraction
   offline: number;
 }
@@ -43,7 +45,7 @@ export function newMods(): Mods {
   return {
     global: 1, tier: new Array(12).fill(1), align: { bright: 1, dark: 1, legend: 1, common: 1 }, building: {},
     click: 1, clickShare: 0, assistantsAdd: 0, assistantsMult: 1, manaRegenAdd: 0, manaRegenMult: 1, manaMaxAdd: 0,
-    fcChance: 1, costMult: 1, gemBonusMult: 1, exchangeBonus: 0.1, offline: 1,
+    fcChance: 1, costMult: 1, gemBonusMult: 1, gemBonusAdd: 0, clickBase: 0, exchangeBonus: 0.1, offline: 1,
   };
 }
 

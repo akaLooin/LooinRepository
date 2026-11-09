@@ -6,6 +6,7 @@ import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
+import { AUTOCAST_UPGRADES, GEM_UPGRADES, MANA_UPGRADES, RUBY_UPGRADES, SECRETS, SPELL_UPGRADES, rubyPower, rubyUpgradeCost, type TrophyUpgrade } from '../data/trophyups';
 import { RESEARCH_COST, LEGES, LEGES_MIN_R, UNIQUES, UNIQUE_MULT, type UniqueDef, ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
@@ -20,6 +21,11 @@ export const BASE = {
 
 const FACTION_UP_BY_ID: Record<string, FactionUpgrade> = Object.fromEntries(FACTION_UPGRADES.map((u) => [u.id, u]));
 const GENERAL_BY_ID = Object.fromEntries(GENERAL_UPGRADES.map((u) => [u.id, u]));
+const TROPHY_UPS: TrophyUpgrade[] = [...GEM_UPGRADES, ...MANA_UPGRADES, ...AUTOCAST_UPGRADES];
+const TROPHY_UP_BY_ID = Object.fromEntries(TROPHY_UPS.map((u) => [u.id, u]));
+const SECRET_BY_UP = Object.fromEntries(SECRETS.map((x) => ['secu_' + x.id, x]));
+const SPELL_UP_BY_SPELL = Object.fromEntries(SPELL_UPGRADES.map((x) => [x.spell, x]));
+export const spellUpgraded = (s: SaveState, spell: string) => s.run.upgrades.includes('su_' + spell);
 
 // ---------------------------------------------------------------- helpers
 export const has = (s: SaveState, id: string) => s.run.upgrades.includes(id);
@@ -64,8 +70,12 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   if (s.run.faction) for (const f of FACILITIES) if (f.factions.includes(s.run.faction)) m.global *= 1 + facilityBonus(s.perm.research[f.id] ?? 0);
   for (const u of UNIQUES) if (has(s, u.id)) { const b = uniqueBuilding(s, u); m.building[b] = (m.building[b] ?? 1) * UNIQUE_MULT; }
   for (const id of s.perm.researchActive) { const r = RESEARCH_BY_ID[id]; if (r && researchUnlocked(s, r.id)) r.effect(m, c); }
+  m.global *= rubyPower(s.perm.rubiesFound);
+  for (const r of RUBY_UPGRADES) { const n = s.perm.rubyUps[r.id] ?? 0; if (n) r.effect(m, n); }
   for (const id of s.run.upgrades) {
     const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
+    const tu = TROPHY_UP_BY_ID[id]; if (tu) { tu.effect(m, s); continue; }
+    const sec = SECRET_BY_UP[id]; if (sec) { sec.effect(m, s); continue; }
     const f = FACTION_UP_BY_ID[id]; if (f?.effect) { f.effect(m, c); continue; }
     const h = HERITAGE_BY_ID[id]; if (h) { h.effect(m, c); continue; }
     if (id.startsWith('bu_')) {
@@ -78,6 +88,7 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   for (const [id, a] of Object.entries(s.run.activeSpells)) {
     if (a.end <= now) continue;
     SPELL_BY_ID[id]?.effect?.(m, c, a, now);
+    if (spellUpgraded(s, id)) SPELL_UP_BY_SPELL[id]?.extra?.(m, c, a);
   }
   m.global *= 1 + m.exchangeBonus * c.exchanges;
   return m;
@@ -93,7 +104,7 @@ export function snapshot(s: SaveState, now: number): Snapshot {
   const ctx = { ...c0, manaRegen, assistants: assistantCount(s, m0), fcChance: fc0, manaMax: BASE.mana + m0.manaMaxAdd };
   const mods = applyAll(s, now, ctx);
   if (s.perm.ascensions > 0) shiftValues(mods);
-  const gemFactor = s.gems.mul(BASE.gemBonus * mods.gemBonusMult).add(1);
+  const gemFactor = has(s, 'gempower') || s.perm.ascensions > 0 ? s.gems.mul((BASE.gemBonus + mods.gemBonusAdd) * mods.gemBonusMult).add(1) : D(1);
   return { mods, ctx, manaRegen: (BASE.manaRegen + mods.manaRegenAdd) * mods.manaRegenMult, manaMax: BASE.mana + mods.manaMaxAdd, gemFactor, assistants: assistantCount(s, mods) };
 }
 
@@ -128,7 +139,7 @@ export function buildingsCps(s: SaveState, snap: Snapshot): Decimal {
 
 export function clickReward(s: SaveState, snap: Snapshot, cps?: Decimal): Decimal {
   const m = snap.mods;
-  return (cps ?? buildingsCps(s, snap)).mul(m.clickShare).add(1).mul(m.click);
+  return (cps ?? buildingsCps(s, snap)).mul(m.clickShare).add(1 + m.clickBase).mul(m.click);
 }
 
 export function assistantsCps(s: SaveState, snap: Snapshot, cps?: Decimal): Decimal {
@@ -239,7 +250,7 @@ export function buyAllBuildings(s: SaveState, limit = 1000): number {
 }
 
 // ---------------------------------------------------------------- upgrades
-export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique';
+export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique' | 'secret' | 'spellup';
 export interface UpgradeView {
   id: string; kind: UpgradeKind; ko: string; desc: string; icon: string; cost: Decimal;
   fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean; reqOk?: boolean;
@@ -316,6 +327,12 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
     if (s.run.bloodline && s.run.bloodline !== b.faction) continue;
     add({ id: 'blood_' + b.faction, kind: 'bloodline', ko: b.ko, desc: b.desc, icon: FACTION_BY_ID[b.faction].emblem, cost: D(0), color: '#8a1a3a', tier: 3 });
   }
+  // trophy-linked: gem, mana and autocast upgrades, secret trophy rewards, spell upgrades
+  for (const u of TROPHY_UPS) if (u.visible(s) || has(s, u.id)) add({ id: u.id, kind: 'general', ko: u.ko, desc: u.desc, icon: u.icon, cost: D(u.cost) });
+  for (const x of SECRETS) if (s.trophies.includes('sec_' + x.id)) add({ id: 'secu_' + x.id, kind: 'secret', ko: x.ko, desc: x.reward, icon: 'star', cost: D(x.cost), color: '#6a3a8a', tier: 3 });
+  const spells = new Set(availableSpells(s).map((x) => x.id));
+  for (const x of SPELL_UPGRADES) if (s.trophies.includes('spt_' + x.spell) && spells.has(x.spell))
+    add({ id: 'su_' + x.spell, kind: 'spellup', ko: x.ko, desc: x.desc, icon: SPELL_BY_ID[x.spell].icon, cost: D(x.cost), color: '#2a4a8a', tier: 2 });
   // general
   for (const g of GENERAL_UPGRADES) if (g.visible(s) || has(s, g.id)) add({ id: g.id, kind: 'general', ko: g.ko, desc: g.desc, icon: g.icon, cost: D(g.cost) });
   return out;
@@ -364,27 +381,42 @@ export function availableSpells(s: SaveState): SpellDef[] {
   });
 }
 
+/** Mana cost after spell upgrades. */
+export function spellCost(s: SaveState, id: string) {
+  const sp = SPELL_BY_ID[id]; if (!sp) return Infinity;
+  return Math.max(0, sp.mana + (spellUpgraded(s, id) ? SPELL_UP_BY_SPELL[id]?.manaDelta ?? 0 : 0));
+}
 export function spellActive(s: SaveState, id: string, now: number) { return (s.run.activeSpells[id]?.end ?? 0) > now; }
 
 export function castSpell(s: SaveState, id: string, now: number, rng: () => number = Math.random): { gained?: Decimal; coins?: number } | null {
   const sp = SPELL_BY_ID[id];
-  if (!sp || !availableSpells(s).includes(sp) || s.run.mana < sp.mana || spellActive(s, id, now)) return null;
+  const cost = spellCost(s, id);
+  if (!sp || !availableSpells(s).includes(sp) || s.run.mana < cost || spellActive(s, id, now)) return null;
   const snap = snapshot(s, now);
-  s.run.mana -= sp.mana;
+  const activeOthers = Object.entries(s.run.activeSpells).filter(([k, a]) => k !== id && a.end > now).length;
+  // trophies tied to how a spell is cast
+  const su = SPELL_UP_BY_SPELL[id];
+  s.stats.spellStreak = s.stats.spellStreak.id === id ? { id, n: s.stats.spellStreak.n + 1 } : { id, n: 1 };
+  if (id === 'tax' && activeOthers >= 3) s.stats.flags.fury = true;
+  s.run.mana -= cost;
   s.run.spells++; s.stats.spells++;
   const res: { gained?: Decimal; coins?: number } = {};
   if (sp.duration > 0) {
     const a = { start: now, end: now + sp.duration * 1000 } as { start: number; end: number; target?: string; n?: number };
     const owned = visibleBuildings(s).filter((b) => s.run.buildings[b.id] > 0);
     if (id === 'pirate' && owned.length) a.target = owned[Math.floor(rng() * owned.length)].id;
-    s.run.spellCasts[id] = (s.run.spellCasts[id] ?? 0) + 1;
-    a.n = s.run.spellCasts[id];
+    a.n = (s.run.spellCasts[id] ?? 0) + 1;
     if (id === 'phoenix') a.target = 'b' + (1 + Math.floor(rng() * 5));
     if (id === 'maelstrom') a.target = [...owned].sort(() => rng() - 0.5).slice(0, 3).map((b) => b.id).join(',');
     if (id === 'sage' && owned.length) a.target = owned.reduce((lo, b) => (buildingProd(s, b, snap).lt(buildingProd(s, lo, snap)) ? b : lo)).id;
     s.run.activeSpells[id] = a;
   }
+  s.run.spellCasts[id] = (s.run.spellCasts[id] ?? 0) + 1;
+  if (su && su.castCheck(s, { assistants: snap.assistants, active: activeOthers, now, owned: snap.ctx.ownedTotal, gems: snap.ctx.gems })) s.stats.flags['spt_' + id] = true;
   if (id === 'tax') { res.gained = totalCps(s, snap).mul(30); earn(s, res.gained); }
+  if (id === 'tax' && spellUpgraded(s, 'tax')) { const n = Math.max(1, Math.round(30 * (1 + snap.assistants) * fcChance(s, snap))); findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
+  if (id === 'phoenix' && spellUpgraded(s, 'phoenix')) { const n = Math.round(1.5 * Math.log(1 + snap.ctx.gems) ** 3) + 10; findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
+  if (id !== 'starmage' && spellUpgraded(s, 'starmage') && spellActive(s, 'starmage', now)) { const n = Math.floor(snap.manaRegen ** 1.1); findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
   if (id === 'thieves') { res.coins = Math.floor(Math.log(1 + snap.ctx.gems) ** 3 + 20); findCoins(s, res.coins, rng); }
   if (id === 'pirate') { res.coins = Math.round(1.5 * Math.log(1 + snap.ctx.gems) ** 3); findCoins(s, res.coins, rng); }
   return res;
@@ -412,11 +444,14 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
   const gained = totalCps(s, snap).mul(dt);
   earn(s, gained);
   s.run.mana = Math.min(snap.manaMax, s.run.mana + snap.manaRegen * dt);
+  s.stats.manaProduced += snap.manaRegen * dt;
+  if (s.run.alignment) s.stats.alignTime[s.run.alignment] = (s.stats.alignTime[s.run.alignment] ?? 0) + dt;
+  if (!s.stats.flags.speedrun && s.run.coinsRun.gte(1e6) && now - s.run.start <= 300000) s.stats.flags.speedrun = true;
   // assistants gather faction coins passively
   s.run.fcFraction += snap.assistants * snap.mods.assistantsMult * fcChance(s, snap) * BASE.assistantShare * dt;
   if (s.run.fcFraction >= 1) { const n = Math.floor(s.run.fcFraction); s.run.fcFraction -= n; findCoins(s, n, rng); }
   // bloodline auto-clicks (counted as clicks, like the original's Elven bloodline)
-  const auto = BLOODLINES.find((b) => b.faction === s.run.bloodline)?.autoclick ?? 0;
+  const auto = (BLOODLINES.find((b) => b.faction === s.run.bloodline)?.autoclick ?? 0) + (spellUpgraded(s, 'minstrel') && spellActive(s, 'minstrel', now) ? 15 : 0);
   if (auto) {
     s.run.autoclickFraction += auto * dt;
     const n = Math.floor(s.run.autoclickFraction);
@@ -435,14 +470,16 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
   return gained;
 }
 
+export const canAutocast = (s: SaveState) => has(s, 'auto1') || s.perm.ascensions > 0;
 function autocast(s: SaveState, now: number) {
+  if (!canAutocast(s)) return;
   const snap = snapshot(s, now);
   if (s.run.mana < s.autocastThreshold * snap.manaMax) return;
   const spells = availableSpells(s);
   const gold = spells.filter((sp) => s.autocast[sp.id] === 'gold');
-  for (const sp of gold) if (!spellActive(s, sp.id, now) && s.run.mana >= sp.mana) castSpell(s, sp.id, now);
+  for (const sp of gold) if (!spellActive(s, sp.id, now) && s.run.mana >= spellCost(s, sp.id)) castSpell(s, sp.id, now);
   if (gold.some((sp) => sp.duration > 0 && !spellActive(s, sp.id, now))) return;
-  for (const sp of spells.filter((x) => s.autocast[x.id] === 'silver')) if (!spellActive(s, sp.id, now) && s.run.mana >= sp.mana) castSpell(s, sp.id, now);
+  for (const sp of spells.filter((x) => s.autocast[x.id] === 'silver')) if (!spellActive(s, sp.id, now) && s.run.mana >= spellCost(s, sp.id)) castSpell(s, sp.id, now);
 }
 
 export function applyOffline(s: SaveState, now: number) {
@@ -467,6 +504,7 @@ export function gemsOnAbdicate(s: SaveState) { return gemsFor(s.run.coinsRun, ge
 
 export function abdicate(s: SaveState, now: number): Decimal {
   const gain = gemsOnAbdicate(s);
+  if (s.run.coinsRun.gte(1e27)) s.stats.flags.rewind = true;
   s.gems = s.gems.add(gain);
   if (s.run.coinsRun.gt(s.stats.bestRun)) s.stats.bestRun = s.run.coinsRun;
   s.stats.abdications++;
@@ -477,7 +515,7 @@ export function abdicate(s: SaveState, now: number): Decimal {
 
 // ---------------------------------------------------------------- trophies
 export function checkTrophies(s: SaveState): TrophyDef[] {
-  const x = { owned: ownedTotal(s), assistants: assistantCount(s) };
+  const x = { owned: ownedTotal(s), assistants: assistantCount(s), visibleTiers: visibleBuildings(s).map((b) => s.run.buildings[b.id]) };
   const got: TrophyDef[] = [];
   for (const t of TROPHIES) if (!s.trophies.includes(t.id) && t.check(s, x)) { s.trophies.push(t.id); got.push(t); }
   return got;
@@ -675,3 +713,11 @@ export function uniqueName(s: SaveState, buildingId: string): string | undefined
   return activeUniques(s, true).find((u) => uniqueBuilding(s, u) === buildingId)?.ko;
 }
 export function uniqueBuildingIds(s: SaveState) { return activeUniques(s, true).map((u) => uniqueBuilding(s, u)); }
+
+// ---------------------------------------------------------------- ruby upgrades (persist through every reset)
+export function rubyUpgradePrice(s: SaveState, id: string) { return rubyUpgradeCost(s.perm.rubyUps[id] ?? 0); }
+export function buyRubyUpgrade(s: SaveState, id: string): boolean {
+  if (!RUBY_UPGRADES.some((r) => r.id === id) || s.perm.rubiesFound < 1) return false;
+  const c = rubyUpgradePrice(s, id); if (s.perm.rubies < c) return false;
+  s.perm.rubies -= c; s.perm.rubyUps[id] = (s.perm.rubyUps[id] ?? 0) + 1; return true;
+}

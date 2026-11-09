@@ -190,3 +190,4 @@ button:focus-visible { outline: 2px solid var(--c-card-affordable-ring); outline
 .rchip { border: 0; padding: 2px 6px; font-size: 11px; background: rgba(120, 90, 50, .2); box-shadow: 0 0 0 1px #6a5030; color: var(--c-ink); }
 .rchip.on { background: var(--c-gold); color: #2e2016; box-shadow: 0 0 0 1px #000; }
 .rchip.locked { color: var(--c-ink-dim); background: transparent; }
+.resbtn { display: flex; align-items: center; gap: 2px; background: none; border: 0; padding: 0; color: inherit; font: inherit; }
