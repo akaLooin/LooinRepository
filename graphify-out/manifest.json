@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "app/src/data/factions.ts": {
-    "mtime": 1794199582.1409678,
-    "seen": 1794199841.9736269,
-    "ast_hash": "f861fbe071ed5c52218a491512473f0a",
+    "mtime": 1794201733.2282455,
+    "seen": 1794201751.8689733,
+    "ast_hash": "a92666948971c78572f307be370ac66d",
     "semantic_hash": ""
   },
   "app/src/data/general.ts": {
