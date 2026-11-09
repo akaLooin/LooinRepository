@@ -39,7 +39,9 @@ function pickAlignment() {
 
 function botStep() {
   // clicks: simulate up to 25 real clicks per step, scale the coin gain for the rest
-  const n = Math.round(CLICKS * STEP);
+  // the idle player only taps for the first 5 minutes of each run
+  const rate = profile === 'idle' ? (now - s.run.start < 300000 ? 3 : 0) : CLICKS;
+  const n = Math.round(rate * STEP);
   if (n > 0) {
     const real = Math.min(n, 25);
     let gained = new Decimal(0);
