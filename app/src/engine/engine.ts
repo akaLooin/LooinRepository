@@ -495,7 +495,7 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
   if (s.run.alignment) s.stats.alignTime[s.run.alignment] = (s.stats.alignTime[s.run.alignment] ?? 0) + dt;
   if (!s.stats.flags.speedrun && s.run.coinsRun.gte(1e6) && now - s.run.start <= 300000) s.stats.flags.speedrun = true;
   // assistants gather faction coins passively
-  s.run.fcFraction += snap.assistants * snap.mods.assistantsMult * fcChance(s, snap) * BASE.assistantShare * dt;
+  s.run.fcFraction += snap.assistants * fcChance(s, snap) * dt;   // WIKI: each assistant "clicks" once a second for faction coins
   if (s.run.fcFraction >= 1) { const n = Math.floor(s.run.fcFraction); s.run.fcFraction -= n; findCoins(s, n, rng); }
   // bloodline auto-clicks (counted as clicks, like the original's Elven bloodline)
   const auto = (BLOODLINES.find((b) => b.faction === s.run.bloodline)?.autoclick ?? 0) + (spellUpgraded(s, 'minstrel') && spellActive(s, 'minstrel', now) ? 15 : 0) + snap.mods.autoclick;

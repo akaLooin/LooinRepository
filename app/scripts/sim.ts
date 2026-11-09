@@ -57,6 +57,7 @@ function botStep() {
   if (s.run.faction && !s.run.prestige) for (const p of ['clockmaker', 'shadow']) E.buyUpgrade(s, `${p}_g1`, now);
   // upgrades, then buildings (cheapest first, like "buy all")
   E.buyAllUpgrades(s, now);
+  for (const u of E.allUpgrades(s)) if (u.kind === 'heritage' && !u.purchased && u.affordable) E.buyUpgrade(s, u.id, now);
   // buildings: best production per gold first (like a careful player)
   for (let i = 0; i < 2000; i++) {
     const sn = E.snapshot(s, now);
