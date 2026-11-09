@@ -44,11 +44,11 @@ export function buildingsFor(alignment: Alignment | null): BuildingDef[] {
 }
 
 // Building upgrades: unlocked at these counts. Multiplier bonus (%) and cost per tier.
-export const BU_COUNTS = [5, 25, 75, 150, 200, 300, 400, 500];
-export const BU_BONUS_LOW = [100, 200, 300, 400, 500, 400, 300, 200];   // tiers 1-3
-export const BU_BONUS_HIGH = [100, 100, 100, 100, 100, 200, 200, 200];  // tiers 4-10
-export const BU_BONUS_T11 = [75, 75, 75, 75, 75, 150, 150, 150];        // + per-trophy part below
-export const BU_T11_PER_TROPHY = [0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5, 0.5];
+export const BU_COUNTS = [5, 25, 75, 150, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1250, 1500, 1750, 2000, 2500]; // WIKI (Good building upgrades)
+export const BU_BONUS_LOW = [100, 200, 300, 400, 500, 400, 300, 200, 200, 200, 300, 300, 300, 300, 300, 400, 400, 400, 400];   // tiers 1-3 (600+ GUESS = high tiers)
+export const BU_BONUS_HIGH = [100, 100, 100, 100, 100, 200, 200, 200, 200, 200, 300, 300, 300, 300, 300, 400, 400, 400, 400];  // tiers 4-10 (WIKI)
+export const BU_BONUS_T11 = [75, 75, 75, 75, 75, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150]; // + per-trophy part below
+export const BU_T11_PER_TROPHY = [0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 // cost table [tier][index], from the verified upgrade table (rounded)
 export const BU_COST: number[][] = [
   [],
@@ -63,4 +63,19 @@ export const BU_COST: number[][] = [
   [2.916e9, 95.46e9, 155.2e12, 7.381e18, 9.998e21, 14.09e27, 19.3e33, 25.9e39],
   [64.36e9, 2.107e12, 3.425e15, 162.9e18, 220.6e21, 310.9e27, 426e33, 571.7e39],
   [40e12, 1.3e15, 2.1e18, 100e21, 140e24, 195e30, 265e36, 357e42],
+];
+// 600..2500 rows: WIKI prices for tier 4 (Warrior Barracks); other tiers scaled by their 500-row price ratio.
+const T4_EXT = [4.248e41, 5.543e47, 7.16e53, 9.173e59, 1.167e66, 1.476e72, 2.012e81, 3.207e96, 5.093e111, 8.058e126, 1.899e157];
+for (let t = 1; t <= 11; t++) { const k = BU_COST[t][7] / BU_COST[4][7]; BU_COST[t].push(...T4_EXT.map((c) => c * k)); }
+
+// Aligned building upgrades (WIKI "Aligned Building Upgrades"): need N buildings of the alignment, boost all of them.
+export interface AlignUpgrade { id: string; alignment: 'bright' | 'dark' | 'legend'; ko: string; need: number; cost: number; pct: number; needHours?: number }
+export const ALIGN_UPGRADES: AlignUpgrade[] = [
+  { id: 'au_b1', alignment: 'bright', ko: '{alignBright} 인증서', need: 750, cost: 1e14, pct: 100 },
+  { id: 'au_b2', alignment: 'bright', ko: '{alignBright} 확인서', need: 1500, cost: 1e20, pct: 300 },
+  { id: 'au_d1', alignment: 'dark', ko: '{alignDark} 인증서', need: 750, cost: 1e14, pct: 100 },
+  { id: 'au_d2', alignment: 'dark', ko: '{alignDark} 확인서', need: 1500, cost: 1e20, pct: 300 },
+  { id: 'au_l1', alignment: 'legend', ko: '{alignLegend} 인증서', need: 3500, cost: 2e30, pct: 100 },
+  { id: 'au_l2', alignment: 'legend', ko: '{alignLegend} 확인서', need: 7000, cost: 4e39, pct: 300 },
+  { id: 'au_l3', alignment: 'legend', ko: '꾸준한 집필', need: 0, needHours: 7, cost: 5e14, pct: 100 },
 ];

@@ -1,6 +1,6 @@
 // Talestopia Tycoon rules. Pure functions over SaveState; time comes in as `now` (ms).
 import Decimal from 'break_infinity.js';
-import { BUILDINGS, BUILDING_BY_ID, BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY, buildingsFor, type BuildingDef } from '../data/buildings';
+import { ALIGN_UPGRADES, BUILDINGS, BUILDING_BY_ID, BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY, buildingsFor, type BuildingDef } from '../data/buildings';
 import { ALIGNMENTS, FACTIONS, FACTION_BY_ID, FACTION_UPGRADES, type FactionDef, type FactionUpgrade } from '../data/factions';
 import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
@@ -23,6 +23,7 @@ const FACTION_UP_BY_ID: Record<string, FactionUpgrade> = Object.fromEntries(FACT
 const GENERAL_BY_ID = Object.fromEntries(GENERAL_UPGRADES.map((u) => [u.id, u]));
 const TROPHY_UPS: TrophyUpgrade[] = [...GEM_UPGRADES, ...MANA_UPGRADES, ...AUTOCAST_UPGRADES];
 const TROPHY_UP_BY_ID = Object.fromEntries(TROPHY_UPS.map((u) => [u.id, u]));
+const ALIGN_UP_BY_ID = Object.fromEntries(ALIGN_UPGRADES.map((u) => [u.id, u]));
 const SECRET_BY_UP = Object.fromEntries(SECRETS.map((x) => ['secu_' + x.id, x]));
 const SPELL_UP_BY_SPELL = Object.fromEntries(SPELL_UPGRADES.map((x) => [x.spell, x]));
 export const spellUpgraded = (s: SaveState, spell: string) => s.run.upgrades.includes('su_' + spell);
@@ -87,6 +88,7 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   for (const id of s.run.upgrades) {
     const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
     const tu = TROPHY_UP_BY_ID[id]; if (tu) { tu.effect(m, s); continue; }
+    const au = ALIGN_UP_BY_ID[id]; if (au) { m.align[au.alignment] *= 1 + au.pct / 100; continue; }
     const sec = SECRET_BY_UP[id]; if (sec) { sec.effect(m, s); continue; }
     const f = FACTION_UP_BY_ID[id]; if (f?.effect) { f.effect(m, c); continue; }
     const h = HERITAGE_BY_ID[id]; if (h) { h.effect(m, c); continue; }
@@ -334,6 +336,15 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
     const b = uniqueBuilding(s, u), n = s.run.buildings[b] ?? 0;
     add({ id: u.id, kind: 'unique', ko: u.ko, desc: `${BUILDING_BY_ID[b].ko}을(를) ${u.ko}(으)로 바꿔요. 생산 x${UNIQUE_MULT}. (${BUILDING_BY_ID[b].ko} ${u.need}채 필요, 지금 ${n}채)`,
       icon: 'b:' + b, cost: D(BUILDING_BY_ID[b].cost).mul(1e12), color: FACTION_BY_ID[u.faction].color, tier: 5, reqOk: n >= u.need });
+  }
+  // aligned building upgrades (WIKI): N buildings of your alignment
+  if (s.run.alignment) {
+    const n = visibleBuildings(s).filter((b) => b.alignment === s.run.alignment).reduce((a, b) => a + s.run.buildings[b.id], 0);
+    for (const u of ALIGN_UPGRADES) {
+      if (u.alignment !== s.run.alignment) continue;
+      const ok = u.needHours ? s.stats.playSeconds >= u.needHours * 3600 : n >= u.need;
+      if (ok || has(s, u.id)) add({ id: u.id, kind: 'general', ko: u.ko, desc: `${u.ko}: 모든 ${u.alignment === 'bright' ? '{alignBright}' : u.alignment === 'dark' ? '{alignDark}' : '{alignLegend}'} 건물 +${u.pct}% (${u.needHours ? `누적 ${u.needHours}시간 플레이` : `성향 건물 ${u.need}채`})`, icon: 'hammer', cost: D(u.cost) });
+    }
   }
   // heritages: unlocked by the faction's champion trophy, bought again each run with faction coins
   for (const h of HERITAGES) {
