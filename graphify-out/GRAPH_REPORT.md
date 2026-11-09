@@ -1,7 +1,7 @@
 # Graph Report - LooinRepository  (2026-11-09)
 
 ## Corpus Check
-- 87 files · ~77,788 words
+- 87 files · ~77,781 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 29 file(s) not represented in the graph (top: .xml 10, (none) 6, .woff2 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `784396dc`
+- Built from commit: `abc20c0c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -81,18 +81,18 @@
 6. `Mods` - 16 edges
 7. `hex()` - 16 edges
 8. `noise()` - 16 edges
-9. `D()` - 15 edges
-10. `framedIcon()` - 15 edges
+9. `framedIcon()` - 15 edges
+10. `D()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `조정 손잡이 (관리자 패널 '기본 수치'에서 바로 바꿀 수 있음)` --references--> `costGrowth()`  [INFERRED]
-  replica/balance.md → app/src/engine/engine.ts
-- `조정 손잡이 (관리자 패널 '기본 수치'에서 바로 바꿀 수 있음)` --references--> `fcChance()`  [INFERRED]
-  replica/balance.md → app/src/engine/engine.ts
 - `API (엔진 액션)` --references--> `reincarnate()`  [INFERRED]
   replica/architecture.md → app/src/engine/engine.ts
+- `조정 손잡이 (관리자 패널 '기본 수치'에서 바로 바꿀 수 있음)` --references--> `fcChance()`  [INFERRED]
+  replica/balance.md → app/src/engine/engine.ts
 - `API (엔진 액션)` --references--> `buyAllBuildings()`  [INFERRED]
   replica/architecture.md → app/src/engine/engine.ts
+- `조정 손잡이 (관리자 패널 '기본 수치'에서 바로 바꿀 수 있음)` --references--> `costGrowth()`  [INFERRED]
+  replica/balance.md → app/src/engine/engine.ts
 - `API (엔진 액션)` --references--> `abdicate()`  [INFERRED]
   replica/architecture.md → app/src/engine/engine.ts
 
