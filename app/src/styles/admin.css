@@ -34,3 +34,5 @@ textarea.a-in { min-width: 220px; resize: vertical; }
   .a-nav button { white-space: nowrap; border-bottom: 0; border-right: 1px solid #c8b688; }
   .a-table th { top: 0; }
 }
+.a-replace { background: #fffaf0; border: 1px solid #c8b688; padding: 8px; }
+.a-replace input { min-width: 140px; }

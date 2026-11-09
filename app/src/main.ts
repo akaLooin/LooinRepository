@@ -16,9 +16,10 @@ import { TROPHIES } from './data/general';
 import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, UNLOCKS, facilityBonus } from './data/endgame';
 import { COIN_TYPES, type CoinType } from './data/types';
 import { installContent } from './data/content';
-import { t } from './data/terms';
+import { t, watchTerms } from './data/terms';
 
 installContent();
+watchTerms(document.body);
 const ADMIN = import.meta.env.DEV || import.meta.env.VITE_ADMIN === '1';
 
 const SAVE_KEY = 'talestopia-tycoon-v1';
@@ -49,7 +50,7 @@ function load() {
     if (raw) {
       S = deserialize(raw, now);
       const off = E.applyOffline(S, now);
-      if (off.gained.gt(0)) setTimeout(() => modal('다녀오셨군요', `<p>${fmtTime(off.seconds)} 동안 왕국이 일했어요.</p><p class="t-lg gold" style="text-align:center">+${F(off.gained)} 금화</p>`), 50);
+      if (off.gained.gt(0)) setTimeout(() => modal('다녀오셨군요', `<p>${fmtTime(off.seconds)} 동안 왕국이 일했어요.</p><p class="t-lg gold" style="text-align:center">+${F(off.gained)} {coin}</p>`), 50);
       return;
     }
   } catch { /* new game */ }
@@ -77,7 +78,7 @@ app.innerHTML = `
     <div class="autocast">
       <button class="round" id="ac-gold" aria-pressed="false" aria-label="자동 시전 1순위 지정"><img class="ic" src="${spriteURL('coin')}" alt=""><span class="lbl shadow-text">${t('autocast1')}</span></button>
       <button class="round" id="ac-silver" aria-pressed="false" aria-label="자동 시전 2순위 지정" style="margin-top:8px"><img class="ic" src="${spriteURL('mana')}" alt=""><span class="lbl shadow-text">${t('autocast2')}</span></button>
-      <button class="round" id="ac-thr" aria-label="자동 시전 시작 영감" style="margin-top:8px"><img class="ic" src="${spriteURL('hourglass')}" alt=""><span class="lbl shadow-text" id="ac-thr-l">0%</span></button>
+      <button class="round" id="ac-thr" aria-label="자동 시전 시작 {mana}" style="margin-top:8px"><img class="ic" src="${spriteURL('hourglass')}" alt=""><span class="lbl shadow-text" id="ac-thr-l">0%</span></button>
     </div>
     <button class="corner left" id="btn-scry"><span class="round"><img class="ic2" src="${spriteURL('orb', 2)}" alt=""></span><span class="shadow-text">${t('scry')}</span></button>
     <div class="ribbon shadow-text" id="ribbon">${t('tabBuildings')}</div>
@@ -136,7 +137,7 @@ $('#tap').addEventListener('pointerdown', (ev) => {
   const r = E.click(S, Date.now());
   const box = $('#map').getBoundingClientRect();
   floater('+' + F(r.value), ev.clientX - box.left, ev.clientY - box.top);
-  if (r.coin) floater(`+1 ${COIN_KO[r.coin]} 조각`, ev.clientX - box.left, ev.clientY - box.top - 16, 'coin');
+  if (r.coin) floater(`+1 ${COIN_KO[r.coin]} {fcShort}`, ev.clientX - box.left, ev.clientY - box.top - 16, 'coin');
 });
 
 // ------------------------------------------------------------ spells
@@ -163,7 +164,7 @@ function renderSpells(now: number) {
         }
         const r = E.castSpell(S, id, Date.now());
         if (!r) { showSpellInfo(id); return; }
-        toast(`🔮 ${SPELL_BY_ID[id].ko}${r.gained ? ` +${F(r.gained)} 금화` : ''}${r.coins ? ` +${r.coins} 조각` : ''}`);
+        toast(`🔮 ${SPELL_BY_ID[id].ko}${r.gained ? ` +${F(r.gained)} {coin}` : ''}${r.coins ? ` +${r.coins} {fcShort}` : ''}`);
       };
       b.oncontextmenu = (e) => { e.preventDefault(); showSpellInfo(b.dataset.id!); };
     });
@@ -179,7 +180,7 @@ function renderSpells(now: number) {
 }
 function showSpellInfo(id: string) {
   const sp = SPELL_BY_ID[id];
-  modal(sp.ko, `<p>${esc(sp.desc)}</p><p>영감 ${sp.mana}${sp.duration ? ` · ${sp.duration}초` : ' · 즉시'}</p>`, [
+  modal(sp.ko, `<p>${esc(sp.desc)}</p><p>{mana} ${sp.mana}${sp.duration ? ` · ${sp.duration}초` : ' · 즉시'}</p>`, [
     { label: '시전', disabled: S.run.mana < sp.mana || E.spellActive(S, id, Date.now()), run: () => E.castSpell(S, id, Date.now()) }, { label: '닫기', cls: 'accent' }]);
 }
 function setAssign(m: 'gold' | 'silver') {
@@ -192,7 +193,7 @@ $('#ac-gold').onclick = () => setAssign('gold');
 $('#ac-silver').onclick = () => setAssign('silver');
 $('#ac-thr').onclick = () => {
   const steps = [0, 0.25, 0.5, 0.75, 1]; S.autocastThreshold = steps[(steps.indexOf(S.autocastThreshold) + 1) % steps.length];
-  toast(`영감이 ${S.autocastThreshold * 100}% 이상일 때부터 자동 시전`);
+  toast(`{mana}이 ${S.autocastThreshold * 100}% 이상일 때부터 자동 시전`);
 };
 
 // ------------------------------------------------------------ panels
@@ -223,8 +224,8 @@ function renderPanel() {
   if (key === panelKey) return;
   panelKey = key;
   const msg: Record<string, string> = {
-    explore: '서고 탐사(발굴)는 첫 <b>새 시리즈(환생)</b> 이후에 열려요.',
-    challenges: '특별 원고(도전)는 <b>새 시리즈(환생)</b> 이후에 열려요.',
+    explore: '{excavation}(발굴)는 첫 <b>{reincarnate}(환생)</b> 이후에 열려요.',
+    challenges: '{challenge}(도전)는 <b>{reincarnate}(환생)</b> 이후에 열려요.',
     events: '지금 진행 중인 이벤트가 없어요.',
   };
   p.innerHTML = `<div class="locked-panel"><img class="ic2" src="${spriteURL(TABS.find((x) => x.id === tab)!.icon, 2)}" alt=""><p>${msg[tab]}</p></div>`;
@@ -278,24 +279,24 @@ function upgradeIcon(u: E.UpgradeView) {
 }
 function costHTML(u: E.UpgradeView) {
   const parts = [`<span class="gold"><img class="ic" src="${spriteURL('coin')}" alt=""> ${F(u.cost)}</span>`];
-  for (const [k, v] of Object.entries(u.fcCost ?? {})) parts.push(`<span><i style="display:inline-block;width:8px;height:8px;background:${COIN_COLOR[k as CoinType]}"></i> ${COIN_KO[k as CoinType]} 조각 ${v}</span>`);
+  for (const [k, v] of Object.entries(u.fcCost ?? {})) parts.push(`<span><i style="display:inline-block;width:8px;height:8px;background:${COIN_COLOR[k as CoinType]}"></i> ${COIN_KO[k as CoinType]} {fcShort} ${v}</span>`);
   return `<div class="cost">${parts.join('')}</div>`;
 }
 function mercPicker(u: E.UpgradeView) {
   if (u.id === 'merc_spell') {
     if (S.run.mercSpell) { modal(esc(u.ko), `<p>${esc(u.desc)}</p>`); return; }
     const list = E.mercSpellCandidates(S);
-    const layer = modal('마법 계약', `<p>주문 하나를 골라요. 금화 ${F(E.MERC.spellCoins)} + 그 진영 조각 ${E.MERC.spellFC}개</p>
+    const layer = modal('마법 계약', `<p>주문 하나를 골라요. {coin} ${F(E.MERC.spellCoins)} + 그 진영 {fcShort} ${E.MERC.spellFC}개</p>
       <table class="dtable">${list.map((sp) => `<tr><td><b>${esc(sp.ko)}</b><br><span class="dim">${esc(sp.desc)}</span></td><td><button class="btn primary sm" data-sp="${sp.id}">선택</button></td></tr>`).join('')}</table>`, [{ label: '닫기', cls: 'accent' }]);
-    layer.querySelectorAll<HTMLButtonElement>('[data-sp]').forEach((b) => { b.onclick = () => { closeModal(); toast(E.buyMercSpell(S, b.dataset.sp!) ? '🔮 마법 계약 완료' : '금화나 조각이 부족해요'); spellKey = ''; panelKey = ''; }; });
+    layer.querySelectorAll<HTMLButtonElement>('[data-sp]').forEach((b) => { b.onclick = () => { closeModal(); toast(E.buyMercSpell(S, b.dataset.sp!) ? '🔮 마법 계약 완료' : '{coin}나 {fcShort}이 부족해요'); spellKey = ''; panelKey = ''; }; });
     return;
   }
   if (S.run.mercPicks[u.id]) { modal(esc(u.ko), `<p>${esc(u.desc)}</p><p class="gold">계약함</p>`); return; }
   const [, t, k] = u.id.match(/merc_t(\d)_(\d)/)!.map(Number);
   const list = E.mercCandidates(S, u.id);
-  const layer = modal('계약 개선 고르기', `<p>${t}단계 진영 개선 하나를 골라요. 그 진영 조각 ${E.mercSlotFC(t, k)}개</p>
+  const layer = modal('계약 개선 고르기', `<p>${t}단계 진영 개선 하나를 골라요. 그 진영 {fcShort} ${E.mercSlotFC(t, k)}개</p>
     <table class="dtable">${list.map((x) => `<tr><td><b>${esc(x.ko)}</b> <span class="dim">(${FACTION_BY_ID[x.faction].ko})</span><br><span class="dim">${esc(x.desc)}</span></td><td><button class="btn primary sm" data-u="${x.id}">선택</button></td></tr>`).join('')}</table>`, [{ label: '닫기', cls: 'accent' }]);
-  layer.querySelectorAll<HTMLButtonElement>('[data-u]').forEach((b) => { b.onclick = () => { closeModal(); toast(E.buyMercPick(S, u.id, b.dataset.u!) ? '✍ 계약했어요' : '조각이 부족해요'); panelKey = ''; }; });
+  layer.querySelectorAll<HTMLButtonElement>('[data-u]').forEach((b) => { b.onclick = () => { closeModal(); toast(E.buyMercPick(S, u.id, b.dataset.u!) ? '✍ 계약했어요' : '{fcShort}이 부족해요'); panelKey = ''; }; });
 }
 function showUpgrade(id: string) {
   const u = E.allUpgrades(S).find((x) => x.id === id); if (!u) return;
@@ -342,17 +343,17 @@ function renderUpgrades(p: HTMLElement) {
 }
 function abdicateFlow() {
   const g = E.gemsOnAbdicate(S);
-  modal('다시 쓰기', `<p>지금까지의 금화·건물·개선·성향·진영·이야기 조각을 내려놓고 처음부터 다시 써요.</p>
-    <p>얻는 전설: <b class="gold">${F(g)}</b> (보유 ${F(S.gems)})\n전설 1개당 생산 +2%. 명장면은 남아요.</p>`, [
-    { label: '다시 쓰기', disabled: g.lt(1), run: () => { const got = E.abdicate(S, Date.now()); save(); panelKey = ''; spellKey = ''; drawMap(true); toast(`🌟 전설 ${F(got)}개를 얻었어요`); } },
+  modal('{abdicate}', `<p>지금까지의 {coin}·건물·개선·성향·진영·{fc}을 내려놓고 처음부터 다시 써요.</p>
+    <p>얻는 {gem}: <b class="gold">${F(g)}</b> (보유 ${F(S.gems)})\n{gem} 1개당 생산 +2%. {trophy}은 남아요.</p>`, [
+    { label: '{abdicate}', disabled: g.lt(1), run: () => { const got = E.abdicate(S, Date.now()); save(); panelKey = ''; spellKey = ''; drawMap(true); toast(`🌟 {gem} ${F(got)}개를 얻었어요`); } },
     { label: '취소', cls: 'accent' }]);
 }
 function exchangeFlow() {
   const draw = () => {
     const rows = COIN_TYPES.map((c) => `<tr><td><i style="display:inline-block;width:8px;height:8px;background:${COIN_COLOR[c]}"></i> ${COIN_KO[c]} (${F(S.run.fc[c])})</td>
       <td>${S.run.exchanges[c] ?? 0}회</td><td>${E.exchangeCost(S, c)}</td><td><button class="btn accent sm" data-c="${c}" ${S.run.fc[c] < E.exchangeCost(S, c) ? 'disabled' : ''}>계약</button></td></tr>`).join('');
-    const layer = modal('출판 계약', `<p>이야기 조각으로 계약을 맺으면 모든 건물 생산이 영구히(이번 판) 늘어요. 계약 1회당 +${Math.round(E.snapshot(S, Date.now()).mods.exchangeBonus * 100)}%.</p>
-      <table class="dtable"><tr><th>조각</th><th>계약</th><th>비용</th><th></th></tr>${rows}</table><p>총 계약 ${E.totalExchanges(S)}회</p>`, [{ label: '닫기' }]);
+    const layer = modal('{exchange}', `<p>{fc}으로 계약을 맺으면 모든 건물 생산이 영구히(이번 판) 늘어요. 계약 1회당 +${Math.round(E.snapshot(S, Date.now()).mods.exchangeBonus * 100)}%.</p>
+      <table class="dtable"><tr><th>{fcShort}</th><th>계약</th><th>비용</th><th></th></tr>${rows}</table><p>총 계약 ${E.totalExchanges(S)}회</p>`, [{ label: '닫기' }]);
     layer.querySelectorAll<HTMLButtonElement>('.dtable button').forEach((b) => { b.onclick = () => { E.royalExchange(S, b.dataset.c as CoinType); draw(); }; });
   };
   draw();
@@ -362,8 +363,8 @@ function renderTrophies(p: HTMLElement) {
   const key = 't' + S.trophies.length;
   if (key === panelKey) return;
   panelKey = key;
-  p.innerHTML = `<div class="t-sm" style="text-align:center">명장면 ${S.trophies.length} / ${TROPHIES.length}</div>
-    <section class="gsection"><header>전체 명장면</header><div class="tgrid">${TROPHIES.map((t) => {
+  p.innerHTML = `<div class="t-sm" style="text-align:center">{trophy} ${S.trophies.length} / ${TROPHIES.length}</div>
+    <section class="gsection"><header>전체 {trophy}</header><div class="tgrid">${TROPHIES.map((t) => {
       const got = S.trophies.includes(t.id);
       const icon = t.id.startsWith('ally_') || t.id.startsWith('champ_') ? FACTION_BY_ID[t.id.split('_')[1] as keyof typeof FACTION_BY_ID].emblem : 'trophy';
       return `<button class="tslot ${got ? '' : 'locked'}" data-id="${t.id}"><img src="${framedIcon(icon, '#3a2a1a', got ? 'gold' : 'plain')}" alt="${esc(t.ko)}"></button>`;
@@ -376,26 +377,26 @@ function renderTrophies(p: HTMLElement) {
 function renderStats(p: HTMLElement) {
   const snap = E.snapshot(S, Date.now());
   const rows: [string, string][] = [
-    ['이번 판 금화', F(S.run.coinsRun)], ['두드리기로 번 금화', F(S.run.coinsByClick)], ['두드리기 1회', F(E.clickReward(S, snap))],
-    ['이야기 조각 발견 확률', (E.fcChance(S, snap) * 100).toFixed(1) + '%'], ['견습생', String(snap.assistants)],
-    ['영감 회복', snap.manaRegen.toFixed(2) + '/초'], ['영감 최대', String(snap.manaMax)],
-    ['성향', S.run.alignment ? { bright: '밝은 이야기', dark: '어두운 이야기', legend: '옛 전설' }[S.run.alignment] : '-'],
+    ['이번 판 {coin}', F(S.run.coinsRun)], ['두드리기로 번 {coin}', F(S.run.coinsByClick)], ['두드리기 1회', F(E.clickReward(S, snap))],
+    ['{fc} 발견 확률', (E.fcChance(S, snap) * 100).toFixed(1) + '%'], ['{assistant}', String(snap.assistants)],
+    ['{mana} 회복', snap.manaRegen.toFixed(2) + '/초'], ['{mana} 최대', String(snap.manaMax)],
+    ['성향', S.run.alignment ? { bright: '{alignBright}', dark: '{alignDark}', legend: '{alignLegend}' }[S.run.alignment] : '-'],
     ['진영', S.run.faction ? FACTION_BY_ID[S.run.faction].ko : '-'],
-    ['이번 판 시간', fmtTime((Date.now() - S.run.start) / 1000)], ['누적 금화', F(S.stats.totalCoins)], ['최고 판 금화', F(Decimal.max(S.stats.bestRun, S.run.coinsRun))],
-    ['전설', F(S.gems)], ['다시 쓰기', String(S.stats.abdications)], ['총 두드리기', F(S.stats.clicks)], ['총 주문', F(S.stats.spells)],
+    ['이번 판 시간', fmtTime((Date.now() - S.run.start) / 1000)], ['누적 {coin}', F(S.stats.totalCoins)], ['최고 판 {coin}', F(Decimal.max(S.stats.bestRun, S.run.coinsRun))],
+    ['{gem}', F(S.gems)], ['{abdicate}', String(S.stats.abdications)], ['총 두드리기', F(S.stats.clicks)], ['총 주문', F(S.stats.spells)],
   ];
   rows.unshift(['시리즈 (환생)', 'R' + S.perm.reincarnations]);
   const R = S.perm.reincarnations;
   const perks = REINCARNATION_PERKS.map((x) => `<li class="${R >= x.r ? '' : 'dim'}">R${x.r}: ${esc(x.ko)}</li>`).join('');
   const rp = E.researchPoints(S);
-  const research = R < UNLOCKS.research ? `<p class="dim">집필 연구는 R${UNLOCKS.research}부터 열려요.</p>`
-    : `<p>집필 포인트 ${rp.free} / ${rp.total}</p><table class="dtable">${FACILITIES.map((f) => `<tr><td>${f.ko}<br><span class="dim">${f.factions.map((x) => FACTION_BY_ID[x].ko).join(', ')}</span></td>
+  const research = R < UNLOCKS.research ? `<p class="dim">{research}는 R${UNLOCKS.research}부터 열려요.</p>`
+    : `<p>{researchPoint} ${rp.free} / ${rp.total}</p><table class="dtable">${FACILITIES.map((f) => `<tr><td>${f.ko}<br><span class="dim">${f.factions.map((x) => FACTION_BY_ID[x].ko).join(', ')}</span></td>
       <td>${S.perm.research[f.id] ?? 0}점 · +${Math.round(facilityBonus(S.perm.research[f.id] ?? 0) * 100)}%</td>
       <td><button class="btn accent sm" data-r="${f.id}" data-d="-1">−</button> <button class="btn primary sm" data-r="${f.id}" data-d="1" ${rp.free < 1 ? 'disabled' : ''}>+</button></td></tr>`).join('')}</table>`;
   const key = 's' + rp.free + JSON.stringify(S.perm.research) + R;
   const html = `<section class="gsection"><header>기록</header><dl class="stats" style="padding:6px">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>
-    <section class="gsection"><header>집필 연구 (연구)</header><div style="padding:6px">${research}</div></section>
-    <section class="gsection"><header>시리즈의 힘 (환생 보너스)</header><ul style="margin:6px;padding-left:16px">${perks}</ul></section>`;
+    <section class="gsection"><header>{research} (연구)</header><div style="padding:6px">${research}</div></section>
+    <section class="gsection"><header>{reincarnationPower} (환생 보너스)</header><ul style="margin:6px;padding-left:16px">${perks}</ul></section>`;
   if (panelKey !== key) {
     const st = p.scrollTop; panelKey = key; p.innerHTML = html; p.scrollTop = st;
     p.querySelectorAll<HTMLButtonElement>('[data-r]').forEach((b) => { b.onclick = () => { E.assignResearch(S, b.dataset.r!, +b.dataset.d! as 1 | -1); panelKey = ''; renderPanel(); }; });
@@ -404,9 +405,9 @@ function renderStats(p: HTMLElement) {
 
 // ------------------------------------------------------------ reincarnation, excavation, challenges
 function reincarnateFlow() {
-  modal('새 시리즈 (환생)', `<p>지금까지 모은 전설·건물·이야기 조각·발굴 기록을 모두 내려놓고 새 시리즈를 시작해요.
-명장면·특별 원고·유물·별사탕·연구는 남아요.</p><p class="gold">시리즈의 힘이 R${S.perm.reincarnations + 1}로 강해져요.</p>`, [
-    { label: '새 시리즈 시작', cls: 'special', disabled: !E.canReincarnate(S), run: () => { E.reincarnate(S, Date.now()); save(); reset(); toast(`📚 새 시리즈 R${S.perm.reincarnations} 시작!`); } },
+  modal('{reincarnate} (환생)', `<p>지금까지 모은 {gem}·건물·{fc}·발굴 기록을 모두 내려놓고 {reincarnate}를 시작해요.
+{trophy}·{challenge}·유물·{ruby}·연구는 남아요.</p><p class="gold">{reincarnationPower}이 R${S.perm.reincarnations + 1}로 강해져요.</p>`, [
+    { label: '{reincarnate} 시작', cls: 'special', disabled: !E.canReincarnate(S), run: () => { E.reincarnate(S, Date.now()); save(); reset(); toast(`📚 {reincarnate} R${S.perm.reincarnations} 시작!`); } },
     { label: '취소', cls: 'accent' }]);
 }
 const ART_ICONS = ['book', 'flag', 'gear', 'book', 'mana', 'trophy', 'orb', 'hourglass', 'leaf', 'legend', 'mask', 'star', 'leaf', 'orb', 'book', 'sun'];
@@ -416,34 +417,34 @@ function renderExplore(p: HTMLElement) {
     panelKey = key;
     if (!S.perm.archaeology) {
       const can = S.gems.gte(ARCHAEOLOGY.gems);
-      p.innerHTML = `<div class="locked-panel"><img class="ic2" src="${spriteURL('shovel', 2)}" alt=""><p>서고 탐사단을 꾸리면 책 속 깊은 곳을 발굴해 이야기 조각·별사탕·유물을 찾을 수 있어요.</p>
-        <p class="${can ? '' : 'dim'}">조건: 전설 ${F(ARCHAEOLOGY.gems)}개 · 비용 금화 ${F(ARCHAEOLOGY.cost)}</p>
+      p.innerHTML = `<div class="locked-panel"><img class="ic2" src="${spriteURL('shovel', 2)}" alt=""><p>{excavation}단을 꾸리면 책 속 깊은 곳을 발굴해 {fc}·{ruby}·유물을 찾을 수 있어요.</p>
+        <p class="${can ? '' : 'dim'}">조건: {gem} ${F(ARCHAEOLOGY.gems)}개 · 비용 {coin} ${F(ARCHAEOLOGY.cost)}</p>
         <button class="btn primary" id="arch" ${can ? '' : 'disabled'}>탐사단 꾸리기</button></div>`;
-      const b = $<HTMLButtonElement>('#arch', p); if (b) b.onclick = () => { if (E.buyArchaeology(S)) toast('⛏ 서고 탐사단을 꾸렸어요'); else toast('금화가 부족해요'); panelKey = ''; renderPanel(); };
+      const b = $<HTMLButtonElement>('#arch', p); if (b) b.onclick = () => { if (E.buyArchaeology(S)) toast('⛏ {excavation}단을 꾸렸어요'); else toast('{coin}가 부족해요'); panelKey = ''; renderPanel(); };
     } else {
       p.innerHTML = `<div class="t-sm" style="text-align:center">탐사 깊이 ${S.perm.excavations}</div>
         <div class="uptop" style="margin-top:6px"><button class="btn primary sm" id="dig1">발굴</button><button class="btn primary sm" id="dig10">10회</button>
-          <button class="btn accent sm" id="digreset">깊이 초기화 (별사탕 ${1 + Math.floor(S.perm.excavations / 3000)})</button></div>
+          <button class="btn accent sm" id="digreset">깊이 초기화 ({ruby} ${1 + Math.floor(S.perm.excavations / 3000)})</button></div>
         <p class="dim" style="text-align:center;margin:2px" id="digcost"></p>
         <section class="gsection"><header>유물 (${S.perm.artifacts.length}/${ARTIFACTS.length})</header><div class="tgrid">${ARTIFACTS.map((a, i) => {
           const got = S.perm.artifacts.includes(a.id);
           return `<button class="tslot ${got ? '' : 'locked'}" data-a="${a.id}"><img src="${framedIcon(ART_ICONS[i % ART_ICONS.length], '#5a4630', got ? 'gold' : 'plain')}" alt=""></button>`; }).join('')}</div></section>`;
       const dig = (n: number) => {
         const r = E.excavate(S, n);
-        if (!r) { toast('금화가 부족해요'); return; }
-        const bits = [r.coins ? `조각 +${F(r.coins)}` : '', r.rubies ? `별사탕 +${r.rubies}` : '', ...r.artifacts.map((a) => `유물: ${esc(a.ko)}`)].filter(Boolean);
+        if (!r) { toast('{coin}가 부족해요'); return; }
+        const bits = [r.coins ? `{fcShort} +${F(r.coins)}` : '', r.rubies ? `{ruby} +${r.rubies}` : '', ...r.artifacts.map((a) => `유물: ${esc(a.ko)}`)].filter(Boolean);
         toast('⛏ ' + (bits.join(' · ') || '아무것도 나오지 않았어요'));
         panelKey = ''; renderPanel();
       };
       $('#dig1', p).onclick = () => dig(1); $('#dig10', p).onclick = () => dig(10);
-      $('#digreset', p).onclick = () => { toast(E.resetExcavations(S) ? '탐사 깊이를 처음으로 되돌렸어요' : '별사탕이 부족해요'); panelKey = ''; renderPanel(); };
+      $('#digreset', p).onclick = () => { toast(E.resetExcavations(S) ? '탐사 깊이를 처음으로 되돌렸어요' : '{ruby}이 부족해요'); panelKey = ''; renderPanel(); };
       p.querySelectorAll<HTMLButtonElement>('[data-a]').forEach((b) => { b.onclick = () => {
         const a = ARTIFACTS.find((x) => x.id === b.dataset.a)!, got = S.perm.artifacts.includes(a.id);
         modal(got ? esc(a.ko) : '???', `<p>${got ? esc(a.desc) : a.at ? `탐사 깊이 ${a.at}에서 발견` : '깊은 곳(100 이후)에서 드물게 발견'}</p>`); }; });
     }
   }
   const c = $('#digcost', p);
-  if (c) { c.textContent = `1회 ${F(E.nextExcavationCost(S, 1))} · 10회 ${F(E.nextExcavationCost(S, 10))} 금화`;
+  if (c) { c.textContent = `1회 ${F(E.nextExcavationCost(S, 1))} · 10회 ${F(E.nextExcavationCost(S, 10))} {coin}`;
     $<HTMLButtonElement>('#dig1', p).disabled = S.run.coins.lt(E.nextExcavationCost(S, 1)); $<HTMLButtonElement>('#dig10', p).disabled = S.run.coins.lt(E.nextExcavationCost(S, 10)); }
 }
 function renderChallenges(p: HTMLElement) {
@@ -451,7 +452,7 @@ function renderChallenges(p: HTMLElement) {
   if (key === panelKey) return;
   panelKey = key;
   if (S.perm.reincarnations < UNLOCKS.challenges) {
-    p.innerHTML = `<div class="locked-panel"><img class="ic2" src="${spriteURL('star', 2)}" alt=""><p>특별 원고(도전)는 <b>새 시리즈 R${UNLOCKS.challenges}</b>부터 열려요.</p></div>`; return;
+    p.innerHTML = `<div class="locked-panel"><img class="ic2" src="${spriteURL('star', 2)}" alt=""><p>{challenge}(도전)는 <b>{reincarnate} R${UNLOCKS.challenges}</b>부터 열려요.</p></div>`; return;
   }
   const groups = FACTIONS.map((f) => {
     const list = CHALLENGES.filter((c) => c.faction === f.id);
@@ -482,11 +483,11 @@ $('#btn-settings').onclick = () => {
     try { const t = deserialize(decodeURIComponent(escape(atob(($('#s-code', layer) as HTMLTextAreaElement).value.trim()))), Date.now()); S = t; S.lastSeen = Date.now(); save(); reset(); toast('📖 불러왔어요'); closeModal(); }
     catch { toast('저장 코드가 올바르지 않아요'); }
   };
-  $('#s-reset', layer).onclick = () => modal('정말 초기화할까요?', '<p>전설과 명장면까지 모두 사라져요. 되돌릴 수 없어요.</p>', [
+  $('#s-reset', layer).onclick = () => modal('정말 초기화할까요?', '<p>{gem}과 {trophy}까지 모두 사라져요. 되돌릴 수 없어요.</p>', [
     { label: '초기화', cls: 'danger', run: () => { S = newGame(Date.now()); save(); reset(); } }, { label: '취소', cls: 'accent' }]);
 };
 $('#btn-scry').onclick = () => modal('점술', '<p>수정구로 앞날을 엿보고 4시간 동안 이어지는 축복 하나를 고를 수 있어요.\n(광고 연동 후 열려요)</p>');
-$('#btn-shop').onclick = () => modal('상점', '<p>별사탕과 특별 상품은 정식 출시 때 열려요.</p>');
+$('#btn-shop').onclick = () => modal('상점', '<p>{ruby}과 특별 상품은 정식 출시 때 열려요.</p>');
 
 function reset() { panelKey = ''; spellKey = ''; mapKey = ''; drawMap(true); renderPanel(); }
 
@@ -520,8 +521,8 @@ function loop() {
   E.tick(S, now);
   if (now - last > 250) {
     last = now;
-    for (const t of E.checkTrophies(S)) toast(`🏅 명장면: ${esc(t.ko)}`);
-    for (const c of E.checkChallenges(S, now)) toast(`📜 특별 원고 완료: ${esc(c.ko)}`);
+    for (const t of E.checkTrophies(S)) toast(`🏅 {trophy}: ${esc(t.ko)}`);
+    for (const c of E.checkChallenges(S, now)) toast(`📜 {challenge} 완료: ${esc(c.ko)}`);
     renderTop(now);
     renderSpells(now);
     renderPanel();
@@ -537,7 +538,7 @@ requestAnimationFrame(loop);
 setInterval(save, 10000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) save();
-  else { const off = E.applyOffline(S, Date.now()); if (off.gained.gt(0)) toast(`자리를 비운 사이 +${F(off.gained)} 금화`); }
+  else { const off = E.applyOffline(S, Date.now()); if (off.gained.gt(0)) toast(`자리를 비운 사이 +${F(off.gained)} {coin}`); }
 });
 window.addEventListener('pagehide', save);
 // debug helpers for testing in the browser console

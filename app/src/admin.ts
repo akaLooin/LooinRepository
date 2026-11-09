@@ -48,14 +48,25 @@ function render() {
   <div class="a-body">
     <nav class="a-nav">${COLLECTIONS.map((c) => `<button data-c="${c.id}" class="${c === current ? 'on' : ''}">${c.label}<small>${countIn(c)}</small></button>`).join('')}</nav>
     <main class="a-main">
-      <div class="a-tools"><input id="q" placeholder="검색 (ID·이름·설명)" value="${esc(query)}"><span class="dim">비워 두면 기본값을 써요. 바뀐 칸은 노란색이에요. 수치를 바꿔도 설명 문장은 따로 고쳐야 해요.</span></div>
-      <table class="a-table"><thead><tr><th>ID</th>${current.fields.map((f) => `<th>${f.label}</th>`).join('')}</tr></thead><tbody>${rows()}</tbody></table>
+      <div class="a-tools"><input id="q" placeholder="검색 (ID·이름·설명)" value="${esc(query)}"><span class="dim">비워 두면 기본값을 써요. 바뀐 칸은 노란색이에요. 이름·설명 속 <b>{gem}</b> 같은 표시는 '게임 용어'의 현재 이름으로 자동으로 바뀌어요.</span></div>
+      ${current.id === 'terms' ? `<div class="a-tools a-replace"><b>모든 이름·설명에서 바꾸기</b><input id="rf" placeholder="찾을 글자 (예: 숲)"><input id="rt" placeholder="바꿀 글자 (예: 정원)"><button id="rgo" class="a-btn">미리 보기</button><span id="rres" class="dim"></span></div>` : ''}
+      <table class="a-table"><thead><tr><th>ID</th>${current.fields.map((f) => `<th>${f.label}</th>`).join('')}${current.id === 'terms' ? '<th>쓰이는 곳</th>' : ''}</tr></thead><tbody>${rows()}</tbody></table>
     </main>
   </div>`;
   root.querySelectorAll<HTMLButtonElement>('.a-nav button').forEach((b) => { b.onclick = () => { current = COLLECTIONS.find((c) => c.id === b.dataset.c)!; render(); }; });
   const q = root.querySelector<HTMLInputElement>('#q')!;
   q.oninput = () => { query = q.value; const tb = root.querySelector('tbody')!; tb.innerHTML = rows(); bindInputs(); };
   bindInputs();
+  const rgo = root.querySelector<HTMLButtonElement>('#rgo');
+  if (rgo) rgo.onclick = () => {
+    const from = root.querySelector<HTMLInputElement>('#rf')!.value, to = root.querySelector<HTMLInputElement>('#rt')!.value;
+    if (!from) return;
+    const hits = findReplace(from, to, false);
+    if (!hits.length) { root.querySelector('#rres')!.textContent = '찾은 곳이 없어요.'; return; }
+    if (confirm(`${hits.length}곳을 바꿔요:\n\n${hits.slice(0, 15).join('\n')}${hits.length > 15 ? '\n…' : ''}\n\n적용할까요? (저장을 눌러야 게임에 반영돼요)`)) {
+      findReplace(from, to, true); root.querySelector('#rres')!.textContent = `${hits.length}곳을 바꿨어요. 저장을 눌러 주세요.`;
+    }
+  };
   root.querySelector<HTMLButtonElement>('#save')!.onclick = save;
   root.querySelector<HTMLButtonElement>('#export')!.onclick = exportJSON;
   root.querySelector<HTMLInputElement>('#import')!.onchange = importJSON;
@@ -78,7 +89,33 @@ function rows() {
     if (f.type === 'longtext') return `<td><textarea ${attrs} rows="2">${esc(v)}</textarea></td>`;
     if (f.type === 'number') return `<td><input ${attrs} type="text" inputmode="decimal" value="${esc(v)}"></td>`;
     return `<td><input ${attrs} type="text" value="${esc(v)}"></td>`;
-  }).join('')}</tr>`).join('');
+  }).join('')}${current.id === 'terms' ? `<td class="dim">${usage(it.id)}곳</td>` : ''}</tr>`).join('');
+}
+
+/** How many names/descriptions contain the {term} token. */
+function usage(term: string) {
+  let n = 0;
+  for (const c of COLLECTIONS) {
+    if (c.id === 'terms' || c.id === 'base') continue;
+    for (const it of c.items()) for (const f of c.fields) if (f.type !== 'number' && String(valueOf(c, it.id, f.key)).includes(`{${term}}`)) n++;
+  }
+  return n;
+}
+
+/** Find/replace across every text field of every collection (writes into the draft). */
+function findReplace(from: string, to: string, apply: boolean) {
+  const hits: string[] = [];
+  for (const c of COLLECTIONS) {
+    if (c.id === 'terms' || c.id === 'base') continue;
+    for (const it of c.items()) for (const f of c.fields) {
+      if (f.type === 'number') continue;
+      const v = String(valueOf(c, it.id, f.key));
+      if (!v.includes(from)) continue;
+      hits.push(`${c.label} · ${it.id}: ${v} → ${v.split(from).join(to)}`);
+      if (apply) setValue(c, it.id, f.key, v.split(from).join(to));
+    }
+  }
+  return hits;
 }
 function bindInputs() {
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('.a-in').forEach((el) => {
