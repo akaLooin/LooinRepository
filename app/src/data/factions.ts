@@ -123,7 +123,7 @@ export const FACTION_UPGRADES: FactionUpgrade[] = [
     ['든든한 화폐', '이번 판 {fcShort} 수에 따라 {assistant} 증가 (0.5·ln(1+x)^2)', (m, c) => { m.assistantsAdd += Math.floor(0.5 * ln(1 + c.fcFoundRun) ** 2); }],
     ['노예 상인 대신 장물아비', '{alignDark} 건물 수에 따라 전체 생산 증가 (2·x^0.7 %)', (m, c) => { m.global *= 1 + (2 * aligned(c, 'd') ** 0.7) / 100; }],
     ['싼 재료', '건물 수에 따라 인세 정산이 더 많은 초를 벌어요 (+√x 초)', (m, c) => { m.taxSeconds += Math.sqrt(c.ownedTotal); }],
-    ['바보의 금', '마녀의 오두막 수에 따라 {fcShort} 확률 증가 (2·x^0.5 %)', (m, c) => { m.fcChance *= 1 + (2 * (c.buildings.d6 ?? 0) ** 0.5) / 100; }],
+    ['바보의 금', '마녀의 오두막 수에 따라 {fcShort} 확률 증가 (2·x^0.6 %)', (m, c) => { m.fcChance *= 1 + Math.floor(2 * (c.buildings.d6 ?? 0) ** 0.6) / 100; }],
     ['도적 경제학', '보유 {coin}에 따라 {mana} 회복 증가 (0.75·log10(1+x)^1.25 %)', (m, c) => { m.manaRegenMult *= 1 + (0.75 * (c.coinsLog10 ?? 0) ** 1.25) / 100; }],
     ['검투사', '인세 정산 가치에 따라 전체 생산 증가 (12·ln(1+초)^3 %)', (m, c) => { m.global *= 1 + (12 * ln(1 + 30 + Math.sqrt(c.ownedTotal)) ** 3) / 100; }],
     ['도적 중앙은행', '주문을 쓸 때마다 공짜 인세 정산 (평균: 전체 생산 x1.5)', (m) => { m.global *= 1.5; }],

@@ -20,11 +20,13 @@ const mana = (id: string, ko: string, cost: number, need: number, regen: number)
   id, ko, desc: `{mana} 회복 +${regen} (누적 {mana} ${need.toLocaleString()} 생산 시 열림)`, icon: 'mana', cost,
   visible: (s) => s.stats.manaProduced >= need, effect: (m) => { m.manaRegenAdd += regen; },
 });
+// WIKI: Mana Wave and later are post-ascension upgrades
+const pa = (u: TrophyUpgrade): TrophyUpgrade => ({ ...u, desc: u.desc + ' — 승천 후', visible: (s) => s.perm.ascensions > 0 && u.visible(s) });
 export const MANA_UPGRADES: TrophyUpgrade[] = [
   mana('mana1', '{mana}의 이슬', 10000, 200, 0.5), mana('mana2', '{mana}의 비', 20 * M, 2000, 0.5), mana('mana3', '{mana}의 소나기', 30 * B, 5000, 0.5),
   mana('mana4', '{mana}의 샘', 40 * T, 10000, 0.5), mana('mana5', '{mana}의 폭포', 50 * Qa, 20000, 0.5), mana('mana6', '{mana}의 시냇물', 60 * Qi, 100000, 0.5),
-  mana('mana7', '{mana}의 홍수', 70 * Sx, 200000, 0.5), mana('mana8', '{mana}의 물결', 80 * Sp, 20 * M, 5), mana('mana9', '{mana}의 강', 90 * Oc, 1 * B, 5),
-  mana('mana10', '{mana}의 호수', 100 * No, 20 * B, 5),
+  mana('mana7', '{mana}의 홍수', 70 * Sx, 200000, 0.5), pa(mana('mana8', '{mana}의 물결', 80 * Sp, 20 * M, 5)), pa(mana('mana9', '{mana}의 강', 90 * Oc, 1 * B, 5)),
+  pa(mana('mana10', '{mana}의 호수', 100 * No, 20 * B, 5)),
 ];
 
 // ---------------------------------------------------------------- automatic casting (WIKI: must be bought to autocast)

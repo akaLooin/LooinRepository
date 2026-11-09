@@ -86,7 +86,7 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   }
   for (const r of RUBY_UPGRADES) { const n = s.perm.rubyUps[r.id] ?? 0; if (n) r.effect(m, n); }
   for (const id of s.run.upgrades) {
-    const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
+    const g = GENERAL_BY_ID[id]; if (g) { g.effect(m, c); continue; }
     const tu = TROPHY_UP_BY_ID[id]; if (tu) { tu.effect(m, s); continue; }
     const au = ALIGN_UP_BY_ID[id]; if (au) { m.align[au.alignment] *= 1 + au.pct / 100; continue; }
     const sec = SECRET_BY_UP[id]; if (sec) { sec.effect(m, s); continue; }
@@ -181,7 +181,13 @@ export function totalCps(s: SaveState, snap: Snapshot): Decimal {
 }
 
 export function fcChance(s: SaveState, snap: Snapshot): number {
-  return Math.min(1, BASE.fcChance * snap.mods.fcChance * (1 + 0.05 * Math.log10(1 + Math.max(0, snap.ctx.gems))));
+  return Math.min(1, BASE.fcChance * snap.mods.fcChance * (1 + gemFcBonus(s, snap.ctx.gems) / 100));
+}
+/** WIKI Gem Power: faction coin chance +floor((1.25 + y/4) * ln(1+x)^0.9 / ln 10)%, y = gem upgrades bought (multiplier GUESS). */
+export function gemFcBonus(s: SaveState, gems: number): number {
+  if (!has(s, 'gempower') && s.perm.ascensions === 0) return 0;
+  const y = ['gem2', 'gem3', 'gem4'].filter((id) => has(s, id)).length;
+  return Math.floor((1.25 + y / 4) * Math.log(1 + Math.max(0, gems)) ** 0.9 / Math.LN10);
 }
 
 // ---------------------------------------------------------------- earning
@@ -399,7 +405,8 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
     }
   }
   // general
-  for (const g of GENERAL_UPGRADES) if (g.visible(s) || has(s, g.id)) add({ id: g.id, kind: 'general', ko: g.ko, desc: g.desc, icon: g.icon, cost: D(g.cost) });
+  const ast = snapshot(s, s.lastSeen).assistants;
+  for (const g of GENERAL_UPGRADES) if (g.visible(s, ast) || has(s, g.id)) add({ id: g.id, kind: 'general', ko: g.ko, desc: g.desc, icon: g.icon, cost: D(g.cost) });
   return out;
 }
 

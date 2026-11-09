@@ -1,5 +1,5 @@
-// General (non-faction) upgrades and trophies. Numbers are this game's own (GUESS where the original is unverified).
-import type { Mods } from '../engine/mods';
+// General (non-faction) upgrades and trophies.
+import type { Mods, Ctx } from '../engine/mods';
 import type { SaveState } from '../engine/state';
 import { FACTIONS } from './factions';
 import { BUILDINGS } from './buildings';
@@ -9,22 +9,37 @@ import { SPELL_TIERS } from './endgame';
 
 export interface GeneralUpgrade {
   id: string; ko: string; desc: string; icon: string; cost: number;
-  visible: (s: SaveState) => boolean;
-  effect: (m: Mods) => void;
+  visible: (s: SaveState, assistants: number) => boolean;
+  effect: (m: Mods, c: Ctx) => void;
 }
 
-const click = (n: number, cost: number, share: number): GeneralUpgrade => ({
-  id: 'click' + n, ko: `낭독 기술 ${n}`, desc: `두드리기에 초당 생산의 ${share * 100}% 추가`, icon: 'book', cost,
-  visible: (s) => s.run.coinsRun.gte(cost / 20), effect: (m) => { m.clickShare += share; },
+// WIKI "Upgrades": Click, Assistant upgrades (costs and unlocks follow the original; names are ours)
+const NAMES = ['단단한', '질긴', '튼튼한', '꿋꿋한', '부서지지 않는', '영원한'];
+const sturdy = (i: number, add: number, cost: number, clicks: number): GeneralUpgrade => ({
+  id: 'tb' + i, ko: `${NAMES[i]} 책장`, desc: `두드리기 기본 보상 +${add.toLocaleString()} (누적 두드리기 ${clicks.toLocaleString()}번 시 열림)`, icon: 'book', cost,
+  visible: (s) => s.stats.clicks >= clicks, effect: (m) => { m.clickBase += add; },
 });
-const cap = (n: number, cost: number): GeneralUpgrade => ({
-  id: 'cap' + n, ko: `넓은 서재 ${n}`, desc: '{mana} 최대치 +250', icon: 'orb', cost,
-  visible: (s) => s.run.coinsRun.gte(cost / 20), effect: (m) => { m.manaMaxAdd += 250; },
+const FILL = ['가득 찬', '넉넉한', '풍요로운', '호화로운', '넘쳐흐르는'];
+const filled = (i: number, cost: number, byClick: number): GeneralUpgrade => ({
+  id: 'tf' + i, ko: `${FILL[i]} 책갈피`, desc: `두드리기 보상 +25%, 모든 건물 생산 +25% (이번 판 두드리기로 {coin} ${byClick.toExponential(0)} 벌면 열림)`, icon: 'coin', cost,
+  visible: (s) => s.run.coinsByClick.gte(byClick), effect: (m) => { m.click *= 1.25; m.global *= 1.25; },
+});
+const ORN = ['귀한', '화려한', '장식된', '수놓은', '눈부신'];
+const precious = (i: number, cost: number, earned: number): GeneralUpgrade => ({
+  id: 'tp' + i, ko: `${ORN[i]} 표지`, desc: `두드리기 기본 보상에 전체 생산의 1% 추가 (이번 판 {coin} ${earned.toExponential(0)} 벌면 열림)`, icon: 'book', cost,
+  visible: (s) => s.run.coinsRun.gte(earned), effect: (m) => { m.clickShare += 0.01; },
+});
+const UNION = ['{assistant} 조합', '{assistant} 연합', '{assistant} 길드'];
+const union = (i: number, cost: number, need: number): GeneralUpgrade => ({
+  id: 'au' + i, ko: UNION[i], desc: `{assistant} 1명당 모든 건물 생산 +1% ({assistant} ${need}명 시 열림)`, icon: 'hammer', cost,
+  visible: (_s, a) => a >= need, effect: (m, c) => { m.global *= 1 + 0.01 * c.assistants; },
 });
 
 export const GENERAL_UPGRADES: GeneralUpgrade[] = [
-  click(1, 500, 0.01), click(2, 5e4, 0.01), click(3, 5e6, 0.02), click(4, 5e9, 0.02), click(5, 5e12, 0.03), click(6, 5e16, 0.05),
-  cap(1, 5e4), cap(2, 5e8), cap(3, 5e12),
+  sturdy(0, 4, 500, 100), sturdy(1, 45, 5000, 500), sturdy(2, 4950, 5e6, 2500), sturdy(3, 5e5, 5e9, 1e4), sturdy(4, 5e7, 5e13, 5e4), sturdy(5, 5e10, 5e15, 1e5),
+  filled(0, 1e4, 5e3), filled(1, 5e7, 5e6), filled(2, 1e11, 5e9), filled(3, 1.5e14, 5e12), filled(4, 2e17, 5e15),
+  precious(0, 5e4, 1e5), precious(1, 5e7, 1e8), precious(2, 5e10, 1e11), precious(3, 5e13, 1e14), precious(4, 5e15, 1e17),
+  union(0, 1.5e20, 10), union(1, 3e80, 100), union(2, 5e108, 300),
 ];
 
 export interface TrophyDef { id: string; ko: string; desc: string; secret?: boolean; check: (s: SaveState, x: { owned: number; assistants: number; visibleTiers: number[] }) => boolean }
