@@ -13,7 +13,7 @@ feature,area,priority,original,clone,notes
 진영 조약으로 가입 (한 판에 하나),factions,must,yes,yes,
 진영별 업그레이드 세트,factions,must,yes,yes,진영당 3개 → 원작 수준으로 확대
 진영 코인 발견 (탭·생산 중 확률),currency,must,yes,yes,
-마나와 공통 주문 4종,spells,must,yes,partial,공통 2종 + 성향 3종 (원작 공통 3·4번은 환생 이후)
+마나와 공통 주문 4종,spells,must,yes,yes,공통 3종(R14 영혼의 물결 포함) + 성향 3종
 진영 고유 주문,spells,must,yes,yes,
 퇴위: 보석 획득·초기화,reset,must,yes,yes,공식을 n(n+1)·상수 형태로 교체
 보석 1개당 생산 보너스,reset,must,yes,yes,
@@ -25,13 +25,14 @@ feature,area,priority,original,clone,notes
 왕실 교환 (진영 코인 → 영구 배율),currency,should,yes,yes,
 조수 (자동 탭),core,should,yes,yes,
 통계 화면,meta,should,yes,yes,
-환생 (보석 1e27 필요·×1000),reset,should,yes,no,
-환생 시 유지/초기화 규칙,reset,should,yes,no,
-혈통(계보) 선택,reset,should,yes,no,
+환생 (보석 1e27 필요·×1000),reset,should,yes,yes,
+환생 시 유지/초기화 규칙,reset,should,yes,yes,
+혈통(계보) 선택,reset,should,yes,yes,"R7+, 진영 개선 100개 누적"
+유산 (진영 챔피언 업적 → 영구 개선),reset,should,yes,yes,9종
 중립 진영 3종 (선·악 진영과 짝),factions,should,yes,yes,
-도전 과제,meta,should,yes,no,
-연구 (R16 해금),endgame,should,yes,no,
-발굴과 유물,endgame,should,yes,no,
+도전 과제,meta,should,yes,partial,진영별 1~2단계 15개 (원작 46개)
+연구 (R16 해금),endgame,should,yes,partial,시설 6개·포인트 배분 (원작의 연구 슬롯·개선은 아직)
+발굴과 유물,endgame,should,yes,yes,"유물 16종 (원작 106종), 별사탕 25n(n+1)"
 큰 수 처리 (1e308 이상),core,should,yes,yes,
 숫자 표기 옵션,meta,should,yes,yes,
 효과음·배경음,audio,should,yes,no,우리가 새로 만듦

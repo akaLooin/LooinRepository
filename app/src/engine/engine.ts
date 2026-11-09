@@ -5,7 +5,8 @@ import { ALIGNMENTS, FACTIONS, FACTION_BY_ID, FACTION_UPGRADES, type FactionUpgr
 import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { COIN_TYPES, type Alignment, type CoinType, type FactionId } from '../data/types';
-import { newMods, type Ctx, type Mods } from './mods';
+import { newMods, type Mods } from './mods';
+import { ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
 export const BASE = {
@@ -31,23 +32,37 @@ export function assistantCount(s: SaveState, m?: Mods): number {
   return Math.floor(n + (m ? m.assistantsAdd : 0));
 }
 
-function baseCtx(s: SaveState, now: number, manaRegen: number): Ctx {
+function baseCtx(s: SaveState, now: number, manaRegen: number): EndCtx {
+  const owned = ownedTotal(s);
   return {
     gems: s.gems.toNumber(), trophies: s.trophies.length, assistants: assistantCount(s), buildings: s.run.buildings,
-    ownedTotal: ownedTotal(s), runSeconds: Math.max(0, (now - s.run.start) / 1000), manaRegen,
+    ownedTotal: owned, runSeconds: Math.max(0, (now - s.run.start) / 1000), manaRegen,
     clicksTotal: s.stats.clicks, clicksRun: s.run.clicks, fcFoundRun: s.run.fcFound, spellsRun: s.run.spells,
     upgradesRun: s.run.upgrades.length, exchanges: totalExchanges(s), alignment: s.run.alignment,
+    reincarnations: s.perm.reincarnations, excavations: s.perm.excavations, artifacts: s.perm.artifacts.length,
+    hoursTotal: s.stats.playSeconds / 3600, maxOwned: Math.max(s.perm.maxOwned, owned), fcChance: BASE.fcChance, manaMax: BASE.mana,
+    exchangesRun: totalExchanges(s), c11: s.run.buildings.c11 ?? 0,
   };
 }
 
 export function totalExchanges(s: SaveState) { let n = 0; for (const k in s.run.exchanges) n += s.run.exchanges[k as CoinType] ?? 0; return n; }
 
+const HERITAGE_BY_ID = Object.fromEntries(HERITAGES.map((h) => [`her_${h.faction}`, h]));
+const ARTIFACT_BY_ID = Object.fromEntries(ARTIFACTS.map((a) => [a.id, a]));
+
 // ---------------------------------------------------------------- modifiers
-function applyAll(s: SaveState, now: number, c: Ctx): Mods {
+function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   const m = newMods();
+  const R = s.perm.reincarnations;
+  for (const p of REINCARNATION_PERKS) if (R >= p.r) p.effect(m, c);
+  for (const id of s.perm.artifacts) ARTIFACT_BY_ID[id]?.effect?.(m, c);
+  for (const ch of CHALLENGES) if (s.run.faction === ch.faction && s.perm.challenges.includes(ch.id)) ch.effect(m, c);
+  if (s.run.bloodline) BLOODLINES.find((b) => b.faction === s.run.bloodline)?.effect(m, c);
+  if (s.run.faction) for (const f of FACILITIES) if (f.factions.includes(s.run.faction)) m.global *= 1 + facilityBonus(s.perm.research[f.id] ?? 0);
   for (const id of s.run.upgrades) {
     const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
     const f = FACTION_UP_BY_ID[id]; if (f?.effect) { f.effect(m, c); continue; }
+    const h = HERITAGE_BY_ID[id]; if (h) { h.effect(m, c); continue; }
     if (id.startsWith('bu_')) {
       const [, bid, idx] = id.split('_');
       const b = BUILDING_BY_ID[bid], i = +idx;
@@ -63,13 +78,14 @@ function applyAll(s: SaveState, now: number, c: Ctx): Mods {
   return m;
 }
 
-export interface Snapshot { mods: Mods; ctx: Ctx; manaRegen: number; manaMax: number; gemFactor: Decimal; assistants: number }
+export interface Snapshot { mods: Mods; ctx: EndCtx; manaRegen: number; manaMax: number; gemFactor: Decimal; assistants: number }
 
 export function snapshot(s: SaveState, now: number): Snapshot {
   const c0 = baseCtx(s, now, BASE.manaRegen);
   const m0 = applyAll(s, now, c0);
   const manaRegen = (BASE.manaRegen + m0.manaRegenAdd) * m0.manaRegenMult;
-  const ctx = { ...c0, manaRegen, assistants: assistantCount(s, m0) };
+  const fc0 = Math.min(1, BASE.fcChance * m0.fcChance);
+  const ctx = { ...c0, manaRegen, assistants: assistantCount(s, m0), fcChance: fc0, manaMax: BASE.mana + m0.manaMaxAdd };
   const mods = applyAll(s, now, ctx);
   const gemFactor = s.gems.mul(BASE.gemBonus * mods.gemBonusMult).add(1);
   return { mods, ctx, manaRegen: (BASE.manaRegen + mods.manaRegenAdd) * mods.manaRegenMult, manaMax: BASE.mana + mods.manaMaxAdd, gemFactor, assistants: assistantCount(s, mods) };
@@ -194,7 +210,7 @@ export function buyAllBuildings(s: SaveState, limit = 1000): number {
 }
 
 // ---------------------------------------------------------------- upgrades
-export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction';
+export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline';
 export interface UpgradeView {
   id: string; kind: UpgradeKind; ko: string; desc: string; icon: string; cost: Decimal;
   fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean;
@@ -240,6 +256,17 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
         icon: 'b:' + b.id, cost: D(BU_COST[b.tier][i]), tier: i });
     });
   }
+  // heritages: unlocked by the faction's champion trophy, bought again each run with faction coins
+  for (const h of HERITAGES) {
+    if (!s.trophies.includes('champ_' + h.faction)) continue;
+    add({ id: 'her_' + h.faction, kind: 'heritage', ko: h.ko, desc: h.desc, icon: FACTION_BY_ID[h.faction].emblem, cost: D(0), fcCost: h.cost, color: FACTION_BY_ID[h.faction].color, tier: 3 });
+  }
+  // bloodlines: R7+, 100 faction upgrades bought in total; free; one per run
+  if (s.perm.reincarnations >= UNLOCKS.bloodline) for (const b of BLOODLINES) {
+    if ((s.perm.factionUpgrades[b.faction] ?? 0) < BLOODLINE_UPGRADES_NEEDED) continue;
+    if (s.run.bloodline && s.run.bloodline !== b.faction) continue;
+    add({ id: 'blood_' + b.faction, kind: 'bloodline', ko: b.ko, desc: b.desc, icon: FACTION_BY_ID[b.faction].emblem, cost: D(0), color: '#8a1a3a', tier: 3 });
+  }
   // general
   for (const g of GENERAL_UPGRADES) if (g.visible(s) || has(s, g.id)) add({ id: g.id, kind: 'general', ko: g.ko, desc: g.desc, icon: g.icon, cost: D(g.cost) });
   return out;
@@ -256,6 +283,8 @@ export function buyUpgrade(s: SaveState, id: string, now: number): boolean {
     s.run.faction = f;
     s.stats.allied[f] = (s.stats.allied[f] ?? 0) + 1;
   }
+  if (u.kind === 'faction') { const f = FACTION_UP_BY_ID[id].faction; s.perm.factionUpgrades[f] = (s.perm.factionUpgrades[f] ?? 0) + 1; }
+  if (u.kind === 'bloodline') s.run.bloodline = id.slice(6) as FactionId;
   s.run.upgrades.push(id);
   void now;
   return true;
@@ -264,7 +293,7 @@ export function buyUpgrade(s: SaveState, id: string, now: number): boolean {
 export function buyAllUpgrades(s: SaveState, now: number): number {
   let n = 0;
   for (;;) {
-    const next = allUpgrades(s).filter((u) => !u.purchased && u.affordable && u.kind !== 'alignment' && !(u.kind === 'faction' && u.id.endsWith('_g1')))
+    const next = allUpgrades(s).filter((u) => !u.purchased && u.affordable && u.kind !== 'alignment' && u.kind !== 'bloodline' && u.kind !== 'heritage' && !(u.kind === 'faction' && u.id.endsWith('_g1')))
       .sort((a, b) => (a.cost.lt(b.cost) ? -1 : 1))[0];
     if (!next || !buyUpgrade(s, next.id, now)) break;
     n++;
@@ -274,7 +303,14 @@ export function buyAllUpgrades(s: SaveState, now: number): number {
 
 // ---------------------------------------------------------------- spells
 export function availableSpells(s: SaveState): SpellDef[] {
-  return SPELLS.filter((sp) => (!sp.alignment && !sp.faction) || (sp.alignment && sp.alignment === s.run.alignment) || (sp.faction && sp.faction === s.run.faction));
+  // bloodlines of the spell-role factions also grant their alignment spell (as in the original)
+  const granted: Record<string, string> = { starmage: 'holy', witch: 'frenzy', puppet: 'grind' };
+  const extra = s.run.bloodline ? granted[s.run.bloodline] : undefined;
+  return SPELLS.filter((sp) => {
+    if (sp.minR && s.perm.reincarnations < sp.minR) return false;
+    if (sp.id === extra) return true;
+    return (!sp.alignment && !sp.faction) || (sp.alignment && sp.alignment === s.run.alignment) || (sp.faction && sp.faction === s.run.faction);
+  });
 }
 
 export function spellActive(s: SaveState, id: string, now: number) { return (s.run.activeSpells[id]?.end ?? 0) > now; }
@@ -324,7 +360,22 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
   // assistants gather faction coins passively
   s.run.fcFraction += snap.assistants * snap.mods.assistantsMult * fcChance(s, snap) * BASE.assistantShare * dt;
   if (s.run.fcFraction >= 1) { const n = Math.floor(s.run.fcFraction); s.run.fcFraction -= n; findCoins(s, n, rng); }
+  // bloodline auto-clicks (counted as clicks, like the original's Elven bloodline)
+  const auto = BLOODLINES.find((b) => b.faction === s.run.bloodline)?.autoclick ?? 0;
+  if (auto) {
+    s.run.autoclickFraction += auto * dt;
+    const n = Math.floor(s.run.autoclickFraction);
+    if (n > 0) {
+      s.run.autoclickFraction -= n;
+      const v = clickReward(s, snap).mul(n);
+      earn(s, v); s.run.coinsByClick = s.run.coinsByClick.add(v);
+      s.run.clicks += n; s.stats.clicks += n;
+      let found = 0; const p = fcChance(s, snap); for (let i = 0; i < Math.min(n, 50); i++) if (rng() < p) found++;
+      findCoins(s, found, rng);
+    }
+  }
   for (const [id, a] of Object.entries(s.run.activeSpells)) if (a.end <= now) delete s.run.activeSpells[id];
+  s.perm.maxOwned = Math.max(s.perm.maxOwned, snap.ctx.ownedTotal);
   s.stats.playSeconds += dt;
   return gained;
 }
@@ -375,4 +426,86 @@ export function checkTrophies(s: SaveState): TrophyDef[] {
   const got: TrophyDef[] = [];
   for (const t of TROPHIES) if (!s.trophies.includes(t.id) && t.check(s, x)) { s.trophies.push(t.id); got.push(t); }
   return got;
+}
+
+// ---------------------------------------------------------------- reincarnation
+export function reincarnationCost(s: SaveState): Decimal { return D(REINCARNATION_BASE).mul(D(1000).pow(s.perm.reincarnations)); }
+export function canReincarnate(s: SaveState) { return s.gems.gte(reincarnationCost(s)); }
+/** Resets gems, the run, excavations and most stats. Keeps trophies, challenges, artifacts, rubies, research, allied stats. */
+export function reincarnate(s: SaveState, now: number): boolean {
+  if (!canReincarnate(s)) return false;
+  s.perm.reincarnations++;
+  s.gems = D(0);
+  s.run = newRun(now);
+  s.perm.excavations = 0;
+  s.stats = { ...s.stats, clicks: 0, spells: 0, abdications: 0, totalCoins: D(0), bestRun: D(0) };
+  s.lastSeen = now;
+  return true;
+}
+
+// ---------------------------------------------------------------- excavation
+export function canBuyArchaeology(s: SaveState) { return !s.perm.archaeology && s.gems.gte(ARCHAEOLOGY.gems) && s.run.coins.gte(ARCHAEOLOGY.cost); }
+export function buyArchaeology(s: SaveState) {
+  if (!canBuyArchaeology(s)) return false;
+  s.run.coins = s.run.coins.sub(ARCHAEOLOGY.cost); s.perm.archaeology = true; return true;
+}
+export function nextExcavationCost(s: SaveState, n = 1): Decimal {
+  let t = D(0); for (let i = 0; i < n; i++) t = t.add(excavationCost(s.perm.excavations + i)); return t;
+}
+export interface DigResult { coins: number; rubies: number; artifacts: ArtifactDef[] }
+export function excavate(s: SaveState, n: number, rng: () => number = Math.random): DigResult | null {
+  if (!s.perm.archaeology) return null;
+  const cost = nextExcavationCost(s, n);
+  if (s.run.coins.lt(cost)) return null;
+  s.run.coins = s.run.coins.sub(cost);
+  const res: DigResult = { coins: 0, rubies: 0, artifacts: [] };
+  for (let i = 0; i < n; i++) {
+    const x = s.perm.excavations;
+    if (rng() < EXCAVATION_FC_CHANCE) { const c = excavationCoins(x); res.coins += c; findCoins(s, c, rng); }
+    s.perm.excavations++;
+    while (s.perm.excavations >= rubyAt(s.perm.rubiesFound + 1)) { s.perm.rubiesFound++; s.perm.rubies++; res.rubies++; }
+    for (const a of ARTIFACTS) {
+      if (s.perm.artifacts.includes(a.id)) continue;
+      if ((a.at && s.perm.excavations >= a.at) || (a.chance && s.perm.excavations > 100 && rng() < a.chance)) { s.perm.artifacts.push(a.id); res.artifacts.push(a); }
+    }
+  }
+  return res;
+}
+/** Spend rubies to reset the excavation counter (cost 1 ruby per 3000 excavations, as in the original). */
+export function resetExcavations(s: SaveState): boolean {
+  const cost = 1 + Math.floor(s.perm.excavations / 3000);
+  if (s.perm.rubies < cost || s.perm.excavations === 0) return false;
+  s.perm.rubies -= cost; s.perm.excavations = 0; return true;
+}
+
+// ---------------------------------------------------------------- challenges
+export function challengeAvailable(s: SaveState, ch: ChallengeDef) {
+  if (s.perm.reincarnations < Math.max(ch.minR, UNLOCKS.challenges)) return false;
+  return CHALLENGES.filter((x) => x.faction === ch.faction && x.tier < ch.tier).every((x) => s.perm.challenges.includes(x.id));
+}
+export function checkChallenges(s: SaveState, now: number): ChallengeDef[] {
+  if (s.perm.reincarnations < UNLOCKS.challenges || !s.run.faction) return [];
+  const snap = snapshot(s, now);
+  const view = { faction: s.run.faction, runSeconds: snap.ctx.runSeconds, coinsRun: s.run.coinsRun.toNumber(), clicksRun: s.run.clicks, spellsRun: s.run.spells,
+    owned: s.run.buildings, ownedTotal: snap.ctx.ownedTotal, upgradesRun: s.run.upgrades.length, assistants: snap.assistants, fcFoundRun: s.run.fcFound, exchangesRun: totalExchanges(s) };
+  const done: ChallengeDef[] = [];
+  for (const ch of CHALLENGES) {
+    if (ch.faction !== s.run.faction || s.perm.challenges.includes(ch.id) || !challengeAvailable(s, ch)) continue;
+    if (ch.check(view)) { s.perm.challenges.push(ch.id); done.push(ch); }
+  }
+  return done;
+}
+
+// ---------------------------------------------------------------- research
+export function researchPoints(s: SaveState) {
+  const total = researchPointsFor(s.perm.reincarnations);
+  const used = Object.values(s.perm.research).reduce((a, b) => a + b, 0);
+  return { total, used, free: total - used };
+}
+export function assignResearch(s: SaveState, facility: string, delta: 1 | -1): boolean {
+  if (!FACILITIES.some((f) => f.id === facility)) return false;
+  const cur = s.perm.research[facility] ?? 0;
+  if (delta > 0 && researchPoints(s).free < 1) return false;
+  if (delta < 0 && cur < 1) return false;
+  s.perm.research[facility] = cur + delta; return true;
 }

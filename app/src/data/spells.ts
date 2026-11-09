@@ -5,7 +5,7 @@ import { type Ctx, type Mods, ln, lowTiers } from '../engine/mods';
 export interface ActiveSpell { start: number; end: number; target?: string }
 export interface SpellDef {
   id: string; ko: string; icon: string; mana: number; duration: number;
-  alignment?: Alignment; faction?: FactionId;
+  alignment?: Alignment; faction?: FactionId; minR?: number;
   desc: string;
   effect?: (m: Mods, c: Ctx, a: ActiveSpell, now: number) => void;
 }
@@ -14,6 +14,8 @@ export const SPELLS: SpellDef[] = [
   { id: 'tax', ko: '인세 정산', icon: 'coin', mana: 200, duration: 0, desc: '건물과 견습생 생산 30초 분량을 즉시 얻어요.' },
   { id: 'call', ko: '총동원령', icon: 'hammer', mana: 400, duration: 20, desc: '20초 동안 보유 건물 수에 비례해 건물 생산 증가.',
     effect: (m, c) => { m.global *= 1 + 0.003 * c.ownedTotal ** 0.975; } },
+  { id: 'surge', ko: '영혼의 물결', icon: 'star', mana: 2500, duration: 20, minR: 14, desc: '20초 동안 환생 횟수에 따라 건물 생산이 크게 증가 (R14부터).',
+    effect: (m, c) => { m.global *= 1 + (10000 * 1.05 ** ((c as unknown as { reincarnations?: number }).reincarnations ?? 0)) / 100; } },
   { id: 'holy', ko: '낭독의 빛', icon: 'book', mana: 900, duration: 10, alignment: 'bright', desc: '10초 동안 두드리기 보상 +2,500%.',
     effect: (m) => { m.click *= 26; } },
   { id: 'frenzy', ko: '피의 축제', icon: 'moon', mana: 600, duration: 20, alignment: 'dark', desc: '20초 동안 어두운 이야기 건물 생산 +1,000%.',
