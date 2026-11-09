@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "app/src/data/spells.ts": {
-    "mtime": 1794140878.664636,
-    "seen": 1794141698.9554338,
-    "ast_hash": "8f9e79ff63ab11a00da105d266801505",
+    "mtime": 1794187647.0986917,
+    "seen": 1794187906.8393776,
+    "ast_hash": "e5fde8976b10504e658023d38b722a14",
     "semantic_hash": ""
   },
   "app/src/data/types.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794141052.5533314,
-    "seen": 1794141698.955438,
-    "ast_hash": "8657e04ae4fc6e7fad0789f729c8a4c0",
+    "mtime": 1794187703.5187047,
+    "seen": 1794187906.839381,
+    "ast_hash": "7d6848ebbac95b22fc4140fcdcfa956b",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
@@ -456,15 +456,15 @@
     "semantic_hash": ""
   },
   "app/src/engine/state.ts": {
-    "mtime": 1794140926.2766387,
-    "seen": 1794141698.9554405,
-    "ast_hash": "fbbc432b36d148c14530490661627c06",
+    "mtime": 1794187639.7353902,
+    "seen": 1794187906.8393836,
+    "ast_hash": "4ccbbbe3bb8d8cb989ceedca8a59337a",
     "semantic_hash": ""
   },
   "app/src/main.ts": {
-    "mtime": 1794142627.2162993,
-    "seen": 1794142957.0300558,
-    "ast_hash": "79af2fdd7607c5f409933209f397a9e3",
+    "mtime": 1794187778.4163594,
+    "seen": 1794187906.8393853,
+    "ast_hash": "57167e7a3e4128ed3d1f26b68afdcc36",
     "semantic_hash": ""
   },
   "app/tests/engine.test.ts": {
@@ -498,8 +498,8 @@
     "semantic_hash": ""
   },
   "app/android/app/capacitor.build.gradle": {
-    "mtime": 1794142854.515541,
-    "seen": 1794142957.0300143,
+    "mtime": 1794187871.4464486,
+    "seen": 1794187906.8393505,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -528,8 +528,8 @@
     "semantic_hash": ""
   },
   "app/android/capacitor.settings.gradle": {
-    "mtime": 1794142854.515541,
-    "seen": 1794142957.0300226,
+    "mtime": 1794187871.4464486,
+    "seen": 1794187906.839357,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -741,6 +741,18 @@
     "mtime": 1794142845.7418094,
     "seen": 1794142957.0301304,
     "ast_hash": "20c18d4b8bbaa3690cfe8328fe8d9db0",
+    "semantic_hash": ""
+  },
+  "app/src/data/endgame.ts": {
+    "mtime": 1794187610.1357439,
+    "seen": 1794187906.839374,
+    "ast_hash": "67642bde7894076cd89a0e62b24e284b",
+    "semantic_hash": ""
+  },
+  "app/tests/endgame.test.ts": {
+    "mtime": 1794187726.8216977,
+    "seen": 1794187906.8393862,
+    "ast_hash": "16fcc5cdb3286576b622a177524e1f27",
     "semantic_hash": ""
   },
   "app/package-lock.json": {
