@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-09)
 
 ## Corpus Check
-- 87 files · ~79,254 words
+- 87 files · ~79,620 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 29 file(s) not represented in the graph (top: .xml 10, (none) 6, .woff2 3)
 
 ## Summary
-- 944 nodes · 1921 edges · 63 communities (47 shown, 16 thin omitted)
+- 952 nodes · 1934 edges · 64 communities (48 shown, 16 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 100 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4169c8d1`
+- Built from commit: `edf28d21`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -62,14 +62,15 @@
 - factions.ts
 - data/buildings.ts
 - allUpgrades
-- content.ts
-- D
 - endgame.ts
+- general.ts
+- FactionId
 - state.ts
 - spells.ts
 - trophyups.ts
 - API (엔진 액션)
 - 밸런스 점검 1차 (2026-11-09)
+- snapshot
 - allUpgrades
 
 ## God Nodes (most connected - your core abstractions)
@@ -82,24 +83,24 @@
 7. `hex()` - 16 edges
 8. `noise()` - 16 edges
 9. `D()` - 15 edges
-10. `framedIcon()` - 15 edges
+10. `snapshot()` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `API (엔진 액션)` --references--> `reincarnate()`  [INFERRED]
-  replica/architecture.md → app/src/engine/engine.ts
+- `조정 손잡이 (관리자 패널 '기본 수치'에서 바로 바꿀 수 있음)` --references--> `fcChance()`  [INFERRED]
+  replica/balance.md → app/src/engine/engine.ts
 - `API (엔진 액션)` --references--> `buyAllBuildings()`  [INFERRED]
-  replica/architecture.md → app/src/engine/engine.ts
-- `API (엔진 액션)` --references--> `royalExchange()`  [INFERRED]
   replica/architecture.md → app/src/engine/engine.ts
 - `API (엔진 액션)` --references--> `buyAllUpgrades()`  [INFERRED]
   replica/architecture.md → app/src/engine/engine.ts
-- `조정 손잡이 (관리자 패널 '기본 수치'에서 바로 바꿀 수 있음)` --references--> `costGrowth()`  [INFERRED]
-  replica/balance.md → app/src/engine/engine.ts
+- `API (엔진 액션)` --references--> `royalExchange()`  [INFERRED]
+  replica/architecture.md → app/src/engine/engine.ts
+- `API (엔진 액션)` --references--> `checkTrophies()`  [INFERRED]
+  replica/architecture.md → app/src/engine/engine.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (63 total, 16 thin omitted)
+## Communities (64 total, 16 thin omitted)
 
 ### Community 0 - "engine.js"
 Cohesion: 0.10
@@ -115,7 +116,7 @@ Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep()
 
 ### Community 3 - "map.ts"
 Cohesion: 0.06
-Nodes (62): BUILDING_ART, buildingSprite(), cache, Maker, thumbs, DOOR, Extra, IsoCanvas (+54 more)
+Nodes (63): BUILDING_ART, buildingSprite(), buildingThumb(), cache, Maker, thumbs, DOOR, Extra (+55 more)
 
 ### Community 4 - "ui.js"
 Cohesion: 0.26
@@ -123,7 +124,7 @@ Nodes (12): buildBuildingRows(), load(), loop(), render(), renderBuildings(), re
 
 ### Community 5 - "engine.ts"
 Cohesion: 0.07
-Nodes (37): ArtifactDef, researchPointsFor(), rubyUpgradeCost(), AddFn, ALIGN_UP_BY_ID, ARTIFACT_BY_ID, assignResearch(), buyArchaeology() (+29 more)
+Nodes (35): ArtifactDef, researchPointsFor(), researchSlots(), rubyUpgradeCost(), AddFn, ALIGN_UP_BY_ID, ARTIFACT_BY_ID, assignResearch() (+27 more)
 
 ### Community 6 - "replica-recon"
 Cohesion: 0.15
@@ -194,8 +195,8 @@ Cohesion: 0.33
 Nodes (5): 다음 단계 (출시까지), 실행, 테일즈토피아 타이쿤 (Talestopia Tycoon), 파일 구성, 핵심 시스템
 
 ### Community 29 - "castSpell"
-Cohesion: 0.18
-Nodes (21): activeLineage(), applyAll(), autocast(), availableSpells(), castSpell(), click(), coinPool(), costGrowth() (+13 more)
+Cohesion: 0.15
+Nodes (27): activeLineage(), applyAll(), applyOffline(), assistantsCps(), autocast(), availableSpells(), buildingMult(), buildingProd() (+19 more)
 
 ### Community 30 - "save-schema.ts"
 Cohesion: 0.29
@@ -207,7 +208,7 @@ Nodes (34): config, dependencies, break_infinity.js@^2.2.0, @capacitor/android@^
 
 ### Community 32 - "main.ts"
 Cohesion: 0.07
-Nodes (69): buildingThumb(), levelFor(), cache, PALETTE, SPRITES, spriteURL(), facilityBonus(), researchSlots() (+61 more)
+Nodes (66): levelFor(), cache, PALETTE, SPRITES, spriteURL(), facilityBonus(), ATTRS, setCurrencyTier() (+58 more)
 
 ### Community 33 - "compilerOptions"
 Cohesion: 0.17
@@ -230,8 +231,8 @@ Cohesion: 0.22
 Nodes (4): { chromium }, fs, path, RES
 
 ### Community 40 - "visibleBuildings"
-Cohesion: 0.33
-Nodes (9): buildingsFor(), buildingCost(), buildingGrowth(), buyAllBuildings(), buyBuilding(), canSeeBuilding(), costMult(), maxAffordable() (+1 more)
+Cohesion: 0.25
+Nodes (11): buildingsFor(), buildingCost(), buildingGrowth(), buyAllBuildings(), buyBuilding(), canSeeBuilding(), costGrowth(), costMult() (+3 more)
 
 ### Community 41 - "Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임)"
 Cohesion: 0.29
@@ -242,48 +243,52 @@ Cohesion: 0.40
 Nodes (4): Talestopia Tycoon (app), 개발, 관리자 패널 (용어·설명·수치 편집), 안드로이드
 
 ### Community 51 - "factions.ts"
-Cohesion: 0.10
-Nodes (17): HeritageDef, AlignmentDef, ALIGNMENTS, FACTION_COSTS, FACTION_UPGRADES, FactionDef, FactionKind, FactionUpgrade (+9 more)
+Cohesion: 0.12
+Nodes (12): ALIGNMENTS, FACTION_BY_ID, FACTION_COSTS, FACTION_UPGRADES, FactionKind, GATE, GATE_FC, LOW (+4 more)
 
 ### Community 52 - "data/buildings.ts"
 Cohesion: 0.12
-Nodes (14): ALIGN_UPGRADES, AlignUpgrade, BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY (+6 more)
+Nodes (15): ALIGN_UPGRADES, AlignUpgrade, BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY (+7 more)
 
 ### Community 53 - "allUpgrades"
-Cohesion: 0.21
-Nodes (12): buyMercPick(), buyMercSpell(), canAutocast(), has(), mercCandidates(), mercFactions(), mercSlotFC(), mercSpellCandidates() (+4 more)
+Cohesion: 0.24
+Nodes (11): buyMercPick(), buyMercSpell(), has(), mercCandidates(), mercFactions(), mercSlotFC(), mercSpellCandidates(), mercUpgrades() (+3 more)
 
-### Community 54 - "content.ts"
-Cohesion: 0.10
-Nodes (16): BASE_LABELS, Field, FieldType, ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES (+8 more)
+### Community 54 - "endgame.ts"
+Cohesion: 0.06
+Nodes (34): BASE_LABELS, Field, FieldType, ARCHAEOLOGY, ARTIFACT_TOTAL_BONUS, ARTIFACTS, ASCENSION, BLOODLINE_UPGRADES_NEEDED (+26 more)
 
-### Community 55 - "D"
-Cohesion: 0.43
-Nodes (8): applyOffline(), assistantsCps(), buildingMult(), buildingProd(), buildingsCps(), clickReward(), D(), totalCps()
+### Community 55 - "general.ts"
+Cohesion: 0.13
+Nodes (10): SPELL_TIERS, FILL, GENERAL_UPGRADES, NAMES, ORN, SUF, TROPHIES, UNION (+2 more)
 
-### Community 56 - "endgame.ts"
-Cohesion: 0.08
-Nodes (28): ARCHAEOLOGY, ARTIFACT_TOTAL_BONUS, BLOODLINE_UPGRADES_NEEDED, BloodlineDef, ChallengeDef, ChallengeView, Eff, EXCAVATION_FC_CHANCE (+20 more)
+### Community 56 - "FactionId"
+Cohesion: 0.18
+Nodes (13): BloodlineDef, ChallengeDef, ChallengeView, FacilityDef, HeritageDef, LexDef, UniqueDef, FactionDef (+5 more)
 
 ### Community 57 - "state.ts"
-Cohesion: 0.08
-Nodes (36): botStep(), days, events, lastGain, log(), milestones, pickAlignment(), pickFaction() (+28 more)
+Cohesion: 0.09
+Nodes (37): botStep(), days, events, lastGain, log(), milestones, pickAlignment(), pickFaction() (+29 more)
 
 ### Community 58 - "spells.ts"
-Cohesion: 0.21
-Nodes (13): BuildingDef, EndCtx, excavationCoins(), ActiveSpell, SpellDef, Alignment, COIN_TYPES, VANILLA_COINS (+5 more)
+Cohesion: 0.27
+Nodes (10): EndCtx, AlignmentDef, SpellDef, SPELLS, Alignment, VANILLA_COINS, Snapshot, Ctx (+2 more)
 
 ### Community 59 - "trophyups.ts"
-Cohesion: 0.11
-Nodes (21): SPELL_TIERS, FACTIONS, GENERAL_UPGRADES, GeneralUpgrade, SUF, TROPHIES, TrophyDef, SPELL_BY_ID (+13 more)
+Cohesion: 0.12
+Nodes (18): LineageDef, UnionDef, FACTIONS, GeneralUpgrade, TrophyDef, ActiveSpell, AUTOCAST_UPGRADES, GEM_UPGRADES (+10 more)
 
 ### Community 60 - "API (엔진 액션)"
-Cohesion: 0.17
-Nodes (13): excavationCost(), rubyAt(), abdicate(), assistantCount(), baseCtx(), checkTrophies(), excavate(), gemDivisor() (+5 more)
+Cohesion: 0.20
+Nodes (10): excavationCoins(), excavationCost(), rubyAt(), abdicate(), excavate(), gemDivisor(), gemsFor(), gemsOnAbdicate() (+2 more)
 
 ### Community 61 - "밸런스 점검 1차 (2026-11-09)"
 Cohesion: 0.20
 Nodes (9): 28일·8일 결과 (활동형), 남은 병목 (다음 조정 대상), 다음 후보 (원작 자료 확인 필요), 바꾼 것, 밸런스 점검 1차 (2026-11-09), 밸런스 점검 2차 (2026-11-09) — "원작에 가깝게", 원인 (구조), 이번에 찾아서 고친 것 (+1 more)
+
+### Community 62 - "snapshot"
+Cohesion: 0.31
+Nodes (9): assistantCount(), baseCtx(), challengeAvailable(), checkChallenges(), checkTrophies(), ownedTotal(), shiftValues(), snapshot() (+1 more)
 
 ### Community 63 - "allUpgrades"
 Cohesion: 0.25

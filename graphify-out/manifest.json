@@ -414,21 +414,21 @@
     "semantic_hash": ""
   },
   "app/src/data/factions.ts": {
-    "mtime": 1794208366.5979464,
-    "seen": 1794208421.2073505,
-    "ast_hash": "39eaed844376cec9beb692be40a8df5c",
+    "mtime": 1794222061.0204172,
+    "seen": 1794222112.7951066,
+    "ast_hash": "bc581e4799eb39b7707801794ad08c7c",
     "semantic_hash": ""
   },
   "app/src/data/general.ts": {
-    "mtime": 1794201193.1631544,
-    "seen": 1794201213.1019716,
-    "ast_hash": "ad2b4d0d308ec13359100449d64ec177",
+    "mtime": 1794221915.4427662,
+    "seen": 1794222112.795108,
+    "ast_hash": "76c9f9f73c96b13a99c897475a984e5f",
     "semantic_hash": ""
   },
   "app/src/data/spells.ts": {
-    "mtime": 1794198424.680993,
-    "seen": 1794198525.4680333,
-    "ast_hash": "b275a681513936586ef37975b709fe64",
+    "mtime": 1794221915.4436722,
+    "seen": 1794222112.795111,
+    "ast_hash": "5b6066e93645a6883b670bbaad569466",
     "semantic_hash": ""
   },
   "app/src/data/types.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794208366.5976033,
-    "seen": 1794208421.207359,
-    "ast_hash": "f51b1defd0350d82e976644e5579a613",
+    "mtime": 1794221963.6320827,
+    "seen": 1794222112.7951183,
+    "ast_hash": "927c2bd5d254cefb651f8a0269b96cc4",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
@@ -786,9 +786,9 @@
     "semantic_hash": ""
   },
   "app/src/data/trophyups.ts": {
-    "mtime": 1794198242.935581,
-    "seen": 1794198525.4680352,
-    "ast_hash": "148413a67d2ec3f0f0c9eb9281a32dd8",
+    "mtime": 1794221936.6478326,
+    "seen": 1794222112.795114,
+    "ast_hash": "2a1ab2f08cc1e2aa1d5f4423c3500682",
     "semantic_hash": ""
   },
   "app/tests/trophyups.test.ts": {
@@ -798,9 +798,9 @@
     "semantic_hash": ""
   },
   "app/scripts/sim.ts": {
-    "mtime": 1794203603.5534322,
-    "seen": 1794203616.9725468,
-    "ast_hash": "e95e103e974d55030245e122d0b82615",
+    "mtime": 1794222073.1644962,
+    "seen": 1794222112.795082,
+    "ast_hash": "cbb778986866ca580001edc959caada0",
     "semantic_hash": ""
   },
   "replica/balance.md": {
