@@ -414,21 +414,21 @@
     "semantic_hash": ""
   },
   "app/src/data/factions.ts": {
-    "mtime": 1794195937.6451652,
-    "seen": 1794196241.9129179,
-    "ast_hash": "59e5278f1cc4850d7d076ebbe12f6a36",
+    "mtime": 1794197027.4081736,
+    "seen": 1794197383.092773,
+    "ast_hash": "8f02651b65fffcb79b189fb37c4c920a",
     "semantic_hash": ""
   },
   "app/src/data/general.ts": {
-    "mtime": 1794196006.7640593,
-    "seen": 1794196241.9129186,
-    "ast_hash": "5a753b4a4fceb3d0c8088c2d64a6843f",
+    "mtime": 1794197027.4087627,
+    "seen": 1794197383.0927737,
+    "ast_hash": "fd456360c6c779e3eeba21778e671451",
     "semantic_hash": ""
   },
   "app/src/data/spells.ts": {
-    "mtime": 1794195937.6454797,
-    "seen": 1794196241.9129202,
-    "ast_hash": "d2edc9926996c6a63e8c943ffeaf61cb",
+    "mtime": 1794197027.4084725,
+    "seen": 1794197383.0927756,
+    "ast_hash": "2b9efd406884c4aec9382b146a6fce41",
     "semantic_hash": ""
   },
   "app/src/data/types.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794196054.0371563,
-    "seen": 1794196241.9129248,
-    "ast_hash": "85b8640544eb462514a2fd610b404e60",
+    "mtime": 1794197275.0721893,
+    "seen": 1794197383.09278,
+    "ast_hash": "55fec36241bd6c1a66631358a264e782",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
@@ -456,15 +456,15 @@
     "semantic_hash": ""
   },
   "app/src/engine/state.ts": {
-    "mtime": 1794195937.6456602,
-    "seen": 1794196241.9129274,
-    "ast_hash": "a3a10d80eaeb3d423fee501f747cdc4e",
+    "mtime": 1794197228.9930658,
+    "seen": 1794197383.0927825,
+    "ast_hash": "5b8c89adcb65c737fdfcd9c5f98e2d9a",
     "semantic_hash": ""
   },
   "app/src/main.ts": {
-    "mtime": 1794196152.5539675,
-    "seen": 1794196241.9129298,
-    "ast_hash": "4cb8035fd5927bff6e01ac0deba8b7ff",
+    "mtime": 1794197296.8920417,
+    "seen": 1794197383.0927844,
+    "ast_hash": "1b6b9086480469c179c597b2e70987a7",
     "semantic_hash": ""
   },
   "app/tests/engine.test.ts": {
@@ -498,8 +498,8 @@
     "semantic_hash": ""
   },
   "app/android/app/capacitor.build.gradle": {
-    "mtime": 1794196203.3756053,
-    "seen": 1794196241.912879,
+    "mtime": 1794197369.2906735,
+    "seen": 1794197383.0927436,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -528,8 +528,8 @@
     "semantic_hash": ""
   },
   "app/android/capacitor.settings.gradle": {
-    "mtime": 1794196203.3756053,
-    "seen": 1794196241.9128888,
+    "mtime": 1794197369.2906735,
+    "seen": 1794197383.0927496,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -744,27 +744,27 @@
     "semantic_hash": ""
   },
   "app/src/data/endgame.ts": {
-    "mtime": 1794187610.1357439,
-    "seen": 1794187906.839374,
-    "ast_hash": "67642bde7894076cd89a0e62b24e284b",
+    "mtime": 1794197275.0718575,
+    "seen": 1794197383.0927715,
+    "ast_hash": "98f84a4e3daa0353866431b56d9881e2",
     "semantic_hash": ""
   },
   "app/tests/endgame.test.ts": {
-    "mtime": 1794196006.7640593,
-    "seen": 1794196241.9129307,
-    "ast_hash": "f105d72d0bb03e664a6253ae20d81933",
+    "mtime": 1794197304.1115475,
+    "seen": 1794197383.0927851,
+    "ast_hash": "3656c84d268da061b89b1ac676b93aa3",
     "semantic_hash": ""
   },
   "app/src/admin.ts": {
-    "mtime": 1794196201.8890433,
-    "seen": 1794196241.9129012,
-    "ast_hash": "b91fe9d0dec6fd86791143371d2bae64",
+    "mtime": 1794197059.263302,
+    "seen": 1794197383.09276,
+    "ast_hash": "9309b81f997b013f1320b1382f4efe33",
     "semantic_hash": ""
   },
   "app/src/data/content.ts": {
-    "mtime": 1794196083.6656253,
-    "seen": 1794196241.912915,
-    "ast_hash": "f2e34951451c14b13af8da5853755cb3",
+    "mtime": 1794197296.8928158,
+    "seen": 1794197383.09277,
+    "ast_hash": "0e0157a033e8ac430d6ff1f7d6a44cdb",
     "semantic_hash": ""
   },
   "app/src/data/overrides.json": {
@@ -774,9 +774,9 @@
     "semantic_hash": ""
   },
   "app/src/data/terms.ts": {
-    "mtime": 1794196064.2896247,
-    "seen": 1794196241.9129212,
-    "ast_hash": "112d484582712b33358dfc6de79a61f9",
+    "mtime": 1794197140.4115415,
+    "seen": 1794197383.092777,
+    "ast_hash": "eecb9af68e99150bfd12ff47afb5e536",
     "semantic_hash": ""
   },
   "app/admin.html": {
