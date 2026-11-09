@@ -25,16 +25,14 @@ const seen = new Set<string>();
 const lastGain: Decimal[] = [];
 const log = (key: string, text: string) => { if (seen.has(key)) return; seen.add(key); events.push(`${fmtTime(now / 1000).padStart(12)}  ${text}`); };
 
-// faction choice by gems (inspired by the original's community progression guide)
-function pickFaction(): FactionId[] {
-  const g = s.gems.toNumber();
-  if (profile === 'idle') return g >= 1e9 && s.run.alignment === 'legend' ? ['puppet'] : ['ghost', 'thieves'];
-  if (g < 1e6) return ['minstrel', 'woodland'];
-  return ['woodland', 'starmage', 'minstrel'];
-}
+// faction choice by gems, following the original's community progression guide (Elf first, neutral after 1B gems)
 function pickAlignment() {
-  if (s.gems.gte(1e9) && profile === 'idle') return 'legend';
+  if (s.gems.gte(1e9)) return 'legend';
   return profile === 'idle' ? 'dark' : 'bright';
+}
+function pickFaction(): FactionId[] {
+  if (s.run.alignment === 'legend') return profile === 'idle' ? ['puppet', 'sage'] : ['pirate', 'sage'];
+  return profile === 'idle' ? ['thieves', 'ghost'] : ['minstrel', 'starmage'];
 }
 
 function botStep() {
