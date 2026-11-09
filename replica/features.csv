@@ -30,16 +30,16 @@ feature,area,priority,original,clone,notes
 혈통(계보) 선택,reset,should,yes,yes,"R7+, 진영 개선 100개 누적"
 유산 (진영 챔피언 업적 → 영구 개선),reset,should,yes,yes,9종
 중립 진영 3종 (선·악 진영과 짝),factions,should,yes,yes,
-도전 과제,meta,should,yes,partial,"40개 (원작 46개): 기본 진영 3단계, 중립 4단계, 프리스티지"
-연구 (R16 해금),endgame,should,yes,yes,"포인트 R(R+1)/2, 시설 6곳 350·x^0.75%, 연구 개선 36개·칸 4~6 (원작은 포인트를 금화·조각으로 구매)"
-발굴과 유물,endgame,should,yes,yes,"유물 50종 (원작 106종), 유물 1개당 전체 생산 +2% (GUESS)"
+도전 과제,meta,should,yes,yes,46개 (원작과 같은 수): 기본 3단계·중립 4단계·프리스티지
+연구 (R16 해금),endgame,should,yes,yes,"포인트 R(R+1)/2를 금화 1e126·1.5^x + 조각 (x+1)^3으로 구매 (원작 공식), 연구 개선 36개·칸"
+발굴과 유물,endgame,should,yes,yes,"유물 106종 (원작과 같은 수), 1개당 생산 +2% (GUESS)"
 큰 수 처리 (1e308 이상),core,should,yes,yes,
 숫자 표기 옵션,meta,should,yes,yes,
 효과음·배경음,audio,should,yes,no,우리가 새로 만듦
 프리스티지 진영 3종,factions,could,yes,yes,시계장인·그림자 극단·불사조(R46). 관문·가격은 원작 수치
 용병 진영 (다른 진영 조합),factions,could,yes,yes,"R3, 첫 계약 50Spd, 마법 계약 + 단계별 4칸 선택"
 승천,reset,could,yes,yes,"A1~A4: R39/99/159/219, 화폐 교체, 금화 개선 무료, 배율^0.1, 건물 1.03, 발굴 1e27^0.75·1.04^x"
-2차 성향 (정석/반전),factions,could,yes,no,
+2차 성향 (정석/반전),factions,could,yes,yes,"레게스 3종 (정석·반전·균형), 승천 2·R100, 주문 3종, 두 번째 고유 건물"
 루비(프리미엄 화폐)와 상점,monetization,could,yes,no,상품 구성은 새로 설계
 광고 보상,monetization,could,no,no,원작에 없는 우리 추가 기능 후보
 클라우드 저장,meta,could,yes,no,
@@ -48,3 +48,5 @@ Kongregate 계정·랭킹·이벤트,platform,skip,yes,skip,원작 플랫폼 소
 원작 이름·캐릭터·그림·문구,brand,skip,yes,skip,저작권 — 우리 것으로 대체
 원작 결제 상품 구성 그대로,monetization,skip,yes,skip,기능만 만들고 상품은 새로
 관리자 패널 (용어·설명·수치 편집),tooling,should,no,yes,"용어 {토큰}으로 전체 반영, 사용처 표시, 일괄 바꾸기, 승천·연구 개선 편집"
+진영 고유 건물,buildings,should,yes,yes,"R16/22/28/46/75, 22종(레게스 포함), 생산 x10 (GUESS)"
+지도 위 건물 이름표,ui,should,no,yes,"사용자 요청, 설정에서 끄기 가능"

@@ -216,13 +216,17 @@ function drawDeco(r: Raster, i: number, j: number, t: Tile) {
 let grid: Tile[][] | null = null;
 
 /** Draws the realm with the currently owned buildings (id, tier, count). */
-export function renderMap(owned: { id: string; tier: number; count: number }[]): HTMLCanvasElement {
+/** Where each drawn building's name label goes (map pixels, top-centre of the sprite). Filled by renderMap. */
+export const lastLabels: { id: string; x: number; y: number }[] = [];
+
+export function renderMap(owned: { id: string; tier: number; count: number; unique?: boolean }[]): HTMLCanvasElement {
+  lastLabels.length = 0;
   grid ??= buildGrid();
   const g = grid;
   const r = new Raster(MAP_W, MAP_H);
   drawLibrary(r);
   drawBook(r);
-  const byPlot = new Map<string, { id: string; count: number }>();
+  const byPlot = new Map<string, { id: string; count: number; unique?: boolean }>();
   for (const o of owned) if (o.count > 0) { const p = PLOTS[o.tier]; if (p) byPlot.set(p[0] + ',' + p[1], o); }
   const cells: [number, number][] = [];
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) cells.push([i, j]);
@@ -251,6 +255,11 @@ export function renderMap(owned: { id: string; tier: number; count: number }[]):
       const [cx, cy] = center(i, j, t.h);
       for (let x = -13; x <= 13; x++) for (let y = -5; y <= 5; y++) if (x * x / 169 + y * y / 25 <= 1) r.set(cx + x + 3, cy + y + 2, [40, 60, 30], 70);
       r.draw(spr.r, cx - spr.ax, cy - spr.ay + 2);
+      lastLabels.push({ id: b.id, x: cx, y: cy - spr.ay - 1 });
+      if (b.unique) for (let k = 0; k < 14; k++) {   // unique building: ring of golden motes
+        const a = (k / 14) * Math.PI * 2, x = Math.round(cx + Math.cos(a) * (spr.r.w / 2 + 3)), y = Math.round(cy - spr.ay / 2 + Math.sin(a) * (spr.ay / 2 + 3));
+        r.set(x, y, hex('#fff2a0')); if (k % 2 === 0) { r.set(x + 1, y, hex('#ffd860'), 160); r.set(x, y - 1, hex('#ffd860'), 160); }
+      }
     } else if (t.deco) drawDeco(r, i, j, t);
   }
   return r.toCanvas();

@@ -5,7 +5,7 @@ import { type Ctx, type Mods, ln, lowTiers } from '../engine/mods';
 export interface ActiveSpell { start: number; end: number; target?: string; n?: number }
 export interface SpellDef {
   id: string; ko: string; icon: string; mana: number; duration: number;
-  alignment?: Alignment; faction?: FactionId; minR?: number;
+  alignment?: Alignment; faction?: FactionId; minR?: number; lex?: 'order' | 'chaos' | 'balance';
   desc: string;
   effect?: (m: Mods, c: Ctx, a: ActiveSpell, now: number) => void;
 }
@@ -51,5 +51,12 @@ export const SPELLS: SpellDef[] = [
     effect: (m, _c, a) => { m.global *= 1 + (30 * (a.n ?? 1) ** 0.9) / 100; } },
   { id: 'phoenix', ko: '불사조의 숨결', icon: 'sun', mana: 1500, duration: 20, faction: 'phoenix', desc: '20초 동안 다섯 가지 숨결 중 하나가 무작위로 발동해요.',
     effect: (m, _c, a) => { switch (a.target) { case 'b1': m.global *= 3; break; case 'b2': m.click *= 10; break; case 'b3': m.manaRegenMult *= 3; break; case 'b4': m.fcChance *= 3; break; default: m.assistantsMult *= 3; } } },
+  // Leges spells (A2, R100+) — WIKI: Temporal Flux 5000/12s, Maelstrom 3500/12s, All Creation 6000/12s
+  { id: 'flux', ko: '시간의 소용돌이', icon: 'hourglass', mana: 5000, duration: 12, lex: 'order', desc: '12초 동안 이번 판 시간에 따라 고유 건물 생산과 {mana} 회복 증가 (5·(분)^0.7 %).',
+    effect: (m, c) => { const f = 1 + (5 * (c.runSeconds / 60) ** 0.7) / 100; m.manaRegenMult *= f; for (const id of (c as unknown as { uniques?: string[] }).uniques ?? []) m.building[id] = (m.building[id] ?? 1) * f; } },
+  { id: 'maelstrom', ko: '혼돈의 소용돌이', icon: 'mask', mana: 3500, duration: 12, lex: 'chaos', desc: '12초 동안 무작위 건물 3종의 생산이 이번 판 기록에 따라 크게 증가.',
+    effect: (m, c, a) => { const f = 1 + (0.075 * ln(1 + c.clicksRun) ** 2.5 + 0.01 * ln(1 + c.fcFoundRun) ** 4) / 100 * 10; for (const id of (a.target ?? '').split(',').filter(Boolean)) m.building[id] = (m.building[id] ?? 1) * f; } },
+  { id: 'creation', ko: '만물의 조화', icon: 'owl', mana: 6000, duration: 12, lex: 'balance', desc: '12초 동안 {mana} 회복량에 따라 모든 건물 생산과 {fcShort} 발견 확률 증가.',
+    effect: (m, c) => { const f = 1 + Math.floor(0.2 * c.manaRegen ** 0.6) / 10; m.global *= f; m.fcChance *= f; } },
 ];
 export const SPELL_BY_ID = Object.fromEntries(SPELLS.map((s) => [s.id, s]));

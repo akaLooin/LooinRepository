@@ -8,7 +8,7 @@ import { fmt, fmtTime } from './engine/format';
 import { spriteURL } from './art/sprites';
 import { framedIcon, installTextures } from './art/ui';
 import { buildingThumb, levelFor } from './art/buildings';
-import { renderMap, MAP_W, MAP_H } from './art/map';
+import { renderMap, lastLabels, MAP_W, MAP_H } from './art/map';
 import { BUILDING_BY_ID } from './data/buildings';
 import { FACTIONS, FACTION_BY_ID } from './data/factions';
 import { SPELL_BY_ID } from './data/spells';
@@ -71,6 +71,7 @@ app.innerHTML = `
   <div class="spellrow" id="spells"></div>
   <div class="map" id="map">
     <canvas class="realm" id="realm"></canvas>
+    <div class="labels" id="labels" aria-hidden="true"></div>
     <button class="tap" id="tap" aria-label="왕국 두드리기"></button>
     <div class="dust" aria-hidden="true">${Array.from({ length: 14 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i * 0.7) % 6}s;animation-duration:${5 + (i % 4)}s"></i>`).join('')}</div>
     <div class="floaters" id="floaters"></div>
@@ -112,8 +113,9 @@ function modal(title: string, body: string, actions: { label: string; cls?: stri
 const realm = $<HTMLCanvasElement>('#realm');
 let mapKey = '';
 function drawMap(force = false) {
-  const owned = E.visibleBuildings(S).map((b) => ({ id: b.id, tier: b.tier, count: S.run.buildings[b.id] }));
-  const key = owned.map((o) => o.id + levelFor(o.count) + (o.count > 0 ? 1 : 0)).join(',');
+  const uq = new Set(E.uniqueBuildingIds(S));
+  const owned = E.visibleBuildings(S).map((b) => ({ id: b.id, tier: b.tier, count: S.run.buildings[b.id], unique: uq.has(b.id) }));
+  const key = owned.map((o) => o.id + levelFor(o.count) + (o.count > 0 ? 1 : 0)).join(',') + E.uniqueBuildingIds(S).join() + S.settings.showLabels + S.perm.ascensions;
   const box = $('#map').getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const scale = Math.max(1, Math.round(Math.max((box.width * dpr) / MAP_W, (box.height * dpr) / MAP_H)));
@@ -125,7 +127,29 @@ function drawMap(force = false) {
   realm.style.width = (MAP_W * scale) / dpr + 'px'; realm.style.height = (MAP_H * scale) / dpr + 'px';
   const ctx = realm.getContext('2d')!; ctx.imageSmoothingEnabled = false;
   ctx.drawImage(src, 0, 0, realm.width, realm.height);
+  drawLabels(scale / dpr);
 }
+/** Building name tags over the map (setting: show/hide). */
+function drawLabels(k: number) {
+  const box = $('#labels');
+  if (!S.settings.showLabels) { box.innerHTML = ''; return; }
+  // greedy de-overlap: place from the bottom of the map up, nudging a label upward while it overlaps a placed one
+  const H = 15, placed: { x: number; y: number; w: number }[] = [];
+  const items = lastLabels.map((l) => ({ name: buildingName(l.id), x: (l.x - MAP_W / 2) * k, y: (l.y - MAP_H / 2) * k })).sort((a, b) => b.y - a.y);
+  for (const it of items) {
+    const w = it.name.length * 11 + 8;
+    let y = it.y;
+    for (let tries = 0; tries < 6; tries++) {
+      const hit = placed.find((p) => Math.abs(p.x - it.x) < (p.w + w) / 2 && Math.abs(p.y - y) < H);
+      if (!hit) break;
+      y = hit.y - H;
+    }
+    placed.push({ x: it.x, y, w });
+    it.y = y;
+  }
+  box.innerHTML = items.map((l) => `<span style="left:calc(50% + ${Math.round(l.x)}px);top:calc(50% + ${Math.round(l.y)}px)">${esc(l.name)}</span>`).join('');
+}
+function buildingName(id: string) { return E.uniqueName(S, id) ?? BUILDING_BY_ID[id].ko; }
 new ResizeObserver(() => drawMap(true)).observe($('#map'));
 
 function floater(text: string, x: number, y: number, cls = '') {
@@ -234,11 +258,11 @@ function renderPanel() {
 const AMOUNTS: SaveState['settings']['buyAmount'][] = [1, 10, 100, 'max'];
 function renderBuildings(p: HTMLElement) {
   const list = E.visibleBuildings(S);
-  const key = 'b' + list.map((b) => b.id).join(',') + S.settings.buyAmount;
+  const key = 'b' + list.map((b) => b.id).join(',') + S.settings.buyAmount + E.uniqueBuildingIds(S).join();
   if (key !== panelKey) {
     panelKey = key;
     p.innerHTML = `<div class="bgrid">${list.map((b) => `<button class="bcard bevel ${b.alignment ?? 'common'}" data-id="${b.id}">
-      <img src="${buildingThumb(b.id, 30)}" alt=""><span class="pct"></span><span class="own"></span><span class="price"></span><span class="name">${b.ko}</span></button>`).join('')}
+      <img src="${buildingThumb(b.id, 30)}" alt=""><span class="pct"></span><span class="own"></span><span class="price"></span><span class="name">${esc(buildingName(b.id))}</span></button>`).join('')}
       <button class="bcard amount bevel" id="amt">${S.settings.buyAmount === 'max' ? '최대 구매' : 'x' + S.settings.buyAmount + ' 구매'}</button></div>`;
     p.querySelectorAll<HTMLButtonElement>('.bcard[data-id]').forEach((c) => {
       c.onclick = () => { E.buyBuilding(S, c.dataset.id!, S.settings.buyAmount); updateBuildings(); };
@@ -274,7 +298,8 @@ function upgradeIcon(u: E.UpgradeView) {
     return framedIcon('hammer', bg, u.tier! >= 5 ? 'gold' : u.tier! >= 2 ? 'silver' : 'bronze');
   }
   if (u.kind === 'faction') return framedIcon(u.icon, u.color!, u.tier === 3 ? 'gold' : u.tier === 2 ? 'silver' : 'bronze');
-  if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline' || u.kind === 'merc') return framedIcon(u.icon, u.color!, u.kind === 'merc' ? 'silver' : 'gold');
+  if (u.kind === 'unique') return framedIcon('star', u.color!, 'gold');
+  if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline' || u.kind === 'merc' || u.kind === 'lex') return framedIcon(u.icon, u.color!, u.kind === 'merc' ? 'silver' : 'gold');
   return framedIcon(u.icon, '#3a3040', 'plain');
 }
 function costHTML(u: E.UpgradeView) {
@@ -397,17 +422,18 @@ function renderStats(p: HTMLElement) {
   const research = R < UNLOCKS.research ? `<p class="dim">{research}는 R${UNLOCKS.research}부터 열려요.</p>`
     : `<p>{researchPoint} ${rp.free} / ${rp.total}</p><table class="dtable">${FACILITIES.map((f) => `<tr><td>${f.ko}<br><span class="dim">${f.factions.map((x) => FACTION_BY_ID[x].ko).join(', ')}</span></td>
       <td>${S.perm.research[f.id] ?? 0}점 · +${Math.round(facilityBonus(S.perm.research[f.id] ?? 0) * 100)}%</td>
-      <td><button class="btn accent sm" data-r="${f.id}" data-d="-1">−</button> <button class="btn primary sm" data-r="${f.id}" data-d="1" ${rp.free < 1 ? 'disabled' : ''}>+</button></td></tr>
+      <td>${(() => { const c = E.researchCost(S, f.id); const ok = rp.free >= 1 && S.run.coins.gte(c.coins) && S.run.fc[c.coin] >= c.fc;
+        return `<button class="btn primary sm" data-r="${f.id}" data-d="1" ${ok ? '' : 'disabled'}>+1</button><br><span class="dim">${F(c.coins)} {coin}<br>${COIN_KO[c.coin]} {fcShort} ${F(c.fc)}</span>`; })()}</td></tr>
       <tr><td colspan="3"><div class="rchips"><span class="dim">칸 ${E.researchSlotsUsed(S, f.id)}/${researchSlots(R)}</span>${RESEARCH_UPGRADES.filter((x) => x.facility === f.id).map((x) => {
         const on = S.perm.researchActive.includes(x.id), open = E.researchUnlocked(S, x.id);
         return `<button class="rchip ${on ? 'on' : open ? '' : 'locked'}" data-ru="${x.id}" title="${x.desc}">${open ? x.ko : x.rp + '점'}</button>`; }).join('')}</div></td></tr>`).join('')}</table>`;
-  const key = 's' + rp.free + JSON.stringify(S.perm.research) + R + S.perm.researchActive.join();
+  const key = 's' + rp.free + JSON.stringify(S.perm.research) + R + S.perm.researchActive.join() + Math.floor(S.run.coins.log10()) + JSON.stringify(S.run.fc);
   const html = `<section class="gsection"><header>기록</header><dl class="stats" style="padding:6px">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>
     <section class="gsection"><header>{research} (연구)</header><div style="padding:6px">${research}</div></section>
     <section class="gsection"><header>{reincarnationPower} (환생 보너스)</header><ul style="margin:6px;padding-left:16px">${perks}</ul></section>`;
   if (panelKey !== key) {
     const st = p.scrollTop; panelKey = key; p.innerHTML = html; p.scrollTop = st;
-    p.querySelectorAll<HTMLButtonElement>('[data-r]').forEach((b) => { b.onclick = () => { E.assignResearch(S, b.dataset.r!, +b.dataset.d! as 1 | -1); panelKey = ''; renderPanel(); }; });
+    p.querySelectorAll<HTMLButtonElement>('[data-r]').forEach((b) => { b.onclick = () => { if (!E.assignResearch(S, b.dataset.r!, 1)) toast('{coin}이나 {fcShort}이 부족해요'); panelKey = ''; renderPanel(); }; });
     p.querySelectorAll<HTMLButtonElement>('[data-ru]').forEach((b) => { b.onclick = () => {
       const x = RESEARCH_UPGRADES.find((r) => r.id === b.dataset.ru)!;
       if (!E.researchUnlocked(S, x.id)) { toast(`${x.ko}: 이 시설에 {researchPoint} ${x.rp}점이 필요해요`); return; }
@@ -495,12 +521,14 @@ $('#btn-settings').onclick = () => {
   const layer = modal('설정', `<div class="settings-grid">
     <div class="row"><span>숫자 표기</span><label class="check"><input type="radio" name="nf" value="short" ${S.settings.numberFormat === 'short' ? 'checked' : ''}> 짧은 이름</label>
       <label class="check"><input type="radio" name="nf" value="scientific" ${S.settings.numberFormat === 'scientific' ? 'checked' : ''}> 과학 표기</label></div>
+    <div class="row"><label class="check"><input type="checkbox" id="s-labels" ${S.settings.showLabels ? 'checked' : ''}> 지도에 건물 이름 표시</label></div>
     <div class="row"><button class="btn primary sm" id="s-save">저장</button><button class="btn accent sm" id="s-export">내보내기</button><button class="btn accent sm" id="s-import">불러오기</button></div>
     <textarea id="s-code" rows="3" placeholder="저장 코드"></textarea>
     <div class="row"><button class="btn danger sm" id="s-reset">모든 기록 초기화</button></div>
     ${ADMIN ? '<div class="row"><a class="btn accent sm" style="display:inline-flex;align-items:center;text-decoration:none" href="./admin.html">관리자 패널</a></div>' : ''}
     <p class="dim">Talestopia Tycoon v0.4 · 글꼴 갈무리(OFL)</p></div>`, [{ label: '닫기' }]);
   layer.querySelectorAll<HTMLInputElement>('input[name=nf]').forEach((i) => { i.onchange = () => { S.settings.numberFormat = i.value as 'short'; panelKey = ''; }; });
+  ($('#s-labels', layer) as HTMLInputElement).onchange = (e) => { S.settings.showLabels = (e.target as HTMLInputElement).checked; drawMap(true); };
   $('#s-save', layer).onclick = () => toast(save() ? '💾 저장했어요' : '이 브라우저에서는 저장할 수 없어요');
   $('#s-export', layer).onclick = () => { const c = btoa(unescape(encodeURIComponent(serialize(S)))); ($('#s-code', layer) as HTMLTextAreaElement).value = c; navigator.clipboard?.writeText(c).then(() => toast('📋 복사했어요'), () => {}); };
   $('#s-import', layer).onclick = () => {

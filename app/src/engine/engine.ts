@@ -6,7 +6,7 @@ import { GENERAL_UPGRADES, TROPHIES, type TrophyDef } from '../data/general';
 import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
-import { ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
+import { RESEARCH_COST, LEGES, LEGES_MIN_R, UNIQUES, UNIQUE_MULT, type UniqueDef, ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
 export const BASE = {
@@ -42,7 +42,7 @@ function baseCtx(s: SaveState, now: number, manaRegen: number): EndCtx {
     upgradesRun: s.run.upgrades.length, exchanges: totalExchanges(s), alignment: s.run.alignment,
     reincarnations: s.perm.reincarnations, excavations: s.perm.excavations, artifacts: s.perm.artifacts.length,
     hoursTotal: s.stats.playSeconds / 3600, maxOwned: Math.max(s.perm.maxOwned, owned), fcChance: BASE.fcChance, manaMax: BASE.mana,
-    exchangesRun: totalExchanges(s), c11: s.run.buildings.c11 ?? 0,
+    exchangesRun: totalExchanges(s), c11: s.run.buildings.c11 ?? 0, uniques: uniqueBuildingIds(s),
   };
 }
 
@@ -62,6 +62,7 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   for (const ch of CHALLENGES) if ((s.run.faction === ch.faction || s.run.prestige === ch.faction) && s.perm.challenges.includes(ch.id)) ch.effect(m, c);
   if (s.run.bloodline) BLOODLINES.find((b) => b.faction === s.run.bloodline)?.effect(m, c);
   if (s.run.faction) for (const f of FACILITIES) if (f.factions.includes(s.run.faction)) m.global *= 1 + facilityBonus(s.perm.research[f.id] ?? 0);
+  for (const u of UNIQUES) if (has(s, u.id)) { const b = uniqueBuilding(s, u); m.building[b] = (m.building[b] ?? 1) * UNIQUE_MULT; }
   for (const id of s.perm.researchActive) { const r = RESEARCH_BY_ID[id]; if (r && researchUnlocked(s, r.id)) r.effect(m, c); }
   for (const id of s.run.upgrades) {
     const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
@@ -238,10 +239,10 @@ export function buyAllBuildings(s: SaveState, limit = 1000): number {
 }
 
 // ---------------------------------------------------------------- upgrades
-export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc';
+export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique';
 export interface UpgradeView {
   id: string; kind: UpgradeKind; ko: string; desc: string; icon: string; cost: Decimal;
-  fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean;
+  fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean; reqOk?: boolean;
 }
 
 function fcAffordable(s: SaveState, fc?: Partial<Record<CoinType, number>>) {
@@ -253,8 +254,8 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
   const out: UpgradeView[] = [];
   const free = s.perm.ascensions > 0; // after ascending, upgrades that cost gold are free (WIKI)
   const add = (u: Omit<UpgradeView, 'purchased' | 'affordable'>) => {
-    const v = free ? { ...u, cost: D(0) } : u;
-    out.push({ ...v, purchased: has(s, v.id), affordable: s.run.coins.gte(v.cost) && fcAffordable(s, v.fcCost) });
+    const v = free && u.kind !== 'lex' ? { ...u, cost: D(0) } : u;
+    out.push({ ...v, purchased: has(s, v.id), affordable: (v.reqOk ?? true) && s.run.coins.gte(v.cost) && fcAffordable(s, v.fcCost) });
   };
 
   // alignment proofs
@@ -292,6 +293,18 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
         icon: 'b:' + b.id, cost: D(BU_COST[b.tier][i]), tier: i });
     });
   }
+  // Leges proofs (A2, R100+): an extra alignment matching your faction
+  if (s.run.faction && !s.run.lex && s.perm.ascensions >= 2 && s.perm.reincarnations >= LEGES_MIN_R) for (const l of LEGES) {
+    if (!l.factions.includes(s.run.faction)) continue;
+    add({ id: 'lex_' + l.id, kind: 'lex', ko: l.ko, desc: l.desc, icon: l.icon, cost: D(l.cost), color: l.color, tier: 3 });
+  }
+  if (s.run.lex) { const l = LEGES.find((x) => x.id === s.run.lex)!; add({ id: 'lex_' + l.id, kind: 'lex', ko: l.ko, desc: l.desc, icon: l.icon, cost: D(l.cost), color: l.color, tier: 3 }); }
+  // unique buildings
+  for (const u of activeUniques(s, false)) {
+    const b = uniqueBuilding(s, u), n = s.run.buildings[b] ?? 0;
+    add({ id: u.id, kind: 'unique', ko: u.ko, desc: `${BUILDING_BY_ID[b].ko}을(를) ${u.ko}(으)로 바꿔요. 생산 x${UNIQUE_MULT}. (${BUILDING_BY_ID[b].ko} ${u.need}채 필요, 지금 ${n}채)`,
+      icon: 'b:' + b, cost: D(BUILDING_BY_ID[b].cost).mul(1e12), color: FACTION_BY_ID[u.faction].color, tier: 5, reqOk: n >= u.need });
+  }
   // heritages: unlocked by the faction's champion trophy, bought again each run with faction coins
   for (const h of HERITAGES) {
     if (!s.trophies.includes('champ_' + h.faction)) continue;
@@ -321,6 +334,7 @@ export function buyUpgrade(s: SaveState, id: string, now: number): boolean {
   }
   if (u.kind === 'faction') { const f = (FACTION_UP_BY_ID[id]?.faction ?? 'freelancer') as FactionId; s.perm.factionUpgrades[f] = (s.perm.factionUpgrades[f] ?? 0) + 1; }
   if (u.kind === 'bloodline') s.run.bloodline = id.slice(6) as FactionId;
+  if (u.kind === 'lex') s.run.lex = id.slice(4) as 'order' | 'chaos' | 'balance';
   s.run.upgrades.push(id);
   void now;
   return true;
@@ -345,6 +359,7 @@ export function availableSpells(s: SaveState): SpellDef[] {
   return SPELLS.filter((sp) => {
     if (sp.minR && s.perm.reincarnations < sp.minR) return false;
     if (sp.id === extra || sp.id === s.run.mercSpell) return true;
+    if (sp.lex) return sp.lex === s.run.lex;
     return (!sp.alignment && !sp.faction) || (sp.alignment && sp.alignment === s.run.alignment) || (sp.faction && (sp.faction === s.run.faction || sp.faction === s.run.prestige));
   });
 }
@@ -365,6 +380,7 @@ export function castSpell(s: SaveState, id: string, now: number, rng: () => numb
     s.run.spellCasts[id] = (s.run.spellCasts[id] ?? 0) + 1;
     a.n = s.run.spellCasts[id];
     if (id === 'phoenix') a.target = 'b' + (1 + Math.floor(rng() * 5));
+    if (id === 'maelstrom') a.target = [...owned].sort(() => rng() - 0.5).slice(0, 3).map((b) => b.id).join(',');
     if (id === 'sage' && owned.length) a.target = owned.reduce((lo, b) => (buildingProd(s, b, snap).lt(buildingProd(s, lo, snap)) ? b : lo)).id;
     s.run.activeSpells[id] = a;
   }
@@ -544,7 +560,7 @@ export function checkChallenges(s: SaveState, now: number): ChallengeDef[] {
   if (s.perm.reincarnations < UNLOCKS.challenges || !s.run.faction) return [];
   const snap = snapshot(s, now);
   const view = { faction: s.run.faction, runSeconds: snap.ctx.runSeconds, coinsRun: s.run.coinsRun.toNumber(), clicksRun: s.run.clicks, spellsRun: s.run.spells,
-    owned: s.run.buildings, ownedTotal: snap.ctx.ownedTotal, upgradesRun: s.run.upgrades.length, assistants: snap.assistants, fcFoundRun: s.run.fcFound, exchangesRun: totalExchanges(s) };
+    owned: s.run.buildings, ownedTotal: snap.ctx.ownedTotal, upgradesRun: s.run.upgrades.length, assistants: snap.assistants, fcFoundRun: s.run.fcFound, exchangesRun: totalExchanges(s), excavations: s.perm.excavations };
   const done: ChallengeDef[] = [];
   for (const ch of CHALLENGES) {
     if ((ch.faction !== s.run.faction && ch.faction !== s.run.prestige) || s.perm.challenges.includes(ch.id) || !challengeAvailable(s, ch)) continue;
@@ -559,14 +575,23 @@ export function researchPoints(s: SaveState) {
   const used = Object.values(s.perm.research).reduce((a, b) => a + b, 0);
   return { total, used, free: total - used };
 }
-export function assignResearch(s: SaveState, facility: string, delta: 1 | -1): boolean {
-  if (!FACILITIES.some((f) => f.id === facility)) return false;
+/** Gold and faction-coin price of the next research point in a facility (original formula). */
+export function researchCost(s: SaveState, facility: string) {
+  const x = s.perm.research[facility] ?? 0, R = RESEARCH_COST;
+  const coins = s.perm.ascensions > 0 ? D(R.ascBase).mul(D(R.ascGrowth).pow(x - R.ascOffset)) : D(R.base).mul(D(R.growth).pow(x));
+  const f = FACILITIES.find((y) => y.id === facility)!;
+  const coin = FACTION_BY_ID[f.factions[0]].coinTypes[0];
+  return { coins, coin, fc: (x + 1) ** R.fcPower };
+}
+/** Buy one research point for a facility (points are permanent, limited by R(R+1)/2). */
+export function assignResearch(s: SaveState, facility: string, delta: 1 | -1 = 1): boolean {
+  if (delta < 0 || !FACILITIES.some((f) => f.id === facility)) return false;
   const cur = s.perm.research[facility] ?? 0;
-  if (delta > 0 && (researchPoints(s).free < 1 || cur >= RESEARCH_POINT_CAP)) return false;
-  if (delta < 0 && cur < 1) return false;
-  s.perm.research[facility] = cur + delta;
-  // upgrades whose RP threshold is no longer met drop out of their slot
-  s.perm.researchActive = s.perm.researchActive.filter((id) => researchUnlocked(s, id));
+  if (researchPoints(s).free < 1 || cur >= RESEARCH_POINT_CAP) return false;
+  const c = researchCost(s, facility);
+  if (s.run.coins.lt(c.coins) || s.run.fc[c.coin] < c.fc) return false;
+  s.run.coins = s.run.coins.sub(c.coins); s.run.fc[c.coin] -= c.fc;
+  s.perm.research[facility] = cur + 1;
   return true;
 }
 export function researchUnlocked(s: SaveState, id: string) {
@@ -633,3 +658,20 @@ export function buyMercSpell(s: SaveState, spellId: string): boolean {
   s.run.coins = s.run.coins.sub(MERC.spellCoins); s.run.mercSpell = sp.id; s.run.upgrades.push('merc_spell');
   return true;
 }
+
+// ---------------------------------------------------------------- unique buildings
+export function uniqueBuilding(s: SaveState, u: UniqueDef) { return u.buildingByAlign ? u.buildingByAlign[s.run.alignment ?? 'bright'] : u.building; }
+/** Unique buildings available to this run's factions (purchasable or purchased). */
+export function activeUniques(s: SaveState, purchasedOnly: boolean): UniqueDef[] {
+  return UNIQUES.filter((u) => {
+    if (purchasedOnly) return has(s, u.id);
+    if (u.faction !== s.run.faction && u.faction !== s.run.prestige) return false;
+    if (s.perm.reincarnations < u.minR) return false;
+    if (u.lex && (!s.run.lex || !LEGES.find((l) => l.id === s.run.lex)!.factions.includes(u.faction))) return false;
+    return canSeeBuilding(s, uniqueBuilding(s, u));
+  });
+}
+export function uniqueName(s: SaveState, buildingId: string): string | undefined {
+  return activeUniques(s, true).find((u) => uniqueBuilding(s, u) === buildingId)?.ko;
+}
+export function uniqueBuildingIds(s: SaveState) { return activeUniques(s, true).map((u) => uniqueBuilding(s, u)); }

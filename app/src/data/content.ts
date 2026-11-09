@@ -4,7 +4,7 @@ import { BUILDINGS } from './buildings';
 import { ALIGNMENTS, FACTIONS, FACTION_UPGRADES } from './factions';
 import { SPELLS } from './spells';
 import { GENERAL_UPGRADES, TROPHIES } from './general';
-import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES, RESEARCH_UPGRADES } from './endgame';
+import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES, LEGES, RESEARCH_COST, RESEARCH_UPGRADES, UNIQUES } from './endgame';
 import { TERMS, TERM_LABELS } from './terms';
 import { BASE } from '../engine/engine';
 import baked from './overrides.json';
@@ -42,6 +42,11 @@ export const COLLECTIONS: Collection[] = [
   { id: 'artifacts', label: '유물', fields: [T('ko'), L('desc'), N('at', '확정 발견 깊이'), N('chance', '발견 확률')], items: list(ARTIFACTS, (a) => a.id) },
   { id: 'challenges', label: '도전', fields: [T('ko'), L('clue', '단서'), L('reward', '보상 설명'), N('minR', '최소 환생')], items: list(CHALLENGES, (c) => c.id) },
   { id: 'facilities', label: '연구 시설', fields: [T('ko')], items: list(FACILITIES, (f) => f.id) },
+  { id: 'uniques', label: '고유 건물', fields: [T('ko'), N('need', '필요 건물 수'), N('minR', '최소 환생')], items: list(UNIQUES, (u) => u.id, (u) => `${u.faction} · ${u.building}`) },
+  { id: 'leges', label: '레게스 성향 (승천 2)', fields: [T('ko'), L('desc'), N('cost', '가격')], items: list(LEGES, (l) => l.id) },
+  { id: 'researchCost', label: '연구 포인트 가격', fields: [N('value', '값')],
+    items: () => (Object.keys(RESEARCH_COST) as (keyof typeof RESEARCH_COST)[]).map((k) => ({ id: k, title: ({ base: '금화 기본값', growth: '금화 증가율', ascBase: '승천 후 기본값', ascGrowth: '승천 후 증가율', ascOffset: '승천 후 지수 보정', fcPower: '조각 = (x+1)^이 값' })[k],
+      obj: { get value() { return RESEARCH_COST[k]; }, set value(v: unknown) { RESEARCH_COST[k] = Number(v); } } })) },
   { id: 'research', label: '연구 개선', fields: [T('ko'), L('desc'), N('rp', '필요 포인트')], items: list(RESEARCH_UPGRADES, (r) => r.id, (r) => r.facility) },
 ];
 

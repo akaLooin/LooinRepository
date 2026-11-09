@@ -27,6 +27,7 @@ export interface RunState {
   bloodline: FactionId | null;
   autoclickFraction: number;
   prestige: FactionId | null;
+  lex: 'order' | 'chaos' | 'balance' | null;
   mercSpell: string | null;
   mercPicks: Record<string, string>;
   spellCasts: Record<string, number>;
@@ -57,7 +58,7 @@ export interface SaveState {
   autocast: Record<string, AutocastTier>;
   autocastThreshold: number; // 0..1 of max mana before autocast starts
   stats: { clicks: number; spells: number; abdications: number; allied: Partial<Record<FactionId, number>>; totalCoins: Decimal; bestRun: Decimal; playSeconds: number };
-  settings: { numberFormat: NumberFormat; buyAmount: 1 | 10 | 100 | 'max' };
+  settings: { numberFormat: NumberFormat; buyAmount: 1 | 10 | 100 | 'max'; showLabels: boolean };
   lastSeen: number;
 }
 
@@ -67,7 +68,7 @@ export function newRun(now: number): RunState {
     buildings: Object.fromEntries(BUILDINGS.map((b) => [b.id, 0])),
     upgrades: [], alignment: null, faction: null,
     fc: Object.fromEntries(COIN_TYPES.map((c) => [c, 0])) as Record<CoinType, number>,
-    fcFound: 0, fcFraction: 0, activeSpells: {}, exchanges: {}, start: now, clicks: 0, spells: 0, bloodline: null, autoclickFraction: 0, prestige: null, mercSpell: null, mercPicks: {}, spellCasts: {},
+    fcFound: 0, fcFraction: 0, activeSpells: {}, exchanges: {}, start: now, clicks: 0, spells: 0, bloodline: null, autoclickFraction: 0, prestige: null, lex: null, mercSpell: null, mercPicks: {}, spellCasts: {},
   };
 }
 
@@ -79,7 +80,7 @@ export function newGame(now: number): SaveState {
   return {
     version: 1, run: newRun(now), gems: new Decimal(0), perm: newPerm(), trophies: [], autocast: {}, autocastThreshold: 0,
     stats: { clicks: 0, spells: 0, abdications: 0, allied: {}, totalCoins: new Decimal(0), bestRun: new Decimal(0), playSeconds: 0 },
-    settings: { numberFormat: 'short', buyAmount: 1 },
+    settings: { numberFormat: 'short', buyAmount: 1, showLabels: true },
     lastSeen: now,
   };
 }

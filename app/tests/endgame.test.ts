@@ -83,7 +83,11 @@ describe('challenges and research', () => {
     expect(E.researchPoints(s).total).toBe(0);
     s.perm.reincarnations = 16;
     expect(E.researchPoints(s).total).toBeGreaterThan(0);
+    expect(E.assignResearch(s, 'craft', 1)).toBe(false);          // needs 1e126 coins + 1 minstrel coin
+    s.run.coins = new Decimal('1e130'); s.run.fc.minstrel = 10;
     expect(E.assignResearch(s, 'craft', 1)).toBe(true);
+    expect(s.run.fc.minstrel).toBe(9);
+    expect(E.researchCost(s, 'craft').fc).toBe(8);               // (x+1)^3
     expect(facilityBonus(1)).toBeCloseTo(3.5);
   });
   it('perm state survives save/load and abdication', () => {
@@ -171,15 +175,16 @@ describe('ascension', () => {
 
 describe('research slots and expanded content', () => {
   it('RP = R(R+1)/2; upgrades unlock at facility RP and fill 4 slots', () => {
-    const s = newGame(T0); s.perm.reincarnations = 16;
+    const s = newGame(T0); s.perm.reincarnations = 16; s.run.coins = new Decimal('1e300'); s.run.fc.minstrel = 1e12;
     expect(E.researchPoints(s).total).toBe(136);
     expect(E.toggleResearch(s, 'r_craft1')).toBe(false);          // needs 1 RP in craft
     E.assignResearch(s, 'craft', 1);
     expect(E.toggleResearch(s, 'r_craft1')).toBe(true);
-    for (let i = 0; i < 200; i++) E.assignResearch(s, 'craft', 1);
+    for (let i = 0; i < 135; i++) E.assignResearch(s, 'craft', 1);
+    expect(s.perm.research.craft).toBe(136);
     for (const id of ['r_craft2', 'r_craft3', 'r_craft4']) expect(E.toggleResearch(s, id)).toBe(true);
     expect(E.toggleResearch(s, 'r_craft5')).toBe(false);           // 4 slots at R16
-    E.assignResearch(s, 'craft', -1);
+    expect(E.assignResearch(s, 'craft', 1)).toBe(false);          // no free points left
     const before = E.snapshot(s, T0).mods.click;
     expect(before).toBeGreaterThan(1);
   });
@@ -187,5 +192,29 @@ describe('research slots and expanded content', () => {
     const s = newGame(T0); s.perm.reincarnations = 10; s.run.alignment = 'bright'; s.run.faction = 'woodland'; s.run.prestige = 'clockmaker';
     s.run.coinsRun = new Decimal('1e45');
     expect(E.checkChallenges(s, T0).map((c) => c.id)).toContain('ch_clockmaker1');
+  });
+});
+
+describe('unique buildings and leges', () => {
+  it('a unique building needs R16 and enough base buildings, then multiplies that building x10', () => {
+    const s = newGame(T0); s.perm.reincarnations = 16; s.run.alignment = 'bright'; s.run.faction = 'woodland';
+    s.run.coins = new Decimal('1e60'); s.run.coinsRun = new Decimal('1e60'); s.run.buildings.c1 = 100;
+    const u = E.allUpgrades(s).find((x) => x.id === 'uq_woodland')!;
+    expect(u.affordable).toBe(false);
+    s.run.buildings.c1 = 1500;
+    const base = E.buildingProd(s, { id: 'c1' } as never, E.snapshot(s, T0));
+    void base;
+    expect(E.buyUpgrade(s, 'uq_woodland', T0)).toBe(true);
+    expect(E.uniqueName(s, 'c1')).toBe('요정의 꽃밭');
+    expect(E.snapshot(s, T0).mods.building.c1).toBeGreaterThanOrEqual(10);
+  });
+  it('leges proof at A2/R100 matching the faction opens its spell and second unique', () => {
+    const s = newGame(T0); s.perm.reincarnations = 100; s.perm.ascensions = 2; s.run.alignment = 'bright'; s.run.faction = 'starmage';
+    s.run.coins = new Decimal('1e20'); s.run.coinsRun = new Decimal('1e20');
+    expect(E.allUpgrades(s).map((u) => u.id)).toContain('lex_order');
+    expect(E.allUpgrades(s).map((u) => u.id)).not.toContain('lex_chaos');
+    expect(E.buyUpgrade(s, 'lex_order', T0)).toBe(true);
+    expect(E.availableSpells(s).map((x) => x.id)).toContain('flux');
+    expect(E.allUpgrades(s).map((u) => u.id)).toContain('uq2_starmage');
   });
 });

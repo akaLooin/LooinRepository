@@ -6,7 +6,7 @@ import { type Ctx, type Mods, ln, lowTiers } from '../engine/mods';
 
 export interface EndCtx extends Ctx {
   reincarnations: number; excavations: number; artifacts: number; hoursTotal: number; maxOwned: number;
-  fcChance: number; manaMax: number; exchangesRun: number; c11: number;
+  fcChance: number; manaMax: number; exchangesRun: number; c11: number; uniques: string[];
 }
 type Eff = (m: Mods, c: EndCtx) => void;
 
@@ -145,13 +145,69 @@ export const ARTIFACTS: ArtifactDef[] = [
   { id: 'l_32', ko: '봉인된 두루마리', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
   { id: 'l_33', ko: '노래하는 조개', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
   { id: 'l_34', ko: '시간의 책갈피', desc: '깊은 곳에서만 드물게 나오는 이야기의 흔적.', chance: 0.005 },
+  { id: 'l_35', ko: '낡은 책갈피', desc: '이야기 깊은 곳에서 나온 흔적.', at: 4000 },
+  { id: 'l_36', ko: '빛나는 왕관', desc: '이야기 깊은 곳에서 나온 흔적.', at: 4500 },
+  { id: 'l_37', ko: '속삭이는 인형', desc: '이야기 깊은 곳에서 나온 흔적.', at: 5000 },
+  { id: 'l_38', ko: '잠든 거울', desc: '이야기 깊은 곳에서 나온 흔적.', at: 5500 },
+  { id: 'l_39', ko: '부서진 지도', desc: '이야기 깊은 곳에서 나온 흔적.', at: 6000 },
+  { id: 'l_40', ko: '은빛 촛대', desc: '이야기 깊은 곳에서 나온 흔적.', at: 6500 },
+  { id: 'l_41', ko: '황금빛 깃펜', desc: '이야기 깊은 곳에서 나온 흔적.', at: 7000 },
+  { id: 'l_42', ko: '잊힌 종', desc: '이야기 깊은 곳에서 나온 흔적.', at: 7500 },
+  { id: 'l_43', ko: '작은 두루마리', desc: '이야기 깊은 곳에서 나온 흔적.', at: 8000 },
+  { id: 'l_44', ko: '거대한 조개', desc: '이야기 깊은 곳에서 나온 흔적.', at: 8500 },
+  { id: 'l_45', ko: '투명한 열쇠', desc: '이야기 깊은 곳에서 나온 흔적.', at: 9000 },
+  { id: 'l_46', ko: '노래하는 등불', desc: '이야기 깊은 곳에서 나온 흔적.', at: 9500 },
+  { id: 'l_47', ko: '차가운 책갈피', desc: '이야기 깊은 곳에서 나온 흔적.', at: 10000 },
+  { id: 'l_48', ko: '따뜻한 왕관', desc: '이야기 깊은 곳에서 나온 흔적.', at: 10500 },
+  { id: 'l_49', ko: '낡은 인형', desc: '이야기 깊은 곳에서 나온 흔적.', at: 11000 },
+  { id: 'l_50', ko: '빛나는 거울', desc: '이야기 깊은 곳에서 나온 흔적.', at: 11500 },
+  { id: 'l_51', ko: '속삭이는 지도', desc: '이야기 깊은 곳에서 나온 흔적.', at: 12000 },
+  { id: 'l_52', ko: '잠든 촛대', desc: '이야기 깊은 곳에서 나온 흔적.', at: 12500 },
+  { id: 'l_53', ko: '부서진 깃펜', desc: '이야기 깊은 곳에서 나온 흔적.', at: 13000 },
+  { id: 'l_54', ko: '은빛 종', desc: '이야기 깊은 곳에서 나온 흔적.', at: 13500 },
+  { id: 'l_55', ko: '황금빛 두루마리', desc: '이야기 깊은 곳에서 나온 흔적.', at: 14000 },
+  { id: 'l_56', ko: '잊힌 조개', desc: '이야기 깊은 곳에서 나온 흔적.', at: 14500 },
+  { id: 'l_57', ko: '작은 열쇠', desc: '이야기 깊은 곳에서 나온 흔적.', at: 15000 },
+  { id: 'l_58', ko: '거대한 등불', desc: '이야기 깊은 곳에서 나온 흔적.', at: 15500 },
+  { id: 'l_59', ko: '투명한 책갈피', desc: '이야기 깊은 곳에서 나온 흔적.', at: 16000 },
+  { id: 'l_60', ko: '노래하는 왕관', desc: '이야기 깊은 곳에서 나온 흔적.', at: 16500 },
+  { id: 'l_61', ko: '차가운 인형', desc: '이야기 깊은 곳에서 나온 흔적.', at: 17000 },
+  { id: 'l_62', ko: '따뜻한 거울', desc: '이야기 깊은 곳에서 나온 흔적.', at: 17500 },
+  { id: 'l_63', ko: '낡은 지도', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_64', ko: '빛나는 촛대', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_65', ko: '속삭이는 깃펜', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_66', ko: '잠든 종', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_67', ko: '부서진 두루마리', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_68', ko: '은빛 조개', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_69', ko: '황금빛 열쇠', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_70', ko: '잊힌 등불', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_71', ko: '작은 책갈피', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_72', ko: '거대한 왕관', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_73', ko: '투명한 인형', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_74', ko: '노래하는 거울', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_75', ko: '차가운 지도', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_76', ko: '따뜻한 촛대', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_77', ko: '낡은 깃펜', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_78', ko: '빛나는 종', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_79', ko: '속삭이는 두루마리', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_80', ko: '잠든 조개', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_81', ko: '부서진 열쇠', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_82', ko: '은빛 등불', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_83', ko: '황금빛 책갈피', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_84', ko: '잊힌 왕관', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_85', ko: '작은 인형', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_86', ko: '거대한 거울', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_87', ko: '투명한 지도', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_88', ko: '노래하는 촛대', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_89', ko: '차가운 깃펜', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
+  { id: 'l_90', ko: '따뜻한 종', desc: '아주 드물게 나오는 흔적.', chance: 0.003 },
 ];
 
 // ---------------------------------------------------------------- challenges (structure WIKI: per-faction tiers, met during a run as that faction)
 export interface ChallengeDef { id: string; faction: FactionId; tier: number; ko: string; clue: string; minR: number;
   check: (s: ChallengeView) => boolean; reward: string; effect: Eff }
 export interface ChallengeView { faction: FactionId | null; runSeconds: number; coinsRun: number; clicksRun: number; spellsRun: number;
-  owned: Record<string, number>; ownedTotal: number; upgradesRun: number; assistants: number; fcFoundRun: number; exchangesRun: number }
+  owned: Record<string, number>; ownedTotal: number; upgradesRun: number; assistants: number; fcFoundRun: number; exchangesRun: number; excavations?: number }
 const fast = (c: ChallengeView, coins: number, sec: number) => c.coinsRun >= coins && c.runSeconds <= sec;
 export const CHALLENGES: ChallengeDef[] = [
   { id: 'ch_woodland1', faction: 'woodland', tier: 1, minR: 2, ko: '작은 손의 기적', clue: '작은 친구들은 빠르다. 10분 안에 {coin} 1B를 벌어라.', check: (c) => fast(c, 1e9, 600), reward: '숲속 친구들: 1~3단계 건물 x2', effect: (m) => lowTiers(m, 2) },
@@ -197,6 +253,12 @@ export const CHALLENGES: ChallengeDef[] = [
   { id: 'ch_shadow4', faction: 'shadow', tier: 4, minR: 27, ko: '천 번의 커튼콜', clue: '한 판에 주문을 1,000번 시전하라.', check: (c) => c.spellsRun >= 1000, reward: '그림자 극단: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
   { id: 'ch_phoenix1', faction: 'phoenix', tier: 1, minR: 46, ko: '첫 불꽃', clue: '불사조와 함께 금화 1e70을 벌어라.', check: (c) => c.coinsRun >= 1e70, reward: '불사조: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
   { id: 'ch_phoenix2', faction: 'phoenix', tier: 2, minR: 50, ko: '다시 태어나는 날개', clue: '한 판을 24시간 이상 이어가라.', check: (c) => c.runSeconds >= 24 * 3600, reward: '불사조: {assistant} 생산 x3', effect: (m) => { m.assistantsMult *= 3; } },
+  { id: 'ch_clockmaker5', faction: 'clockmaker', tier: 5, minR: 33, ko: '천 번의 발굴', clue: '{excavation} 깊이 1,000을 넘겨라.', check: (c) => (c.excavations ?? 0) >= 1000, reward: '시계장인: 전체 생산 x4', effect: (m) => { m.global *= 4; } },
+  { id: 'ch_shadow5', faction: 'shadow', tier: 5, minR: 33, ko: '침묵의 연출', clue: '두드리지 않고 주문 500번을 시전하라.', check: (c) => c.clicksRun === 0 && c.spellsRun >= 500, reward: '그림자 극단: 전체 생산 x4', effect: (m) => { m.global *= 4; } },
+  { id: 'ch_phoenix3', faction: 'phoenix', tier: 3, minR: 55, ko: '다섯 숨결', clue: '한 판에 주문을 500번 시전하라.', check: (c) => c.spellsRun >= 500, reward: '불사조: 전체 생산 x3', effect: (m) => { m.global *= 3; } },
+  { id: 'ch_phoenix4', faction: 'phoenix', tier: 4, minR: 65, ko: '재 속의 왕국', clue: '건물 10,000채를 모아라.', check: (c) => c.ownedTotal >= 10000, reward: '불사조: {assistant} 생산 x3', effect: (m) => { m.assistantsMult *= 3; } },
+  { id: 'ch_phoenix5', faction: 'phoenix', tier: 5, minR: 75, ko: '끝없는 비상', clue: '한 판을 5일 이상 이어가라.', check: (c) => c.runSeconds >= 5 * 86400, reward: '불사조: 전체 생산 x4', effect: (m) => { m.global *= 4; } },
+  { id: 'ch_phoenix6', faction: 'phoenix', tier: 6, minR: 90, ko: '태양을 삼킨 새', clue: '{exchange}을 1,000번 맺어라.', check: (c) => c.exchangesRun >= 1000, reward: '불사조: 전체 생산 x5', effect: (m) => { m.global *= 5; } },
 ];
 
 // ---------------------------------------------------------------- research (WIKI: R16, 6 facilities, facility bonus 350*x^0.75 %)
@@ -211,6 +273,8 @@ export const FACILITIES: FacilityDef[] = [
 ];
 export const researchPointsFor = (r: number) => (r < UNLOCKS.research ? 0 : (r * (r + 1)) / 2); // WIKI: R(R+1)/2 (136 at R16)
 export const RESEARCH_POINT_CAP = 5000; // WIKI: per facility
+/** WIKI: each research point costs coins 1e126*1.5^x (after ascension 1e42*1.147^(x-780)) and (x+1)^3 faction coins; x = points already in the facility. */
+export const RESEARCH_COST = { base: 1e126, growth: 1.5, ascBase: 1e42, ascGrowth: 1.147, ascOffset: 780, fcPower: 3 };
 export const researchSlots = (r: number) => (r < UNLOCKS.research ? 0 : 4 + (r >= 20 ? 1 : 0) + (r >= 29 ? 1 : 0)); // WIKI: 4 default, +1 around R17-20, prestige +R29
 export const facilityBonus = (rp: number) => (rp > 0 ? 3.5 * rp ** 0.75 : 0); // multiplier add: 350*x^0.75 %
 
@@ -269,3 +333,43 @@ export const RESEARCH_UPGRADES: ResearchUpgradeDef[] = [
     ['승전보', '전체 생산 x2', (m) => { m.global *= 2; }],
   ]),
 ];
+
+// ---------------------------------------------------------------- unique buildings (WIKI: one building per faction, R16 vanilla / R22 neutral / R28 prestige / R46 dragon / R75 mercenary)
+// Leges (A2, R100+) give each faction a second one. Requirement counts and the x10 production are GUESS.
+export interface UniqueDef { id: string; faction: FactionId; building: string; ko: string; minR: number; need: number; lex?: boolean; buildingByAlign?: Record<string, string> }
+export const UNIQUE_MULT = 10;
+export const UNIQUES: UniqueDef[] = [
+  { id: 'uq_woodland', faction: 'woodland', building: 'c1', ko: '요정의 꽃밭', minR: 16, need: 1500 },
+  { id: 'uq_minstrel', faction: 'minstrel', building: 'b4', ko: '노래하는 콩나무', minR: 16, need: 1500 },
+  { id: 'uq_starmage', faction: 'starmage', building: 'b10', ko: '별이 열리는 정원', minR: 16, need: 1500 },
+  { id: 'uq_thieves', faction: 'thieves', building: 'd6', ko: '도적단의 금고', minR: 16, need: 1500 },
+  { id: 'uq_ghost', faction: 'ghost', building: 'd8', ko: '잠들지 않는 미궁', minR: 16, need: 1500 },
+  { id: 'uq_witch', faction: 'witch', building: 'd10', ko: '영원한 밤의 왕좌', minR: 16, need: 1500 },
+  { id: 'uq_pirate', faction: 'pirate', building: 'c11', ko: '해적왕의 책나무', minR: 22, need: 500 },
+  { id: 'uq_sage', faction: 'sage', building: 'l5', ko: '돌의 원', minR: 22, need: 1500 },
+  { id: 'uq_puppet', faction: 'puppet', building: 'l8', ko: '가라앉은 무대', minR: 22, need: 1500 },
+  { id: 'uq_clockmaker', faction: 'clockmaker', building: 'c3', ko: '태엽 대장간', minR: 28, need: 2000 },
+  { id: 'uq_shadow', faction: 'shadow', building: 'd7', ko: '그림자 선착장', minR: 28, need: 1500 },
+  { id: 'uq_phoenix', faction: 'phoenix', building: 'l9', ko: '불사조의 둥지', minR: 46, need: 1500 },
+  { id: 'uq_freelancer', faction: 'freelancer', building: 'b5', ko: '작가들의 막사', minR: 75, need: 1500, buildingByAlign: { bright: 'b5', dark: 'd9', legend: 'l6' } },
+  // second unique buildings with the Leges proofs (R100+)
+  { id: 'uq2_starmage', faction: 'starmage', building: 'b7', ko: '구름 위 성당', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_woodland', faction: 'woodland', building: 'b6', ko: '날개 달린 도서관', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_minstrel', faction: 'minstrel', building: 'b8', ko: '나무 위 유리 성', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_ghost', faction: 'ghost', building: 'd5', ko: '살아 있는 숲', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_witch', faction: 'witch', building: 'c11', ko: '저주받은 책나무', minR: 100, need: 1000, lex: true },
+  { id: 'uq2_thieves', faction: 'thieves', building: 'd4', ko: '검은 물레방아 시장', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_pirate', faction: 'pirate', building: 'l4', ko: '산속 궁전', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_puppet', faction: 'puppet', building: 'l7', ko: '금지된 서고', minR: 100, need: 2000, lex: true },
+  { id: 'uq2_sage', faction: 'sage', building: 'l10', ko: '지구라트 석상', minR: 100, need: 2000, lex: true },
+];
+
+// ---------------------------------------------------------------- Leges (WIKI: A2 / R100, extra alignment on top of the main one, proof 1Qa)
+export type Lex = 'order' | 'chaos' | 'balance';
+export interface LexDef { id: Lex; ko: string; desc: string; cost: number; factions: FactionId[]; color: string; icon: string }
+export const LEGES: LexDef[] = [
+  { id: 'order', ko: '정석의 증표', desc: '잘 짜인 계획으로 왕국을 다스려요. 별의 마법사·유령·해적과 함께해요.', cost: 1e15, factions: ['starmage', 'ghost', 'pirate'], color: '#d8c070', icon: 'hourglass' },
+  { id: 'chaos', ko: '반전의 증표', desc: '예측할 수 없는 운명의 폭발에 몸을 맡겨요. 숲속 친구들·마녀·꼭두각시와 함께해요.', cost: 1e15, factions: ['woodland', 'witch', 'puppet'], color: '#c05ac8', icon: 'mask' },
+  { id: 'balance', ko: '균형의 증표', desc: '얻을 수 있는 모든 것을 고루 살려요. 음유시인·도적단·현자와 함께해요.', cost: 1e15, factions: ['minstrel', 'thieves', 'sage'], color: '#6ac0a0', icon: 'owl' },
+];
+export const LEGES_MIN_R = 100;

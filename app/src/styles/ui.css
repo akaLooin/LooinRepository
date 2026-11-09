@@ -77,6 +77,9 @@ button:focus-visible { outline: 2px solid var(--c-card-affordable-ring); outline
   clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%);
   font: var(--t-sm-weight) 13px/1 var(--t-sm-font); letter-spacing: 2px; pointer-events: none; box-shadow: inset 0 2px 0 rgba(255,255,255,.25); }
 .buyall { position: absolute; right: 58px; bottom: 10px; }
+.labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.labels span { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-size: 11px; line-height: 13px; padding: 0 4px;
+  color: #fff8e0; background: rgba(29, 24, 48, .72); box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), inset 0 -1px 0 var(--c-frame-trim); }
 .dust { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .dust i { position: absolute; bottom: -6px; width: 3px; height: 3px; background: #fff3b0; box-shadow: 0 0 4px 1px rgba(255, 230, 150, .8);
   animation: dust 6s linear infinite; opacity: 0; }
@@ -93,6 +96,7 @@ button:focus-visible { outline: 2px solid var(--c-card-affordable-ring); outline
 /* G. panel */
 .panel, .modal { --c-text: var(--c-ink); --c-text-muted: var(--c-ink-muted); --c-text-dim: var(--c-ink-dim); --c-gold: var(--c-gold-ink); color: var(--c-ink); }
 .bcard, .gsection > header, .modal .close, .btn { --c-gold: #ffd45a; }
+.bcard { --c-text-muted: #eadfc6; --c-danger: #ff9a8a; }
 .panel { flex: 0 0 var(--l-panel); min-height: 0; overflow-y: auto; background: var(--tex-stone), var(--c-parchment);
   border-top: var(--bw-frame) solid var(--c-frame-trim); box-shadow: inset 0 2px 0 #000, inset 0 10px 12px -8px rgba(80, 50, 20, .45); padding: var(--s-3); }
 
