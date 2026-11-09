@@ -408,9 +408,9 @@
     "semantic_hash": ""
   },
   "app/src/data/buildings.ts": {
-    "mtime": 1794140775.1806297,
-    "seen": 1794141698.955431,
-    "ast_hash": "1b1fe49eba7c16191a2e14662503febe",
+    "mtime": 1794200708.7667994,
+    "seen": 1794200727.534425,
+    "ast_hash": "0e1ec8ec16fb8b603e3c2b34037fbe84",
     "semantic_hash": ""
   },
   "app/src/data/factions.ts": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "app/src/engine/engine.ts": {
-    "mtime": 1794199963.3188753,
-    "seen": 1794199987.7605379,
-    "ast_hash": "de49bc60e6e2c0b0aa70b333d97ead36",
+    "mtime": 1794200708.7673454,
+    "seen": 1794200727.5344424,
+    "ast_hash": "dcfce075c4256df9f06379d138ce8cde",
     "semantic_hash": ""
   },
   "app/src/engine/format.ts": {
