@@ -14,7 +14,7 @@ import { FACTIONS, FACTION_BY_ID } from './data/factions';
 import { SPELL_BY_ID } from './data/spells';
 import { TROPHIES } from './data/general';
 import { RUBY_UPGRADES, rubyPower } from './data/trophyups';
-import { ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, RESEARCH_UPGRADES, UNLOCKS, facilityBonus, researchSlots } from './data/endgame';
+import { LINEAGE, LINEAGES, ARCHAEOLOGY, ARTIFACTS, CHALLENGES, FACILITIES, REINCARNATION_PERKS, RESEARCH_UPGRADES, UNLOCKS, facilityBonus, researchSlots } from './data/endgame';
 import { COIN_TYPES, type CoinType } from './data/types';
 import { installContent } from './data/content';
 import { t, watchTerms, setCurrencyTier } from './data/terms';
@@ -204,9 +204,13 @@ function renderSpells(now: number) {
   });
 }
 function showSpellInfo(id: string) {
-  const sp = SPELL_BY_ID[id];
-  modal(sp.ko, `<p>${esc(sp.desc)}</p><p>{mana} ${sp.mana}${sp.duration ? ` · ${sp.duration}초` : ' · 즉시'}</p>`, [
-    { label: '시전', disabled: S.run.mana < sp.mana || E.spellActive(S, id, Date.now()), run: () => E.castSpell(S, id, Date.now()) }, { label: '닫기', cls: 'accent' }]);
+  const sp = SPELL_BY_ID[id], max = E.spellMaxTier(S, id), cur = E.spellTier(S, id);
+  const tiers = max > 1 ? `<p>시전 등급 (자동 시전에도 적용)</p><div class="uptop">${Array.from({ length: max }, (_, i) => i + 1)
+    .map((k) => `<button class="btn ${k === cur ? 'primary' : 'accent'} sm" data-k="${k}">${k}등급</button>`).join('')}</div>` : '';
+  const up = E.spellUpgraded(S, id) ? '<p class="gold">강화됨</p>' : '';
+  const layer = modal(sp.ko, `<p>${esc(sp.desc)}</p>${up}<p>{mana} ${E.spellCost(S, id)}${sp.duration ? ` · ${sp.duration}초` : ' · 즉시'} · 누적 발동 ${Math.floor((S.perm.spellActive[id] ?? 0) / 60)}분</p>${tiers}`, [
+    { label: '시전', disabled: S.run.mana < E.spellCost(S, id) || E.spellActive(S, id, Date.now()), run: () => E.castSpell(S, id, Date.now()) }, { label: '닫기', cls: 'accent' }]);
+  layer.querySelectorAll<HTMLButtonElement>('[data-k]').forEach((b) => { b.onclick = () => { E.setSpellTier(S, id, +b.dataset.k!); closeModal(); showSpellInfo(id); }; });
 }
 function setAssign(m: 'gold' | 'silver') {
   if (!E.canAutocast(S)) { toast('자동 시전은 \'자동 낭독\' 개선을 사야 쓸 수 있어요 (누적 {mana} 60,000 생산 후 열림)'); return; }
@@ -302,6 +306,7 @@ function upgradeIcon(u: E.UpgradeView) {
   if (u.kind === 'faction') return framedIcon(u.icon, u.color!, u.tier === 3 ? 'gold' : u.tier === 2 ? 'silver' : 'bronze');
   if (u.kind === 'unique') return framedIcon('star', u.color!, 'gold');
   if (u.kind === 'secret' || u.kind === 'spellup') return framedIcon(u.icon, u.color!, 'silver');
+  if (u.kind === 'tier') return framedIcon(u.icon, u.color!, 'gold');
   if (u.kind === 'alignment' || u.kind === 'heritage' || u.kind === 'bloodline' || u.kind === 'merc' || u.kind === 'lex') return framedIcon(u.icon, u.color!, u.kind === 'merc' ? 'silver' : 'gold');
   return framedIcon(u.icon, '#3a3040', 'plain');
 }
@@ -414,7 +419,7 @@ function renderStats(p: HTMLElement) {
   const rows: [string, string][] = [
     ['이번 판 {coin}', F(S.run.coinsRun)], ['두드리기로 번 {coin}', F(S.run.coinsByClick)], ['두드리기 1회', F(E.clickReward(S, snap))],
     ['{fc} 발견 확률', (E.fcChance(S, snap) * 100).toFixed(1) + '%'], ['{assistant}', String(snap.assistants)],
-    ['{mana} 회복', snap.manaRegen.toFixed(2) + '/초'], ['{mana} 최대', String(snap.manaMax)],
+    ['{mana} 회복', snap.manaRegen.toFixed(2) + '/초'], ['{mana} 최대', String(Math.floor(snap.manaMax))],
     ['성향', S.run.alignment ? { bright: '{alignBright}', dark: '{alignDark}', legend: '{alignLegend}' }[S.run.alignment] : '-'],
     ['진영', S.run.faction ? FACTION_BY_ID[S.run.faction].ko : '-'],
     ['이번 판 시간', fmtTime((Date.now() - S.run.start) / 1000)], ['누적 {coin}', F(S.stats.totalCoins)], ['최고 판 {coin}', F(Decimal.max(S.stats.bestRun, S.run.coinsRun))],
@@ -432,19 +437,38 @@ function renderStats(p: HTMLElement) {
       <tr><td colspan="3"><div class="rchips"><span class="dim">칸 ${E.researchSlotsUsed(S, f.id)}/${researchSlots(R)}</span>${RESEARCH_UPGRADES.filter((x) => x.facility === f.id).map((x) => {
         const on = S.perm.researchActive.includes(x.id), open = E.researchUnlocked(S, x.id);
         return `<button class="rchip ${on ? 'on' : open ? '' : 'locked'}" data-ru="${x.id}" title="${x.desc}">${open ? x.ko : x.rp + '점'}</button>`; }).join('')}</div></td></tr>`).join('')}</table>`;
-  const key = 's' + rp.free + JSON.stringify(S.perm.research) + R + S.perm.researchActive.join() + Math.floor(S.run.coins.log10()) + JSON.stringify(S.run.fc);
+  const key = 's' + JSON.stringify(S.perm.lineage) + (E.activeLineage(S)?.faction ?? '') + rp.free + JSON.stringify(S.perm.research) + R + S.perm.researchActive.join() + Math.floor(S.run.coins.log10()) + JSON.stringify(S.run.fc);
   const html = `<section class="gsection"><header>기록</header><dl class="stats" style="padding:6px">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl></section>
     <section class="gsection"><header>{research} (연구)</header><div style="padding:6px">${research}</div></section>
+    <section class="gsection"><header>{lineage}</header><div style="padding:6px">${lineageHTML()}</div></section>
     <section class="gsection"><header>{reincarnationPower} (환생 보너스)</header><ul style="margin:6px;padding-left:16px">${perks}</ul></section>`;
   if (panelKey !== key) {
     const st = p.scrollTop; panelKey = key; p.innerHTML = html; p.scrollTop = st;
     p.querySelectorAll<HTMLButtonElement>('[data-r]').forEach((b) => { b.onclick = () => { if (!E.assignResearch(S, b.dataset.r!, 1)) toast('{coin}이나 {fcShort}이 부족해요'); panelKey = ''; renderPanel(); }; });
+    const lb = $<HTMLButtonElement>('#lin-buy', p); if (lb) lb.onclick = () => { toast(E.buyLineageLevel(S) ? '🌳 {lineage} 레벨 업!' : '{fcShort}이 부족해요'); panelKey = ''; renderPanel(); };
     p.querySelectorAll<HTMLButtonElement>('[data-ru]').forEach((b) => { b.onclick = () => {
       const x = RESEARCH_UPGRADES.find((r) => r.id === b.dataset.ru)!;
       if (!E.researchUnlocked(S, x.id)) { toast(`${x.ko}: 이 시설에 {researchPoint} ${x.rp}점이 필요해요`); return; }
       if (!E.toggleResearch(S, x.id)) toast('칸이 가득 찼어요. 다른 연구를 빼 주세요'); else toast(`${S.perm.researchActive.includes(x.id) ? '✔' : '✖'} ${x.ko}: ${x.desc}`);
       panelKey = ''; renderPanel(); }; });
   } else { const dl = $('dl.stats', p); if (dl) dl.innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join(''); }
+}
+
+function lineageHTML() {
+  if (S.perm.reincarnations < LINEAGE.minR) return `<p class="dim">{lineage}는 R${LINEAGE.minR}부터 열려요.</p>`;
+  const f = S.run.bloodline;
+  if (!f || !LINEAGES.some((l) => l.faction === f)) return '<p class="dim">이번 판에 {bloodline}을 고르면 그 진영의 {lineage}를 키울 수 있어요.</p>';
+  const def = LINEAGES.find((l) => l.faction === f)!, L = S.perm.lineage[f] ?? 0, act = E.activeLineage(S);
+  const ex = FACTION_BY_ID[f].coinTypes.map((c) => `${COIN_KO[c]} ${S.run.exchanges[c] ?? 0}/${LINEAGE.exchangesNeeded}`).join(', ');
+  const req = [
+    [S.run.faction && S.run.faction !== f, `주 {faction}이 ${FACTION_BY_ID[f].ko}가 아님`], [!!S.run.prestige, '프리스티지 {faction} 가입'],
+    [FACTION_BY_ID[f].coinTypes.every((c) => (S.run.exchanges[c] ?? 0) >= LINEAGE.exchangesNeeded), `{exchange} ${ex}`],
+  ].map(([ok, txt]) => `<li class="${ok ? '' : 'dim'}">${ok ? '✔' : '✖'} ${txt}</li>`).join('');
+  const cost = E.lineageCost(S, f);
+  return `<p><b>${def.ko}</b> 레벨 ${L} · ${act ? '<span class="gold">적용 중</span>' : '<span class="dim">조건 미충족</span>'}</p>
+    <p class="dim">레벨마다 ${def.perLevel}. 5: 전체 x1.5 · 10: {fcShort} x100 · 15: 진영 주문 · 20: 전체 x2·대영웅 · 30: 주문 2배</p>
+    <ul style="margin:4px 0;padding-left:16px">${req}</ul>
+    <button class="btn primary sm" id="lin-buy" ${FACTION_BY_ID[f].coinTypes.every((c) => S.run.fc[c] >= cost) ? '' : 'disabled'}>레벨 ${L + 1} (${FACTION_BY_ID[f].coinTypes.map((c) => COIN_KO[c]).join('+')} {fcShort} ${F(cost)})</button>`;
 }
 
 // ------------------------------------------------------------ reincarnation, excavation, challenges
@@ -573,7 +597,7 @@ function renderTop(now: number) {
   $('#assist').textContent = String(snap.assistants);
   $('#rubies').textContent = String(S.perm.rubies);
   $('#mana-fill').style.width = Math.min(100, (S.run.mana / snap.manaMax) * 100) + '%';
-  $('#mana-text').textContent = `${t('mana')} ${Math.floor(S.run.mana)} / ${snap.manaMax} · +${snap.manaRegen.toFixed(1)}/초`;
+  $('#mana-text').textContent = `${t('mana')} ${Math.floor(S.run.mana)} / ${Math.floor(snap.manaMax)} · +${snap.manaRegen.toFixed(1)}/초`;
   $('#ac-thr-l').textContent = Math.round(S.autocastThreshold * 100) + '%';
   const fx: string[] = [];
   if (S.run.alignment) fx.push({ bright: '☀ ' + t('alignBright'), dark: '☾ ' + t('alignDark'), legend: '⌛ ' + t('alignLegend') }[S.run.alignment]);

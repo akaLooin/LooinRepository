@@ -25,6 +25,7 @@ export const TERMS = {
   artifact: '유물',
   heritage: '유산',
   bloodline: '혈통',
+  lineage: '계보',
   alignment: '성향',
   faction: '진영',
   scry: '점술',
@@ -47,7 +48,7 @@ export type TermKey = keyof typeof TERMS;
 export const TERM_LABELS: Record<TermKey, string> = {
   gameTitle: '게임 이름', coin: '기본 화폐', coinAsc1: '승천 1 화폐 (다이아)', coinAsc2: '승천 2 화폐 (에메랄드)', coinAsc3: '승천 3 화폐', coinAsc4: '승천 4 화폐', ascend: '승천', mana: '마나', gem: '퇴위 화폐(보석)', fc: '진영 코인', fcShort: '진영 코인 (짧게)', assistant: '조수', ruby: '루비(프리미엄)',
   abdicate: '퇴위', reincarnate: '환생', reincarnationPower: '환생의 힘', exchange: '왕실 교환', trophy: '업적', challenge: '도전', research: '연구',
-  researchPoint: '연구 포인트', excavation: '발굴', artifact: '유물', heritage: '유산', bloodline: '혈통', alignment: '성향', faction: '진영',
+  researchPoint: '연구 포인트', excavation: '발굴', artifact: '유물', heritage: '유산', bloodline: '혈통', lineage: '계보(Lineage)', alignment: '성향', faction: '진영',
   scry: '점술', shop: '상점', autocast1: '자동 시전 1순위', autocast2: '자동 시전 2순위', tabBuildings: '탭: 건물', tabUpgrades: '탭: 업그레이드',
   tabExplore: '탭: 발굴', tabTrophies: '탭: 업적', tabChallenges: '탭: 도전', tabEvents: '탭: 이벤트', tabStats: '탭: 통계', buyAll: '모두 구매 버튼',
   alignBright: '선 성향', alignDark: '악 성향', alignLegend: '중립 성향',

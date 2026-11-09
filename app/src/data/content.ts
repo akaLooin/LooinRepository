@@ -4,7 +4,7 @@ import { BUILDINGS } from './buildings';
 import { ALIGNMENTS, FACTIONS, FACTION_UPGRADES } from './factions';
 import { SPELLS } from './spells';
 import { GENERAL_UPGRADES, TROPHIES } from './general';
-import { ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES, LEGES, RESEARCH_COST, RESEARCH_UPGRADES, UNIQUES } from './endgame';
+import { LINEAGES, ARTIFACTS, ASCENSION, BLOODLINES, CHALLENGES, FACILITIES, HERITAGES, LEGES, RESEARCH_COST, RESEARCH_UPGRADES, UNIQUES } from './endgame';
 import { TERMS, TERM_LABELS } from './terms';
 import { AUTOCAST_UPGRADES, GEM_UPGRADES, MANA_UPGRADES, RUBY_UPGRADES, SECRETS, SPELL_UPGRADES } from './trophyups';
 import { BASE } from '../engine/engine';
@@ -47,6 +47,7 @@ export const COLLECTIONS: Collection[] = [
   { id: 'artifacts', label: '유물', fields: [T('ko'), L('desc'), N('at', '확정 발견 깊이'), N('chance', '발견 확률')], items: list(ARTIFACTS, (a) => a.id) },
   { id: 'challenges', label: '도전', fields: [T('ko'), L('clue', '단서'), L('reward', '보상 설명'), N('minR', '최소 환생')], items: list(CHALLENGES, (c) => c.id) },
   { id: 'facilities', label: '연구 시설', fields: [T('ko')], items: list(FACILITIES, (f) => f.id) },
+  { id: 'lineages', label: '계보', fields: [T('ko'), L('perLevel', '레벨당 효과 설명')], items: list(LINEAGES, (l) => l.faction) },
   { id: 'uniques', label: '고유 건물', fields: [T('ko'), N('need', '필요 건물 수'), N('minR', '최소 환생')], items: list(UNIQUES, (u) => u.id, (u) => `${u.faction} · ${u.building}`) },
   { id: 'leges', label: '레게스 성향 (승천 2)', fields: [T('ko'), L('desc'), N('cost', '가격')], items: list(LEGES, (l) => l.id) },
   { id: 'researchCost', label: '연구 포인트 가격', fields: [N('value', '값')],

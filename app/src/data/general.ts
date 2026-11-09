@@ -43,6 +43,7 @@ export const TROPHIES: TrophyDef[] = [
   ...FACTIONS.map((f) => ({ id: 'ally_' + f.id, ko: `${f.ko}의 친구`, desc: `${f.ko} 진영에 가입`, check: (s: SaveState) => (s.stats.allied[f.id] ?? 0) > 0 })),
   ...FACTIONS.filter((f) => f.kind !== 'mercenary').map((f) => ({ id: 'champ_' + f.id, ko: `${f.ko}의 영웅`, desc: `한 판에 ${f.ko} 개선 12개 모두 구매`,
     check: (s: SaveState) => s.run.upgrades.filter((u) => u.startsWith(f.id + '_')).length >= 12 })),
+  ...FACTIONS.filter((f) => f.kind !== 'mercenary').map((f) => ({ id: 'grand_' + f.id, ko: `${f.ko}의 대영웅`, desc: `${f.ko} 계보 20레벨 달성`, check: (s: SaveState) => (s.perm.lineage[f.id] ?? 0) >= 20 })),
   ...SECRETS.map((x) => ({ id: 'sec_' + x.id, ko: x.ko, desc: x.hint, secret: true, check: x.check })),
   ...SPELL_UPGRADES.map((x) => ({ id: 'spt_' + x.spell, ko: `${SPELL_BY_ID[x.spell].ko}의 달인`, desc: x.hint, check: (s: SaveState) => !!s.stats.flags['spt_' + x.spell] })),
 ];

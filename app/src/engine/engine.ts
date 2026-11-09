@@ -7,7 +7,7 @@ import { SPELLS, SPELL_BY_ID, type SpellDef } from '../data/spells';
 import { VANILLA_COINS, type Alignment, type CoinType, type FactionId } from '../data/types';
 import { newMods, type Mods } from './mods';
 import { AUTOCAST_UPGRADES, GEM_UPGRADES, MANA_UPGRADES, RUBY_UPGRADES, SECRETS, SPELL_UPGRADES, rubyPower, rubyUpgradeCost, type TrophyUpgrade } from '../data/trophyups';
-import { RESEARCH_COST, LEGES, LEGES_MIN_R, UNIQUES, UNIQUE_MULT, type UniqueDef, ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
+import { LINEAGE, LINEAGES, SPELL_TIERS, RESEARCH_COST, LEGES, LEGES_MIN_R, UNIQUES, UNIQUE_MULT, type UniqueDef, ARTIFACT_TOTAL_BONUS, ASCENSION, reincarnationGems, RESEARCH_UPGRADES, RESEARCH_POINT_CAP, researchSlots, ARCHAEOLOGY, ARTIFACTS, BLOODLINES, BLOODLINE_UPGRADES_NEEDED, CHALLENGES, EXCAVATION_FC_CHANCE, FACILITIES, HERITAGES, REINCARNATION_BASE, REINCARNATION_PERKS, UNLOCKS, excavationCoins, excavationCost, facilityBonus, researchPointsFor, rubyAt, type ArtifactDef, type ChallengeDef, type EndCtx } from '../data/endgame';
 import { newRun, type SaveState } from './state';
 
 export const BASE = {
@@ -71,6 +71,15 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   for (const u of UNIQUES) if (has(s, u.id)) { const b = uniqueBuilding(s, u); m.building[b] = (m.building[b] ?? 1) * UNIQUE_MULT; }
   for (const id of s.perm.researchActive) { const r = RESEARCH_BY_ID[id]; if (r && researchUnlocked(s, r.id)) r.effect(m, c); }
   m.global *= rubyPower(s.perm.rubiesFound);
+  const lin = activeLineage(s);
+  if (lin) {
+    const L = s.perm.lineage[lin.faction] ?? 0;
+    lin.level(m, L);
+    if (L >= LINEAGE.perk1) m.global *= 1.5;
+    if (L >= LINEAGE.perk3) m.global *= 2;
+    const a = s.run.activeSpells[FACTION_BY_ID[lin.faction].spell];
+    if (L >= LINEAGE.perk4 && a && a.end > now) SPELL_BY_ID[FACTION_BY_ID[lin.faction].spell]?.effect?.(m, c, a, now);
+  }
   for (const r of RUBY_UPGRADES) { const n = s.perm.rubyUps[r.id] ?? 0; if (n) r.effect(m, n); }
   for (const id of s.run.upgrades) {
     const g = GENERAL_BY_ID[id]; if (g) { g.effect(m); continue; }
@@ -87,8 +96,11 @@ function applyAll(s: SaveState, now: number, c: EndCtx): Mods {
   }
   for (const [id, a] of Object.entries(s.run.activeSpells)) {
     if (a.end <= now) continue;
-    SPELL_BY_ID[id]?.effect?.(m, c, a, now);
-    if (spellUpgraded(s, id)) SPELL_UP_BY_SPELL[id]?.extra?.(m, c, a);
+    const k = a.k ?? 1;   // spell tiers: each tier is one more simultaneous cast
+    for (let i = 0; i < k; i++) {
+      SPELL_BY_ID[id]?.effect?.(m, c, a, now);
+      if (spellUpgraded(s, id)) SPELL_UP_BY_SPELL[id]?.extra?.(m, c, a);
+    }
   }
   m.global *= 1 + m.exchangeBonus * c.exchanges;
   return m;
@@ -183,6 +195,8 @@ function findCoins(s: SaveState, n: number, rng: () => number): CoinType | null 
   if (n <= 0) return null;
   const pool = coinPool(s);
   const type = pool[Math.floor(rng() * pool.length) % pool.length];
+  const lin = activeLineage(s);
+  if (lin && (s.perm.lineage[lin.faction] ?? 0) >= LINEAGE.fc100 && FACTION_BY_ID[lin.faction].coinTypes.includes(type)) n *= 100;
   s.run.fc[type] += n;
   s.run.fcFound += n;
   return type;
@@ -250,7 +264,7 @@ export function buyAllBuildings(s: SaveState, limit = 1000): number {
 }
 
 // ---------------------------------------------------------------- upgrades
-export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique' | 'secret' | 'spellup';
+export type UpgradeKind = 'building' | 'general' | 'alignment' | 'faction' | 'heritage' | 'bloodline' | 'merc' | 'lex' | 'unique' | 'secret' | 'spellup' | 'tier';
 export interface UpgradeView {
   id: string; kind: UpgradeKind; ko: string; desc: string; icon: string; cost: Decimal;
   fcCost?: Partial<Record<CoinType, number>>; color?: string; tier?: number; purchased: boolean; affordable: boolean; reqOk?: boolean;
@@ -265,7 +279,7 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
   const out: UpgradeView[] = [];
   const free = s.perm.ascensions > 0; // after ascending, upgrades that cost gold are free (WIKI)
   const add = (u: Omit<UpgradeView, 'purchased' | 'affordable'>) => {
-    const v = free && u.kind !== 'lex' ? { ...u, cost: D(0) } : u;
+    const v = free && u.kind !== 'lex' && u.kind !== 'tier' ? { ...u, cost: D(0) } : u;
     out.push({ ...v, purchased: has(s, v.id), affordable: (v.reqOk ?? true) && s.run.coins.gte(v.cost) && fcAffordable(s, v.fcCost) });
   };
 
@@ -333,6 +347,20 @@ export function allUpgrades(s: SaveState): UpgradeView[] {
   const spells = new Set(availableSpells(s).map((x) => x.id));
   for (const x of SPELL_UPGRADES) if (s.trophies.includes('spt_' + x.spell) && spells.has(x.spell))
     add({ id: 'su_' + x.spell, kind: 'spellup', ko: x.ko, desc: x.desc, icon: SPELL_BY_ID[x.spell].icon, cost: D(x.cost), color: '#2a4a8a', tier: 2 });
+  // spell tier upgrades (after the first ascension)
+  const maxT = SPELL_TIERS.maxTier(s.perm.ascensions);
+  if (maxT > 1) for (const sp of availableSpells(s)) {
+    if (sp.duration === 0) continue;
+    for (let k = 2; k <= maxT; k++) {
+      const id = `tier_${sp.id}_${k}`;
+      if (!has(s, id) && !(k === 2 || has(s, `tier_${sp.id}_${k - 1}`))) break;
+      const need = SPELL_TIERS.unlockSeconds(k - 1, s.perm.reincarnations), have = s.perm.spellActive[sp.id] ?? 0;
+      const cat = spellCategory(sp.id), fc = SPELL_TIERS.fc(SPELL_TIERS.fcBase[cat], k), coin = tierCoin(s, sp.id);
+      add({ id, kind: 'tier', ko: `${sp.ko} ${k}등급`, desc: `${sp.ko}을(를) ${k}번 겹쳐 시전할 수 있어요 ({mana} 비용 x${2 ** k - 1}). 누적 발동 ${Math.floor(have / 60)}/${Math.ceil(need / 60)}분`,
+        icon: sp.icon, cost: D(SPELL_TIERS.coins(SPELL_TIERS.coinBase[cat], k)), fcCost: fc ? { [coin]: Math.ceil(fc) } : undefined, color: '#3a5aa0', tier: Math.min(5, k), reqOk: have >= need });
+      if (!has(s, id)) break;
+    }
+  }
   // general
   for (const g of GENERAL_UPGRADES) if (g.visible(s) || has(s, g.id)) add({ id: g.id, kind: 'general', ko: g.ko, desc: g.desc, icon: g.icon, cost: D(g.cost) });
   return out;
@@ -376,6 +404,7 @@ export function availableSpells(s: SaveState): SpellDef[] {
   return SPELLS.filter((sp) => {
     if (sp.minR && s.perm.reincarnations < sp.minR) return false;
     if (sp.id === extra || sp.id === s.run.mercSpell) return true;
+    const lin = activeLineage(s); if (lin && (s.perm.lineage[lin.faction] ?? 0) >= LINEAGE.spell && sp.faction === lin.faction) return true;
     if (sp.lex) return sp.lex === s.run.lex;
     return (!sp.alignment && !sp.faction) || (sp.alignment && sp.alignment === s.run.alignment) || (sp.faction && (sp.faction === s.run.faction || sp.faction === s.run.prestige));
   });
@@ -384,7 +413,8 @@ export function availableSpells(s: SaveState): SpellDef[] {
 /** Mana cost after spell upgrades. */
 export function spellCost(s: SaveState, id: string) {
   const sp = SPELL_BY_ID[id]; if (!sp) return Infinity;
-  return Math.max(0, sp.mana + (spellUpgraded(s, id) ? SPELL_UP_BY_SPELL[id]?.manaDelta ?? 0 : 0));
+  const base = Math.max(0, sp.mana + (spellUpgraded(s, id) ? SPELL_UP_BY_SPELL[id]?.manaDelta ?? 0 : 0));
+  return base * (2 ** spellTier(s, id) - 1);   // each tier costs double the previous one
 }
 export function spellActive(s: SaveState, id: string, now: number) { return (s.run.activeSpells[id]?.end ?? 0) > now; }
 
@@ -402,10 +432,11 @@ export function castSpell(s: SaveState, id: string, now: number, rng: () => numb
   s.run.spells++; s.stats.spells++;
   const res: { gained?: Decimal; coins?: number } = {};
   if (sp.duration > 0) {
-    const a = { start: now, end: now + sp.duration * 1000 } as { start: number; end: number; target?: string; n?: number };
+    const a = { start: now, end: now + sp.duration * 1000 } as { start: number; end: number; target?: string; n?: number; k?: number };
     const owned = visibleBuildings(s).filter((b) => s.run.buildings[b.id] > 0);
     if (id === 'pirate' && owned.length) a.target = owned[Math.floor(rng() * owned.length)].id;
     a.n = (s.run.spellCasts[id] ?? 0) + 1;
+    a.k = spellTier(s, id);
     if (id === 'phoenix') a.target = 'b' + (1 + Math.floor(rng() * 5));
     if (id === 'maelstrom') a.target = [...owned].sort(() => rng() - 0.5).slice(0, 3).map((b) => b.id).join(',');
     if (id === 'sage' && owned.length) a.target = owned.reduce((lo, b) => (buildingProd(s, b, snap).lt(buildingProd(s, lo, snap)) ? b : lo)).id;
@@ -464,7 +495,10 @@ export function tick(s: SaveState, now: number, rng: () => number = Math.random)
       findCoins(s, found, rng);
     }
   }
-  for (const [id, a] of Object.entries(s.run.activeSpells)) if (a.end <= now) delete s.run.activeSpells[id];
+  for (const [id, a] of Object.entries(s.run.activeSpells)) {
+    if (a.end > now - dt * 1000) s.perm.spellActive[id] = (s.perm.spellActive[id] ?? 0) + Math.min(dt, (a.end - (now - dt * 1000)) / 1000);
+    if (a.end <= now) delete s.run.activeSpells[id];
+  }
   s.perm.maxOwned = Math.max(s.perm.maxOwned, snap.ctx.ownedTotal);
   s.stats.playSeconds += dt;
   return gained;
@@ -720,4 +754,40 @@ export function buyRubyUpgrade(s: SaveState, id: string): boolean {
   if (!RUBY_UPGRADES.some((r) => r.id === id) || s.perm.rubiesFound < 1) return false;
   const c = rubyUpgradePrice(s, id); if (s.perm.rubies < c) return false;
   s.perm.rubies -= c; s.perm.rubyUps[id] = (s.perm.rubyUps[id] ?? 0) + 1; return true;
+}
+
+// ---------------------------------------------------------------- spell tiers
+function spellCategory(id: string) {
+  const sp = SPELL_BY_ID[id];
+  return id === 'call' ? 'call' : id === 'surge' ? 'surge' : sp.lex ? 'lex' : sp.faction ? 'faction' : 'alignment';
+}
+function tierCoin(s: SaveState, id: string): CoinType {
+  const sp = SPELL_BY_ID[id];
+  if (sp.faction && FACTION_BY_ID[sp.faction].coinTypes.length) return FACTION_BY_ID[sp.faction].coinTypes[0];
+  return (s.run.faction && FACTION_BY_ID[s.run.faction].coinTypes[0]) || 'woodland';
+}
+/** Highest tier bought this run for a spell (1 = base). */
+export function spellMaxTier(s: SaveState, id: string) { let k = 1; while (has(s, `tier_${id}_${k + 1}`)) k++; return k; }
+/** Tier used when casting: the chosen tier (tiered autocasting) capped by the bought tier. */
+export function spellTier(s: SaveState, id: string) { return Math.max(1, Math.min(spellMaxTier(s, id), s.settings.spellTier[id] ?? 99)); }
+export function setSpellTier(s: SaveState, id: string, k: number) { s.settings.spellTier[id] = Math.max(1, Math.min(spellMaxTier(s, id), k)); }
+
+// ---------------------------------------------------------------- lineages
+/** The bloodline's lineage, when this run meets the requirements (R60, other main faction, prestige joined, 400 exchanges of its coins). */
+export function activeLineage(s: SaveState) {
+  const f = s.run.bloodline;
+  if (!f || s.perm.reincarnations < LINEAGE.minR || !s.run.faction || s.run.faction === f || !s.run.prestige) return null;
+  if (!FACTION_BY_ID[f].coinTypes.every((c) => (s.run.exchanges[c] ?? 0) >= LINEAGE.exchangesNeeded)) return null;
+  return LINEAGES.find((l) => l.faction === f) ?? null;
+}
+export function lineageCost(s: SaveState, f: FactionId) { return LINEAGE.cost((s.perm.lineage[f] ?? 0) + 1); }
+/** Buy the next lineage level of the current bloodline with its faction coins (kept forever). */
+export function buyLineageLevel(s: SaveState): boolean {
+  const f = s.run.bloodline;
+  if (!f || s.perm.reincarnations < LINEAGE.minR || !LINEAGES.some((l) => l.faction === f)) return false;
+  const cost = lineageCost(s, f), types = FACTION_BY_ID[f].coinTypes;
+  if (!types.every((c) => s.run.fc[c] >= cost)) return false;
+  for (const c of types) s.run.fc[c] -= cost;
+  s.perm.lineage[f] = (s.perm.lineage[f] ?? 0) + 1;
+  return true;
 }

@@ -50,3 +50,9 @@ Kongregate 계정·랭킹·이벤트,platform,skip,yes,skip,원작 플랫폼 소
 관리자 패널 (용어·설명·수치 편집),tooling,should,no,yes,"용어 {토큰}으로 전체 반영, 사용처 표시, 일괄 바꾸기, 승천·연구 개선 편집"
 진영 고유 건물,buildings,should,yes,yes,"R16/22/28/46/75, 22종(레게스 포함), 생산 x10 (GUESS)"
 지도 위 건물 이름표,ui,should,no,yes,"사용자 요청, 설정에서 끄기 가능"
+업적 연계 개선 (영감·자동 시전·전설 힘),meta,should,yes,yes,"영감 개선 10종(원작 가격·조건), 자동 시전 구매 필요, 전설의 힘/강화 3종"
+비밀 업적과 보상 개선,meta,should,yes,yes,"12종, 조건은 자체 설계"
+주문 업적 → 주문 강화,spells,should,yes,yes,17종
+별사탕(루비) 강화,monetization,should,yes,yes,"루비 파워 x2/x3, 강화 5종 n+1개, 영구"
+주문 등급 (Tier 2~7),spells,should,yes,yes,"승천 후, 해금 시간 공식·가격 공식 원작, 등급 선택"
+계보 (Lineage),reset,should,yes,yes,"R60, 조건 원작, 레벨 가격 2.5e(15+L), 특전 5/10/15/20/30"

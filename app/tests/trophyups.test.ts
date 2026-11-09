@@ -47,3 +47,41 @@ describe('trophy upgrades and rewards', () => {
     expect(E.snapshot(s, T0).assistants).toBe(2);
   });
 });
+
+describe('spell tiers', () => {
+  it('appear after the first ascension; tier k doubles mana per tier and stacks the effect', () => {
+    const s = newGame(T0);
+    expect(E.allUpgrades(s).some((u) => u.kind === 'tier')).toBe(false);
+    s.perm.ascensions = 1; s.perm.reincarnations = 40; s.run.alignment = 'dark'; s.run.faction = 'thieves'; s.run.upgrades.push('thieves_g1');
+    s.run.coins = new Decimal('1e200'); s.run.coinsRun = new Decimal('1e200'); s.run.fc.thieves = 1e20;
+    const t2 = E.allUpgrades(s).find((u) => u.id === 'tier_frenzy_2')!;
+    expect(t2).toBeTruthy();
+    expect(E.buyUpgrade(s, 'tier_frenzy_2', T0)).toBe(true);   // tier 2 needs no active time
+    expect(E.spellCost(s, 'frenzy')).toBe(600 * 3);
+    expect(E.allUpgrades(s).find((u) => u.id === 'tier_frenzy_3')!.affordable).toBe(false); // needs active time
+    s.run.buildings.d4 = 10; s.run.mana = 1e6;
+    const base = E.buildingsCps(s, E.snapshot(s, T0)).toNumber();
+    E.castSpell(s, 'frenzy', T0);
+    expect(E.buildingsCps(s, E.snapshot(s, T0 + 1)).toNumber()).toBeCloseTo(base * (11 * 11) ** 0.1, 3);
+    E.setSpellTier(s, 'frenzy', 1);
+    expect(E.spellCost(s, 'frenzy')).toBe(600);
+  });
+});
+
+describe('lineage', () => {
+  it('needs R60, bloodline, another faction, a prestige faction and 400 exchanges', () => {
+    const s = newGame(T0); s.perm.reincarnations = 60; s.run.bloodline = 'woodland';
+    s.run.alignment = 'bright'; s.run.faction = 'minstrel'; s.run.prestige = 'clockmaker';
+    expect(E.activeLineage(s)).toBeNull();
+    s.run.exchanges.woodland = 400;
+    expect(E.activeLineage(s)?.faction).toBe('woodland');
+    s.run.fc.woodland = 3e16;
+    expect(E.buyLineageLevel(s)).toBe(true);           // level 1 costs 2.5e16
+    expect(s.perm.lineage.woodland).toBe(1);
+    expect(E.lineageCost(s, 'woodland')).toBeCloseTo(2.5e17, -10);
+    s.perm.lineage.woodland = 15;
+    expect(E.availableSpells(s).some((x) => x.id === 'woodland')).toBe(true);
+    s.perm.lineage.woodland = 20;
+    expect(E.checkTrophies(s).map((t) => t.id)).toContain('grand_woodland');
+  });
+});

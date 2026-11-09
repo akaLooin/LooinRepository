@@ -80,6 +80,10 @@ export const BLOODLINES: BloodlineDef[] = [
   { faction: 'pirate', ko: '바다의 혈통', desc: '{exchange} 횟수에 따라 전체 생산 증가 (15·x^0.85 %)', effect: (m, c) => { m.global *= 1 + (15 * c.exchangesRun ** 0.85) / 100; } },
   { faction: 'sage', ko: '지혜의 혈통', desc: '{mana} 최대치에 따라 {mana} 회복 증가', effect: (m, c) => { m.manaRegenMult *= 1 + (0.03 * c.manaMax ** 0.9) / 100; } },
   { faction: 'puppet', ko: '가면의 혈통', desc: '{mana} 최대치 증가 (GUESS)', effect: (m, c) => { m.manaMaxAdd += Math.floor(30 * Math.log10(1 + c.spellsRun * 1000) ** 3.5); } },
+  // prestige bloodlines (WIKI formulas)
+  { faction: 'clockmaker', ko: '태엽의 혈통', desc: '{excavation} 깊이에 따라 전체 생산 증가 (10·x^0.8 %)', effect: (m, c) => { m.global *= 1 + (10 * c.excavations ** 0.8) / 100; } },
+  { faction: 'shadow', ko: '그림자의 혈통', desc: '이번 판 시간에 따라 {fcShort} 발견 확률 배율 증가', effect: (m, c) => { m.fcChance *= 1 + (1.6 * c.runSeconds ** 0.6) / 100; } },
+  { faction: 'phoenix', ko: '불꽃의 혈통', desc: '{fcShort} 발견 확률에 따라 전체 생산 증가 (4·x^0.4)', effect: (m, c) => { m.global *= 1 + 4 * (c.fcChance * 100) ** 0.4 / 100; } },
 ];
 export const BLOODLINE_UPGRADES_NEEDED = 100;
 
@@ -373,3 +377,32 @@ export const LEGES: LexDef[] = [
   { id: 'balance', ko: '균형의 증표', desc: '얻을 수 있는 모든 것을 고루 살려요. 음유시인·도적단·현자와 함께해요.', cost: 1e15, factions: ['minstrel', 'thieves', 'sage'], color: '#6ac0a0', icon: 'owl' },
 ];
 export const LEGES_MIN_R = 100;
+
+// ---------------------------------------------------------------- spell tiers (WIKI: after the first ascension, tiers 2-6, tier 7 after A2)
+export const SPELL_TIERS = {
+  maxTier: (a: number) => (a >= 2 ? 7 : a >= 1 ? 6 : 1),
+  /** seconds of total active time needed to unlock tier n+1 (WIKI formula, without Arcane Brilliance) */
+  unlockSeconds: (n: number, r: number) => Math.max(0, 43200 * (n * n - n) * 0.98 ** (r - n - 42)),
+  coinBase: { call: 5.1e52, surge: 6.6e67, alignment: 5.4e55, faction: 5.4e55, lex: 5.4e55 } as Record<string, number>,
+  fcBase: { call: 0, surge: 1e13, alignment: 1e9, faction: 1e9, lex: 1e9 } as Record<string, number>,
+  coins: (x: number, k: number) => (k >= 7 ? 0 : x ** (1 + 0.25 * (k - 2))),     // WIKI: x^(1+0.25(n-1)); tier 7 free
+  fc: (y: number, k: number) => (y ? y ** (1 + 0.15 * (k - 2)) : 0),               // WIKI: x^(1+0.15(n-1))
+};
+
+// ---------------------------------------------------------------- lineages (WIKI: R60+, levels bought with faction coins 2.5e(15+L), kept forever)
+export interface LineageDef { faction: FactionId; ko: string; perLevel: string; level: (m: Mods, L: number) => void }
+export const LINEAGE = { minR: 60, exchangesNeeded: 400, cost: (level: number) => 2.5 * 10 ** (15 + level), perk1: 5, fc100: 10, spell: 15, perk3: 20, perk4: 30 };
+export const LINEAGES: LineageDef[] = [
+  { faction: 'woodland', ko: '숲의 계보', perLevel: '1~3단계 건물 +18%/레벨', level: (m, L) => lowTiers(m, 1 + 0.18 * L) },
+  { faction: 'minstrel', ko: '노래의 계보', perLevel: '두드리기 +20%/레벨', level: (m, L) => { m.click *= 1 + 0.2 * L; } },
+  { faction: 'starmage', ko: '별의 계보', perLevel: '{mana} 회복 +5%/레벨', level: (m, L) => { m.manaRegenMult *= 1 + 0.05 * L; } },
+  { faction: 'thieves', ko: '도둑의 계보', perLevel: '건물 가격 -1%/레벨', level: (m, L) => { m.costMult *= 0.99 ** L; } },
+  { faction: 'ghost', ko: '망령의 계보', perLevel: '{assistant} 생산 +10%/레벨', level: (m, L) => { m.assistantsMult *= 1 + 0.1 * L; } },
+  { faction: 'witch', ko: '마녀의 계보', perLevel: '9·10단계 건물 +20%/레벨', level: (m, L) => { m.tier[9] *= 1 + 0.2 * L; m.tier[10] *= 1 + 0.2 * L; } },
+  { faction: 'pirate', ko: '바다의 계보', perLevel: '{exchange} 보너스 +0.5%p/레벨', level: (m, L) => { m.exchangeBonus += 0.005 * L; } },
+  { faction: 'sage', ko: '지혜의 계보', perLevel: '{mana} 최대치 +2%/레벨', level: (m, L) => { m.manaMaxAdd += 20 * L; } },
+  { faction: 'puppet', ko: '가면의 계보', perLevel: '전체 생산 +5%/레벨', level: (m, L) => { m.global *= 1 + 0.05 * L; } },
+  { faction: 'clockmaker', ko: '태엽의 계보', perLevel: '두드리기 +15%/레벨', level: (m, L) => { m.click *= 1 + 0.15 * L; } },
+  { faction: 'shadow', ko: '그림자의 계보', perLevel: '전체 생산 +5%/레벨', level: (m, L) => { m.global *= 1 + 0.05 * L; } },
+  { faction: 'phoenix', ko: '불꽃의 계보', perLevel: '전체 생산 +7%/레벨', level: (m, L) => { m.global *= 1 + 0.07 * L; } },
+];

@@ -47,6 +47,8 @@ export interface PermState {
   research: Record<string, number>;
   researchActive: string[];
   rubyUps: Record<string, number>;
+  lineage: Record<string, number>;
+  spellActive: Record<string, number>;
   maxOwned: number;
 }
 
@@ -60,7 +62,7 @@ export interface SaveState {
   autocastThreshold: number; // 0..1 of max mana before autocast starts
   stats: { clicks: number; spells: number; abdications: number; allied: Partial<Record<FactionId, number>>; totalCoins: Decimal; bestRun: Decimal; playSeconds: number;
     manaProduced: number; flags: Record<string, boolean>; alignTime: Record<string, number>; spellStreak: { id: string; n: number } };
-  settings: { numberFormat: NumberFormat; buyAmount: 1 | 10 | 100 | 'max'; showLabels: boolean };
+  settings: { numberFormat: NumberFormat; buyAmount: 1 | 10 | 100 | 'max'; showLabels: boolean; spellTier: Record<string, number> };
   lastSeen: number;
 }
 
@@ -75,14 +77,14 @@ export function newRun(now: number): RunState {
 }
 
 export function newPerm(): PermState {
-  return { reincarnations: 0, ascensions: 0, factionUpgrades: {}, challenges: [], artifacts: [], archaeology: false, excavations: 0, rubies: 0, rubiesFound: 0, research: {}, researchActive: [], rubyUps: {}, maxOwned: 0 };
+  return { reincarnations: 0, ascensions: 0, factionUpgrades: {}, challenges: [], artifacts: [], archaeology: false, excavations: 0, rubies: 0, rubiesFound: 0, research: {}, researchActive: [], rubyUps: {}, lineage: {}, spellActive: {}, maxOwned: 0 };
 }
 
 export function newGame(now: number): SaveState {
   return {
     version: 1, run: newRun(now), gems: new Decimal(0), perm: newPerm(), trophies: [], autocast: {}, autocastThreshold: 0,
     stats: { clicks: 0, spells: 0, abdications: 0, allied: {}, totalCoins: new Decimal(0), bestRun: new Decimal(0), playSeconds: 0, manaProduced: 0, flags: {}, alignTime: {}, spellStreak: { id: '', n: 0 } },
-    settings: { numberFormat: 'short', buyAmount: 1, showLabels: true },
+    settings: { numberFormat: 'short', buyAmount: 1, showLabels: true, spellTier: {} },
     lastSeen: now,
   };
 }

@@ -2,7 +2,7 @@
 import type { Alignment, FactionId } from './types';
 import { type Ctx, type Mods, ln, lowTiers } from '../engine/mods';
 
-export interface ActiveSpell { start: number; end: number; target?: string; n?: number }
+export interface ActiveSpell { start: number; end: number; target?: string; n?: number; k?: number }
 export interface SpellDef {
   id: string; ko: string; icon: string; mana: number; duration: number;
   alignment?: Alignment; faction?: FactionId; minR?: number; lex?: 'order' | 'chaos' | 'balance';
