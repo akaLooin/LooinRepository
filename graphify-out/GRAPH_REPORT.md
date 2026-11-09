@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-09)
 
 ## Corpus Check
-- 79 files · ~58,084 words
+- 83 files · ~62,645 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 28 file(s) not represented in the graph (top: .xml 10, (none) 6, .woff2 3)
+- Unclassified: 29 file(s) not represented in the graph (top: .xml 10, (none) 6, .woff2 3)
 
 ## Summary
-- 755 nodes · 1445 edges · 54 communities (38 shown, 16 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 88 edges (avg confidence: 0.86)
+- 813 nodes · 1584 edges · 54 communities (38 shown, 16 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 91 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `201adb86`
+- Built from commit: `eb645662`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -52,7 +52,7 @@
 - SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
 - build-tokens.mjs
 - components.md
-- general.ts
+- content.ts
 - ExampleInstrumentedTest.java
 - export-icons.cjs
 - visibleBuildings
@@ -61,14 +61,14 @@
 - MainActivity.java
 - endgame.ts
 - data/buildings.ts
-- excavate
+- allUpgrades
 
 ## God Nodes (most connected - your core abstractions)
 1. `Raster` - 23 edges
 2. `renderMap()` - 21 edges
-3. `S()` - 18 edges
-4. `FactionId` - 17 edges
-5. `shade()` - 17 edges
+3. `S()` - 19 edges
+4. `shade()` - 17 edges
+5. `FactionId` - 17 edges
 6. `hex()` - 16 edges
 7. `noise()` - 16 edges
 8. `framedIcon()` - 15 edges
@@ -106,15 +106,15 @@ Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep()
 
 ### Community 3 - "map.ts"
 Cohesion: 0.06
-Nodes (61): BUILDING_ART, buildingSprite(), cache, Maker, thumbs, DOOR, Extra, IsoCanvas (+53 more)
+Nodes (60): BUILDING_ART, buildingSprite(), cache, Maker, thumbs, DOOR, Extra, IsoCanvas (+52 more)
 
 ### Community 4 - "ui.js"
 Cohesion: 0.26
 Nodes (12): buildBuildingRows(), load(), loop(), render(), renderBuildings(), renderGenres(), renderHighlights(), renderRewrite() (+4 more)
 
 ### Community 5 - "engine.ts"
-Cohesion: 0.09
-Nodes (35): ArtifactDef, facilityBonus(), researchPointsFor(), abdicate(), allUpgrades(), applyAll(), ARTIFACT_BY_ID, assignResearch() (+27 more)
+Cohesion: 0.08
+Nodes (38): ArtifactDef, excavationCoins(), excavationCost(), researchPointsFor(), rubyAt(), abdicate(), AddFn, applyAll() (+30 more)
 
 ### Community 6 - "replica-recon"
 Cohesion: 0.15
@@ -138,7 +138,7 @@ Nodes (8): Output, replica-brand, Step 1: the name, Step 2: the checks, run, not
 
 ### Community 11 - "Recon map: Realm Grinder (Android / Steam / Web)"
 Cohesion: 0.07
-Nodes (26): Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: Realm Grinder (Android / Steam / Web), Screens (+18 more)
+Nodes (27): 2026-11-09 추가 확인 (Fandom 위키 진영 페이지), Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: Realm Grinder (Android / Steam / Web) (+19 more)
 
 ### Community 12 - "replica-deploy"
 Cohesion: 0.22
@@ -177,32 +177,32 @@ Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
 ### Community 21 - "factions.ts"
-Cohesion: 0.15
-Nodes (20): EndCtx, AlignmentDef, ALIGNMENTS, COST, FACTION_BY_ID, FACTION_UPGRADES, GATE, Row (+12 more)
+Cohesion: 0.12
+Nodes (23): EndCtx, AlignmentDef, ALIGNMENTS, FACTION_BY_ID, FACTION_COSTS, FACTION_UPGRADES, FactionKind, GATE (+15 more)
 
 ### Community 22 - "테일즈토피아 타이쿤 (Talestopia Tycoon)"
 Cohesion: 0.33
 Nodes (5): 다음 단계 (출시까지), 실행, 테일즈토피아 타이쿤 (Talestopia Tycoon), 파일 구성, 핵심 시스템
 
 ### Community 29 - "castSpell"
-Cohesion: 0.18
-Nodes (22): applyOffline(), assistantsCps(), autocast(), availableSpells(), buildingMult(), buildingProd(), buildingsCps(), canReincarnate() (+14 more)
+Cohesion: 0.24
+Nodes (18): applyOffline(), assistantsCps(), autocast(), availableSpells(), buildingMult(), buildingProd(), buildingsCps(), castSpell() (+10 more)
 
 ### Community 30 - "save-schema.ts"
 Cohesion: 0.29
 Nodes (6): Alignment, AutocastTier, Big, CoinType, FactionId, SaveV1
 
 ### Community 31 - "package.json"
-Cohesion: 0.07
-Nodes (32): config, dependencies, break_infinity.js@^2.2.0, @capacitor/android@^8.6.0, @capacitor/core@^8.6.0, galmuri@^2.40.3, devDependencies, @capacitor/cli@^8.6.0 (+24 more)
+Cohesion: 0.05
+Nodes (51): config, dependencies, break_infinity.js@^2.2.0, @capacitor/android@^8.6.0, @capacitor/core@^8.6.0, galmuri@^2.40.3, devDependencies, @capacitor/cli@^8.6.0 (+43 more)
 
 ### Community 32 - "main.ts"
-Cohesion: 0.06
-Nodes (69): buildingThumb(), levelFor(), cache, PALETTE, SPRITES, spriteURL(), BUILDINGS, FACTIONS (+61 more)
+Cohesion: 0.09
+Nodes (54): buildingThumb(), levelFor(), cache, PALETTE, SPRITES, spriteURL(), framedIcon(), facilityBonus() (+46 more)
 
 ### Community 33 - "compilerOptions"
-Cohesion: 0.18
-Nodes (10): compilerOptions, lib, module, moduleResolution, noEmit, skipLibCheck, strict, target (+2 more)
+Cohesion: 0.17
+Nodes (11): compilerOptions, lib, module, moduleResolution, noEmit, resolveJsonModule, skipLibCheck, strict (+3 more)
 
 ### Community 34 - "SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007"
 Cohesion: 0.29
@@ -212,9 +212,9 @@ Nodes (6): DEFINITIONS, DISCLAIMER, PERMISSION & CONDITIONS, PREAMBLE, SIL OPEN 
 Cohesion: 0.40
 Nodes (3): lines, src, t
 
-### Community 37 - "general.ts"
-Cohesion: 0.24
-Nodes (6): GENERAL_UPGRADES, GeneralUpgrade, SUF, TROPHIES, TrophyDef, SaveState
+### Community 37 - "content.ts"
+Cohesion: 0.06
+Nodes (40): bindInputs(), countChanges(), countIn(), draft, esc(), exportJSON(), importJSON(), merged() (+32 more)
 
 ### Community 39 - "export-icons.cjs"
 Cohesion: 0.22
@@ -229,20 +229,20 @@ Cohesion: 0.29
 Nodes (6): Architecture: Talestopia Tycoon (Realm Grinder의 시스템 구조를 다시 만든 게임), Build order, Schema (저장 데이터), Stack, The parts that bite, 화면 구조 (원작 녹화 영상 기준)
 
 ### Community 43 - "Talestopia Tycoon (app)"
-Cohesion: 0.50
-Nodes (3): Talestopia Tycoon (app), 개발, 안드로이드
+Cohesion: 0.40
+Nodes (4): Talestopia Tycoon (app), 개발, 관리자 패널 (용어·설명·수치 편집), 안드로이드
 
 ### Community 51 - "endgame.ts"
-Cohesion: 0.10
-Nodes (26): ARCHAEOLOGY, ARTIFACTS, BLOODLINE_UPGRADES_NEEDED, BloodlineDef, BLOODLINES, ChallengeDef, CHALLENGES, ChallengeView (+18 more)
+Cohesion: 0.11
+Nodes (23): ARCHAEOLOGY, ARTIFACTS, BLOODLINE_UPGRADES_NEEDED, BloodlineDef, ChallengeDef, ChallengeView, Eff, EXCAVATION_FC_CHANCE (+15 more)
 
 ### Community 52 - "data/buildings.ts"
 Cohesion: 0.14
 Nodes (12): BU_BONUS_HIGH, BU_BONUS_LOW, BU_BONUS_T11, BU_COST, BU_COUNTS, BU_T11_PER_TROPHY, BUILDING_BY_ID, BuildingDef (+4 more)
 
-### Community 53 - "excavate"
-Cohesion: 0.40
-Nodes (5): excavationCoins(), excavationCost(), rubyAt(), excavate(), nextExcavationCost()
+### Community 53 - "allUpgrades"
+Cohesion: 0.18
+Nodes (15): allUpgrades(), buyAllUpgrades(), buyMercPick(), buyMercSpell(), buyUpgrade(), coinPool(), fcAffordable(), has() (+7 more)
 
 ## Knowledge Gaps
 - **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
@@ -250,16 +250,16 @@ Nodes (5): excavationCoins(), excavationCost(), rubyAt(), excavate(), nextExcava
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `break_infinity.js` connect `main.ts` to `engine.ts`, `package.json`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+- **Why does `break_infinity.js` connect `package.json` to `main.ts`, `engine.ts`?**
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `renderMap()` (e.g. with `.draw()` and `.set()`) actually correct?**
   _`renderMap()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `engine.js` be split into smaller, more focused modules?**
   _Cohesion score 0.09523809523809523 - nodes in this community are weakly interconnected._
 - **Why does `renderMap()` connect `map.ts` to `main.ts`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Are the 18 inferred relationships involving `S()` (e.g. with `main.ts` and `abdicateFlow()`) actually correct?**
-  _`S()` has 18 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 19 inferred relationships involving `S()` (e.g. with `main.ts` and `abdicateFlow()`) actually correct?**
+  _`S()` has 19 INFERRED edges - model-reasoned connections that need verification._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
