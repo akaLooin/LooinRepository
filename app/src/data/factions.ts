@@ -87,7 +87,7 @@ function faction(id: FactionId, rows: Row[]): FactionUpgrade[] {
 export const FACTION_UPGRADES: FactionUpgrade[] = [
   // Vanilla factions: effect types and formulas modelled on the original's upgrades (Fandom faction pages), own names.
   ...faction('woodland', [
-    ['요정 비료', '1~3단계 건물의 기본 생산 +600', (m) => { for (const id of LOW) m.baseAdd[id] = (m.baseAdd[id] ?? 0) + 600; }],
+    ['요정 비료', '1~3단계 건물의 기본 생산 +600, 가격 증가율 감소 (-0.035/-0.03/-0.025)', (m) => { LOW.forEach((id, i) => { m.baseAdd[id] = (m.baseAdd[id] ?? 0) + 600; m.costRedB[id] = (m.costRedB[id] ?? 0) + [0.035, 0.03, 0.025][i]; }); }],
     ['숲속 일꾼', '{assistant} 수에 따라 1~3단계 건물 증가 (5·ln(1+x)^2.5 %)', (m, c) => lowTiers(m, 1 + (5 * ln(1 + c.assistants) ** 2.5) / 100)],
     ['주문 대장장이', '1~3단계 건물 수에 따라 {mana} 회복 증가 (0.3·x^0.3)', (m, c) => { m.manaRegenAdd += 0.3 * low(c) ** 0.3; }],
     ['별쇠 합금', '발동 중인 주문 1개당 초당 1회 자동 두드리기', (m, c) => { m.autoclick += c.activeSpells ?? 0; }],
@@ -127,7 +127,7 @@ export const FACTION_UPGRADES: FactionUpgrade[] = [
     ['도적 경제학', '보유 {coin}에 따라 {mana} 회복 증가 (0.75·log10(1+x)^1.25 %)', (m, c) => { m.manaRegenMult *= 1 + (0.75 * (c.coinsLog10 ?? 0) ** 1.25) / 100; }],
     ['검투사', '인세 정산 가치에 따라 전체 생산 증가 (12·ln(1+초)^3 %)', (m, c) => { m.global *= 1 + (12 * ln(1 + 30 + Math.sqrt(c.ownedTotal)) ** 3) / 100; }],
     ['도적 중앙은행', '주문을 쓸 때마다 공짜 인세 정산 (평균: 전체 생산 x1.5)', (m) => { m.global *= 1.5; }],
-    ['암시장', '보유 {gem}에 따라 {gem} 보너스 증가', (m, c) => { m.gemBonusMult *= 1 + Math.log10(1 + c.gems) / 20; }],
+    ['암시장', '보유 {gem}에 따라 {gem} 보너스 증가 (log10(1+x)^2 %)', (m, c) => { m.gemBonusMult *= 1 + Math.log10(1 + c.gems) ** 2 / 100; }],
     ['녹색 손가락 할인', '이번 판 시간에 따라 30초마다 {coin} 보너스 (평균: 전체 생산 증가)', (m, c) => { m.global *= 1 + Math.min(5, c.runSeconds / 7200); }],
   ]),
   ...faction('ghost', [
@@ -157,15 +157,15 @@ export const FACTION_UPGRADES: FactionUpgrade[] = [
     ['거대한 용광로', '건물 수에 따라 전체 생산 증가 (6·x^0.6 %)', (m, c) => { m.global *= 1 + (6 * c.ownedTotal ** 0.6) / 100; }],
     ['충전된 손길', '이번 판 두드리기 수에 따라 {mana} 회복 증가 (25 + 2.5·log10(1+x)^2.5 + x^0.25 %)', (m, c) => { m.manaRegenMult *= 1 + (25 + 2.5 * Math.log10(1 + c.clicksRun) ** 2.5 + c.clicksRun ** 0.25) / 100; }],
     ['해적의 오벨리스크', '이번 판 {alignLegend} 시간에 따라 {fcShort} 확률 증가 (3·초^0.7 %)', (m, c) => { m.fcChance *= 1 + (3 * (c.alignSeconds ?? 0) ** 0.7) / 100; }],
-    ['해적의 드릴', '4단계 건물 기본 생산 +19,635, 7단계 +98,000', (m) => { for (const id of ['b4', 'd4', 'l4']) m.baseAdd[id] = (m.baseAdd[id] ?? 0) + 19635; for (const id of ['b7', 'd7', 'l7']) m.baseAdd[id] = (m.baseAdd[id] ?? 0) + 98000; }],
+    ['해적의 드릴', '4단계 건물 기본 생산 +19,635, 7단계 +98,000, 두 건물 생산 +2,500%', (m) => { for (const id of ['b4', 'd4', 'l4']) { m.baseAdd[id] = (m.baseAdd[id] ?? 0) + 19635; m.building[id] = (m.building[id] ?? 1) * 26; } for (const id of ['b7', 'd7', 'l7']) { m.baseAdd[id] = (m.baseAdd[id] ?? 0) + 98000; m.building[id] = (m.building[id] ?? 1) * 26; } }],
     ['충전된 건물', '발동 중인 주문 1개당 전체 생산 +15%', (m, c) => { m.global *= 1 + 0.15 * (c.activeSpells ?? 0); }],
     ['거인 크기의 성벽', '{assistant} 수에 따라 이야기의 나무 증가 (20 + 2.15·ln(1+x)^2.15 %)', (m, c) => { m.building.c11 = (m.building.c11 ?? 1) * (1 + (20 + 2.15 * ln(1 + c.assistants) ** 2.15) / 100); }],
     ['외눈 거인의 힘', '{assistant}가 200% 더 계산되고, 이번 판 시간에 따라 생산 증가', (m, c) => { m.assistantsMult *= 3 * (1 + (c.runSeconds / 3600) ** 0.5 / 10); }],
     ['무거운 동전', '{exchange} 보너스 x2', (m) => { m.exchangeBonus *= 2; }],
-    ['거대한 전설', '이야기의 나무 수에 따라 {assistant} 생산 증가 (6·x^0.6 %)', (m, c) => { m.assistantsMult *= 1 + (6 * (c.buildings.c11 ?? 0) ** 0.6) / 100; }],
+    ['거대한 전설', '이야기의 나무 가격 증가율 -0.02, 보유 수에 따라 {assistant} 생산 증가 (6·x^0.6 %)', (m, c) => { m.costRedB.c11 = (m.costRedB.c11 ?? 0) + 0.02; m.assistantsMult *= 1 + (6 * (c.buildings.c11 ?? 0) ** 0.6) / 100; }],
   ]),
   ...faction('sage', [
-    ['현자의 어휘', '낮은 단계 건물일수록 크게 증가 (6·1.8^(12-단계) %)', (m) => { for (let t = 1; t <= 11; t++) m.tier[t] *= 1 + (6 * 1.8 ** (12 - t)) / 100; }],
+    ['현자의 어휘', '낮은 단계 건물일수록 크게 증가 (4000·(12-단계) %)', (m) => { for (let t = 1; t <= 11; t++) m.tier[t] *= 1 + (4000 * (12 - t)) / 100; }],
     ['동물 친구들', '{assistant} +3, 이번 판 시간에 따라 더 늘어요', (m, c) => { m.assistantsAdd += 3 + Math.floor((Math.sqrt(1 + 12 * (c.runSeconds / 3600)) - 1) / 2); }],
     ['자연의 순환', '건물 수에 따라 {fcShort} 확률 증가 (0.4·x^0.4 %)', (m, c) => { m.fcChance *= 1 + (0.4 * c.ownedTotal ** 0.4) / 100; }],
     ['대지의 유대', '돌다리 요새 수에 따라 {mana} 최대치 증가 (+2/채)', (m, c) => { m.manaMaxAdd += 2 * (c.buildings.l5 ?? 0); }],

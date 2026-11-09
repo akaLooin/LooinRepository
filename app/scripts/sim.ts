@@ -31,7 +31,8 @@ function pickAlignment() {
   return profile === 'idle' ? 'dark' : 'bright';
 }
 function pickFaction(): FactionId[] {
-  if (s.run.alignment === 'legend') return profile === 'idle' ? ['puppet', 'sage'] : ['pirate', 'sage'];
+  if (s.run.alignment === 'legend') return process.env.NEUTRAL ? [process.env.NEUTRAL as FactionId] : profile === 'idle' ? ['puppet', 'sage'] : ['pirate', 'sage'];
+  if (process.env.VANILLA) return [process.env.VANILLA as FactionId];
   return profile === 'idle' ? ['thieves', 'ghost'] : ['minstrel', 'starmage'];
 }
 
