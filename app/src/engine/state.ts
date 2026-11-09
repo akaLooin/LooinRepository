@@ -62,7 +62,7 @@ export interface SaveState {
   autocast: Record<string, AutocastTier>;
   autocastThreshold: number; // 0..1 of max mana before autocast starts
   stats: { clicks: number; spells: number; abdications: number; allied: Partial<Record<FactionId, number>>; totalCoins: Decimal; bestRun: Decimal; playSeconds: number;
-    manaProduced: number; flags: Record<string, boolean>; alignTime: Record<string, number>; spellStreak: { id: string; n: number } };
+    manaProduced: number; castTotal: Record<string, number>; flags: Record<string, boolean>; alignTime: Record<string, number>; spellStreak: { id: string; n: number } };
   settings: { numberFormat: NumberFormat; buyAmount: 1 | 10 | 100 | 'max'; showLabels: boolean; spellTier: Record<string, number> };
   lastSeen: number;
 }
@@ -84,7 +84,7 @@ export function newPerm(): PermState {
 export function newGame(now: number): SaveState {
   return {
     version: 1, run: newRun(now), gems: new Decimal(0), perm: newPerm(), trophies: [], autocast: {}, autocastThreshold: 0,
-    stats: { clicks: 0, spells: 0, abdications: 0, allied: {}, totalCoins: new Decimal(0), bestRun: new Decimal(0), playSeconds: 0, manaProduced: 0, flags: {}, alignTime: {}, spellStreak: { id: '', n: 0 } },
+    stats: { clicks: 0, spells: 0, abdications: 0, allied: {}, totalCoins: new Decimal(0), bestRun: new Decimal(0), playSeconds: 0, manaProduced: 0, castTotal: {}, flags: {}, alignTime: {}, spellStreak: { id: '', n: 0 } },
     settings: { numberFormat: 'short', buyAmount: 1, showLabels: true, spellTier: {} },
     lastSeen: now,
   };

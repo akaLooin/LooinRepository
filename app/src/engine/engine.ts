@@ -470,6 +470,7 @@ export function castSpell(s: SaveState, id: string, now: number, rng: () => numb
     s.run.activeSpells[id] = a;
   }
   s.run.spellCasts[id] = (s.run.spellCasts[id] ?? 0) + 1;
+  s.stats.castTotal[id] = (s.stats.castTotal[id] ?? 0) + 1;
   if (su && su.castCheck(s, { assistants: snap.assistants, active: activeOthers, now, owned: snap.ctx.ownedTotal, gems: snap.ctx.gems })) s.stats.flags['spt_' + id] = true;
   if (id === 'tax') { res.gained = totalCps(s, snap).mul(30 + snap.mods.taxSeconds); earn(s, res.gained); }
   if (id === 'tax' && spellUpgraded(s, 'tax')) { const n = Math.max(1, Math.round(30 * (1 + snap.assistants) * fcChance(s, snap))); findCoins(s, n, rng); res.coins = (res.coins ?? 0) + n; }
