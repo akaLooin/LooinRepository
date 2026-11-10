@@ -3,3 +3,6 @@ graphify-out/.graphify_*
 !graphify-out/.graphify_labels.json
 graphify-out/.needs_update
 graphify-out/cache/stat-index.json
+
+# 이 컴퓨터 전용 설정 (Android SDK 경로)
+local.properties
