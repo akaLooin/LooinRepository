@@ -1,0 +1,13 @@
+{
+  "name": "talestopia-logo-teaser",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "node render.mjs --serve",
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "roughjs": "^4.6.6",
+    "three": "^0.170.0"
+  }
+}
