@@ -192,7 +192,7 @@ export function alley(ctx, t, dur, A, sub) {
     if (ap < 1) f.walk(ap * 6, 0.7); else { f.stand(t * 3); f.crouch(clamp((1.6 - tg.y) * 0.7, 0, 0.85)); }
     f.spine.rotation.set(0.1 + (1.9 - tg.y) * 0.1, 0, (tg.x - f.root.position.x) * -0.15);
     if (ap > 0.6) { f.reach('R', tg.clone().add(V(0, 0.02, 0.36)), V(0.5, -1, 0)); f.head.lookAt(tg); }
-    if (t < 8.7) { const c = prog(t, 7.2, 8.7); look(cam, tg.clone().add(V(0.85 - c * 0.2, 0.08, 0.5)).add(shake(t, 0.004)), tg.clone().add(V(-0.3, 0, 0.1))); cam.fov = 34; st.focus = cam.position.distanceTo(tg) * 0.9; st.aperture = 1.5; }
+    if (t < 8.7) { const c = prog(t, 7.2, 8.7); look(cam, tg.clone().add(V(0.85 - c * 0.2, 0.08, 0.5)).add(shake(t, 0.004)), tg.clone().add(V(-0.3, 0, 0.1))); cam.fov = 34; st.focus = cam.position.distanceTo(tg) * 0.9; st.aperture = 1.5; st.exposure = 0.72; st.bloom = 0.15; }
     else if (t < 10.3) { const c = ease.io(prog(t, 8.7, 10.3)); look(cam, V(lerp(-2.9, -2.2, c), 1.55, lerp(1.9, 2.6, c)).add(shake(t, 0.006)), V(0.1, 1.8, 0.2)); cam.fov = 38; st.focus = cam.position.distanceTo(f.root.position.clone().setY(1.5)); st.aperture = 0.8; }
     else { const c = ease.io(prog(t, 10.3, 11.6)); look(cam, V(lerp(0.5, 0, c), lerp(1.2, 1.7, c), lerp(2.4, 5.4, c)).add(shake(t, 0.006)), V(0, lerp(1.6, 1.85, c), 0)); cam.fov = 40; st.focus = cam.position.z; st.aperture = 0.4; }
   } else { // 만족하고 떠난다
@@ -256,7 +256,7 @@ export function phone(ctx, t, dur, A, sub) {
     setPhoneCam(); ph.visible = false; f.root.visible = false; renderFilm(scene, phoneCam, PHOTO_ST, t, sub, rtp); ph.visible = true; f.root.visible = true;
     const ux = uic.getContext('2d'); ux.clearRect(0, 0, 960, 540); cameraUI(ux, t, prog(t, 2.9, 3.1), 960, 540); uit.needsUpdate = true;
     const k = ease.io(prog(t, 1.2, 3.1)), fill = PH / 2 / Math.tan((30 * Math.PI) / 360);
-    cam.position.copy(V(1.15, 1.78, 5.6).lerp(V(PP.x, PP.y, PP.z + fill), k)).add(shake(t, 0.01 * (1 - k))); cam.up.set(0, 1, 0);
+    cam.position.copy(V(1.15, 1.78, 5.6).lerp(V(PP.x, PP.y, PP.z + fill), k)).add(V(Math.sin(k * Math.PI) * 0.1 - Math.sin(k * Math.PI) ** 2 * 0.55, Math.sin(k * Math.PI) ** 2 * 0.2, 0)).add(shake(t, 0.01 * (1 - k))); cam.up.set(0, 1, 0);
     cam.lookAt(V(0.1, 1.75, 0).lerp(V(PP.x, PP.y, PP.z), ease.out(k))); cam.fov = lerp(40, 30, k); cam.near = 0.01; cam.updateProjectionMatrix();
     st.focus = cam.position.distanceTo(PP); st.aperture = 0.9 * (1 - k * 0.3);
     renderFilm(scene, cam, st, t, sub); blit(ctx);
