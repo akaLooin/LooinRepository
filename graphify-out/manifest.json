@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "teaser/audio.py": {
-    "mtime": 1794285461.602964,
-    "seen": 1794286540.0229824,
-    "ast_hash": "76024ac29a41a197898b26b293563c0d",
+    "mtime": 1794288303.3391268,
+    "seen": 1794304953.265457,
+    "ast_hash": "e949852ae9a2c824ed32d7196dadc809",
     "semantic_hash": ""
   },
   "teaser/package.json": {
@@ -78,45 +78,45 @@
     "semantic_hash": ""
   },
   "teaser/render.mjs": {
-    "mtime": 1794284765.6709225,
-    "seen": 1794286540.0229855,
-    "ast_hash": "0742b5bd8b265679911aa9648896c499",
+    "mtime": 1794288570.2191486,
+    "seen": 1794304953.2654603,
+    "ast_hash": "166adafd21b57fd2cd7acdae85dac7c5",
     "semantic_hash": ""
   },
   "teaser/src/core.js": {
-    "mtime": 1794284906.9709308,
-    "seen": 1794286540.022987,
-    "ast_hash": "19664fa4bea3108da029678aeced7c28",
+    "mtime": 1794287428.4704223,
+    "seen": 1794304953.2654614,
+    "ast_hash": "ce8c99119d715adde87c1c8468b048c9",
     "semantic_hash": ""
   },
   "teaser/src/main.js": {
-    "mtime": 1794284745.5149212,
-    "seen": 1794286540.0229888,
-    "ast_hash": "48fd1b6c99fc9b3aaab5f58448c8aec3",
+    "mtime": 1794288245.0002136,
+    "seen": 1794304953.265465,
+    "ast_hash": "d7ed9623f77db5520410f2477ed945b6",
     "semantic_hash": ""
   },
   "teaser/src/scene_3d.js": {
-    "mtime": 1794285412.1772292,
-    "seen": 1794286540.02299,
-    "ast_hash": "1bb0320545e20fdd0191ae68969c4b0d",
+    "mtime": 1794288245.0000079,
+    "seen": 1794304953.2654665,
+    "ast_hash": "57ecfc6025ec660f1b40e9df2d8534cd",
     "semantic_hash": ""
   },
   "teaser/src/scene_alley.js": {
-    "mtime": 1794285236.062871,
-    "seen": 1794286540.022992,
-    "ast_hash": "463c38989b3d787b1b378ba20b8681ae",
+    "mtime": 1794304034.1336377,
+    "seen": 1794304953.2654674,
+    "ast_hash": "83eef669520615dbd1fd52327adc017d",
     "semantic_hash": ""
   },
   "teaser/src/scene_office.js": {
-    "mtime": 1794285040.7687018,
-    "seen": 1794286540.0229936,
-    "ast_hash": "ffc81c4dfe1926c7748ba4d05d6df8d1",
+    "mtime": 1794290851.5997581,
+    "seen": 1794304953.2654686,
+    "ast_hash": "368187322dbaa7d4e29ea78c369e8627",
     "semantic_hash": ""
   },
   "teaser/src/scene_travel.js": {
-    "mtime": 1794285152.410379,
-    "seen": 1794286540.022995,
-    "ast_hash": "fa72e6686ce1c6fc11644fa1584d2dd0",
+    "mtime": 1794290851.5993743,
+    "seen": 1794304953.2654703,
+    "ast_hash": "e8708b578c173c5749eca37facf96eac",
     "semantic_hash": ""
   },
   ".claude/skills/replica-architect/SKILL.md": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "teaser/README.md": {
-    "mtime": 1794285487.0909653,
-    "seen": 1794286540.023023,
-    "ast_hash": "7bfdb3a2526ab67e63aacd3a10a5dd6c",
+    "mtime": 1794288318.1431336,
+    "seen": 1794304953.2654915,
+    "ast_hash": "2b6868143f6cd2820a5bb20049d894fa",
     "semantic_hash": ""
   },
   "teaser/index.html": {
@@ -258,27 +258,39 @@
     "semantic_hash": ""
   },
   "teaser/out/preview-3d.jpg": {
-    "mtime": 1794286531.1891,
-    "seen": 1794286540.0230327,
-    "ast_hash": "0dbbcd7c340b0b14b4fd97770978b67d",
+    "mtime": 1794304859.1712966,
+    "seen": 1794304953.265497,
+    "ast_hash": "7712bc83293c7fe5871c440796ffd7dc",
     "semantic_hash": ""
   },
   "teaser/out/preview-alley.jpg": {
-    "mtime": 1794286531.1877837,
-    "seen": 1794286540.023034,
-    "ast_hash": "44399ac21a132a79b61297cb81c48c41",
+    "mtime": 1794304859.168828,
+    "seen": 1794304953.2654984,
+    "ast_hash": "bb7ea67d8970afeb1a2c681170554c78",
     "semantic_hash": ""
   },
   "teaser/out/preview-office.jpg": {
-    "mtime": 1794286531.1864142,
-    "seen": 1794286540.0230358,
-    "ast_hash": "4d89ccce9b19420fbd45bec2fcea939b",
+    "mtime": 1794304859.166695,
+    "seen": 1794304953.2654994,
+    "ast_hash": "f612995dd0b632991b6b93ef1d61932c",
     "semantic_hash": ""
   },
   "teaser/out/teaser.mp4": {
-    "mtime": 1794286531.1710274,
-    "seen": 1794286540.023037,
-    "ast_hash": "ae2f787c3c788c34052cfd14f3878809",
+    "mtime": 1794304947.0118244,
+    "seen": 1794304953.2655003,
+    "ast_hash": "ba9865a1a19f9beca1af1d8ab07dc3c7",
+    "semantic_hash": ""
+  },
+  "teaser/src/film.js": {
+    "mtime": 1794288244.9970984,
+    "seen": 1794304953.2654629,
+    "ast_hash": "5809b1ac52dd218b96bb19f9f0668051",
+    "semantic_hash": ""
+  },
+  "teaser/src/kit.js": {
+    "mtime": 1794288948.2650056,
+    "seen": 1794304953.265464,
+    "ast_hash": "a89866a0272bc28d64d875ad151a38f5",
     "semantic_hash": ""
   },
   "teaser/package-lock.json": {
