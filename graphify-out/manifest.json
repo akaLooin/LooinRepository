@@ -1,0 +1,290 @@
+{
+  ".claude/hooks/graphify-stop.sh": {
+    "mtime": 1794275478.44511,
+    "seen": 1794286540.022954,
+    "ast_hash": "673b496dfe672cdb8e78fedc230fadc3",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1794275478.44511,
+    "seen": 1794286540.0229626,
+    "ast_hash": "e4566ed31fd6e146ad998dc0bd467e51",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/sweep.py": {
+    "mtime": 1794275478.445638,
+    "seen": 1794286540.0229669,
+    "ast_hash": "6e72239d135e70b85f5eb029560645e7",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/contrast.py": {
+    "mtime": 1794275478.445971,
+    "seen": 1794286540.022969,
+    "ast_hash": "be1cc9f80abcff530e3047e43cc7418b",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/imgdiff.py": {
+    "mtime": 1794275478.4461486,
+    "seen": 1794286540.0229712,
+    "ast_hash": "89423d275a22901d45d1dded2bbf0a89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/parity.py": {
+    "mtime": 1794275478.4461486,
+    "seen": 1794286540.0229728,
+    "ast_hash": "b038abcd7358f9267f243cf25e337f79",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/reviews.py": {
+    "mtime": 1794275478.4464605,
+    "seen": 1794286540.0229747,
+    "ast_hash": "30484811d165ea8e8f26ea27b468e258",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/themes.json": {
+    "mtime": 1794275478.4464605,
+    "seen": 1794286540.0229762,
+    "ast_hash": "2f131b47a08b6f829a3a7b9b310c0d89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.example.json": {
+    "mtime": 1794275478.4466937,
+    "seen": 1794286540.0229778,
+    "ast_hash": "7f333f8243827641e47a0afaebf858dc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.py": {
+    "mtime": 1794275478.4466937,
+    "seen": 1794286540.0229793,
+    "ast_hash": "af4d4a7b06701afb767de7ef763ddda8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/e2e.example.spec.ts": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794286540.022981,
+    "ast_hash": "1a6d12fef3cbe97dfa1b0dc42c3a8881",
+    "semantic_hash": ""
+  },
+  "teaser/audio.py": {
+    "mtime": 1794285461.602964,
+    "seen": 1794286540.0229824,
+    "ast_hash": "76024ac29a41a197898b26b293563c0d",
+    "semantic_hash": ""
+  },
+  "teaser/package.json": {
+    "mtime": 1794284666.142958,
+    "seen": 1794286540.022984,
+    "ast_hash": "3be66eb3d5fed46b9a081d42b062aea6",
+    "semantic_hash": ""
+  },
+  "teaser/render.mjs": {
+    "mtime": 1794284765.6709225,
+    "seen": 1794286540.0229855,
+    "ast_hash": "0742b5bd8b265679911aa9648896c499",
+    "semantic_hash": ""
+  },
+  "teaser/src/core.js": {
+    "mtime": 1794284906.9709308,
+    "seen": 1794286540.022987,
+    "ast_hash": "19664fa4bea3108da029678aeced7c28",
+    "semantic_hash": ""
+  },
+  "teaser/src/main.js": {
+    "mtime": 1794284745.5149212,
+    "seen": 1794286540.0229888,
+    "ast_hash": "48fd1b6c99fc9b3aaab5f58448c8aec3",
+    "semantic_hash": ""
+  },
+  "teaser/src/scene_3d.js": {
+    "mtime": 1794285412.1772292,
+    "seen": 1794286540.02299,
+    "ast_hash": "1bb0320545e20fdd0191ae68969c4b0d",
+    "semantic_hash": ""
+  },
+  "teaser/src/scene_alley.js": {
+    "mtime": 1794285236.062871,
+    "seen": 1794286540.022992,
+    "ast_hash": "463c38989b3d787b1b378ba20b8681ae",
+    "semantic_hash": ""
+  },
+  "teaser/src/scene_office.js": {
+    "mtime": 1794285040.7687018,
+    "seen": 1794286540.0229936,
+    "ast_hash": "ffc81c4dfe1926c7748ba4d05d6df8d1",
+    "semantic_hash": ""
+  },
+  "teaser/src/scene_travel.js": {
+    "mtime": 1794285152.410379,
+    "seen": 1794286540.022995,
+    "ast_hash": "fa72e6686ce1c6fc11644fa1584d2dd0",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/SKILL.md": {
+    "mtime": 1794275478.4453719,
+    "seen": 1794286540.0229964,
+    "ast_hash": "68b9b40ecc837f79cd8a1f9f55bb69e9",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/architecture.md": {
+    "mtime": 1794275478.4454496,
+    "seen": 1794286540.0229983,
+    "ast_hash": "0da9e8d3bb2bcfaaca00da1d7652b3f8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-backend/SKILL.md": {
+    "mtime": 1794275478.4454496,
+    "seen": 1794286540.0229998,
+    "ast_hash": "6cf582652afdfa7a4d93be9c0b678acc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/SKILL.md": {
+    "mtime": 1794275478.4454496,
+    "seen": 1794286540.0230014,
+    "ast_hash": "52f8859b2bd72803f0f22f6504ceb5d2",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-build/SKILL.md": {
+    "mtime": 1794275478.445638,
+    "seen": 1794286540.0230029,
+    "ast_hash": "5ff1211352611a1b0ca4261bbf802914",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/SKILL.md": {
+    "mtime": 1794275478.445638,
+    "seen": 1794286540.0230045,
+    "ast_hash": "68ca163f75008916d771db003e9e9d2f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/preflight.md": {
+    "mtime": 1794275478.4458573,
+    "seen": 1794286540.023006,
+    "ast_hash": "e08376a3e4b2137083d9cac67e5213d8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/SKILL.md": {
+    "mtime": 1794275478.4458573,
+    "seen": 1794286540.0230076,
+    "ast_hash": "6cb2089c8fef9f8ff7cfdb437beb4335",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/SKILL.md": {
+    "mtime": 1794275478.445971,
+    "seen": 1794286540.0230093,
+    "ast_hash": "4388136945068abb2403b78f646f1ff4",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/SKILL.md": {
+    "mtime": 1794275478.4461486,
+    "seen": 1794286540.0230107,
+    "ast_hash": "f8991e2948128c6b7747c5a54984c763",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/SKILL.md": {
+    "mtime": 1794275478.4464605,
+    "seen": 1794286540.0230124,
+    "ast_hash": "45df2bb5bc5cea98a442026a8ff9f948",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/SKILL.md": {
+    "mtime": 1794275478.4466937,
+    "seen": 1794286540.0230136,
+    "ast_hash": "6d9392e82e61935f37ac1bb95ef909c5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/recon-map.md": {
+    "mtime": 1794275478.4469087,
+    "seen": 1794286540.0230153,
+    "ast_hash": "d23e672474a29ec1ea49ec43ddfff8b5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/SKILL.md": {
+    "mtime": 1794275478.4469087,
+    "seen": 1794286540.0230167,
+    "ast_hash": "c9a62a0d332c47e75f43f0b30a4a8af1",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/bug-report.md": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794286540.0230186,
+    "ast_hash": "96a2f82bee687b61cdcab4cae30f3b74",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/test-plan.md": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794286540.02302,
+    "ast_hash": "63d7dea8bd03011a3cd8b62c78e0c762",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794286540.0230212,
+    "ast_hash": "0082dfb26d459e9bafa72031729e3693",
+    "semantic_hash": ""
+  },
+  "teaser/README.md": {
+    "mtime": 1794285487.0909653,
+    "seen": 1794286540.023023,
+    "ast_hash": "7bfdb3a2526ab67e63aacd3a10a5dd6c",
+    "semantic_hash": ""
+  },
+  "teaser/index.html": {
+    "mtime": 1794284731.7949204,
+    "seen": 1794286540.023024,
+    "ast_hash": "a23380fbeb3f91428ed71229f7144108",
+    "semantic_hash": ""
+  },
+  "Logo/LooinLogo.png": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794286540.0230255,
+    "ast_hash": "cecee7e00251e27ba618aa679eaa3d56",
+    "semantic_hash": ""
+  },
+  "teaser/assets/logo-2026-simple.svg": {
+    "mtime": 1794284666.141764,
+    "seen": 1794286540.023027,
+    "ast_hash": "76793da1b59340fc14122cafbd4dd718",
+    "semantic_hash": ""
+  },
+  "teaser/assets/logo-2026.svg": {
+    "mtime": 1794284666.1402194,
+    "seen": 1794286540.0230281,
+    "ast_hash": "f71524fd493ed73b4f2cebe057e7b6d6",
+    "semantic_hash": ""
+  },
+  "teaser/assets/logo-old.svg": {
+    "mtime": 1794284666.138488,
+    "seen": 1794286540.0230298,
+    "ast_hash": "73425a9bbfa83cca66f8c47e340fa8e8",
+    "semantic_hash": ""
+  },
+  "teaser/out/preview-3d.jpg": {
+    "mtime": 1794286531.1891,
+    "seen": 1794286540.0230327,
+    "ast_hash": "0dbbcd7c340b0b14b4fd97770978b67d",
+    "semantic_hash": ""
+  },
+  "teaser/out/preview-alley.jpg": {
+    "mtime": 1794286531.1877837,
+    "seen": 1794286540.023034,
+    "ast_hash": "44399ac21a132a79b61297cb81c48c41",
+    "semantic_hash": ""
+  },
+  "teaser/out/preview-office.jpg": {
+    "mtime": 1794286531.1864142,
+    "seen": 1794286540.0230358,
+    "ast_hash": "4d89ccce9b19420fbd45bec2fcea939b",
+    "semantic_hash": ""
+  },
+  "teaser/out/teaser.mp4": {
+    "mtime": 1794286531.1710274,
+    "seen": 1794286540.023037,
+    "ast_hash": "ae2f787c3c788c34052cfd14f3878809",
+    "semantic_hash": ""
+  },
+  "teaser/package-lock.json": {
+    "mtime": 1794284667.4909167,
+    "seen": 1794286540.0230384,
+    "ast_hash": "54713d6d5badc247df354344348195f2",
+    "semantic_hash": ""
+  }
+}
