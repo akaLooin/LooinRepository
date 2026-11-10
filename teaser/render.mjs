@@ -35,7 +35,7 @@ async function openPage() {
   page.on('pageerror', e => console.error('[page error]', e.message));
   page.on('console', m => { if (m.type() === 'error') console.error('[console]', m.text()); });
   await page.goto(URL_);
-  await page.waitForFunction(() => window.renderAt && window.DURATION);
+  await page.waitForFunction(() => window.renderAt && window.DURATION, null, { timeout: 600000 });
   return page;
 }
 async function grab(page, t, file, type = 'jpeg') {

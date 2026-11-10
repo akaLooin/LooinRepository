@@ -51,8 +51,8 @@ for i, m in enumerate(mel):
 # --- 바람과 시간 여행 ---
 wind = mid * (0.3 + 0.7 * lfo(0.35) * lfo(0.9, 2)) + air * 0.25 * lfo(0.6, 1)
 add(wind * env(9.7, ALLEY + 1.6, 1.2, 1.5), 0.9)
-ed = (ALLEY - TRAVEL) / 7
-for i in range(7):
+ed = (ALLEY - TRAVEL) / 6
+for i in range(6):
     t0 = TRAVEL + (i + 1) * ed - 0.35
     sw = band(white, 400, 3000) * np.exp(-((T - t0 - 0.2) / 0.16) ** 2); add(sw, 0.8, pan=0.5 if i % 2 else -0.5)
     for j, m in enumerate([0, 2, 4]):                                                # 시대가 바뀔 때마다 음이 올라간다
@@ -88,7 +88,7 @@ hit(L3D + 0.45, 48, 0.9, 1.0, drop=0.6)
 chord = [73.42, 110.0, 146.83, 174.61, 220.0, 329.63]
 syn = sum(np.sin(2 * np.pi * f * T * (1 + 0.002 * np.sin(T * 0.7 + i))) + 0.3 * np.sin(4 * np.pi * f * T) for i, f in enumerate(chord)) / 6
 add(syn * env(L3D + 0.4, L3D + 12.8, 1.5, 0.15) * (0.7 + 0.3 * lfo(0.5)), 0.42)
-for c in [2.7, 4.5, 6.3, 8.0]:
+for c in [2.4, 4.3, 6.1, 7.8]:
     add(band(white, 300, 5000) * np.exp(-((T - L3D - c) / 0.11) ** 2), 0.7); hit(L3D + c, 52, 0.5, 0.8, drop=0.5)
 rise = 300 * 2 ** (np.clip((T - L3D - 8.0) / 3.4, 0, 1) * 1.6)
 add(np.sin(2 * np.pi * np.cumsum(rise) / SR) * env(L3D + 8.0, L3D + 11.4, 2.5, 0.05), 0.07)

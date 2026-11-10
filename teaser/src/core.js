@@ -109,7 +109,8 @@ export function drawLogoSketch(ctx, logo, p, cx, cy, size, color) {
     for (let i = 0; i < N; i++) {
       const s = logo.subs[i], pi = clamp((p - (i / N) * SPAN) / WIN);
       if (pi <= 0) break;
-      ctx.setLineDash(pi >= 1 ? [] : [pi * s.len, s.len + 50]);
+      if (pi >= 1) continue;
+      ctx.setLineDash([pi * s.len, s.len + 50]);
       ctx.stroke(s.p);
     }
     ctx.restore();
