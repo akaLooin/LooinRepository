@@ -35,3 +35,11 @@
   - 3b3703a feat: D-day 당일 포함 and a red circle on D-day dates; routine 종료 날짜 없음 switch
   - e57716c fix: chat field stays above the keyboard (B16) — keyboard height from window insets via react-native-keyboard-controller
   - ad9c91c build: crews as in the second recording — crew chat, ⋯ menu (members, my category, copy link, stop/resume recruiting, edit/delete), crew chips and crew home
+
+## 2026-11-12 09:55 UTC · auto
+- 브랜치: claude/replica-skill-install-ll9jb4 · HEAD bfc9dfb
+- 커밋 안 된 파일: 0개
+- 최근 커밋:
+  - bfc9dfb feat: 여러 날 할 일 — to-dos over several days: thin lines on the calendar, a 긴 할 일 calendar with labelled bars, grey once done
+  - 0f800b0 feat: drag a to-do onto a calendar date to move it there
+  - 8d530a6 feat: 알림 in four tabs — 친구의 할 일, 친구의 일기, 받은 관심, 공지
