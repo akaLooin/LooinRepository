@@ -36,6 +36,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | friends.js | demo people: friend chip → friend home, heart → emoji/sticker reaction and take back, their diary (sheet, sticker reaction), 주간 보기, 둘러보기 search → profile → follow (clovers) / request, profile's home button, 알림, 마이 counts → 친구 lists |
 | st.js | display settings (theme, week start), profile edit |
 | dy.js | diary: mood, text, background, reopen, empty removes |
+| photo-view.js | 사진 크게 보기: a to-do photo opens full screen, ⋯ → 사진 저장 (no 신고하기 on my own photo), close |
 | rm.js | reminders add/duplicate/delete, to-do alarm |
 
 Unit tests (no browser): `npm test`.

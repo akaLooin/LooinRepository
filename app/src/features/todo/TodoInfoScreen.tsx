@@ -3,7 +3,7 @@ import { useInsets } from "../../theme";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Animated, Pressable, ScrollView, View } from "react-native";
-import { AppText, Clover, ScreenHeader, StoredImage, useSheetDrag, VisibilityIcon } from "../../components";
+import { AppText, Clover, ScreenHeader, StoredImage, useSheetDrag, VisibilityIcon, ZoomPhoto } from "../../components";
 import { formatTime, usePrefs } from "../../data/prefs";
 import { timerTotal, useDB } from "../../data/store";
 import { parseDay, weekday } from "../../lib/dates";
@@ -65,7 +65,7 @@ export function TodoInfoScreen() {
             </View>
           </View>
         </View>
-        {todo.photoUri ? <StoredImage uri={todo.photoUri} label="인증 사진" style={{ width: "100%", aspectRatio: 1.4, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /> : null}
+        {todo.photoUri ? <ZoomPhoto uri={todo.photoUri!} label="인증 사진" others={false}><StoredImage uri={todo.photoUri} label="인증 사진" style={{ width: "100%", aspectRatio: 1.4, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /></ZoomPhoto> : null}
         <View style={{ gap: 6 }}>
           <AppText variant="bodyLg">{todo.title}</AppText>
           {todo.memo ? <AppText variant="body" color="textSecondary">{todo.memo}</AppText> : null}

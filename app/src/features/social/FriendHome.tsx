@@ -147,7 +147,7 @@ export function FriendHome({ id }: { id: string }) {
   return (
     <View>
       <View style={{ paddingHorizontal: G, marginTop: 34 }}>
-        <ProfileHeader name={p.nickname} avatar={p.avatarUri} bio={p.bio} emoji={diary?.emoji} onEmoji={() => setDiaryOpen(true)} readOnly />
+        <ProfileHeader name={p.nickname} avatar={p.avatarUri} bio={p.bio} emoji={diary ? diary.emoji ?? "📔" : undefined} onEmoji={() => setDiaryOpen(true)} readOnly />
       </View>
       <View style={{ paddingHorizontal: G, marginTop: 27, gap: 16 }}>
         <CalendarHeader
@@ -181,6 +181,7 @@ export function FriendHome({ id }: { id: string }) {
                   title={t.title}
                   memo={t.memo}
                   photo={t.photoUri}
+                  photoOthers
                   done={t.isDone}
                   color={cat.color}
                   onToggle={() => {}}

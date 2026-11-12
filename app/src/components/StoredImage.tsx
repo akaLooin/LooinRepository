@@ -15,7 +15,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * may still be loading or refreshing, and the link request failed: the photo stayed grey for good. So it waits
  * for the sign-in and tries again a few times before giving up.
  */
-async function resolve(uri: string, fresh = false): Promise<string | null> {
+export async function resolve(uri: string, fresh = false): Promise<string | null> {
   if (!isUploaded(uri)) return uri;
   const hit = cache.get(uri);
   if (!fresh && hit && hit.until > Date.now()) return hit.url;

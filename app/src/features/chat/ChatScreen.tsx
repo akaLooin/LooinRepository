@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
-import { AppText, KeyboardSpacer, ChevronLeft, Image as ImageIcon, Send, SmilePlus, Sticker, StoredImage } from "../../components";
+import { AppText, KeyboardSpacer, ChevronLeft, Image as ImageIcon, Send, SmilePlus, Sticker, StoredImage, ZoomPhoto } from "../../components";
 import { loadThread, markRead, newMessageId, sendMessage, type Message, type Thread } from "../../data/chat";
 import { usePrefs } from "../../data/prefs";
 import { chatItems, isBigEmoji, mergeMessages } from "../../lib/chat";
@@ -201,7 +201,7 @@ function Bubble({ m, time, state, onRetry, tight, who }: { m: Message; time?: st
   const { c } = useTheme();
   const big = m.kind === "emoji" || (m.kind === "text" && isBigEmoji(m.body));
   const body = m.kind === "photo" ? (
-    m.photoUri ? <StoredImage uri={m.photoUri} label="보낸 사진" style={{ width: 200, height: 200, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} />
+    m.photoUri ? <ZoomPhoto uri={m.photoUri} label="보낸 사진" others={!m.mine}><StoredImage uri={m.photoUri} label="보낸 사진" style={{ width: 200, height: 200, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /></ZoomPhoto>
       : <View style={{ width: 200, height: 200, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} />
   ) : m.kind === "sticker" ? (
     <Sticker id={m.body} size={120} />

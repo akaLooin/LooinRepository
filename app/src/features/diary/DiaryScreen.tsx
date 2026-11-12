@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
-  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, Image, MoodGauge, MoodMark, KeyboardSpacer, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage, Thermometer,
+  AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, ZoomPhoto, Image, MoodGauge, MoodMark, KeyboardSpacer, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage, Thermometer,
   useToast, VisibilityIcon, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
@@ -119,7 +119,7 @@ export function DiaryScreen() {
         </View>
         {images.map((u, i) => (
           <View key={u + i}>
-            <StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: "100%", aspectRatio: 1, borderRadius: tokens.radius.lg }} />
+            <ZoomPhoto uri={u} label={`일기 사진 ${i + 1}`} others={false}><StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: "100%", aspectRatio: 1, borderRadius: tokens.radius.lg }} /></ZoomPhoto>
             <Pressable onPress={() => setImages((xs) => xs.filter((_, j) => j !== i))} accessibilityRole="button" accessibilityLabel={`일기 사진 ${i + 1} 빼기`} hitSlop={8}
               style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: c.surfaceButton, alignItems: "center", justifyContent: "center" }}>
               <View style={{ width: 12, height: 2.5, borderRadius: 1, backgroundColor: c.text }} />

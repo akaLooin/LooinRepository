@@ -268,7 +268,7 @@ export function HomeScreen() {
             bio={profile.bio}
             dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now) } : undefined}
             onDday={() => router.push("/ddays" as never)}
-            emoji={diary?.emoji}
+            emoji={diary ? diary.emoji ?? "📔" : undefined}
             onEmoji={() => (diary ? setDiaryOpen(true) : router.push(`/diary/${selected}` as never))}
           />
         </View>

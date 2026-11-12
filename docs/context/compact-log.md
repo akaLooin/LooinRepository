@@ -17,3 +17,21 @@
   - d81d439 docs: phase 2 (friends) plan and the recordings it needs
   - 7f1e531 build: font choice and feed memo line limit in display settings
   - c03bb2b build: 오늘 할 일 home-screen widget (Android)
+
+## 2026-11-12 08:32 UTC · auto
+- 브랜치: claude/replica-skill-install-ll9jb4 · HEAD 3b3703a
+- 커밋 안 된 파일: 20개
+  - `pp/app.json`
+  - `app/package-lock.json`
+  - `app/package.json`
+  - `app/src/app/_layout.tsx`
+  - `app/src/components/StoredImage.tsx`
+  - `app/src/components/TodoRow.tsx`
+  - `app/src/components/index.ts`
+  - `app/src/features/chat/ChatScreen.tsx`
+  - `app/src/features/diary/DiaryScreen.tsx`
+  - `app/src/features/home/HomeScreen.tsx`
+- 최근 커밋:
+  - 3b3703a feat: D-day 당일 포함 and a red circle on D-day dates; routine 종료 날짜 없음 switch
+  - e57716c fix: chat field stays above the keyboard (B16) — keyboard height from window insets via react-native-keyboard-controller
+  - ad9c91c build: crews as in the second recording — crew chat, ⋯ menu (members, my category, copy link, stop/resume recruiting, edit/delete), crew chips and crew home

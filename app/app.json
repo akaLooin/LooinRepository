@@ -62,6 +62,16 @@
             }
           ]
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "크게 본 사진을 앨범에 저장할 때 써요.",
+          "isAccessMediaLocationEnabled": false,
+          "granularPermissions": [
+            "photo"
+          ]
+        }
       ]
     ],
     "scheme": "todomateclone",

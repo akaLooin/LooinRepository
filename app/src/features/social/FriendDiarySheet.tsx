@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, View } from "react-native";
 import { useState } from "react";
-import { AppText, BottomSheet, Ellipsis, Heart, MoodGauge, MoodMark, StoredImage } from "../../components";
+import { AppText, BottomSheet, Ellipsis, Heart, MoodGauge, MoodMark, StoredImage, ZoomPhoto } from "../../components";
 import { ActionSheet } from "../settings/parts";
 import type { Person, Reaction } from "../../data/social";
 import type { Diary } from "../../data/types";
@@ -44,7 +44,7 @@ export function FriendDiarySheet({ diary, person, reactions, onReact, onClose, o
             {diary.body ? <AppText variant="bodyLg" raw={ink} style={{ lineHeight: 26 }} selectable>{diary.body}</AppText> : null}
             {diary.imagePaths.length ? (
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {diary.imagePaths.map((u, i) => <StoredImage key={u + i} uri={u} label={`일기 사진 ${i + 1}`} style={{ width: 110, height: 110, borderRadius: tokens.radius.md }} />)}
+                {diary.imagePaths.map((u, i) => <ZoomPhoto key={u + i} uri={u} label={`일기 사진 ${i + 1}`} others={!onEdit}><StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: 110, height: 110, borderRadius: tokens.radius.md }} /></ZoomPhoto>)}
               </View>
             ) : null}
           </ScrollView>

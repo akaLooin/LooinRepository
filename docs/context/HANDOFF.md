@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-08 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-12 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -39,22 +39,15 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - EAS로 빌드(`cd app` → `npx.cmd eas-cli build --platform android --profile preview`), 순서 `replica/backend.md` 7번. projectId는 app.json. 푸시용 google-services.json은 EAS 파일 변수(저장소에 없음)
 - 이용자 할 일 남음: Supabase Redirect URL `todomateclone://**`(backend.md 8)
 
-## 다음 할 일 후보 (`replica/parity.md`의 상위 5개)
-- **2단계 친구 기능** — `replica/phase2.md`. 서버 `20261108000000_friends.sql`(읽기는 함수로만), DB 테스트 `supabase/tests/run.sh`
-- **친구 화면 1차 완료(2026-11-08, 원본 영상 2개 기준)**: 검색 → 프로필 시트, 친구 칩 → 친구 홈 + 하트 반응, 알림 탭, 친구 목록. 체험 모드 샘플 3명. e2e `friends.js`
-- **대화(DM) 완료(2026-11-08, 이용자 요청)**: 보내기 탭 = 대화 목록(안 읽은 수, 탭의 빨간 점), 대화 화면(글·이모지·사진, 전송됨/읽음, 3초마다 새 메시지), 프로필 종이비행기로 시작. 서버 `20261108000200_chat.sql` + 테스트 `chat.test.sql`. e2e `chat.js`
-- **친구 홈 주간 보기 + 친구 일기(2026-11-08)**: 주 버튼, 그날 일기 카드 → 읽기 전용 시트 + 하트로 반응. 내 일기에 받은 반응: 홈 일기 칸 + 일기 화면 '받은 반응'(보낸 사람 이름). SQL 000100에 포함
-- **스티커 '클로버 친구들' 18개 완료(2026-11-08)**: 코드로 그린 우리 그림(`components/Sticker.tsx`, 색은 tokens `sticker`). 반응 창 첫 탭, 친구 할 일 아래, 대화에서 보내기, 설정 → 내 스티커. 일기 스티커는 원본 화면 보고 나중에
-- **할 일 캘린더(2026-11-08)**: 홈 메뉴 → 할 일 캘린더(칸에 할 일 이름, 최대 개수 넘치면 +n, 주간 보기, 날짜 누르면 홈). 설정 → 화면 최대 개수 2줄 동작
-- **푸시 알림(2026-11-08)**: 서버 함수 `functions/push` + SQL 000300 + Firebase/EAS/배포/Webhook 이용자 PC에서 완료, 새 APK에서 '켜져 있어요' 확인 ✅
-- **친구 피드(2026-11-09)**: 둘러보기 검색칸 아래 '친구 소식'(팔로우한 친구의 완료 할 일·공개 일기, 반응, 더 보기, 피드 설정 2개 적용). SQL `20261109000000_feed.sql` 이용자 실행 필요(backend.md 14)
-- **원본 맞추기(2026-11-08~09)**: 클로버 모양(모서리 네 원), 캘린더 숫자 색 설정, 목록 터치 = 손가락에서 퍼지는 원(`components/press.tsx`, 이용자 OK ✅)
-- **일기 원본처럼(2026-11-09)**: 스티커 기분 + 기분 온도, 색 격자, 프로필 옆 = 그날 일기(시트 ⋯ 수정·삭제). SQL `20261109000100_diary_mood.sql`
-- **크루(2026-11-09, 원본 영상)**: 둘러보기 크루 줄, 크루 화면(순위·메달·크루장), 참가 신청(메시지+공유 카테고리)·취소, 크루장 수락, 만들기, 가이드. SQL `20261109000200_crews.sql`
-- **크루 2차·일기 정정(2026-11-09, 이용자 영상)**: 크루 대화방, ⋯(멤버 보기·카테고리 변경·링크 복사·모집 중단·수정/삭제), 홈 크루 칩 → 크루 홈, 크루 사진 버그 수정. 일기: 위=스티커, 아래 버튼=기분 온도, 임시 저장. SQL `20261109000300_crews2.sql`
-- **대화 키보드 가림(B16, 2026-11-09)**: react-native-keyboard-controller + reanimated로 입력칸이 키보드 위로(대화·일기). 폰 확인 필요
-- **다음(이용자, PC)**: SQL 20261109000300 실행, push 재배포 + Webhook crew_messages(backend.md 17), 새 APK(새 네이티브 부품 clipboard·keyboard-controller·reanimated → `npm.cmd install` 필수)
-- SQL 실행 완료 ✅ (2026-11-08): 20261107000000, 20261108000000·000100·000200·000300 (이용자 확인)
+## 2단계(친구·대화·크루) 완료 — 자세한 건 `replica/build-log.md`, `replica/backend.md` 9~18
+- 친구(검색·프로필·친구 홈·주간·일기·반응·알림), 대화(DM), 스티커 18개, 할 일 캘린더, 푸시(폰 확인 ✅), 친구 피드, 일기(스티커 기분+기분 온도·임시 저장), 크루 1·2차(대화방·⋯ 메뉴·크루 홈), 대화 키보드 가림 수정(B16, 폰 확인 필요)
+- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. **미확인/미실행**: 20261109000300_crews2, 20261112000000_my_features
+- 이용자 PC 할 일: 위 SQL 2개, push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
+
+## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지, 이후 디자인 교체)
+- ✅ 디데이 당일 포함·디데이 날 붉은 동그라미·루틴 종료 날짜 없음 (3b3703a)
+- ✅ 사진 크게 보기: `components/PhotoViewer.tsx`(두 손가락 확대 1~5배, 두 번 탭, 길게 누르기/⋯ → 사진 저장·남의 사진 신고하기). 저장 `lib/savePhoto.ts`(expo-media-library), 신고 `data/report.ts` → SQL `reports`. e2e `photo-view.js`
+- 남은 순서: 뽀모도로(타이머 ⋯) → 할 일·일기 검색(홈 위 버튼, 결과 누르면 그 날짜) → 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지) → 할 일을 달력 날짜로 끌어 옮기기 → 여러 날 할 일(`todos.end_date`를 20261112000000에 추가, 달력에 막대, 체크하면 회색, 헤더 ▼ = 캘린더 종류)
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인
@@ -62,7 +55,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (65개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (67개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

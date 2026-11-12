@@ -64,6 +64,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 15. **일기 기분 온도 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000100_diary_mood.sql`. Safe to run again. Until then a diary keeps its 기분 온도 on the phone only.
 16. **크루 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000200_crews.sql` (crews, members and requests, crew notices, the public `crew-images` bucket). Safe to run again. For crew pushes, deploy the push function again (`npx.cmd supabase functions deploy push --no-verify-jwt --remote=<id>`).
 17. **크루 2차 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000300_crews2.sql` (모집 중단, 크루 수정, 크루 홈, 크루 대화방). Safe to run again. For crew chat pushes: deploy the push function again (`npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <id>`) and add a third Database Webhook like step 13.6: name `push-crew-messages`, table `crew_messages`, same `x-push-secret` header.
+18. **내 기능 (2026-11-12)**, once in the SQL Editor: run `supabase/migrations/20261112000000_my_features.sql` (디데이 `당일 포함`, photo reports `reports` + `report_content`). Safe to run again. Until then 당일 포함 stays on the phone only and 신고하기 shows an error.
 ## Checklist
 
 Auth

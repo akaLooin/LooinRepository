@@ -1,7 +1,7 @@
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText, Clover, Heart, StoredImage, useToast, MoodMark } from "../../components";
+import { AppText, Clover, Heart, StoredImage, useToast, MoodMark, ZoomPhoto } from "../../components";
 import { friendFeed, react, type FeedItem, type Person } from "../../data/social";
 import { usePrefs } from "../../data/prefs";
 import { nextReaction, timeAgo } from "../../lib/friend";
@@ -74,7 +74,7 @@ export function FeedList({ onPerson }: { onPerson: (p: Person) => void }) {
                   <AppText variant="bodyLg">{it.title}</AppText>
                   {it.category ? <AppText variant="small" raw={visibleOn(it.category.color, c.bg, c.textMuted)}>{it.category.title}</AppText> : null}
                   {it.memo ? <AppText variant="helper" color="textSecondary" numberOfLines={lines}>{it.memo}</AppText> : null}
-                  {it.photoUri ? <StoredImage uri={it.photoUri} label="인증 사진" style={{ marginTop: 6, width: "100%", aspectRatio: 2, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /> : null}
+                  {it.photoUri ? <ZoomPhoto uri={it.photoUri} label="인증 사진" others={true}><StoredImage uri={it.photoUri} label="인증 사진" style={{ marginTop: 6, width: "100%", aspectRatio: 2, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} /></ZoomPhoto> : null}
                 </View>
               </View>
             ) : (
@@ -83,7 +83,7 @@ export function FeedList({ onPerson }: { onPerson: (p: Person) => void }) {
                 {it.body ? <AppText variant="body" numberOfLines={lines ?? 6}>{it.body}</AppText> : null}
                 {it.imagePaths?.length ? (
                   <View style={{ flexDirection: "row", gap: 6 }}>
-                    {it.imagePaths.slice(0, 3).map((u, i) => <StoredImage key={u + i} uri={u} label={`일기 사진 ${i + 1}`} style={{ width: 84, height: 84, borderRadius: tokens.radius.md }} />)}
+                    {it.imagePaths.slice(0, 3).map((u, i) => <ZoomPhoto key={u + i} uri={u} label={`일기 사진 ${i + 1}`} others={true}><StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: 84, height: 84, borderRadius: tokens.radius.md }} /></ZoomPhoto>)}
                   </View>
                 ) : null}
               </View>

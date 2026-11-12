@@ -10,6 +10,7 @@ import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadPrefs, usePrefs } from "../data/prefs";
 import { KeyboardRoot } from "../components/KeyboardSpacer";
+import { PhotoViewerHost } from "../components/PhotoViewer";
 import { AuthGate } from "../features/auth/AuthGate";
 import { extraFontFiles, fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
 
@@ -44,6 +45,7 @@ function Shell() {
           </Stack>
         </AuthGate>
       </ScaledRoot>
+      <PhotoViewerHost />
     </View>
   );
 }
