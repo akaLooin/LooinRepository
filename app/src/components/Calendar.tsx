@@ -2,10 +2,11 @@ import { memo, useCallback, useRef, useState } from "react";
 import type { ViewInstance as ViewType } from "react-native";
 import { Pressable, View } from "react-native";
 import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/dates";
-import { tokens, useTheme, type ColorName } from "../theme";
+import { rowSegments, type SpanBar } from "../lib/spans";
+import { onColor, tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 import { Clover, type CloverState } from "./Clover";
-import { ChevronDown, ChevronLeft, ChevronRight } from "./icons";
+import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 
 function dayColor(wd: number): ColorName {
@@ -13,20 +14,24 @@ function dayColor(wd: number): ColorName {
 }
 
 /** [clover ▼]  2026년 11월  [주] [‹] [›]  (S03) */
-export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filterColors, onFilter, onTitle }: {
+export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filterColors, onFilter, onTitle, kind = "basic" }: {
   title: string; mode: "month" | "week"; onToggleMode?: () => void; onPrev: () => void; onNext: () => void; filterColors: string[]; onFilter?: () => void;
+  /** 캘린더 종류: clovers, or the 긴 할 일 calendar (bars) */
+  kind?: "basic" | "span";
   /** tapping the big month title goes back to today (original) */
   onTitle?: () => void;
 }) {
   const { c } = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <PillButton onPress={onFilter} a11y="표시할 카테고리" pad={9} gap={8}>
-        <View style={{ width: 22, height: 22 }}>
-          {filterColors.slice(0, 2).map((col, i) => (
-            <View key={i} style={{ position: "absolute", left: i * 4, top: i * 4 }}><Clover size={18} state={{ kind: "fill", color: col }} /></View>
-          ))}
-        </View>
+      <PillButton onPress={onFilter} a11y={kind === "span" ? "캘린더 종류: 긴 할 일" : "캘린더 종류와 표시할 카테고리"} pad={9} gap={8}>
+        {kind === "span" ? <CalendarRange size={22} color={c.text} /> : (
+          <View style={{ width: 22, height: 22 }}>
+            {filterColors.slice(0, 2).map((col, i) => (
+              <View key={i} style={{ position: "absolute", left: i * 4, top: i * 4 }}><Clover size={18} state={{ kind: "fill", color: col }} /></View>
+            ))}
+          </View>
+        )}
         <ChevronDown size={15} color={c.text} fill={c.text} />
       </PillButton>
       <Pressable onPress={onTitle} disabled={!onTitle} style={{ flex: 1, marginLeft: 1 }} accessibilityRole="button" accessibilityLabel={`${title}, 오늘로 이동`}>
@@ -72,7 +77,7 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
  * Month or week grid. `state` gives each day's clover; pass `picker` for the plain date picker (S21b).
  * `rows` lets the week view pass just one row.
  */
-export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn, dropHover, cellRef }: {
+export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn, dropHover, cellRef, spans, kind = "basic" }: {
   year: number; month: number; today: Day; selected?: Day; onSelect?: (d: Day) => void; state?: (d: Day) => CloverState; picker?: boolean; weekStartsSunday?: boolean; rows?: (Day | null)[][];
   /** known width (calendar pager): the dates are placed right away instead of after measuring */
   width?: number;
@@ -82,8 +87,12 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   dropHover?: Day | null;
   /** each date's view, so home can find which date is under the finger (keep it the same function between renders) */
   cellRef?: (d: Day, v: ViewType | null) => void;
+  /** 여러 날 할 일: thin lines under the dates (basic), or labelled bars on the 긴 할 일 calendar (kind "span") */
+  spans?: SpanBar[];
+  kind?: "basic" | "span";
 }) {
   const { c } = useTheme();
+  const long = kind === "span" && !picker;
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
   const labels = weekdayLabels(weekStartsSunday);
   // The original spreads the days edge to edge: the first clover touches the left margin, the last the right one.
@@ -104,8 +113,10 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
           <AppText key={l} variant="weekday" center color={l === "일" ? "sunday" : l === "토" ? "saturday" : "text"} style={{ flex: 1 }}>{l}</AppText>
         ))}
       </View>
-      {grid.map((row, i) => (
-        <View key={i} style={{ flexDirection: "row", height: picker ? 52 : tokens.layout.calendarRowHeight, marginHorizontal: -bleed }}>
+      {grid.map((row, i) => {
+        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? 3 : 2) : null;
+        return (
+        <View key={i} style={{ flexDirection: "row", height: picker ? 52 : long ? tokens.layout.spanRowHeight : tokens.layout.calendarRowHeight, marginHorizontal: -bleed }}>
           {row.map((day, j) => {
             if (!day) return <View key={j} style={{ flex: 1 }} />;
             const isToday = day === today;
@@ -113,14 +124,41 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             // today is a grey disc when another day is picked. The date picker sheet only marks the picked day.
             const ring = day === selected || (!picker && !selected && isToday);
             const todayDisc = !picker && isToday && !ring;
-            const cs = !picker && state ? state(day) : undefined;
+            const cs = !picker && !long && state ? state(day) : undefined;
             return (
               <DayCell key={j} day={day} ring={ring} todayDisc={todayDisc} picker={!!picker} clover={cs} cloverKey={cs ? JSON.stringify(cs) : ""}
                 ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} />
             );
           })}
+          {bars ? (
+            <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
+              {bars.segments.map((b) => {
+                const fill = b.done ? c.spanDone : b.color;
+                const pos = { position: "absolute" as const, left: `${(b.from / 7) * 100}%` as const, width: `${((b.to - b.from + 1) / 7) * 100}%` as const };
+                const ends = { marginLeft: b.opensLeft ? 0 : 4, marginRight: b.opensRight ? 0 : 4 };
+                const round = { borderTopLeftRadius: b.opensLeft ? 0 : 4, borderBottomLeftRadius: b.opensLeft ? 0 : 4, borderTopRightRadius: b.opensRight ? 0 : 4, borderBottomRightRadius: b.opensRight ? 0 : 4 };
+                return long ? (
+                  <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}`}>
+                    <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill, justifyContent: "center", paddingHorizontal: 4 }}>
+                      {!b.opensLeft || b.from === row.findIndex(Boolean) ? (
+                        <AppText variant="spanLabel" raw={onColor(fill)} numberOfLines={1}>{b.title}</AppText>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : (
+                  <View key={b.id} style={{ ...pos, bottom: 1 + b.lane * 5, height: 3 }}>
+                    <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill }} />
+                  </View>
+                );
+              })}
+              {long ? bars.more.map((n, col) => (n ? (
+                <AppText key={col} variant="spanLabel" color="textMuted" center style={{ position: "absolute", top: 34 + 3 * 17, left: `${(col / 7) * 100}%`, width: `${100 / 7}%` }}>{`+${n}`}</AppText>
+              ) : null)) : null}
+            </View>
+          ) : null}
         </View>
-      ))}
+        );
+      })}
     </View>
   );
 }

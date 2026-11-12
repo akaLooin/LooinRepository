@@ -1,23 +1,40 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, ArrowRight, BottomSheet, Button, Clover, Copy, List, RadioCheck, Redo2, X } from "../../components";
+import { AppText, ArrowRight, BottomSheet, Button, CalendarRange, Clover, Copy, List, RadioCheck, Redo2, X } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import type { Category } from "../../data/store";
 import { useTheme } from "../../theme";
 
-/** ▼ next to the month: which categories the calendar clovers count (null = all). */
+/**
+ * ▼ next to the month: 캘린더 종류 (clovers, or the 긴 할 일 calendar with the multi-day to-dos as bars; user's
+ * feature), then which categories the calendar counts (null = all).
+ */
 export function CalendarFilterSheet({ open, onClose, categories }: { open: boolean; onClose: () => void; categories: Category[] }) {
   const { c } = useTheme();
   const prefs = usePrefs();
   const [picked, setPicked] = useState<string[]>(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
+  const [kind, setKind] = useState(prefs.calendarKind);
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? (p.length > 1 ? p.filter((x) => x !== id) : p) : [...p, id]));
   const save = () => {
     const all = categories.every((x) => picked.includes(x.id));
     setPref("calendarCategoryIds", all ? null : picked);
+    if (kind !== prefs.calendarKind) setPref("calendarKind", kind);
     onClose();
   };
   return (
-    <BottomSheet visible={open} onClose={onClose} title="캘린더에 표시할 카테고리">
+    <BottomSheet visible={open} onClose={onClose} title="캘린더 종류">
+      {([["basic", "기본", "날짜마다 클로버, 여러 날 할 일은 아래 얇은 줄"], ["span", "긴 할 일", "여러 날 할 일을 이름이 적힌 막대로"]] as const).map(([k, label, sub]) => (
+        <Pressable key={k} onPress={() => setKind(k)} accessibilityRole="radio" accessibilityState={{ checked: kind === k }} accessibilityLabel={`${label} 캘린더`}
+          style={{ flexDirection: "row", alignItems: "center", height: 58, gap: 14 }}>
+          {k === "basic" ? <Clover size={22} state={{ kind: "fill", color: categories[0]?.color ?? c.accent }} /> : <CalendarRange size={22} color={c.text} />}
+          <View style={{ flex: 1 }}>
+            <AppText variant="bodyLg">{label}</AppText>
+            <AppText variant="small" color="textMuted">{sub}</AppText>
+          </View>
+          <RadioCheck selected={kind === k} />
+        </Pressable>
+      ))}
+      <AppText variant="body" weight={700} style={{ marginTop: 18, marginBottom: 2 }}>표시할 카테고리</AppText>
       {categories.map((cat) => {
         const on = picked.includes(cat.id);
         return (
@@ -29,7 +46,7 @@ export function CalendarFilterSheet({ open, onClose, categories }: { open: boole
           </Pressable>
         );
       })}
-      <AppText variant="helper" color="textMuted" style={{ marginTop: 6 }}>고른 카테고리의 할 일만 날짜의 클로버에 세어요. 최소 하나는 남겨 두어야 해요.</AppText>
+      <AppText variant="helper" color="textMuted" style={{ marginTop: 6 }}>고른 카테고리의 할 일만 캘린더에 보여요. 최소 하나는 남겨 두어야 해요.</AppText>
       <View style={{ marginTop: 18 }}><Button kind="sheetPrimary" label="확인" onPress={save} /></View>
     </BottomSheet>
   );

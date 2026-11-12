@@ -3,15 +3,16 @@ import { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import {
   AppText, Archive, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
-  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown,
+  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown, CalendarRange,
 } from "../../components";
 import { ensurePermission } from "../../data/notifications";
-import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, moveTodos, setTodoAlarm, setTodoPhoto, updateTodo, useDB, type Todo } from "../../data/store";
+import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, moveTodos, setTodoAlarm, setTodoEnd, setTodoPhoto, updateTodo, useDB, type Todo } from "../../data/store";
 import { pickPhoto } from "../../lib/photos";
 import { addDays, parseDay, today, type Day } from "../../lib/dates";
+import { isSpan, spanLabel } from "../../lib/spans";
 import { tokens, useTheme } from "../../theme";
 
-type Mode = { kind: "menu" } | { kind: "memo" } | { kind: "alarm" } | { kind: "date"; action: "copy" | "move" } | { kind: "closed" };
+type Mode = { kind: "menu" } | { kind: "memo" } | { kind: "alarm" } | { kind: "date"; action: "copy" | "move" } | { kind: "end" } | { kind: "closed" };
 
 /** S05 to-do menu, plus the memo sheet (S05a) and the date picker it opens. */
 /** `inbox`: the 보관함 version of the menu (메모 with its text, 오늘하기, 날짜 바꾸기, 정보 보기), as in the reference. */
@@ -31,7 +32,9 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
   };
   const now = today();
   const day = todo.date ?? now;
-  const past = day < now;
+  const span = isSpan(todo);
+  // a multi-day to-do has passed only once its last day has
+  const past = (span ? todo.endDate! : day) < now;
   const icon = (I: typeof Pencil) => <I size={18} color={c.onIcon} strokeWidth={2.4} />;
 
   return (
@@ -88,6 +91,7 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
           <SheetMenuRow title="내일 하기" color="menuMove" icon={icon(ArrowRight)} onPress={() => { moveTodo(todo.id, addDays(day, 1)); close(); notice("내일로 옮겼어요"); }} />
         )}
         <SheetMenuRow title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
+        <SheetMenuRow title={span ? `기간 · ${spanLabel(todo, parseDay(now).y)}` : "여러 날 하기"} color="menuTime" icon={icon(CalendarRange)} onPress={() => setMode({ kind: "end" })} />
         {!todo.isDone ? (
           <SheetMenuRow title="보관함으로 이동" color="menuMove" icon={icon(Archive)} onPress={() => { moveTodos([todo.id], null); close(); notice("보관함으로 옮겼어요"); }} />
         ) : null}
@@ -98,6 +102,20 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
 
       {mode.kind === "memo" ? <MemoSheet todo={todo} onClose={close} /> : null}
       {mode.kind === "alarm" ? <AlarmSheet todo={todo} onClose={close} notice={notice} /> : null}
+      {mode.kind === "end" && todo.date ? (
+        <DatePickSheet
+          title="끝나는 날"
+          initial={span ? todo.endDate! : addDays(todo.date, 1)}
+          onClose={close}
+          onClear={span ? () => { setTodoEnd(todo.id, null); close(); notice("하루 할 일로 바꿨어요"); } : undefined}
+          onPick={(end) => {
+            setTodoEnd(todo.id, end);
+            close();
+            const { m, d } = parseDay(end);
+            notice(end > todo.date! ? `${m}월 ${d}일까지 하는 할 일이에요` : "끝나는 날은 시작한 날보다 뒤여야 해요");
+          }}
+        />
+      ) : null}
       {mode.kind === "date" ? (
         <DatePickSheet
           title={mode.action === "copy" ? "다른 날 또 하기" : "날짜 바꾸기"}

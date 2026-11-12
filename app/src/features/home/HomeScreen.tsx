@@ -28,6 +28,7 @@ import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 import { takeHomeDay } from "../../lib/todoCalendar";
+import { isSpan, rowSegments, spanLabel, type SpanBar } from "../../lib/spans";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
 import { CrewHome } from "../crew/CrewHome";
 import { useMyCrews } from "../../data/crews";
@@ -226,7 +227,9 @@ export function HomeScreen() {
         today={now}
         selected={selected}
         onSelect={(d) => { if (calendarJustSwiped()) return; if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); keepEditing(); }}
-        state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
+        state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId) && !isSpan(t)), calCats, prefs.calendarCategoryCount)}
+        spans={spanBars}
+        kind={prefs.calendarKind}
         ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))}
         rows={rows}
         weekStartsSunday={prefs.weekStartsSunday}
@@ -238,6 +241,13 @@ export function HomeScreen() {
   };
 
   const diary = diaries.find((x) => x.date === selected);
+  // 여러 날 할 일 as bars on the calendar (not counted in the clovers)
+  const spanBars: SpanBar[] = useMemo(() => {
+    const ids = new Set(prefs.calendarCategoryIds ?? db.categories.map((x) => x.id));
+    const color = new Map(db.categories.map((x) => [x.id, x.color]));
+    return db.todos.filter((t) => isSpan(t) && !t.isSkipped && ids.has(t.categoryId))
+      .map((t) => ({ id: t.id, start: t.date!, end: t.endDate!, color: color.get(t.categoryId) ?? c.accent, done: t.isDone, title: t.title }));
+  }, [db, prefs.calendarCategoryIds, c.accent]);
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
   const calCats = categories.filter((x) => calIds.has(x.id));
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
@@ -260,7 +270,8 @@ export function HomeScreen() {
     if (!arrangeTodos(entries)) notice("종료한 카테고리로는 옮길 수 없어요");
   };
 
-  const undoneIds = () => dayTodos.filter((t) => !t.isDone).map((t) => t.id);
+  // 여러 날 할 일 stay put when the day's unfinished to-dos move on
+  const undoneIds = () => dayTodos.filter((t) => !t.isDone && !isSpan(t)).map((t) => t.id);
   const allIds = () => dayTodos.map((t) => t.id);
   const runListAction = (a: ListAction) => {
     setHomeSheet(null);
@@ -327,6 +338,7 @@ export function HomeScreen() {
             onNext={() => shift(1)}
             filterColors={calCats.slice(0, 2).map((x) => x.color)}
             onFilter={() => setHomeSheet("filter")}
+            kind={prefs.calendarKind}
           />
           <CalendarPager key={`${mode}-${prefs.weekStartsSunday}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} gutter={G} />
         </View>
@@ -400,6 +412,7 @@ export function HomeScreen() {
               ) : (
                 <TodoRow
                   title={t.title}
+                  period={isSpan(t) ? spanLabel(t, parseDay(now).y) : undefined}
                   alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined}
                   memo={t.memo}
                   photo={t.photoUri}

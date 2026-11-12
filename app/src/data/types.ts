@@ -27,6 +27,7 @@ export type Todo = {
   categoryId: string;
   title: string;
   date: Day | null; // null = 보관함 (no date yet)
+  endDate?: Day | null; // 여러 날 할 일 (user's feature): the last day, after `date`. null = made one-day again
   sortOrder: number;
   isDone: boolean;
   doneAt?: string;

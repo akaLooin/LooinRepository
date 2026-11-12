@@ -32,6 +32,7 @@
     "dday": "#cf2f3c",
     "search-hit": "#0f8a47",
     "drop-target": "#d6f0df",
+    "span-done": "#b5b5b5",
     "danger": "#c4303c",
     "toggle-on": "#555555",
     "toggle-off": "#cccccc",

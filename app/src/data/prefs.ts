@@ -38,6 +38,8 @@ export type Prefs = {
   monthCalendarMax: number; weekCalendarMax: number;
   // 타이머 ⋯ → 스톱워치 / 뽀모도로 (user's feature); this phone only
   timerMode: "stopwatch" | "pomodoro"; pomodoroMinutes: number; pomodoro: PomodoroSession | null;
+  // 캘린더 종류 (home ▼, user's feature): clovers, or the 긴 할 일 calendar; this phone only
+  calendarKind: "basic" | "span";
 };
 
 export type Audience = "all" | "followers" | "none";
@@ -49,7 +51,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null,
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic",
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

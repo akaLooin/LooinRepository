@@ -10,6 +10,7 @@ import { AppState } from "react-native";
 import { addDays, today, type Day } from "../lib/dates";
 import { isUploaded, rememberLocal } from "../lib/photoPaths";
 import { smoothLayout } from "../lib/motion";
+import { moveSpan } from "../lib/spans";
 import { refreshWidget, setWidgetSource, takeWidgetChecks } from "../lib/widget";
 import { rescheduleNotifications } from "./notifications";
 import { applyRemoteSettings, getPrefs, settingsDirty, settingsSent } from "./prefs";
@@ -362,7 +363,15 @@ export function moveTodo(id: string, date: Day) {
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   const same = db.todos.filter((x) => x.categoryId === t.categoryId && x.date === date);
-  updateTodo(id, { date, sortOrder: nextOrder(same) });
+  updateTodo(id, { ...moveSpan(t, date), sortOrder: nextOrder(same) });
+}
+
+/** 여러 날 할 일 (user's feature): the last day of the to-do, or null to make it a one-day to-do again. */
+export function setTodoEnd(id: string, end: Day | null) {
+  id = materialize(id);
+  const t = db.todos.find((x) => x.id === id);
+  if (!t?.date) return;
+  updateTodo(id, { endDate: end && end > t.date ? end : null });
 }
 
 /** 내일 또 하기 / 다른 날 또 하기: a fresh, unchecked copy on another day. */
@@ -372,7 +381,7 @@ export function copyTodo(id: string, date: Day) {
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   const same = db.todos.filter((x) => x.categoryId === t.categoryId && x.date === date);
-  const copy: Todo = { ...t, id: newId(), date, isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined,
+  const copy: Todo = { ...t, id: newId(), ...moveSpan(t, date), isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined,
     photoUri: undefined, routineId: undefined, routineDate: undefined, sortOrder: nextOrder(same), createdAt: now() };
   set({ ...db, todos: [...db.todos, copy] });
 }
@@ -460,7 +469,7 @@ export function moveTodos(ids: string[], date: Day | null) {
   smoothLayout();
   const real = new Set(ids.map((id) => materialize(id)));
   let order = nextOrder(db.todos.filter((x) => x.date === date));
-  set({ ...db, todos: db.todos.map((t) => (real.has(t.id) ? { ...t, date, sortOrder: order++ } : t)) });
+  set({ ...db, todos: db.todos.map((t) => (real.has(t.id) ? { ...t, ...moveSpan(t, date), sortOrder: order++ } : t)) });
 }
 
 /** Fresh, unchecked copies on another day. */
@@ -469,7 +478,7 @@ export function copyTodos(ids: string[], date: Day) {
   const real = ids.map((id) => materialize(id));
   let order = nextOrder(db.todos.filter((x) => x.date === date));
   const copies: Todo[] = db.todos.filter((t) => real.includes(t.id)).map((t) => ({
-    ...t, id: newId(), date, isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined, photoUri: undefined,
+    ...t, id: newId(), ...moveSpan(t, date), isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined, photoUri: undefined,
     routineId: undefined, routineDate: undefined, isSkipped: undefined, sortOrder: order++, createdAt: now(),
   }));
   set({ ...db, todos: [...db.todos, ...copies] });

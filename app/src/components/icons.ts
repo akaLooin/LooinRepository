@@ -4,5 +4,5 @@ export {
   FileText, Globe, House, Image, Info, Lock, Pause, Pencil, Play, Minus, Plus, Redo2, Send, SmilePlus,
   TextAlignStart, Trash2, User, Users, X, List, Copy, ArrowDown,
   Shield, Monitor, Megaphone, FlaskConical, Share, CircleCheck, BellRing, CircleQuestionMark, Settings,
-  Heart, Search, Ellipsis, Crown, Thermometer,
+  Heart, Search, Ellipsis, Crown, Thermometer, CalendarRange,
 } from "lucide-react-native";

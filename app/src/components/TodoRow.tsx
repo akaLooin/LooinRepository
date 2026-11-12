@@ -21,7 +21,7 @@ function AlarmClock({ size = 14 }: { size?: number }) {
 }
 
 /** One to-do: clover checkbox, title, optional alarm time, memo and proof photo (S03). */
-export function TodoRow({ photoOthers, right, below, smallPhoto, onMemoPress, onAlarmPress, title, alarm, memo, done, color, photo, onToggle, onPress, onDoubleTap, small, smallMemo, onLongPress, delayLongPress, selected, largeMemo }: {
+export function TodoRow({ period, photoOthers, right, below, smallPhoto, onMemoPress, onAlarmPress, title, alarm, memo, done, color, photo, onToggle, onPress, onDoubleTap, small, smallMemo, onLongPress, delayLongPress, selected, largeMemo }: {
   title: string; alarm?: string; memo?: string; done: boolean; color: string; photo?: string; onToggle: () => void; onPress?: () => void; onDoubleTap?: () => void;
   small?: boolean; smallMemo?: boolean; onLongPress?: () => void; delayLongPress?: number; selected?: boolean; largeMemo?: boolean;
   /** tapping the memo text opens the memo editor, tapping the alarm time opens the time sheet (user) */
@@ -32,6 +32,8 @@ export function TodoRow({ photoOthers, right, below, smallPhoto, onMemoPress, on
   right?: React.ReactNode; below?: React.ReactNode;
   /** someone else's photo (the big view then offers 신고하기) */
   photoOthers?: boolean;
+  /** 여러 날 할 일: "11.3 – 11.7", with a short bar in the category colour (grey once done) */
+  period?: string;
 }) {
   const { c } = useTheme();
   // With double-tap editing on, a single tap waits a moment to see if a second one follows, so a double tap
@@ -53,6 +55,12 @@ export function TodoRow({ photoOthers, right, below, smallPhoto, onMemoPress, on
       <Clover size={tokens.size.cloverTodo} state={done ? { kind: "todoDone", color } : { kind: "todoOpen" }} onPress={onToggle} label={`${title}, ${done ? "완료됨" : "미완료"}`} />
       <Pressable onPress={press} onLongPress={onLongPress} delayLongPress={delayLongPress} style={{ flex: 1, gap: 2 }} accessibilityRole="button" accessibilityHint="메뉴 열기">
         <AppText variant={small ? "body" : "bodyLg"}>{title}</AppText>
+        {period ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }} accessibilityLabel={`기간 ${period}`}>
+            <View style={{ width: 14, height: 4, borderRadius: 2, backgroundColor: done ? c.spanDone : color }} />
+            <AppText variant="helper" color="textSecondary">{period}</AppText>
+          </View>
+        ) : null}
         {alarm ? (
           <Pressable onPress={onAlarmPress} disabled={!onAlarmPress} onLongPress={onLongPress} delayLongPress={delayLongPress} hitSlop={{ top: 4, bottom: 4 }}
             style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2, alignSelf: "flex-start" }} accessibilityRole="button" accessibilityLabel={`알림 ${alarm}`} accessibilityHint="시간 알림 바꾸기">

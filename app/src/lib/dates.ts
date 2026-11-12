@@ -31,6 +31,12 @@ export function addDays(day: Day, n: number): Day {
   return toDay(t.getFullYear(), t.getMonth() + 1, t.getDate());
 }
 
+/** Whole days from a to b (b later = positive). Counted on UTC dates, so summer time cannot shift it. */
+export function daysBetween(a: Day, b: Day) {
+  const t = (d: Day) => { const p = parseDay(d); return Date.UTC(p.y, p.m - 1, p.d); };
+  return Math.round((t(b) - t(a)) / 86400000);
+}
+
 /** Weeks of a month as rows of 7 cells; cells outside the month are null. */
 export function monthGrid(y: number, m: number, weekStartsSunday = true): (Day | null)[][] {
   const first = toDay(y, m, 1);

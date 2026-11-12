@@ -1,6 +1,7 @@
 // Pure: which to-dos a day has, including routine occurrences without a row yet. No React Native imports.
 import type { Day } from "../lib/dates";
 import { occursOn } from "../lib/routines";
+import { onDay } from "../lib/spans";
 import type { DB, Todo } from "./types";
 
 /** A routine's time on a given day as an alarm moment (the phone's local time), or undefined if it has no time. */
@@ -20,7 +21,8 @@ export const isVirtual = (id: string) => id.startsWith("r:");
  * A row exists once the user touches the occurrence (checks, edits, moves, skips).
  */
 export function todosForDay(d: DB, day: Day): Todo[] {
-  const real = d.todos.filter((t) => t.date === day && !t.isSkipped);
+  // a multi-day to-do is on every day from its start to its end
+  const real = d.todos.filter((t) => onDay(t, day) && !t.isSkipped);
   const touched = new Set(d.todos.filter((t) => t.routineId && t.routineDate === day).map((t) => t.routineId));
   const virtual: Todo[] = d.routines
     .filter((r) => !r.manualAdd && !touched.has(r.id) && occursOn(r, day))

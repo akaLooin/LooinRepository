@@ -25,3 +25,9 @@ language sql security definer set search_path = public as $$
 $$;
 revoke execute on function report_content(text, text, text) from public, anon;
 grant execute on function report_content(text, text, text) to authenticated;
+
+-- 여러 날 할 일: date(시작)부터 end_date(끝, 그날 포함)까지. 하루짜리는 null
+alter table todos add column if not exists end_date date;
+do $$ begin
+  alter table todos add constraint todos_end_after_start check (end_date is null or (date is not null and end_date > date));
+exception when duplicate_object then null; end $$;

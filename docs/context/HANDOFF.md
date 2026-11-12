@@ -42,16 +42,18 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 ## 2단계(친구·대화·크루) 완료 — 자세한 건 `replica/build-log.md`, `replica/backend.md` 9~18
 - 친구(검색·프로필·친구 홈·주간·일기·반응·알림), 대화(DM), 스티커 18개, 할 일 캘린더, 푸시(폰 확인 ✅), 친구 피드, 일기(스티커 기분+기분 온도·임시 저장), 크루 1·2차(대화방·⋯ 메뉴·크루 홈), 대화 키보드 가림 수정(B16, 폰 확인 필요)
 - SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. **미확인/미실행**: 20261109000300_crews2, 20261112000000_my_features
-- 이용자 PC 할 일: 위 SQL 2개, push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
+- 이용자 PC 할 일: 위 SQL 2개(20261112000000 = 당일 포함·신고·여러 날 할 일), push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
 
-## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지, 이후 디자인 교체)
-- ✅ 디데이 당일 포함·디데이 날 붉은 동그라미·루틴 종료 날짜 없음 (3b3703a)
-- ✅ 사진 크게 보기: `components/PhotoViewer.tsx`(두 손가락 확대 1~5배, 두 번 탭, 길게 누르기/⋯ → 사진 저장·남의 사진 신고하기). 저장 `lib/savePhoto.ts`(expo-media-library), 신고 `data/report.ts` → SQL `reports`. e2e `photo-view.js`
-- ✅ 뽀모도로: 타이머 ⋯ → 스톱워치/뽀모도로(이 폰에만 저장). 5분 단위 5~120분, 할 일 타이머 위에서 카운트다운 → 집중 시간이 할 일에 기록, 끝나면 로컬 알림(앱 꺼져도). `lib/pomodoro.ts`, e2e `pomodoro.js`
-- ✅ 할 일·일기 검색: 홈 맨 위 돋보기 → `/search`(할 일 제목·메모, 일기 글, 전체/할 일/일기, 찾은 글자 강조 `searchHit` 토큰, 날짜별 묶음, 누르면 홈이 그 날짜로, 보관함 할 일은 보관함으로). `lib/search.ts`, e2e `search.js`
-- ✅ 알림 탭 4개: 친구의 할 일·친구의 일기(피드를 종류별로), 받은 관심(기존 알림, 새 것 있으면 빨간 점·여기로 열림), 공지(`data/notices.ts`, 설정 → 공지사항과 같은 목록). `components/TabPills.tsx`, e2e `alerts.js`
-- ✅ 할 일 날짜 옮기기: 홈 할 일을 길게 눌러 캘린더 날짜 위로 끌면 그 날짜가 밝아지고(할 일은 반투명), 놓으면 옮겨짐 + "n월 n일로 옮겼어요". 들 때 화면의 날짜 칸 위치를 잼(`ReorderableList` `drop`, `Calendar` `cellRef`/`dropHover`, 토큰 `dropTarget`). 같은 날 위는 순서 바꾸기 그대로. e2e `drag-date.js`. 폰 확인 필요
-- 남은 순서: 여러 날 할 일(`todos.end_date`를 20261112000000에 추가, 달력에 막대, 체크하면 회색, 헤더 ▼ = 캘린더 종류)
+## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지 — 모두 1차 완료, 폰 확인 필요)
+- 디데이 당일 포함·디데이 날 붉은 동그라미·루틴 종료 날짜 없음
+- 사진 크게 보기 `components/PhotoViewer.tsx`(핀치 1~5배, 길게 → 저장 `lib/savePhoto.ts` / 남의 사진 신고 `data/report.ts`)
+- 뽀모도로: 타이머 ⋯ → 스톱워치/뽀모도로, 5분 단위, 할 일 타이머 위 카운트다운, 끝나면 로컬 알림 `lib/pomodoro.ts`
+- 검색: 홈 맨 위 돋보기 → `/search`(할 일·메모·일기, 누르면 그 날짜) `lib/search.ts`
+- 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지 `data/notices.ts`) `components/TabPills.tsx`
+- 날짜로 끌어 옮기기: 할 일을 길게 눌러 캘린더 날짜에 놓기(`ReorderableList` `drop`, `Calendar` `cellRef`)
+- 여러 날 할 일: 메뉴 → 여러 날 하기(끝나는 날, 없음 = 하루로). 기간의 모든 날 목록에, 클로버에선 빠짐, 기본 캘린더엔 얇은 줄, ▼ = 캘린더 종류(기본/긴 할 일: 이름 막대) + 카테고리, 체크하면 회색, 옮기면 길이 유지 `lib/spans.ts`, `todos.end_date`
+- 테스트: 단위 73개, DB `my_features.test.sql`, e2e photo-view·pomodoro·search·alerts·drag-date·span
+- 남은 것: 친구 화면의 여러 날 할 일(서버 함수가 end_date 안 보냄), 폰 확인, 그다음 디자인 교체(이용자 계획)
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인
@@ -59,7 +61,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (71개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (73개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

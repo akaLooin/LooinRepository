@@ -47,7 +47,7 @@
     "web": "expo start --web",
     "tokens": "node scripts/gen-tokens.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts && tsx scripts/test-url.ts && tsx scripts/test-dday.ts && tsx scripts/test-notifications.ts && tsx scripts/test-photos.ts && tsx scripts/test-settings.ts && tsx scripts/test-arrange.ts && tsx scripts/test-authlink.ts && tsx scripts/test-widget.ts && tsx scripts/test-friend.ts && tsx scripts/test-chat.ts && tsx scripts/test-todocalendar.ts && tsx scripts/test-push.ts && tsx scripts/test-crew.ts && tsx scripts/test-pomodoro.ts && tsx scripts/test-search.ts"
+    "test": "tsx scripts/test-routines.ts && tsx scripts/test-daystate.ts && tsx scripts/test-sync.ts && tsx scripts/test-url.ts && tsx scripts/test-dday.ts && tsx scripts/test-notifications.ts && tsx scripts/test-photos.ts && tsx scripts/test-settings.ts && tsx scripts/test-arrange.ts && tsx scripts/test-authlink.ts && tsx scripts/test-widget.ts && tsx scripts/test-friend.ts && tsx scripts/test-chat.ts && tsx scripts/test-todocalendar.ts && tsx scripts/test-push.ts && tsx scripts/test-crew.ts && tsx scripts/test-pomodoro.ts && tsx scripts/test-search.ts && tsx scripts/test-spans.ts"
   },
   "private": true
 }

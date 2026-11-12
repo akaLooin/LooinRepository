@@ -27,6 +27,8 @@ export const toRow = {
     id: t.id, user_id, category_id: t.categoryId, title: t.title, date: t.date, sort_order: t.sortOrder, is_done: t.isDone, done_at: n(t.doneAt),
     memo: t.memo, memo_is_private: t.memoIsPrivate, remind_at: n(t.remindAt), photo_path: n(t.photoUri), timer_seconds: t.timerSeconds,
     timer_started_at: n(t.timerStartedAt), routine_id: n(t.routineId), routine_date: n(t.routineDate), is_skipped: t.isSkipped ?? false,
+    // sent only once used, so syncing keeps working before 20261112000000 is run
+    ...(t.endDate !== undefined ? { end_date: t.endDate } : {}),
   }),
   reminders: (r: Reminder, user_id: string): Row => ({ id: r.id, user_id, time_of_day: r.timeOfDay }),
   diaries: (d: Diary, user_id: string): Row => ({
@@ -57,6 +59,7 @@ export const fromRow = {
     id: r.id, categoryId: r.category_id, title: r.title, date: r.date, sortOrder: Number(r.sort_order), isDone: !!r.is_done, doneAt: u(r.done_at),
     memo: r.memo ?? "", memoIsPrivate: !!r.memo_is_private, remindAt: u(r.remind_at), photoUri: u(r.photo_path), timerSeconds: r.timer_seconds ?? 0,
     timerStartedAt: u(r.timer_started_at), routineId: u(r.routine_id), routineDate: u(r.routine_date), isSkipped: !!r.is_skipped, createdAt: r.created_at ?? "",
+    ...(r.end_date ? { endDate: r.end_date } : {}),
   }),
   reminders: (r: R): Reminder => ({ id: r.id, timeOfDay: String(r.time_of_day).slice(0, 5) }),
   diaries: (r: R): Diary => ({

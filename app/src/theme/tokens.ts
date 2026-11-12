@@ -32,6 +32,7 @@ export const tokens = {
       "dday": "#f04e5a",
       "searchHit": "#4fd88a",
       "dropTarget": "#2c3a31",
+      "spanDone": "#5a5a5a",
       "danger": "#e5646e",
       "toggleOn": "#9c9c9c",
       "toggleOff": "#424242",
@@ -90,6 +91,7 @@ export const tokens = {
       "dday": "#cf2f3c",
       "searchHit": "#0f8a47",
       "dropTarget": "#d6f0df",
+      "spanDone": "#b5b5b5",
       "danger": "#c4303c",
       "toggleOn": "#555555",
       "toggleOff": "#cccccc",
@@ -162,6 +164,11 @@ export const tokens = {
       "line": 18,
       "weight": 400
     },
+    "spanLabel": {
+      "size": 10.5,
+      "line": 14,
+      "weight": 600
+    },
     "weekday": {
       "size": 12.5,
       "line": 16,
@@ -200,6 +207,7 @@ export const tokens = {
     "gutter": 21,
     "calendarColumns": 7,
     "calendarRowHeight": 64,
+    "spanRowHeight": 92,
     "headerHeight": 56,
     "bottomNavHeight": 64
   },
