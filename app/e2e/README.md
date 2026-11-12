@@ -40,6 +40,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | pomodoro.js | 뽀모도로 from the timer's ⋯: 5-minute stepper, countdown, pause, 그만하기, the end records the time, back to 스톱워치 |
 | search.js | 할 일·일기 검색 from the home top: empty hint, highlighted hit under its day, 일기 filter, nothing found, a result opens home on its day |
 | alerts.js | 알림 tabs: 친구의 할 일 / 친구의 일기 (feed by kind), 받은 관심, 공지; the tab is remembered |
+| drag-date.js | hold a home to-do and drop it on a calendar date: the date lights up, the to-do moves there (after reload too). Tall window, so the to-do and the calendar are both on screen |
 | rm.js | reminders add/duplicate/delete, to-do alarm |
 
 Unit tests (no browser): `npm test`.

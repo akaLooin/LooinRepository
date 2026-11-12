@@ -1,7 +1,7 @@
 import { useInsets } from "../../theme";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Keyboard, Pressable, ScrollView, View } from "react-native";
+import { Dimensions, Keyboard, Pressable, ScrollView, View, type ViewInstance } from "react-native";
 import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, Search, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
@@ -177,6 +177,45 @@ export function HomeScreen() {
     setSelected(now);
     setView({ y: parseDay(now).y, m: parseDay(now).m });
   };
+  // Drag a to-do onto a calendar date to move it there (user's feature). When a row is lifted, the dates on screen
+  // are measured; while it moves, the date under the finger lights up; letting go there moves the to-do.
+  const cellViews = useRef(new Map<Day, ViewInstance>()).current;
+  const cellRef = useCallback((d: Day, v: ViewInstance | null) => { if (v) cellViews.set(d, v); }, [cellViews]);
+  const cellRects = useRef<{ d: Day; x: number; y: number; w: number; h: number }[]>([]);
+  const [dropHover, setDropHover] = useState<Day | null>(null);
+  const drop = {
+    prepare: () => {
+      const found: typeof cellRects.current = [];
+      cellRects.current = found;
+      const screenW = Dimensions.get("window").width;
+      cellViews.forEach((v, d) => {
+        try {
+          v.measureInWindow((x, y, w, h) => {
+            if (!w || !h || x < -1 || x > screenW - 2) return; // the calendar pager's months beside this one
+            found.push({ d, x, y, w, h });
+          });
+        } catch { /* a date that is no longer on screen */ }
+      });
+    },
+    at: (px: number, py: number) => {
+      const rs = cellRects.current;
+      // a cell's size from the gaps between neighbours (safe whatever scale the screen is drawn at)
+      const gapX = Math.min(...rs.map((a) => Math.min(...rs.filter((b) => Math.abs(b.y - a.y) < 2 && b.x > a.x + 1).map((b) => b.x - a.x))));
+      const gapY = Math.min(...rs.map((a) => Math.min(...rs.filter((b) => Math.abs(b.x - a.x) < 2 && b.y > a.y + 1).map((b) => b.y - a.y))));
+      const hit = rs.find((r) => px >= r.x && px < r.x + (Number.isFinite(gapX) ? gapX : r.w) && py >= r.y && py < r.y + (Number.isFinite(gapY) ? gapY : r.h));
+      return hit && hit.d !== selected ? hit.d : null;
+    },
+    onHover: (d: string | null) => setDropHover(d),
+    onDropOn: (key: string, d: string) => {
+      setDropHover(null);
+      const t = dayTodos.find((x) => x.id === key);
+      if (!t) return;
+      moveTodos([key], d);
+      const p = parseDay(d);
+      notice(`${p.m}월 ${p.d}일로 옮겼어요`);
+    },
+  };
+
   const renderPage = (i: number, width: number) => {
     const rows = mode === "week" ? [Array.from({ length: 7 }, (_, k) => addDays(epochWeek, i * 7 + k))] : undefined;
     const ym = mode === "month" ? fromMonthIndex(i) : view;
@@ -192,6 +231,8 @@ export function HomeScreen() {
         rows={rows}
         weekStartsSunday={prefs.weekStartsSunday}
         width={width}
+        dropHover={dropHover}
+        cellRef={cellRef}
       />
     );
   };
@@ -309,6 +350,7 @@ export function HomeScreen() {
             labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)}
             fixed={(r) => r.kind !== "todo"}
             onReorder={onArrange}
+            drop={drop}
             renderItem={(r, drag) => {
               const cat = r.cat;
               const addInput = adding === cat.id ? <InlineTodoInput color={cat.color} onSubmit={(title) => onAdd(cat.id, title)} onDone={() => setAdding(null)} /> : null;

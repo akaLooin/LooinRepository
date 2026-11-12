@@ -26,6 +26,12 @@ type Props<T> = {
   gap?: number;
   /** Rows that cannot be held (e.g. category titles): they still slide out of the held row's way. */
   fixed?: (item: T) => boolean;
+  /**
+   * Somewhere outside the list a held row can be dropped on (home: a calendar date, user's feature). Given the
+   * finger's place on screen, returns what is under it, or null. Called once when a row is lifted (`prepare`) and on
+   * every move. While over a target the list keeps its order; letting go there calls onDropOn instead of reordering.
+   */
+  drop?: { prepare: () => void; at: (x: number, y: number) => string | null; onHover: (target: string | null) => void; onDropOn: (key: string, target: string) => void };
 };
 
 /**
@@ -36,7 +42,7 @@ type Props<T> = {
  */
 const noDrag: DragHandle = { onLongPress: () => {}, delayLongPress: HOLD_MS };
 
-export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0, fixed }: Props<T>) {
+export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0, fixed, drop }: Props<T>) {
   const { c } = useTheme();
   const lock = useScrollLock();
   const keys = items.map(keyOf);
@@ -54,8 +60,11 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const lastDy = useRef(0);
   const [target, setTarget] = useState(0);
   const band = useRef(new Animated.Value(0)).current; // the grey band under the held row fades in and out
-  const state = useRef({ active: null as string | null, from: 0, target: 0, keys });
+  const state = useRef({ active: null as string | null, from: 0, target: 0, keys, over: null as string | null });
   state.current.keys = keys;
+  const [overDrop, setOverDrop] = useState(false); // the held row is over a drop target: see-through, so the date shows
+  const dropRef = useRef(drop);
+  dropRef.current = drop;
 
   const rowH = (k: string) => (heights.current[k] ?? 56) + gap;
   const clearAll = () => shifts.forEach((v) => v.setValue(0));
@@ -70,11 +79,22 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   };
 
   const finish = () => {
-    const { active: a, from, target: to, keys: ks } = state.current;
+    const { active: a, from, target: to, keys: ks, over } = state.current;
     if (a === null) return;
     state.current.active = null;
+    state.current.over = null;
     onDragging?.(false);
     lock?.(false);
+    setOverDrop(false);
+    if (over !== null && dropRef.current) {
+      // dropped on a target outside the list: the row leaves this list (or glides home if the move is refused)
+      dropRef.current.onHover(null);
+      slide(band, 0);
+      setActive(null);
+      slide(shiftOf(a), 0);
+      dropRef.current.onDropOn(a, over);
+      return;
+    }
     // The order is saved the moment the finger lifts. It used to wait for the glide's "finished" signal, which in
     // Expo Go arrived seconds late: until then the list was still in drag mode and the moved row could not be tapped
     // (user's video). The glide now runs on its own after the save.
@@ -113,6 +133,14 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
           // a row from one value to another left it stuck at the old offset after a drop (user's video)
           shiftOf(a).setValue(g.dy);
           lastDy.current = g.dy;
+          const d = dropRef.current;
+          const over = d ? d.at(g.moveX, g.moveY) : null;
+          if (over !== state.current.over) { state.current.over = over; d?.onHover(over); setOverDrop(over !== null); }
+          if (over !== null) {
+            // over a drop target: the other rows go back to their places
+            if (state.current.target !== from) { state.current.target = from; setTarget(from); }
+            return;
+          }
           // where the held row's centre is now, measured in row heights
           const h = rowH;
           let to = from;
@@ -136,7 +164,8 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
 
   const start = (key: string) => {
     const from = state.current.keys.indexOf(key);
-    state.current = { ...state.current, active: key, from, target: from };
+    state.current = { ...state.current, active: key, from, target: from, over: null };
+    dropRef.current?.prepare();
     lastDy.current = 0;
     glide.current = null;
     band.setValue(0);
@@ -198,6 +227,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
             style={{
               marginBottom: i < items.length - 1 ? gap : 0,
               zIndex: banded ? 10 : 0,
+              opacity: isActive && overDrop ? 0.45 : 1,
               transform: [{ translateY: shiftOf(k) }],
             }}
           >
