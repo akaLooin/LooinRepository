@@ -3,3 +3,12 @@ graphify-out/.graphify_*
 !graphify-out/.graphify_labels.json
 graphify-out/.needs_update
 graphify-out/cache/stat-index.json
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+captures/
