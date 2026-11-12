@@ -6,7 +6,7 @@ import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
@@ -188,6 +188,7 @@ export function HomeScreen() {
         selected={selected}
         onSelect={(d) => { if (calendarJustSwiped()) return; if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); keepEditing(); }}
         state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
+        ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))}
         rows={rows}
         weekStartsSunday={prefs.weekStartsSunday}
         width={width}

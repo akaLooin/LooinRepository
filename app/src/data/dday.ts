@@ -15,9 +15,20 @@ export function nextOccurrence(d: Pick<DDay, "type" | "targetDate" | "repeatUnit
   return c >= from ? c : make(fy + 1, tm);
 }
 
-export function ddayLabel(target: Day | Pick<DDay, "type" | "targetDate" | "repeatUnit">, from: Day = today()) {
+/**
+ * "D-3", "D-DAY", "D+5". With 당일 포함 (user's feature) the target day counts as the first day: D+1 on the day,
+ * D+6 five days later; the countdown before it is unchanged.
+ */
+export function ddayLabel(target: Day | (Pick<DDay, "type" | "targetDate" | "repeatUnit"> & { includeToday?: boolean }), from: Day = today()) {
   const day = typeof target === "string" ? target : nextOccurrence(target, from);
   const n = Math.round((Date.parse(day) - Date.parse(from)) / 86400000);
+  if (typeof target !== "string" && target.includeToday && n <= 0) return `D+${1 - n}`;
   return n === 0 ? "D-DAY" : n > 0 ? `D-${n}` : `D+${-n}`;
+}
+
+/** Is `day` one of this D-day's dates? (the red circle on the calendar) */
+export function isDDayOn(d: Pick<DDay, "type" | "targetDate" | "repeatUnit">, day: Day): boolean {
+  if (d.type !== "repeat") return d.targetDate === day;
+  return day >= d.targetDate && nextOccurrence(d, day) === day;
 }
 

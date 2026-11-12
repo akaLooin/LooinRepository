@@ -481,7 +481,7 @@ export function deleteTodos(ids: string[]) {
 }
 
 // ── d-days ─────────────────────────────────────────────────
-export { ddayLabel, nextOccurrence } from "./dday";
+export { ddayLabel, isDDayOn, nextOccurrence } from "./dday";
 
 export function saveDDay(input: Omit<DDay, "id" | "sortOrder"> & { id?: string }) {
   if (input.id && db.ddays.some((d) => d.id === input.id)) {

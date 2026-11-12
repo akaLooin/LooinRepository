@@ -10,7 +10,7 @@ const { chromium } = require("playwright");
   await p.getByRole("button", { name: /자격증 시험/ }).click();
   await p.waitForTimeout(400);
   await p.screenshot({ path: "S21.png" });
-  r.list = await p.getByText("D-12").count();
+  r.list = await p.getByText(/^D-\d+$/).count();
   // reordering is covered by e2e/drag.js
   await p.getByRole("button", { name: "추가하기" }).click();
   await p.waitForTimeout(400);

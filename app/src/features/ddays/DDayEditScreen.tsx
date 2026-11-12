@@ -24,6 +24,7 @@ export function DDayEditScreen() {
   const [unit, setUnit] = useState<NonNullable<DDay["repeatUnit"]>>(existing?.repeatUnit ?? "yearly");
   const [date, setDate] = useState<Day>(existing?.targetDate ?? today());
   const [isPrivate, setPrivate] = useState(existing?.isPrivate ?? false);
+  const [includeToday, setIncludeToday] = useState(existing?.includeToday ?? false);
   const [open, setOpen] = useState(true);
   const [ym, setYm] = useState(() => ({ y: parseDay(date).y, m: parseDay(date).m }));
   const [error, setError] = useState<string>();
@@ -32,7 +33,8 @@ export function DDayEditScreen() {
   const shift = (n: number) => setYm(({ y, m }) => { const t = m + n; return { y: y + Math.floor((t - 1) / 12), m: ((t - 1 + 120) % 12) + 1 }; });
   const save = () => {
     if (!title.trim()) return setError("이름을 입력해 주세요");
-    saveDDay({ id: existing?.id, title: title.trim(), type, repeatUnit: type === "repeat" ? unit : undefined, targetDate: date, isPrivate });
+    saveDDay({ id: existing?.id, title: title.trim(), type, repeatUnit: type === "repeat" ? unit : undefined, targetDate: date, isPrivate,
+      ...(includeToday || existing?.includeToday !== undefined ? { includeToday } : {}) });
     goBack("/ddays");
   };
 
@@ -64,7 +66,11 @@ export function DDayEditScreen() {
             <Calendar picker year={ym.y} month={ym.m} today={today()} selected={date} onSelect={setDate} />
           </View>
         ) : null}
-        <AppText variant="body" color="textSecondary">{`오늘 기준 ${ddayLabel({ type, targetDate: date, repeatUnit: unit })}`}</AppText>
+        <AppText variant="body" color="textSecondary">{`오늘 기준 ${ddayLabel({ type, targetDate: date, repeatUnit: unit, includeToday })}`}</AppText>
+        <FieldGroup>
+          <FieldRow title="당일 포함" right={<Toggle value={includeToday} onChange={setIncludeToday} label="당일 포함" />} />
+        </FieldGroup>
+        <AppText variant="helper" color="textMuted">켜면 그날을 1일로 세요. 시작한 날부터 며칠째인지 셀 때 써요 (그날 D+1).</AppText>
         <FieldGroup>
           <FieldRow title="나만 보기" right={<Toggle value={isPrivate} onChange={setPrivate} label="나만 보기" />} />
         </FieldGroup>

@@ -7,7 +7,7 @@ import {
   AppText, BottomSheet, Button, FieldGroup, FieldRow, MemoInput, RadioList, ScreenHeader, TimeGrid, TitleInput, Toggle,
 } from "../../components";
 import { deleteRoutine, saveRoutine, useDB } from "../../data/store";
-import { parseDay, today, weekday, type Day } from "../../lib/dates";
+import { addDays, parseDay, today, weekday, type Day } from "../../lib/dates";
 import { ruleLabel, type RepeatRule, type RepeatType } from "../../lib/routines";
 import { fontFamily, ScaledRoot, tokens, useTheme, visibleOn } from "../../theme";
 import { DatePickSheet } from "../home/TodoSheets";
@@ -57,7 +57,9 @@ export function RoutineEditScreen() {
         <View style={{ height: 0 }} />
         <FieldGroup>
           <FieldRow title="시작 날짜" value={fmt(startDate)} onPress={() => setSheet("start")} />
-          <FieldRow title="종료 날짜" value={endDate ? fmt(endDate) : "없음"} onPress={() => setSheet("end")} />
+          <FieldRow title="종료 날짜 없음" right={<Toggle value={!endDate} label="종료 날짜 없음"
+            onChange={(none) => setEnd(none ? undefined : addDays(startDate, 30))} />} />
+          {endDate ? <FieldRow title="종료 날짜" value={fmt(endDate)} onPress={() => setSheet("end")} /> : null}
         </FieldGroup>
         <FieldGroup><FieldRow title="반복" value={ruleLabel(rule)} onPress={() => setSheet("repeat")} /></FieldGroup>
         <FieldGroup><FieldRow title="시간" value={time ?? "없음"} onPress={() => { const [h, m] = (time ?? "09:00").split(":").map(Number); setDraftTime({ h, m }); setSheet("time"); }} /></FieldGroup>

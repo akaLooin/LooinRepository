@@ -34,7 +34,9 @@ export const toRow = {
     // only once set: a server without the column (SQL 20261109000100 not run yet) still takes the diary
     ...(d.moodTemp !== undefined ? { mood_temp: d.moodTemp } : {}),
   }),
-  ddays: (d: DDay, user_id: string): Row => ({ id: d.id, user_id, title: d.title, type: d.type, target_date: d.targetDate, repeat_unit: n(d.type === "repeat" ? d.repeatUnit ?? "yearly" : undefined), is_private: d.isPrivate, sort_order: d.sortOrder }),
+  ddays: (d: DDay, user_id: string): Row => ({ id: d.id, user_id, title: d.title, type: d.type, target_date: d.targetDate, repeat_unit: n(d.type === "repeat" ? d.repeatUnit ?? "yearly" : undefined), is_private: d.isPrivate, sort_order: d.sortOrder,
+    // only once set: a server without the column (SQL 20261112000000 not run yet) still takes the D-day
+    ...(d.includeToday !== undefined ? { include_today: d.includeToday } : {}) }),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,5 +63,6 @@ export const fromRow = {
     id: r.id, date: r.date, emoji: u(r.emoji), body: r.body ?? "", visibility: r.visibility, backgroundColor: u(r.background_color), imagePaths: r.image_paths ?? [],
     ...(typeof r.mood_temp === "number" ? { moodTemp: r.mood_temp } : {}),
   }),
-  ddays: (r: R): DDay => ({ id: r.id, title: r.title, type: r.type, targetDate: r.target_date, repeatUnit: u(r.repeat_unit), isPrivate: !!r.is_private, sortOrder: Number(r.sort_order) }),
+  ddays: (r: R): DDay => ({ id: r.id, title: r.title, type: r.type, targetDate: r.target_date, repeatUnit: u(r.repeat_unit), isPrivate: !!r.is_private, sortOrder: Number(r.sort_order),
+    ...(typeof r.include_today === "boolean" ? { includeToday: r.include_today } : {}) }),
 };

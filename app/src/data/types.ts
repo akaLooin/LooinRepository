@@ -54,7 +54,9 @@ export type Routine = RepeatRule & {
   sortOrder: number;
 };
 
-export type DDay = { id: string; title: string; type: "fixed" | "repeat"; targetDate: Day; repeatUnit?: "yearly" | "monthly"; isPrivate: boolean; sortOrder: number };
+export type DDay = { id: string; title: string; type: "fixed" | "repeat"; targetDate: Day; repeatUnit?: "yearly" | "monthly"; isPrivate: boolean; sortOrder: number;
+  /** 당일 포함: the target day itself counts as day 1 (D+1 on the day), for counting days since a start */
+  includeToday?: boolean };
 
 export type Diary = {
   id: string;

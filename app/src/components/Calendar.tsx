@@ -42,8 +42,10 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * One date. Memoised: picking a day redraws only the old and the new picked cell, not every clover of the three
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
-const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick }: {
+const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick, dday }: {
   day: Day; ring: boolean; todayDisc: boolean; picker: boolean; clover?: CloverState; cloverKey: string; ringSize: number; onPick: (d: Day) => void;
+  /** a D-day falls on this date: a red circle around the number (user's feature) */
+  dday?: boolean;
 }) {
   const { c } = useTheme();
   const label = String(parseDay(day).d);
@@ -52,21 +54,25 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   return (
     <Pressable style={{ flex: 1, alignItems: "center", gap: 4 }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일`} accessibilityState={{ selected: ring }}>
       {clover ? <Clover state={clover} /> : null}
-      <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5, transform: [{ translateY: (ring || todayDisc) && !picker ? 4 : 0 }] }}>
+      <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
+        borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker ? 4 : 0 }] }}
+        accessibilityLabel={dday ? "디데이" : undefined}>
         <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>
       </View>
     </Pressable>
   );
-}, (a, b) => a.day === b.day && a.ring === b.ring && a.todayDisc === b.todayDisc && a.picker === b.picker && a.cloverKey === b.cloverKey && a.ringSize === b.ringSize && a.onPick === b.onPick);
+}, (a, b) => a.day === b.day && a.ring === b.ring && a.todayDisc === b.todayDisc && a.picker === b.picker && a.cloverKey === b.cloverKey && a.ringSize === b.ringSize && a.onPick === b.onPick && a.dday === b.dday);
 
 /**
  * Month or week grid. `state` gives each day's clover; pass `picker` for the plain date picker (S21b).
  * `rows` lets the week view pass just one row.
  */
-export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width }: {
+export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn }: {
   year: number; month: number; today: Day; selected?: Day; onSelect?: (d: Day) => void; state?: (d: Day) => CloverState; picker?: boolean; weekStartsSunday?: boolean; rows?: (Day | null)[][];
   /** known width (calendar pager): the dates are placed right away instead of after measuring */
   width?: number;
+  /** dates that are a D-day get a red circle */
+  ddayOn?: (d: Day) => boolean;
 }) {
   const { c } = useTheme();
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
@@ -101,7 +107,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             const cs = !picker && state ? state(day) : undefined;
             return (
               <DayCell key={j} day={day} ring={ring} todayDisc={todayDisc} picker={!!picker} clover={cs} cloverKey={cs ? JSON.stringify(cs) : ""}
-                ringSize={ringSize} onPick={pick} />
+                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} />
             );
           })}
         </View>
