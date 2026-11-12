@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSyncExternalStore } from "react";
 import { SYNCED } from "./prefsRow";
 import type { FontFace } from "../theme/fonts";
+import type { PomodoroSession } from "../lib/pomodoro";
 
 export type Prefs = {
   theme: "system" | "dark" | "light";
@@ -35,6 +36,8 @@ export type Prefs = {
   feedMemoLines: number; // 피드에서 메모 줄 제한: 0 = 무제한 (feed is phase 2)
   // 할 일 캘린더: how many to-dos one day shows before "+n" (0 = 무제한)
   monthCalendarMax: number; weekCalendarMax: number;
+  // 타이머 ⋯ → 스톱워치 / 뽀모도로 (user's feature); this phone only
+  timerMode: "stopwatch" | "pomodoro"; pomodoroMinutes: number; pomodoro: PomodoroSession | null;
 };
 
 export type Audience = "all" | "followers" | "none";
@@ -46,6 +49,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null,
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

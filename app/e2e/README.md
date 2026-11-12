@@ -37,6 +37,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | st.js | display settings (theme, week start), profile edit |
 | dy.js | diary: mood, text, background, reopen, empty removes |
 | photo-view.js | 사진 크게 보기: a to-do photo opens full screen, ⋯ → 사진 저장 (no 신고하기 on my own photo), close |
+| pomodoro.js | 뽀모도로 from the timer's ⋯: 5-minute stepper, countdown, pause, 그만하기, the end records the time, back to 스톱워치 |
 | rm.js | reminders add/duplicate/delete, to-do alarm |
 
 Unit tests (no browser): `npm test`.

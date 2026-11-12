@@ -47,7 +47,8 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 ## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지, 이후 디자인 교체)
 - ✅ 디데이 당일 포함·디데이 날 붉은 동그라미·루틴 종료 날짜 없음 (3b3703a)
 - ✅ 사진 크게 보기: `components/PhotoViewer.tsx`(두 손가락 확대 1~5배, 두 번 탭, 길게 누르기/⋯ → 사진 저장·남의 사진 신고하기). 저장 `lib/savePhoto.ts`(expo-media-library), 신고 `data/report.ts` → SQL `reports`. e2e `photo-view.js`
-- 남은 순서: 뽀모도로(타이머 ⋯) → 할 일·일기 검색(홈 위 버튼, 결과 누르면 그 날짜) → 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지) → 할 일을 달력 날짜로 끌어 옮기기 → 여러 날 할 일(`todos.end_date`를 20261112000000에 추가, 달력에 막대, 체크하면 회색, 헤더 ▼ = 캘린더 종류)
+- ✅ 뽀모도로: 타이머 ⋯ → 스톱워치/뽀모도로(이 폰에만 저장). 5분 단위 5~120분, 할 일 타이머 위에서 카운트다운 → 집중 시간이 할 일에 기록, 끝나면 로컬 알림(앱 꺼져도). `lib/pomodoro.ts`, e2e `pomodoro.js`
+- 남은 순서: 할 일·일기 검색(홈 위 버튼, 결과 누르면 그 날짜) → 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지) → 할 일을 달력 날짜로 끌어 옮기기 → 여러 날 할 일(`todos.end_date`를 20261112000000에 추가, 달력에 막대, 체크하면 회색, 헤더 ▼ = 캘린더 종류)
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인
@@ -55,7 +56,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (67개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (69개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

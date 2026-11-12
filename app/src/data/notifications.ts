@@ -115,7 +115,7 @@ async function drain() {
       if (!scheduledKnown) {
         scheduled.clear();
         for (const r of await Notifications.getAllScheduledNotificationsAsync()) {
-          if (!r.identifier.startsWith("test:")) scheduled.set(r.identifier, "?");
+          if (!r.identifier.startsWith("test:") && !r.identifier.startsWith(POMODORO)) scheduled.set(r.identifier, "?");
         }
         scheduledKnown = true;
       }
@@ -155,6 +155,18 @@ export async function notificationStatus(): Promise<{ allowed: boolean; schedule
     .filter((x) => Number.isFinite(x) && x > Date.now())
     .sort((a, b) => a - b);
   return { allowed: perm.granted, scheduled: list.length, next: times.length ? new Date(times[0]) : null, channel: channelOk, error: lastError };
+}
+
+const POMODORO = "pomodoro:";
+/** The bell at the end of a 뽀모도로, so it rings with the app closed. Replaces any earlier one. */
+export async function schedulePomodoroEnd(at: Date, body: string) {
+  await cancelPomodoroEnd();
+  if (!(await ensurePermission())) return;
+  await scheduleOne(`${POMODORO}end`, "뽀모도로 끝", body, { date: at }).catch((e) => { lastError = String(e); });
+}
+export async function cancelPomodoroEnd() {
+  if (!supported) return;
+  await Notifications.cancelScheduledNotificationAsync(`${POMODORO}end`).catch(() => {});
 }
 
 /** Sends a test notification in a few seconds (close the app to see it arrive in the background). */
