@@ -1,3 +1,4 @@
+import { APP_NOTICES } from "../../data/notices";
 import * as Notifications from "expo-notifications";
 import { useCallback, useEffect, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
@@ -147,19 +148,11 @@ export function NotificationSettingsScreen() {
   );
 }
 
-/** 공지사항: this app's own update notes (newest first). */
-const NOTICES: { date: string; text: string }[] = [
-  { date: "2026. 11. 7.", text: "폰에 직접 설치하는 앱(APK)이 나왔어요. 이제 PC 없이 쓸 수 있어요. 설정 화면을 새로 꾸미고, 비밀번호 찾기와 바꾸기를 넣었어요." },
-  { date: "2026. 11. 7.", text: "캘린더를 옆으로 밀어 달을 넘길 수 있어요. 큰 날짜 제목을 누르면 오늘로 돌아와요. 할 일 메모와 알림 시간을 누르면 바로 고칠 수 있어요." },
-  { date: "2026. 11. 6.", text: "할 일 시간 알림이 할 일 내용으로 와요. 할 일 아래에 알림 시간이 보여요." },
-  { date: "2026. 11. 5.", text: "할 일을 길게 눌러 다른 카테고리로 옮길 수 있어요. 보관함은 홈 왼쪽 옆 화면이에요." },
-  { date: "2026. 11. 4.", text: "보관함, 사진 인증, 리스트 메뉴, 바텀 시트 끌어 닫기가 생겼어요." },
-];
 export function NoticesScreen() {
   const { c } = useTheme();
   return (
     <Page title="공지사항">
-      {NOTICES.map((n, i) => (
+      {APP_NOTICES.map((n, i) => (
         <View key={i} style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: c.surfaceRow, gap: 8 }}>
           <AppText variant="body">{n.text}</AppText>
           <AppText variant="helper" color="textMuted">{n.date}</AppText>

@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, TextInput, View } from "react-native";
-import { AppText, Check, ChevronLeft, MoodMark, Search, X } from "../../components";
+import { AppText, Check, ChevronLeft, MoodMark, Search, TabPills, X } from "../../components";
 import { useDB } from "../../data/store";
 import { parseDay, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
 import { goBack } from "../../lib/nav";
@@ -93,13 +93,8 @@ export function SearchScreen() {
           {q ? <Pressable onPress={() => setQ("")} hitSlop={10} accessibilityRole="button" accessibilityLabel="지우기"><X size={18} color={c.textMuted} /></Pressable> : null}
         </View>
       </View>
-      <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: G }}>
-        {([["all", "전체"], ["todo", "할 일"], ["diary", "일기"]] as const).map(([k, l]) => (
-          <Pressable key={k} onPress={() => setKind(k)} accessibilityRole="button" accessibilityState={{ selected: kind === k }} accessibilityLabel={`${l}만 보기`}
-            style={{ height: 34, paddingHorizontal: 16, borderRadius: tokens.radius.pill, justifyContent: "center", backgroundColor: kind === k ? c.text : c.surface }}>
-            <AppText variant="body" weight={600} raw={kind === k ? c.bg : c.text}>{l}</AppText>
-          </Pressable>
-        ))}
+      <View style={{ flexGrow: 0 }}>
+        <TabPills items={[["all", "전체"], ["todo", "할 일"], ["diary", "일기"]] as const} value={kind} onChange={setKind} />
       </View>
       <FlatList data={rows} keyExtractor={(r) => r.key} renderItem={renderRow} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingHorizontal: G, paddingBottom: insets.bottom + 40 }}

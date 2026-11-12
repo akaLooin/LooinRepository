@@ -75,7 +75,7 @@ const out = process.argv[2] || ".";
   r.monthBack = await p.getByText(/^\d{4}년 \d+월$/).count();
 
   // back to me
-  await p.getByRole("button", { name: /^(나|체험|.+)$/ }).nth(1).click(); // the chip after 보관함 is mine
+  await p.getByRole("button", { name: /^(나|체험|.+)$/ }).nth(2).click(); // the chip after 보관함 is mine (검색 and 관리 메뉴 come first)
   await p.waitForTimeout(400);
   r.backToMe = await p.getByRole("button", { name: "운동하기에 반응하기" }).count() === 0;
 
@@ -112,7 +112,9 @@ const out = process.argv[2] || ".";
   // 알림, 마이 counts → 친구 lists
   await p.getByRole("tab", { name: "알림" }).click();
   await p.waitForTimeout(500);
-  r.alertsEmpty = await p.getByText("아직 알림이 없어요").count();
+  await p.getByRole("tab", { name: /^받은 관심/ }).click();
+  await p.waitForTimeout(300);
+  r.alertsEmpty = await p.getByText("아직 받은 관심이 없어요").count();
   await p.getByRole("tab", { name: "마이" }).click();
   await p.waitForTimeout(500);
   r.counts = await p.getByRole("button", { name: "팔로잉 2" }).count();

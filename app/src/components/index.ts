@@ -29,3 +29,4 @@ export * from "./Mood";
 export * from "./ConfirmDialog";
 export * from "./KeyboardSpacer";
 export * from "./PhotoViewer";
+export * from "./TabPills";

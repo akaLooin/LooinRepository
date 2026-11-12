@@ -15,7 +15,7 @@ import { ReactionSheet } from "./ReactionSheet";
  * first, with a heart for a sticker/emoji reaction. 설정 → 화면: 피드에서 메모 줄 제한 cuts long memos and diaries,
  * 피드에서 좋아요 보이기 shows or hides the reactions under each entry. (Layout ours: the original's feed was not recorded.)
  */
-export function FeedList({ onPerson }: { onPerson: (p: Person) => void }) {
+export function FeedList({ onPerson, only, heading = true }: { onPerson: (p: Person) => void; only?: "todo" | "diary"; heading?: boolean }) {
   const { c } = useTheme();
   const prefs = usePrefs();
   const [items, setItems] = useState<FeedItem[] | null>(null);
@@ -44,16 +44,21 @@ export function FeedList({ onPerson }: { onPerson: (p: Person) => void }) {
     react(it.id, { kind, value }, action === "clear", it.kind).catch((e) => { put(before); notice(e instanceof Error ? e.message : "반응을 남기지 못했어요"); });
   };
   const lines = prefs.feedMemoLines || undefined;
+  // 알림 tabs show one kind (친구의 할 일 / 친구의 일기)
+  const shown = items && only ? items.filter((it) => it.kind === only) : items;
 
   if (error) return <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>{error}</AppText>;
-  if (!items) return <ActivityIndicator style={{ marginTop: 40 }} color={c.textMuted} />;
+  if (!shown) return <ActivityIndicator style={{ marginTop: 40 }} color={c.textMuted} />;
   return (
     <View>
-      <AppText variant="bodyLg" weight={700} style={{ marginTop: 8, marginBottom: 4 }} accessibilityRole="header">친구 소식</AppText>
-      {items.length === 0 ? (
-        <AppText variant="body" color="textMuted" style={{ paddingVertical: 24 }}>팔로우한 친구가 할 일을 끝내거나 일기를 쓰면 여기에 보여요. 위 칸에서 ID나 이름으로 친구를 찾아보세요.</AppText>
+      {heading ? <AppText variant="bodyLg" weight={700} style={{ marginTop: 8, marginBottom: 4 }} accessibilityRole="header">친구 소식</AppText> : null}
+      {shown.length === 0 ? (
+        <AppText variant="body" color="textMuted" style={{ paddingVertical: 24 }}>
+          {only === "todo" ? "팔로우한 친구가 할 일을 끝내면 여기에 보여요." : only === "diary" ? "팔로우한 친구가 일기를 쓰면 여기에 보여요."
+            : "팔로우한 친구가 할 일을 끝내거나 일기를 쓰면 여기에 보여요. 위 칸에서 ID나 이름으로 친구를 찾아보세요."}
+        </AppText>
       ) : null}
-      {items.map((it) => {
+      {shown.map((it) => {
         const mine = it.reactions.some((r) => r.mine);
         const what = it.kind === "todo" ? it.title ?? "" : "일기";
         const d = it.date ? parseDay(it.date) : null;
