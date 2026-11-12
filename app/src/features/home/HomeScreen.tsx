@@ -3,7 +3,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Keyboard, Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
+  AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, Search, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
   addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
@@ -243,7 +243,10 @@ export function HomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }} {...rootWatch}>
       <DragScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <View style={{ height: 60, alignItems: "flex-end", justifyContent: "center", paddingHorizontal: G }}>
+        <View style={{ height: 60, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 22, paddingHorizontal: G }}>
+          <Pressable onPress={() => router.push("/search" as never)} hitSlop={12} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색" style={{ padding: 2 }}>
+            <Search size={25} color={c.text} strokeWidth={2.2} />
+          </Pressable>
           <MenuButton onPress={() => setMenuOpen(true)} />
         </View>
 
