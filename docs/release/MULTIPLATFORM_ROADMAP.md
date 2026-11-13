@@ -4,10 +4,10 @@
 
 | 계층 | Android | PC (Windows·macOS) | iOS |
 |---|---|---|---|
-| 재정 계산 `:core` | ✅ | ✅ (JVM 타깃 그대로 사용) | ✅ 컴파일 대상 선언, macOS CI 로 빌드·테스트 |
-| 저장 (Room) | ✅ Android 전용 설정 | ❌ | ❌ |
+| 재정 계산 `:core` | ✅ | ✅ (JVM 타깃 그대로 사용) | ✅ macOS CI 로 빌드·테스트 |
+| 저장·백업 `:shared` (Room KMP) | ✅ OS 내장 SQLite, 기존 DB 그대로 | ✅ 번들 SQLite, 파일 DB 테스트 통과 | ✅ 번들 SQLite, macOS CI 로 빌드·테스트 |
 | 화면 (Jetpack Compose) | ✅ | ❌ | ❌ |
-| 백업 파일 입출력 | ✅ Android 저장소 접근 | ❌ | ❌ |
+| 백업 파일 선택 화면(파일 대화상자) | ✅ Android 저장소 접근 | ❌ (2단계) | ❌ (2단계) |
 
 `:core` 는 Kotlin Multiplatform 모듈입니다.
 - `commonMain`(공용 코드)은 JVM 전용 API 없이 컴파일된다는 것을 확인했습니다.
@@ -18,11 +18,23 @@
 > **CI 확인 (2026-11-13)**: macOS 러너에서 `:core:iosSimulatorArm64Test`(iOS 시뮬레이터 테스트)와 `:core:linkReleaseFrameworkIosArm64`(기기용 프레임워크)가 통과했습니다.
 > 다만 러너의 Xcode 26.6 은 현재 Kotlin 2.0.21 이 공식 검증한 버전(최대 16.0)보다 새로워 경고가 나옵니다. iOS 앱 작업 전에 Kotlin 을 최신 안정판으로 올려야 합니다(1단계에 포함).
 
-### 1단계: 공용 데이터 계층 (예상 1~2주)
-- Kotlin 을 최신 안정판(최신 Xcode 지원 버전), Room 2.7+(KMP 지원)과 번들 SQLite 드라이버로 올립니다. 또는 SQLDelight 를 씁니다.
+### 1단계: 공용 데이터 계층 — ✅ 완료 (2026-11-13)
+- Kotlin 2.3.21, KSP 2.3.13, Room 2.8.5(KMP), AGP 8.13.2 로 올림.
+  - Kotlin 2.4 는 AGP 8.13 에 들어 있는 lint(Kotlin 2.2 분석기)가 읽지 못해 lint 가 일부 검사를 놓쳤다. 그래서 한 단계 아래인 2.3 을 쓴다. AGP 9 이전 때 2.4 이상으로 올린다.
+- 데이터 계층 `:shared`(android·jvm·iOS)로 이동했다. Android 는 OS 내장 SQLite, PC·iOS 는 번들 SQLite 를 쓴다(Android APK 에는 네이티브 라이브러리 추가 없음).
+- 트랜잭션은 Android 전용 `withTransaction` 대신 공용 `useWriterConnection` + `immediateTransaction` 을 쓴다. 중첩·롤백을 테스트로 확인했다.
+- 백업 JSON 은 `kotlinx.serialization` 으로 옮겼다. 1.0.0(org.json) 형식 파일을 읽는 호환 테스트가 있다.
+- 공용 저장소 테스트(`shared/src/sqliteTest`)는 PC(JVM)에서 실행해 통과했고, iOS 시뮬레이터에서는 CI 로 실행한다.
+- Room 스키마(v1, v2)는 바뀌지 않았다. 기존 Android 사용자 DB 의 마이그레이션 테스트도 통과했다.
+
+<details><summary>계획 당시 메모</summary>
+
+
 - `data/` 를 공용 모듈 `:shared` 로 옮기고, DB 파일 위치만 플랫폼별(expect/actual)로 둡니다.
 - 백업 JSON 은 `org.json`(Android 전용) 대신 `kotlinx.serialization` 으로 바꿉니다. 형식(`formatVersion 1`)은 그대로 유지해 기존 백업 파일과 호환합니다.
 - 기존 Android 사용자 DB 는 같은 스키마(v2)를 그대로 읽어야 합니다. `MigrationTest` 로 검증합니다.
+
+</details>
 
 ### 2단계: 공용 화면 (예상 2~3주)
 - Jetpack Compose → **Compose Multiplatform**. 지금 화면 코드는 Material3·Compose 기본 요소만 써서 대부분 그대로 옮겨집니다.
@@ -59,5 +71,5 @@
 ## 지금 결정이 필요한 것
 1. 출시 순서: 권장은 Android → PC → iOS(PC 는 Mac 없이도 Windows 먼저 가능)
 2. PC 플랫폼 범위: Windows 만 / Windows + macOS
-3. 1단계 저장 방식: Room KMP(현재 코드와 연속성) 권장 / SQLDelight
+3. ~~1단계 저장 방식~~ → Room KMP 로 진행함(권장안). 바꾸려면 알려 주세요.
 4. iOS 빌드용 Mac 확보 방법: 실제 Mac 또는 클라우드 Mac

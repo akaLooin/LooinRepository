@@ -1,13 +1,13 @@
-# iOS: 공용 계산 모듈(core)을 iOS 용으로 컴파일·테스트한다. Kotlin/Native iOS 빌드는 macOS 에서만 가능.
-# iOS 앱(화면)은 아직 없음 — docs/release/MULTIPLATFORM_ROADMAP.md 참고.
+# iOS: 공용 계산(core)·데이터(shared, Room KMP + 번들 SQLite) 모듈을 iOS 용으로 컴파일·테스트한다.
+# Kotlin/Native iOS 빌드는 macOS 에서만 가능. iOS 앱(화면)은 아직 없음 — docs/release/MULTIPLATFORM_ROADMAP.md 참고.
 name: iOS core
 
 on:
   push:
     branches: [main, "claude/**"]
-    paths: ["core/**", "gradle/**", "*.gradle.kts", ".github/workflows/ios-core.yml"]
+    paths: ["core/**", "shared/**", "gradle/**", "*.gradle.kts", "gradle.properties", ".github/workflows/ios-core.yml"]
   pull_request:
-    paths: ["core/**"]
+    paths: ["core/**", "shared/**"]
 
 jobs:
   ios-core:
@@ -20,5 +20,5 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Test core on iOS simulator and build framework
-        run: ./gradlew :core:iosSimulatorArm64Test :core:linkReleaseFrameworkIosArm64 --stacktrace
+      - name: Test core and shared on iOS simulator, build device frameworks
+        run: ./gradlew :core:iosSimulatorArm64Test :shared:iosSimulatorArm64Test :core:linkReleaseFrameworkIosArm64 :shared:linkReleaseFrameworkIosArm64 --stacktrace

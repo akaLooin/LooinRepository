@@ -1,7 +1,8 @@
 package com.looin.finance.data
 
-import android.content.Context
 import androidx.room.AutoMigration
+import androidx.room.ConstructedBy
+import androidx.room.RoomDatabaseConstructor
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -12,9 +13,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.Transaction
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import androidx.room.Update
@@ -200,14 +199,6 @@ interface FinanceDao {
     @Query("SELECT * FROM settings WHERE id = 1") fun observeSettings(): Flow<SettingsEntity?>
     @Query("SELECT * FROM settings WHERE id = 1") suspend fun settings(): SettingsEntity?
     @Upsert suspend fun upsertSettings(s: SettingsEntity)
-
-    @Transaction
-    suspend fun seedIfEmpty(defaults: List<CategoryEntity>, settings: SettingsEntity) {
-        if (settings() == null) {
-            if (categories().isEmpty()) insertCategories(defaults)
-            upsertSettings(settings)
-        }
-    }
 }
 
 @Database(
@@ -221,20 +212,23 @@ interface FinanceDao {
     autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 @TypeConverters(Converters::class)
+@ConstructedBy(FinanceDatabaseConstructor::class)
 abstract class FinanceDatabase : RoomDatabase() {
     abstract fun dao(): FinanceDao
 
+    /**
+     * 플랫폼별 생성 함수는 확장 함수로 둔다:
+     *  - Android: `FinanceDatabase.build(context, name)` (androidMain)
+     *  - PC: `FinanceDatabase.build(file)` (jvmMain) / iOS: `FinanceDatabase.build(name)` (iosMain)
+     * 스키마 변경 시에는 반드시 Migration 을 추가한다(파괴적 마이그레이션 금지: 사용자 금융 데이터 보존).
+     */
     companion object {
         const val NAME = "looin_finance.db"
-
-        fun build(context: Context, name: String? = NAME): FinanceDatabase {
-            val builder = if (name == null) {
-                Room.inMemoryDatabaseBuilder(context, FinanceDatabase::class.java)
-            } else {
-                Room.databaseBuilder(context, FinanceDatabase::class.java, name)
-            }
-            // 스키마 변경 시에는 반드시 Migration 을 추가한다(파괴적 마이그레이션 금지: 사용자 금융 데이터 보존).
-            return builder.build()
-        }
     }
+}
+
+/** Room 이 플랫폼마다 생성하는 생성자(KMP 필수). */
+@Suppress("KotlinNoActualForExpect")
+expect object FinanceDatabaseConstructor : RoomDatabaseConstructor<FinanceDatabase> {
+    override fun initialize(): FinanceDatabase
 }

@@ -17,4 +17,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "LooinFinance"
-include(":core", ":app")
+include(":core", ":shared", ":app")

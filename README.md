@@ -20,12 +20,12 @@
 
 ```
 core/   재정 계산 Kotlin Multiplatform 모듈 (commonMain: Android·PC(JVM)·iOS 공용)
+shared/ 데이터 계층 KMP 모듈: Room 엔티티·DAO, FinanceRepository, 백업(JSON) — Android·PC·iOS 공용
   model/       계좌·거래·카테고리·예산·설정 모델
   period/      달력/월급일 이중 회계 기간 (시작 포함·종료 미포함 구간)
   calc/        잔고·순자산·예상 잔고·예산·사용 가능 금액·통계 계산 + 계산 근거(Breakdown)
   validation/  거래 검증(오류/경고), 계좌 보관·잔고 조정 규칙
-app/    Android 앱 (Jetpack Compose + Room)
-  data/        Room 엔티티·DAO, FinanceRepository(저장 전 검증, 트랜잭션 처리)
+app/    Android 앱 (Jetpack Compose)
   ui/          홈·캘린더·돈 관리·자산·분석·거래 입력·설정 화면
 ```
 

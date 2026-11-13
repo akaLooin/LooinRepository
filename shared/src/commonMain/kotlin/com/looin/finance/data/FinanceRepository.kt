@@ -1,6 +1,7 @@
 package com.looin.finance.data
 
-import androidx.room.withTransaction
+import androidx.room.immediateTransaction
+import androidx.room.useWriterConnection
 import com.looin.finance.core.calc.TransactionActions
 import com.looin.finance.core.model.Account
 import com.looin.finance.core.model.Budget
@@ -46,10 +47,17 @@ data class FinanceData(
 
 class FinanceRepository(
     private val db: FinanceDatabase,
-    private val now: () -> Long = { System.currentTimeMillis() },
+    private val now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     private val today: () -> LocalDate = { Clock.System.todayIn(TimeZone.currentSystemDefault()) },
 ) {
     private val dao = db.dao()
+
+    /**
+     * 쓰기 트랜잭션. 블록 안의 DAO 호출은 같은 연결을 쓰고, 예외가 나면 전부 되돌린다.
+     * 중첩 호출(예: 규칙 저장 → 반복 생성)은 같은 트랜잭션 안의 중첩 트랜잭션으로 처리된다.
+     */
+    private suspend fun <R> tx(block: suspend () -> R): R =
+        db.useWriterConnection { connection -> connection.immediateTransaction { block() } }
 
     val data: Flow<FinanceData> = combine(
         dao.observeAccounts(),
@@ -72,7 +80,12 @@ class FinanceRepository(
 
     /** 최초 실행 시 기본 카테고리와 설정만 생성한다(샘플 거래·계좌는 만들지 않음). */
     suspend fun ensureInitialized() {
-        dao.seedIfEmpty(DefaultData.categories(), FinanceSettings().toEntity())
+        tx {
+            if (dao.settings() == null) {
+                if (dao.categories().isEmpty()) dao.insertCategories(DefaultData.categories())
+                dao.upsertSettings(FinanceSettings().toEntity())
+            }
+        }
         generateRecurring()
     }
 
@@ -99,7 +112,7 @@ class FinanceRepository(
     }
 
     /** 모든 활성 규칙에 대해 아직 만들지 않은 예정 거래를 만든다. 여러 번 호출해도 중복이 생기지 않는다. 만든 개수 반환. */
-    suspend fun generateRecurring(): Int = db.withTransaction {
+    suspend fun generateRecurring(): Int = tx {
         val horizon = recurringHorizon()
         var created = 0
         for (rule in dao.rules().map { it.toModel() }) {
@@ -114,7 +127,7 @@ class FinanceRepository(
      * 규칙 저장. 수정이면 오늘 이후의 "아직 처리하지 않은" 예정 발생분을 지우고 새 규칙으로 다시 만든다.
      * 이미 완료·취소한 거래와 지난 예정 거래는 그대로 둔다.
      */
-    suspend fun saveRule(rule: RecurringRule): Long = db.withTransaction {
+    suspend fun saveRule(rule: RecurringRule): Long = tx {
         val errors = RecurrenceCalculator.validate(rule).toMutableList()
         val s = snapshot()
         val template = RecurrenceCalculator.template(rule)
@@ -134,14 +147,14 @@ class FinanceRepository(
     }
 
     /** 규칙 삭제. 오늘 이후의 미처리 예정 발생분도 함께 지운다(완료·취소 기록은 보존). */
-    suspend fun deleteRule(id: Long) = db.withTransaction {
+    suspend fun deleteRule(id: Long) = tx {
         dao.deletePlannedOccurrences(id, today())
         dao.deleteRule(id)
     }
 
     // ── 계좌 ──────────────────────────────────────────────
 
-    suspend fun saveAccount(account: Account): Long = db.withTransaction {
+    suspend fun saveAccount(account: Account): Long = tx {
         if (account.name.isBlank()) throw FinanceException("계좌 이름을 입력하세요.")
         val t = now()
         if (account.id == 0L) {
@@ -171,13 +184,13 @@ class FinanceRepository(
 
     /** 실제 잔고를 [targetBalance] 로 맞추는 조정 거래를 기록한다. 기록된 조정 거래가 곧 변경 이력이다. */
     suspend fun adjustBalance(accountId: Long, targetBalance: Long, date: LocalDate, memo: String): Transaction? =
-        db.withTransaction {
+        tx {
             val acc = dao.accounts().firstOrNull { it.id == accountId }?.toModel()
                 ?: throw FinanceException("계좌를 찾을 수 없습니다.")
             if (acc.archived) throw FinanceException("보관된 계좌는 조정할 수 없습니다.")
             if (date > today()) throw FinanceException("미래 날짜로 잔고를 조정할 수 없습니다.")
             val txs = dao.transactions().map { it.toModel() }
-            val adj = AccountRules.adjustment(acc, txs, targetBalance, date, memo, now()) ?: return@withTransaction null
+            val adj = AccountRules.adjustment(acc, txs, targetBalance, date, memo, now()) ?: return@tx null
             val id = dao.insertTransaction(adj.toEntity())
             adj.copy(id = id)
         }
@@ -190,7 +203,7 @@ class FinanceRepository(
     }
 
     /** 오류가 있으면 저장하지 않는다. 경고(잔액 부족 등)는 화면에서 사용자 확인을 받은 뒤 호출한다. */
-    suspend fun saveTransaction(tx: Transaction): Long = db.withTransaction {
+    suspend fun saveTransaction(tx: Transaction): Long = tx {
         val s = snapshot()
         val result = TransactionValidator.validate(tx, s.accounts, s.categories, s.transactions, today())
         if (!result.isValid) throw FinanceException(result.errors.joinToString("\n"))
@@ -225,7 +238,7 @@ class FinanceRepository(
 
     // ── 예산 ──────────────────────────────────────────────
 
-    suspend fun saveBudget(budget: Budget): Long = db.withTransaction {
+    suspend fun saveBudget(budget: Budget): Long = tx {
         if (budget.amount < 0) throw FinanceException("예산은 0원 이상이어야 합니다.")
         val duplicate = dao.budgets().any {
             it.id != budget.id && it.basis == budget.basis && it.periodStart == budget.periodStart &&
@@ -244,7 +257,7 @@ class FinanceRepository(
     suspend fun deleteBudget(id: Long) = dao.deleteBudget(id)
 
     /** 이전 기간 예산을 대상 기간으로 복사(이미 있는 항목은 건너뜀). 복사된 개수 반환. */
-    suspend fun copyBudgets(from: Period, to: Period): Int = db.withTransaction {
+    suspend fun copyBudgets(from: Period, to: Period): Int = tx {
         val all = dao.budgets().map { it.toModel() }
         val existing = all.filter { it.basis == to.basis && it.periodStart == to.start }.map { it.categoryId }.toSet()
         val source = all.filter { it.basis == from.basis && it.periodStart == from.start && it.categoryId !in existing }
@@ -260,7 +273,7 @@ class FinanceRepository(
      * 카테고리 추가·수정. 같은 종류 안에서 이름 중복 금지, 거래·예산·반복 규칙에 쓰인 카테고리는 수입↔지출 변경 금지.
      * 삭제 대신 보관(archived)을 쓴다: 지난 거래·예산 기록이 카테고리를 계속 가리킬 수 있게.
      */
-    suspend fun saveCategory(category: Category): Long = db.withTransaction {
+    suspend fun saveCategory(category: Category): Long = tx {
         val name = category.name.trim()
         if (name.isBlank()) throw FinanceException("카테고리 이름을 입력하세요.")
         if (name.length > 20) throw FinanceException("카테고리 이름은 20자 이내로 입력하세요.")
@@ -299,7 +312,7 @@ class FinanceRepository(
      */
     suspend fun restoreBackup(text: String): BackupCodec.Summary {
         val incoming = BackupCodec.decode(text)
-        db.withTransaction {
+        tx {
             dao.clearTransactions(); dao.clearBudgets(); dao.clearRules(); dao.clearAccounts(); dao.clearCategories()
             dao.insertCategories(incoming.categories.map { it.toEntity() })
             dao.insertAccounts(incoming.accounts.map { it.toEntity() })
