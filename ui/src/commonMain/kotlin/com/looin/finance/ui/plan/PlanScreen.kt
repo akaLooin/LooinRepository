@@ -273,7 +273,7 @@ private fun glue(text: String) = text.replace(' ', '\u00A0').toList().joinToStri
 /** 예산 입력 폼(시트 내용). categoryId: -1 = 미선택(신규), null = 전체 생활비. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun BudgetForm(
+fun BudgetForm(
     budget: Budget,
     data: FinanceData,
     existing: List<BudgetStatus>,

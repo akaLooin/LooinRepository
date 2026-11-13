@@ -1,6 +1,5 @@
 package com.looin.finance.ui.theme
 
-import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -15,12 +14,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.looin.finance.R
+import com.looin.finance.ui.platform.InMemoryKeyValueStore
+import com.looin.finance.ui.platform.KeyValueStore
 
 /**
  * 디자인 토큰. 투두메이트 프로젝트(replica/design/tokens*.json)의 색 역할·글자 크기·모서리를 그대로 옮기고,
@@ -117,12 +116,8 @@ val LightTokens = LooinColors(
     scrim = Color(0x66000000),
 )
 
-val Pretendard = FontFamily(
-    Font(R.font.pretendard_regular, FontWeight.Normal),
-    Font(R.font.pretendard_medium, FontWeight.Medium),
-    Font(R.font.pretendard_semibold, FontWeight.SemiBold),
-    Font(R.font.pretendard_bold, FontWeight.Bold),
-)
+/** Pretendard 글꼴(OFL). 플랫폼마다 불러오는 방법이 달라 각 플랫폼 소스에 둔다(Fonts.android.kt / Fonts.jvm.kt). */
+expect val Pretendard: FontFamily
 
 /** 투두메이트 토큰의 글자 크기(type.*). 숫자는 고정폭(tnum)으로 자릿수를 맞춘다. */
 object LooinType {
@@ -156,20 +151,23 @@ val BigAmountStyle = LooinType.bigAmount
 
 val LocalLooinColors = staticCompositionLocalOf { DarkTokens }
 
-/** 화면 테마: 시스템 따름(기본, 시스템이 라이트가 아니면 다크) / 다크 / 라이트. 기기별 설정이라 SharedPreferences 에 둔다. */
+/** 화면 테마: 시스템 따름(기본, 시스템이 라이트가 아니면 다크) / 다크 / 라이트. 기기별 설정이라 [KeyValueStore] 에 둔다. */
 enum class ThemeMode(val label: String) { SYSTEM("시스템 설정"), DARK("다크"), LIGHT("라이트") }
 
 object ThemePrefs {
+    private var store: KeyValueStore = InMemoryKeyValueStore()
+
     var mode by mutableStateOf(ThemeMode.SYSTEM)
         private set
 
-    fun load(context: Context) {
-        val name = context.getSharedPreferences("ui", Context.MODE_PRIVATE).getString("theme", null)
-        mode = ThemeMode.entries.firstOrNull { it.name == name } ?: ThemeMode.SYSTEM
+    /** 앱 시작 시 플랫폼 저장소를 연결하고 저장된 값을 읽는다. */
+    fun init(store: KeyValueStore) {
+        this.store = store
+        mode = ThemeMode.entries.firstOrNull { it.name == store.get("theme") } ?: ThemeMode.SYSTEM
     }
 
-    fun set(context: Context, m: ThemeMode) {
-        context.getSharedPreferences("ui", Context.MODE_PRIVATE).edit().putString("theme", m.name).apply()
+    fun set(m: ThemeMode) {
+        store.put("theme", m.name)
         mode = m
     }
 }

@@ -68,11 +68,18 @@ private fun Transaction.matches(f: CalendarFilter) = when (f) {
 }
 
 /** 달력 칸에 맞게 줄인 금액(1.2만, 350만). 정확한 금액은 아래 목록에 표시. */
-fun compact(v: Long): String = when {
-    v >= 100_000_000 -> "%.1f억".format(v / 100_000_000.0).replace(".0억", "억")
-    v >= 1_000_000 -> "${v / 10_000}만"
-    v >= 10_000 -> "%.1f만".format(v / 10_000.0).replace(".0만", "만")
-    else -> "%,d".format(v)
+fun compact(v: Long): String {
+    /** 소수 첫째 자리까지 반올림, ".0" 은 생략. */
+    fun oneDecimal(value: Long, unit: Long, suffix: String): String {
+        val tenths = (value * 10 + unit / 2) / unit
+        return if (tenths % 10 == 0L) "${tenths / 10}$suffix" else "${tenths / 10}.${tenths % 10}$suffix"
+    }
+    return when {
+        v >= 100_000_000 -> oneDecimal(v, 100_000_000, "억")
+        v >= 1_000_000 -> "${v / 10_000}만"
+        v >= 10_000 -> oneDecimal(v, 10_000, "만")
+        else -> com.looin.finance.core.money.MoneyFormat.number(v)
+    }
 }
 
 fun startOfWeek(d: LocalDate): LocalDate = d.minus(DatePeriod(days = if (d.dayOfWeek == DayOfWeek.SUNDAY) 0 else d.dayOfWeek.ordinal + 1))
