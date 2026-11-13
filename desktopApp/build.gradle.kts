@@ -36,9 +36,11 @@ compose.desktop {
             )
             packageName = "LooinFinance"
             packageVersion = desktopVersion
-            description = "루인 가계부 - 잔고·예정 지출·예산 관리"
+            // Windows 설치 도구(WiX)는 설명·저작권의 비ASCII 문자(한글, ©)에서 실패한다 → 영문으로 둔다.
+            // 앱 안의 이름(창 제목·화면)은 그대로 한국어.
+            description = "Looin Finance - balance, planned spending and budget"
             vendor = "Looin"
-            copyright = "© Looin"
+            copyright = "Copyright (c) Looin"
             // jlink 로 필요한 JDK 모듈만 포함(./gradlew :desktopApp:suggestRuntimeModules 결과)
             modules("java.instrument", "java.prefs", "jdk.unsupported")
 
