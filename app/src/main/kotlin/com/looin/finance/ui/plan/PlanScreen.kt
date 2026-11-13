@@ -42,6 +42,9 @@ import com.looin.finance.core.model.Budget
 import com.looin.finance.core.model.CategoryKind
 import com.looin.finance.core.model.KRW
 import com.looin.finance.core.model.Transaction
+import com.looin.finance.core.model.TransactionType
+import com.looin.finance.core.recurring.RecurrenceCalculator
+import com.looin.finance.ui.components.typeColor
 import com.looin.finance.core.money.MoneyFormat
 import com.looin.finance.core.period.PeriodCalculator
 import com.looin.finance.data.FinanceData
@@ -80,6 +83,7 @@ fun PlanScreen(
     padding: PaddingValues,
     onOpenTx: (Transaction) -> Unit,
     onAddPlanned: (LocalDate) -> Unit,
+    onOpenRule: (Long?) -> Unit = {},
 ) {
     val c = Looin.colors
     val data = state.data
@@ -171,6 +175,27 @@ fun PlanScreen(
             }
         }
         item {
+            Section("반복 거래", dot = c.menuMove, onAdd = { onOpenRule(null) }, addLabel = "반복 거래 추가") {
+                if (data.rules.isEmpty()) EmptyHint("월세·통신비·급여처럼 매번 같은 거래를 등록하면 예정 거래가 자동으로 생겨요.")
+                data.rules.forEach { r ->
+                    val next = RecurrenceCalculator.nextOccurrence(r, state.today)
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onOpenRule(r.id) }.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(32.dp).clip(CircleShape).background(if (r.active) c.surfaceButton else c.markerEmpty), contentAlignment = Alignment.Center) {
+                            Text("↻", style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = if (r.active) c.text else c.textMuted)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(r.name, style = LooinType.bodyLg, color = if (r.active) c.text else c.textMuted)
+                            SmallLabel(r.scheduleLabel + if (!r.active) " · 꺼짐" else next?.let { " · 다음 ${it.monthNumber}.${it.dayOfMonth}" } ?: " · 끝남")
+                        }
+                        AmountText(if (r.type == TransactionType.EXPENSE) -r.amount else r.amount, currency = r.currency,
+                            signed = r.type != TransactionType.TRANSFER, color = if (r.active) typeColor(r.type) else c.textMuted)
+                    }
+                }
+            }
+        }
+        item {
             val rows = StatisticsCalculator.planVsActual(period, data.budgets, txs)
             Section("계획 대비 실제", dot = c.saturday) {
                 if (rows.isEmpty()) EmptyHint("비교할 데이터가 없어요.")
@@ -224,8 +249,8 @@ private fun BudgetRow(s: BudgetStatus, data: FinanceData, onClick: () -> Unit) {
         BudgetBar(s.spent / total, s.planned / total, s.isOver)
         Spacer(Modifier.height(4.dp))
         Row {
-            SmallLabel("예산 ${fmt(s.budget.amount)} · 사용 ${fmt(s.spent)} · 예정 ${fmt(s.planned)}")
-            Spacer(Modifier.weight(1f))
+            SmallLabel("예산 ${fmt(s.budget.amount)} · 사용 ${fmt(s.spent)} · 예정 ${fmt(s.planned)}", modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
             when {
                 s.isOver -> SmallLabel("초과 ${fmt(-s.remaining)}", color = c.danger)
                 s.isOverWithPlanned -> SmallLabel("예정 포함 시 초과", color = c.planned)

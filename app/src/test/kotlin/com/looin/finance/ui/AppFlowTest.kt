@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -92,9 +95,24 @@ open class AppFlowTest {
         waitText("488,000원")
         shot("05_plan")
 
+        // 반복 거래: 매월 31일(짧은 달은 말일) 월세 300,000원 → 이번 달 말 예정 거래가 자동 생성
+        rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("반복 거래 추가"))
+        rule.onNodeWithContentDescription("반복 거래 추가").performClick()
+        waitText("반복 거래 추가")
+        field("이름").performTextInput("월세")
+        field("금액").performTextInput("300000")
+        field("반복일 (1~31)").performTextReplacement("31")
+        shot("05b_recurring_edit")
+        rule.onNodeWithText("저장").performClick()
+        waitText("매월 31일")
+        shot("05c_plan_recurring")
+
         // 홈: 사용 가능 = 잔고 1,488,000 − 예산 확보 488,000 = 1,000,000
+        //   (월세 예정 300,000 은 전체 생활비 예산 안에서 확보되므로 이중 차감 없음)
+        // 기간 말 예상 잔고 = 1,488,000 − 300,000 = 1,188,000
         rule.onAllNodesWithText("홈").onFirst().performClick()
         waitText("1,000,000원")
+        waitText("1,188,000원")
 
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         waitText("예정 지출")

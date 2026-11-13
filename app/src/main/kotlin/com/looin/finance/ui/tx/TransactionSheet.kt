@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,7 @@ fun TransactionActionSheet(
     onDismiss: () -> Unit,
     onEdit: (Transaction) -> Unit,
     onCopy: (Transaction) -> Unit,
+    onOpenRule: (Long) -> Unit = {},
 ) {
     val c = Looin.colors
     var mode by remember { mutableStateOf("menu") }
@@ -89,6 +91,8 @@ fun TransactionActionSheet(
                     MenuRow(Icons.AutoMirrored.Filled.Undo, "예정으로 되돌리기", c.menuMove, { onDismiss(); vm.reopenTransaction(tx.id) })
                 }
                 if (editable) MenuRow(Icons.Outlined.ContentCopy, "복사해서 새로 입력", c.menuSoft, { onDismiss(); onCopy(tx) })
+                val rule = tx.recurringId?.let { id -> data.rules.firstOrNull { it.id == id } }
+                if (rule != null) MenuRow(Icons.Outlined.Repeat, "반복 규칙 보기", c.menuMove, { onDismiss(); onOpenRule(rule.id) }, rule.scheduleLabel)
                 MenuRow(Icons.Outlined.Info, "정보 보기", c.menuInfo, { mode = "info" })
             }
         }

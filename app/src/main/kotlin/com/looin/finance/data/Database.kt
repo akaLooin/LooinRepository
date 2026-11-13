@@ -1,6 +1,7 @@
 package com.looin.finance.data
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -24,6 +25,7 @@ import com.looin.finance.core.model.TransactionSource
 import com.looin.finance.core.model.TransactionStatus
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.period.PeriodBasis
+import com.looin.finance.core.recurring.Frequency
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
@@ -64,6 +66,8 @@ data class CategoryEntity(
     ],
     indices = [
         Index("date"), Index("from_account_id"), Index("to_account_id"), Index("category_id"), Index("status"),
+        // 같은 규칙의 같은 발생일은 한 번만 (NULL 은 중복 허용 → 직접 입력 거래에는 영향 없음)
+        Index(value = ["recurring_id", "recurring_occurrence"], unique = true),
     ],
 )
 data class TransactionEntity(
@@ -81,6 +85,32 @@ data class TransactionEntity(
     val source: TransactionSource,
     @ColumnInfo(name = "linked_planned_id") val linkedPlannedId: Long?,
     @ColumnInfo(name = "to_amount") val toAmount: Long?,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    @ColumnInfo(name = "recurring_id") val recurringId: Long? = null,
+    @ColumnInfo(name = "recurring_occurrence") val recurringOccurrence: LocalDate? = null,
+)
+
+/** 반복 거래 규칙 (v2). 요일은 ISO 번호(월=1 … 일=7)로 저장한다. */
+@Entity(tableName = "recurring_rules")
+data class RecurringRuleEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val type: TransactionType,
+    val amount: Long,
+    val currency: String,
+    @ColumnInfo(name = "from_account_id") val fromAccountId: Long?,
+    @ColumnInfo(name = "to_account_id") val toAccountId: Long?,
+    @ColumnInfo(name = "category_id") val categoryId: Long?,
+    val frequency: Frequency,
+    val interval: Int,
+    @ColumnInfo(name = "day_of_month") val dayOfMonth: Int?,
+    @ColumnInfo(name = "day_of_week") val dayOfWeek: Int?,
+    @ColumnInfo(name = "start_date") val startDate: LocalDate,
+    @ColumnInfo(name = "end_date") val endDate: LocalDate?,
+    val active: Boolean,
+    @ColumnInfo(name = "generated_through") val generatedThrough: LocalDate?,
+    val memo: String,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
 )
@@ -135,6 +165,29 @@ interface FinanceDao {
     @Insert suspend fun insertTransaction(t: TransactionEntity): Long
     @Update suspend fun updateTransaction(t: TransactionEntity)
     @Query("DELETE FROM transactions WHERE id = :id") suspend fun deleteTransaction(id: Long)
+    /** 반복 생성분: 같은 (규칙, 발생일)이 이미 있으면 건너뛴다. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertGenerated(t: List<TransactionEntity>): List<Long>
+    /** 규칙 수정·삭제 시: 아직 처리 안 한 [from] 이후 예정 발생분만 지운다(완료·취소 기록은 보존). */
+    @Query("DELETE FROM transactions WHERE recurring_id = :ruleId AND status = 'PLANNED' AND recurring_occurrence >= :from")
+    suspend fun deletePlannedOccurrences(ruleId: Long, from: LocalDate): Int
+
+    // 반복 규칙
+    @Query("SELECT * FROM recurring_rules ORDER BY active DESC, name") fun observeRules(): Flow<List<RecurringRuleEntity>>
+    @Query("SELECT * FROM recurring_rules") suspend fun rules(): List<RecurringRuleEntity>
+    @Insert suspend fun insertRule(r: RecurringRuleEntity): Long
+    @Update suspend fun updateRule(r: RecurringRuleEntity)
+    @Query("DELETE FROM recurring_rules WHERE id = :id") suspend fun deleteRule(id: Long)
+
+    // 백업 복원용: 전체 교체
+    @Query("DELETE FROM transactions") suspend fun clearTransactions()
+    @Query("DELETE FROM budgets") suspend fun clearBudgets()
+    @Query("DELETE FROM recurring_rules") suspend fun clearRules()
+    @Query("DELETE FROM accounts") suspend fun clearAccounts()
+    @Query("DELETE FROM categories") suspend fun clearCategories()
+    @Insert suspend fun insertAccounts(a: List<AccountEntity>)
+    @Insert suspend fun insertTransactions(t: List<TransactionEntity>)
+    @Insert suspend fun insertBudgets(b: List<BudgetEntity>)
+    @Insert suspend fun insertRules(r: List<RecurringRuleEntity>)
 
     // 예산
     @Query("SELECT * FROM budgets ORDER BY period_start DESC, id") fun observeBudgets(): Flow<List<BudgetEntity>>
@@ -158,9 +211,14 @@ interface FinanceDao {
 }
 
 @Database(
-    entities = [AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class],
-    version = 1,
+    entities = [
+        AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
+        RecurringRuleEntity::class,
+    ],
+    version = 2,
     exportSchema = true,
+    // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 @TypeConverters(Converters::class)
 abstract class FinanceDatabase : RoomDatabase() {

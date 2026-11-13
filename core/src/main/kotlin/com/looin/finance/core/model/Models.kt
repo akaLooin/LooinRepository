@@ -62,6 +62,7 @@ enum class TransactionSource(val label: String) {
     ADJUSTMENT("잔고 조정"),
     IMPORT("가져오기"),
     BANK_SYNC("금융 연동"),
+    RECURRING("반복 거래"),
 }
 
 /**
@@ -92,6 +93,10 @@ data class Transaction(
     val toAmount: Long? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
+    /** 이 거래를 만든 반복 규칙(없으면 직접 입력). */
+    val recurringId: Long? = null,
+    /** 반복 규칙상의 원래 발생일. 사용자가 예정일을 옮겨도 그대로 둔다(중복 생성 방지). */
+    val recurringOccurrence: LocalDate? = null,
 ) {
     /**
      * 기간 집계·잔고 기준일.

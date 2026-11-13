@@ -751,6 +751,11 @@ fun TransactionRow(
                 Text(title, style = LooinType.bodyLg, color = if (cancelled) c.textMuted else c.text, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     textDecoration = if (cancelled) TextDecoration.LineThrough else null, modifier = Modifier.weight(1f, fill = false))
                 Spacer(Modifier.width(6.dp))
+                if (tx.recurringId != null) {
+                    Text("↻", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.menuMove,
+                        modifier = Modifier.semantics { contentDescription = "반복 거래" })
+                    Spacer(Modifier.width(4.dp))
+                }
                 StatusBadge(tx.status)
             }
             if (subtitle.isNotEmpty()) Text(subtitle, style = LooinType.helper, color = c.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)

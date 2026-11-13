@@ -78,6 +78,7 @@ import com.looin.finance.ui.calendar.CalendarScreen
 import com.looin.finance.ui.components.GUTTER
 import com.looin.finance.ui.home.HomeScreen
 import com.looin.finance.ui.plan.PlanScreen
+import com.looin.finance.ui.plan.RecurringEditScreen
 import com.looin.finance.ui.settings.SettingsScreen
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinTheme
@@ -172,7 +173,8 @@ private fun LooinRoot(vm: MainViewModel) {
         val live = state.data.transactions.firstOrNull { it.id == tx.id }
         if (live == null) sheetTx = null
         else TransactionActionSheet(live, state.data, state.today, vm, onDismiss = { sheetTx = null },
-            onEdit = { nav.navigate(txRoute(id = it.id)) }, onCopy = { nav.navigate(txRoute(copy = it.id)) })
+            onEdit = { nav.navigate(txRoute(id = it.id)) }, onCopy = { nav.navigate(txRoute(copy = it.id)) },
+            onOpenRule = { nav.navigate("rule?id=$it") })
     }
 }
 
@@ -207,12 +209,16 @@ private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel
         composable(Tab.CALENDAR.route) { CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }) }
         composable(Tab.PLAN.route) {
             PlanScreen(state, vm, padding, openSheet,
-                onAddPlanned = { nav.navigate(txRoute(date = it, type = TransactionType.EXPENSE, status = TransactionStatus.PLANNED)) })
+                onAddPlanned = { nav.navigate(txRoute(date = it, type = TransactionType.EXPENSE, status = TransactionStatus.PLANNED)) },
+                onOpenRule = { nav.navigate("rule?id=${it ?: -1}") })
         }
         composable(Tab.ASSETS.route) {
             AssetsScreen(state, padding, onOpenAccount = { nav.navigate("account/$it") }, onAddAccount = { nav.navigate("accountEdit") })
         }
         composable(Tab.ANALYSIS.route) { AnalysisScreen(state, padding) }
+        composable("rule?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
+            RecurringEditScreen(state, vm, entry.arguments!!.getLong("id").takeIf { it > 0 }, onClose = { nav.popBackStack() })
+        }
         composable("settings") { SettingsScreen(state, vm, onBack = { nav.popBackStack() }) }
         composable(
             "tx?id={id}&date={date}&type={type}&status={status}&account={account}&copy={copy}",

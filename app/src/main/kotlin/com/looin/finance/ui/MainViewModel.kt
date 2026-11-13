@@ -13,6 +13,9 @@ import com.looin.finance.core.validation.ValidationResult
 import com.looin.finance.data.FinanceData
 import com.looin.finance.data.FinanceException
 import com.looin.finance.data.FinanceRepository
+import com.looin.finance.core.recurring.RecurringRule
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -53,6 +56,8 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
     /** 앱 복귀 시 날짜가 바뀌었으면 갱신(자정 넘김 대비). */
     fun refreshToday() {
         today.value = repo.today()
+        // 날짜가 지나면 다음 기간의 반복 거래 예정분을 채운다(중복 없음)
+        viewModelScope.launch { runCatching { repo.generateRecurring() } }
     }
 
     private fun run(success: String?, onSuccess: () -> Unit = {}, block: suspend () -> Unit) {
@@ -96,4 +101,28 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
     }
 
     fun updateSettings(settings: FinanceSettings) = run("설정을 저장했습니다") { repo.updateSettings(settings) }
+
+    fun saveRule(rule: RecurringRule, onSuccess: () -> Unit) =
+        run(if (rule.id == 0L) "반복 거래를 만들었습니다" else "반복 거래를 수정했습니다", onSuccess) { repo.saveRule(rule) }
+
+    fun deleteRule(id: Long, onSuccess: () -> Unit) = run("반복 거래를 삭제했습니다", onSuccess) { repo.deleteRule(id) }
+
+    /** 백업 파일 쓰기. [write] 는 IO 스레드에서 호출된다. */
+    fun exportBackup(appVersion: String, write: (String) -> Unit) = run("백업 파일을 저장했습니다") {
+        val json = repo.exportBackup(appVersion)
+        try {
+            withContext(Dispatchers.IO) { write(json) }
+        } catch (e: Exception) {
+            throw FinanceException("백업 파일을 저장하지 못했습니다: ${e.message}")
+        }
+    }
+
+    /** 백업 파일 읽기 → 검증 → 전체 교체. */
+    fun restoreBackup(read: () -> String) = run(null) {
+        val text = try { withContext(Dispatchers.IO) { read() } } catch (e: Exception) {
+            throw FinanceException("백업 파일을 읽지 못했습니다: ${e.message}")
+        }
+        val s = repo.restoreBackup(text)
+        _messages.tryEmit("복원했습니다 · 계좌 ${s.accounts}개, 거래 ${s.transactions}건, 예산 ${s.budgets}개, 반복 ${s.rules}개")
+    }
 }

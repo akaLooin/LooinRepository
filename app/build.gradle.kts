@@ -16,8 +16,8 @@ android {
         applicationId = "com.looin.finance"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-phase1"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -33,12 +33,17 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    // 마이그레이션 테스트(Robolectric)가 내보낸 스키마를 읽도록 debug assets 에만 포함(릴리스 제외)
+    sourceSets.getByName("debug").assets.srcDir("$projectDir/schemas")
     testOptions {
         unitTests.isIncludeAndroidResources = true
-        // Compose UI 테스트는 테스트용 Activity(ui-test-manifest, debug 전용)가 필요하므로 debug 변형에서만 실행
+        // Compose UI 테스트(ui-test-manifest)와 마이그레이션 테스트(스키마 assets)는 debug 전용이라 debug 변형에서만 실행
         unitTests.all { test ->
-            if (test.name.contains("Release")) test.exclude("**/ui/**")
+            if (test.name.contains("Release")) test.exclude("**/ui/**", "**/MigrationTest*")
         }
     }
 }
@@ -75,6 +80,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.room.testing)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)

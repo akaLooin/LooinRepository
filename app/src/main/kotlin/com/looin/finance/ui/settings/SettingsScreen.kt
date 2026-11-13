@@ -23,6 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.looin.finance.BuildConfig
+import com.looin.finance.ui.components.ConfirmDialog
+import com.looin.finance.ui.components.ValueRow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +63,20 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
     var dayText by rememberSaveable(s.paydayDay) { mutableStateOf(s.paydayDay.toString()) }
     var basis by rememberSaveable(s.primaryBasis) { mutableStateOf(s.primaryBasis) }
     val day = dayText.toIntOrNull()?.takeIf { it in 1..31 }
+    val resolver = context.contentResolver
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) vm.exportBackup(BuildConfig.VERSION_NAME) { json ->
+            resolver.openOutputStream(uri, "wt")!!.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+        }
+    }
+    var pendingRestore by remember { mutableStateOf<Uri?>(null) }
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> pendingRestore = uri }
+    pendingRestore?.let { uri ->
+        ConfirmDialog("백업에서 복원", "지금 기기의 계좌·거래·예산·반복 거래가 모두 백업 파일 내용으로 바뀌어요. 계속할까요?", "복원",
+            { pendingRestore = null }, danger = true) {
+            vm.restoreBackup { resolver.openInputStream(uri)!!.use { it.readBytes().toString(Charsets.UTF_8) } }
+        }
+    }
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding()) {
         ScreenHeader("설정", onBack)
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -89,7 +110,13 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             Title("데이터")
             Text("모든 데이터는 이 기기에만 저장돼요(서버 전송 없음).", style = LooinType.body, color = c.text)
-            SmallLabel("샘플 데이터는 만들지 않아요. 백업·복원과 금융기관 연동은 다음 단계에서 지원할 예정이에요.")
+            SmallLabel("휴대폰을 바꾸거나 앱을 지우면 데이터가 사라지니, 백업 파일을 만들어 안전한 곳(클라우드 드라이브 등)에 보관하세요.")
+            FieldGroup {
+                ValueRow("백업 파일 만들기", "JSON", onClick = { exportLauncher.launch("looin-backup-${state.today}.json") })
+                FieldDivider()
+                ValueRow("백업에서 복원", "전체 교체", onClick = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }, valueColor = c.danger)
+            }
+            SmallLabel("복원하면 지금 데이터가 백업 내용으로 모두 바뀌어요. 파일을 먼저 검사하고, 문제가 있으면 아무것도 바꾸지 않아요.")
             Spacer(Modifier.height(24.dp))
         }
     }

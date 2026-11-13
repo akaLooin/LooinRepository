@@ -8,6 +8,11 @@ import com.looin.finance.core.model.Category
 import com.looin.finance.core.model.CategoryKind
 import com.looin.finance.core.model.FinanceSettings
 import com.looin.finance.core.model.Transaction
+import com.looin.finance.core.period.PeriodCalculator
+import com.looin.finance.core.recurring.RecurrenceCalculator
+import com.looin.finance.core.recurring.RecurringRule
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.isoDayNumber
 import com.looin.finance.core.period.Period
 import com.looin.finance.core.validation.AccountRules
 import com.looin.finance.core.validation.TransactionValidator
@@ -31,6 +36,7 @@ data class FinanceData(
     val budgets: List<Budget> = emptyList(),
     val settings: FinanceSettings = FinanceSettings(),
     val loaded: Boolean = false,
+    val rules: List<RecurringRule> = emptyList(),
 ) {
     val accountById by lazy { accounts.associateBy { it.id } }
     val categoryById by lazy { categories.associateBy { it.id } }
@@ -60,13 +66,14 @@ class FinanceRepository(
             settings = s?.toModel() ?: FinanceSettings(),
             loaded = true,
         )
-    }
+    }.combine(dao.observeRules()) { d, r -> d.copy(rules = r.map { it.toModel() }) }
 
     val settings: Flow<FinanceSettings> = dao.observeSettings().map { it?.toModel() ?: FinanceSettings() }
 
     /** 최초 실행 시 기본 카테고리와 설정만 생성한다(샘플 거래·계좌는 만들지 않음). */
     suspend fun ensureInitialized() {
         dao.seedIfEmpty(DefaultData.categories(), FinanceSettings().toEntity())
+        generateRecurring()
     }
 
     suspend fun snapshot(): FinanceData = FinanceData(
@@ -76,7 +83,61 @@ class FinanceRepository(
         budgets = dao.budgets().map { it.toModel() },
         settings = dao.settings()?.toModel() ?: FinanceSettings(),
         loaded = true,
+        rules = dao.rules().map { it.toModel() },
     )
+
+    // ── 반복 거래 ─────────────────────────────────────────
+
+    /**
+     * 반복 규칙의 예정 거래 생성 범위: 주 회계 기간 기준 "다음 기간"의 마지막 날까지.
+     * 그래서 이번 기간과 다음 기간의 예상 잔고·예산 확보액에 정기 결제가 빠짐없이 들어간다.
+     */
+    suspend fun recurringHorizon(): LocalDate {
+        val st = dao.settings()?.toModel() ?: FinanceSettings()
+        val current = PeriodCalculator.periodContaining(today(), st.primaryBasis, st.paydayDay)
+        return PeriodCalculator.next(current, st.paydayDay).lastDay
+    }
+
+    /** 모든 활성 규칙에 대해 아직 만들지 않은 예정 거래를 만든다. 여러 번 호출해도 중복이 생기지 않는다. 만든 개수 반환. */
+    suspend fun generateRecurring(): Int = db.withTransaction {
+        val horizon = recurringHorizon()
+        var created = 0
+        for (rule in dao.rules().map { it.toModel() }) {
+            val (txs, through) = RecurrenceCalculator.plan(rule, today(), horizon, now())
+            if (txs.isNotEmpty()) created += dao.insertGenerated(txs.map { it.toEntity() }).count { it != -1L }
+            if (through != rule.generatedThrough) dao.updateRule(rule.copy(generatedThrough = through).toEntity())
+        }
+        created
+    }
+
+    /**
+     * 규칙 저장. 수정이면 오늘 이후의 "아직 처리하지 않은" 예정 발생분을 지우고 새 규칙으로 다시 만든다.
+     * 이미 완료·취소한 거래와 지난 예정 거래는 그대로 둔다.
+     */
+    suspend fun saveRule(rule: RecurringRule): Long = db.withTransaction {
+        val errors = RecurrenceCalculator.validate(rule).toMutableList()
+        val s = snapshot()
+        val template = RecurrenceCalculator.template(rule)
+        errors += TransactionValidator.validate(template, s.accounts, s.categories, emptyList(), rule.startDate).errors
+        if (errors.isNotEmpty()) throw FinanceException(errors.distinct().joinToString("\n"))
+        val t = now()
+        val id = if (rule.id == 0L) {
+            dao.insertRule(rule.copy(generatedThrough = null, createdAt = t, updatedAt = t).toEntity())
+        } else {
+            val old = s.rules.firstOrNull { it.id == rule.id } ?: throw FinanceException("반복 규칙을 찾을 수 없습니다.")
+            dao.deletePlannedOccurrences(rule.id, today())
+            dao.updateRule(rule.copy(generatedThrough = null, createdAt = old.createdAt, updatedAt = t).toEntity())
+            rule.id
+        }
+        generateRecurring()
+        id
+    }
+
+    /** 규칙 삭제. 오늘 이후의 미처리 예정 발생분도 함께 지운다(완료·취소 기록은 보존). */
+    suspend fun deleteRule(id: Long) = db.withTransaction {
+        dao.deletePlannedOccurrences(id, today())
+        dao.deleteRule(id)
+    }
 
     // ── 계좌 ──────────────────────────────────────────────
 
@@ -94,6 +155,9 @@ class FinanceRepository(
             }
             if (!old.archived && account.archived) {
                 AccountRules.canArchive(old, txs)?.let { throw FinanceException(it) }
+                if (dao.rules().any { it.active && (it.fromAccountId == account.id || it.toAccountId == account.id) }) {
+                    throw FinanceException("이 계좌를 쓰는 반복 거래가 있어 보관할 수 없습니다. 반복 거래를 먼저 끄거나 지우세요.")
+                }
             }
             dao.updateAccount(account.copy(createdAt = old.createdAt, updatedAt = t).toEntity())
             account.id
@@ -201,6 +265,32 @@ class FinanceRepository(
     suspend fun updateSettings(settings: FinanceSettings) {
         if (settings.paydayDay !in 1..31) throw FinanceException("급여 기준일은 1~31 사이여야 합니다.")
         dao.upsertSettings(settings.toEntity())
+        generateRecurring() // 기간 기준이 바뀌면 반복 거래 생성 범위도 바뀐다
+    }
+
+    // ── 백업·복원 ─────────────────────────────────────────
+
+    suspend fun exportBackup(appVersion: String): String = BackupCodec.encode(snapshot(), now(), appVersion)
+
+    /**
+     * 백업 파일로 현재 데이터를 모두 바꾼다. 파일을 먼저 끝까지 검증하고, 교체는 한 트랜잭션으로 처리해
+     * 중간에 실패하면 기존 데이터가 그대로 남는다. 복원 후 요약값을 다시 비교한다.
+     */
+    suspend fun restoreBackup(text: String): BackupCodec.Summary {
+        val incoming = BackupCodec.decode(text)
+        db.withTransaction {
+            dao.clearTransactions(); dao.clearBudgets(); dao.clearRules(); dao.clearAccounts(); dao.clearCategories()
+            dao.insertCategories(incoming.categories.map { it.toEntity() })
+            dao.insertAccounts(incoming.accounts.map { it.toEntity() })
+            dao.insertTransactions(incoming.transactions.map { it.toEntity() })
+            dao.insertBudgets(incoming.budgets.map { it.toEntity() })
+            dao.insertRules(incoming.rules.map { it.toEntity() })
+            dao.upsertSettings(incoming.settings.toEntity())
+            val after = BackupCodec.summarize(snapshot())
+            if (after != BackupCodec.summarize(incoming)) throw FinanceException("복원 결과가 백업과 일치하지 않아 취소했습니다.")
+        }
+        generateRecurring()
+        return BackupCodec.summarize(incoming)
     }
 
     fun today(): LocalDate = today.invoke()
@@ -227,8 +317,16 @@ fun AccountEntity.toModel() = Account(id, name, type, currency, openingBalance, 
 fun Account.toEntity() = AccountEntity(id, name.trim(), type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt)
 fun CategoryEntity.toModel() = Category(id, name, kind, colorArgb, sortOrder, archived)
 fun Category.toEntity() = CategoryEntity(id, name.trim(), kind, colorArgb, sortOrder, archived)
-fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt)
-fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt)
+fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence)
+fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence)
+fun RecurringRuleEntity.toModel() = RecurringRule(
+    id, name, type, amount, currency, fromAccountId, toAccountId, categoryId, frequency, interval, dayOfMonth,
+    dayOfWeek?.let { n -> DayOfWeek.entries.first { it.isoDayNumber == n } }, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt,
+)
+fun RecurringRule.toEntity() = RecurringRuleEntity(
+    id, name.trim(), type, amount, currency, fromAccountId, toAccountId, categoryId, frequency, interval, dayOfMonth,
+    dayOfWeek?.isoDayNumber, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt,
+)
 fun BudgetEntity.toModel() = Budget(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
 fun Budget.toEntity() = BudgetEntity(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
 fun SettingsEntity.toModel() = FinanceSettings(paydayDay, primaryBasis)
