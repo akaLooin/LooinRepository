@@ -15,8 +15,11 @@
 
 ## 단계
 
+> **CI 확인 (2026-11-13)**: macOS 러너에서 `:core:iosSimulatorArm64Test`(iOS 시뮬레이터 테스트)와 `:core:linkReleaseFrameworkIosArm64`(기기용 프레임워크)가 통과했습니다.
+> 다만 러너의 Xcode 26.6 은 현재 Kotlin 2.0.21 이 공식 검증한 버전(최대 16.0)보다 새로워 경고가 나옵니다. iOS 앱 작업 전에 Kotlin 을 최신 안정판으로 올려야 합니다(1단계에 포함).
+
 ### 1단계: 공용 데이터 계층 (예상 1~2주)
-- Kotlin 2.1+, Room 2.7+(KMP 지원)과 번들 SQLite 드라이버로 올립니다. 또는 SQLDelight 를 씁니다.
+- Kotlin 을 최신 안정판(최신 Xcode 지원 버전), Room 2.7+(KMP 지원)과 번들 SQLite 드라이버로 올립니다. 또는 SQLDelight 를 씁니다.
 - `data/` 를 공용 모듈 `:shared` 로 옮기고, DB 파일 위치만 플랫폼별(expect/actual)로 둡니다.
 - 백업 JSON 은 `org.json`(Android 전용) 대신 `kotlinx.serialization` 으로 바꿉니다. 형식(`formatVersion 1`)은 그대로 유지해 기존 백업 파일과 호환합니다.
 - 기존 Android 사용자 DB 는 같은 스키마(v2)를 그대로 읽어야 합니다. `MigrationTest` 로 검증합니다.
