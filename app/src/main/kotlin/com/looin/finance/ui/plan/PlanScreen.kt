@@ -30,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.looin.finance.core.calc.AvailableFundsCalculator
 import com.looin.finance.core.calc.BalanceCalculator
@@ -134,12 +137,16 @@ fun PlanScreen(
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(enabled = statuses.isNotEmpty()) { showSummary = true }.padding(vertical = 4.dp)) {
                 SmallLabel(if (statuses.isEmpty()) "예산이 없어요" else "예정 지출까지 확보하고 남는 예산 ⓘ")
                 AmountText(if (statuses.isEmpty()) 0 else left, style = LooinType.bigAmount, color = if (left < 0 && statuses.isNotEmpty()) c.danger else c.text)
-                Row {
-                    Text("예산 ${fmt(totalBudget)}  ·  쓴 돈 ", style = LooinType.body, color = c.textSecondary)
-                    Text(fmt(stats.expense), style = LooinType.body, color = c.expense)
-                    Text("  ·  예정 ", style = LooinType.body, color = c.textSecondary)
-                    Text(fmt(stats.plannedExpense), style = LooinType.body, color = c.planned)
-                }
+                // 한 문장으로 그려 좁은 화면에서도 금액 단위로 줄바꿈되게 한다(줄바꿈 금지 공백 사용)
+                Text(buildAnnotatedString {
+                    append(glue("예산 ${fmt(totalBudget)}"))
+                    append("  ·  ")
+                    append(glue("쓴 돈 "))
+                    withStyle(SpanStyle(color = c.expense)) { append(glue(fmt(stats.expense))) }
+                    append("  ·  ")
+                    append(glue("예정 "))
+                    withStyle(SpanStyle(color = c.planned)) { append(glue(fmt(stats.plannedExpense))) }
+                }, style = LooinType.body, color = c.textSecondary)
             }
         }
         item {
@@ -259,6 +266,9 @@ private fun BudgetRow(s: BudgetStatus, data: FinanceData, onClick: () -> Unit) {
         }
     }
 }
+
+/** 한 덩어리로 보여야 하는 글자(예: "예정 619,000원")가 중간에서 줄바꿈되지 않게 Word Joiner 로 묶는다. */
+private fun glue(text: String) = text.replace(' ', '\u00A0').toList().joinToString("\u2060")
 
 /** 예산 입력 폼(시트 내용). categoryId: -1 = 미선택(신규), null = 전체 생활비. */
 @OptIn(ExperimentalLayoutApi::class)

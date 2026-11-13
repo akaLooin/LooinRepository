@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ 백업 규칙. 가계부 DB와 화면 설정을 사용자의 Google 계정 백업(종단 암호화)과
+  기기 간 이전에 포함한다. 개발자 서버로는 아무것도 보내지 않는다.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

@@ -12,3 +12,8 @@ local.properties
 .idea/
 .kotlin/
 captures/
+
+# 출시 서명 키 — 절대 커밋 금지
+keystore.properties
+*.jks
+*.keystore

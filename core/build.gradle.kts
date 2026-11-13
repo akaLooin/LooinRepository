@@ -29,3 +29,10 @@ kotlin {
         }
     }
 }
+
+// `./gradlew test` 한 번으로 core(JVM) 테스트까지 돌도록 별칭을 둔다.
+tasks.register("test") {
+    group = "verification"
+    description = "core 모듈의 JVM 테스트(commonTest + jvmTest)를 실행합니다."
+    dependsOn("jvmTest")
+}
