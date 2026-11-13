@@ -256,9 +256,30 @@ class FinanceRepository(
 
     // ── 카테고리·설정 ─────────────────────────────────────
 
-    suspend fun saveCategory(category: Category): Long {
-        if (category.name.isBlank()) throw FinanceException("카테고리 이름을 입력하세요.")
-        return dao.upsertCategory(category.toEntity())
+    /**
+     * 카테고리 추가·수정. 같은 종류 안에서 이름 중복 금지, 거래·예산·반복 규칙에 쓰인 카테고리는 수입↔지출 변경 금지.
+     * 삭제 대신 보관(archived)을 쓴다: 지난 거래·예산 기록이 카테고리를 계속 가리킬 수 있게.
+     */
+    suspend fun saveCategory(category: Category): Long = db.withTransaction {
+        val name = category.name.trim()
+        if (name.isBlank()) throw FinanceException("카테고리 이름을 입력하세요.")
+        if (name.length > 20) throw FinanceException("카테고리 이름은 20자 이내로 입력하세요.")
+        val all = dao.categories().map { it.toModel() }
+        if (all.any { it.id != category.id && it.kind == category.kind && it.name == name }) {
+            throw FinanceException("같은 이름의 ${category.kind.label} 카테고리가 이미 있습니다.")
+        }
+        if (category.id == 0L) {
+            dao.upsertCategory(category.copy(name = name, sortOrder = all.count { it.kind == category.kind }).toEntity())
+        } else {
+            val old = all.firstOrNull { it.id == category.id } ?: throw FinanceException("카테고리를 찾을 수 없습니다.")
+            if (old.kind != category.kind) {
+                val used = dao.transactions().any { it.categoryId == category.id } || dao.budgets().any { it.categoryId == category.id } ||
+                    dao.rules().any { it.categoryId == category.id }
+                if (used) throw FinanceException("거래·예산에 쓰인 카테고리는 수입/지출 종류를 바꿀 수 없습니다.")
+            }
+            dao.upsertCategory(category.copy(name = name).toEntity())
+            category.id
+        }
     }
 
     /** 기간 설정을 바꿔도 거래·예산 기록은 그대로 둔다(예산은 생성 당시 기간을 저장하고 있음). */

@@ -56,7 +56,7 @@ import com.looin.finance.ui.theme.ThemeMode
 import com.looin.finance.ui.theme.ThemePrefs
 
 @Composable
-fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
+fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}) {
     val c = Looin.colors
     val context = LocalContext.current
     val s = state.settings
@@ -97,6 +97,12 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
             SmallLabel("바꿔도 기존 거래와 예산 기록은 그대로 보존돼요. 예산은 만들 당시 기간에 묶여 있으니 새 기준의 기간에는 예산을 새로 만들거나 가져오세요.")
             PrimaryButton("기간 설정 저장", { vm.updateSettings(FinanceSettings(paydayDay = day!!, primaryBasis = basis)) },
                 enabled = day != null && (day != s.paydayDay || basis != s.primaryBasis), strong = true)
+
+            Spacer(Modifier.height(8.dp))
+            Title("분류")
+            FieldGroup {
+                ValueRow("카테고리 관리", "지출 ${state.data.categories.count { it.kind == com.looin.finance.core.model.CategoryKind.EXPENSE && !it.archived }} · 수입 ${state.data.categories.count { it.kind == com.looin.finance.core.model.CategoryKind.INCOME && !it.archived }}", onClick = onOpenCategories)
+            }
 
             Spacer(Modifier.height(8.dp))
             Title("화면")

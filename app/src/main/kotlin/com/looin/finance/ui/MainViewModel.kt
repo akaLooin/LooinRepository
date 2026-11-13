@@ -102,6 +102,9 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
 
     fun updateSettings(settings: FinanceSettings) = run("설정을 저장했습니다") { repo.updateSettings(settings) }
 
+    fun saveCategory(category: com.looin.finance.core.model.Category, onSuccess: () -> Unit) =
+        run(if (category.id == 0L) "카테고리를 추가했습니다" else "카테고리를 저장했습니다", onSuccess) { repo.saveCategory(category) }
+
     fun saveRule(rule: RecurringRule, onSuccess: () -> Unit) =
         run(if (rule.id == 0L) "반복 거래를 만들었습니다" else "반복 거래를 수정했습니다", onSuccess) { repo.saveRule(rule) }
 

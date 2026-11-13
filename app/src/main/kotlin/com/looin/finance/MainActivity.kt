@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -80,6 +81,8 @@ import com.looin.finance.ui.home.HomeScreen
 import com.looin.finance.ui.plan.PlanScreen
 import com.looin.finance.ui.plan.RecurringEditScreen
 import com.looin.finance.ui.settings.SettingsScreen
+import com.looin.finance.ui.settings.CategoryScreen
+import com.looin.finance.ui.search.SearchScreen
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinTheme
 import com.looin.finance.ui.theme.LooinType
@@ -152,6 +155,8 @@ private fun LooinRoot(vm: MainViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(if (tab == Tab.HOME) "루인 가계부" else tab.label, style = LooinType.monthTitle, color = c.text, modifier = Modifier.weight(1f))
+                Box(Modifier.size(44.dp).clip(CircleShape).clickable { nav.navigate("search") }.semantics { contentDescription = "거래 검색" },
+                    contentAlignment = Alignment.Center) { Icon(Icons.Filled.Search, null, tint = c.text) }
                 Box(Modifier.size(44.dp).clip(CircleShape).clickable { nav.navigate("settings") }.semantics { contentDescription = "설정" },
                     contentAlignment = Alignment.Center) { Icon(Icons.Filled.Menu, null, tint = c.text) }
             }
@@ -219,7 +224,9 @@ private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel
         composable("rule?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
             RecurringEditScreen(state, vm, entry.arguments!!.getLong("id").takeIf { it > 0 }, onClose = { nav.popBackStack() })
         }
-        composable("settings") { SettingsScreen(state, vm, onBack = { nav.popBackStack() }) }
+        composable("settings") { SettingsScreen(state, vm, onBack = { nav.popBackStack() }, onOpenCategories = { nav.navigate("categories") }) }
+        composable("categories") { CategoryScreen(state, vm, onBack = { nav.popBackStack() }) }
+        composable("search") { SearchScreen(state, onBack = { nav.popBackStack() }, onOpenTx = openSheet) }
         composable(
             "tx?id={id}&date={date}&type={type}&status={status}&account={account}&copy={copy}",
             arguments = listOf(

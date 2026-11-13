@@ -178,3 +178,39 @@ class RecurringAndBackupTest {
         assertEquals(acc, repo.snapshot().accounts.single().id)
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class CategoryRulesTest {
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private lateinit var db: FinanceDatabase
+    private lateinit var repo: FinanceRepository
+
+    @Before fun setUp() {
+        context.deleteDatabase("cat.db")
+        db = FinanceDatabase.build(context, "cat.db")
+        repo = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 13) })
+    }
+    @After fun tearDown() { db.close(); context.deleteDatabase("cat.db") }
+
+    /** 추가·이름 중복·종류 변경 규칙·보관 */
+    @Test fun categoryRules() = runTest {
+        repo.ensureInitialized()
+        val id = repo.saveCategory(com.looin.finance.core.model.Category(name = " 반려동물 ", kind = com.looin.finance.core.model.CategoryKind.EXPENSE, colorArgb = 0xFF00C072))
+        var c = repo.snapshot().categories.first { it.id == id }
+        assertEquals("반려동물", c.name)
+        try { repo.saveCategory(c.copy(id = 0)); fail("중복 이름 허용됨") } catch (_: FinanceException) {}
+        // 같은 이름이라도 종류가 다르면 허용
+        repo.saveCategory(c.copy(id = 0, kind = com.looin.finance.core.model.CategoryKind.INCOME))
+        // 거래에 쓰이면 종류 변경 금지
+        val acc = repo.saveAccount(Account(name = "통장", type = AccountType.CHECKING, openingBalance = 10_000))
+        repo.saveTransaction(Transaction(type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 1_000,
+            date = LocalDate(2026, 11, 13), completedDate = LocalDate(2026, 11, 13), fromAccountId = acc, categoryId = id))
+        try { repo.saveCategory(c.copy(kind = com.looin.finance.core.model.CategoryKind.INCOME)); fail() } catch (_: FinanceException) {}
+        // 보관해도 지난 거래는 그대로 카테고리를 가리킨다
+        repo.saveCategory(c.copy(archived = true, name = "펫"))
+        c = repo.snapshot().categories.first { it.id == id }
+        assertTrue(c.archived)
+        assertEquals("펫", repo.snapshot().categoryName(repo.snapshot().transactions.single().categoryId))
+    }
+}

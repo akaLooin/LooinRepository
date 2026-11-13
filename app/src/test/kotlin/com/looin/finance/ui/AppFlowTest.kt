@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -126,9 +127,23 @@ open class AppFlowTest {
         waitText("카테고리별 소비")
         shot("08_analysis")
 
+        // 검색: "점심" → 1건, 지출 12,000원
+        rule.onNodeWithContentDescription("거래 검색").performClick()
+        waitText("메모, 카테고리, 계좌, 금액")
+        field("검색어").performTextInput("점심")
+        waitText("1건")
+        waitText("지출 12,000원")
+        shot("10_search")
+        rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+
         rule.onNodeWithContentDescription("설정").performClick()
         waitText("급여 기준일")
         shot("09_settings")
+
+        // 카테고리 관리: 식비에 거래 1건이 표시된다
+        rule.onNodeWithText("카테고리 관리").performScrollTo().performClick()
+        waitText("거래 1건")
+        shot("11_categories")
     }
 }
 
