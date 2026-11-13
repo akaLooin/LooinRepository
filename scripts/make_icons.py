@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parent.parent
 LOGO = ROOT / "Logo" / "LooinLogo.png"
 RES = ROOT / "app" / "src" / "main" / "res"
 STORE = ROOT / "docs" / "release" / "store"
-FONT = RES / "font" / "pretendard_bold.otf"
-FONT_REG = RES / "font" / "pretendard_medium.otf"
+FONTS = ROOT / "ui" / "src" / "androidMain" / "res" / "font"
+FONT = FONTS / "pretendard_bold.otf"
+FONT_REG = FONTS / "pretendard_medium.otf"
 
 
 def emblem(height: int, color=(255, 255, 255, 255)) -> Image.Image:
@@ -56,6 +57,20 @@ def main():
     draw.ellipse((424, 345, 448, 369), fill=(0, 255, 127))
     draw.text((460, 338), "오늘 쓸 수 있는 돈을 정확하게", font=ImageFont.truetype(str(FONT_REG), 30), fill=(140, 140, 140))
     fg.save(STORE / "feature-graphic-1024x500.png", optimize=True)
+
+    # PC 아이콘: Windows .ico(16~256), macOS .icns, 창 아이콘 png — 둥근 사각형 검정 바탕
+    desk = ROOT / "desktopApp" / "icons"
+    desk.mkdir(parents=True, exist_ok=True)
+    big = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    mask = Image.new("L", (1024, 1024), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((40, 40, 984, 984), radius=200, fill=255)
+    bg = Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
+    big.paste(bg, (0, 0), mask)
+    big.alpha_composite(centered(1024, 0.7))
+    big.save(desk / "icon.ico", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    big.save(desk / "icon.icns")
+    big.resize((512, 512), Image.LANCZOS).save(desk / "icon.png", optimize=True)
+    big.resize((256, 256), Image.LANCZOS).save(ROOT / "desktopApp" / "src" / "main" / "resources" / "icon.png", optimize=True)
     print("done")
 
 

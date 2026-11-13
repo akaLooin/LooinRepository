@@ -9,6 +9,7 @@ Android 앱은 지금 바로 비공개 테스트에 올릴 수 있는 상태이�
 | [PLAY_LISTING_ko.md](PLAY_LISTING_ko.md) | 스토어 등록 문구(제목·짧은 설명·자세한 설명·새 기능), 그래픽 목록 |
 | [DATA_SAFETY.md](DATA_SAFETY.md) | Play 데이터 보안 양식·App Store 개인정보 라벨 답변, 기타 콘텐츠 선언 |
 | [PRIVACY_POLICY_ko.md](PRIVACY_POLICY_ko.md) | 개인정보처리방침 (공개 URL 필요 → `docs/privacy/index.html`) |
+| [DESKTOP_RELEASE.md](DESKTOP_RELEASE.md) | PC(Windows·macOS) 설치 파일 만들기, 데이터 위치, 서명 |
 | [MULTIPLATFORM_ROADMAP.md](MULTIPLATFORM_ROADMAP.md) | iOS·PC 출시까지의 기술 단계와 일정 |
 | `store/` | Play 아이콘 512, 대표 그래픽 1024×500, 휴대폰 스크린샷 6장(1080×1920) |
 
@@ -22,7 +23,7 @@ Android 앱은 지금 바로 비공개 테스트에 올릴 수 있는 상태이�
 | 4 | **지원 이메일** | 앱 전용 주소 새로 만들기 권장 | 스토어에 공개됨 |
 | 5 | **개인정보처리방침 URL** | GitHub Pages(`docs/privacy/`)로 공개 | 저장소 설정 → Pages → `docs` 폴더 |
 | 6 | **개발자 계정** | Google Play(일회성 등록비), Apple Developer Program(연회비) | 비용·본인 확인 절차는 각 콘솔에서 최신 정보 확인 |
-| 7 | **PC 배포 경로** | Windows: Microsoft Store + 설치 파일(MSI), macOS: 공증된 DMG | Mac App Store 는 2차 |
+| 7 | **PC 배포 경로** | ✅ Windows 우선, 가능하면 macOS (결정됨). Windows: Microsoft Store + MSI, macOS: 공증된 DMG | 서명 인증서 필요 |
 | 8 | **iOS 빌드 환경** | GitHub Actions macOS 러너(이미 설정) + 실제 Mac 1대(서명·심사 제출) | Xcode 는 macOS 에서만 동작 |
 | 9 | **계산 규칙 확인 항목** | `docs/PHASE1_PLAN.md` 3장 8개, `docs/PHASE2_NOTES.md` 4개 | 출시 전에 확정 권장 |
 

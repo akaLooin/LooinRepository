@@ -25,8 +25,9 @@ shared/ 데이터 계층 KMP 모듈: Room 엔티티·DAO, FinanceRepository, 백
   period/      달력/월급일 이중 회계 기간 (시작 포함·종료 미포함 구간)
   calc/        잔고·순자산·예상 잔고·예산·사용 가능 금액·통계 계산 + 계산 근거(Breakdown)
   validation/  거래 검증(오류/경고), 계좌 보관·잔고 조정 규칙
-app/    Android 앱 (Jetpack Compose)
-  ui/          홈·캘린더·돈 관리·자산·분석·거래 입력·설정 화면
+ui/     공용 화면 (Compose Multiplatform): 홈·캘린더·돈 관리·자산·분석·설정 — Android·PC 공용
+app/    Android 앱 진입점 (MainActivity)
+desktopApp/ PC 앱 진입점 + Windows MSI / macOS DMG 설치 파일 설정
 ```
 
 화면 코드는 원본 데이터만 받고, 모든 금액은 `core`의 계산기로 계산합니다.
@@ -41,6 +42,8 @@ app/    Android 앱 (Jetpack Compose)
 ./gradlew :app:assembleDebug      # 디버그 APK → app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:installDebug       # 연결된 기기/에뮬레이터에 설치
 ./gradlew :app:bundleRelease      # 스토어 업로드용 AAB (서명 설정: docs/release/ANDROID_RELEASE.md)
+./gradlew :desktopApp:run         # PC 앱 실행
+./gradlew :desktopApp:packageMsi  # Windows 설치 파일 (Windows 에서, docs/release/DESKTOP_RELEASE.md)
 ```
 
 Android Studio에서는 저장소 루트를 열고 `app` 구성을 실행하면 됩니다.
