@@ -33,13 +33,13 @@ data class Period(
 
     val label: String
         get() = when (basis) {
-            PeriodBasis.CALENDAR -> "${start.year}년 ${start.monthNumber}월"
-            PeriodBasis.PAYDAY -> "${start.year}.${start.monthNumber}.${start.dayOfMonth} ~ " +
-                "${lastDay.year}.${lastDay.monthNumber}.${lastDay.dayOfMonth}"
+            PeriodBasis.CALENDAR -> "${start.year}년 ${start.month.number}월"
+            PeriodBasis.PAYDAY -> "${start.year}.${start.month.number}.${start.day} ~ " +
+                "${lastDay.year}.${lastDay.month.number}.${lastDay.day}"
         }
 
     val rangeLabel: String
-        get() = "${start.monthNumber}.${start.dayOfMonth} ~ ${lastDay.monthNumber}.${lastDay.dayOfMonth}"
+        get() = "${start.month.number}.${start.day} ~ ${lastDay.month.number}.${lastDay.day}"
 }
 
 object PeriodCalculator {
@@ -47,7 +47,7 @@ object PeriodCalculator {
     fun lengthOfMonth(year: Int, month: Int): Int {
         val first = LocalDate(year, month, 1)
         val nextFirst = first.plus(DatePeriod(months = 1))
-        return (nextFirst.toEpochDays() - first.toEpochDays())
+        return (nextFirst.toEpochDays() - first.toEpochDays()).toInt()
     }
 
     /** 해당 연·월의 급여 기준일. 그 달에 없는 날짜(예: 2월 31일)면 말일. */
@@ -62,7 +62,7 @@ object PeriodCalculator {
             Period(basis, start, start.plus(DatePeriod(months = 1)))
         }
         PeriodBasis.PAYDAY -> {
-            val thisMonthPayday = paydayIn(date.year, date.monthNumber, paydayDay)
+            val thisMonthPayday = paydayIn(date.year, date.month.number, paydayDay)
             val startMonth = if (date >= thisMonthPayday) {
                 LocalDate(date.year, date.month, 1)
             } else {
@@ -71,8 +71,8 @@ object PeriodCalculator {
             val nextMonth = startMonth.plus(DatePeriod(months = 1))
             Period(
                 basis,
-                paydayIn(startMonth.year, startMonth.monthNumber, paydayDay),
-                paydayIn(nextMonth.year, nextMonth.monthNumber, paydayDay),
+                paydayIn(startMonth.year, startMonth.month.number, paydayDay),
+                paydayIn(nextMonth.year, nextMonth.month.number, paydayDay),
             )
         }
     }

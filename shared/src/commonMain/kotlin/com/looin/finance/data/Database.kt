@@ -139,7 +139,8 @@ data class SettingsEntity(
 )
 
 class Converters {
-    @TypeConverter fun fromDate(d: LocalDate?): Int? = d?.toEpochDays()
+    // DB 열은 정수(epoch day)로 유지: 스키마 변경 없음
+    @TypeConverter fun fromDate(d: LocalDate?): Int? = d?.toEpochDays()?.toInt()
     @TypeConverter fun toDate(v: Int?): LocalDate? = v?.let { LocalDate.fromEpochDays(it) }
 }
 

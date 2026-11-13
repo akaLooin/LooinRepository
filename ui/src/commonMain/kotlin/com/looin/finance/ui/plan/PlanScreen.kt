@@ -1,6 +1,7 @@
 package com.looin.finance.ui.plan
 
 import androidx.compose.foundation.background
+import kotlinx.datetime.number
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,7 +158,7 @@ fun PlanScreen(
                 }
                 val cashAccounts = data.accounts.filter { !it.archived && it.currency == KRW && it.type in BalanceCalculator.CASH_LIKE }
                 val proj = BalanceCalculator.projectedBreakdown(cashAccounts, txs, period.lastDay, "기간 말 예상 잔고")
-                MetricRow("기간 말(${period.lastDay.monthNumber}.${period.lastDay.dayOfMonth}) 예상 잔고", proj.total, proj)
+                MetricRow("기간 말(${period.lastDay.month.number}.${period.lastDay.day}) 예상 잔고", proj.total, proj)
                 MetricRow("확정 소비", stats.expense, StatisticsCalculator.expenseBreakdown(stats, data::categoryName), color = c.expense)
             }
         }
@@ -194,7 +195,7 @@ fun PlanScreen(
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(r.name, style = LooinType.bodyLg, color = if (r.active) c.text else c.textMuted)
-                            SmallLabel(r.scheduleLabel + if (!r.active) " · 꺼짐" else next?.let { " · 다음 ${it.monthNumber}.${it.dayOfMonth}" } ?: " · 끝남")
+                            SmallLabel(r.scheduleLabel + if (!r.active) " · 꺼짐" else next?.let { " · 다음 ${it.month.number}.${it.day}" } ?: " · 끝남")
                         }
                         AmountText(if (r.type == TransactionType.EXPENSE) -r.amount else r.amount, currency = r.currency,
                             signed = r.type != TransactionType.TRANSFER, color = if (r.active) typeColor(r.type) else c.textMuted)

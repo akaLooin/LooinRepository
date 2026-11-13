@@ -1,6 +1,7 @@
 package com.looin.finance.ui.analysis
 
 import androidx.compose.foundation.background
+import kotlinx.datetime.number
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -140,7 +141,7 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
                                 Bar(t.expense.toFloat() / max, c.expense)
                             }
                             Spacer(Modifier.height(4.dp))
-                            Text(if (basis == PeriodBasis.CALENDAR) "${t.period.start.monthNumber}월" else "${t.period.start.monthNumber}.${t.period.start.dayOfMonth}~",
+                            Text(if (basis == PeriodBasis.CALENDAR) "${t.period.start.month.number}월" else "${t.period.start.month.number}.${t.period.start.day}~",
                                 style = LooinType.weekday, color = if (t.period == period) c.text else c.textMuted, textAlign = TextAlign.Center)
                         }
                     }

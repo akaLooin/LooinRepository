@@ -229,7 +229,7 @@ private fun AccountChips(label: String, accounts: List<Account>, selected: Long?
     }
 }
 
-private val DateSaver = Saver<LocalDate, Int>(save = { it.toEpochDays() }, restore = { LocalDate.fromEpochDays(it) })
-private val NullableDateSaver = Saver<LocalDate?, Int>(
-    save = { it?.toEpochDays() ?: Int.MIN_VALUE }, restore = { if (it == Int.MIN_VALUE) null else LocalDate.fromEpochDays(it) },
+private val DateSaver = Saver<LocalDate, Long>(save = { it.toEpochDays() }, restore = { LocalDate.fromEpochDays(it) })
+private val NullableDateSaver = Saver<LocalDate?, Long>(
+    save = { it?.toEpochDays() ?: Long.MIN_VALUE }, restore = { if (it == Long.MIN_VALUE) null else LocalDate.fromEpochDays(it) },
 )

@@ -1,6 +1,7 @@
 package com.looin.finance.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import kotlinx.datetime.number
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -97,9 +98,9 @@ private val dayNames = mapOf(
 )
 
 fun LocalDate.korean(withYear: Boolean = false): String =
-    (if (withYear) "${year}년 " else "") + "${monthNumber}월 ${dayOfMonth}일 (${dayNames[dayOfWeek]})"
+    (if (withYear) "${year}년 " else "") + "${month.number}월 ${day}일 (${dayNames[dayOfWeek]})"
 
-fun LocalDate.short(): String = "$monthNumber.$dayOfMonth"
+fun LocalDate.short(): String = "$month.number.$day"
 fun LocalDate.toUtcMillis(): Long = toEpochDays().toLong() * 86_400_000L
 fun localDateFromUtcMillis(ms: Long): LocalDate = LocalDate.fromEpochDays((ms / 86_400_000L).toInt())
 

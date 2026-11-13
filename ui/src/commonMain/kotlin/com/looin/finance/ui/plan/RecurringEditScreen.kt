@@ -80,7 +80,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
         var amountText by rememberSaveable { mutableStateOf(existing?.let { amountToInput(it.amount, it.currency) } ?: "") }
         var frequency by rememberSaveable { mutableStateOf(existing?.frequency ?: Frequency.MONTHLY) }
         var interval by rememberSaveable { mutableStateOf(existing?.interval ?: 1) }
-        var dayText by rememberSaveable { mutableStateOf((existing?.dayOfMonth ?: state.today.dayOfMonth).toString()) }
+        var dayText by rememberSaveable { mutableStateOf((existing?.dayOfMonth ?: state.today.day).toString()) }
         var dayOfWeek by rememberSaveable { mutableStateOf(existing?.dayOfWeek ?: state.today.dayOfWeek) }
         var startDays by rememberSaveable { mutableStateOf((existing?.startDate ?: state.today).toEpochDays()) }
         var endDays by rememberSaveable { mutableStateOf(existing?.endDate?.toEpochDays()) }

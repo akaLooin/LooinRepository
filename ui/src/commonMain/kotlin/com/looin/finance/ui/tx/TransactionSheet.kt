@@ -1,6 +1,7 @@
 package com.looin.finance.ui.tx
 
 import androidx.compose.foundation.layout.Arrangement
+import kotlinx.datetime.number
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +37,7 @@ import com.looin.finance.ui.components.TileButton
 import com.looin.finance.ui.components.korean
 import com.looin.finance.ui.theme.Looin
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -109,4 +110,4 @@ private fun stamp(ms: Long): String {
     return "${t.date.short2()} ${t.hour.toString().padStart(2, '0')}:${t.minute.toString().padStart(2, '0')}"
 }
 
-private fun LocalDate.short2() = "$year.$monthNumber.$dayOfMonth"
+private fun LocalDate.short2() = "$year.$month.number.$day"

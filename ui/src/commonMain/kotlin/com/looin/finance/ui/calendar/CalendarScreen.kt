@@ -1,6 +1,7 @@
 package com.looin.finance.ui.calendar
 
 import androidx.compose.foundation.background
+import kotlinx.datetime.number
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,7 +119,7 @@ fun CalendarScreen(
     }
     val title = if (weekMode) {
         val w = startOfWeek(anchor)
-        "${w.year}년 ${w.monthNumber}월 ${(w.dayOfMonth - 1) / 7 + 1}주차"
+        "${w.year}년 ${w.month.number}월 ${(w.day - 1) / 7 + 1}주차"
     } else month.label
 
     LazyColumn(
@@ -181,7 +182,7 @@ fun CalendarGrid(
 ) {
     val c = Looin.colors
     val leading = start.dayOfWeek.let { if (it == DayOfWeek.SUNDAY) 0 else it.ordinal + 1 }
-    val days = endExclusive.toEpochDays() - start.toEpochDays()
+    val days = (endExclusive.toEpochDays() - start.toEpochDays()).toInt()
     val rows = (leading + days + 6) / 7
     Column {
         Row(Modifier.padding(bottom = 6.dp)) {
@@ -222,7 +223,7 @@ fun CalendarGrid(
                             ),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("${date.dayOfMonth}", style = LooinType.date.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium),
+                            Text("${date.day}", style = LooinType.date.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium),
                                 color = if (isToday) c.onSelected else dayColor)
                         }
                         if (showAmounts) {

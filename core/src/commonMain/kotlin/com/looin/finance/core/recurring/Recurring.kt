@@ -1,6 +1,7 @@
 package com.looin.finance.core.recurring
 
 import com.looin.finance.core.model.KRW
+import kotlinx.datetime.number
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionSource
 import com.looin.finance.core.model.TransactionStatus
@@ -80,8 +81,8 @@ object RecurrenceCalculator {
         when (rule.frequency) {
             Frequency.MONTHLY -> {
                 val day = rule.dayOfMonth ?: return emptyList()
-                val startMonth = rule.startDate.year * 12 + (rule.startDate.monthNumber - 1)
-                var m = lo.year * 12 + (lo.monthNumber - 1)
+                val startMonth = rule.startDate.year * 12 + (rule.startDate.month.number - 1)
+                var m = lo.year * 12 + (lo.month.number - 1)
                 // 간격 맞추기: 시작 달에서 interval 배수만큼 떨어진 달만
                 val offset = ((m - startMonth) % rule.interval + rule.interval) % rule.interval
                 if (offset != 0) m += rule.interval - offset
@@ -101,7 +102,7 @@ object RecurrenceCalculator {
                 var d = first
                 if (d < lo) {
                     val gap = lo.toEpochDays() - d.toEpochDays()
-                    d = d.plus(DatePeriod(days = (gap + step - 1) / step * step))
+                    d = d.plus(DatePeriod(days = ((gap + step - 1) / step * step).toInt()))
                 }
                 while (d <= hi) { out += d; d = d.plus(DatePeriod(days = step)) }
             }
