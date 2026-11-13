@@ -17,6 +17,8 @@ import com.looin.finance.ui.platform.AppInfo
 import com.looin.finance.ui.platform.AppPlatform
 import com.looin.finance.ui.platform.LocalAppInfo
 import com.looin.finance.ui.platform.LocalFileActions
+import com.looin.finance.ui.platform.LocalReminderControl
+import com.looin.finance.reminder.rememberAndroidReminderControl
 import com.looin.finance.ui.platform.rememberAndroidFileActions
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinTheme
@@ -40,6 +42,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalAppInfo provides AppInfo(BuildConfig.VERSION_NAME, AppPlatform.ANDROID),
                     LocalFileActions provides rememberAndroidFileActions(),
+                    LocalReminderControl provides rememberAndroidReminderControl(),
                 ) {
                     LooinAppRoot(vm)
                 }

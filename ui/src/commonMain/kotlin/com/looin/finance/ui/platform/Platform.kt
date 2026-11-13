@@ -33,9 +33,27 @@ object NoFileActions : FileActions {
     override fun openText(onSource: (() -> String) -> Unit) = Unit
 }
 
+/** 예정 거래 알림 켜기/끄기. 지원하지 않는 플랫폼(PC 등)은 [supported] = false 로 설정 항목을 숨긴다. */
+interface ReminderControl {
+    val supported: Boolean
+    /** 켜져 있는지(화면 갱신용 상태). */
+    val enabled: Boolean
+    /** 권한이 거부되어 켤 수 없었는지. */
+    val permissionDenied: Boolean
+    fun setEnabled(on: Boolean)
+}
+
+object NoReminders : ReminderControl {
+    override val supported = false
+    override val enabled = false
+    override val permissionDenied = false
+    override fun setEnabled(on: Boolean) = Unit
+}
+
 enum class AppPlatform(val label: String) { ANDROID("Android"), DESKTOP("PC"), IOS("iOS") }
 
 data class AppInfo(val versionName: String, val platform: AppPlatform)
 
 val LocalAppInfo = staticCompositionLocalOf { AppInfo("dev", AppPlatform.ANDROID) }
 val LocalFileActions = staticCompositionLocalOf<FileActions> { NoFileActions }
+val LocalReminderControl = staticCompositionLocalOf<ReminderControl> { NoReminders }

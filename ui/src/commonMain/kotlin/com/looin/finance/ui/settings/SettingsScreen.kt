@@ -51,6 +51,8 @@ import com.looin.finance.ui.theme.ThemeMode
 import com.looin.finance.ui.theme.ThemePrefs
 import com.looin.finance.ui.platform.LocalAppInfo
 import com.looin.finance.ui.platform.LocalFileActions
+import com.looin.finance.ui.platform.LocalReminderControl
+import com.looin.finance.ui.components.ToggleRow
 
 @Composable
 fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}) {
@@ -89,6 +91,17 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
             SmallLabel("바꿔도 기존 거래와 예산 기록은 그대로 보존돼요. 예산은 만들 당시 기간에 묶여 있으니 새 기준의 기간에는 예산을 새로 만들거나 가져오세요.")
             PrimaryButton("기간 설정 저장", { vm.updateSettings(FinanceSettings(paydayDay = day!!, primaryBasis = basis)) },
                 enabled = day != null && (day != s.paydayDay || basis != s.primaryBasis), strong = true)
+
+            val reminders = LocalReminderControl.current
+            if (reminders.supported) {
+                Spacer(Modifier.height(8.dp))
+                Title("알림")
+                FieldGroup {
+                    ToggleRow("예정 거래 알림", "매일 오전 9시쯤, 오늘 예정이거나 처리하지 않은 지난 예정 거래가 있을 때만 알려요",
+                        reminders.enabled, { reminders.setEnabled(it) })
+                }
+                if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → 루인 가계부 → 알림에서 허용해 주세요.", color = c.danger)
+            }
 
             Spacer(Modifier.height(8.dp))
             Title("분류")

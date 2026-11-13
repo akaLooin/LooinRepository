@@ -56,8 +56,11 @@
 </details>
 
 ### 3단계: PC 출시 — 진행 중 (Windows 우선, 가능하면 macOS)
+> **우선순위 결정 (2026-11-13, 사용자)**: 모바일에서 기능을 먼저 모두 완성한 뒤 PC 로 확장한다. PC 는 **PC 창에 맞는 디자인**(넓은 화면 배치)이 필요하지만 지금 당장은 아니다.
+> 그때까지 PC 앱은 모바일 화면을 가운데에 보여 주는 형태로 빌드만 유지한다.
 - ✅ 설치 파일 설정(MSI·EXE·DMG), 아이콘, CI 빌드 → 자세한 내용 `DESKTOP_RELEASE.md`
-- ⏳ 넓은 창 배치·단축키, 서명, Microsoft Store 등록
+- ⏳ (모바일 기능 완성 후) PC 창 전용 디자인: 넓은 화면 여러 칸 배치, 마우스·키보드 조작(단축키, 우클릭 메뉴), 창 크기 기억
+- ⏳ 서명, Microsoft Store 등록
 
 - Compose Desktop 기본 배포: `packageMsi`(Windows), `packageDmg`(macOS). jpackage 로 런타임을 포함하므로 사용자가 Java 를 설치할 필요가 없습니다.
 - **Windows**: Microsoft Store 등록(스토어가 서명). 스토어 밖 설치 파일은 코드 서명 인증서가 없으면 SmartScreen 경고가 뜹니다.
