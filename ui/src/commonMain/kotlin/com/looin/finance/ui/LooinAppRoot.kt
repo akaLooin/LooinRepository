@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.savedstate.read
@@ -178,7 +180,14 @@ private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit) {
 
 @Composable
 private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel, padding: PaddingValues, openSheet: (Transaction) -> Unit) {
-    NavHost(nav, startDestination = Tab.HOME.route) {
+    // 화면 전환은 애니메이션 없이 즉시 바꾼다(사용자 요청: 페이드 없이). 탭 이동·화면 열기·뒤로 가기 모두.
+    NavHost(
+        nav, startDestination = Tab.HOME.route,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+    ) {
         composable(Tab.HOME.route) {
             HomeScreen(state, vm, padding, openSheet,
                 onAddTx = { d, t, planned -> nav.navigate(txRoute(date = d, type = t, status = if (planned) TransactionStatus.PLANNED else null)) },
