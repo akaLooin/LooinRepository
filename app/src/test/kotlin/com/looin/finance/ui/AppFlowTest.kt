@@ -117,7 +117,16 @@ open class AppFlowTest {
 
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         waitText("예정 지출")
+        // 선택한 날(오늘)의 예상 잔고: 월세(말일)는 아직 오지 않아 1,488,000원
+        waitText("이날 예상 잔고 1,488,000원")
+        // 반복 결제(월세)가 있는 날짜에 ↻ 표시
+        rule.onAllNodesWithText("↻").onFirst().assertExists()
         shot("06_calendar")
+        // 표시 방식: 잔고 보기 → 칸마다 그날 잔고(100만 이상은 "148만"처럼 만 단위), 다시 금액 보기로
+        rule.onNodeWithText("잔고 보기").performClick()
+        waitText("148만")
+        shot("06b_calendar_balance")
+        rule.onNodeWithText("금액 보기").performClick()
 
         rule.onAllNodesWithText("자산").onFirst().performClick()
         waitText("순자산")

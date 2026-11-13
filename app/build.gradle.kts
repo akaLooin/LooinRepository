@@ -34,6 +34,7 @@ android {
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
+        manifestPlaceholders["appLabel"] = "@string/app_name"
     }
 
     signingConfigs {
@@ -55,6 +56,18 @@ android {
             signingConfig = if (releaseStoreFile != null) signingConfigs.getByName("release") else null
             ndk { debugSymbolLevel = "NONE" } // 네이티브 코드 없음
         }
+        /**
+         * 직접 설치해 써 보는 미리보기: 출시와 같은 R8 최적화 + 개발용 키 서명.
+         * 앱 ID 가 달라(.preview) 나중에 스토어 버전과 함께 설치되고 데이터도 따로 쓴다.
+         */
+        create("preview") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".preview"
+            versionNameSuffix = "-preview"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            manifestPlaceholders["appLabel"] = "@string/app_name_preview"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -70,7 +83,7 @@ android {
         unitTests.isIncludeAndroidResources = true
         // Compose UI 테스트(ui-test-manifest)와 마이그레이션 테스트(스키마 assets)는 debug 전용이라 debug 변형에서만 실행
         unitTests.all { test ->
-            if (test.name.contains("Release")) test.exclude("**/ui/**", "**/MigrationTest*")
+            if (!test.name.contains("Debug")) test.exclude("**/ui/**", "**/MigrationTest*")
         }
     }
 }

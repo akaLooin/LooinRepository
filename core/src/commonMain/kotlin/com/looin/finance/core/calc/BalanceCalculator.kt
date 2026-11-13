@@ -132,6 +132,27 @@ object BalanceCalculator {
         )
     }
 
+    /**
+     * 특정 날짜 "끝 시점"의 잔고(캘린더 날짜별 잔고용).
+     *  - 오늘 이전: 그날까지 처리된(완료) 거래만 반영한 실제 잔고 — 과거 기록 그대로
+     *  - 오늘 이후(오늘 포함): 현재 실제 잔고 + 그날까지의 예정 거래 = 예상 잔고
+     * 오늘 이전 날짜에는 미처리 예정 거래를 넣지 않는다(그날 실제로 있던 돈이 아니므로).
+     */
+    fun balanceOn(account: Account, transactions: List<Transaction>, date: LocalDate, today: LocalDate): Long =
+        if (date < today) {
+            account.openingBalance + transactions.asSequence()
+                .filter { it.isCompleted && it.touches(account.id) && it.effectiveDate <= date }
+                .sumOf { it.deltaFor(account.id) }
+        } else {
+            projectedBalance(account, transactions, date)
+        }
+
+    /** 여러 계좌의 날짜별 잔고 합. [dates] 마다 계산(캘린더 한 달치). */
+    fun balancesOn(accounts: List<Account>, transactions: List<Transaction>, dates: List<LocalDate>, today: LocalDate): Map<LocalDate, Long> {
+        val relevant = transactions.filter { tx -> accounts.any { tx.touches(it.id) } }
+        return dates.associateWith { d -> accounts.sumOf { balanceOn(it, relevant, d, today) } }
+    }
+
     val CASH_LIKE = setOf(
         com.looin.finance.core.model.AccountType.CHECKING,
         com.looin.finance.core.model.AccountType.CASH,

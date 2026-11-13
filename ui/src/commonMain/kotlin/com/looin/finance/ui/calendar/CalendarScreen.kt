@@ -32,6 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.looin.finance.core.model.KRW
+import com.looin.finance.core.calc.BalanceCalculator
+import com.looin.finance.core.money.MoneyFormat
+import com.looin.finance.ui.theme.CalendarDisplay
+import com.looin.finance.ui.theme.ThemePrefs
+import androidx.compose.foundation.layout.offset
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.period.PeriodBasis
@@ -99,12 +104,21 @@ fun CalendarScreen(
     var selectedDays by rememberSaveable { mutableStateOf(state.today.toEpochDays()) }
     var weekMode by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf(CalendarFilter.ALL) }
+    val display = ThemePrefs.calendarDisplay
     var completing by remember { mutableStateOf<Transaction?>(null) }
     val anchor = LocalDate.fromEpochDays(anchorDays)
     val selected = LocalDate.fromEpochDays(selectedDays)
     val month = PeriodCalculator.periodContaining(anchor, PeriodBasis.CALENDAR, 1)
     val (rangeStart, rangeEnd) = if (weekMode) startOfWeek(anchor).let { it to it.plus(DatePeriod(days = 7)) } else month.start to month.endExclusive
 
+    // 날짜별 잔고: 현금성 원화 계좌(홈의 '실제 보유 잔고'와 같은 범위)
+    val cashAccounts = data.accounts.filter { !it.archived && it.currency == KRW && it.type in BalanceCalculator.CASH_LIKE }
+    val gridDates = remember(rangeStart, rangeEnd) {
+        (0 until (rangeEnd.toEpochDays() - rangeStart.toEpochDays()).toInt()).map { rangeStart.plus(DatePeriod(days = it)) }
+    }
+    val balances = remember(data.transactions, data.accounts, gridDates, state.today, selected) {
+        BalanceCalculator.balancesOn(cashAccounts, data.transactions, (gridDates + selected).distinct(), state.today)
+    }
     val rangeTxs = data.transactions.filter { it.effectiveDate >= rangeStart && it.effectiveDate < rangeEnd && it.matches(filter) }
     val byDay = rangeTxs.groupBy { it.effectiveDate }
     val active = rangeTxs.filter { !it.isCancelled && it.currency == KRW }
@@ -132,9 +146,12 @@ fun CalendarScreen(
                 extra = { OutlinePill(if (weekMode) "월" else "주") { weekMode = !weekMode } })
             Spacer(Modifier.height(4.dp))
             PillTabs(CalendarFilter.entries, filter, { it.label }, { filter = it })
+            Spacer(Modifier.height(8.dp))
+            PillTabs(CalendarDisplay.entries, display, { it.label }, { ThemePrefs.chooseCalendarDisplay(it) })
         }
         item {
-            CalendarGrid(rangeStart, rangeEnd, selected, state.today, byDay, showAmounts = true) { selectedDays = it.toEpochDays() }
+            CalendarGrid(rangeStart, rangeEnd, selected, state.today, byDay, showAmounts = true, onSelect = { selectedDays = it.toEpochDays() },
+                display = display, balances = if (display == CalendarDisplay.BALANCE) balances else emptyMap())
         }
         item {
             Row(Modifier.fillMaxWidth().clip(CircleShape).background(c.surfaceInput).padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -146,6 +163,10 @@ fun CalendarScreen(
         item {
             val dayTxs = (byDay[selected] ?: emptyList()).sortedWith(compareBy<Transaction> { it.status.ordinal }.thenBy { it.id })
             Section(selected.korean(), onAdd = { onAddTx(selected) }, addLabel = "이 날 거래 추가") {
+                balances[selected]?.let { b ->
+                    SmallLabel((if (selected < state.today) "이날 끝 잔고 " else "이날 예상 잔고 ") + MoneyFormat.format(b) + " · 현금성 계좌",
+                        color = if (b < 0) c.danger else c.textSecondary, modifier = Modifier.padding(bottom = 4.dp))
+                }
                 if (dayTxs.isEmpty()) EmptyHint("거래가 없습니다. + 로 추가하세요.")
                 dayTxs.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, onComplete = { completing = tx }) }
             }
@@ -168,7 +189,8 @@ private fun Summary(label: String, amount: Long, color: Color) {
  * 투두메이트 캘린더 칸: 위에 동전 마커, 아래 날짜(오늘은 흰 원).
  *  - 거래 없음: 빈 회색 동전 / 예정만: 회색 동전 + 남은 예정 수
  *  - 모두 완료: 초록 동전 + 체크 / 완료+예정: 초록 동전 + 남은 예정 수
- * [showAmounts] 면 날짜 아래에 줄인 수입·지출 금액을 표시한다.
+ * 날짜 아래 표시는 [display]: 금액(수입·지출) / 잔고(그날 끝 잔고, 오늘 이후는 예상) / 점(표시 없음).
+ * 반복 거래가 있는 날은 동전 오른쪽 위에 ↻ 를 붙인다.
  */
 @Composable
 fun CalendarGrid(
@@ -179,6 +201,8 @@ fun CalendarGrid(
     byDay: Map<LocalDate, List<Transaction>>,
     showAmounts: Boolean,
     onSelect: (LocalDate) -> Unit,
+    display: CalendarDisplay = if (showAmounts) CalendarDisplay.AMOUNT else CalendarDisplay.DOT,
+    balances: Map<LocalDate, Long> = emptyMap(),
 ) {
     val c = Looin.colors
     val leading = start.dayOfWeek.let { if (it == DayOfWeek.SUNDAY) 0 else it.ordinal + 1 }
@@ -215,7 +239,13 @@ fun CalendarGrid(
                             .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        CoinMarker(27.dp, if (done > 0) c.accent else null, check = done > 0 && planned == 0, number = planned.takeIf { it > 0 })
+                        Box {
+                            CoinMarker(27.dp, if (done > 0) c.accent else null, check = done > 0 && planned == 0, number = planned.takeIf { it > 0 })
+                            if (list.any { it.recurringId != null }) {
+                                Text("↻", style = LooinType.tiny.copy(fontWeight = FontWeight.Bold), color = c.menuMove,
+                                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 7.dp, y = (-4).dp))
+                            }
+                        }
                         Spacer(Modifier.height(3.dp))
                         Box(
                             Modifier.size(28.dp).clip(CircleShape).background(
@@ -226,9 +256,18 @@ fun CalendarGrid(
                             Text("${date.day}", style = LooinType.date.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium),
                                 color = if (isToday) c.onSelected else dayColor)
                         }
-                        if (showAmounts) {
-                            Text(if (inc > 0) "+" + compact(inc) else " ", style = LooinType.tiny.merge(AmountStyle), color = c.income, maxLines = 1)
-                            Text(if (exp > 0) "-" + compact(exp) else " ", style = LooinType.tiny.merge(AmountStyle), color = c.expense, maxLines = 1)
+                        when (display) {
+                            CalendarDisplay.AMOUNT -> {
+                                Text(if (inc > 0) "+" + compact(inc) else " ", style = LooinType.tiny.merge(AmountStyle), color = c.income, maxLines = 1)
+                                Text(if (exp > 0) "-" + compact(exp) else " ", style = LooinType.tiny.merge(AmountStyle), color = c.expense, maxLines = 1)
+                            }
+                            CalendarDisplay.BALANCE -> {
+                                val b = balances[date]
+                                Text(b?.let { (if (it < 0) "-" else "") + compact(kotlin.math.abs(it)) } ?: " ",
+                                    style = LooinType.tiny.merge(AmountStyle), maxLines = 1,
+                                    color = when { b == null -> c.textMuted; b < 0 -> c.danger; date > today -> c.textMuted; else -> c.textSecondary })
+                            }
+                            CalendarDisplay.DOT -> Unit
                         }
                     }
                 }

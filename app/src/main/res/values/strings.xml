@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">루인 가계부</string>
+    <string name="app_name_preview">루인 가계부 β</string>
 </resources>

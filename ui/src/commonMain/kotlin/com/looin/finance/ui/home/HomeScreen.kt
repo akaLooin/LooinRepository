@@ -158,7 +158,7 @@ fun HomeScreen(
                 ChipPill("캘린더 ›", false, onOpenCalendar)
             }
             Spacer(Modifier.height(10.dp))
-            CalendarGrid(week, week.plus(DatePeriod(days = 7)), null, state.today, weekTxs, showAmounts = true) { onOpenCalendar() }
+            CalendarGrid(week, week.plus(DatePeriod(days = 7)), null, state.today, weekTxs, showAmounts = true, onSelect = { onOpenCalendar() })
         }
         item {
             Section("잔고", dot = c.accent, onAdd = onAddAccount, addLabel = "계좌 추가") {

@@ -152,6 +152,9 @@ val BigAmountStyle = LooinType.bigAmount
 val LocalLooinColors = staticCompositionLocalOf { DarkTokens }
 
 /** 화면 테마: 시스템 따름(기본, 시스템이 라이트가 아니면 다크) / 다크 / 라이트. 기기별 설정이라 [KeyValueStore] 에 둔다. */
+/** 캘린더 날짜 아래에 무엇을 보일지: 수입·지출 금액 / 그날 잔고 / 표시 없음(점만). */
+enum class CalendarDisplay(val label: String) { AMOUNT("금액 보기"), BALANCE("잔고 보기"), DOT("점만 보기") }
+
 enum class ThemeMode(val label: String) { SYSTEM("시스템 설정"), DARK("다크"), LIGHT("라이트") }
 
 object ThemePrefs {
@@ -160,10 +163,20 @@ object ThemePrefs {
     var mode by mutableStateOf(ThemeMode.SYSTEM)
         private set
 
+    /** 캘린더 날짜 아래 표시 방식(기기별 기억). */
+    var calendarDisplay by mutableStateOf(CalendarDisplay.AMOUNT)
+        private set
+
     /** 앱 시작 시 플랫폼 저장소를 연결하고 저장된 값을 읽는다. */
     fun init(store: KeyValueStore) {
         this.store = store
         mode = ThemeMode.entries.firstOrNull { it.name == store.get("theme") } ?: ThemeMode.SYSTEM
+        calendarDisplay = CalendarDisplay.entries.firstOrNull { it.name == store.get("calendarDisplay") } ?: CalendarDisplay.AMOUNT
+    }
+
+    fun chooseCalendarDisplay(d: CalendarDisplay) {
+        store.put("calendarDisplay", d.name)
+        calendarDisplay = d
     }
 
     fun set(m: ThemeMode) {
