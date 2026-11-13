@@ -25,7 +25,7 @@ Android 앱은 지금 바로 비공개 테스트에 올릴 수 있는 상태이�
 | 6 | **개발자 계정** | Google Play(일회성 등록비), Apple Developer Program(연회비) | 비용·본인 확인 절차는 각 콘솔에서 최신 정보 확인 |
 | 7 | **PC 배포 경로** | ✅ Windows 우선, 가능하면 macOS (결정됨). Windows: Microsoft Store + MSI, macOS: 공증된 DMG | 서명 인증서 필요 |
 | 8 | **iOS 빌드 환경** | GitHub Actions macOS 러너(이미 설정) + 실제 Mac 1대(서명·심사 제출) | Xcode 는 macOS 에서만 동작 |
-| 9 | **계산 규칙 확인 항목** | `docs/PHASE1_PLAN.md` 3장 8개, `docs/PHASE2_NOTES.md` 4개 | 출시 전에 확정 권장 |
+| 9 | **계산 규칙 확인 항목** | `docs/PHASE1_PLAN.md` 3장 8개, `docs/PHASE2_NOTES.md` 4개 (예산 이월 없음·저축 목표 차감은 확정됨) | 출시 전에 확정 권장 |
 
 ## 출시 체크리스트 (Android 1.0.0)
 

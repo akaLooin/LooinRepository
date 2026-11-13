@@ -98,7 +98,7 @@ fun HomeScreen(
         return
     }
 
-    val available = AvailableFundsCalculator.calculate(data.accounts, txs, data.budgets, period)
+    val available = AvailableFundsCalculator.calculate(data.accounts, txs, data.budgets, period, data.goalStatuses)
     val cash = BalanceCalculator.cashBreakdown(data.accounts, txs)
     val assets = BalanceCalculator.assetSummary(data.accounts, txs)
     val stats = StatisticsCalculator.stats(period, txs)

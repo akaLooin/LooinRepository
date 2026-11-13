@@ -153,7 +153,7 @@ fun PlanScreen(
         item {
             Section("요약", dot = c.accent) {
                 if (isCurrent) {
-                    val avail = AvailableFundsCalculator.calculate(data.accounts, txs, data.budgets, period)
+                    val avail = AvailableFundsCalculator.calculate(data.accounts, txs, data.budgets, period, data.goalStatuses)
                     MetricRow("생활비로 사용 가능한 금액", avail.amount, avail.breakdown)
                 }
                 val cashAccounts = data.accounts.filter { !it.archived && it.currency == KRW && it.type in BalanceCalculator.CASH_LIKE }
@@ -203,6 +203,7 @@ fun PlanScreen(
                 }
             }
         }
+        item { SavingsGoalsSection(data, state.today, vm) }
         item {
             val rows = StatisticsCalculator.planVsActual(period, data.budgets, txs)
             Section("계획 대비 실제", dot = c.saturday) {

@@ -110,4 +110,4 @@ private fun stamp(ms: Long): String {
     return "${t.date.short2()} ${t.hour.toString().padStart(2, '0')}:${t.minute.toString().padStart(2, '0')}"
 }
 
-private fun LocalDate.short2() = "$year.$month.number.$day"
+private fun LocalDate.short2() = "$year.${month.number}.$day"

@@ -100,7 +100,7 @@ private val dayNames = mapOf(
 fun LocalDate.korean(withYear: Boolean = false): String =
     (if (withYear) "${year}년 " else "") + "${month.number}월 ${day}일 (${dayNames[dayOfWeek]})"
 
-fun LocalDate.short(): String = "$month.number.$day"
+fun LocalDate.short(): String = "${month.number}.$day"
 fun LocalDate.toUtcMillis(): Long = toEpochDays().toLong() * 86_400_000L
 fun localDateFromUtcMillis(ms: Long): LocalDate = LocalDate.fromEpochDays((ms / 86_400_000L).toInt())
 

@@ -115,6 +115,21 @@ open class AppFlowTest {
         waitText("1,000,000원")
         waitText("1,188,000원")
 
+        // 저축 목표: 생활비 계좌에서 200,000원을 떼어 두면 사용 가능 금액만 800,000원으로 줄고,
+        // 실제 돈의 흐름인 기간 말 예상 잔고(1,188,000원)는 그대로다. (목표 입력 폼 자체는 GoalFormTest)
+        kotlinx.coroutines.runBlocking {
+            val goal = app.repository.saveGoal(com.looin.finance.core.savings.SavingsGoal(name = "여행", targetAmount = 1_000_000))
+            app.repository.allocate(goal, 200_000, app.repository.today(), "")
+        }
+        waitText("800,000원")
+        waitText("1,188,000원")
+        rule.onAllNodesWithText("돈 관리").onFirst().performClick()
+        rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("저축 목표 추가"))
+        waitText("생활비에서 빼 둠")
+        shot("05d_plan_goals")
+        rule.onAllNodesWithText("홈").onFirst().performClick()
+        waitText("800,000원")
+
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         waitText("예정 지출")
         // 선택한 날(오늘)의 예상 잔고: 월세(말일)는 아직 오지 않아 1,488,000원

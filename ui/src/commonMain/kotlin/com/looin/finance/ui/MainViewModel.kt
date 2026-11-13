@@ -105,6 +105,15 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
     fun saveCategory(category: com.looin.finance.core.model.Category, onSuccess: () -> Unit) =
         run(if (category.id == 0L) "카테고리를 추가했습니다" else "카테고리를 저장했습니다", onSuccess) { repo.saveCategory(category) }
 
+    fun saveGoal(goal: com.looin.finance.core.savings.SavingsGoal, onSuccess: () -> Unit) =
+        run(if (goal.id == 0L) "저축 목표를 만들었습니다" else "저축 목표를 저장했습니다", onSuccess) { repo.saveGoal(goal) }
+
+    fun allocate(goalId: Long, amount: Long, date: LocalDate, memo: String, onSuccess: () -> Unit = {}) =
+        run(if (amount > 0) "목표에 떼어 뒀습니다" else "배정을 해제했습니다", onSuccess) { repo.allocate(goalId, amount, date, memo) }
+
+    fun setGoalArchived(goalId: Long, archived: Boolean) =
+        run(if (archived) "목표를 보관하고 배정을 풀었습니다" else "목표를 다시 사용합니다") { repo.setGoalArchived(goalId, archived) }
+
     fun saveRule(rule: RecurringRule, onSuccess: () -> Unit) =
         run(if (rule.id == 0L) "반복 거래를 만들었습니다" else "반복 거래를 수정했습니다", onSuccess) { repo.saveRule(rule) }
 
