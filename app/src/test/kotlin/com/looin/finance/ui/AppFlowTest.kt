@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -28,7 +30,10 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w400dp-h860dp-xhdpi")
-class AppFlowTest {
+open class AppFlowTest {
+    /** 캡처 파일 이름 앞에 붙는 말(다크 모드 실행과 구분). */
+    open val prefix = "light"
+
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
     private fun shot(name: String) {
@@ -37,12 +42,12 @@ class AppFlowTest {
         val view = rule.activity.window.decorView
         val bmp = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         rule.runOnUiThread { view.draw(android.graphics.Canvas(bmp)) }
-        File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        File(dir, "${prefix}_$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     private fun waitText(text: String) = rule.waitUntilAtLeastOneExists(hasText(text, substring = true), 10_000)
 
-    private fun field(label: String) = rule.onNode(hasSetTextAction() and hasText(label))
+    private fun field(label: String) = rule.onNode(hasSetTextAction() and hasContentDescription(label))
 
     @Test
     fun coreUserFlow() {
@@ -60,7 +65,7 @@ class AppFlowTest {
         rule.onAllNodesWithText("1,500,000원").onFirst().assertExists()
 
         // 빠른 지출 입력
-        rule.onNodeWithContentDescription("거래 추가").performClick()
+        rule.onAllNodesWithContentDescription("거래 추가").onFirst().performClick()
         waitText("거래 추가")
         field("금액").performTextInput("12000")
         rule.onNodeWithText("식비").performClick()
@@ -73,7 +78,7 @@ class AppFlowTest {
 
         // 돈 관리: 전체 생활비 예산 500,000원
         rule.onAllNodesWithText("돈 관리").onFirst().performClick()
-        waitText("+ 예산 추가")
+        rule.waitUntilAtLeastOneExists(hasContentDescription("예산 추가"), 10_000)
         // 예산 입력 다이얼로그 자체는 BudgetDialogTest 에서 검증한다(Robolectric 에서 큰 화면의 다이얼로그 텍스트 필드가 idle 되지 않는 환경 문제).
         val app = rule.activity.application as com.looin.finance.LooinApp
         kotlinx.coroutines.runBlocking {
@@ -84,7 +89,7 @@ class AppFlowTest {
                 periodEndExclusive = p.endExclusive, categoryId = null, amount = 500_000))
         }
         // 예산 500,000 − 사용 12,000 = 잔액 488,000
-        waitText("잔액 488,000원")
+        waitText("488,000원")
         shot("05_plan")
 
         // 홈: 사용 가능 = 잔고 1,488,000 − 예산 확보 488,000 = 1,000,000
@@ -107,4 +112,10 @@ class AppFlowTest {
         waitText("급여 기준일")
         shot("09_settings")
     }
+}
+
+/** 같은 흐름을 다크 모드(시스템 night)로 실행. */
+@Config(sdk = [34], qualifiers = "w400dp-h860dp-night-xhdpi")
+class AppFlowDarkTest : AppFlowTest() {
+    override val prefix = "dark"
 }
