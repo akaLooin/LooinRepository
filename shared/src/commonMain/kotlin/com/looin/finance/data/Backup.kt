@@ -13,6 +13,8 @@ import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.period.PeriodBasis
 import com.looin.finance.core.recurring.Frequency
 import com.looin.finance.core.recurring.RecurringRule
+import com.looin.finance.core.savings.SavingsAllocation
+import com.looin.finance.core.savings.SavingsGoal
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
@@ -40,15 +42,21 @@ import kotlinx.serialization.json.put
  */
 object BackupCodec {
     const val FORMAT = "looin-finance-backup"
-    const val FORMAT_VERSION = 1
+    /** 2: 저축 목표·배정 기록 추가(1.0.0 이후). 버전 1 파일도 읽는다(목표 없음으로). */
+    const val FORMAT_VERSION = 2
 
     private val json = Json { prettyPrint = true }
 
-    data class Summary(val accounts: Int, val categories: Int, val transactions: Int, val budgets: Int, val rules: Int, val transactionAmountSum: Long, val openingBalanceSum: Long)
+    data class Summary(
+        val accounts: Int, val categories: Int, val transactions: Int, val budgets: Int, val rules: Int,
+        val transactionAmountSum: Long, val openingBalanceSum: Long,
+        val goals: Int = 0, val allocations: Int = 0, val allocationAmountSum: Long = 0,
+    )
 
     fun summarize(d: FinanceData) = Summary(
         d.accounts.size, d.categories.size, d.transactions.size, d.budgets.size, d.rules.size,
         d.transactions.sumOf { it.amount }, d.accounts.sumOf { it.openingBalance },
+        d.goals.size, d.allocations.size, d.allocations.sumOf { it.amount },
     )
 
     private fun JsonObjectBuilder.putOpt(key: String, value: Long?) { if (value != null) put(key, value) }
@@ -116,10 +124,28 @@ object BackupCodec {
                     })
                 }
             })
+            put("savingsGoals", buildJsonArray {
+                d.goals.forEach { g ->
+                    add(buildJsonObject {
+                        put("id", g.id); put("name", g.name); put("targetAmount", g.targetAmount); putOpt("targetDate", g.targetDate?.toString())
+                        putOpt("accountId", g.accountId); put("colorArgb", g.colorArgb); put("archived", g.archived); put("memo", g.memo)
+                        put("createdAt", g.createdAt); put("updatedAt", g.updatedAt)
+                    })
+                }
+            })
+            put("savingsAllocations", buildJsonArray {
+                d.allocations.forEach { a ->
+                    add(buildJsonObject {
+                        put("id", a.id); put("goalId", a.goalId); put("amount", a.amount); put("date", a.date.toString())
+                        put("memo", a.memo); put("createdAt", a.createdAt)
+                    })
+                }
+            })
             put("summary", buildJsonObject {
                 put("accounts", s.accounts); put("categories", s.categories); put("transactions", s.transactions)
                 put("budgets", s.budgets); put("recurringRules", s.rules); put("transactionAmountSum", s.transactionAmountSum)
                 put("openingBalanceSum", s.openingBalanceSum)
+                put("savingsGoals", s.goals); put("savingsAllocations", s.allocations); put("allocationAmountSum", s.allocationAmountSum)
             })
         }
         return json.encodeToString(JsonObject.serializer(), root)
@@ -181,14 +207,23 @@ object BackupCodec {
                 memo = o.str("memo") ?: "", createdAt = o.longOrNull("createdAt") ?: 0, updatedAt = o.longOrNull("updatedAt") ?: 0,
             )
         } ?: emptyList()
-        return FinanceData(accounts, categories, transactions, budgets, settings, loaded = true, rules = rules)
+        val goals = (root["savingsGoals"] as? JsonArray)?.map { it.jsonObject }?.map { o ->
+            SavingsGoal(o.long("id"), o.req("name"), o.long("targetAmount"), o.str("targetDate")?.let(LocalDate::parse),
+                o.longOrNull("accountId"), o.long("colorArgb"), o.bool("archived"), o.str("memo") ?: "",
+                o.longOrNull("createdAt") ?: 0, o.longOrNull("updatedAt") ?: 0)
+        } ?: emptyList()
+        val allocations = (root["savingsAllocations"] as? JsonArray)?.map { it.jsonObject }?.map { o ->
+            SavingsAllocation(o.long("id"), o.long("goalId"), o.long("amount"), LocalDate.parse(o.req("date")), o.str("memo") ?: "", o.longOrNull("createdAt") ?: 0)
+        } ?: emptyList()
+        return FinanceData(accounts, categories, transactions, budgets, settings, loaded = true, rules = rules, goals = goals, allocations = allocations)
     }
 
     /** 요약값 일치 + 참조 무결성(거래·예산·규칙이 가리키는 계좌·카테고리가 파일 안에 있는지) 검사. */
     private fun verify(d: FinanceData, summary: JsonObject) {
         val s = summarize(d)
         val expected = Summary(summary.int("accounts"), summary.int("categories"), summary.int("transactions"),
-            summary.int("budgets"), summary.intOrNull("recurringRules") ?: 0, summary.long("transactionAmountSum"), summary.long("openingBalanceSum"))
+            summary.int("budgets"), summary.intOrNull("recurringRules") ?: 0, summary.long("transactionAmountSum"), summary.long("openingBalanceSum"),
+            summary.intOrNull("savingsGoals") ?: 0, summary.intOrNull("savingsAllocations") ?: 0, summary.longOrNull("allocationAmountSum") ?: 0)
         if (s != expected) throw FinanceException("백업 파일의 요약값이 내용과 맞지 않습니다(파일이 손상되었거나 편집됨).")
         val accountIds = d.accounts.map { it.id }.toSet()
         val categoryIds = d.categories.map { it.id }.toSet()
@@ -197,6 +232,9 @@ object BackupCodec {
         d.transactions.forEach { checkAcc(it.fromAccountId); checkAcc(it.toAccountId); checkCat(it.categoryId) }
         d.budgets.forEach { checkCat(it.categoryId) }
         d.rules.forEach { checkAcc(it.fromAccountId); checkAcc(it.toAccountId); checkCat(it.categoryId) }
+        d.goals.forEach { checkAcc(it.accountId) }
+        val goalIds = d.goals.map { it.id }.toSet()
+        d.allocations.forEach { if (it.goalId !in goalIds) throw FinanceException("없는 저축 목표(#${it.goalId})의 배정 기록이 있습니다.") }
         if (d.settings.paydayDay !in 1..31) throw FinanceException("급여 기준일 값이 올바르지 않습니다.")
         if (d.categories.isEmpty()) throw FinanceException("카테고리가 없는 백업은 복원할 수 없습니다.")
     }

@@ -12,6 +12,10 @@ import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.period.PeriodCalculator
 import com.looin.finance.core.recurring.RecurrenceCalculator
 import com.looin.finance.core.recurring.RecurringRule
+import com.looin.finance.core.savings.GoalStatus
+import com.looin.finance.core.savings.SavingsAllocation
+import com.looin.finance.core.savings.SavingsCalculator
+import com.looin.finance.core.savings.SavingsGoal
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
 import com.looin.finance.core.period.Period
@@ -38,7 +42,10 @@ data class FinanceData(
     val settings: FinanceSettings = FinanceSettings(),
     val loaded: Boolean = false,
     val rules: List<RecurringRule> = emptyList(),
+    val goals: List<SavingsGoal> = emptyList(),
+    val allocations: List<SavingsAllocation> = emptyList(),
 ) {
+    val goalStatuses: List<GoalStatus> by lazy { SavingsCalculator.statuses(goals, allocations) }
     val accountById by lazy { accounts.associateBy { it.id } }
     val categoryById by lazy { categories.associateBy { it.id } }
     fun categoryName(id: Long?) = id?.let { categoryById[it]?.name } ?: "미분류"
@@ -75,6 +82,8 @@ class FinanceRepository(
             loaded = true,
         )
     }.combine(dao.observeRules()) { d, r -> d.copy(rules = r.map { it.toModel() }) }
+        .combine(dao.observeGoals()) { d, g -> d.copy(goals = g.map { it.toModel() }) }
+        .combine(dao.observeAllocations()) { d, a -> d.copy(allocations = a.map { it.toModel() }) }
 
     val settings: Flow<FinanceSettings> = dao.observeSettings().map { it?.toModel() ?: FinanceSettings() }
 
@@ -97,7 +106,43 @@ class FinanceRepository(
         settings = dao.settings()?.toModel() ?: FinanceSettings(),
         loaded = true,
         rules = dao.rules().map { it.toModel() },
+        goals = dao.goals().map { it.toModel() },
+        allocations = dao.allocations().map { it.toModel() },
     )
+
+    // ── 저축 목표 ─────────────────────────────────────────
+
+    /** 목표 추가·수정. 돈을 둘 계좌는 없음(생활비 계좌에서 떼어 둠) 또는 부채가 아닌 원화 계좌. */
+    suspend fun saveGoal(goal: SavingsGoal): Long = tx {
+        val errors = SavingsCalculator.validate(goal).toMutableList()
+        if (goal.accountId != null) {
+            val acc = dao.accounts().firstOrNull { it.id == goal.accountId }
+            if (acc == null || acc.type.isLiability || acc.archived) errors += "목표의 돈을 둘 계좌를 확인하세요."
+        }
+        if (errors.isNotEmpty()) throw FinanceException(errors.joinToString("\n"))
+        val t = now()
+        if (goal.id == 0L) dao.insertGoal(goal.copy(name = goal.name.trim(), createdAt = t, updatedAt = t).toEntity())
+        else {
+            val old = dao.goals().firstOrNull { it.id == goal.id } ?: throw FinanceException("저축 목표를 찾을 수 없습니다.")
+            dao.updateGoal(goal.copy(name = goal.name.trim(), createdAt = old.createdAt, updatedAt = t).toEntity())
+            goal.id
+        }
+    }
+
+    /** 목표에 돈 떼어 두기(양수) / 해제(음수). 배정 기록으로 쌓인다. */
+    suspend fun allocate(goalId: Long, amount: Long, date: LocalDate, memo: String): Long = tx {
+        val s = snapshot()
+        val status = s.goalStatuses.firstOrNull { it.goal.id == goalId } ?: throw FinanceException("저축 목표를 찾을 수 없습니다.")
+        SavingsCalculator.validateAllocation(status, amount)?.let { throw FinanceException(it) }
+        if (date > today()) throw FinanceException("미래 날짜로 배정할 수 없습니다.")
+        dao.insertAllocation(SavingsAllocation(goalId = goalId, amount = amount, date = date, memo = memo.trim(), createdAt = now()).toEntity())
+    }
+
+    /** 보관(완료·포기)하면 배정이 풀려 사용 가능 금액에서 빼지 않는다. 기록은 남는다. */
+    suspend fun setGoalArchived(goalId: Long, archived: Boolean) = tx {
+        val g = dao.goals().firstOrNull { it.id == goalId }?.toModel() ?: throw FinanceException("저축 목표를 찾을 수 없습니다.")
+        dao.updateGoal(g.copy(archived = archived, updatedAt = now()).toEntity())
+    }
 
     // ── 반복 거래 ─────────────────────────────────────────
 
@@ -313,12 +358,15 @@ class FinanceRepository(
     suspend fun restoreBackup(text: String): BackupCodec.Summary {
         val incoming = BackupCodec.decode(text)
         tx {
+            dao.clearAllocations(); dao.clearGoals()
             dao.clearTransactions(); dao.clearBudgets(); dao.clearRules(); dao.clearAccounts(); dao.clearCategories()
             dao.insertCategories(incoming.categories.map { it.toEntity() })
             dao.insertAccounts(incoming.accounts.map { it.toEntity() })
             dao.insertTransactions(incoming.transactions.map { it.toEntity() })
             dao.insertBudgets(incoming.budgets.map { it.toEntity() })
             dao.insertRules(incoming.rules.map { it.toEntity() })
+            dao.insertGoals(incoming.goals.map { it.toEntity() })
+            dao.insertAllocations(incoming.allocations.map { it.toEntity() })
             dao.upsertSettings(incoming.settings.toEntity())
             val after = BackupCodec.summarize(snapshot())
             if (after != BackupCodec.summarize(incoming)) throw FinanceException("복원 결과가 백업과 일치하지 않아 취소했습니다.")
@@ -353,6 +401,10 @@ fun CategoryEntity.toModel() = Category(id, name, kind, colorArgb, sortOrder, ar
 fun Category.toEntity() = CategoryEntity(id, name.trim(), kind, colorArgb, sortOrder, archived)
 fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence)
 fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence)
+fun SavingsGoalEntity.toModel() = SavingsGoal(id, name, targetAmount, targetDate, accountId, colorArgb, archived, memo, createdAt, updatedAt)
+fun SavingsGoal.toEntity() = SavingsGoalEntity(id, name, targetAmount, targetDate, accountId, colorArgb, archived, memo, createdAt, updatedAt)
+fun SavingsAllocationEntity.toModel() = SavingsAllocation(id, goalId, amount, date, memo, createdAt)
+fun SavingsAllocation.toEntity() = SavingsAllocationEntity(id, goalId, amount, date, memo, createdAt)
 fun RecurringRuleEntity.toModel() = RecurringRule(
     id, name, type, amount, currency, fromAccountId, toAccountId, categoryId, frequency, interval, dayOfMonth,
     dayOfWeek?.let { n -> DayOfWeek.entries.first { it.isoDayNumber == n } }, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt,

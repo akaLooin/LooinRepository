@@ -6,6 +6,8 @@ import com.looin.finance.core.model.KRW
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.money.MoneyFormat
+import com.looin.finance.core.savings.GoalStatus
+import com.looin.finance.core.savings.SavingsCalculator
 import com.looin.finance.core.period.Period
 
 /**
@@ -36,6 +38,7 @@ object AvailableFundsCalculator {
         val plannedTransfersOut: Long,
         val plannedIncomeNotCounted: Long,
         val breakdown: Breakdown,
+        val savingsReserved: Long = 0,
     )
 
     fun includedAccounts(accounts: List<Account>) = accounts.filter {
@@ -47,6 +50,7 @@ object AvailableFundsCalculator {
         transactions: List<Transaction>,
         budgets: List<Budget>,
         period: Period,
+        goals: List<GoalStatus> = emptyList(),
     ): Result {
         val included = includedAccounts(accounts)
         val ids = included.map { it.id }.toSet()
@@ -96,7 +100,11 @@ object AvailableFundsCalculator {
             }
             .sumOf { it.amount }
 
-        val amount = cash - budgetReserve - unbudgetedPlanned - plannedTransfersOut
+        // 저축 목표 배정액: 생활비 계좌 안에서 떼어 둔 것만(사용자 결정 2026-11-13: 저축 목표는 빼 둔다)
+        val reservedGoals = SavingsCalculator.reserveForAvailable(goals, included)
+        val savingsReserved = reservedGoals.sumOf { it.allocated }
+
+        val amount = cash - budgetReserve - unbudgetedPlanned - plannedTransfersOut - savingsReserved
 
         val breakdown = Breakdown(
             title = "생활비로 사용 가능한 금액",
@@ -106,14 +114,15 @@ object AvailableFundsCalculator {
                 addAll(reserveLines)
                 add(BreakdownLine("예산 밖 예정 지출", unbudgetedPlanned, -1, "기간 종료 전·밀린 예정 지출 포함"))
                 add(BreakdownLine("예정 이체(대상 밖 계좌로)", plannedTransfersOut, -1, "저축·카드 대금 등"))
+                if (savingsReserved > 0) add(BreakdownLine("저축 목표 배정", savingsReserved, -1, reservedGoals.joinToString { it.goal.name }))
                 add(BreakdownLine("참고: 예정 수입(미반영)", plannedIncome, 0, "입금 전까지 반영하지 않음"))
             },
-            formula = "사용 가능 금액 = 대상 계좌 잔고 − 예산 확보액 − 예산 밖 예정 지출 − 예정 이체",
+            formula = "사용 가능 금액 = 대상 계좌 잔고 − 예산 확보액 − 예산 밖 예정 지출 − 예정 이체 − 저축 목표 배정",
             notes = listOf(
                 "대상 계좌: " + included.joinToString { it.name }.ifEmpty { "없음 (자산 화면에서 지정)" },
                 "기준 기간: ${period.label}",
             ),
         )
-        return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown)
+        return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown, savingsReserved)
     }
 }

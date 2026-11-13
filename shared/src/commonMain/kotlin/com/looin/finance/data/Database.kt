@@ -130,6 +130,40 @@ data class BudgetEntity(
     val memo: String,
 )
 
+/** 저축 목표 (v3). 지우지 않고 보관(archived)한다. */
+@Entity(
+    tableName = "savings_goals",
+    foreignKeys = [ForeignKey(entity = AccountEntity::class, parentColumns = ["id"], childColumns = ["account_id"])],
+    indices = [Index("account_id")],
+)
+data class SavingsGoalEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    @ColumnInfo(name = "target_amount") val targetAmount: Long,
+    @ColumnInfo(name = "target_date") val targetDate: LocalDate?,
+    @ColumnInfo(name = "account_id") val accountId: Long?,
+    @ColumnInfo(name = "color_argb") val colorArgb: Long,
+    val archived: Boolean,
+    val memo: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+)
+
+/** 저축 목표 배정 기록 (v3). 양수 = 떼어 둠, 음수 = 해제. 이력이므로 지우지 않는다. */
+@Entity(
+    tableName = "savings_allocations",
+    foreignKeys = [ForeignKey(entity = SavingsGoalEntity::class, parentColumns = ["id"], childColumns = ["goal_id"])],
+    indices = [Index("goal_id")],
+)
+data class SavingsAllocationEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "goal_id") val goalId: Long,
+    val amount: Long,
+    val date: LocalDate,
+    val memo: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+)
+
 /** 단일 행 설정 테이블. */
 @Entity(tableName = "settings")
 data class SettingsEntity(
@@ -178,7 +212,20 @@ interface FinanceDao {
     @Update suspend fun updateRule(r: RecurringRuleEntity)
     @Query("DELETE FROM recurring_rules WHERE id = :id") suspend fun deleteRule(id: Long)
 
+    // 저축 목표
+    @Query("SELECT * FROM savings_goals ORDER BY archived, id") fun observeGoals(): Flow<List<SavingsGoalEntity>>
+    @Query("SELECT * FROM savings_goals") suspend fun goals(): List<SavingsGoalEntity>
+    @Query("SELECT * FROM savings_allocations ORDER BY date DESC, id DESC") fun observeAllocations(): Flow<List<SavingsAllocationEntity>>
+    @Query("SELECT * FROM savings_allocations") suspend fun allocations(): List<SavingsAllocationEntity>
+    @Insert suspend fun insertGoal(g: SavingsGoalEntity): Long
+    @Update suspend fun updateGoal(g: SavingsGoalEntity)
+    @Insert suspend fun insertAllocation(a: SavingsAllocationEntity): Long
+
     // 백업 복원용: 전체 교체
+    @Query("DELETE FROM savings_allocations") suspend fun clearAllocations()
+    @Query("DELETE FROM savings_goals") suspend fun clearGoals()
+    @Insert suspend fun insertGoals(g: List<SavingsGoalEntity>)
+    @Insert suspend fun insertAllocations(a: List<SavingsAllocationEntity>)
     @Query("DELETE FROM transactions") suspend fun clearTransactions()
     @Query("DELETE FROM budgets") suspend fun clearBudgets()
     @Query("DELETE FROM recurring_rules") suspend fun clearRules()
@@ -205,12 +252,13 @@ interface FinanceDao {
 @Database(
     entities = [
         AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
-        RecurringRuleEntity::class,
+        RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
     // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    // v2 → v3: 저축 목표·배정 기록 테이블 추가(기존 테이블 변경 없음).
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(FinanceDatabaseConstructor::class)

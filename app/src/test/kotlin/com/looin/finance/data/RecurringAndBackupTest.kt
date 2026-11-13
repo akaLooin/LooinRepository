@@ -169,7 +169,7 @@ class RecurringAndBackupTest {
             "not json",
             """{"format":"other"}""",
             json.replace("\"openingBalance\": 2000000", "\"openingBalance\": 9000000"), // 요약값 불일치
-            json.replace("\"formatVersion\": 1", "\"formatVersion\": 99"),
+            json.replace("\"formatVersion\": 2", "\"formatVersion\": 99"),
         )
         for (b in bad) {
             try { repo.restoreBackup(b); fail("손상된 백업이 복원됨: ${b.take(30)}") } catch (_: FinanceException) {}

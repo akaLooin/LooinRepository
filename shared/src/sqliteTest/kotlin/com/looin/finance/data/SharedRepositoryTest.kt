@@ -121,4 +121,38 @@ class SharedRepositoryTest {
         assertEquals(25, s.settings.paydayDay)
         assertEquals(488_000, BalanceCalculator.actualBalance(s.accounts.single(), s.transactions))
     }
+
+    /** 저축 목표: 배정·해제 이력, 사용 가능 금액 차감(생활비 계좌분만), 보관 시 해제, 백업 왕복 */
+    @Test fun savingsGoalsEndToEnd() = runTest {
+        val r = repo()
+        val acc = r.setup() // 주거래(생활비 대상) 1,000,000
+        val savingsAcc = r.saveAccount(Account(name = "적금", type = AccountType.SAVINGS, openingBalance = 2_000_000))
+        val trip = r.saveGoal(com.looin.finance.core.savings.SavingsGoal(name = "여행", targetAmount = 500_000))
+        val home = r.saveGoal(com.looin.finance.core.savings.SavingsGoal(name = "전세", targetAmount = 10_000_000, accountId = savingsAcc))
+        r.allocate(trip, 200_000, today, "첫 배정")
+        r.allocate(trip, -50_000, today, "일부 사용")
+        r.allocate(home, 1_000_000, today, "")
+        assertFailsWith<FinanceException> { r.allocate(trip, -200_000, today, "") } // 배정(150,000)보다 많이 해제 불가
+
+        var s = r.snapshot()
+        assertEquals(listOf(150_000L, 1_000_000L), s.goalStatuses.sortedBy { it.goal.id }.map { it.allocated })
+        val period = com.looin.finance.core.period.PeriodCalculator.periodContaining(today, s.settings.primaryBasis, s.settings.paydayDay)
+        var avail = com.looin.finance.core.calc.AvailableFundsCalculator.calculate(s.accounts, s.transactions, s.budgets, period, s.goalStatuses)
+        assertEquals(150_000, avail.savingsReserved)     // 적금 통장의 전세 목표는 빼지 않음
+        assertEquals(850_000, avail.amount)
+
+        val json = r.exportBackup("test")
+        r.setGoalArchived(trip, true)
+        s = r.snapshot()
+        avail = com.looin.finance.core.calc.AvailableFundsCalculator.calculate(s.accounts, s.transactions, s.budgets, period, s.goalStatuses)
+        assertEquals(1_000_000, avail.amount)
+        assertEquals(3, s.allocations.size) // 기록은 남음
+
+        val b = repo(); b.ensureInitialized()
+        b.restoreBackup(json)
+        val restored = b.snapshot()
+        assertEquals(2, restored.goals.size)
+        assertEquals(3, restored.allocations.size)
+        assertEquals(150_000, restored.goalStatuses.first { it.goal.name == "여행" }.allocated)
+    }
 }

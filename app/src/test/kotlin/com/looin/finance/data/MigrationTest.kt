@@ -50,4 +50,28 @@ class MigrationTest {
             db.close()
         }
     }
+
+    /** v2(반복 거래) → v3(저축 목표): 기존 데이터 유지, 새 테이블은 비어 있음 */
+    @Test fun v2DataSurvivesUpgradeToV3() = runTest {
+        val n = "migration-v2.db"
+        helper.createDatabase(n, 2).apply {
+            val day = LocalDate(2026, 11, 1).toEpochDays()
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO accounts (id, name, type, currency, opening_balance, include_in_available, archived, memo, sort_order, rate_to_krw_x10000, created_at, updated_at) " +
+                "VALUES (1, '주거래', 'CHECKING', 'KRW', 500000, 1, 0, '', 0, NULL, 0, 0)")
+            execSQL("INSERT INTO recurring_rules (id, name, type, amount, currency, from_account_id, to_account_id, category_id, frequency, interval, day_of_month, day_of_week, start_date, end_date, active, generated_through, memo, created_at, updated_at) " +
+                "VALUES (1, '월세', 'EXPENSE', 300000, 'KRW', 1, NULL, NULL, 'MONTHLY', 1, 25, NULL, $day, NULL, 1, NULL, '', 0, 0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 3, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val s = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 13) }).snapshot()
+            assertEquals("월세", s.rules.single().name)
+            assertEquals(500_000, s.accounts.single().openingBalance)
+            assertEquals(0, s.goals.size)
+        } finally {
+            db.close()
+        }
+    }
 }
