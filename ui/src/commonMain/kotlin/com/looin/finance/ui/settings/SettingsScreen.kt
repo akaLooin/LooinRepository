@@ -51,11 +51,12 @@ import com.looin.finance.ui.theme.ThemeMode
 import com.looin.finance.ui.theme.ThemePrefs
 import com.looin.finance.ui.platform.LocalAppInfo
 import com.looin.finance.ui.platform.LocalFileActions
+import com.looin.finance.ui.platform.FileKind
 import com.looin.finance.ui.platform.LocalReminderControl
 import com.looin.finance.ui.components.ToggleRow
 
 @Composable
-fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}) {
+fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}, onOpenCsvImport: () -> Unit = {}) {
     val c = Looin.colors
     val files = LocalFileActions.current
     val appInfo = LocalAppInfo.current
@@ -128,6 +129,14 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
                 ValueRow("백업에서 복원", "전체 교체", onClick = { files.openText { read -> pendingRestore = read } }, valueColor = c.danger)
             }
             SmallLabel("복원하면 지금 데이터가 백업 내용으로 모두 바뀌어요. 파일을 먼저 검사하고, 문제가 있으면 아무것도 바꾸지 않아요.")
+            FieldGroup {
+                ValueRow("CSV로 내보내기", "거래 ${state.data.transactions.size}건", onClick = {
+                    files.saveText("looin-transactions-${state.today}.csv", FileKind.CSV) { write -> vm.exportCsv(write) }
+                })
+                FieldDivider()
+                ValueRow("CSV 가져오기", "미리보기 후 추가", onClick = { files.openText(FileKind.CSV) { read -> vm.loadCsv(read, onOpenCsvImport) } })
+            }
+            SmallLabel("CSV는 엑셀에서 바로 열 수 있어요. 가져오기는 이 앱이 내보낸 파일과 은행 거래내역(날짜·출금액·입금액 열)을 읽고, 이미 있는 거래는 건너뛰어요. 기존 데이터는 지우지 않아요.")
             Spacer(Modifier.height(24.dp))
         }
     }

@@ -42,7 +42,7 @@ compose.desktop {
             vendor = "Looin"
             copyright = "Copyright (c) Looin"
             // jlink 로 필요한 JDK 모듈만 포함(./gradlew :desktopApp:suggestRuntimeModules 결과)
-            modules("java.instrument", "java.prefs", "jdk.unsupported")
+            modules("java.instrument", "java.prefs", "jdk.unsupported", "jdk.charsets") // jdk.charsets: CP949(은행·엑셀 CSV)
 
             windows {
                 iconFile.set(project.file("icons/icon.ico"))

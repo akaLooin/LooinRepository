@@ -20,6 +20,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
 import com.looin.finance.core.period.Period
 import com.looin.finance.core.validation.AccountRules
+import com.looin.finance.core.model.TransactionSource
 import com.looin.finance.core.validation.TransactionValidator
 import com.looin.finance.core.validation.ValidationResult
 import kotlinx.coroutines.flow.Flow
@@ -263,6 +264,32 @@ class FinanceRepository(
     }
 
     suspend fun deleteTransaction(id: Long) = dao.deleteTransaction(id)
+
+    // ── CSV ──────────────────────────────────────────────
+
+    /** 모든 거래를 CSV 로(엑셀용 UTF-8 BOM). 보관한 계좌·카테고리 이름도 그대로 쓴다. */
+    suspend fun exportCsv(): String {
+        val s = snapshot()
+        return com.looin.finance.core.csv.TransactionCsvExport.export(s.transactions, s::accountName, s::categoryName)
+    }
+
+    /** CSV 를 읽어 새 거래·중복·오류로 나눈다(저장하지 않음). */
+    suspend fun previewCsv(text: String, defaultAccountId: Long?): com.looin.finance.core.csv.ImportPreview {
+        val s = snapshot()
+        return com.looin.finance.core.csv.TransactionCsvImport.preview(text, s.accounts, s.categories, s.transactions, defaultAccountId, today(), now())
+    }
+
+    /**
+     * 미리보기를 지금 데이터로 다시 계산해 새 거래만 한 트랜잭션으로 저장한다(하나라도 실패하면 전부 취소).
+     * 반환값: 저장한 건수.
+     */
+    suspend fun importCsv(text: String, defaultAccountId: Long?): Int = tx {
+        val items = previewCsv(text, defaultAccountId).newItems
+        val t = now()
+        items.forEach { dao.insertTransaction(it.tx!!.copy(id = 0, source = TransactionSource.IMPORT, createdAt = t, updatedAt = t).toEntity()) }
+        items.size
+    }
+
 
     suspend fun completeTransaction(id: Long, actualDate: LocalDate, actualAmount: Long?) {
         val tx = dao.transaction(id)?.toModel() ?: throw FinanceException("거래를 찾을 수 없습니다.")

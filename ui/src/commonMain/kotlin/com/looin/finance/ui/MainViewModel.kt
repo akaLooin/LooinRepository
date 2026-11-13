@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import com.looin.finance.core.csv.ImportPreview
 
 data class UiState(
     val data: FinanceData = FinanceData(),
@@ -40,6 +41,9 @@ data class UiState(
  * 앱 전체가 공유하는 상태. 저장된 원본 데이터만 들고 있고,
  * 잔고·예산·통계 등 모든 수치는 화면에서 :core 계산기로 계산한다.
  */
+/** CSV 가져오기 미리보기: 읽은 파일, 분류 결과, 계좌 열이 없을 때 쓸 기본 계좌. */
+data class CsvImportState(val text: String, val preview: ImportPreview, val accountId: Long?)
+
 class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
 
     private val today = MutableStateFlow(repo.today())
@@ -137,4 +141,43 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         val s = repo.restoreBackup(text)
         _messages.tryEmit("복원했습니다 · 계좌 ${s.accounts}개, 거래 ${s.transactions}건, 예산 ${s.budgets}개, 반복 ${s.rules}개")
     }
+
+    // ── CSV ──────────────────────────────────────────────
+
+    private val _csvImport = MutableStateFlow<CsvImportState?>(null)
+    val csvImport: StateFlow<CsvImportState?> = _csvImport
+
+    fun exportCsv(write: (String) -> Unit) = run("CSV 파일을 저장했습니다") {
+        val csv = repo.exportCsv()
+        try { withContext(Dispatchers.IO) { write(csv) } } catch (e: Exception) {
+            throw FinanceException("CSV 파일을 저장하지 못했습니다: ${e.message}")
+        }
+    }
+
+    /** 파일을 읽어 미리보기를 만든다(아직 저장하지 않음). 기본 계좌: 생활비 계좌 중 첫 번째. */
+    fun loadCsv(read: () -> String, onLoaded: () -> Unit) = run(null) {
+        val text = try { withContext(Dispatchers.IO) { read() } } catch (e: Exception) {
+            throw FinanceException("CSV 파일을 읽지 못했습니다: ${e.message}")
+        }
+        val accounts = state.value.data.accounts.filter { !it.archived }
+        val accountId = (accounts.firstOrNull { it.includeInAvailable } ?: accounts.firstOrNull())?.id
+        _csvImport.value = CsvImportState(text, repo.previewCsv(text, accountId), accountId)
+        onLoaded()
+    }
+
+    fun setCsvAccount(id: Long) {
+        val cur = _csvImport.value ?: return
+        viewModelScope.launch { _csvImport.value = cur.copy(preview = repo.previewCsv(cur.text, id), accountId = id) }
+    }
+
+    fun confirmCsvImport(onDone: () -> Unit) {
+        val cur = _csvImport.value ?: return
+        run(null, onDone) {
+            val n = repo.importCsv(cur.text, cur.accountId)
+            _csvImport.value = null
+            _messages.tryEmit("거래 ${n}건을 가져왔습니다")
+        }
+    }
+
+    fun cancelCsvImport() { _csvImport.value = null }
 }

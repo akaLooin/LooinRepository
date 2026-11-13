@@ -207,7 +207,11 @@ private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel
         composable("rule?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
             RecurringEditScreen(state, vm, entry.argLong("id").takeIf { it > 0 }, onClose = { nav.popBackStack() })
         }
-        composable("settings") { SettingsScreen(state, vm, onBack = { nav.popBackStack() }, onOpenCategories = { nav.navigate("categories") }) }
+        composable("settings") {
+            SettingsScreen(state, vm, onBack = { nav.popBackStack() }, onOpenCategories = { nav.navigate("categories") },
+                onOpenCsvImport = { nav.navigate("csvImport") { launchSingleTop = true } })
+        }
+        composable("csvImport") { com.looin.finance.ui.settings.CsvImportScreen(state, vm, onClose = { nav.popBackStack() }) }
         composable("categories") { CategoryScreen(state, vm, onBack = { nav.popBackStack() }) }
         composable("search") { SearchScreen(state, onBack = { nav.popBackStack() }, onOpenTx = openSheet) }
         composable(

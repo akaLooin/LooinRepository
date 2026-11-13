@@ -24,13 +24,19 @@ class InMemoryKeyValueStore : KeyValueStore {
  * 실제 입출력은 ViewModel 이 IO 스레드에서 호출한다.
  */
 interface FileActions {
-    fun saveText(suggestedName: String, onTarget: (write: (String) -> Unit) -> Unit)
-    fun openText(onSource: (read: () -> String) -> Unit)
+    fun saveText(suggestedName: String, kind: FileKind = FileKind.JSON, onTarget: (write: (String) -> Unit) -> Unit)
+    fun openText(kind: FileKind = FileKind.JSON, onSource: (read: () -> String) -> Unit)
+}
+
+/** 파일 종류: 확장자와 MIME. 백업은 JSON, 거래 내보내기·가져오기는 CSV. */
+enum class FileKind(val extension: String, val mime: String, val title: String) {
+    JSON("json", "application/json", "백업 파일"),
+    CSV("csv", "text/csv", "CSV 파일"),
 }
 
 object NoFileActions : FileActions {
-    override fun saveText(suggestedName: String, onTarget: ((String) -> Unit) -> Unit) = Unit
-    override fun openText(onSource: (() -> String) -> Unit) = Unit
+    override fun saveText(suggestedName: String, kind: FileKind, onTarget: ((String) -> Unit) -> Unit) = Unit
+    override fun openText(kind: FileKind, onSource: (() -> String) -> Unit) = Unit
 }
 
 /** 예정 거래 알림 켜기/끄기. 지원하지 않는 플랫폼(PC 등)은 [supported] = false 로 설정 항목을 숨긴다. */
