@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -150,7 +153,7 @@ fun EmptyHint(text: String) {
 // ── 알약(Pill) ──────────────────────────────────────────────
 
 /**
- * 섹션 머리 알약: [아이콘·점][굵은 제목][+ 원]. 투두메이트의 카테고리 알약("To Do +") 모양.
+ * 섹션 머리: [색 막대][제목] ……… [＋ 추가]. 추가 버튼은 알약 전체가 눌린다.
  */
 @Composable
 fun SectionPill(
@@ -164,28 +167,61 @@ fun SectionPill(
 ) {
     val c = Looin.colors
     Row(
-        modifier.height(40.dp).clip(CircleShape).background(c.surface)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(start = 14.dp, end = if (onAdd != null) 5.dp else 16.dp),
+        modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(8.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (dot != null) {
-            Box(Modifier.size(10.dp).clip(CircleShape).background(dot))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(title, style = LooinType.pill, color = if (titleColor == Color.Unspecified) c.text else titleColor, maxLines = 1)
-        if (onAdd != null) {
+            Box(Modifier.size(4.dp, 16.dp).clip(CircleShape).background(dot))
             Spacer(Modifier.width(10.dp))
-            Box(
-                Modifier.size(30.dp).clip(CircleShape).background(c.bg).clickable(onClick = onAdd)
-                    .semantics { contentDescription = addLabel },
-                contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Filled.Add, null, tint = c.text, modifier = Modifier.size(20.dp)) }
         }
+        Text(title, style = LooinType.sheetTitle, color = if (titleColor == Color.Unspecified) c.text else titleColor, maxLines = 1,
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
     }
 }
 
-/** 섹션: 알약 머리 + 카드 없는 내용(배경 위에 바로). */
+/** 작은 "＋ 추가" 알약 버튼. 알약 전체가 눌리는 영역이다. */
+@Composable
+fun AddPill(label: String, onClick: () -> Unit, text: String = "추가") {
+    val c = Looin.colors
+    Row(
+        Modifier.height(32.dp).clip(RoundedCornerShape(10.dp)).background(c.primarySoft).clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) { contentDescription = label }.padding(start = 8.dp, end = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.Add, null, tint = c.primary, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(2.dp))
+        Text(text, style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.primary)
+    }
+}
+
+/** 넓은 추가 버튼: "＋ 11월 13일 거래 추가"처럼 글자까지 버튼 전체가 눌린다. */
+@Composable
+fun AddRowButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, description: String = text) {
+    val c = Looin.colors
+    Row(
+        modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(12.dp)).background(c.primarySoft).clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) { contentDescription = description }.padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+    ) {
+        Icon(Icons.Filled.Add, null, tint = c.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = LooinType.bodyLg.copy(fontWeight = FontWeight.SemiBold), color = c.primary, maxLines = 1)
+    }
+}
+
+/** 카드: 흰(다크: 짙은) 바탕 + 옅은 테두리, 모서리 18. */
+@Composable
+fun Card(modifier: Modifier = Modifier, padding: Dp = 16.dp, content: @Composable ColumnScope.() -> Unit) {
+    val c = Looin.colors
+    Column(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.card).border(1.dp, c.cardBorder, RoundedCornerShape(18.dp))
+            .padding(padding),
+        content = content,
+    )
+}
+
+/** 섹션: 카드 안에 머리(제목 + 추가 버튼)와 내용. */
 @Composable
 fun Section(
     title: String,
@@ -196,26 +232,27 @@ fun Section(
     trailing: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionPill(title, dot = dot, onAdd = onAdd, addLabel = addLabel)
-            Spacer(Modifier.weight(1f))
+    Card(modifier, padding = 0.dp) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            SectionPill(title, Modifier.weight(1f), dot = dot)
             trailing?.invoke(this)
+            if (onAdd != null) { Spacer(Modifier.width(6.dp)); AddPill(addLabel, onAdd) }
         }
-        Spacer(Modifier.height(6.dp))
-        Column(Modifier.padding(start = 4.dp)) { content() }
+        Column(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) { content() }
     }
 }
 
-/** 칩 알약: 선택되면 흰 배경·검정 글자(다크) / 검정 배경·흰 글자(라이트). */
+/** 칩: 선택되면 주 색 바탕, 아니면 테두리만. */
 @Composable
 fun ChipPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, dot: Color? = null, enabled: Boolean = true) {
     val c = Looin.colors
+    val shape = RoundedCornerShape(10.dp)
     Row(
-        modifier.height(36.dp).clip(CircleShape)
-            .background(if (selected) c.selectedBg else c.surface)
+        modifier.height(36.dp).clip(shape)
+            .background(if (selected) c.primary else c.card)
+            .then(if (selected) Modifier else Modifier.border(1.dp, c.surfaceStrong, shape))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (dot != null) {
@@ -223,15 +260,32 @@ fun ChipPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Mod
             Spacer(Modifier.width(6.dp))
         }
         Text(text, style = LooinType.body.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
-            color = when { !enabled -> c.textMuted; selected -> c.onSelected; else -> c.text }, maxLines = 1)
+            color = when { !enabled -> c.textMuted; selected -> c.onPrimary; else -> c.text }, maxLines = 1)
     }
 }
 
-/** 탭처럼 쓰는 알약 줄(한 개 선택). */
+/** 탭처럼 쓰는 한 개 선택. 4개 이하는 꽉 찬 분할 버튼, 그보다 많으면 가로로 넘기는 칩. */
 @Composable
 fun <T> PillTabs(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEach { o -> ChipPill(label(o), o == selected, { onSelect(o) }) }
+    val c = Looin.colors
+    if (options.size <= 4) {
+        Row(modifier.fillMaxWidth().height(42.dp).clip(RoundedCornerShape(12.dp)).background(c.surface).padding(3.dp)) {
+            options.forEach { o ->
+                val sel = o == selected
+                Box(
+                    Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(9.dp)).background(if (sel) c.card else Color.Transparent)
+                        .clickable { onSelect(o) }.semantics { this.selected = sel },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(label(o), style = LooinType.body.copy(fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium),
+                        color = if (sel) c.text else c.textMuted, maxLines = 1)
+                }
+            }
+        }
+    } else {
+        Row(modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { o -> ChipPill(label(o), o == selected, { onSelect(o) }) }
+        }
     }
 }
 
@@ -244,7 +298,7 @@ fun <T> Segmented(options: List<T>, selected: T, label: (T) -> String, onSelect:
 fun OutlinePill(text: String, onClick: () -> Unit) {
     val c = Looin.colors
     Box(
-        Modifier.height(36.dp).widthIn(min = 44.dp).clip(CircleShape).border(1.dp, c.surfaceStrong, CircleShape)
+        Modifier.height(36.dp).widthIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).border(1.dp, c.surfaceStrong, RoundedCornerShape(10.dp))
             .clickable(onClick = onClick).padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = LooinType.body, color = c.text) }
@@ -254,7 +308,7 @@ fun OutlinePill(text: String, onClick: () -> Unit) {
 fun OutlineIcon(icon: ImageVector, description: String, onClick: () -> Unit) {
     val c = Looin.colors
     Box(
-        Modifier.size(36.dp).clip(CircleShape).border(1.dp, c.surfaceStrong, CircleShape).clickable(onClick = onClick)
+        Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).border(1.dp, c.surfaceStrong, RoundedCornerShape(10.dp)).clickable(onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) { Icon(icon, null, tint = c.text, modifier = Modifier.size(20.dp)) }
@@ -415,8 +469,8 @@ fun MenuRow(icon: ImageVector, label: String, color: Color, onClick: () -> Unit,
         Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(LooinShape.md)).clickable(onClick = onClick).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(32.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(18.dp))
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(color.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(16.dp))
         Column {
@@ -431,7 +485,7 @@ fun MenuRow(icon: ImageVector, label: String, color: Color, onClick: () -> Unit,
 fun TileButton(icon: ImageVector, label: String, tint: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = Looin.colors
     Column(
-        modifier.height(88.dp).clip(RoundedCornerShape(LooinShape.md)).background(c.surfaceButton).clickable(onClick = onClick),
+        modifier.height(80.dp).clip(RoundedCornerShape(14.dp)).background(tint.copy(alpha = 0.10f)).clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) {
         Icon(icon, null, tint = tint, modifier = Modifier.size(26.dp))
@@ -446,10 +500,10 @@ fun TileButton(icon: ImageVector, label: String, tint: Color, onClick: () -> Uni
 @Composable
 fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, strong: Boolean = false) {
     val c = Looin.colors
-    val bg = if (strong) c.selectedBg else c.surfaceStrong
-    val fg = if (strong) c.onSelected else c.text
+    val bg = if (strong) c.primary else c.surfaceButton
+    val fg = if (strong) c.onPrimary else c.text
     Box(
-        modifier.fillMaxWidth().height(54.dp).clip(CircleShape).background(if (enabled) bg else c.surface)
+        modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).background(if (enabled) bg else c.surface)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = if (enabled) fg else c.textMuted) }
@@ -459,7 +513,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
 fun DangerButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = Looin.colors
     Box(
-        modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(LooinShape.sm)).background(c.surfaceInput).clickable(onClick = onClick),
+        modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(14.dp)).background(c.danger.copy(alpha = 0.10f)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(text, style = LooinType.bodyLg, color = c.danger) }
 }
@@ -489,18 +543,19 @@ fun ScreenHeader(title: String, onBack: () -> Unit, actions: @Composable RowScop
 /** 편집 칸 묶음: surface-input, 모서리 20. */
 @Composable
 fun FieldGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(LooinShape.lg)).background(Looin.colors.surfaceInput), content = content)
+    val c = Looin.colors
+    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.card).border(1.dp, c.cardBorder, RoundedCornerShape(16.dp)), content = content)
 }
 
 @Composable
-fun FieldDivider() = Box(Modifier.fillMaxWidth().height(1.dp).background(Looin.colors.bg))
+fun FieldDivider() = Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(Looin.colors.divider))
 
 /** 값 줄: 왼쪽 이름, 오른쪽 값 + ›. */
 @Composable
 fun ValueRow(label: String, value: String, onClick: (() -> Unit)?, valueColor: Color = Color.Unspecified) {
     val c = Looin.colors
     Row(
-        Modifier.fillMaxWidth().height(60.dp).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(horizontal = 20.dp),
+        Modifier.fillMaxWidth().height(56.dp).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = LooinType.bodyLg, color = c.text, modifier = Modifier.weight(1f))
@@ -512,25 +567,23 @@ fun ValueRow(label: String, value: String, onClick: (() -> Unit)?, valueColor: C
     }
 }
 
-/** ON/OFF 토글 54×30 (투두메이트). */
+/** 스위치 48×28: 켜짐 = 강조 색. */
 @Composable
 fun LooinToggle(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true, description: String? = null) {
     val c = Looin.colors
     Box(
-        Modifier.size(54.dp, 30.dp).clip(CircleShape).background(if (checked) c.toggleOn else c.toggleOff)
+        Modifier.size(48.dp, 28.dp).clip(CircleShape).background(if (checked) c.accent else c.toggleOff)
             .clickable(enabled = enabled) { onChange(!checked) }
-            .semantics { if (description != null) contentDescription = description }
+            .semantics { if (description != null) contentDescription = description; stateDescription = if (checked) "켜짐" else "꺼짐" }
             .then(if (enabled) Modifier else Modifier.background(c.bg.copy(alpha = 0.5f))),
     ) {
-        Text(if (checked) "ON" else "OFF", style = LooinType.toggleLabel, color = Color.White,
-            modifier = Modifier.align(if (checked) Alignment.CenterStart else Alignment.CenterEnd).padding(horizontal = 7.dp))
-        Box(Modifier.align(if (checked) Alignment.CenterEnd else Alignment.CenterStart).padding(2.dp).size(26.dp).clip(CircleShape).background(c.toggleThumb))
+        Box(Modifier.align(if (checked) Alignment.CenterEnd else Alignment.CenterStart).padding(3.dp).size(22.dp).clip(CircleShape).background(c.toggleThumb))
     }
 }
 
 @Composable
 fun ToggleRow(label: String, sub: String?, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(label, style = LooinType.bodyLg, color = Looin.colors.text)
             if (sub != null) SmallLabel(sub)
@@ -652,7 +705,7 @@ fun DateField(label: String, date: LocalDate, onChange: (LocalDate) -> Unit, mod
         ) {
             DatePicker(state = state, showModeToggle = false, colors = DatePickerDefaults.colors(
                 containerColor = c.surfaceRaised, selectedDayContainerColor = c.selectedBg, selectedDayContentColor = c.onSelected,
-                todayDateBorderColor = c.text, todayContentColor = c.text,
+                todayDateBorderColor = c.primary, todayContentColor = c.primary,
             ))
         }
     }
@@ -697,9 +750,35 @@ fun markerColor(tx: Transaction, data: FinanceData): Color =
     tx.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: typeColor(tx.type)
 
 /**
- * 거래 한 줄 (투두메이트 할 일 줄 모양).
- * 앞 동전: 완료 = 카테고리 색 + 체크, 예정 = 빈 동전(누르면 완료 처리), 취소 = 회색 ×.
+ * 거래 줄 앞 표시(34dp).
+ *  - 완료: 카테고리 색을 옅게 깐 둥근 칸 + 카테고리 첫 글자(이체는 ⇄, 조정은 ±)
+ *  - 예정: 예정 색 테두리의 빈 원(누르면 완료 처리)
+ *  - 취소: 회색 칸 + ×
  */
+@Composable
+fun TxMarker(tx: Transaction, data: FinanceData) {
+    val c = Looin.colors
+    val color = markerColor(tx, data)
+    when {
+        tx.isCancelled -> Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(c.surface), contentAlignment = Alignment.Center) {
+            Icon(Icons.Filled.Close, null, tint = c.textMuted, modifier = Modifier.size(18.dp))
+        }
+        tx.isPlanned -> Box(Modifier.size(34.dp).clip(CircleShape).border(2.dp, c.planned, CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Filled.Check, null, tint = c.planned.copy(alpha = 0.45f), modifier = Modifier.size(18.dp))
+        }
+        else -> Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(color.copy(alpha = if (c.isDark) 0.26f else 0.15f)),
+            contentAlignment = Alignment.Center) {
+            val glyph = when (tx.type) {
+                TransactionType.TRANSFER -> "⇄"
+                TransactionType.ADJUSTMENT -> "±"
+                else -> tx.categoryId?.let { data.categoryById[it]?.name?.take(1) } ?: if (tx.type == TransactionType.INCOME) "+" else "−"
+            }
+            Text(glyph, style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = color)
+        }
+    }
+}
+
+/** 거래 한 줄: [표시][제목·부제][금액]. */
 @Composable
 fun TransactionRow(
     tx: Transaction,
@@ -737,15 +816,9 @@ fun TransactionRow(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(LooinShape.md)).clickable(onClick = onClick).padding(vertical = 8.dp),
     ) {
         val markerMod = if (tx.isPlanned && onComplete != null)
-            Modifier.clip(CircleShape).clickable(onClick = onComplete).semantics { contentDescription = "완료 처리" }.padding(6.dp)
-        else Modifier.padding(6.dp)
-        Box(markerMod) {
-            when {
-                cancelled -> CoinMarker(25.dp, null, cross = true)
-                tx.isPlanned -> CoinMarker(25.dp, if (c.isDark) Color.White else c.markerEmpty)
-                else -> CoinMarker(25.dp, markerColor(tx, data), check = true)
-            }
-        }
+            Modifier.clip(CircleShape).clickable(onClick = onComplete).semantics { contentDescription = "완료 처리" }.padding(4.dp)
+        else Modifier.padding(4.dp)
+        Box(markerMod) { TxMarker(tx, data) }
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -812,3 +885,51 @@ fun ConfirmDialog(title: String, text: String, confirm: String, onDismiss: () ->
     )
 }
 
+
+/** 이름 하나를 입력받는 작은 대화상자(카테고리·계좌 바로 추가). 빈 값이면 확인 버튼이 꺼진다. */
+@Composable
+fun InputDialog(title: String, label: String, confirm: String, onDismiss: () -> Unit, help: String? = null, initial: String = "", onConfirm: (String) -> Unit) {
+    val c = Looin.colors
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = c.surfaceRaised, titleContentColor = c.text, textContentColor = c.textSecondary,
+        shape = RoundedCornerShape(LooinShape.lg),
+        title = { Text(title, style = LooinType.sheetTitle) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                UnderlineField(text, { text = it.take(20) }, label)
+                if (help != null) SmallLabel(help)
+            }
+        },
+        confirmButton = { TextAction(confirm, { onDismiss(); onConfirm(text.trim()) }, enabled = text.isNotBlank()) },
+        dismissButton = { TextAction("취소", onDismiss, color = c.textMuted) },
+    )
+}
+
+/** "#RRGGBB" / "RRGGBB" / "#AARRGGBB" → ARGB. 잘못된 값이면 null. */
+fun parseHexColor(text: String): Long? {
+    val h = text.trim().removePrefix("#")
+    if (h.length != 6 && h.length != 8) return null
+    val v = h.toLongOrNull(16) ?: return null
+    return if (h.length == 6) 0xFF000000L or v else v
+}
+
+/** ARGB → "#RRGGBB" (불투명 색만 쓰므로 알파는 생략). */
+fun hexOf(argb: Long): String = "#" + (argb and 0xFFFFFF).toString(16).uppercase().padStart(6, '0')
+
+/** 색 코드 입력 칸: 왼쪽에 미리보기 동그라미, 올바른 코드를 입력하면 바로 [onColor] 로 알린다. */
+@Composable
+fun HexColorField(argb: Long, onColor: (Long) -> Unit, label: String = "색 코드", modifier: Modifier = Modifier) {
+    val c = Looin.colors
+    var text by remember(argb) { mutableStateOf(hexOf(argb)) }
+    val parsed = parseHexColor(text)
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(30.dp).clip(CircleShape).background(Color(parsed ?: argb)).border(1.dp, c.divider, CircleShape))
+        Spacer(Modifier.width(12.dp))
+        UnderlineField(text, { v ->
+            text = v.uppercase().filter { it == '#' || it in '0'..'9' || it in 'A'..'F' }.take(9)
+            parseHexColor(text)?.let(onColor)
+        }, label, Modifier.weight(1f), placeholder = "#12A594", isError = parsed == null)
+    }
+}

@@ -45,7 +45,7 @@ data class Account(
 enum class TransactionType(val label: String) {
     INCOME("수입"),
     EXPENSE("지출"),
-    TRANSFER("이체"),
+    TRANSFER("저축 및 이체"),
     /** 외화 환전 — 구조만 준비(Phase 1 UI 미지원). */
     EXCHANGE("환전"),
     ADJUSTMENT("잔고 조정"),

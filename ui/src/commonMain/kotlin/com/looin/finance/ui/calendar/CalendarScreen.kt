@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -47,6 +48,7 @@ import com.looin.finance.ui.components.AmountText
 import com.looin.finance.ui.components.CoinMarker
 import com.looin.finance.ui.components.CompleteSheet
 import com.looin.finance.ui.components.EmptyHint
+import com.looin.finance.ui.components.AddRowButton
 import com.looin.finance.ui.components.GUTTER
 import com.looin.finance.ui.components.OutlinePill
 import com.looin.finance.ui.components.PeriodSwitcher
@@ -64,7 +66,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
-enum class CalendarFilter(val label: String) { ALL("전체"), INCOME("수입"), EXPENSE("지출"), TRANSFER("이체") }
+enum class CalendarFilter(val label: String) { ALL("전체"), INCOME("수입"), EXPENSE("지출"), TRANSFER("저축·이체") }
 
 private fun Transaction.matches(f: CalendarFilter) = when (f) {
     CalendarFilter.ALL -> true
@@ -97,11 +99,13 @@ fun CalendarScreen(
     padding: PaddingValues,
     onOpenTx: (Transaction) -> Unit,
     onAddTx: (LocalDate) -> Unit,
+    /** 선택한 날짜(epoch day). 화면 밖(+ 버튼)에서도 쓰도록 앱 루트가 들고 있다. */
+    selectedDays: Long = state.today.toEpochDays(),
+    onSelectDays: (Long) -> Unit = {},
 ) {
     val c = Looin.colors
     val data = state.data
     var anchorDays by rememberSaveable { mutableStateOf(state.today.toEpochDays()) }
-    var selectedDays by rememberSaveable { mutableStateOf(state.today.toEpochDays()) }
     var weekMode by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf(CalendarFilter.ALL) }
     val display = ThemePrefs.calendarDisplay
@@ -129,7 +133,7 @@ fun CalendarScreen(
     fun go(delta: Int) {
         val next = if (weekMode) anchor.plus(DatePeriod(days = 7 * delta)) else (if (delta > 0) PeriodCalculator.next(month, 1) else PeriodCalculator.previous(month, 1)).start
         anchorDays = next.toEpochDays()
-        selectedDays = next.toEpochDays()
+        onSelectDays(next.toEpochDays())
     }
     val title = if (weekMode) {
         val w = startOfWeek(anchor)
@@ -142,7 +146,7 @@ fun CalendarScreen(
     ) {
         item {
             PeriodSwitcher(title, null, onPrev = { go(-1) }, onNext = { go(1) },
-                onToday = { anchorDays = state.today.toEpochDays(); selectedDays = state.today.toEpochDays() },
+                onToday = { anchorDays = state.today.toEpochDays(); onSelectDays(state.today.toEpochDays()) },
                 extra = { OutlinePill(if (weekMode) "월" else "주") { weekMode = !weekMode } })
             Spacer(Modifier.height(4.dp))
             PillTabs(CalendarFilter.entries, filter, { it.label }, { filter = it })
@@ -150,7 +154,7 @@ fun CalendarScreen(
             PillTabs(CalendarDisplay.entries, display, { it.label }, { ThemePrefs.chooseCalendarDisplay(it) })
         }
         item {
-            CalendarGrid(rangeStart, rangeEnd, selected, state.today, byDay, showAmounts = true, onSelect = { selectedDays = it.toEpochDays() },
+            CalendarGrid(rangeStart, rangeEnd, selected, state.today, byDay, showAmounts = true, onSelect = { onSelectDays(it.toEpochDays()) },
                 display = display, balances = if (display == CalendarDisplay.BALANCE) balances else emptyMap())
         }
         item {
@@ -162,13 +166,16 @@ fun CalendarScreen(
         }
         item {
             val dayTxs = (byDay[selected] ?: emptyList()).sortedWith(compareBy<Transaction> { it.status.ordinal }.thenBy { it.id })
-            Section(selected.korean(), onAdd = { onAddTx(selected) }, addLabel = "이 날 거래 추가") {
+            Section(selected.korean()) {
                 balances[selected]?.let { b ->
                     SmallLabel((if (selected < state.today) "이날 끝 잔고 " else "이날 예상 잔고 ") + MoneyFormat.format(b) + " · 현금성 계좌",
                         color = if (b < 0) c.danger else c.textSecondary, modifier = Modifier.padding(bottom = 4.dp))
                 }
-                if (dayTxs.isEmpty()) EmptyHint("거래가 없습니다. + 로 추가하세요.")
+                if (dayTxs.isEmpty()) EmptyHint("이날 거래가 없어요.")
                 dayTxs.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, onComplete = { completing = tx }) }
+                Spacer(Modifier.height(8.dp))
+                // 날짜가 적힌 버튼 전체가 눌리는 영역
+                AddRowButton("${selected.korean()} 수입·지출 추가", { onAddTx(selected) }, description = "이 날 거래 추가")
             }
         }
     }
@@ -186,9 +193,8 @@ private fun Summary(label: String, amount: Long, color: Color) {
 }
 
 /**
- * 투두메이트 캘린더 칸: 위에 동전 마커, 아래 날짜(오늘은 흰 원).
- *  - 거래 없음: 빈 회색 동전 / 예정만: 회색 동전 + 남은 예정 수
- *  - 모두 완료: 초록 동전 + 체크 / 완료+예정: 초록 동전 + 남은 예정 수
+ * 캘린더 칸: 위에 날짜(오늘 = 주 색 칸), 그 아래 상태 점.
+ *  - 완료한 거래가 있으면 강조 색 점, 남은 예정이 있으면 예정 색 점 + 개수
  * 날짜 아래 표시는 [display]: 금액(수입·지출) / 잔고(그날 끝 잔고, 오늘 이후는 예상) / 점(표시 없음).
  * 반복 거래가 있는 날은 동전 오른쪽 위에 ↻ 를 붙인다.
  */
@@ -239,22 +245,27 @@ fun CalendarGrid(
                             .padding(vertical = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box {
-                            CoinMarker(27.dp, if (done > 0) c.accent else null, check = done > 0 && planned == 0, number = planned.takeIf { it > 0 })
-                            if (list.any { it.recurringId != null }) {
-                                Text("↻", style = LooinType.tiny.copy(fontWeight = FontWeight.Bold), color = c.menuMove,
-                                    modifier = Modifier.align(Alignment.TopEnd).offset(x = 7.dp, y = (-4).dp))
-                            }
-                        }
-                        Spacer(Modifier.height(3.dp))
+                        // 날짜: 오늘 = 주 색 칸, 선택한 날 = 옅은 주 색 칸
                         Box(
-                            Modifier.size(28.dp).clip(CircleShape).background(
-                                when { isToday -> c.selectedBg; isSel -> c.selectedDay; else -> Color.Transparent },
+                            Modifier.size(32.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).background(
+                                when { isToday -> c.primary; isSel -> c.primarySoft; else -> Color.Transparent },
                             ),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("${date.day}", style = LooinType.date.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium),
-                                color = if (isToday) c.onSelected else dayColor)
+                            Text("${date.day}", style = LooinType.date.copy(fontWeight = if (isToday || isSel) FontWeight.Bold else FontWeight.Medium),
+                                color = when { isToday -> c.onPrimary; isSel -> c.primary; else -> dayColor })
+                        }
+                        // 상태 표시: 완료 = 강조 점, 남은 예정 = 예정 색 점 + 개수, 반복 = ↻
+                        Row(Modifier.height(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (done > 0) Box(Modifier.size(5.dp).clip(CircleShape).background(c.accent))
+                            if (planned > 0) {
+                                if (done > 0) Spacer(Modifier.width(2.dp))
+                                Box(Modifier.size(5.dp).clip(CircleShape).background(c.planned))
+                                Text("$planned", style = LooinType.tiny, color = c.planned, modifier = Modifier.padding(start = 1.dp))
+                            }
+                            if (list.any { it.recurringId != null }) {
+                                Text("↻", style = LooinType.tiny.copy(fontWeight = FontWeight.Bold), color = c.menuMove, modifier = Modifier.padding(start = 2.dp))
+                            }
                         }
                         when (display) {
                             CalendarDisplay.AMOUNT -> {

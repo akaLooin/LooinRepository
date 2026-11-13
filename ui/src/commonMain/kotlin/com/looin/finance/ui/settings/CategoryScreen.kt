@@ -50,6 +50,9 @@ import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.ToggleRow
 import com.looin.finance.ui.components.UnderlineField
 import com.looin.finance.ui.components.FieldGroup
+import com.looin.finance.ui.components.HexColorField
+import com.looin.finance.ui.components.DangerButton
+import com.looin.finance.ui.components.ConfirmDialog
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinType
 
@@ -65,6 +68,7 @@ fun CategoryScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
     val c = Looin.colors
     var kind by rememberSaveable { mutableStateOf(CategoryKind.EXPENSE) }
     var editing by remember { mutableStateOf<Category?>(null) }
+    var deleting by remember { mutableStateOf<Pair<Category, com.looin.finance.data.FinanceRepository.CategoryUsage>?>(null) }
     val list = state.data.categories.filter { it.kind == kind }.sortedWith(compareBy<Category> { it.archived }.thenBy { it.sortOrder }.thenBy { it.id })
     val used = remember(state.data.transactions) { state.data.transactions.groupingBy { it.categoryId }.eachCount() }
 
@@ -73,7 +77,7 @@ fun CategoryScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
         Column(Modifier.padding(horizontal = GUTTER)) {
             PillTabs(listOf(CategoryKind.EXPENSE, CategoryKind.INCOME), kind, { it.label }, { kind = it })
             Spacer(Modifier.size(6.dp))
-            SmallLabel("지우는 대신 '보관'하면 새 거래 선택 목록에서만 빠지고, 지난 기록은 그대로 남아요.")
+            SmallLabel("카테고리를 눌러 이름·색을 바꾸거나 삭제할 수 있어요. 지난 기록을 그대로 두고 목록에서만 빼려면 '보관'을 쓰세요.")
         }
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = GUTTER, vertical = 12.dp)) {
             items(list, key = { it.id }) { cat ->
@@ -93,14 +97,25 @@ fun CategoryScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
 
     editing?.let { cat ->
         LooinSheet({ editing = null }, if (cat.id == 0L) "카테고리 추가" else "카테고리 편집") {
-            CategoryForm(cat) { updated -> vm.saveCategory(updated) { editing = null } }
+            CategoryForm(cat, onDelete = if (cat.id == 0L) null else ({ vm.categoryUsage(cat.id) { u -> deleting = cat to u } })) { updated ->
+                vm.saveCategory(updated) { editing = null }
+            }
         }
+    }
+    deleting?.let { (cat, u) ->
+        val effects = buildList {
+            if (u.transactions > 0) add("거래 ${u.transactions}건은 '미분류'로 남아요(금액·잔고는 그대로).")
+            if (u.rules > 0) add("반복 거래 ${u.rules}개도 '미분류'가 돼요.")
+            if (u.budgets > 0) add("이 카테고리 예산 ${u.budgets}개는 함께 삭제돼요.")
+        }
+        ConfirmDialog("'${cat.name}' 삭제", (effects.ifEmpty { listOf("사용한 기록이 없어 바로 지워져요.") }).joinToString("\n") + "\n\n되돌릴 수 없어요. 삭제할까요?", "삭제",
+            { deleting = null }, danger = true) { vm.deleteCategory(cat.id) { editing = null } }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CategoryForm(cat: Category, onSave: (Category) -> Unit) {
+private fun CategoryForm(cat: Category, onDelete: (() -> Unit)?, onSave: (Category) -> Unit) {
     val c = Looin.colors
     var name by remember { mutableStateOf(cat.name) }
     var color by remember { mutableStateOf(cat.colorArgb) }
@@ -119,7 +134,9 @@ private fun CategoryForm(cat: Category, onSave: (Category) -> Unit) {
                 )
             }
         }
+        HexColorField(color, { color = it }, "색 코드 직접 입력 (예: #12A594)")
         if (cat.id != 0L) FieldGroup { ToggleRow("보관", "새 거래·예산 선택 목록에서 숨겨요", archived, { archived = it }) }
         PrimaryButton("저장", { onSave(cat.copy(name = name, colorArgb = color, archived = archived)) }, enabled = name.isNotBlank(), strong = true)
+        if (onDelete != null) DangerButton("카테고리 삭제", onDelete)
     }
 }

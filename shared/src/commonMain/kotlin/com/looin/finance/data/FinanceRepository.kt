@@ -280,11 +280,15 @@ class FinanceRepository(
     }
 
     /**
-     * 미리보기를 지금 데이터로 다시 계산해 새 거래만 한 트랜잭션으로 저장한다(하나라도 실패하면 전부 취소).
+     * 미리보기를 지금 데이터로 다시 계산해 새 거래와, 사용자가 "중복 아님"으로 확인한 줄([keepDuplicateLines])을
+     * 한 트랜잭션으로 저장한다(하나라도 실패하면 전부 취소).
      * 반환값: 저장한 건수.
      */
-    suspend fun importCsv(text: String, defaultAccountId: Long?): Int = tx {
-        val items = previewCsv(text, defaultAccountId).newItems
+    suspend fun importCsv(text: String, defaultAccountId: Long?, keepDuplicateLines: Set<Int> = emptySet()): Int = tx {
+        val items = previewCsv(text, defaultAccountId).items.filter {
+            it.status == com.looin.finance.core.csv.ImportStatus.NEW ||
+                (it.status == com.looin.finance.core.csv.ImportStatus.DUPLICATE && it.line in keepDuplicateLines && it.tx != null)
+        }
         val t = now()
         items.forEach { dao.insertTransaction(it.tx!!.copy(id = 0, source = TransactionSource.IMPORT, createdAt = t, updatedAt = t).toEntity()) }
         items.size
@@ -365,6 +369,24 @@ class FinanceRepository(
             dao.upsertCategory(category.copy(name = name).toEntity())
             category.id
         }
+    }
+
+    /** 카테고리를 지우면 무엇이 바뀌는지(삭제 확인 안내용). */
+    data class CategoryUsage(val transactions: Int, val budgets: Int, val rules: Int)
+
+    suspend fun categoryUsage(id: Long) = CategoryUsage(
+        dao.transactions().count { it.categoryId == id }, dao.budgets().count { it.categoryId == id }, dao.rules().count { it.categoryId == id },
+    )
+
+    /**
+     * 카테고리 완전 삭제. 이 카테고리를 쓰던 거래·반복 거래는 '미분류'로 남고(금액·잔고는 그대로),
+     * 이 카테고리 전용 예산은 함께 삭제된다. 한 트랜잭션으로 처리.
+     */
+    suspend fun deleteCategory(id: Long): CategoryUsage = tx {
+        if (dao.categories().none { it.id == id }) throw FinanceException("카테고리를 찾을 수 없습니다.")
+        val u = CategoryUsage(dao.uncategorizeTransactions(id), dao.deleteCategoryBudgets(id), dao.uncategorizeRules(id))
+        dao.deleteCategory(id)
+        u
     }
 
     /** 기간 설정을 바꿔도 거래·예산 기록은 그대로 둔다(예산은 생성 당시 기간을 저장하고 있음). */

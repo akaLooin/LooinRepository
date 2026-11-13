@@ -54,6 +54,19 @@ import com.looin.finance.ui.platform.LocalFileActions
 import com.looin.finance.ui.platform.FileKind
 import com.looin.finance.ui.platform.LocalReminderControl
 import com.looin.finance.ui.components.ToggleRow
+import com.looin.finance.ui.components.TextAction
+import com.looin.finance.ui.components.HexColorField
+import com.looin.finance.ui.components.LooinSheet
+import com.looin.finance.ui.components.hexOf
+import com.looin.finance.ui.theme.ColorRole
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}, onOpenCsvImport: () -> Unit = {}) {
@@ -64,6 +77,8 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
     var dayText by rememberSaveable(s.paydayDay) { mutableStateOf(s.paydayDay.toString()) }
     var basis by rememberSaveable(s.primaryBasis) { mutableStateOf(s.primaryBasis) }
     val day = dayText.toIntOrNull()?.takeIf { it in 1..31 }
+    var editingColor by remember { mutableStateOf<ColorRole?>(null) }
+    editingColor?.let { role -> ColorSheet(role, role.of(c)) { editingColor = null } }
     // 복원은 파일을 고른 뒤 한 번 더 확인받는다.
     var pendingRestore by remember { mutableStateOf<(() -> String)?>(null) }
     pendingRestore?.let { read ->
@@ -93,17 +108,6 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
             PrimaryButton("기간 설정 저장", { vm.updateSettings(FinanceSettings(paydayDay = day!!, primaryBasis = basis)) },
                 enabled = day != null && (day != s.paydayDay || basis != s.primaryBasis), strong = true)
 
-            val reminders = LocalReminderControl.current
-            if (reminders.supported) {
-                Spacer(Modifier.height(8.dp))
-                Title("알림")
-                FieldGroup {
-                    ToggleRow("예정 거래 알림", "매일 오전 9시쯤, 오늘 예정이거나 처리하지 않은 지난 예정 거래가 있을 때만 알려요",
-                        reminders.enabled, { reminders.setEnabled(it) })
-                }
-                if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → 루인 가계부 → 알림에서 허용해 주세요.", color = c.danger)
-            }
-
             Spacer(Modifier.height(8.dp))
             Title("분류")
             FieldGroup {
@@ -117,6 +121,26 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
                     if (i > 0) FieldDivider()
                     RadioRow(m.label, if (m == ThemeMode.SYSTEM) "시스템이 라이트가 아니면 다크로 보여요" else null, ThemePrefs.mode == m) { ThemePrefs.set(m) }
                 }
+            }
+            Title("색상")
+            SmallLabel("눌러서 색 코드(예: #12A594)를 입력하면 바로 바뀌어요. 라이트·다크 모두에 같은 색을 써요.")
+            FieldGroup {
+                ColorRole.entries.forEachIndexed { i, role ->
+                    if (i > 0) FieldDivider()
+                    ColorRow(role, role.of(c), role in ThemePrefs.colorOverrides) { editingColor = role }
+                }
+            }
+            if (ThemePrefs.colorOverrides.isNotEmpty()) TextAction("모든 색 기본값으로", { ThemePrefs.resetColors() }, color = c.textMuted)
+
+            val reminders = LocalReminderControl.current
+            if (reminders.supported) {
+                Spacer(Modifier.height(8.dp))
+                Title("알림")
+                FieldGroup {
+                    ToggleRow("예정 거래 알림", "매일 오전 9시쯤, 오늘 예정이거나 처리하지 않은 지난 예정 거래가 있을 때만 알려요",
+                        reminders.enabled, { reminders.setEnabled(it) })
+                }
+                if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → 루인 가계부 → 알림에서 허용해 주세요.", color = c.danger)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -149,7 +173,7 @@ private fun Title(text: String) = Text(text, style = LooinType.sheetTitle, color
 @Composable
 private fun RadioRow(label: String, sub: String?, selected: Boolean, onClick: () -> Unit) {
     val c = Looin.colors
-    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(label, style = LooinType.bodyLg, color = c.text)
             if (sub != null) SmallLabel(sub)
@@ -159,5 +183,43 @@ private fun RadioRow(label: String, sub: String?, selected: Boolean, onClick: ()
                 .then(if (selected) Modifier.background(c.selectedBg) else Modifier.border(2.dp, c.surfaceStrong, CircleShape)),
             contentAlignment = Alignment.Center,
         ) { if (selected) Box(Modifier.size(9.dp).clip(CircleShape).background(c.onSelected)) }
+    }
+}
+
+@Composable
+private fun ColorRow(role: ColorRole, color: Color, custom: Boolean, onClick: () -> Unit) {
+    val c = Looin.colors
+    Row(Modifier.fillMaxWidth().height(58.dp).clickable(onClick = onClick).padding(horizontal = 16.dp)
+        .semantics(mergeDescendants = true) { contentDescription = "${role.label} 색 ${hexOf(color.toArgb().toLong())}" },
+        verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(26.dp).clip(RoundedCornerShape(8.dp)).background(color))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(role.label, style = LooinType.bodyLg, color = c.text)
+            SmallLabel(role.help)
+        }
+        Text(hexOf(color.toArgb().toLong()) + if (custom) " · 사용자" else "", style = LooinType.body, color = c.textMuted)
+    }
+}
+
+/** 색 하나 바꾸기: 색 코드 입력 + 추천 색 + 기본값. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ColorSheet(role: ColorRole, current: Color, onDismiss: () -> Unit) {
+    val c = Looin.colors
+    LooinSheet(onDismiss, "${role.label} 색") {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            HexColorField(current.toArgb().toLong() and 0xFFFFFFFFL, { ThemePrefs.setColor(role, it) }, "색 코드")
+            SmallLabel("추천 색")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                CATEGORY_PALETTE.forEach { argb ->
+                    Box(Modifier.size(34.dp).clip(CircleShape).background(Color(argb))
+                        .then(if (Color(argb) == current) Modifier.border(3.dp, c.text, CircleShape) else Modifier)
+                        .clickable { ThemePrefs.setColor(role, argb) }.semantics { contentDescription = hexOf(argb) })
+                }
+            }
+            PrimaryButton("기본값으로", { ThemePrefs.setColor(role, null) })
+            PrimaryButton("완료", onDismiss, strong = true)
+        }
     }
 }

@@ -62,6 +62,10 @@ import com.looin.finance.ui.components.PrimaryButton
 import com.looin.finance.ui.components.Section
 import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.TransactionRow
+import com.looin.finance.ui.components.Card
+import com.looin.finance.ui.components.HBar
+import com.looin.finance.ui.components.TextAction
+import androidx.compose.foundation.border
 import com.looin.finance.ui.components.korean
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinType
@@ -122,67 +126,81 @@ fun HomeScreen(
     val daysLeft = period.endExclusive.toEpochDays() - state.today.toEpochDays()
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showAvailable by remember { mutableStateOf(false) }
-    val week = startOfWeek(state.today)
-    val weekTxs = txs.filter { it.effectiveDate >= week && it.effectiveDate < week.plus(DatePeriod(days = 7)) }.groupBy { it.effectiveDate }
 
     LazyColumn(
-        contentPadding = PaddingValues(start = GUTTER, end = GUTTER, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 96.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 96.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // 머리: 예산 사용 고리 + 사용 가능 금액 + 기간 D-day (투두메이트 프로필 머리 자리)
+        // 1) 요약: 사용 가능 금액 · 기간 · 예산 사용 · 이번 기간 수입/소비/예정
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                .clickable { showAvailable = true }.padding(vertical = 4.dp)
-                .semantics { contentDescription = "생활비로 사용 가능한 금액 ${fmt(available.amount)}, 계산 근거 보기" }) {
-                UsageRing(usage, Modifier.size(69.dp))
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    SmallLabel("생활비로 사용 가능한 금액 ⓘ")
-                    AmountText(available.amount, style = LooinType.bigAmount.copy(fontSize = LooinType.monthTitle.fontSize * 1.35f),
-                        color = if (available.amount < 0) c.danger else c.text)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${period.basis.label} ${period.rangeLabel}", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.text)
-                        Spacer(Modifier.width(6.dp))
-                        Text("D-$daysLeft", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.dday)
+            Card {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${period.basis.label} ${period.rangeLabel}", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.textSecondary,
+                        modifier = Modifier.weight(1f))
+                    Box(Modifier.clip(RoundedCornerShape(8.dp)).background(c.dday.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                        Text("D-$daysLeft", style = LooinType.helper.copy(fontWeight = FontWeight.Bold), color = c.dday)
                     }
                 }
-            }
-            if (AvailableFundsCalculator.includedAccounts(data.accounts).isEmpty()) {
-                SmallLabel("생활비 계산 대상 계좌가 없어요. 자산 탭에서 계좌를 '생활비 계산 대상'으로 켜 주세요.", color = c.danger)
-            }
-        }
-        // 이번 주 캘린더 줄
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("이번 주", style = LooinType.monthTitle, color = c.text, modifier = Modifier.weight(1f))
-                ChipPill("캘린더 ›", false, onOpenCalendar)
-            }
-            Spacer(Modifier.height(10.dp))
-            CalendarGrid(week, week.plus(DatePeriod(days = 7)), null, state.today, weekTxs, showAmounts = true, onSelect = { onOpenCalendar() })
-        }
-        item {
-            Section("잔고", dot = c.accent, onAdd = onAddAccount, addLabel = "계좌 추가") {
-                MetricRow("실제 보유 잔고", cash.total, cash)
-                MetricRow("전체 순자산", assets.netWorth, assets.netWorthBreakdown)
-                MetricRow("${projectionDate.korean()} 예상 잔고", projected.total, projected, sub = "현금성 계좌 + 그날까지의 예정 거래")
-                Spacer(Modifier.height(4.dp))
-                FieldGroup { DateField("예상 잔고 기준일", projectionDate, { projectionDate = it }) }
-            }
-        }
-        item {
-            Section("이번 기간", dot = c.saturday) {
-                MetricRow("수입 합계", stats.income, StatisticsCalculator.incomeBreakdown(stats, data::categoryName), color = c.income)
-                MetricRow("확정 소비", stats.expense, StatisticsCalculator.expenseBreakdown(stats, data::categoryName), color = c.expense)
-                MetricRow("미완료 예정 지출", pendingBreakdown.total, pendingBreakdown, color = c.planned)
+                Spacer(Modifier.height(12.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { showAvailable = true }
+                    .semantics(mergeDescendants = true) { contentDescription = "생활비로 사용 가능한 금액 ${fmt(available.amount)}, 계산 근거 보기" }) {
+                    SmallLabel("생활비로 사용 가능한 금액 ⓘ")
+                    AmountText(available.amount, style = LooinType.bigAmount, color = if (available.amount < 0) c.danger else c.text)
+                }
+                if (AvailableFundsCalculator.includedAccounts(data.accounts).isEmpty()) {
+                    SmallLabel("생활비 계산 대상 계좌가 없어요. 자산 탭에서 계좌를 '생활비 계산 대상'으로 켜 주세요.", color = c.danger)
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SmallLabel(if (usage == null) "예산 없음" else "예산 ${(usage * 100).toInt()}% 사용", modifier = Modifier.weight(1f))
+                    if (budgetTotal > 0) SmallLabel("예산 ${fmt(budgetTotal)}")
+                }
+                Spacer(Modifier.height(6.dp))
+                HBar(usage ?: 0f, if ((usage ?: 0f) > 1f) c.danger else c.accent)
+                Spacer(Modifier.height(14.dp))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(c.divider))
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    MiniStat("수입", stats.income, c.income, StatisticsCalculator.incomeBreakdown(stats, data::categoryName), Modifier.weight(1f))
+                    MiniStat("확정 소비", stats.expense, c.expense, StatisticsCalculator.expenseBreakdown(stats, data::categoryName), Modifier.weight(1f))
+                    MiniStat("미완료 예정 지출", pendingBreakdown.total, c.planned, pendingBreakdown, Modifier.weight(1f))
+                }
             }
         }
+        // 2) 빠른 입력
         item {
-            Section("남은 예산", dot = c.menuSoft, onAdd = onOpenPlan, addLabel = "예산 관리") {
-                if (statuses.isEmpty()) EmptyHint("이번 기간 예산이 없어요. + 를 눌러 돈 관리에서 만들어 보세요.")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickAdd("지출", c.expense, Modifier.weight(1f)) { onAddTx(null, TransactionType.EXPENSE, false) }
+                QuickAdd("수입", c.income, Modifier.weight(1f)) { onAddTx(null, TransactionType.INCOME, false) }
+                QuickAdd("저축 및 이체", c.transfer, Modifier.weight(1f)) { onAddTx(null, TransactionType.TRANSFER, false) }
+            }
+        }
+        // 3) 예정 거래
+        item {
+            Section("예정 거래", dot = c.planned, onAdd = { onAddTx(null, TransactionType.EXPENSE, true) }, addLabel = "예정 거래 추가") {
+                if (upcoming.isEmpty()) EmptyHint("예정 거래가 없어요.")
+                upcoming.forEach { tx ->
+                    TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true, onComplete = { completing = tx })
+                    if (tx.date < state.today) SmallLabel("예정일이 지났어요 · 동그라미를 눌러 완료 처리", color = c.danger, modifier = Modifier.padding(start = 45.dp))
+                }
+            }
+        }
+        // 4) 최근 거래
+        item {
+            Section("최근 거래", dot = c.expense, onAdd = { onAddTx(null, null, false) }, addLabel = "거래 추가",
+                trailing = { TextAction("캘린더 ›", onOpenCalendar, color = c.textMuted) }) {
+                if (recent.isEmpty()) EmptyHint("완료된 거래가 없어요. + 로 기록해 보세요.")
+                recent.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true) }
+            }
+        }
+        // 5) 남은 예산
+        item {
+            Section("남은 예산", dot = c.accent, onAdd = onOpenPlan, addLabel = "예산 관리") {
+                if (statuses.isEmpty()) EmptyHint("이번 기간 예산이 없어요. 추가를 눌러 돈 관리에서 만들어 보세요.")
                 statuses.forEach { s ->
                     val name = s.budget.categoryId?.let { data.categoryName(it) } ?: "전체 생활비"
-                    val dot = s.budget.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: c.text
-                    Column(Modifier.padding(vertical = 8.dp)) {
+                    val dot = s.budget.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: c.primary
+                    Column(Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(dot))
                             Spacer(Modifier.width(8.dp))
@@ -198,19 +216,14 @@ fun HomeScreen(
                 }
             }
         }
+        // 6) 잔고
         item {
-            Section("예정 거래", dot = c.planned, onAdd = { onAddTx(null, TransactionType.EXPENSE, true) }, addLabel = "예정 거래 추가") {
-                if (upcoming.isEmpty()) EmptyHint("예정 거래가 없어요.")
-                upcoming.forEach { tx ->
-                    TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true, onComplete = { completing = tx })
-                    if (tx.date < state.today) SmallLabel("예정일이 지났어요 · 동그라미를 눌러 완료 처리", color = c.danger, modifier = Modifier.padding(start = 45.dp))
-                }
-            }
-        }
-        item {
-            Section("최근 거래", dot = c.sunday, onAdd = { onAddTx(null, null, false) }, addLabel = "거래 추가") {
-                if (recent.isEmpty()) EmptyHint("완료된 거래가 없어요. + 로 기록해 보세요.")
-                recent.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true) }
+            Section("잔고", dot = c.income, onAdd = onAddAccount, addLabel = "계좌 추가") {
+                MetricRow("실제 보유 잔고", cash.total, cash)
+                MetricRow("전체 순자산", assets.netWorth, assets.netWorthBreakdown)
+                MetricRow("${projectionDate.korean()} 예상 잔고", projected.total, projected, sub = "현금성 계좌 + 그날까지의 예정 거래")
+                Spacer(Modifier.height(4.dp))
+                FieldGroup { DateField("예상 잔고 기준일", projectionDate, { projectionDate = it }) }
             }
         }
     }
@@ -240,5 +253,31 @@ fun UsageRing(usage: Float?, modifier: Modifier) {
             Text(if (usage == null) "-" else "${(usage * 100).toInt()}%", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.text)
             Text("예산", style = LooinType.tiny, color = c.textMuted)
         }
+    }
+}
+
+/** 요약 카드 아래 작은 지표: 누르면 계산 근거. */
+@Composable
+private fun MiniStat(label: String, amount: Long, color: Color, breakdown: Breakdown, modifier: Modifier) {
+    var show by remember { mutableStateOf(false) }
+    Column(modifier.clip(RoundedCornerShape(10.dp)).clickable { show = true }.padding(vertical = 4.dp, horizontal = 2.dp)) {
+        SmallLabel(label)
+        AmountText(amount, color = color, style = LooinType.body.copy(fontWeight = FontWeight.Bold))
+    }
+    if (show) BreakdownSheet(breakdown) { show = false }
+}
+
+/** 빠른 입력 버튼: 유형을 골라 둔 채 입력 화면을 연다. */
+@Composable
+private fun QuickAdd(label: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    val c = Looin.colors
+    Row(
+        modifier.height(46.dp).clip(RoundedCornerShape(12.dp)).background(c.card).border(1.dp, c.cardBorder, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick).semantics(mergeDescendants = true) { contentDescription = "$label 추가" },
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+    ) {
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(color))
+        Spacer(Modifier.width(6.dp))
+        Text("+ $label", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.text, maxLines = 1)
     }
 }

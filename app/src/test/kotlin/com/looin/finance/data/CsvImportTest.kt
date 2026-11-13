@@ -84,4 +84,32 @@ class CsvImportTest {
         val acc = s.accounts.first { it.id == save }
         assertEquals(-3_500 + 120L, BalanceCalculator.actualBalance(acc, s.transactions))
     }
+
+    /** 중복으로 보인 줄도 사용자가 "중복 아님"으로 확인하면 저장된다 */
+    @Test fun confirmedDuplicateIsKept() = runTest {
+        val (main, _) = accounts(repo)
+        val csv = "날짜,금액,메모\n2026-11-01,-4500,커피\n2026-11-01,-4500,커피"
+        val p = repo.previewCsv(csv, main)
+        assertEquals(1, p.newItems.size)
+        val dup = p.items.single { it.status == com.looin.finance.core.csv.ImportStatus.DUPLICATE }.line
+        assertEquals(2, repo.importCsv(csv, main, keepDuplicateLines = setOf(dup)))
+        assertEquals(2, repo.snapshot().transactions.size)
+    }
+
+    /** 카테고리 삭제: 거래는 미분류로 남고(잔고 그대로) 그 카테고리 예산은 함께 삭제 */
+    @Test fun deleteCategoryKeepsTransactions() = runTest {
+        val (main, _) = accounts(repo)
+        val cat = repo.saveCategory(com.looin.finance.core.model.Category(name = "반려동물", kind = com.looin.finance.core.model.CategoryKind.EXPENSE, colorArgb = 0xFF12A594))
+        repo.saveTransaction(Transaction(type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 30_000,
+            date = today, completedDate = today, fromAccountId = main, categoryId = cat))
+        val p = com.looin.finance.core.period.PeriodCalculator.periodContaining(today, com.looin.finance.core.period.PeriodBasis.CALENDAR, 25)
+        repo.saveBudget(com.looin.finance.core.model.Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = cat, amount = 100_000))
+        assertEquals(FinanceRepository.CategoryUsage(1, 1, 0), repo.categoryUsage(cat))
+        repo.deleteCategory(cat)
+        val s = repo.snapshot()
+        assertTrue(s.categories.none { it.id == cat })
+        assertEquals(null, s.transactions.single().categoryId)
+        assertEquals(0, s.budgets.size)
+        assertEquals(970_000L, BalanceCalculator.actualBalance(s.accounts.first { it.id == main }, s.transactions))
+    }
 }

@@ -17,6 +17,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import com.looin.finance.MainActivity
 import org.junit.Rule
 import org.junit.Test
@@ -98,7 +100,7 @@ open class AppFlowTest {
 
         // 반복 거래: 매월 31일(짧은 달은 말일) 월세 300,000원 → 이번 달 말 예정 거래가 자동 생성
         rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("반복 거래 추가"))
-        rule.onNodeWithContentDescription("반복 거래 추가").performClick()
+        rule.onNodeWithContentDescription("반복 거래 추가").performSemanticsAction(SemanticsActions.OnClick)
         waitText("반복 거래 추가")
         field("이름").performTextInput("월세")
         field("금액").performTextInput("300000")

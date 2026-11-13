@@ -191,6 +191,10 @@ interface FinanceDao {
     @Query("SELECT * FROM categories") suspend fun categories(): List<CategoryEntity>
     @Insert suspend fun insertCategories(c: List<CategoryEntity>)
     @Upsert suspend fun upsertCategory(c: CategoryEntity): Long
+    @Query("DELETE FROM categories WHERE id = :id") suspend fun deleteCategory(id: Long)
+    @Query("UPDATE transactions SET category_id = NULL WHERE category_id = :id") suspend fun uncategorizeTransactions(id: Long): Int
+    @Query("UPDATE recurring_rules SET category_id = NULL WHERE category_id = :id") suspend fun uncategorizeRules(id: Long): Int
+    @Query("DELETE FROM budgets WHERE category_id = :id") suspend fun deleteCategoryBudgets(id: Long): Int
 
     // 거래
     @Query("SELECT * FROM transactions ORDER BY date DESC, id DESC") fun observeTransactions(): Flow<List<TransactionEntity>>

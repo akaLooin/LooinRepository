@@ -79,4 +79,28 @@ class CsvImportScreenTest {
         assertTrue(vm.csvImport.value == null)
         rule.waitUntilAtLeastOneExists(hasText("가져올 파일이 없어요", substring = true), 5_000)
     }
+
+    /** 중복 의심 줄은 재확인 안내가 뜨고, "중복 아님"을 누르면 함께 저장된다 */
+    @Test fun duplicateCanBeKeptAfterConfirming() {
+        runBlocking {
+            repo.ensureInitialized()
+            repo.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 100_000, includeInAvailable = true))
+        }
+        val vm = MainViewModel(repo)
+        var loaded = false
+        var closed = false
+        rule.setContent {
+            val state by vm.state.collectAsState()
+            LooinTheme { CsvImportScreen(state, vm) { closed = true } }
+        }
+        await { vm.state.value.data.accounts.size == 1 }
+        rule.runOnIdle { vm.loadCsv({ "날짜,금액,메모\n2026-11-01,-4500,커피\n2026-11-01,-4500,커피" }) { loaded = true } }
+        await { loaded }
+        rule.onNodeWithText("중복으로 보이는 거래 1건을 확인해 주세요").assertExists()
+        rule.onNodeWithText("중복 아님 · 가져오기").performClick()
+        await { vm.csvImport.value?.keepDuplicates?.size == 1 }
+        rule.onNodeWithText("2건 가져오기").performClick()
+        await { closed }
+        assertEquals(2, runBlocking { repo.snapshot().transactions.size })
+    }
 }

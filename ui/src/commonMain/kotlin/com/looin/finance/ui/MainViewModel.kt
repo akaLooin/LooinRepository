@@ -42,7 +42,7 @@ data class UiState(
  * 잔고·예산·통계 등 모든 수치는 화면에서 :core 계산기로 계산한다.
  */
 /** CSV 가져오기 미리보기: 읽은 파일, 분류 결과, 계좌 열이 없을 때 쓸 기본 계좌. */
-data class CsvImportState(val text: String, val preview: ImportPreview, val accountId: Long?)
+data class CsvImportState(val text: String, val preview: ImportPreview, val accountId: Long?, val keepDuplicates: Set<Int> = emptySet())
 
 class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
 
@@ -167,17 +167,52 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
 
     fun setCsvAccount(id: Long) {
         val cur = _csvImport.value ?: return
-        viewModelScope.launch { _csvImport.value = cur.copy(preview = repo.previewCsv(cur.text, id), accountId = id) }
+        // 계좌가 바뀌면 중복 판정도 바뀌므로 "중복 아님" 확인은 다시 받는다
+        viewModelScope.launch { _csvImport.value = cur.copy(preview = repo.previewCsv(cur.text, id), accountId = id, keepDuplicates = emptySet()) }
     }
 
     fun confirmCsvImport(onDone: () -> Unit) {
         val cur = _csvImport.value ?: return
         run(null, onDone) {
-            val n = repo.importCsv(cur.text, cur.accountId)
+            val n = repo.importCsv(cur.text, cur.accountId, cur.keepDuplicates)
             _csvImport.value = null
             _messages.tryEmit("거래 ${n}건을 가져왔습니다")
         }
     }
 
     fun cancelCsvImport() { _csvImport.value = null }
+
+    /** 중복으로 보이는 줄을 "중복 아님 → 가져오기"로 표시하거나 해제한다. */
+    fun toggleKeepDuplicate(line: Int) {
+        val cur = _csvImport.value ?: return
+        _csvImport.value = cur.copy(keepDuplicates = if (line in cur.keepDuplicates) cur.keepDuplicates - line else cur.keepDuplicates + line)
+    }
+
+    fun setKeepAllDuplicates(keep: Boolean) {
+        val cur = _csvImport.value ?: return
+        _csvImport.value = cur.copy(keepDuplicates = if (keep) cur.preview.items.filter { it.status == com.looin.finance.core.csv.ImportStatus.DUPLICATE }.map { it.line }.toSet() else emptySet())
+    }
+
+    // ── 카테고리 삭제 ─────────────────────────────────────
+
+    fun categoryUsage(id: Long, onResult: (FinanceRepository.CategoryUsage) -> Unit) {
+        viewModelScope.launch { onResult(repo.categoryUsage(id)) }
+    }
+
+    fun deleteCategory(id: Long, onSuccess: () -> Unit = {}) = run(null, onSuccess) {
+        val u = repo.deleteCategory(id)
+        _messages.tryEmit(if (u.transactions + u.rules > 0) "카테고리를 삭제했습니다 · 거래 ${u.transactions + u.rules}건은 미분류로 남아요" else "카테고리를 삭제했습니다")
+    }
+
+    /** 카테고리를 만들고 새 id 를 돌려준다(거래 입력 중 바로 추가). */
+    fun addCategory(category: com.looin.finance.core.model.Category, onCreated: (Long) -> Unit) = run("카테고리를 추가했습니다") {
+        val id = repo.saveCategory(category)
+        onCreated(id)
+    }
+
+    /** 계좌를 만들고 새 id 를 돌려준다(거래 입력 중 입금·출금 계좌 바로 추가). */
+    fun addAccount(account: Account, onCreated: (Long) -> Unit) = run("계좌를 추가했습니다") {
+        val id = repo.saveAccount(account)
+        onCreated(id)
+    }
 }

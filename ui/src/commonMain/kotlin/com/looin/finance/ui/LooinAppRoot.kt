@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -57,6 +58,14 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.savedstate.read
 import androidx.navigation.NavType
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NamedNavArgument
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -116,18 +125,27 @@ fun LooinAppRoot(vm: MainViewModel) {
     val backStack by nav.currentBackStackEntryAsState()
     val tab = Tab.entries.firstOrNull { it.route == backStack?.destination?.route }
     var sheetTx by remember { mutableStateOf<Transaction?>(null) }
+    // 캘린더에서 고른 날짜. + 버튼이 이 날짜로 새 거래를 연다(없으면 오늘).
+    var calendarDay by rememberSaveable { mutableStateOf<Long?>(null) }
 
     Scaffold(
         containerColor = c.bg,
         snackbarHost = {
             // 편집 화면에서는 하단 저장 버튼을 가리지 않도록 스낵바를 위로 올린다.
-            SnackbarHost(snackbar, Modifier.padding(bottom = if (tab == null) 84.dp else 0.dp)) {
-                Snackbar(it, containerColor = c.surfaceStrong, contentColor = c.text, shape = CircleShape)
+            SnackbarHost(snackbar, Modifier.padding(bottom = if (tab == null) 84.dp else 0.dp)) { data ->
+                // 옆으로 밀면 밀리면서 사라진다(양방향).
+                val dismissState = rememberSwipeToDismissBoxState()
+                LaunchedEffect(dismissState.currentValue) {
+                    if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) data.dismiss()
+                }
+                SwipeToDismissBox(dismissState, backgroundContent = {}, modifier = Modifier.semantics { contentDescription = "알림, 옆으로 밀어 닫기" }) {
+                    Snackbar(data, containerColor = c.toastBg, contentColor = c.onToast, shape = RoundedCornerShape(14.dp))
+                }
             }
         },
         topBar = {
             if (tab != null) Row(
-                Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(start = GUTTER, end = 8.dp),
+                Modifier.fillMaxWidth().background(c.bg).statusBarsPadding().height(56.dp).padding(start = GUTTER, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(if (tab == Tab.HOME) "루인 가계부" else tab.label, style = LooinType.monthTitle, color = c.text, modifier = Modifier.weight(1f))
@@ -140,13 +158,16 @@ fun LooinAppRoot(vm: MainViewModel) {
         bottomBar = { if (tab != null) BottomNav(tab) { t -> nav.navigate(t.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true; restoreState = true } } },
         floatingActionButton = {
             if (tab == Tab.HOME || tab == Tab.CALENDAR) Box(
-                Modifier.size(56.dp).clip(CircleShape).background(c.selectedBg).clickable { nav.navigate(txRoute()) }
+                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(c.primary).clickable {
+                    val day = if (tab == Tab.CALENDAR) calendarDay?.let { LocalDate.fromEpochDays(it) } else null
+                    nav.navigate(txRoute(date = day))
+                }
                     .semantics { contentDescription = "거래 추가" },
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Filled.Add, null, tint = c.onSelected, modifier = Modifier.size(28.dp)) }
+            ) { Icon(Icons.Filled.Add, null, tint = c.onPrimary, modifier = Modifier.size(28.dp)) }
         },
     ) { padding ->
-        AppNavHost(nav, state, vm, padding) { sheetTx = it }
+        AppNavHost(nav, state, vm, padding, calendarDay ?: state.today.toEpochDays(), { calendarDay = it }) { sheetTx = it }
     }
 
     sheetTx?.let { tx ->
@@ -159,27 +180,36 @@ fun LooinAppRoot(vm: MainViewModel) {
     }
 }
 
-/** 하단 탭: 높이 64, 선택 = text, 비선택 = icon-inactive. 표시 막대 없이 아이콘 채움으로 구분(투두메이트). */
+/** 하단 탭: 카드 바탕 + 위 구분선. 선택한 탭은 아이콘 뒤에 주 색을 옅게 깐 알약으로 표시. */
 @Composable
 private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit) {
     val c = Looin.colors
-    Row(Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
-        Tab.entries.forEach { t ->
-            val sel = t == current
-            Column(
-                Modifier.weight(1f).height(64.dp).clickable { onSelect(t) }.semantics { contentDescription = t.label },
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-            ) {
-                Icon(if (sel) t.selectedIcon else t.icon, null, tint = if (sel) c.text else c.iconInactive, modifier = Modifier.size(26.dp))
-                Spacer(Modifier.height(2.dp))
-                Text(t.label, style = LooinType.tiny, color = if (sel) c.text else c.iconInactive)
+    Column(Modifier.fillMaxWidth().background(c.card)) {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(c.cardBorder))
+        Row(Modifier.fillMaxWidth().navigationBarsPadding().height(66.dp), verticalAlignment = Alignment.CenterVertically) {
+            Tab.entries.forEach { t ->
+                val sel = t == current
+                Column(
+                    Modifier.weight(1f).height(66.dp).clickable { onSelect(t) }.semantics { contentDescription = t.label },
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                ) {
+                    Box(Modifier.size(52.dp, 30.dp).clip(RoundedCornerShape(15.dp)).background(if (sel) c.primarySoft else Color.Transparent),
+                        contentAlignment = Alignment.Center) {
+                        Icon(if (sel) t.selectedIcon else t.icon, null, tint = if (sel) c.primary else c.iconInactive, modifier = Modifier.size(22.dp))
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Text(t.label, style = LooinType.tiny, color = if (sel) c.primary else c.iconInactive)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel, padding: PaddingValues, openSheet: (Transaction) -> Unit) {
+private fun AppNavHost(
+    nav: NavHostController, state: UiState, vm: MainViewModel, padding: PaddingValues,
+    calendarDay: Long, onCalendarDay: (Long) -> Unit, openSheet: (Transaction) -> Unit,
+) {
     // 화면 전환은 애니메이션 없이 즉시 바꾼다(사용자 요청: 페이드 없이). 탭 이동·화면 열기·뒤로 가기 모두.
     NavHost(
         nav, startDestination = Tab.HOME.route,
@@ -188,33 +218,35 @@ private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None },
     ) {
-        composable(Tab.HOME.route) {
+        page(Tab.HOME.route) {
             HomeScreen(state, vm, padding, openSheet,
                 onAddTx = { d, t, planned -> nav.navigate(txRoute(date = d, type = t, status = if (planned) TransactionStatus.PLANNED else null)) },
                 onAddAccount = { nav.navigate("accountEdit") }, onOpenPlan = { nav.navigate(Tab.PLAN.route) },
                 onOpenCalendar = { nav.navigate(Tab.CALENDAR.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true } })
         }
-        composable(Tab.CALENDAR.route) { CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }) }
-        composable(Tab.PLAN.route) {
+        page(Tab.CALENDAR.route) {
+            CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }, selectedDays = calendarDay, onSelectDays = onCalendarDay)
+        }
+        page(Tab.PLAN.route) {
             PlanScreen(state, vm, padding, openSheet,
                 onAddPlanned = { nav.navigate(txRoute(date = it, type = TransactionType.EXPENSE, status = TransactionStatus.PLANNED)) },
                 onOpenRule = { nav.navigate("rule?id=${it ?: -1}") })
         }
-        composable(Tab.ASSETS.route) {
+        page(Tab.ASSETS.route) {
             AssetsScreen(state, padding, onOpenAccount = { nav.navigate("account/$it") }, onAddAccount = { nav.navigate("accountEdit") })
         }
-        composable(Tab.ANALYSIS.route) { AnalysisScreen(state, padding) }
-        composable("rule?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
+        page(Tab.ANALYSIS.route) { AnalysisScreen(state, padding) }
+        page("rule?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
             RecurringEditScreen(state, vm, entry.argLong("id").takeIf { it > 0 }, onClose = { nav.popBackStack() })
         }
-        composable("settings") {
+        page("settings") {
             SettingsScreen(state, vm, onBack = { nav.popBackStack() }, onOpenCategories = { nav.navigate("categories") },
                 onOpenCsvImport = { nav.navigate("csvImport") { launchSingleTop = true } })
         }
-        composable("csvImport") { com.looin.finance.ui.settings.CsvImportScreen(state, vm, onClose = { nav.popBackStack() }) }
-        composable("categories") { CategoryScreen(state, vm, onBack = { nav.popBackStack() }) }
-        composable("search") { SearchScreen(state, onBack = { nav.popBackStack() }, onOpenTx = openSheet) }
-        composable(
+        page("csvImport") { com.looin.finance.ui.settings.CsvImportScreen(state, vm, onClose = { nav.popBackStack() }) }
+        page("categories") { CategoryScreen(state, vm, onBack = { nav.popBackStack() }) }
+        page("search") { SearchScreen(state, onBack = { nav.popBackStack() }, onOpenTx = openSheet) }
+        page(
             "tx?id={id}&date={date}&type={type}&status={status}&account={account}&copy={copy}",
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType; defaultValue = -1L },
@@ -237,15 +269,31 @@ private fun AppNavHost(nav: NavHostController, state: UiState, vm: MainViewModel
                 copyFromId = a.argLong("copy").takeIf { it > 0 },
             )
         }
-        composable("account/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+        page("account/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
             val id = entry.argLong("id")
             AccountDetailScreen(state, vm, id, onBack = { nav.popBackStack() }, onEdit = { nav.navigate("accountEdit?id=$id") },
                 onOpenTx = openSheet, onAddTx = { nav.navigate(txRoute(type = it, account = id)) })
         }
-        composable("accountEdit?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
+        page("accountEdit?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
             AccountEditScreen(state, vm, entry.argLong("id").takeIf { it > 0 }, onDone = { nav.popBackStack() })
         }
     }
+}
+
+/**
+ * 화면 하나. 배경을 불투명하게 칠해, 전환 순간 이전 화면이 한 프레임이라도 비쳐 보이는 잔상을 막는다.
+ * (전환 애니메이션은 모두 없음)
+ */
+private fun NavGraphBuilder.page(
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    content: @Composable (NavBackStackEntry) -> Unit,
+) = composable(
+    route, arguments,
+    enterTransition = { EnterTransition.None }, exitTransition = { ExitTransition.None },
+    popEnterTransition = { EnterTransition.None }, popExitTransition = { ExitTransition.None },
+) { entry ->
+    Box(Modifier.fillMaxSize().background(Looin.colors.bg)) { content(entry) }
 }
 
 // 화면 이동 인자 읽기 (Android·PC 공용 SavedState API). 없으면 기본값.

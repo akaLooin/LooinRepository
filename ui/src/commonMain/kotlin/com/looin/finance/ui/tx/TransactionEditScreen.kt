@@ -1,5 +1,8 @@
 package com.looin.finance.ui.tx
 
+import com.looin.finance.core.model.Category
+import com.looin.finance.core.model.AccountType
+import com.looin.finance.ui.components.InputDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -106,6 +109,8 @@ fun TransactionEditScreen(
         var warnings by remember { mutableStateOf<List<String>>(emptyList()) }
         var pending by remember { mutableStateOf<Transaction?>(null) }
         var confirmDelete by remember { mutableStateOf(false) }
+        var newAccountFor by remember { mutableStateOf<String?>(null) }
+        var newCategory by remember { mutableStateOf(false) }
         val focus = remember { FocusRequester() }
 
         val showActualDate = existing?.completedDate != null && existing.completedDate != existing.date
@@ -144,7 +149,7 @@ fun TransactionEditScreen(
         }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = GUTTER),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             if (data.accounts.isEmpty()) Text("먼저 자산 탭에서 계좌를 등록하세요.", color = c.danger, style = LooinType.body)
             PillTabs(listOf(TransactionType.EXPENSE, TransactionType.INCOME, TransactionType.TRANSFER), type, { it.label }, onSelect = {
@@ -159,8 +164,27 @@ fun TransactionEditScreen(
                 }
             })
             AmountField(amountText, { amountText = it }, "금액", Modifier.focusRequester(focus), currency = currency, accent = accent)
-            UnderlineField(memo, { memo = it }, "메모", placeholder = "무엇에 썼나요? (선택)", accent = accent)
-
+            if (type != TransactionType.TRANSFER) {
+                val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SmallLabel("카테고리")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        data.categories.filter { it.kind == kind && (!it.archived || it.id == categoryId) }.forEach { cat ->
+                            ChipPill(cat.name, cat.id == categoryId, { categoryId = if (categoryId == cat.id) null else cat.id }, dot = Color(cat.colorArgb))
+                        }
+                        ChipPill("+ 카테고리", false, { newCategory = true })
+                    }
+                }
+            }
+            when (type) {
+                TransactionType.INCOME -> AccountChips("입금 계좌", activeAccounts, toId, { newAccountFor = "to" }) { toId = it }
+                TransactionType.EXPENSE -> AccountChips("출금 계좌", activeAccounts, fromId, { newAccountFor = "from" }) { fromId = it }
+                else -> {
+                    AccountChips("출금 계좌", activeAccounts, fromId, { newAccountFor = "from" }) { fromId = it; if (toId == it) toId = null }
+                    AccountChips("입금 계좌 (넣을 자산)", activeAccounts.filter { it.id != fromId }, toId, { newAccountFor = "to" }) { toId = it }
+                    SmallLabel("계좌 간 저축·이체는 소비로 계산하지 않아요. 넣을 자산이 없으면 '+ 새 계좌'로 바로 만들 수 있어요.")
+                }
+            }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallLabel("상태")
                 val statusOptions = if (existing != null) TransactionStatus.entries.toList() else listOf(TransactionStatus.COMPLETED, TransactionStatus.PLANNED)
@@ -177,26 +201,8 @@ fun TransactionEditScreen(
                     DateField("실제 처리일", completedDate ?: date, { completedDate = it })
                 }
             }
-            when (type) {
-                TransactionType.INCOME -> AccountChips("입금 계좌", activeAccounts, toId) { toId = it }
-                TransactionType.EXPENSE -> AccountChips("출금 계좌", activeAccounts, fromId) { fromId = it }
-                else -> {
-                    AccountChips("출금 계좌", activeAccounts, fromId) { fromId = it }
-                    AccountChips("입금 계좌", activeAccounts.filter { it.id != fromId }, toId) { toId = it }
-                    SmallLabel("계좌 간 이체·저축은 소비로 계산하지 않아요.")
-                }
-            }
-            if (type != TransactionType.TRANSFER) {
-                val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallLabel("카테고리")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        data.categories.filter { it.kind == kind && (!it.archived || it.id == categoryId) }.forEach { cat ->
-                            ChipPill(cat.name, cat.id == categoryId, { categoryId = if (categoryId == cat.id) null else cat.id }, dot = Color(cat.colorArgb))
-                        }
-                    }
-                }
-            }
+            UnderlineField(memo, { memo = it }, "메모", placeholder = "무엇에 썼나요? (선택)", accent = accent)
+
             errors.forEach { Text(it, color = c.danger, style = LooinType.body) }
             if (existing != null) SmallLabel("상태 ${existing.status.label} · 출처 ${existing.source.label}")
             Spacer(Modifier.height(16.dp))
@@ -212,19 +218,35 @@ fun TransactionEditScreen(
             ConfirmDialog("거래 삭제", "삭제하면 관련 잔고와 통계가 다시 계산돼요. 기록을 남기려면 '취소' 상태를 쓰세요.", "삭제",
                 { confirmDelete = false }, danger = true) { vm.deleteTransaction(existing.id, onClose) }
         }
+        newAccountFor?.let { which ->
+            val savingsDest = which == "to" && type == TransactionType.TRANSFER
+            InputDialog("새 계좌", "계좌 이름", "추가", { newAccountFor = null },
+                help = if (savingsDest) "저축 계좌로 만들어요(생활비 계산 제외, 잔고 0원). 자세한 설정은 자산 탭에서 바꿀 수 있어요."
+                else "입출금 계좌로 만들어요(잔고 0원). 자세한 설정은 자산 탭에서 바꿀 수 있어요.") { name ->
+                vm.addAccount(Account(name = name, type = if (savingsDest) AccountType.SAVINGS else AccountType.CHECKING,
+                    openingBalance = 0, includeInAvailable = !savingsDest)) { id -> if (which == "to") toId = id else fromId = id }
+            }
+        }
+        if (newCategory) {
+            val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
+            InputDialog("새 ${kind.label} 카테고리", "카테고리 이름", "추가", { newCategory = false }) { name ->
+                vm.addCategory(Category(name = name, kind = kind, colorArgb = nextCategoryColor(data.categories.size))) { categoryId = it }
+            }
+        }
         LaunchedEffect(Unit) { if (existing == null && source == null) runCatching { focus.requestFocus() } }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AccountChips(label: String, accounts: List<Account>, selected: Long?, onSelect: (Long) -> Unit) {
+private fun AccountChips(label: String, accounts: List<Account>, selected: Long?, onAddNew: () -> Unit, onSelect: (Long) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SmallLabel(label)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             accounts.forEach { a ->
                 ChipPill(if (a.currency == KRW) a.name else "${a.name} (${a.currency})", a.id == selected, { onSelect(a.id) })
             }
+            ChipPill("+ 새 계좌", false, onAddNew)
         }
     }
 }
@@ -233,3 +255,7 @@ private val DateSaver = Saver<LocalDate, Long>(save = { it.toEpochDays() }, rest
 private val NullableDateSaver = Saver<LocalDate?, Long>(
     save = { it?.toEpochDays() ?: Long.MIN_VALUE }, restore = { if (it == Long.MIN_VALUE) null else LocalDate.fromEpochDays(it) },
 )
+
+/** 새 카테고리 기본 색: 정해 둔 팔레트를 차례로 쓴다(카테고리 관리에서 바꿀 수 있음). */
+fun nextCategoryColor(index: Int): Long = com.looin.finance.ui.settings.CATEGORY_PALETTE.let { it[(index * 7) % it.size] }
+
