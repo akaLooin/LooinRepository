@@ -49,6 +49,7 @@ import com.looin.finance.ui.components.CoinMarker
 import com.looin.finance.ui.components.CompleteSheet
 import com.looin.finance.ui.components.EmptyHint
 import com.looin.finance.ui.components.AddRowButton
+import com.looin.finance.ui.components.AdaptiveColumns
 import com.looin.finance.ui.components.GUTTER
 import com.looin.finance.ui.components.OutlinePill
 import com.looin.finance.ui.components.PeriodSwitcher
@@ -140,11 +141,10 @@ fun CalendarScreen(
         "${w.year}년 ${w.month.number}월 ${(w.day - 1) / 7 + 1}주차"
     } else month.label
 
-    LazyColumn(
-        contentPadding = PaddingValues(start = GUTTER, end = GUTTER, top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding() + 96.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item {
+    // 넓은 화면(PC)에서는 왼쪽: 달력, 오른쪽: 고른 날의 거래.
+    val left = mutableListOf<@Composable () -> Unit>()
+    val right = mutableListOf<@Composable () -> Unit>()
+        left += {
             PeriodSwitcher(title, null, onPrev = { go(-1) }, onNext = { go(1) },
                 onToday = { anchorDays = state.today.toEpochDays(); onSelectDays(state.today.toEpochDays()) },
                 extra = { OutlinePill(if (weekMode) "월" else "주") { weekMode = !weekMode } })
@@ -153,18 +153,18 @@ fun CalendarScreen(
             Spacer(Modifier.height(8.dp))
             PillTabs(CalendarDisplay.entries, display, { it.label }, { ThemePrefs.chooseCalendarDisplay(it) })
         }
-        item {
+        left += {
             CalendarGrid(rangeStart, rangeEnd, selected, state.today, byDay, showAmounts = true, onSelect = { onSelectDays(it.toEpochDays()) },
                 display = display, balances = if (display == CalendarDisplay.BALANCE) balances else emptyMap())
         }
-        item {
+        left += {
             Row(Modifier.fillMaxWidth().clip(CircleShape).background(c.surfaceInput).padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 Summary("수입", sumIncome, c.income)
                 Summary("지출", sumExpense, c.expense)
                 Summary("예정 지출", sumPlanned, c.planned)
             }
         }
-        item {
+        right += {
             val dayTxs = (byDay[selected] ?: emptyList()).sortedWith(compareBy<Transaction> { it.status.ordinal }.thenBy { it.id })
             Section(selected.korean()) {
                 balances[selected]?.let { b ->
@@ -178,7 +178,7 @@ fun CalendarScreen(
                 AddRowButton("${selected.korean()} 수입·지출 추가", { onAddTx(selected) }, description = "이 날 거래 추가")
             }
         }
-    }
+        AdaptiveColumns(left, right, mobilePadding = PaddingValues(start = GUTTER, end = GUTTER, top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding() + 96.dp), spacing = 14.dp, leftWeight = 1.25f)
     completing?.let { tx ->
         CompleteSheet(tx, state.today, { completing = null }) { d, a -> completing = null; vm.completeTransaction(tx.id, d, a) }
     }

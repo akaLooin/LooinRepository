@@ -63,6 +63,7 @@ import com.looin.finance.ui.components.Section
 import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.TransactionRow
 import com.looin.finance.ui.components.Card
+import com.looin.finance.ui.components.AdaptiveColumns
 import com.looin.finance.ui.components.HBar
 import com.looin.finance.ui.components.TextAction
 import androidx.compose.foundation.border
@@ -132,12 +133,11 @@ fun HomeScreen(
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showAvailable by remember { mutableStateOf(false) }
 
-    LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 96.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    // 넓은 화면(PC)에서는 왼쪽: 요약·입력·거래, 오른쪽: 예산·잔고. 휴대폰에서는 이 순서대로 한 줄.
+    val left = mutableListOf<@Composable () -> Unit>()
+    val right = mutableListOf<@Composable () -> Unit>()
         // 1) 요약: 사용 가능 금액 · 기간 · 예산 사용 · 이번 기간 수입/소비/예정
-        item {
+        left += {
             Card {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("${period.basis.label} ${period.rangeLabel}", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.textSecondary,
@@ -174,7 +174,7 @@ fun HomeScreen(
         }
         // 백업 알림(필요할 때만)
         BackupReminder.message(txs, state.today, ThemePrefs.lastBackupDay, ThemePrefs.backupSnoozeUntil)?.let { msg ->
-            item {
+            left += {
                 Card {
                     Text(msg, style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.text)
                     SmallLabel("데이터는 이 기기에만 있어요. 휴대폰을 잃어버리거나 앱을 지우면 사라지니 백업 파일을 만들어 안전한 곳에 두세요.")
@@ -191,7 +191,7 @@ fun HomeScreen(
             }
         }
         // 2) 빠른 입력
-        item {
+        left += {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 QuickAdd("지출", c.expense, Modifier.weight(1f)) { onAddTx(null, TransactionType.EXPENSE, false) }
                 QuickAdd("수입", c.income, Modifier.weight(1f)) { onAddTx(null, TransactionType.INCOME, false) }
@@ -199,7 +199,7 @@ fun HomeScreen(
             }
         }
         // 3) 예정 거래
-        item {
+        left += {
             Section("예정 거래", dot = c.planned, onAdd = { onAddTx(null, TransactionType.EXPENSE, true) }, addLabel = "예정 거래 추가") {
                 if (upcoming.isEmpty()) EmptyHint("예정 거래가 없어요.")
                 upcoming.forEach { tx ->
@@ -209,7 +209,7 @@ fun HomeScreen(
             }
         }
         // 4) 최근 거래
-        item {
+        left += {
             Section("최근 거래", dot = c.expense, onAdd = { onAddTx(null, null, false) }, addLabel = "거래 추가",
                 trailing = { TextAction("캘린더 ›", onOpenCalendar, color = c.textMuted) }) {
                 if (recent.isEmpty()) EmptyHint("완료된 거래가 없어요. + 로 기록해 보세요.")
@@ -217,7 +217,7 @@ fun HomeScreen(
             }
         }
         // 5) 남은 예산
-        item {
+        right += {
             Section("남은 예산", dot = c.accent, onAdd = onOpenPlan, addLabel = "예산 관리") {
                 if (statuses.isEmpty()) EmptyHint("이번 기간 예산이 없어요. 추가를 눌러 돈 관리에서 만들어 보세요.")
                 statuses.forEach { s ->
@@ -240,7 +240,7 @@ fun HomeScreen(
             }
         }
         // 6) 잔고
-        item {
+        right += {
             Section("잔고", dot = c.income, onAdd = onAddAccount, addLabel = "계좌 추가") {
                 MetricRow("실제 보유 잔고", cash.total, cash)
                 MetricRow("전체 순자산", assets.netWorth, assets.netWorthBreakdown)
@@ -249,7 +249,7 @@ fun HomeScreen(
                 FieldGroup { DateField("예상 잔고 기준일", projectionDate, { projectionDate = it }) }
             }
         }
-    }
+        AdaptiveColumns(left, right, mobilePadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 96.dp))
 
     if (showAvailable) BreakdownSheet(available.breakdown) { showAvailable = false }
     completing?.let { tx ->

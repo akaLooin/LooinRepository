@@ -58,6 +58,15 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.savedstate.read
 import androidx.navigation.NavType
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
+import com.looin.finance.ui.components.LocalWide
+import com.looin.finance.ui.components.WIDE_MIN_WIDTH
+import kotlinx.coroutines.flow.Flow
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NamedNavArgument
 import androidx.compose.foundation.layout.fillMaxSize
@@ -116,8 +125,11 @@ private fun txRoute(
  * 앱 전체 화면(하단 탭 + 화면 이동 + 거래 메뉴 시트). Android·PC 가 같은 코드를 쓴다.
  * 테마([com.looin.finance.ui.theme.LooinTheme])와 플랫폼 구현([com.looin.finance.ui.platform])은 각 진입점이 감싸서 넣는다.
  */
+/** 키보드 단축키 등 화면 밖에서 오는 명령(PC). */
+enum class AppCommand { NEW_TRANSACTION, SEARCH, SETTINGS, BACK, TAB_HOME, TAB_CALENDAR, TAB_PLAN, TAB_ASSETS, TAB_ANALYSIS }
+
 @Composable
-fun LooinAppRoot(vm: MainViewModel) {
+fun LooinAppRoot(vm: MainViewModel, commands: Flow<AppCommand>? = null) {
     val c = Looin.colors
     val state by vm.state.collectAsStateWithLifecycle()
     val nav = rememberNavController()
@@ -135,11 +147,37 @@ fun LooinAppRoot(vm: MainViewModel) {
     // 캘린더에서 고른 날짜. + 버튼이 이 날짜로 새 거래를 연다(없으면 오늘).
     var calendarDay by rememberSaveable { mutableStateOf<Long?>(null) }
 
+    val goTab: (Tab) -> Unit = { t -> nav.navigate(t.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true; restoreState = true } }
+    val addTx: () -> Unit = {
+        val day = if (tab == Tab.CALENDAR) calendarDay?.let { LocalDate.fromEpochDays(it) } else null
+        nav.navigate(txRoute(date = day))
+    }
+    // 단축키(PC): Ctrl/⌘+N 새 거래, Ctrl/⌘+F 검색, Ctrl/⌘+, 설정, Esc 뒤로, Ctrl/⌘+1~5 탭
+    if (commands != null) LaunchedEffect(commands) {
+        commands.collect { cmd ->
+            if (AppLock.locked) return@collect
+            when (cmd) {
+                AppCommand.NEW_TRANSACTION -> addTx()
+                AppCommand.SEARCH -> nav.navigate("search") { launchSingleTop = true }
+                AppCommand.SETTINGS -> nav.navigate("settings") { launchSingleTop = true }
+                AppCommand.BACK -> if (sheetTx != null) sheetTx = null else if (tab == null) nav.popBackStack()
+                AppCommand.TAB_HOME -> goTab(Tab.HOME)
+                AppCommand.TAB_CALENDAR -> goTab(Tab.CALENDAR)
+                AppCommand.TAB_PLAN -> goTab(Tab.PLAN)
+                AppCommand.TAB_ASSETS -> goTab(Tab.ASSETS)
+                AppCommand.TAB_ANALYSIS -> goTab(Tab.ANALYSIS)
+            }
+        }
+    }
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val wide = maxWidth >= WIDE_MIN_WIDTH
+    CompositionLocalProvider(LocalWide provides wide) {
     Scaffold(
         containerColor = c.bg,
         snackbarHost = {
             // 편집 화면에서는 하단 저장 버튼을 가리지 않도록 스낵바를 위로 올린다.
-            SnackbarHost(snackbar, Modifier.padding(bottom = if (tab == null) 84.dp else 0.dp)) { data ->
+            SnackbarHost(snackbar, Modifier.padding(bottom = if (tab == null) 84.dp else 0.dp).widthIn(max = 560.dp)) { data ->
                 // 옆으로 밀면 밀리면서 사라진다(양방향).
                 val dismissState = rememberSwipeToDismissBoxState()
                 LaunchedEffect(dismissState.currentValue) {
@@ -151,7 +189,7 @@ fun LooinAppRoot(vm: MainViewModel) {
             }
         },
         topBar = {
-            if (tab != null) Row(
+            if (tab != null && !wide) Row(
                 Modifier.fillMaxWidth().background(c.bg).statusBarsPadding().height(56.dp).padding(start = GUTTER, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -162,19 +200,32 @@ fun LooinAppRoot(vm: MainViewModel) {
                     contentAlignment = Alignment.Center) { Icon(Icons.Filled.Menu, null, tint = c.text) }
             }
         },
-        bottomBar = { if (tab != null) BottomNav(tab) { t -> nav.navigate(t.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true; restoreState = true } } },
+        bottomBar = { if (tab != null && !wide) BottomNav(tab, goTab) },
         floatingActionButton = {
-            if (tab == Tab.HOME || tab == Tab.CALENDAR) Box(
-                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(c.primary).clickable {
-                    val day = if (tab == Tab.CALENDAR) calendarDay?.let { LocalDate.fromEpochDays(it) } else null
-                    nav.navigate(txRoute(date = day))
-                }
+            if (!wide && (tab == Tab.HOME || tab == Tab.CALENDAR)) Box(
+                Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(c.primary).clickable { addTx() }
                     .semantics { contentDescription = "거래 추가" },
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Filled.Add, null, tint = c.onPrimary, modifier = Modifier.size(28.dp)) }
         },
     ) { padding ->
-        AppNavHost(nav, state, vm, padding, calendarDay ?: state.today.toEpochDays(), { calendarDay = it }) { sheetTx = it }
+        val host: @Composable (PaddingValues) -> Unit = { p ->
+            AppNavHost(nav, state, vm, p, calendarDay ?: state.today.toEpochDays(), { calendarDay = it }) { sheetTx = it }
+        }
+        if (!wide) host(padding)
+        else Row(Modifier.fillMaxSize().padding(padding)) {
+            // PC·태블릿: 왼쪽 사이드바 + 오른쪽 내용(탭 화면은 위에 제목 줄)
+            Sidebar(tab, backStack?.destination?.route, commands != null, goTab, addTx,
+                onSearch = { nav.navigate("search") { launchSingleTop = true } },
+                onSettings = { nav.navigate("settings") { launchSingleTop = true } })
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                if (tab != null) Text(if (tab == Tab.HOME) "홈" else tab.label, style = LooinType.monthTitle.copy(fontSize = 22.sp), color = c.text,
+                    modifier = Modifier.statusBarsPadding().padding(start = 24.dp, top = 20.dp, bottom = 12.dp))
+                Box(Modifier.weight(1f)) { host(PaddingValues(0.dp)) }
+            }
+        }
+    }
+    }
     }
 
     if (AppLock.locked) LockScreen()
@@ -188,6 +239,60 @@ fun LooinAppRoot(vm: MainViewModel) {
             onOpenRule = { nav.navigate("rule?id=$it") })
     }
 }
+
+/**
+ * 사이드바(넓은 화면): 앱 이름, "+ 거래 추가", 탭 5개, 아래에 검색·설정.
+ * 단축키를 받는 앱(PC)이면 단축키를 함께 적어 둔다. 태블릿에서는 숨긴다.
+ */
+@Composable
+private fun Sidebar(
+    current: Tab?, route: String?, showShortcuts: Boolean, onSelect: (Tab) -> Unit, onAdd: () -> Unit, onSearch: () -> Unit, onSettings: () -> Unit,
+) {
+    val c = Looin.colors
+    Row(Modifier.fillMaxHeight()) {
+        Column(Modifier.width(232.dp).fillMaxHeight().background(c.card).statusBarsPadding().navigationBarsPadding().padding(horizontal = 14.dp, vertical = 18.dp)) {
+            Text("루인 가계부", style = LooinType.monthTitle, color = c.text, modifier = Modifier.padding(start = 8.dp, bottom = 18.dp))
+            Row(
+                Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(12.dp)).background(c.primary).clickable(onClick = onAdd)
+                    .semantics(mergeDescendants = true) { contentDescription = "거래 추가" }.padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Filled.Add, null, tint = c.onPrimary, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("거래 추가", style = LooinType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = c.onPrimary,
+                    modifier = Modifier.weight(1f))
+                if (showShortcuts) Text(SHORTCUT_MOD + "N", style = LooinType.tiny, color = c.onPrimary.copy(alpha = 0.7f))
+            }
+            Spacer(Modifier.height(16.dp))
+            Tab.entries.forEachIndexed { i, t ->
+                SideItem(if (t == current) t.selectedIcon else t.icon, t.label, t == current, if (showShortcuts) SHORTCUT_MOD + "${i + 1}" else "") { onSelect(t) }
+            }
+            Spacer(Modifier.weight(1f))
+            SideItem(Icons.Filled.Search, "검색", route == "search", if (showShortcuts) SHORTCUT_MOD + "F" else "", onSearch)
+            SideItem(Icons.Filled.Menu, "설정", route == "settings", if (showShortcuts) SHORTCUT_MOD + "," else "", onSettings)
+        }
+        Box(Modifier.width(1.dp).fillMaxHeight().background(c.cardBorder))
+    }
+}
+
+@Composable
+private fun SideItem(icon: ImageVector, label: String, selected: Boolean, shortcut: String, onClick: () -> Unit) {
+    val c = Looin.colors
+    Row(
+        Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(10.dp)).background(if (selected) c.primarySoft else Color.Transparent)
+            .clickable(onClick = onClick).semantics(mergeDescendants = true) { contentDescription = label }.padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = if (selected) c.primary else c.textMuted, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(label, style = LooinType.body.copy(fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium),
+            color = if (selected) c.primary else c.text, modifier = Modifier.weight(1f))
+        Text(shortcut, style = LooinType.tiny, color = c.textMuted)
+    }
+}
+
+/** 단축키 표시용 접두(Ctrl). macOS 는 PC 앱 진입점이 ⌘ 로 바꾼다. */
+var SHORTCUT_MOD = "Ctrl+"
 
 /** 하단 탭: 카드 바탕 + 위 구분선. 선택한 탭은 아이콘 뒤에 주 색을 옅게 깐 알약으로 표시. */
 @Composable
@@ -227,13 +332,13 @@ private fun AppNavHost(
         popEnterTransition = { EnterTransition.None },
         popExitTransition = { ExitTransition.None },
     ) {
-        page(Tab.HOME.route) {
+        page(Tab.HOME.route, wideMax = null) {
             HomeScreen(state, vm, padding, openSheet,
                 onAddTx = { d, t, planned -> nav.navigate(txRoute(date = d, type = t, status = if (planned) TransactionStatus.PLANNED else null)) },
                 onAddAccount = { nav.navigate("accountEdit") }, onOpenPlan = { nav.navigate(Tab.PLAN.route) },
                 onOpenCalendar = { nav.navigate(Tab.CALENDAR.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true } })
         }
-        page(Tab.CALENDAR.route) {
+        page(Tab.CALENDAR.route, wideMax = null) {
             CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }, selectedDays = calendarDay, onSelectDays = onCalendarDay)
         }
         page(Tab.PLAN.route) {
@@ -301,13 +406,18 @@ private fun AppNavHost(
 private fun NavGraphBuilder.page(
     route: String,
     arguments: List<NamedNavArgument> = emptyList(),
+    /** 넓은 화면에서 가운데에 둘 최대 폭(null = 두 칸 화면처럼 전체 폭 사용). */
+    wideMax: Dp? = 760.dp,
     content: @Composable (NavBackStackEntry) -> Unit,
 ) = composable(
     route, arguments,
     enterTransition = { EnterTransition.None }, exitTransition = { ExitTransition.None },
     popEnterTransition = { EnterTransition.None }, popExitTransition = { ExitTransition.None },
 ) { entry ->
-    Box(Modifier.fillMaxSize().background(Looin.colors.bg)) { content(entry) }
+    val wide = LocalWide.current
+    Box(Modifier.fillMaxSize().background(Looin.colors.bg), contentAlignment = Alignment.TopCenter) {
+        Box(if (wide && wideMax != null) Modifier.widthIn(max = wideMax).fillMaxHeight() else Modifier.fillMaxSize()) { content(entry) }
+    }
 }
 
 // 화면 이동 인자 읽기 (Android·PC 공용 SavedState API). 없으면 기본값.
