@@ -17,3 +17,7 @@ captures/
 keystore.properties
 *.jks
 *.keystore
+
+# Python 캐시
+__pycache__/
+*.pyc
