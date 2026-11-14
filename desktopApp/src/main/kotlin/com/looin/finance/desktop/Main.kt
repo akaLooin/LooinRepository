@@ -105,7 +105,7 @@ fun DesktopRoot(vm: MainViewModel, files: FileActions, commands: Flow<AppCommand
             LocalFileActions provides files,
         ) {
             Box(Modifier.fillMaxSize().background(Looin.colors.bg)) {
-                LooinAppRoot(vm, commands)
+                LooinAppRoot(vm, commands, showShortcutHints = true)
             }
         }
     }

@@ -56,6 +56,29 @@ object NoReminders : ReminderControl {
     override fun setEnabled(on: Boolean) = Unit
 }
 
+/**
+ * 자동 백업(Android): 사용자가 고른 폴더에 정기적으로 백업 파일을 쓴다. 지원하지 않으면 [supported] = false.
+ */
+interface AutoBackupControl {
+    val supported: Boolean
+    /** 고른 폴더 이름. null 이면 꺼짐. */
+    val folderLabel: String?
+    /** 마지막 실행 결과 문구(없으면 null). */
+    val lastResult: String?
+    fun chooseFolder()
+    fun disable()
+    fun runNow()
+}
+
+object NoAutoBackup : AutoBackupControl {
+    override val supported = false
+    override val folderLabel: String? = null
+    override val lastResult: String? = null
+    override fun chooseFolder() = Unit
+    override fun disable() = Unit
+    override fun runNow() = Unit
+}
+
 enum class AppPlatform(val label: String) { ANDROID("Android"), DESKTOP("PC"), IOS("iOS") }
 
 data class AppInfo(val versionName: String, val platform: AppPlatform)
@@ -63,3 +86,4 @@ data class AppInfo(val versionName: String, val platform: AppPlatform)
 val LocalAppInfo = staticCompositionLocalOf { AppInfo("dev", AppPlatform.ANDROID) }
 val LocalFileActions = staticCompositionLocalOf<FileActions> { NoFileActions }
 val LocalReminderControl = staticCompositionLocalOf<ReminderControl> { NoReminders }
+val LocalAutoBackup = staticCompositionLocalOf<AutoBackupControl> { NoAutoBackup }

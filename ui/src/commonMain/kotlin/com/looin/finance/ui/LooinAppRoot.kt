@@ -67,6 +67,8 @@ import androidx.compose.ui.unit.sp
 import com.looin.finance.ui.components.LocalWide
 import com.looin.finance.ui.components.WIDE_MIN_WIDTH
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.snapshotFlow
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NamedNavArgument
 import androidx.compose.foundation.layout.fillMaxSize
@@ -125,11 +127,16 @@ private fun txRoute(
  * 앱 전체 화면(하단 탭 + 화면 이동 + 거래 메뉴 시트). Android·PC 가 같은 코드를 쓴다.
  * 테마([com.looin.finance.ui.theme.LooinTheme])와 플랫폼 구현([com.looin.finance.ui.platform])은 각 진입점이 감싸서 넣는다.
  */
-/** 키보드 단축키 등 화면 밖에서 오는 명령(PC). */
-enum class AppCommand { NEW_TRANSACTION, SEARCH, SETTINGS, BACK, TAB_HOME, TAB_CALENDAR, TAB_PLAN, TAB_ASSETS, TAB_ANALYSIS }
+/** 화면 밖에서 오는 명령: PC 키보드 단축키, Android 앱 바로가기·위젯. */
+enum class AppCommand { NEW_TRANSACTION, NEW_EXPENSE, NEW_INCOME, SEARCH, SETTINGS, BACK, TAB_HOME, TAB_CALENDAR, TAB_PLAN, TAB_ASSETS, TAB_ANALYSIS }
 
 @Composable
-fun LooinAppRoot(vm: MainViewModel, commands: Flow<AppCommand>? = null) {
+fun LooinAppRoot(
+    vm: MainViewModel,
+    commands: Flow<AppCommand>? = null,
+    /** 사이드바에 키보드 단축키를 적어 둘지(PC 만). */
+    showShortcutHints: Boolean = false,
+) {
     val c = Looin.colors
     val state by vm.state.collectAsStateWithLifecycle()
     val nav = rememberNavController()
@@ -154,10 +161,14 @@ fun LooinAppRoot(vm: MainViewModel, commands: Flow<AppCommand>? = null) {
     }
     // 단축키(PC): Ctrl/⌘+N 새 거래, Ctrl/⌘+F 검색, Ctrl/⌘+, 설정, Esc 뒤로, Ctrl/⌘+1~5 탭
     if (commands != null) LaunchedEffect(commands) {
+        nav.currentBackStackEntryFlow.first() // 화면 이동 준비(첫 화면)가 끝난 뒤에 명령을 받는다
         commands.collect { cmd ->
-            if (AppLock.locked) return@collect
+            // 잠겨 있으면 풀릴 때까지 기다렸다가 실행(바로가기로 열었을 때 잠금 화면 뒤로 가지 않게)
+            if (AppLock.locked) snapshotFlow { AppLock.locked }.first { !it }
             when (cmd) {
                 AppCommand.NEW_TRANSACTION -> addTx()
+                AppCommand.NEW_EXPENSE -> nav.navigate(txRoute(type = TransactionType.EXPENSE))
+                AppCommand.NEW_INCOME -> nav.navigate(txRoute(type = TransactionType.INCOME))
                 AppCommand.SEARCH -> nav.navigate("search") { launchSingleTop = true }
                 AppCommand.SETTINGS -> nav.navigate("settings") { launchSingleTop = true }
                 AppCommand.BACK -> if (sheetTx != null) sheetTx = null else if (tab == null) nav.popBackStack()
@@ -215,7 +226,7 @@ fun LooinAppRoot(vm: MainViewModel, commands: Flow<AppCommand>? = null) {
         if (!wide) host(padding)
         else Row(Modifier.fillMaxSize().padding(padding)) {
             // PC·태블릿: 왼쪽 사이드바 + 오른쪽 내용(탭 화면은 위에 제목 줄)
-            Sidebar(tab, backStack?.destination?.route, commands != null, goTab, addTx,
+            Sidebar(tab, backStack?.destination?.route, showShortcutHints, goTab, addTx,
                 onSearch = { nav.navigate("search") { launchSingleTop = true } },
                 onSettings = { nav.navigate("settings") { launchSingleTop = true } })
             Column(Modifier.weight(1f).fillMaxHeight()) {

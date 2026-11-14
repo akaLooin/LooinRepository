@@ -99,6 +99,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.biometric) // 앱 잠금: 지문·얼굴 인증
+    implementation(libs.androidx.documentfile) // 자동 백업: 사용자가 고른 폴더에 쓰기
+    implementation(libs.androidx.glance.appwidget) // 홈 화면 위젯
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
@@ -114,6 +116,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.room.testing)
     testImplementation(libs.androidx.work.testing)
+    testImplementation(libs.androidx.glance.testing)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)

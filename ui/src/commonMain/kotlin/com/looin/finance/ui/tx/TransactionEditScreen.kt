@@ -1,5 +1,6 @@
 package com.looin.finance.ui.tx
 
+import com.looin.finance.core.calc.MemoSuggest
 import com.looin.finance.core.model.Category
 import com.looin.finance.core.model.AccountType
 import com.looin.finance.ui.components.InputDialog
@@ -111,6 +112,7 @@ fun TransactionEditScreen(
         var confirmDelete by remember { mutableStateOf(false) }
         var newAccountFor by remember { mutableStateOf<String?>(null) }
         var newCategory by remember { mutableStateOf(false) }
+        var memoEdited by remember { mutableStateOf(false) }
         val focus = remember { FocusRequester() }
 
         val showActualDate = existing?.completedDate != null && existing.completedDate != existing.date
@@ -201,7 +203,21 @@ fun TransactionEditScreen(
                     DateField("실제 처리일", completedDate ?: date, { completedDate = it })
                 }
             }
-            UnderlineField(memo, { memo = it }, "메모", placeholder = "무엇에 썼나요? (선택)", accent = accent)
+            UnderlineField(memo, { memo = it; memoEdited = true }, "메모", placeholder = "무엇에 썼나요? (선택)", accent = accent)
+            // 예전에 쓴 메모 추천: 누르면 메모와 그때의 카테고리·계좌(금액이 비어 있으면 금액도)를 채운다
+            val suggestions = if (memoEdited) MemoSuggest.suggest(data.transactions, memo, type) else emptyList()
+            if (suggestions.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                suggestions.forEach { sug ->
+                    val cat = sug.categoryId?.let { data.categoryById[it] }?.takeIf { !it.archived }
+                    ChipPill(sug.memo + (cat?.let { " · ${it.name}" } ?: ""), false, {
+                        memo = sug.memo; memoEdited = false
+                        if (type != TransactionType.TRANSFER && cat != null) categoryId = cat.id
+                        val acc = sug.accountId?.takeIf { id -> activeAccounts.any { it.id == id && !it.archived } }
+                        if (acc != null) { if (type == TransactionType.INCOME) toId = acc else fromId = acc }
+                        if (amountText.isBlank()) amountText = amountToInput(sug.lastAmount, currency)
+                    }, dot = cat?.let { Color(it.colorArgb) })
+                }
+            }
 
             errors.forEach { Text(it, color = c.danger, style = LooinType.body) }
             if (existing != null) SmallLabel("상태 ${existing.status.label} · 출처 ${existing.source.label}")

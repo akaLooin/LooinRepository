@@ -52,6 +52,7 @@ import com.looin.finance.ui.theme.ThemePrefs
 import com.looin.finance.ui.platform.LocalAppInfo
 import com.looin.finance.ui.platform.LocalFileActions
 import com.looin.finance.ui.platform.FileKind
+import com.looin.finance.ui.platform.LocalAutoBackup
 import com.looin.finance.ui.platform.LocalReminderControl
 import com.looin.finance.ui.components.ToggleRow
 import com.looin.finance.ui.components.TextAction
@@ -177,6 +178,21 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
                 ValueRow("백업에서 복원", "전체 교체", onClick = { files.openText { read -> pendingRestore = read } }, valueColor = c.danger)
             }
             SmallLabel("복원하면 지금 데이터가 백업 내용으로 모두 바뀌어요. 파일을 먼저 검사하고, 문제가 있으면 아무것도 바꾸지 않아요.")
+            val auto = LocalAutoBackup.current
+            if (auto.supported) {
+                FieldGroup {
+                    ToggleRow("자동 백업", auto.folderLabel?.let { "매주 '$it' 폴더에 저장 · 최근 5개 보관" }
+                        ?: "폴더를 고르면 매주 백업 파일을 저장해요(구글 드라이브 폴더도 가능)",
+                        auto.folderLabel != null, { on -> if (on) auto.chooseFolder() else auto.disable() })
+                    if (auto.folderLabel != null) {
+                        FieldDivider()
+                        ValueRow("지금 자동 백업", auto.lastResult ?: "", onClick = { auto.runNow() },
+                            valueColor = if (auto.lastResult?.startsWith("실패") == true) c.danger else Color.Unspecified)
+                        FieldDivider()
+                        ValueRow("폴더 바꾸기", auto.folderLabel ?: "", onClick = { auto.chooseFolder() })
+                    }
+                }
+            }
             FieldGroup {
                 ValueRow("CSV로 내보내기", "거래 ${state.data.transactions.size}건", onClick = {
                     files.saveText("looin-transactions-${state.today}.csv", FileKind.CSV) { write -> vm.exportCsv(write) }

@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">루인 가계부</string>
     <string name="app_name_preview">루인 가계부 β</string>
+    <string name="widget_description">생활비로 사용 가능한 금액과 이번 기간 소비, 빠른 입력</string>
 </resources>
