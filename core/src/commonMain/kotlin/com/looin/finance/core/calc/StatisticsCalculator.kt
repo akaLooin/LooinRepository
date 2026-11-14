@@ -1,5 +1,6 @@
 package com.looin.finance.core.calc
 
+import kotlinx.datetime.LocalDate
 import com.looin.finance.core.model.Budget
 import com.looin.finance.core.model.KRW
 import com.looin.finance.core.model.Transaction
@@ -53,6 +54,35 @@ object StatisticsCalculator {
             incomeByCategory = completed.filter { it.type == TransactionType.INCOME }
                 .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.amount } },
         )
+    }
+
+    /**
+     * 기간 안 소비 흐름(완료된 원화 지출, 실제 처리일 기준).
+     * [cumulative] 는 기간 첫날부터 오늘(지난 기간이면 마지막 날)까지 날마다 누적 소비.
+     * 예산이 있으면 고르게 쓴다고 가정한 "오늘까지 예상 사용액"과 차이를 함께 준다(+ = 예상보다 빨리 씀).
+     * 예산: 전체 생활비 예산이 있으면 그것, 없으면 카테고리 예산 합계.
+     */
+    data class SpendingPace(
+        val days: Int,
+        val cumulative: List<Long>,
+        val budget: Long?,
+        val expectedByNow: Long?,
+        val diff: Long?,
+    )
+
+    fun pace(period: Period, transactions: List<Transaction>, budgets: List<Budget>, today: LocalDate): SpendingPace {
+        val days = (period.endExclusive.toEpochDays() - period.start.toEpochDays()).toInt()
+        val elapsed = (today.toEpochDays() - period.start.toEpochDays() + 1).toInt().coerceIn(0, days)
+        val byDay = LongArray(days)
+        transactionsIn(period, transactions)
+            .filter { it.isCompleted && it.type == TransactionType.EXPENSE && it.currency == KRW }
+            .forEach { byDay[(it.effectiveDate.toEpochDays() - period.start.toEpochDays()).toInt()] += it.amount }
+        var run = 0L
+        val cumulative = (0 until elapsed).map { run += byDay[it]; run }
+        val pb = BudgetCalculator.budgetsFor(budgets, period)
+        val budget = (pb.firstOrNull { it.categoryId == null }?.amount ?: pb.sumOf { it.amount }).takeIf { it > 0 }
+        val expected = budget?.let { it * elapsed / days }
+        return SpendingPace(days, cumulative, budget, expected, expected?.let { (cumulative.lastOrNull() ?: 0) - it })
     }
 
     /** 최근 [count]개 기간 추이(오래된 순). */

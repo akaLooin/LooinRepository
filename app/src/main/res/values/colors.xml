@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1C3354</color>
+    <!-- 앱 배경(ui Theme.kt LightTokens.bg / DarkTokens.bg) -->
+    <color name="window_background">#F2F4F7</color>
+    <!-- 시작 화면 바탕: 아이콘 바탕과 같은 네이비 -->
+    <color name="splash_background">#1C3354</color>
 </resources>

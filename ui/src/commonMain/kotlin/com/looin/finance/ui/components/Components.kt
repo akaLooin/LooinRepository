@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,6 +71,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
@@ -85,6 +88,7 @@ import com.looin.finance.core.model.TransactionStatus
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.money.Currencies
 import com.looin.finance.core.money.MoneyFormat
+import com.looin.finance.core.money.AmountExpression
 import com.looin.finance.data.FinanceData
 import com.looin.finance.ui.theme.AmountStyle
 import com.looin.finance.ui.theme.Looin
@@ -645,8 +649,11 @@ fun UnderlineField(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
             Box(Modifier.weight(1f)) {
                 if (value.isEmpty() && placeholder.isNotEmpty()) Text(placeholder, style = textStyle, color = c.textPlaceholder)
+                // 앱이 값을 바꾸면(연산자 버튼·추천 선택 등) 커서를 끝으로 옮긴다. 직접 입력은 커서 위치 그대로.
+                var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+                if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
                 BasicTextField(
-                    value = value, onValueChange = onValueChange, singleLine = singleLine,
+                    value = field, onValueChange = { v -> field = v; if (v.text != value) onValueChange(v.text) }, singleLine = singleLine,
                     textStyle = textStyle.copy(color = c.text), cursorBrush = SolidColor(c.text),
                     keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                     visualTransformation = visualTransformation,
@@ -659,7 +666,12 @@ fun UnderlineField(
     }
 }
 
-/** 금액 입력. 숫자(및 소수 통화의 '.')만 받는다. */
+/**
+ * 금액 입력. 숫자(및 소수 통화의 '.')만 받는다.
+ * [calculator] = true 면 + − × ÷ 계산식도 받는다: 아래 연산자 버튼, 결과 미리보기("= 15,500원"), [=] 로 결과 넣기.
+ * 저장할 때는 [com.looin.finance.core.money.AmountExpression.parse] 로 읽는다.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AmountField(
     text: String,
@@ -670,20 +682,61 @@ fun AmountField(
     allowNegative: Boolean = false,
     isError: Boolean = false,
     accent: Color = Color.Unspecified,
+    calculator: Boolean = false,
 ) {
     val decimals = Currencies.of(currency).decimals
-    UnderlineField(
-        value = text,
-        onValueChange = { v ->
-            val filtered = v.filterIndexed { i, ch -> ch.isDigit() || (ch == '.' && decimals > 0) || (ch == '-' && allowNegative && i == 0) }
-            if (filtered.count { it == '.' } <= 1 && filtered.length <= 16) onTextChange(filtered)
-        },
-        label = label, modifier = modifier, placeholder = "0",
-        textStyle = LooinType.bigAmount.copy(fontSize = LooinType.bigAmount.fontSize),
-        keyboardType = if (decimals > 0) KeyboardType.Decimal else KeyboardType.Number,
-        visualTransformation = ThousandsTransformation,
-        suffix = Currencies.of(currency).symbol, isError = isError, accent = accent,
-    )
+    val isExpr = calculator && AmountExpression.isExpression(text)
+    Column {
+        UnderlineField(
+            modifier = modifier, // 포커스 등은 입력 칸에
+            value = text,
+            onValueChange = { v ->
+                if (calculator) {
+                    val n = AmountExpression.normalize(v)
+                    val ok = n.all { it.isDigit() || it in "+-×÷" || (it == '.' && decimals > 0) }
+                    if (ok && n.length <= 40) onTextChange(n)
+                } else {
+                    val filtered = v.filterIndexed { i, ch -> ch.isDigit() || (ch == '.' && decimals > 0) || (ch == '-' && allowNegative && i == 0) }
+                    if (filtered.count { it == '.' } <= 1 && filtered.length <= 16) onTextChange(filtered)
+                }
+            },
+            label = label, placeholder = "0",
+            textStyle = LooinType.bigAmount.copy(fontSize = if (isExpr) LooinType.bigAmount.fontSize * 0.75f else LooinType.bigAmount.fontSize),
+            keyboardType = if (decimals > 0) KeyboardType.Decimal else KeyboardType.Number,
+            // 계산식은 그대로, 숫자 하나면 천 단위 쉼표
+            visualTransformation = if (isExpr) VisualTransformation.None else ThousandsTransformation,
+            suffix = Currencies.of(currency).symbol, isError = isError || (isExpr && AmountExpression.parse(text, currency) == null), accent = accent,
+        )
+        if (calculator) {
+            val c = Looin.colors
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                listOf('+' to "더하기", '-' to "빼기", '×' to "곱하기", '÷' to "나누기").forEach { (op, name) ->
+                    OpKey(if (op == '-') "−" else "$op", name) {
+                        if (text.isNotEmpty()) onTextChange((if (text.last() in "+-×÷") text.dropLast(1) else text) + op)
+                    }
+                    Spacer(Modifier.width(6.dp))
+                }
+                val result = if (isExpr) AmountExpression.parse(text, currency) else null
+                if (isExpr) {
+                    OpKey("=", "계산 결과 넣기", strong = true) { result?.let { onTextChange(amountToInput(it, currency)) } }
+                    Spacer(Modifier.width(10.dp))
+                    Text(if (result != null) "= ${MoneyFormat.format(result, currency)}" else "식을 확인하세요",
+                        style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = if (result != null) c.textSecondary else c.danger, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OpKey(label: String, description: String, strong: Boolean = false, onClick: () -> Unit) {
+    val c = Looin.colors
+    Box(
+        Modifier.size(40.dp, 34.dp).clip(RoundedCornerShape(10.dp)).background(if (strong) c.primary else c.surface)
+            .clickable(onClick = onClick).semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) { Text(label, style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = if (strong) c.onPrimary else c.text) }
 }
 
 fun amountToInput(amount: Long, currency: String): String = MoneyFormat.number(amount, currency).replace(",", "")
@@ -857,7 +910,7 @@ fun CompleteDialog(tx: Transaction, today: LocalDate, onDismiss: () -> Unit, onC
 fun CompleteForm(tx: Transaction, today: LocalDate, onConfirm: (LocalDate, Long) -> Unit) {
     var date by remember { mutableStateOf(if (tx.date < today) tx.date else today) }
     var text by remember { mutableStateOf(amountToInput(tx.amount, tx.currency)) }
-    val amount = MoneyFormat.parse(text, tx.currency)
+    val amount = AmountExpression.parse(text, tx.currency)
     val error = when {
         amount == null || amount <= 0 -> "금액을 확인하세요"
         date > today -> "실제 처리일은 오늘 이후일 수 없습니다"
@@ -865,7 +918,7 @@ fun CompleteForm(tx: Transaction, today: LocalDate, onConfirm: (LocalDate, Long)
     }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SmallLabel("예정일 ${tx.date.korean()} · 실제 금액과 날짜가 다르면 고쳐 주세요")
-        AmountField(text, { text = it }, "실제 금액", currency = tx.currency, isError = amount == null, accent = typeColor(tx.type))
+        AmountField(text, { text = it }, "실제 금액", currency = tx.currency, isError = amount == null, accent = typeColor(tx.type), calculator = true)
         FieldGroup { DateField("실제 처리일", date, { date = it }) }
         if (error != null) SmallLabel(error, color = Looin.colors.danger)
         PrimaryButton("완료", { onConfirm(date, amount!!) }, enabled = error == null, strong = true)

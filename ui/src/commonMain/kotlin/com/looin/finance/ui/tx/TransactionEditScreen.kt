@@ -1,6 +1,7 @@
 package com.looin.finance.ui.tx
 
 import com.looin.finance.core.calc.MemoSuggest
+import com.looin.finance.core.money.AmountExpression
 import com.looin.finance.core.model.Category
 import com.looin.finance.core.model.AccountType
 import com.looin.finance.ui.components.InputDialog
@@ -120,7 +121,7 @@ fun TransactionEditScreen(
         val accent = categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: typeColor(type)
 
         fun build(): Transaction? {
-            val amount = MoneyFormat.parse(amountText, currency) ?: run { errors = listOf("금액을 입력하세요."); return null }
+            val amount = AmountExpression.parse(amountText, currency) ?: run { errors = listOf("금액을 확인하세요."); return null }
             val isCompleted = status == TransactionStatus.COMPLETED
             return Transaction(
                 id = existing?.id ?: 0, type = type, status = status, amount = amount, currency = currency, date = date,
@@ -165,7 +166,7 @@ fun TransactionEditScreen(
                     }
                 }
             })
-            AmountField(amountText, { amountText = it }, "금액", Modifier.focusRequester(focus), currency = currency, accent = accent)
+            AmountField(amountText, { amountText = it }, "금액", Modifier.focusRequester(focus), currency = currency, accent = accent, calculator = true)
             if (type != TransactionType.TRANSFER) {
                 val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

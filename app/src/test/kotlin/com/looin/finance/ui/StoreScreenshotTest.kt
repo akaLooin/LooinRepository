@@ -101,7 +101,7 @@ class StoreScreenshotTest {
         rule.waitUntilAtLeastOneExists(hasText("순자산"), 10_000)
         shot("4_assets")
         rule.onAllNodesWithText("분석").onFirst().performClick()
-        rule.waitUntilAtLeastOneExists(hasText("카테고리별 소비"), 10_000)
+        rule.waitUntilAtLeastOneExists(hasText("소비 흐름"), 10_000)
         shot("5_analysis")
         rule.onNodeWithContentDescription("거래 검색").performClick()
         rule.waitUntilAtLeastOneExists(hasText("메모, 카테고리, 계좌, 금액"), 10_000)

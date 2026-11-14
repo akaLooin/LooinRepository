@@ -46,6 +46,7 @@ import com.looin.finance.ui.components.PillTabs
 import com.looin.finance.ui.components.Section
 import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.theme.Looin
+import androidx.compose.ui.text.font.FontWeight
 import com.looin.finance.ui.theme.LooinType
 
 /** 기본 분석. 같은 원본 거래를 달력 기준·월급일 기준으로 바꿔 볼 수 있다(주 기준과 별개로 선택). */
@@ -82,6 +83,22 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
             Spacer(Modifier.height(6.dp))
             SmallLabel("수입 − 소비")
             AmountText(s.net, style = LooinType.bigAmount, signed = true, color = if (s.net < 0) c.expense else c.text)
+        }
+        item {
+            val pace = StatisticsCalculator.pace(period, txs, data.budgets, state.today)
+            Section("소비 흐름", dot = c.expense) {
+                if (pace.cumulative.isEmpty()) EmptyHint("아직 시작하지 않은 기간이에요.")
+                else {
+                    PaceChart(pace)
+                    Spacer(Modifier.height(6.dp))
+                    SmallLabel("누적 소비 ${MoneyFormat.format(pace.cumulative.last())}" +
+                        (pace.expectedByNow?.let { " · 고르게 썼다면 ${MoneyFormat.format(it)}" } ?: ""), color = c.textSecondary)
+                    pace.diff?.let { d ->
+                        SmallLabel(if (d > 0) "예산보다 ${MoneyFormat.format(d)} 빨리 쓰는 중이에요" else "예산보다 ${MoneyFormat.format(-d)} 여유 있어요",
+                            color = if (d > 0) c.danger else c.accent, weight = FontWeight.SemiBold)
+                    } ?: SmallLabel("예산을 만들면 고르게 쓸 때의 선(점선)과 비교해 보여 줘요.")
+                }
+            }
         }
         item {
             Section("수입·소비", dot = c.accent) {
@@ -166,4 +183,32 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
 @Composable
 private fun Bar(fraction: Float, color: Color) {
     Box(Modifier.width(10.dp).fillMaxHeight(fraction.coerceIn(0.02f, 1f)).clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)).background(color))
+}
+
+/** 누적 소비 선(지출 색, 아래 옅게 채움) + 예산을 고르게 쓸 때의 점선 + 오늘 점. */
+@Composable
+private fun PaceChart(p: StatisticsCalculator.SpendingPace) {
+    val c = Looin.colors
+    val top = maxOf(p.cumulative.maxOrNull() ?: 0L, p.budget ?: 0L).coerceAtLeast(1L).toFloat()
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(140.dp).padding(top = 8.dp)) {
+        val w = size.width; val h = size.height
+        fun x(i: Int) = w * (i + 1) / p.days
+        fun y(v: Long) = h - h * (v / top)
+        // 바닥선
+        drawLine(c.divider, androidx.compose.ui.geometry.Offset(0f, h), androidx.compose.ui.geometry.Offset(w, h), strokeWidth = 2f)
+        // 예산 점선
+        p.budget?.let { b ->
+            drawLine(c.textMuted, androidx.compose.ui.geometry.Offset(0f, h), androidx.compose.ui.geometry.Offset(w, y(b)), strokeWidth = 3f,
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(12f, 10f)))
+        }
+        // 누적 소비
+        val line = androidx.compose.ui.graphics.Path().apply {
+            moveTo(0f, h)
+            p.cumulative.forEachIndexed { i, v -> lineTo(x(i), y(v)) }
+        }
+        val area = androidx.compose.ui.graphics.Path().apply { addPath(line); lineTo(x(p.cumulative.lastIndex), h); close() }
+        drawPath(area, c.expense.copy(alpha = 0.12f))
+        drawPath(line, c.expense, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        drawCircle(c.expense, radius = 8f, center = androidx.compose.ui.geometry.Offset(x(p.cumulative.lastIndex), y(p.cumulative.last())))
+    }
 }

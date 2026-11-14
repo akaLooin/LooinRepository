@@ -78,4 +78,28 @@ class MemoSuggestUiTest {
         assertEquals(card, saved.fromAccountId)
         assertEquals(4_500L, saved.amount)
     }
+
+    /** 금액 칸 계산식: 48000 ÷ 4 → [=] → 12,000 으로 저장 */
+    @Test fun amountCalculator() {
+        runBlocking {
+            repo.ensureInitialized()
+            repo.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 100_000, includeInAvailable = true))
+        }
+        val vm = MainViewModel(repo)
+        var closed = false
+        rule.setContent {
+            val state by vm.state.collectAsState()
+            LooinTheme { TransactionEditScreen(state, vm, null, null, null, null, null, onClose = { closed = true }) }
+        }
+        await { vm.state.value.data.accounts.size == 1 }
+        val amount = rule.onNode(hasSetTextAction() and hasContentDescription("금액"))
+        amount.performTextInput("48000")
+        rule.onNode(hasContentDescription("나누기")).performClick()
+        amount.performTextInput("4")
+        rule.onNodeWithText("= 12,000원").assertExists()
+        rule.onNode(hasContentDescription("계산 결과 넣기")).performClick()
+        rule.onNodeWithText("저장").performClick()
+        await { closed }
+        assertEquals(12_000L, runBlocking { repo.snapshot().transactions.single().amount })
+    }
 }

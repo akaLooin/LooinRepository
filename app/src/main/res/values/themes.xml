@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 창 바탕을 앱 배경색과 맞춰 처음 뜰 때 흰 번쩍임이 없게 한다 -->
     <style name="Theme.Looin" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowBackground">@color/window_background</item>
     </style>
 </resources>
