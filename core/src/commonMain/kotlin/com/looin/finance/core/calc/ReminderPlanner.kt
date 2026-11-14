@@ -36,4 +36,17 @@ object ReminderPlanner {
             " — 처리했으면 앱에서 완료로 바꿔 주세요."
         return Reminder(title, body, dueToday, overdue)
     }
+
+    /**
+     * 미리 예약하는 알림(iOS 처럼 매일 백그라운드 작업을 돌릴 수 없는 플랫폼용).
+     * [from] 부터 예정 거래가 있는 날마다 그날 예정분만으로 알림 내용을 만든다(지난 예정은 넣지 않음 — 그 사이 처리할 수 있으므로).
+     * [skip] 은 알릴 필요가 없는 거래(예: 자동이체로 자동 완료되는 것). 날짜순 최대 [max]개.
+     */
+    fun schedule(
+        transactions: List<Transaction>, from: LocalDate, max: Int = 30,
+        skip: (Transaction) -> Boolean = { false }, label: (Transaction) -> String,
+    ): List<Pair<LocalDate, Reminder>> =
+        transactions.filter { it.isPlanned && it.date >= from && !skip(it) }
+            .groupBy { it.date }.entries.sortedBy { it.key }.take(max)
+            .mapNotNull { (d, txs) -> plan(txs, d, label)?.let { d to it } }
 }

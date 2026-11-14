@@ -43,4 +43,22 @@ class ReminderPlannerTest {
         val r = ReminderPlanner.plan(txs, today, ::label)!!
         assertTrue(r.body.contains("항목1, 항목2, 항목3 외"))
     }
+
+    /** 미리 예약: 예정 거래가 있는 날마다 하나씩, 지난 날·완료·제외 거래는 빼고 날짜순 */
+    @Test fun scheduleAhead() {
+        val today = LocalDate(2026, 11, 14)
+        val txs = listOf(
+            F.expense(300_000, date = LocalDate(2026, 11, 25), status = TransactionStatus.PLANNED).copy(id = 1, memo = "월세"),
+            F.expense(55_000, date = LocalDate(2026, 11, 20), status = TransactionStatus.PLANNED).copy(id = 2, memo = "통신비"),
+            F.expense(9_900, date = LocalDate(2026, 11, 20), status = TransactionStatus.PLANNED).copy(id = 3, memo = "구독"),
+            F.expense(1_000, date = LocalDate(2026, 11, 10), status = TransactionStatus.PLANNED).copy(id = 4, memo = "지난 예정"),
+            F.expense(2_000, date = LocalDate(2026, 11, 21), status = TransactionStatus.PLANNED).copy(id = 5, memo = "자동이체"),
+            F.expense(3_000, date = LocalDate(2026, 11, 22)).copy(id = 6, memo = "완료"),
+        )
+        val s = ReminderPlanner.schedule(txs, today, skip = { it.id == 5L }) { it.memo }
+        assertEquals(listOf(LocalDate(2026, 11, 20), LocalDate(2026, 11, 25)), s.map { it.first })
+        assertEquals("오늘 예정 2건", s[0].second.title)
+        assertTrue(s[0].second.body.contains("64,900원"))
+        assertEquals(1, ReminderPlanner.schedule(txs, today, max = 1) { it.memo }.size)
+    }
 }

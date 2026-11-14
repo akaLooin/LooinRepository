@@ -210,3 +210,26 @@ UI 흐름 테스트는 실제 화면에서 다음을 확인합니다.
 - `AppLockTest`: 해시 저장, 시작 잠금·1분 기준, 5회 실패 제한, 끄기
 - `AppLockFlowTest`: 설정에서 PIN 두 번 입력 → 잠금 → 틀린 PIN 안내 → 맞는 PIN으로 해제
 - `BackupReminderTest`: 알림 조건·미루기
+
+---
+
+# Phase 2-7: iOS 앱 (2026-11-14)
+
+## 한 일
+- 공용 화면 `:ui` 를 iOS 용으로도 빌드(`LooinUi.framework`). Android·PC 와 **같은 화면·계산·저장 코드**
+- iOS 전용 부분
+  - 설정 저장: NSUserDefaults
+  - 백업·CSV: '파일' 앱 선택 화면(저장은 내보내기, 열기는 UTF-8 아니면 CP949)
+  - 앱 잠금: Face ID·Touch ID, PIN 해시는 CommonCrypto(다른 플랫폼과 같은 방식)
+  - 예정 거래 알림: 예정일 오전 9시 로컬 알림을 미리 예약(최대 30일치, 데이터가 바뀔 때마다 다시 예약, 자동이체 제외)
+  - 글꼴: 앱 번들의 Pretendard
+- `iosApp/`: SwiftUI 껍데기, Info.plist(앱 이름·Face ID 문구·수출 규정), 개인정보 매니페스트, 아이콘 1024
+- CI `ios-app.yml`: 시뮬레이터 빌드 → 실행해 라이트·다크 화면 캡처 → 기기용 빌드
+- Linux 에서도 iOS 용 Kotlin 코드를 검사할 수 있게 함(`kotlin.native.enableKlibsCrossCompilation`)
+
+## 고친 문제
+- `:shared` 의 iOS 전용 코드가 **실제로는 컴파일되지 않고 있었음**: 사용자 정의 테스트 소스(sqliteTest)의 dependsOn 때문에 기본 계층이 적용되지 않아 iosMain·iosTest 가 어느 타깃에도 연결되지 않았다. 그래서 이전의 "iOS core" CI 통과는 iOS DB 생성 코드와 iOS SQLite 테스트를 포함하지 않았다. `applyDefaultHierarchyTemplate()` 를 명시해 연결
+
+## 남은 일(iOS)
+- Apple Developer 가입 → 서명·TestFlight 업로드 CI 연결, 실기기 확인
+- 가장자리 밀어서 뒤로 가기, 파일 내보내기를 취소해도 "저장했습니다"가 뜨는 점

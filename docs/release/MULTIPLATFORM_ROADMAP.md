@@ -5,9 +5,11 @@
 | 계층 | Android | PC (Windows·macOS) | iOS |
 |---|---|---|---|
 | 재정 계산 `:core` | ✅ | ✅ (JVM 타깃 그대로 사용) | ✅ macOS CI 로 빌드·테스트 |
-| 저장·백업 `:shared` (Room KMP) | ✅ OS 내장 SQLite, 기존 DB 그대로 | ✅ 번들 SQLite, 파일 DB 테스트 통과 | ✅ 번들 SQLite, macOS CI 로 빌드·테스트 |
-| 화면 `:ui` (Compose Multiplatform) | ✅ | ✅ `:desktopApp` (창 실행·화면 테스트 확인) | ❌ (4단계) |
-| 백업 파일 선택 화면(파일 대화상자) | ✅ Android 저장소 접근 | ❌ (2단계) | ❌ (2단계) |
+| 저장·백업 `:shared` (Room KMP) | ✅ OS 내장 SQLite, 기존 DB 그대로 | ✅ 번들 SQLite, 파일 DB 테스트 통과 | ✅ 번들 SQLite, macOS CI 로 빌드·테스트(2026-11-14 iOS 소스 연결 수정) |
+| 화면 `:ui` (Compose Multiplatform) | ✅ | ✅ `:desktopApp` (창 실행·화면 테스트 확인) | ✅ `iosApp/` — 시뮬레이터 실행·화면 캡처 확인(2026-11-14) |
+| 백업·CSV 파일 선택 | ✅ Android 저장소 접근 | ✅ OS 파일 대화상자 | ✅ '파일' 앱 선택 화면 |
+| 앱 잠금 생체 인증 | ✅ 지문·얼굴 | — (PIN 만) | ✅ Face ID·Touch ID |
+| 예정 거래 알림 | ✅ 매일 9시 작업 | — | ✅ 예정일 9시 로컬 알림 미리 예약 |
 
 `:core` 는 Kotlin Multiplatform 모듈입니다.
 - `commonMain`(공용 코드)은 JVM 전용 API 없이 컴파일된다는 것을 확인했습니다.
@@ -67,7 +69,11 @@
 - **macOS**: Developer ID 서명과 Apple 공증이 필요합니다(Apple Developer Program). 2차로 Mac App Store 를 검토합니다.
 - PC 화면 배치: 넓은 창에서는 캘린더와 거래 목록을 두 칸으로 보여 줍니다. 키보드 단축키(새 거래, 검색)를 넣습니다.
 
-### 4단계: iOS 출시 (2단계 이후 약 2주, Mac 필요)
+### 4단계: iOS 출시 — 진행 중 (앱 껍데기·CI 완료 2026-11-14, 서명·TestFlight 는 Apple 계정 후)
+
+> 진행 상황: `iosApp/`(XcodeGen) + `.github/workflows/ios-app.yml` 로 macOS 러너에서 시뮬레이터 빌드 → 실행·화면 캡처 → 기기용 빌드까지 통과.
+> 남은 일: Apple Developer 가입 후 서명·TestFlight 업로드 연결, 가장자리 밀어서 뒤로 가기, 실기기 확인.
+
 - Xcode 프로젝트에서 `ComposeUIViewController` 로 공용 화면을 띄웁니다.
 - App Store 준비물:
   - 번들 ID
@@ -86,4 +92,4 @@
 1. 출시 순서: 권장은 Android → PC → iOS(PC 는 Mac 없이도 Windows 먼저 가능)
 2. ~~PC 플랫폼 범위~~ → Windows 우선, 가능하면 macOS (사용자 결정)
 3. ~~1단계 저장 방식~~ → Room KMP 로 진행함(권장안). 바꾸려면 알려 주세요.
-4. iOS 빌드용 Mac 확보 방법: 실제 Mac 또는 클라우드 Mac
+4. ~~iOS 빌드용 Mac 확보 방법~~ → GitHub Actions macOS 러너로 빌드·시뮬레이터 확인 중. 서명·제출용으로 Apple Developer Program 가입 필요(실기기 개인 설치는 Mac + 무료 계정으로도 가능)

@@ -40,12 +40,13 @@ jobs:
           test -d build/ios/Build/Products/Debug-iphonesimulator/LooinBudget.app
       - name: Run in simulator and capture screens
         run: scripts/ios_sim_screenshot.sh build/ios/Build/Products/Debug-iphonesimulator/LooinBudget.app build/ios-screens
-      - name: Build for device (Release, unsigned)
+      # 기기(arm64)용 연결 확인. Release(최적화) 링크는 30분 넘게 걸려 TestFlight 서명 빌드를 붙일 때 추가한다.
+      - name: Build for device (Debug, unsigned)
         run: |
-          xcodebuild -project iosApp/LooinBudget.xcodeproj -scheme LooinBudget -configuration Release \
+          xcodebuild -project iosApp/LooinBudget.xcodeproj -scheme LooinBudget -configuration Debug \
             -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/ios-device \
             CODE_SIGNING_ALLOWED=NO build | tail -40
-          test -d build/ios-device/Build/Products/Release-iphoneos/LooinBudget.app
+          test -d build/ios-device/Build/Products/Debug-iphoneos/LooinBudget.app
       - uses: actions/upload-artifact@v4
         if: always()
         with:
