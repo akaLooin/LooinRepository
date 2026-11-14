@@ -86,6 +86,10 @@ import com.looin.finance.ui.plan.RecurringEditScreen
 import com.looin.finance.ui.settings.SettingsScreen
 import com.looin.finance.ui.settings.CategoryScreen
 import com.looin.finance.ui.search.SearchScreen
+import com.looin.finance.ui.security.AppLock
+import com.looin.finance.ui.security.LockScreen
+import com.looin.finance.ui.security.PinFlow
+import com.looin.finance.ui.security.PinSetupScreen
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinType
 import com.looin.finance.ui.tx.TransactionActionSheet
@@ -121,6 +125,9 @@ fun LooinAppRoot(vm: MainViewModel) {
     // 새 메시지가 오면 이전 메시지를 바로 닫아 오래된 안내가 쌓이지 않게 한다.
     LaunchedEffect(Unit) { vm.messages.collectLatest { snackbar.currentSnackbarData?.dismiss(); snackbar.showSnackbar(it) } }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refreshToday() }
+    // 앱 잠금: 백그라운드에 오래 있다 돌아오면 잠근다
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { AppLock.onBackground(kotlin.time.Clock.System.now().toEpochMilliseconds()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { AppLock.onForeground(kotlin.time.Clock.System.now().toEpochMilliseconds()) }
 
     val backStack by nav.currentBackStackEntryAsState()
     val tab = Tab.entries.firstOrNull { it.route == backStack?.destination?.route }
@@ -169,6 +176,8 @@ fun LooinAppRoot(vm: MainViewModel) {
     ) { padding ->
         AppNavHost(nav, state, vm, padding, calendarDay ?: state.today.toEpochDays(), { calendarDay = it }) { sheetTx = it }
     }
+
+    if (AppLock.locked) LockScreen()
 
     sheetTx?.let { tx ->
         // 데이터가 바뀌면(완료·취소 후) 최신 거래로 보여 준다.
@@ -241,7 +250,12 @@ private fun AppNavHost(
         }
         page("settings") {
             SettingsScreen(state, vm, onBack = { nav.popBackStack() }, onOpenCategories = { nav.navigate("categories") },
-                onOpenCsvImport = { nav.navigate("csvImport") { launchSingleTop = true } })
+                onOpenCsvImport = { nav.navigate("csvImport") { launchSingleTop = true } },
+                onOpenPin = { nav.navigate("pin/${it.name}") { launchSingleTop = true } })
+        }
+        page("pin/{flow}", arguments = listOf(navArgument("flow") { type = NavType.StringType })) { entry ->
+            val flow = PinFlow.valueOf(entry.argString("flow") ?: PinFlow.SET.name)
+            PinSetupScreen(flow, onDone = { msg -> vm.say(msg); nav.popBackStack() }, onBack = { nav.popBackStack() })
         }
         page("csvImport") { com.looin.finance.ui.settings.CsvImportScreen(state, vm, onClose = { nav.popBackStack() }) }
         page("categories") { CategoryScreen(state, vm, onBack = { nav.popBackStack() }) }

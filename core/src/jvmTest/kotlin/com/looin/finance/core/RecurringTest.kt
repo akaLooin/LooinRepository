@@ -85,4 +85,24 @@ class RecurringTest {
         assertEquals("매월 25일", monthly(25).scheduleLabel)
         assertEquals("2개월마다 31일", monthly(31, interval = 2).scheduleLabel)
     }
+
+    /** 자동이체: 앱을 열지 않은 동안의 발생분을 채우고, 발생일이 지난 것만 자동 완료 대상 */
+    @Test fun autopayFillsMissedOccurrencesAndCompletesDueOnes() {
+        val rule = monthly(25).copy(id = 9, autoComplete = true, generatedThrough = LocalDate(2026, 8, 31))
+        val today = LocalDate(2026, 11, 13)
+        val (txs, through) = RecurrenceCalculator.plan(rule, today, LocalDate(2026, 12, 31), 0)
+        // 9/25, 10/25 (지난 발생분) + 11/25, 12/25
+        assertEquals(listOf(LocalDate(2026, 9, 25), LocalDate(2026, 10, 25), LocalDate(2026, 11, 25), LocalDate(2026, 12, 25)), txs.map { it.date })
+        assertEquals(LocalDate(2026, 12, 31), through)
+        val ids = txs.mapIndexed { i, t -> t.copy(id = i + 1L) }
+        val done = RecurrenceCalculator.dueForAutoComplete(listOf(rule), ids, today, 5)
+        assertEquals(listOf(LocalDate(2026, 9, 25), LocalDate(2026, 10, 25)), done.map { it.completedDate })
+        assertTrue(done.all { it.isCompleted && it.amount == rule.amount })
+        // 자동이체가 아니면 지난 발생분은 만들지 않고, 자동 완료도 없다
+        val manual = rule.copy(autoComplete = false)
+        assertEquals(listOf(LocalDate(2026, 11, 25), LocalDate(2026, 12, 25)), RecurrenceCalculator.plan(manual, today, LocalDate(2026, 12, 31), 0).first.map { it.date })
+        assertEquals(0, RecurrenceCalculator.dueForAutoComplete(listOf(manual), ids, today, 5).size)
+        // 처음 만드는 자동이체 규칙(generatedThrough 없음)은 과거 시작일이어도 오늘부터
+        assertEquals(LocalDate(2026, 11, 25), RecurrenceCalculator.plan(rule.copy(generatedThrough = null), today, LocalDate(2026, 12, 31), 0).first.first().date)
+    }
 }

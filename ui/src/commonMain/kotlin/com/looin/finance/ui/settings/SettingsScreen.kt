@@ -59,6 +59,9 @@ import com.looin.finance.ui.components.HexColorField
 import com.looin.finance.ui.components.LooinSheet
 import com.looin.finance.ui.components.hexOf
 import com.looin.finance.ui.theme.ColorRole
+import com.looin.finance.ui.security.AppLock
+import com.looin.finance.ui.security.LocalBiometric
+import com.looin.finance.ui.security.PinFlow
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.width
@@ -69,7 +72,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 
 @Composable
-fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}, onOpenCsvImport: () -> Unit = {}) {
+fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpenCategories: () -> Unit = {}, onOpenCsvImport: () -> Unit = {}, onOpenPin: (PinFlow) -> Unit = {}) {
     val c = Looin.colors
     val files = LocalFileActions.current
     val appInfo = LocalAppInfo.current
@@ -144,9 +147,30 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
             }
 
             Spacer(Modifier.height(8.dp))
+            Title("보안")
+            val bio = LocalBiometric.current
+            FieldGroup {
+                ToggleRow("앱 잠금", "앱을 열 때와 1분 넘게 다른 앱을 쓰다 돌아올 때 PIN을 물어요", AppLock.enabled,
+                    { on -> onOpenPin(if (on) PinFlow.SET else PinFlow.DISABLE) })
+                if (AppLock.enabled) {
+                    FieldDivider()
+                    ValueRow("PIN 바꾸기", "", onClick = { onOpenPin(PinFlow.CHANGE) })
+                    if (bio.available) {
+                        FieldDivider()
+                        ToggleRow("지문·얼굴로 잠금 해제", "휴대폰에 등록한 생체 인증을 써요", AppLock.biometricEnabled, { AppLock.setBiometric(it) })
+                    }
+                }
+            }
+            if (AppLock.enabled) SmallLabel("PIN을 잊으면 되찾을 수 없어요. 아래에서 백업 파일을 만들어 두세요.")
+
+            Spacer(Modifier.height(8.dp))
             Title("데이터")
             Text("모든 데이터는 이 기기에만 저장돼요(서버 전송 없음).", style = LooinType.body, color = c.text)
             SmallLabel("휴대폰을 바꾸거나 앱을 지우면 데이터가 사라지니, 백업 파일을 만들어 안전한 곳(클라우드 드라이브 등)에 보관하세요.")
+            val last = ThemePrefs.lastBackupDay
+            SmallLabel(if (last == null) "이 기기에서 만든 백업 파일이 아직 없어요." else
+                "마지막 백업: ${kotlinx.datetime.LocalDate.fromEpochDays(last).korean(true)} (${state.today.toEpochDays() - last}일 전)",
+                color = if (last == null || state.today.toEpochDays() - last >= 30) c.planned else c.textSecondary)
             FieldGroup {
                 ValueRow("백업 파일 만들기", "JSON", onClick = { files.saveText("looin-backup-${state.today}.json") { write -> vm.exportBackup("${appInfo.versionName} (${appInfo.platform.label})", write) } })
                 FieldDivider()

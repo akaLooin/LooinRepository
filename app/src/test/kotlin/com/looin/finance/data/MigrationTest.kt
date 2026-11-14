@@ -74,4 +74,27 @@ class MigrationTest {
             db.close()
         }
     }
+
+    /** v3 → v4(자동이체 열): 기존 규칙은 자동이체 꺼짐으로 남는다 */
+    @Test fun v3RulesGetAutopayOff() = runTest {
+        val n = "migration-v3.db"
+        helper.createDatabase(n, 3).apply {
+            val day = LocalDate(2026, 11, 1).toEpochDays()
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO accounts (id, name, type, currency, opening_balance, include_in_available, archived, memo, sort_order, rate_to_krw_x10000, created_at, updated_at) " +
+                "VALUES (1, '주거래', 'CHECKING', 'KRW', 500000, 1, 0, '', 0, NULL, 0, 0)")
+            execSQL("INSERT INTO recurring_rules (id, name, type, amount, currency, from_account_id, to_account_id, category_id, frequency, interval, day_of_month, day_of_week, start_date, end_date, active, generated_through, memo, created_at, updated_at) " +
+                "VALUES (1, '통신비', 'EXPENSE', 55000, 'KRW', 1, NULL, NULL, 'MONTHLY', 1, 20, NULL, $day, NULL, 1, NULL, '', 0, 0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 4, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val rule = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 13) }).snapshot().rules.single()
+            assertEquals("통신비", rule.name)
+            assertEquals(false, rule.autoComplete)
+        } finally {
+            db.close()
+        }
+    }
 }

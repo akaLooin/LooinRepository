@@ -88,6 +88,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
         var toId by rememberSaveable { mutableStateOf(existing?.toAccountId ?: if (type == TransactionType.INCOME) defaultAccount else null) }
         var categoryId by rememberSaveable { mutableStateOf(existing?.categoryId) }
         var active by rememberSaveable { mutableStateOf(existing?.active ?: true) }
+        var autoComplete by rememberSaveable { mutableStateOf(existing?.autoComplete ?: false) }
         var error by remember { mutableStateOf<String?>(null) }
         var confirmDelete by remember { mutableStateOf(false) }
 
@@ -105,7 +106,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
                 dayOfMonth = if (frequency == Frequency.MONTHLY) dayText.toIntOrNull() ?: 0 else null,
                 dayOfWeek = if (frequency == Frequency.WEEKLY) dayOfWeek else null,
                 startDate = LocalDate.fromEpochDays(startDays), endDate = endDays?.let { LocalDate.fromEpochDays(it) },
-                active = active, generatedThrough = existing?.generatedThrough, memo = existing?.memo ?: "",
+                active = active, generatedThrough = existing?.generatedThrough, memo = existing?.memo ?: "", autoComplete = autoComplete,
                 createdAt = existing?.createdAt ?: 0,
             )
         }
@@ -157,7 +158,11 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
                 }
                 FieldDivider()
                 ToggleRow("사용 중", "끄면 새 예정 거래를 더 만들지 않아요", active, { active = it })
+                FieldDivider()
+                ToggleRow("자동이체", "발생일이 되면 예정 금액 그대로 자동 완료해요", autoComplete, { autoComplete = it })
             }
+            if (autoComplete) SmallLabel("실제로 빠져나간 금액이 다르면 거래를 눌러 고치세요. 켜는 순간 이미 지난 미처리 예정분도 완료로 바뀌어요. 앱을 오래 열지 않았던 기간의 발생분도 채워서 완료해요.",
+                color = c.planned)
             when (type) {
                 TransactionType.INCOME -> RuleAccountChips("입금 계좌", accounts.map { it.id to it.name }, toId) { toId = it }
                 TransactionType.EXPENSE -> RuleAccountChips("출금 계좌", accounts.map { it.id to it.name }, fromId) { fromId = it }

@@ -195,7 +195,7 @@ fun PlanScreen(
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(r.name, style = LooinType.bodyLg, color = if (r.active) c.text else c.textMuted)
-                            SmallLabel(r.scheduleLabel + if (!r.active) " · 꺼짐" else next?.let { " · 다음 ${it.month.number}.${it.day}" } ?: " · 끝남")
+                            SmallLabel(r.scheduleLabel + (if (r.autoComplete) " · 자동이체" else "") + if (!r.active) " · 꺼짐" else next?.let { " · 다음 ${it.month.number}.${it.day}" } ?: " · 끝남")
                         }
                         AmountText(if (r.type == TransactionType.EXPENSE) -r.amount else r.amount, currency = r.currency,
                             signed = r.type != TransactionType.TRANSFER, color = if (r.active) typeColor(r.type) else c.textMuted)

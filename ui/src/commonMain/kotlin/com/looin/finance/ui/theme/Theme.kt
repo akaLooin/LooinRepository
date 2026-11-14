@@ -222,6 +222,16 @@ object ThemePrefs {
     var calendarDisplay by mutableStateOf(CalendarDisplay.AMOUNT)
         private set
 
+    /** 마지막으로 백업 파일을 만든 날(epoch day, 기기별). 백업 알림에 쓴다. */
+    var lastBackupDay by mutableStateOf<Long?>(null)
+        private set
+    /** "나중에"를 누르면 이 날까지 백업 알림을 숨긴다. */
+    var backupSnoozeUntil by mutableStateOf<Long?>(null)
+        private set
+
+    fun recordBackup(day: Long) { lastBackupDay = day; store.put("backup.last", day.toString()) }
+    fun snoozeBackup(untilDay: Long) { backupSnoozeUntil = untilDay; store.put("backup.snooze", untilDay.toString()) }
+
     /** 사용자가 바꾼 색(역할 → ARGB). 없으면 기본 테마 색. */
     var colorOverrides by mutableStateOf<Map<ColorRole, Long>>(emptyMap())
         private set
@@ -236,6 +246,8 @@ object ThemePrefs {
     /** 앱 시작 시 플랫폼 저장소를 연결하고 저장된 값을 읽는다. */
     fun init(store: KeyValueStore) {
         this.store = store
+        lastBackupDay = store.get("backup.last")?.toLongOrNull()
+        backupSnoozeUntil = store.get("backup.snooze")?.toLongOrNull()
         colorOverrides = store.get("colors").orEmpty().split(",").mapNotNull { e ->
             val (k, v) = e.split("=").takeIf { it.size == 2 } ?: return@mapNotNull null
             val role = ColorRole.entries.firstOrNull { it.name == k } ?: return@mapNotNull null

@@ -583,7 +583,9 @@ fun LooinToggle(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean 
 
 @Composable
 fun ToggleRow(label: String, sub: String?, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    // 줄 전체를 눌러도 켜고 끈다(스위치만 누를 필요 없음)
+    Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).clickable(enabled = enabled) { onChange(!checked) }
+        .padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(label, style = LooinType.bodyLg, color = Looin.colors.text)
             if (sub != null) SmallLabel(sub)

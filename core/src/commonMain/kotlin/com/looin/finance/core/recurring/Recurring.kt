@@ -22,6 +22,7 @@ enum class Frequency(val label: String) { MONTHLY("매월"), WEEKLY("매주") }
  * - 매주: [dayOfWeek] 요일
  * - [interval]: N개월/N주마다 (기본 1). 시작일이 속한 달/주를 기준으로 센다.
  * - [generatedThrough]: 이 날짜까지는 이미 예정 거래를 만들었음. 사용자가 지운 발생분을 다시 만들지 않기 위한 기록.
+ * - [autoComplete]: 자동이체. 켜면 발생일에 자동 완료([RecurrenceCalculator.dueForAutoComplete]).
  */
 data class RecurringRule(
     val id: Long = 0,
@@ -43,6 +44,11 @@ data class RecurringRule(
     val memo: String = "",
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
+    /**
+     * 자동이체(사용자 선택, 기본 꺼짐): 발생일이 되면 예정 거래를 그 날짜·금액으로 자동 완료한다.
+     * 앱을 오래 열지 않아 만들지 못한 지난 발생분도 채워서 완료한다(실제로 빠져나간 돈이므로).
+     */
+    val autoComplete: Boolean = false,
 ) {
     val scheduleLabel: String
         get() = when (frequency) {
@@ -118,11 +124,13 @@ object RecurrenceCalculator {
      * 새로 만들 예정 거래와 갱신된 generatedThrough.
      * - 아직 만들지 않은 날짜(generatedThrough 다음 날부터)만 대상
      * - 과거는 채우지 않는다: 오늘 이전 발생일은 만들지 않음(밀린 예정 거래 폭주 방지)
+     *   단, 자동이체 규칙은 이미 한 번 만든 뒤(generatedThrough 있음) 앱을 열지 않은 동안의 발생분을 채운다
      * - [horizon] 까지 만든다
      */
     fun plan(rule: RecurringRule, today: LocalDate, horizon: LocalDate, now: Long): Pair<List<Transaction>, LocalDate?> {
         if (!rule.active || horizon < today) return emptyList<Transaction>() to rule.generatedThrough
-        val from = maxOf(today, rule.generatedThrough?.plus(DatePeriod(days = 1)) ?: today)
+        val next = rule.generatedThrough?.plus(DatePeriod(days = 1))
+        val from = if (rule.autoComplete && next != null) maxOf(next, rule.startDate) else maxOf(today, next ?: today)
         val dates = occurrences(rule, from, horizon)
         val txs = dates.map { d ->
             Transaction(
@@ -134,6 +142,16 @@ object RecurrenceCalculator {
         }
         val through = maxOf(horizon, rule.generatedThrough ?: horizon.minus(DatePeriod(days = 1)))
         return txs to through
+    }
+
+    /**
+     * 자동 완료할 거래: 자동이체 규칙에서 만든 예정 거래 중 발생일이 오늘 이하인 것.
+     * 결과는 발생일·예정 금액 그대로 완료한 거래다(나중에 사용자가 고칠 수 있음).
+     */
+    fun dueForAutoComplete(rules: List<RecurringRule>, txs: List<Transaction>, today: LocalDate, now: Long): List<Transaction> {
+        val auto = rules.filter { it.autoComplete && it.active }.map { it.id }.toSet()
+        return txs.filter { it.isPlanned && it.recurringId in auto && it.date <= today }
+            .map { it.copy(status = TransactionStatus.COMPLETED, completedDate = it.date, updatedAt = now) }
     }
 
     /** 규칙의 거래 모양(검증용). */

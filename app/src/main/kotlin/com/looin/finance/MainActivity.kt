@@ -1,7 +1,7 @@
 package com.looin.finance
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,12 +23,19 @@ import com.looin.finance.ui.platform.rememberAndroidFileActions
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinTheme
 import com.looin.finance.ui.theme.ThemePrefs
+import com.looin.finance.ui.security.AppLock
+import com.looin.finance.ui.security.LocalBiometric
+import com.looin.finance.security.AndroidBiometric
 
 /** Android 진입점: 공용 화면([LooinAppRoot])에 Android 구현(설정 저장소·파일 선택·시스템 바)을 연결한다. */
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() { // 생체 인증 창(BiometricPrompt)은 FragmentActivity 가 필요
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemePrefs.init(AndroidKeyValueStore(this))
+        // 앱 잠금: 프로세스마다 한 번만 초기화(화면 회전으로는 잠금이 풀리거나 다시 걸리지 않고,
+        // 시스템이 앱을 정리했다가 다시 열면 새 프로세스라 잠근 상태로 시작한다)
+        if (!AppLock.initialized) AppLock.init(AndroidKeyValueStore(this))
+        val biometric = AndroidBiometric(this)
         val repo = (application as LooinApp).repository
         setContent {
             LooinTheme {
@@ -43,6 +50,7 @@ class MainActivity : ComponentActivity() {
                     LocalAppInfo provides AppInfo(BuildConfig.VERSION_NAME, AppPlatform.ANDROID),
                     LocalFileActions provides rememberAndroidFileActions(),
                     LocalReminderControl provides rememberAndroidReminderControl(),
+                    LocalBiometric provides biometric,
                 ) {
                     LooinAppRoot(vm)
                 }

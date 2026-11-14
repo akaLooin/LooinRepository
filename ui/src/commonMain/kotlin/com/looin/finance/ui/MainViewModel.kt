@@ -61,7 +61,14 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
     fun refreshToday() {
         today.value = repo.today()
         // 날짜가 지나면 다음 기간의 반복 거래 예정분을 채운다(중복 없음)
-        viewModelScope.launch { runCatching { repo.generateRecurring() } }
+        // 자동이체 규칙은 발생일이 되면 자동 완료하고 알려 준다
+        viewModelScope.launch {
+            runCatching {
+                repo.generateRecurring()
+                val n = repo.completeDueAutoPay()
+                if (n > 0) _messages.tryEmit("자동이체 ${n}건을 완료 처리했어요")
+            }
+        }
     }
 
     private fun run(success: String?, onSuccess: () -> Unit = {}, block: suspend () -> Unit) {
@@ -75,6 +82,9 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
             }
         }
     }
+
+    /** 화면에서 바로 안내 문구를 띄운다. */
+    fun say(message: String) { _messages.tryEmit(message) }
 
     fun validate(tx: Transaction, onResult: (ValidationResult) -> Unit) {
         viewModelScope.launch { onResult(repo.validate(tx)) }
@@ -131,6 +141,7 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         } catch (e: Exception) {
             throw FinanceException("백업 파일을 저장하지 못했습니다: ${e.message}")
         }
+        com.looin.finance.ui.theme.ThemePrefs.recordBackup(repo.today().toEpochDays()) // 백업 알림 기준일
     }
 
     /** 백업 파일 읽기 → 검증 → 전체 교체. */

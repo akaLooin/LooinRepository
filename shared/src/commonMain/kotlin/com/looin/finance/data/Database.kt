@@ -112,6 +112,8 @@ data class RecurringRuleEntity(
     val memo: String,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    /** v4: 자동이체(발생일에 자동 완료). */
+    @ColumnInfo(name = "auto_complete", defaultValue = "0") val autoComplete: Boolean = false,
 )
 
 @Entity(
@@ -258,11 +260,11 @@ interface FinanceDao {
         AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
         RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
     // v2 → v3: 저축 목표·배정 기록 테이블 추가(기존 테이블 변경 없음).
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(FinanceDatabaseConstructor::class)

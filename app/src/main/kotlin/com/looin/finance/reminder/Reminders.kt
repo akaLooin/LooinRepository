@@ -86,6 +86,8 @@ class PlannedReminderWorker(context: Context, params: WorkerParameters) : Corout
         val ctx = applicationContext
         if (!ReminderScheduler.isEnabled(ctx) || !ReminderScheduler.hasPermission(ctx)) return Result.success()
         val repo = (ctx as LooinApp).repository
+        // 자동이체는 알림 대신 바로 완료 처리(알림에는 사용자가 직접 처리할 것만 남긴다)
+        runCatching { repo.generateRecurring(); repo.completeDueAutoPay() }
         val data = repo.snapshot()
         val reminder = ReminderPlanner.plan(data.transactions, repo.today()) { t -> t.memo.ifBlank { data.categoryName(t.categoryId) } }
             ?: return Result.success()

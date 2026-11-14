@@ -69,6 +69,9 @@ import androidx.compose.foundation.border
 import com.looin.finance.ui.components.korean
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinType
+import com.looin.finance.ui.theme.ThemePrefs
+import com.looin.finance.ui.platform.LocalFileActions
+import com.looin.finance.ui.platform.LocalAppInfo
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -87,6 +90,8 @@ fun HomeScreen(
     onOpenCalendar: () -> Unit,
 ) {
     val c = Looin.colors
+    val files = LocalFileActions.current
+    val appInfo = LocalAppInfo.current
     val data = state.data
     val period = state.currentPeriod
     val txs = data.transactions
@@ -164,6 +169,24 @@ fun HomeScreen(
                     MiniStat("수입", stats.income, c.income, StatisticsCalculator.incomeBreakdown(stats, data::categoryName), Modifier.weight(1f))
                     MiniStat("확정 소비", stats.expense, c.expense, StatisticsCalculator.expenseBreakdown(stats, data::categoryName), Modifier.weight(1f))
                     MiniStat("미완료 예정 지출", pendingBreakdown.total, c.planned, pendingBreakdown, Modifier.weight(1f))
+                }
+            }
+        }
+        // 백업 알림(필요할 때만)
+        BackupReminder.message(txs, state.today, ThemePrefs.lastBackupDay, ThemePrefs.backupSnoozeUntil)?.let { msg ->
+            item {
+                Card {
+                    Text(msg, style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.text)
+                    SmallLabel("데이터는 이 기기에만 있어요. 휴대폰을 잃어버리거나 앱을 지우면 사라지니 백업 파일을 만들어 안전한 곳에 두세요.")
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PrimaryButton("지금 백업", {
+                            files.saveText("looin-backup-${state.today}.json") { write -> vm.exportBackup("${appInfo.versionName} (${appInfo.platform.label})", write) }
+                        }, Modifier.weight(1f), strong = true)
+                        PrimaryButton("${BackupReminder.SNOOZE_DAYS}일 뒤에", {
+                            ThemePrefs.snoozeBackup(state.today.toEpochDays() + BackupReminder.SNOOZE_DAYS)
+                        }, Modifier.weight(1f))
+                    }
                 }
             }
         }

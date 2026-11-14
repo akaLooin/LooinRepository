@@ -160,6 +160,30 @@ class RecurringAndBackupTest {
         assertEquals(0, other.generateRecurring())
     }
 
+    /** 자동이체 규칙: 발생일이 되면 자동 완료, 백업·복원 후에도 설정 유지 */
+    @Test fun autopayCompletesOnDueDateAndSurvivesBackup() = runTest {
+        val (acc, cat) = setup()
+        repo.saveRule(rent(acc, cat).copy(autoComplete = true))
+        assertEquals(0, repo.completeDueAutoPay()) // 11/25 아직 안 옴
+        today = LocalDate(2026, 11, 25)
+        repo.generateRecurring()
+        assertEquals(1, repo.completeDueAutoPay())
+        val done = repo.snapshot().transactions.single { it.date == LocalDate(2026, 11, 25) }
+        assertTrue(done.isCompleted)
+        assertEquals(LocalDate(2026, 11, 25), done.completedDate)
+        assertEquals(1_500_000, BalanceCalculator.actualBalance(repo.snapshot().accounts.single(), repo.snapshot().transactions))
+        // 앱을 두 달 열지 않음 → 12/25, 1/25 발생분을 채워 완료
+        today = LocalDate(2027, 2, 3)
+        repo.generateRecurring()
+        assertEquals(2, repo.completeDueAutoPay())
+        assertEquals(3, repo.snapshot().transactions.count { it.isCompleted })
+
+        val other = open("restore.db")
+        other.ensureInitialized()
+        other.restoreBackup(repo.exportBackup("test"))
+        assertTrue(other.snapshot().rules.single().autoComplete)
+    }
+
     /** 손상·편집된 백업은 거부하고 기존 데이터는 그대로 둔다 */
     @Test fun corruptedBackupRejectedAndDataKept() = runTest {
         val (acc, _) = setup()

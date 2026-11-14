@@ -121,6 +121,7 @@ object BackupCodec {
                         putOpt("dayOfWeek", r.dayOfWeek?.isoDayNumber); put("startDate", r.startDate.toString())
                         putOpt("endDate", r.endDate?.toString()); put("active", r.active); putOpt("generatedThrough", r.generatedThrough?.toString())
                         put("memo", r.memo); put("createdAt", r.createdAt); put("updatedAt", r.updatedAt)
+                        if (r.autoComplete) put("autoComplete", true) // 없으면 꺼짐(형식 2 그대로, 옛 앱도 읽을 수 있음)
                     })
                 }
             })
@@ -205,6 +206,7 @@ object BackupCodec {
                 startDate = LocalDate.parse(o.req("startDate")), endDate = o.str("endDate")?.let(LocalDate::parse),
                 active = o.bool("active"), generatedThrough = o.str("generatedThrough")?.let(LocalDate::parse),
                 memo = o.str("memo") ?: "", createdAt = o.longOrNull("createdAt") ?: 0, updatedAt = o.longOrNull("updatedAt") ?: 0,
+                autoComplete = o.boolOrNull("autoComplete") ?: false,
             )
         } ?: emptyList()
         val goals = (root["savingsGoals"] as? JsonArray)?.map { it.jsonObject }?.map { o ->

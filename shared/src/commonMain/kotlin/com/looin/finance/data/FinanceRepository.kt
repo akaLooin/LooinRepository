@@ -170,6 +170,16 @@ class FinanceRepository(
     }
 
     /**
+     * 자동이체 규칙의 발생분 중 발생일이 지난(오늘 포함) 예정 거래를 그 날짜·금액으로 완료한다.
+     * 앱을 열 때·날짜가 바뀔 때 [generateRecurring] 다음에 부른다. 반환값: 완료한 건수.
+     */
+    suspend fun completeDueAutoPay(): Int = tx {
+        val due = RecurrenceCalculator.dueForAutoComplete(dao.rules().map { it.toModel() }, dao.transactions().map { it.toModel() }, today(), now())
+        due.forEach { dao.updateTransaction(it.toEntity()) }
+        due.size
+    }
+
+    /**
      * 규칙 저장. 수정이면 오늘 이후의 "아직 처리하지 않은" 예정 발생분을 지우고 새 규칙으로 다시 만든다.
      * 이미 완료·취소한 거래와 지난 예정 거래는 그대로 둔다.
      */
@@ -457,10 +467,11 @@ fun SavingsAllocation.toEntity() = SavingsAllocationEntity(id, goalId, amount, d
 fun RecurringRuleEntity.toModel() = RecurringRule(
     id, name, type, amount, currency, fromAccountId, toAccountId, categoryId, frequency, interval, dayOfMonth,
     dayOfWeek?.let { n -> DayOfWeek.entries.first { it.isoDayNumber == n } }, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt,
+    autoComplete,
 )
 fun RecurringRule.toEntity() = RecurringRuleEntity(
     id, name.trim(), type, amount, currency, fromAccountId, toAccountId, categoryId, frequency, interval, dayOfMonth,
-    dayOfWeek?.isoDayNumber, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt,
+    dayOfWeek?.isoDayNumber, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt, autoComplete,
 )
 fun BudgetEntity.toModel() = Budget(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
 fun Budget.toEntity() = BudgetEntity(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
