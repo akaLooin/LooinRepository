@@ -16,3 +16,7 @@ fun FinanceDatabase.Companion.build(context: Context, name: String? = FinanceDat
     }
     return builder.build()
 }
+
+/** Android 는 Context 가 필요하다: [FinanceDatabase.build] (context, name) 을 쓴다. */
+actual fun openDefaultDatabase(): FinanceDatabase =
+    error("Android 에서는 FinanceDatabase.build(context, name) 으로 DB 를 엽니다")

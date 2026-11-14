@@ -287,3 +287,9 @@ abstract class FinanceDatabase : RoomDatabase() {
 expect object FinanceDatabaseConstructor : RoomDatabaseConstructor<FinanceDatabase> {
     override fun initialize(): FinanceDatabase
 }
+
+/**
+ * 앱 기본 위치의 DB 를 연다(PC·iOS 진입점용).
+ * Android 는 Context 가 필요하므로 `FinanceDatabase.build(context, name)` 을 쓴다(이 함수는 오류).
+ */
+expect fun openDefaultDatabase(): FinanceDatabase

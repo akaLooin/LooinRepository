@@ -1,0 +1,54 @@
+# iOS 앱: Kotlin 공용 화면(:ui → LooinUi.framework) + Swift 껍데기(iosApp/)를 빌드하고,
+# 시뮬레이터에서 실행해 화면을 캡처한다. 서명·TestFlight 업로드는 Apple 개발자 계정이 생긴 뒤 추가.
+name: iOS app
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["core/**", "shared/**", "ui/**", "iosApp/**", "gradle/**", "*.gradle.kts", "gradle.properties",
+            "scripts/ios_sim_screenshot.sh", ".github/workflows/ios-app.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-app-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash  # -eo pipefail: xcodebuild 실패가 | tail 에 가려지지 않게
+
+jobs:
+  ios-app:
+    runs-on: macos-15
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Xcode project (XcodeGen)
+        run: |
+          brew install xcodegen
+          cd iosApp && xcodegen generate
+      - name: Build for simulator
+        run: |
+          xcodebuild -project iosApp/LooinBudget.xcodeproj -scheme LooinBudget -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build | tail -60
+          test -d build/ios/Build/Products/Debug-iphonesimulator/LooinBudget.app
+      - name: Run in simulator and capture screens
+        run: scripts/ios_sim_screenshot.sh build/ios/Build/Products/Debug-iphonesimulator/LooinBudget.app build/ios-screens
+      - name: Build for device (Release, unsigned)
+        run: |
+          xcodebuild -project iosApp/LooinBudget.xcodeproj -scheme LooinBudget -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/ios-device \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          test -d build/ios-device/Build/Products/Release-iphoneos/LooinBudget.app
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-screens
+          path: build/ios-screens/
+          if-no-files-found: ignore

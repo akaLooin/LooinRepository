@@ -27,3 +27,6 @@ fun FinanceDatabase.Companion.defaultDesktopFile(): File {
     }
     return File(dir, FinanceDatabase.NAME)
 }
+
+/** PC 앱 기본 DB: 사용자 데이터 폴더의 파일([defaultDesktopFile]). */
+actual fun openDefaultDatabase(): FinanceDatabase = FinanceDatabase.build(FinanceDatabase.defaultDesktopFile())

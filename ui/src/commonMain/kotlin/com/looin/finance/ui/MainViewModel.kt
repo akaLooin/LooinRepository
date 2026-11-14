@@ -15,6 +15,7 @@ import com.looin.finance.data.FinanceException
 import com.looin.finance.data.FinanceRepository
 import com.looin.finance.core.recurring.RecurringRule
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

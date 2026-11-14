@@ -12,6 +12,9 @@ plugins {
 //  - android: OS 내장 SQLite (기존 사용자 DB 그대로, 네이티브 라이브러리 추가 없음)
 //  - jvm(PC)·iOS: 번들 SQLite 드라이버
 kotlin {
+    // 아래 sqliteTest 처럼 dependsOn 을 직접 쓰면 기본 계층(iosMain·iosTest 묶음)이 자동 적용되지 않아
+    // iosMain/iosTest 가 어떤 타깃에도 연결되지 않는다. 명시적으로 적용한다.
+    applyDefaultHierarchyTemplate()
     androidTarget {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }

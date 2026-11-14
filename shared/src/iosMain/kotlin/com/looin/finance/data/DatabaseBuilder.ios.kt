@@ -30,3 +30,6 @@ private fun appSupportDirectory(): String {
     )
     return requireNotNull(url?.path) { "Application Support 폴더를 찾을 수 없습니다." }
 }
+
+/** iOS 앱 기본 DB: Application Support/[FinanceDatabase.NAME]. */
+actual fun openDefaultDatabase(): FinanceDatabase = FinanceDatabase.build()

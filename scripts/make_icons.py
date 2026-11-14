@@ -71,7 +71,15 @@ def main():
     big.save(desk / "icon.icns")
     big.resize((512, 512), Image.LANCZOS).save(desk / "icon.png", optimize=True)
     big.resize((256, 256), Image.LANCZOS).save(ROOT / "desktopApp" / "src" / "main" / "resources" / "icon.png", optimize=True)
+    ios_icon()
     print("done")
+
+
+def ios_icon():
+    """iOS 앱 아이콘 1024(App Store·홈 화면 공용). 투명 없이 꽉 찬 정사각형 — 모서리는 iOS 가 둥글게 자른다."""
+    d = ROOT / "iosApp" / "LooinBudget" / "Assets.xcassets" / "AppIcon.appiconset"
+    d.mkdir(parents=True, exist_ok=True)
+    centered(1024, 0.62, bg=(0, 0, 0, 255)).convert("RGB").save(d / "icon-1024.png", optimize=True)
 
 
 if __name__ == "__main__":

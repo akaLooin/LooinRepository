@@ -7,13 +7,17 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
 }
 
-// 공용 화면 (Compose Multiplatform): Android 앱과 PC(데스크톱) 앱이 같은 화면 코드를 쓴다. iOS 는 4단계에서 추가.
+// 공용 화면 (Compose Multiplatform): Android 앱, PC(데스크톱) 앱, iOS 앱이 같은 화면 코드를 쓴다.
 kotlin {
     androidTarget {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
     jvm {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    }
+    // iOS: Xcode 앱(iosApp/)이 가져다 쓰는 정적 프레임워크 "LooinUi" (MainViewController 진입점)
+    listOf(iosArm64(), iosSimulatorArm64()).forEach {
+        it.binaries.framework { baseName = "LooinUi"; isStatic = true }
     }
 
     sourceSets {
