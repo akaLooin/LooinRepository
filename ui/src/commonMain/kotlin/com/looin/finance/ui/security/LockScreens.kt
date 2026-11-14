@@ -1,5 +1,6 @@
 package com.looin.finance.ui.security
 
+import com.looin.finance.ui.APP_NAME
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -122,7 +123,7 @@ fun LockScreen() {
             Icon(Icons.Filled.Lock, null, tint = c.primary)
         }
         Spacer(Modifier.height(16.dp))
-        Text("루인 가계부", style = LooinType.monthTitle, color = c.text)
+        Text(APP_NAME, style = LooinType.monthTitle, color = c.text)
         Spacer(Modifier.height(6.dp))
         Text(
             when {
@@ -160,7 +161,7 @@ fun LockScreen() {
     }
     if (forgot) {
         ConfirmDialog("PIN을 잊었을 때", "데이터를 지키기 위해 PIN을 되찾거나 건너뛸 방법은 없어요.\n\n" +
-            "휴대폰 설정 → 앱 → 루인 가계부 → 저장공간에서 '데이터 삭제'를 하면 PIN과 함께 모든 기록이 지워져요. " +
+            "휴대폰 설정 → 앱 → $APP_NAME → 저장공간에서 '데이터 삭제'를 하면 PIN과 함께 모든 기록이 지워져요. " +
             "백업 파일이 있다면 그 뒤 '백업에서 복원'으로 되살릴 수 있어요.", "확인", { forgot = false }) {}
     }
 }

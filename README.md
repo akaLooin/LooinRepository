@@ -1,4 +1,4 @@
-# 루인 가계부 (Looin Finance) — Phase 1
+# 페즈뱅크 (가칭, 코드명 Looin Finance)
 
 현재 잔고, 예정 지출, 월간 예산, 실제로 쓸 수 있는 여유 금액을 함께 관리하는 Android 가계부 앱입니다.
 설계 결정과 계산 규칙, 확인이 필요한 항목은 [docs/PHASE1_PLAN.md](docs/PHASE1_PLAN.md)에 있고,

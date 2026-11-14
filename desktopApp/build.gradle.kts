@@ -34,11 +34,12 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe, // Windows 실행형 설치 파일
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg, // macOS
             )
-            packageName = "LooinFinance"
+            // 설치 이름(시작 메뉴·설치 폴더·실행 파일). 앱 이름 가칭 "페즈뱅크"의 영문. 데이터 폴더(LooinFinance)는 따로 고정.
+            packageName = "PezBank"
             packageVersion = desktopVersion
             // Windows 설치 도구(WiX)는 설명·저작권의 비ASCII 문자(한글, ©)에서 실패한다 → 영문으로 둔다.
             // 앱 안의 이름(창 제목·화면)은 그대로 한국어.
-            description = "Looin Finance - balance, planned spending and budget"
+            description = "PezBank - balance, planned spending and budget"
             vendor = "Looin"
             copyright = "Copyright (c) Looin"
             // jlink 로 필요한 JDK 모듈만 포함(./gradlew :desktopApp:suggestRuntimeModules 결과)
@@ -46,7 +47,7 @@ compose.desktop {
 
             windows {
                 iconFile.set(project.file("icons/icon.ico"))
-                menuGroup = "Looin"
+                menuGroup = "PezBank"
                 shortcut = true          // 바탕화면 바로가기
                 menu = true              // 시작 메뉴
                 dirChooser = true        // 설치 위치 선택
@@ -57,7 +58,7 @@ compose.desktop {
             macOS {
                 iconFile.set(project.file("icons/icon.icns"))
                 bundleID = "com.looin.finance.desktop"
-                dockName = "루인 가계부"
+                dockName = "페즈뱅크"
             }
             linux {
                 iconFile.set(project.file("icons/icon.png"))

@@ -1,5 +1,6 @@
 package com.looin.finance.desktop
 
+import com.looin.finance.ui.APP_NAME
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -58,7 +59,7 @@ fun main() {
     application {
         Window(
             onCloseRequest = { db.close(); exitApplication() },
-            title = "루인 가계부",
+            title = APP_NAME,
             icon = painterResource("icon.png"),
             state = rememberWindowState(size = DpSize(1240.dp, 840.dp)),
             onPreviewKeyEvent = { e -> shortcut(e)?.let { commands.tryEmit(it); true } ?: false },

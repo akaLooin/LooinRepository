@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- scripts/make_icons.py 로 생성한 Looin 엠블럼 (검정 바탕 + 흰 엠블럼) -->
+<!-- scripts/make_icons.py 로 생성: 네이비 바탕 + 깃털 만년필이 새겨진 금화. 테마 아이콘(Android 13+)은 단색 이미지 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="ObsoleteSdkInt">
-    <background android:drawable="@color/ic_launcher_background"/>
+    <background android:drawable="@mipmap/ic_launcher_background"/>
     <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-    <monochrome android:drawable="@mipmap/ic_launcher_foreground"/>
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>
 </adaptive-icon>

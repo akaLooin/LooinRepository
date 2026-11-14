@@ -1,5 +1,6 @@
 package com.looin.finance.widget
 
+import com.looin.finance.ui.APP_NAME
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -92,7 +93,7 @@ internal fun WidgetContent(context: Context, s: WidgetSummary) {
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("루인 가계부 · ${s.periodLabel}", style = TextStyle(color = muted, fontSize = 12.sp), modifier = GlanceModifier.defaultWeight())
+            Text("$APP_NAME · ${s.periodLabel}", style = TextStyle(color = muted, fontSize = 12.sp), modifier = GlanceModifier.defaultWeight())
             Text("D-${s.daysLeft}", style = TextStyle(color = expense, fontSize = 12.sp, fontWeight = FontWeight.Bold))
         }
         Spacer(GlanceModifier.height(6.dp))

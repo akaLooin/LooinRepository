@@ -1,5 +1,6 @@
 package com.looin.finance.ui.settings
 
+import com.looin.finance.ui.APP_NAME
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -144,7 +145,7 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
                     ToggleRow("예정 거래 알림", "매일 오전 9시쯤, 오늘 예정이거나 처리하지 않은 지난 예정 거래가 있을 때만 알려요",
                         reminders.enabled, { reminders.setEnabled(it) })
                 }
-                if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → 루인 가계부 → 알림에서 허용해 주세요.", color = c.danger)
+                if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → $APP_NAME → 알림에서 허용해 주세요.", color = c.danger)
             }
 
             Spacer(Modifier.height(8.dp))

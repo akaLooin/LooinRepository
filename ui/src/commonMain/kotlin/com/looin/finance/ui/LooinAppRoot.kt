@@ -204,7 +204,7 @@ fun LooinAppRoot(
                 Modifier.fillMaxWidth().background(c.bg).statusBarsPadding().height(56.dp).padding(start = GUTTER, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(if (tab == Tab.HOME) "루인 가계부" else tab.label, style = LooinType.monthTitle, color = c.text, modifier = Modifier.weight(1f))
+                Text(if (tab == Tab.HOME) APP_NAME else tab.label, style = LooinType.monthTitle, color = c.text, modifier = Modifier.weight(1f))
                 Box(Modifier.size(44.dp).clip(CircleShape).clickable { nav.navigate("search") }.semantics { contentDescription = "거래 검색" },
                     contentAlignment = Alignment.Center) { Icon(Icons.Filled.Search, null, tint = c.text) }
                 Box(Modifier.size(44.dp).clip(CircleShape).clickable { nav.navigate("settings") }.semantics { contentDescription = "설정" },
@@ -262,7 +262,7 @@ private fun Sidebar(
     val c = Looin.colors
     Row(Modifier.fillMaxHeight()) {
         Column(Modifier.width(232.dp).fillMaxHeight().background(c.card).statusBarsPadding().navigationBarsPadding().padding(horizontal = 14.dp, vertical = 18.dp)) {
-            Text("루인 가계부", style = LooinType.monthTitle, color = c.text, modifier = Modifier.padding(start = 8.dp, bottom = 18.dp))
+            Text(APP_NAME, style = LooinType.monthTitle, color = c.text, modifier = Modifier.padding(start = 8.dp, bottom = 18.dp))
             Row(
                 Modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(12.dp)).background(c.primary).clickable(onClick = onAdd)
                     .semantics(mergeDescendants = true) { contentDescription = "거래 추가" }.padding(horizontal = 14.dp),

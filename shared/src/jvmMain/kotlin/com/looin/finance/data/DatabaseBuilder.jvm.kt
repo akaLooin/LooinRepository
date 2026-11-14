@@ -21,6 +21,7 @@ fun FinanceDatabase.Companion.defaultDesktopFile(): File {
     val os = System.getProperty("os.name").lowercase()
     val home = System.getProperty("user.home")
     val dir = when {
+        // 폴더 이름은 앱 이름이 바뀌어도 그대로 둔다(기존 사용자 데이터를 그대로 읽기 위해)
         os.contains("win") -> File(System.getenv("APPDATA") ?: "$home\\AppData\\Roaming", "LooinFinance")
         os.contains("mac") -> File(home, "Library/Application Support/LooinFinance")
         else -> File(System.getenv("XDG_DATA_HOME") ?: "$home/.local/share", "looin-finance")

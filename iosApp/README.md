@@ -1,4 +1,4 @@
-# iOS 앱 (루인 가계부)
+# iOS 앱 (페즈뱅크)
 
 화면·계산·저장은 모두 Kotlin 공용 모듈이 담당합니다(`:ui` → `LooinUi.framework`). 이 폴더는 그 화면을 띄우는 Swift 껍데기와 앱 설정입니다.
 
@@ -6,7 +6,7 @@
 |---|---|
 | `project.yml` | Xcode 프로젝트 정의(XcodeGen). 번들 ID `com.looin.finance`, iOS 16 이상, iPhone 세로 화면 |
 | `LooinBudget/LooinBudgetApp.swift` | 진입점: `MainViewController()`(Kotlin)를 전체 화면으로 띄움 |
-| `LooinBudget/Info.plist` | 앱 이름 "루인 가계부", Face ID 사용 문구, 수출 규정(암호화 없음) |
+| `LooinBudget/Info.plist` | 앱 이름 "페즈뱅크", Face ID 사용 문구, 수출 규정(암호화 없음) |
 | `LooinBudget/PrivacyInfo.xcprivacy` | 개인정보 매니페스트: 추적·수집 없음, UserDefaults·파일 시각 API 사용 이유 |
 | `LooinBudget/Assets.xcassets` | 앱 아이콘 1024(`scripts/make_icons.py` 의 `ios_icon()`이 생성) |
 

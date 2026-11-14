@@ -6,15 +6,15 @@ PC 앱은 Android 와 **같은 화면·같은 계산·같은 DB 구조**를 쓴�
 
 | 대상 | 명령 | 실행 환경 | 결과 |
 |---|---|---|---|
-| Windows 설치 파일 | `./gradlew :desktopApp:packageMsi` (`packageExe`) | **Windows** | `desktopApp/build/compose/binaries/main/msi/LooinFinance-1.0.0.msi` |
-| macOS 디스크 이미지 | `./gradlew :desktopApp:packageDmg` | **macOS** | `.../dmg/LooinFinance-1.0.0.dmg` |
+| Windows 설치 파일 | `./gradlew :desktopApp:packageMsi` (`packageExe`) | **Windows** | `desktopApp/build/compose/binaries/main/msi/PezBank-1.0.0.msi` |
+| macOS 디스크 이미지 | `./gradlew :desktopApp:packageDmg` | **macOS** | `.../dmg/PezBank-1.0.0.dmg` |
 | 개발 실행 | `./gradlew :desktopApp:run` | 아무 OS | 창으로 실행 |
-| 설치 없이 실행 폴더 | `./gradlew :desktopApp:createDistributable` | 아무 OS(그 OS 용) | `.../app/LooinFinance/` |
+| 설치 없이 실행 폴더 | `./gradlew :desktopApp:createDistributable` | 아무 OS(그 OS 용) | `.../app/PezBank/` |
 
 설치 파일은 그 OS 에서만 만들 수 있으므로 GitHub Actions(`.github/workflows/desktop.yml`)가 푸시할 때마다 Windows 러너에서 MSI·EXE, macOS 러너에서 DMG 를 만들어 **Artifacts** 로 올린다.
 
 ## 설치·데이터 위치
-- Windows: 사용자 폴더에 설치(관리자 권한 불필요), 시작 메뉴 "Looin" 그룹 + 바탕화면 바로가기
+- Windows: 사용자 폴더에 설치(관리자 권한 불필요), 시작 메뉴 "PezBank" 그룹 + 바탕화면 바로가기
 - 데이터(DB): Windows `%APPDATA%\LooinFinance\looin_finance.db`, macOS `~/Library/Application Support/LooinFinance/`, Linux `~/.local/share/looin-finance/`
 - 화면 테마 설정: OS 사용자 설정(Windows 레지스트리 HKCU, macOS plist)
 - 앱을 지워도 데이터 폴더는 남는다(재설치 시 그대로 이어짐). 백업은 설정 → 데이터 → 백업 파일 만들기(Android 와 같은 형식이라 서로 옮길 수 있음)

@@ -157,7 +157,7 @@ object BackupCodec {
         val root = try { json.parseToJsonElement(text).jsonObject } catch (e: Exception) {
             throw FinanceException("백업 파일을 읽을 수 없습니다(JSON 형식 아님).")
         }
-        if (root.str("format") != FORMAT) throw FinanceException("루인 가계부 백업 파일이 아닙니다.")
+        if (root.str("format") != FORMAT) throw FinanceException("페즈뱅크(이 앱) 백업 파일이 아닙니다.")
         val version = root.intOrNull("formatVersion") ?: -1
         if (version < 1 || version > FORMAT_VERSION) throw FinanceException("지원하지 않는 백업 형식 버전입니다($version). 앱을 업데이트하세요.")
         val data = try { parse(root) } catch (e: FinanceException) { throw e } catch (e: Exception) {

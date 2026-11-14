@@ -121,7 +121,7 @@ object TransactionCsvImport {
         if (cDate == null || (cAmount == null && cOut == null && cIn == null)) {
             return ImportPreview(listOf(ImportItem(1, ImportStatus.ERROR, null, "날짜와 금액(또는 출금액/입금액) 열을 찾을 수 없습니다. 첫 줄에 열 이름이 있어야 합니다.")), false, "알 수 없음")
         }
-        val format = if (cFrom != null || cTo != null) "루인 가계부 형식" else if (cOut != null || cIn != null) "은행 거래내역 형식" else "날짜·금액 형식"
+        val format = if (cFrom != null || cTo != null) "이 앱 형식" else if (cOut != null || cIn != null) "은행 거래내역 형식" else "날짜·금액 형식"
         val activeAccounts = accounts.filter { !it.archived }
         fun accountByName(n: String?) = n?.trim()?.takeIf { it.isNotEmpty() }?.let { name -> activeAccounts.firstOrNull { it.name == name } }
         val default = defaultAccountId?.let { id -> activeAccounts.firstOrNull { it.id == id } }

@@ -37,7 +37,7 @@ class CsvTest {
         assertTrue(csv.startsWith(Csv.BOM))
         // 빈 앱에 가져오면 4건 모두 새 거래로, 원래 값 그대로
         val fresh = preview(csv)
-        assertEquals("루인 가계부 형식", fresh.format)
+        assertEquals("이 앱 형식", fresh.format)
         assertEquals(4, fresh.newItems.size)
         val imported = fresh.newItems.map { it.tx!! }
         assertEquals(txs.map { it.type to it.amount }.toSet(), imported.map { it.type to it.amount }.toSet())

@@ -1,5 +1,6 @@
 package com.looin.finance.ui.security
 
+import com.looin.finance.ui.APP_NAME
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.LocalAuthentication.LAContext
 import platform.LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics
@@ -15,7 +16,7 @@ class IosBiometric : BiometricControl {
     override fun authenticate(onSuccess: () -> Unit) {
         if (!available) return
         val context = LAContext().apply { localizedFallbackTitle = "PIN 입력" }
-        context.evaluatePolicy(LAPolicyDeviceOwnerAuthenticationWithBiometrics, localizedReason = "루인 가계부 잠금 해제") { ok, _ ->
+        context.evaluatePolicy(LAPolicyDeviceOwnerAuthenticationWithBiometrics, localizedReason = "$APP_NAME 잠금 해제") { ok, _ ->
             if (ok) dispatch_async(dispatch_get_main_queue()) { onSuccess() }
         }
     }

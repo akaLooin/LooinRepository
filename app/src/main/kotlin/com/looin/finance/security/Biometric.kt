@@ -1,5 +1,6 @@
 package com.looin.finance.security
 
+import com.looin.finance.ui.APP_NAME
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricPrompt
@@ -22,7 +23,7 @@ class AndroidBiometric(private val activity: FragmentActivity) : BiometricContro
         })
         prompt.authenticate(
             BiometricPrompt.PromptInfo.Builder()
-                .setTitle("루인 가계부 잠금 해제")
+                .setTitle("$APP_NAME 잠금 해제")
                 .setSubtitle("지문 또는 얼굴로 확인해요")
                 .setNegativeButtonText("PIN 입력")
                 .setAllowedAuthenticators(BIOMETRIC_WEAK)
