@@ -882,7 +882,7 @@ fun TransactionRow(
                 Spacer(Modifier.width(6.dp))
                 if (tx.recurringId != null) {
                     Text("↻", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.menuMove,
-                        modifier = Modifier.semantics { contentDescription = "반복 거래" })
+                        modifier = Modifier.semantics { contentDescription = "고정 비용" })
                     Spacer(Modifier.width(4.dp))
                 }
                 StatusBadge(tx.status)

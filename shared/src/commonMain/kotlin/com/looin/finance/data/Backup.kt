@@ -111,6 +111,8 @@ object BackupCodec {
                         put("id", b.id); put("basis", b.basis.name); put("periodStart", b.periodStart.toString())
                         put("periodEndExclusive", b.periodEndExclusive.toString()); putOpt("categoryId", b.categoryId)
                         put("amount", b.amount); put("memo", b.memo)
+                        // 앱 v6~: 계좌 예산·경고 비율(없으면 카테고리/전체, 80%)
+                        putOpt("accountId", b.accountId); put("warnPercent", b.warnPercent)
                     })
                 }
             })
@@ -141,15 +143,6 @@ object BackupCodec {
                     add(buildJsonObject {
                         put("id", a.id); put("goalId", a.goalId); put("amount", a.amount); put("date", a.date.toString())
                         put("memo", a.memo); put("createdAt", a.createdAt)
-                    })
-                }
-            })
-            // 지출 한도(앱 v5~). 없으면 한도 없음 — 형식 2 그대로라 옛 앱도 읽고 이 항목만 무시한다
-            put("spendingLimits", buildJsonArray {
-                d.limits.forEach { l ->
-                    add(buildJsonObject {
-                        put("id", l.id); put("target", l.target.name); putOpt("targetId", l.targetId); put("amount", l.amount)
-                        put("warnPercent", l.warnPercent); put("active", l.active); put("createdAt", l.createdAt); put("updatedAt", l.updatedAt)
                     })
                 }
             })
@@ -204,7 +197,8 @@ object BackupCodec {
         }
         val budgets = root.arr("budgets").map { o ->
             Budget(o.long("id"), PeriodBasis.valueOf(o.req("basis")), LocalDate.parse(o.req("periodStart")),
-                LocalDate.parse(o.req("periodEndExclusive")), o.longOrNull("categoryId"), o.long("amount"), o.str("memo") ?: "")
+                LocalDate.parse(o.req("periodEndExclusive")), o.longOrNull("categoryId"), o.long("amount"), o.str("memo") ?: "",
+                o.longOrNull("accountId"), o.intOrNull("warnPercent") ?: 80)
         }
         val rules = (root["recurringRules"] as? JsonArray)?.map { it.jsonObject }?.map { o ->
             RecurringRule(
@@ -248,7 +242,7 @@ object BackupCodec {
         fun checkAcc(id: Long?) { if (id != null && id !in accountIds) throw FinanceException("없는 계좌(#$id)를 가리키는 기록이 있습니다.") }
         fun checkCat(id: Long?) { if (id != null && id !in categoryIds) throw FinanceException("없는 카테고리(#$id)를 가리키는 기록이 있습니다.") }
         d.transactions.forEach { checkAcc(it.fromAccountId); checkAcc(it.toAccountId); checkCat(it.categoryId) }
-        d.budgets.forEach { checkCat(it.categoryId) }
+        d.budgets.forEach { checkCat(it.categoryId); checkAcc(it.accountId) }
         d.rules.forEach { checkAcc(it.fromAccountId); checkAcc(it.toAccountId); checkCat(it.categoryId) }
         d.goals.forEach { checkAcc(it.accountId) }
         val goalIds = d.goals.map { it.id }.toSet()

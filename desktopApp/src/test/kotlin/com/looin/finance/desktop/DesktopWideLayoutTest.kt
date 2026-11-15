@@ -81,9 +81,9 @@ class DesktopWideLayoutTest {
         val p = PeriodCalculator.periodContaining(today, PeriodBasis.CALENDAR, 25)
         repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = null, amount = 1_200_000))
         repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = cat("식비"), amount = 300_000))
-        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.CATEGORY, targetId = cat("식비"), amount = 50_000))
-        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.CATEGORY, targetId = cat("카페·간식"), amount = 5_000))
-        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.ALL, amount = 1_000_000))
+        // 경고가 보이도록: 카페·간식 예산 5,000(4,800 사용 → 96% 경고), 주거래 통장 계좌 예산
+        repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = cat("카페·간식"), amount = 5_000))
+        repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = null, accountId = main, amount = 500_000))
     }
 
     private fun ComposeUiTest.shot(name: String) {

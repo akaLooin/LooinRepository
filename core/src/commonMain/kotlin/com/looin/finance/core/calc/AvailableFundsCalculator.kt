@@ -56,8 +56,9 @@ object AvailableFundsCalculator {
         val ids = included.map { it.id }.toSet()
         val cash = included.sumOf { BalanceCalculator.actualBalance(it, transactions) }
 
-        val statuses = BudgetCalculator.statuses(budgets, period, transactions)
-        val overall = statuses.firstOrNull { it.budget.categoryId == null }
+        // 계좌 예산은 경고용(카테고리와 겹침) → 사용 가능 금액 계산에서 제외
+        val statuses = BudgetCalculator.statuses(budgets, period, transactions).filter { !it.budget.isAccount }
+        val overall = statuses.firstOrNull { it.budget.isOverall }
         val categoryStatuses = statuses.filter { it.budget.categoryId != null }
 
         val pendingExpenses = transactions.filter {
@@ -70,7 +71,8 @@ object AvailableFundsCalculator {
         if (overall != null) {
             budgetReserve = overall.reserve
             reserveLines += BreakdownLine("전체 생활비 예산 확보액", overall.reserve, -1,
-                "예산 ${MoneyFormat.format(overall.budget.amount)} − 사용 ${MoneyFormat.format(overall.spent)}, 예정 ${MoneyFormat.format(overall.planned)} 포함")
+                "예산 ${MoneyFormat.format(overall.effective)}" + (if (overall.fixed > 0) "(고정 비용 ${MoneyFormat.format(overall.fixed)} 포함)" else "") +
+                    " − 사용 ${MoneyFormat.format(overall.spent)}, 예정 ${MoneyFormat.format(overall.planned)} 포함")
             coveredByBudget = { it.date in period }
         } else {
             budgetReserve = categoryStatuses.sumOf { it.reserve }

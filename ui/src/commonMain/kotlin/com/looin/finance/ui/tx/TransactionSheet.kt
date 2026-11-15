@@ -73,7 +73,7 @@ fun TransactionActionSheet(
     // 유형 바꾸기: 지출 ↔ 수입 ↔ 저축 및 이체. 원래 쓰던 계좌는 그대로 두고, 이체는 넣을 자산을 고른다.
     val baseAccount = tx.fromAccountId ?: tx.toAccountId
     fun convert(to: TransactionType, dest: Long? = null) {
-        vm.saveTransaction(convertType(tx, to, dest)) { mode = "menu" }
+        vm.saveTransaction(convertType(tx, to, dest), onSuccess = { mode = "menu" })
     }
     LooinSheet(onDismiss, when (mode) { "complete" -> "완료 처리"; "transferTo" -> "어느 자산으로 넣을까요?"; else -> title }) {
         when (mode) {
@@ -134,7 +134,7 @@ fun TransactionActionSheet(
                 }
                 if (editable) MenuRow(Icons.Outlined.ContentCopy, "복사해서 새로 입력", c.menuSoft, { onDismiss(); onCopy(tx) })
                 val rule = tx.recurringId?.let { id -> data.rules.firstOrNull { it.id == id } }
-                if (rule != null) MenuRow(Icons.Outlined.Repeat, "반복 규칙 보기", c.menuMove, { onDismiss(); onOpenRule(rule.id) }, rule.scheduleLabel)
+                if (rule != null) MenuRow(Icons.Outlined.Repeat, "고정 비용 보기", c.menuMove, { onDismiss(); onOpenRule(rule.id) }, rule.scheduleLabel)
                 MenuRow(Icons.Outlined.Info, "정보 보기", c.menuInfo, { mode = "info" })
             }
         }

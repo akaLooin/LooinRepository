@@ -136,15 +136,17 @@ class MemoSuggestUiTest {
         assertEquals("교육", saved)
     }
 
-    /** 지출 한도: 입력 중 경고(85%) → 금액을 올리면 제한 → 저장 시 확인 후 저장 */
-    @Test fun limitWarningsWhileEntering() {
+    /** 예산 경고(지출 한도를 예산에 합침): 입력 중 85% 경고 → 금액을 올리면 초과 → 확인 없이 그대로 저장(기록 앱) */
+    @Test fun budgetWarningsWhileEntering() {
         runBlocking {
             repo.ensureInitialized()
             val acc = repo.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 500_000, includeInAvailable = true))
             val food = repo.snapshot().categories.first { it.name == "식비" }.id
             repo.saveTransaction(Transaction(type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 70_000,
                 date = today, completedDate = today, fromAccountId = acc, categoryId = food))
-            repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.CATEGORY, targetId = food, amount = 100_000))
+            val p = com.looin.finance.core.period.PeriodCalculator.periodContaining(today, com.looin.finance.core.period.PeriodBasis.CALENDAR, 25)
+            repo.saveBudget(com.looin.finance.core.model.Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive,
+                categoryId = food, amount = 100_000))
         }
         val vm = MainViewModel(repo)
         var closed = false
@@ -152,19 +154,15 @@ class MemoSuggestUiTest {
             val state by vm.state.collectAsState()
             LooinTheme { TransactionEditScreen(state, vm, null, null, null, null, null, onClose = { closed = true }) }
         }
-        await { vm.state.value.data.limits.size == 1 }
+        await { vm.state.value.data.budgets.size == 1 }
         rule.onNodeWithText("식비").performClick() // 최근 카테고리
         val amount = rule.onNode(hasSetTextAction() and hasContentDescription("금액"))
         amount.performTextInput("15000")
-        rule.onNodeWithText("식비 한도의 85% (85,000원 / 100,000원)").assertExists()
-        rule.onNodeWithText("경고").assertExists()
+        rule.onNodeWithText("식비 예산의 85%를 썼어요 · 남은 15,000원").assertExists()
         amount.performTextInput("0") // 150000
-        rule.onNodeWithText("식비 한도를 120,000원 넘어요").assertExists()
+        rule.onNodeWithText("식비 예산을 120,000원 넘었어요").assertExists()
         rule.onNodeWithText("저장").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodes(androidx.compose.ui.test.hasText("한도(100,000원)를 120,000원 넘어요", substring = true)).fetchSemanticsNodes().isNotEmpty() }
-        rule.onAllNodes(androidx.compose.ui.test.hasText("저장")).fetchSemanticsNodes().size.let { check(it >= 2) }
-        rule.onAllNodes(androidx.compose.ui.test.hasText("저장"))[1].performClick() // 확인 창의 저장
-        await { closed }
+        await { closed } // 확인 창 없이 바로 저장
         assertEquals(2, runBlocking { repo.snapshot().transactions.size })
     }
 }

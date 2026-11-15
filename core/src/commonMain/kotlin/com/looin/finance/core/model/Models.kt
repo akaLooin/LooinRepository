@@ -146,10 +146,19 @@ data class Budget(
     val basis: com.looin.finance.core.period.PeriodBasis,
     val periodStart: LocalDate,
     val periodEndExclusive: LocalDate,
+    /** 카테고리 예산이면 카테고리. 전체 생활비·계좌 예산이면 null. */
     val categoryId: Long?,
+    /** 직접 정한 금액. 범위 안의 고정 비용은 계산할 때 자동으로 더한다([com.looin.finance.core.calc.BudgetStatus.effective]). */
     val amount: Long,
     val memo: String = "",
-)
+    /** 계좌 예산(예: 신용카드): 이 계좌에서 나간 지출. 경고용이라 사용 가능 금액 계산에는 들어가지 않는다. */
+    val accountId: Long? = null,
+    /** 이 비율(%)에 닿으면 경고. */
+    val warnPercent: Int = 80,
+) {
+    val isOverall: Boolean get() = categoryId == null && accountId == null
+    val isAccount: Boolean get() = accountId != null
+}
 
 data class FinanceSettings(
     /** 급여 기준일(1~31). 해당 월에 없는 날짜면 그 달 말일을 적용한다. */

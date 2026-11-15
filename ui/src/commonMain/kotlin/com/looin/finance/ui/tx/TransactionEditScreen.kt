@@ -6,11 +6,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
-import com.looin.finance.core.limit.LimitCalculator
-import com.looin.finance.core.limit.LimitLevel
-import com.looin.finance.core.limit.LimitStatus
+import com.looin.finance.core.calc.BudgetCalculator
+import com.looin.finance.core.calc.BudgetLevel
+import com.looin.finance.core.calc.BudgetStatus
 import com.looin.finance.ui.plan.levelColor
-import com.looin.finance.ui.plan.limitName
+import com.looin.finance.ui.plan.budgetName
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import com.looin.finance.core.calc.RecentPicks
@@ -125,6 +125,7 @@ fun TransactionEditScreen(
         var errors by remember { mutableStateOf<List<String>>(emptyList()) }
         var warnings by remember { mutableStateOf<List<String>>(emptyList()) }
         var pending by remember { mutableStateOf<Transaction?>(null) }
+        var pendingNotice by remember { mutableStateOf<String?>(null) }
         var confirmDelete by remember { mutableStateOf(false) }
         var newAccountFor by remember { mutableStateOf<String?>(null) }
         var newCategory by remember { mutableStateOf(false) }
@@ -153,13 +154,14 @@ fun TransactionEditScreen(
             )
         }
 
-        /** 지금 입력값으로 저장하면 걸리는 지출 한도(지출일 때만). */
-        fun limitImpact(): List<LimitStatus> {
-            if (type != TransactionType.EXPENSE || status == TransactionStatus.CANCELLED || data.limits.isEmpty()) return emptyList()
+        /** 지금 입력값으로 저장하면 경고·초과에 걸리는 예산(지출일 때만). */
+        fun budgetImpact(): List<BudgetStatus> {
+            if (type != TransactionType.EXPENSE || status == TransactionStatus.CANCELLED || data.budgets.isEmpty()) return emptyList()
             val amount = AmountExpression.parse(amountText, currency)?.takeIf { it > 0 } ?: return emptyList()
             val probe = Transaction(id = existing?.id ?: 0, type = type, status = status, amount = amount, currency = currency, date = date,
-                completedDate = if (status == TransactionStatus.COMPLETED) date else null, fromAccountId = fromId, categoryId = categoryId)
-            return LimitCalculator.impact(data.limits, state.periodOf(probe.effectiveDate), data.transactions, probe)
+                completedDate = if (status == TransactionStatus.COMPLETED) date else null, fromAccountId = fromId, categoryId = categoryId,
+                recurringId = existing?.recurringId)
+            return BudgetCalculator.impact(data.budgets, state.periodOf(probe.effectiveDate), data.transactions, probe)
         }
 
         fun submit() {
@@ -167,11 +169,9 @@ fun TransactionEditScreen(
             vm.validate(tx) { r ->
                 errors = r.errors
                 if (r.isValid) {
-                    // 한도를 넘는 지출은 한 번 더 확인(막지는 않음)
-                    val over = limitImpact().filter { it.level == LimitLevel.OVER }
-                        .map { "${limitName(it.limit, data)} 한도(${MoneyFormat.format(it.limit.amount)})를 ${MoneyFormat.format(-it.remaining)} 넘어요." }
-                    val all = r.warnings + over
-                    if (all.isEmpty()) vm.saveTransaction(tx, onClose) else { warnings = all; pending = tx }
+                    // 예산 경고는 막지 않고, 저장 뒤 안내로 한 번 더 알려 경각심을 준다
+                    val notice = budgetImpact().firstOrNull()?.let { st -> "저장했어요 · ${budgetName(st.budget, data)} ${st.message { MoneyFormat.format(it) }}" }
+                    if (r.warnings.isEmpty()) vm.saveTransaction(tx, onClose, notice) else { warnings = r.warnings; pending = tx; pendingNotice = notice }
                 }
             }
         }
@@ -196,16 +196,15 @@ fun TransactionEditScreen(
                 }
             })
             AmountField(amountText, { amountText = it }, "금액", Modifier.focusRequester(focus), currency = currency, accent = accent, calculator = true)
-            // 지출 한도: 이 거래를 저장하면 경고·제한에 걸리는지 바로 보여 준다
-            limitImpact().forEach { st ->
-                val col = levelColor(st.level)
+            // 예산: 이 거래를 저장하면 경고·초과(예정 포함)에 걸리는지 바로 보여 준다. 저장은 막지 않는다(기록 앱)
+            budgetImpact().forEach { st ->
+                val lvl = if (st.level != BudgetLevel.OK) st.level else st.forecastLevel
+                val col = levelColor(lvl)
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(col.copy(alpha = 0.12f)).padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically) {
-                    Text(st.level.label, style = LooinType.helper.copy(fontWeight = FontWeight.Bold), color = col)
+                    Text(if (st.level != BudgetLevel.OK) lvl.label else "주의", style = LooinType.helper.copy(fontWeight = FontWeight.Bold), color = col)
                     Spacer(Modifier.width(8.dp))
-                    Text(limitName(st.limit, data) + if (st.level == LimitLevel.OVER) " 한도를 ${MoneyFormat.format(-st.remaining)} 넘어요"
-                        else " 한도의 ${(st.ratio * 100).toInt()}% (${MoneyFormat.format(st.used)} / ${MoneyFormat.format(st.limit.amount)})",
-                        style = LooinType.body, color = c.text)
+                    Text("${budgetName(st.budget, data)} ${st.message { MoneyFormat.format(it) } ?: ""}", style = LooinType.body, color = c.text)
                 }
             }
             if (type != TransactionType.TRANSFER) {
@@ -266,7 +265,7 @@ fun TransactionEditScreen(
 
         pending?.let { tx ->
             ConfirmDialog("확인이 필요해요", warnings.joinToString("\n") + "\n\n그래도 저장할까요?", "저장", { pending = null }, dismiss = "돌아가기") {
-                vm.saveTransaction(tx, onClose)
+                vm.saveTransaction(tx, onClose, pendingNotice)
             }
         }
         if (confirmDelete && existing != null) {

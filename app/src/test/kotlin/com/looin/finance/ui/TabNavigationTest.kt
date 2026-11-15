@@ -8,6 +8,10 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import kotlinx.datetime.plus
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.performSemanticsAction
@@ -62,5 +66,23 @@ class TabNavigationTest {
         tab("돈 관리"); rule.waitUntilAtLeastOneExists(hasContentDescription("예산 추가"), 5_000)
         tab("홈"); homeShown()
         rule.waitUntilDoesNotExist(hasContentDescription("예산 추가"), 2_000)
+    }
+
+    /** 캘린더: 왼쪽으로 밀면 다음 달, "오늘"을 누르면 이번 달로 */
+    @Test fun calendarSwipesBetweenMonths() {
+        val app = rule.activity.application as LooinApp
+        runBlocking { app.repository.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 10_000, includeInAvailable = true)) }
+        homeShown()
+        tab("캘린더")
+        val today = app.repository.today()
+        val next = kotlinx.datetime.LocalDate(today.year, today.month, 1).plus(kotlinx.datetime.DatePeriod(months = 1))
+        fun label(d: kotlinx.datetime.LocalDate) = "${d.year}년 ${d.month.ordinal + 1}월"
+        rule.waitUntilAtLeastOneExists(hasText(label(today)), 5_000)
+        rule.onRoot().performTouchInput {
+            swipe(androidx.compose.ui.geometry.Offset(width * 0.9f, height * 0.45f), androidx.compose.ui.geometry.Offset(width * 0.1f, height * 0.45f), 300)
+        }
+        rule.waitUntilAtLeastOneExists(hasText(label(next)), 5_000)
+        rule.onNode(hasText("오늘")).performClick()
+        rule.waitUntilAtLeastOneExists(hasText(label(today)), 5_000)
     }
 }

@@ -18,6 +18,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,6 +99,9 @@ fun compact(v: Long): String {
 
 fun startOfWeek(d: LocalDate): LocalDate = d.minus(DatePeriod(days = if (d.dayOfWeek == DayOfWeek.SUNDAY) 0 else d.dayOfWeek.ordinal + 1))
 
+private const val PAGE_COUNT = 2401
+private const val CENTER_PAGE = 1200
+
 @Composable
 fun CalendarScreen(
     state: UiState,
@@ -106,8 +115,26 @@ fun CalendarScreen(
 ) {
     val c = Looin.colors
     val data = state.data
-    var anchorDays by rememberSaveable { mutableStateOf(state.today.toEpochDays()) }
     var weekMode by rememberSaveable { mutableStateOf(false) }
+    // 좌우로 밀어 이전·다음 달(주)로: 오늘이 있는 달(주)을 가운데 페이지로 두고 앞뒤로 넉넉히
+    val todayMonth = LocalDate(state.today.year, state.today.month, 1)
+    fun pageStart(page: Int): LocalDate = if (weekMode) startOfWeek(state.today).plus(DatePeriod(days = 7 * (page - CENTER_PAGE)))
+        else todayMonth.plus(DatePeriod(months = page - CENTER_PAGE))
+    var savedPage by rememberSaveable(weekMode) { mutableStateOf(CENTER_PAGE) }
+    val pager = rememberPagerState(initialPage = savedPage) { PAGE_COUNT }
+    val scope = rememberCoroutineScope()
+    var anchorDays by remember(weekMode) { mutableStateOf(pageStart(savedPage).toEpochDays()) }
+    // 밀어서 넘기면 그 달(주)을 기준으로: 오늘이 있으면 오늘, 아니면 첫날을 고른다
+    LaunchedEffect(pager, weekMode) {
+        snapshotFlow { pager.settledPage }.collect { page ->
+            if (page == savedPage && anchorDays == pageStart(page).toEpochDays()) return@collect
+            savedPage = page
+            val start = pageStart(page)
+            anchorDays = start.toEpochDays()
+            val end = if (weekMode) start.plus(DatePeriod(days = 7)) else start.plus(DatePeriod(months = 1))
+            onSelectDays((if (state.today >= start && state.today < end) state.today else start).toEpochDays())
+        }
+    }
     var filter by rememberSaveable { mutableStateOf(CalendarFilter.ALL) }
     val display = ThemePrefs.calendarDisplay
     var completing by remember { mutableStateOf<Transaction?>(null) }
@@ -131,11 +158,7 @@ fun CalendarScreen(
     val sumExpense = active.filter { it.isCompleted && it.type == TransactionType.EXPENSE }.sumOf { it.amount }
     val sumPlanned = active.filter { it.isPlanned && it.type == TransactionType.EXPENSE }.sumOf { it.amount }
 
-    fun go(delta: Int) {
-        val next = if (weekMode) anchor.plus(DatePeriod(days = 7 * delta)) else (if (delta > 0) PeriodCalculator.next(month, 1) else PeriodCalculator.previous(month, 1)).start
-        anchorDays = next.toEpochDays()
-        onSelectDays(next.toEpochDays())
-    }
+    fun go(delta: Int) { scope.launch { pager.animateScrollToPage(pager.currentPage + delta) } }
     val title = if (weekMode) {
         val w = startOfWeek(anchor)
         "${w.year}년 ${w.month.number}월 ${(w.day - 1) / 7 + 1}주차"
@@ -146,7 +169,7 @@ fun CalendarScreen(
     val right = mutableListOf<@Composable () -> Unit>()
         left += {
             PeriodSwitcher(title, null, onPrev = { go(-1) }, onNext = { go(1) },
-                onToday = { anchorDays = state.today.toEpochDays(); onSelectDays(state.today.toEpochDays()) },
+                onToday = { scope.launch { pager.animateScrollToPage(CENTER_PAGE) }; onSelectDays(state.today.toEpochDays()) },
                 extra = { OutlinePill(if (weekMode) "월" else "주") { weekMode = !weekMode } })
             Spacer(Modifier.height(4.dp))
             PillTabs(CalendarFilter.entries, filter, { it.label }, { filter = it })
@@ -154,8 +177,18 @@ fun CalendarScreen(
             PillTabs(CalendarDisplay.entries, display, { it.label }, { ThemePrefs.chooseCalendarDisplay(it) })
         }
         left += {
-            CalendarGrid(rangeStart, rangeEnd, selected, state.today, byDay, showAmounts = true, onSelect = { onSelectDays(it.toEpochDays()) },
-                display = display, balances = if (display == CalendarDisplay.BALANCE) balances else emptyMap())
+            HorizontalPager(pager, Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, key = { it }) { page ->
+                // 페이지마다 그 달(주)의 칸·거래·잔고
+                val ps = pageStart(page)
+                val pe = if (weekMode) ps.plus(DatePeriod(days = 7)) else ps.plus(DatePeriod(months = 1))
+                val pageTxs = data.transactions.filter { it.effectiveDate >= ps && it.effectiveDate < pe && it.matches(filter) }.groupBy { it.effectiveDate }
+                val pageBalances = if (display != CalendarDisplay.BALANCE) emptyMap() else remember(data.transactions, data.accounts, ps, state.today) {
+                    val days = (0 until (pe.toEpochDays() - ps.toEpochDays()).toInt()).map { ps.plus(DatePeriod(days = it)) }
+                    BalanceCalculator.balancesOn(cashAccounts, data.transactions, days, state.today)
+                }
+                CalendarGrid(ps, pe, selected, state.today, pageTxs, showAmounts = true, onSelect = { onSelectDays(it.toEpochDays()) },
+                    display = display, balances = pageBalances)
+            }
         }
         left += {
             Row(Modifier.fillMaxWidth().clip(CircleShape).background(c.surfaceInput).padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {

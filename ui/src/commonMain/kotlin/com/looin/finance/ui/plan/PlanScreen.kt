@@ -67,6 +67,10 @@ import com.looin.finance.ui.components.LooinSheet
 import com.looin.finance.ui.components.MetricRow
 import com.looin.finance.ui.components.PeriodSwitcher
 import com.looin.finance.ui.components.PrimaryButton
+import com.looin.finance.core.money.AmountExpression
+import com.looin.finance.ui.components.PillTabs
+import com.looin.finance.ui.components.PickItem
+import com.looin.finance.ui.components.PickerField
 import com.looin.finance.ui.components.Section
 import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.TransactionRow
@@ -101,8 +105,11 @@ fun PlanScreen(
     }
     val txs = data.transactions
     val statuses = BudgetCalculator.statuses(data.budgets, period, txs)
-    val overall = statuses.firstOrNull { it.budget.categoryId == null }
+    val overall = statuses.firstOrNull { it.budget.isOverall }
     val categoryStatuses = statuses.filter { it.budget.categoryId != null }
+    // 이 기간 고정 비용(반복 거래로 생긴 지출): 예산에 자동으로 더해진다
+    val fixedTxs = txs.filter { it.recurringId != null && it.type == TransactionType.EXPENSE && it.currency == KRW && !it.isCancelled &&
+        ((it.isCompleted && it.effectiveDate in period) || (it.isPlanned && it.date in period)) }
     val stats = StatisticsCalculator.stats(period, txs)
     val plannedInPeriod = txs.filter { it.isPlanned && it.date in period }.sortedBy { it.date }
     val isCurrent = offset == 0
@@ -110,13 +117,13 @@ fun PlanScreen(
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showSummary by remember { mutableStateOf(false) }
 
-    val totalBudget = overall?.budget?.amount ?: categoryStatuses.sumOf { it.budget.amount }
+    val totalBudget = overall?.effective ?: categoryStatuses.sumOf { it.effective }
     val left = totalBudget - stats.expense - stats.plannedExpense
     val budgetSummary = Breakdown(
         title = "예정 지출 확보 후 남는 예산",
         total = left,
         lines = listOf(
-            BreakdownLine(if (overall != null) "전체 생활비 예산" else "카테고리 예산 합계", totalBudget, 1),
+            BreakdownLine(if (overall != null) "전체 생활비 예산(고정 비용 포함)" else "카테고리 예산 합계(고정 비용 포함)", totalBudget, 1),
             BreakdownLine("확정 지출", stats.expense, -1),
             BreakdownLine("예정 지출", stats.plannedExpense, -1),
         ),
@@ -171,20 +178,31 @@ fun PlanScreen(
                     ChipPill("지난 기간 예산 가져오기", false, { vm.copyBudgets(PeriodCalculator.previous(period, settings.paydayDay), period) })
                 }
                 statuses.forEach { s -> BudgetRow(s, data) { editing = s.budget } }
+                // 고정 비용: 예산에 자동 포함. 여기서는 고칠 수 없고 누르면 고정 비용 편집으로 간다
+                if (fixedTxs.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    SmallLabel("고정 비용 · 예산에 자동 포함 (합계 ${fmt(fixedTxs.sumOf { it.amount })})", weight = FontWeight.SemiBold)
+                    fixedTxs.groupBy { it.recurringId }.forEach { (ruleId, list) ->
+                        val rule = data.rules.firstOrNull { it.id == ruleId }
+                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onOpenRule(ruleId) }.padding(horizontal = 4.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Text("↻", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.menuMove)
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(rule?.name ?: list.first().memo, style = LooinType.body, color = c.text)
+                                SmallLabel(data.categoryName(list.first().categoryId) + " · " +
+                                    list.joinToString { "${it.date.month.number}.${it.date.day}" + if (it.isCompleted) " 완료" else " 예정" })
+                            }
+                            AmountText(-list.sumOf { it.amount }, signed = true, color = c.expense, style = LooinType.body)
+                            Text(" ›", style = LooinType.body, color = c.textMuted)
+                        }
+                    }
+                }
             }
         }
         item {
-            Section("예정 지출·수입", dot = c.planned, onAdd = {
-                onAddPlanned(if (state.today in period) state.today else period.start)
-            }, addLabel = "예정 추가") {
-                if (plannedInPeriod.isEmpty()) EmptyHint("이 기간 예정 거래가 없어요.")
-                plannedInPeriod.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true, onComplete = { completing = tx }) }
-                if (plannedInPeriod.isNotEmpty()) SmallLabel("동그라미를 누르면 완료 처리, 줄을 누르면 수정·취소 메뉴가 열려요.")
-            }
-        }
-        item {
-            Section("반복 거래", dot = c.menuMove, onAdd = { onOpenRule(null) }, addLabel = "반복 거래 추가") {
-                if (data.rules.isEmpty()) EmptyHint("월세·통신비·급여처럼 매번 같은 거래를 등록하면 예정 거래가 자동으로 생겨요.")
+            Section("고정 비용", dot = c.menuMove, onAdd = { onOpenRule(null) }, addLabel = "고정 비용 추가") {
+                if (data.rules.isEmpty()) EmptyHint("월세·통신비·급여처럼 매번 같은 거래를 등록하면 예정 거래가 자동으로 생기고, 지출은 예산에 자동으로 더해져요.")
                 data.rules.forEach { r ->
                     val next = RecurrenceCalculator.nextOccurrence(r, state.today)
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onOpenRule(r.id) }.padding(vertical = 8.dp),
@@ -203,7 +221,15 @@ fun PlanScreen(
                 }
             }
         }
-        item { SpendingLimitsSection(data, period, vm) }
+        item {
+            Section("예정 지출·수입", dot = c.planned, onAdd = {
+                onAddPlanned(if (state.today in period) state.today else period.start)
+            }, addLabel = "예정 추가") {
+                if (plannedInPeriod.isEmpty()) EmptyHint("이 기간 예정 거래가 없어요.")
+                plannedInPeriod.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true, onComplete = { completing = tx }) }
+                if (plannedInPeriod.isNotEmpty()) SmallLabel("동그라미를 누르면 완료 처리, 줄을 누르면 수정·취소 메뉴가 열려요.")
+            }
+        }
         item { SavingsGoalsSection(data, state.today, vm) }
         item {
             val rows = StatisticsCalculator.planVsActual(period, data.budgets, txs)
@@ -233,7 +259,8 @@ fun PlanScreen(
         LooinSheet({ editing = null }, if (b.id == 0L) "예산 추가" else "예산 수정") {
             BudgetForm(b, data, statuses,
                 onSave = { vm.saveBudget(it) { editing = null } },
-                onDelete = { vm.deleteBudget(b.id); editing = null })
+                onDelete = { vm.deleteBudget(b.id); editing = null },
+                fixedFor = { BudgetCalculator.fixedIn(it, period, txs) })
         }
     }
     completing?.let { tx ->
@@ -241,40 +268,16 @@ fun PlanScreen(
     }
 }
 
-@Composable
-private fun BudgetRow(s: BudgetStatus, data: FinanceData, onClick: () -> Unit) {
-    val c = Looin.colors
-    val name = s.budget.categoryId?.let { data.categoryName(it) } ?: "전체 생활비"
-    val dot = s.budget.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: c.text
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(vertical = 10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(9.dp).clip(CircleShape).background(dot))
-            Spacer(Modifier.width(8.dp))
-            Text(name, Modifier.weight(1f), style = LooinType.bodyLg.copy(fontWeight = FontWeight.SemiBold), color = c.text)
-            SmallLabel("잔액 ")
-            AmountText(s.remaining, color = if (s.isOver) c.danger else c.text, style = LooinType.bodyLg)
-        }
-        Spacer(Modifier.height(8.dp))
-        val total = s.budget.amount.coerceAtLeast(1).toFloat()
-        BudgetBar(s.spent / total, s.planned / total, s.isOver)
-        Spacer(Modifier.height(4.dp))
-        Row {
-            SmallLabel("예산 ${fmt(s.budget.amount)} · 사용 ${fmt(s.spent)} · 예정 ${fmt(s.planned)}", modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            when {
-                s.isOver -> SmallLabel("초과 ${fmt(-s.remaining)}", color = c.danger)
-                s.isOverWithPlanned -> SmallLabel("예정 포함 시 초과", color = c.planned)
-                else -> SmallLabel("확보 후 ${fmt(s.unreserved)}")
-            }
-        }
-    }
-}
-
 /** 한 덩어리로 보여야 하는 글자(예: "예정 619,000원")가 중간에서 줄바꿈되지 않게 Word Joiner 로 묶는다. */
 private fun glue(text: String) = text.replace(' ', '\u00A0').toList().joinToString("\u2060")
 
-/** 예산 입력 폼(시트 내용). categoryId: -1 = 미선택(신규), null = 전체 생활비. */
-@OptIn(ExperimentalLayoutApi::class)
+/** 예산 대상 종류. */
+private enum class BudgetKind(val label: String) { ALL("전체 생활비"), CATEGORY("카테고리"), ACCOUNT("계좌") }
+
+/**
+ * 예산 입력 폼(시트 내용). categoryId: -1 = 미선택(신규).
+ * 대상: 전체 생활비 / 카테고리 / 계좌(경고용). 금액 + 경고 시점. 범위 안의 고정 비용은 자동으로 더해진다([fixedFor]).
+ */
 @Composable
 fun BudgetForm(
     budget: Budget,
@@ -282,30 +285,61 @@ fun BudgetForm(
     existing: List<BudgetStatus>,
     onSave: (Budget) -> Unit,
     onDelete: () -> Unit,
+    fixedFor: (Budget) -> Long = { 0 },
 ) {
     val c = Looin.colors
     val isNew = budget.id == 0L
-    var categoryId by remember { mutableStateOf(budget.categoryId) }
+    var kind by remember {
+        mutableStateOf(when { budget.accountId != null -> BudgetKind.ACCOUNT; budget.categoryId == null -> BudgetKind.ALL; else -> BudgetKind.CATEGORY })
+    }
+    var categoryId by remember { mutableStateOf(budget.categoryId?.takeIf { it != -1L }) }
+    var accountId by remember { mutableStateOf(budget.accountId) }
+    var warn by remember { mutableStateOf(budget.warnPercent) }
     var text by remember { mutableStateOf(if (isNew) "" else amountToInput(budget.amount, KRW)) }
-    val used = existing.map { it.budget.categoryId }.toSet()
-    val amount = MoneyFormat.parse(text)
-    val accent = categoryId?.let { id -> data.categoryById[id]?.colorArgb }?.let { Color(it) } ?: c.text
+    val usedCats = existing.filter { it.budget.id != budget.id }.mapNotNull { it.budget.categoryId }.toSet()
+    val usedAccs = existing.filter { it.budget.id != budget.id }.mapNotNull { it.budget.accountId }.toSet()
+    val hasOverall = existing.any { it.budget.isOverall && it.budget.id != budget.id }
+    val amount = AmountExpression.parse(text)
+    val draft = budget.copy(
+        categoryId = if (kind == BudgetKind.CATEGORY) categoryId else null,
+        accountId = if (kind == BudgetKind.ACCOUNT) accountId else null,
+        amount = amount ?: 0, warnPercent = warn,
+    )
+    val ready = amount != null && amount >= 0 && when (kind) {
+        BudgetKind.ALL -> !hasOverall
+        BudgetKind.CATEGORY -> categoryId != null
+        BudgetKind.ACCOUNT -> accountId != null
+    }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (isNew) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (null !in used) ChipPill("전체 생활비", categoryId == null, { categoryId = null })
-                data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived && it.id !in used }.forEach { cat ->
-                    ChipPill(cat.name, categoryId == cat.id, { categoryId = cat.id }, dot = Color(cat.colorArgb))
-                }
+            PillTabs(BudgetKind.entries, kind, { it.label }, { kind = it })
+            when (kind) {
+                BudgetKind.ALL -> if (hasOverall) SmallLabel("이 기간에는 전체 생활비 예산이 이미 있어요.", color = c.danger)
+                BudgetKind.CATEGORY -> PickerField("카테고리",
+                    data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived && it.id !in usedCats }.map { PickItem(it.id, it.name, Color(it.colorArgb)) },
+                    categoryId, emptyList(), { categoryId = it })
+                BudgetKind.ACCOUNT -> PickerField("출금 계좌",
+                    data.accounts.filter { !it.archived && it.id !in usedAccs }.map { PickItem(it.id, it.name) }, accountId, emptyList(), { accountId = it })
             }
         } else {
-            Text(budget.categoryId?.let { data.categoryName(it) } ?: "전체 생활비", style = LooinType.pill, color = accent)
+            Text(budgetName(budget, data), style = LooinType.pill, color = c.text)
         }
-        AmountField(text, { text = it }, "예산 금액", accent = accent)
-        SmallLabel("예산은 쓸 수 있는 한도예요. 예정 지출은 이 한도 안에서 확보됩니다.")
-        if (categoryId == null) SmallLabel("전체 생활비 예산이 있으면 사용 가능 금액은 전체 예산 기준으로 계산하고, 카테고리 예산은 하위 한도로만 봐요.")
-        PrimaryButton("저장", { onSave(budget.copy(categoryId = categoryId, amount = amount!!)) },
-            enabled = amount != null && amount >= 0 && categoryId != -1L, strong = true)
+        AmountField(text, { text = it }, "예산 금액 (직접 정하는 금액)", calculator = true)
+        val fixed = if (ready) fixedFor(draft) else 0
+        if (fixed > 0 && amount != null) SmallLabel("이 범위의 고정 비용 ${fmt(fixed)}이 자동으로 더해져 예산은 ${fmt(amount + fixed)}이 돼요.",
+            color = c.textSecondary, weight = FontWeight.SemiBold)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SmallLabel("경고를 보여 줄 시점")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(70, 80, 90).forEach { p -> ChipPill("$p%", warn == p, { warn = p }) }
+            }
+        }
+        SmallLabel(when (kind) {
+            BudgetKind.ACCOUNT -> "계좌 예산은 그 계좌(예: 신용카드)에서 나간 지출을 봐요. 경고용이라 사용 가능 금액 계산에는 들어가지 않아요."
+            BudgetKind.ALL -> "전체 생활비 예산이 있으면 사용 가능 금액은 전체 예산 기준으로 계산하고, 카테고리 예산은 하위 한도로만 봐요."
+            BudgetKind.CATEGORY -> "예정 지출은 이 예산 안에서 확보돼요. 넘어도 저장은 되고, 경고로 알려 줘요."
+        })
+        PrimaryButton("저장", { onSave(draft) }, enabled = ready, strong = true)
         if (!isNew) DangerButton("예산 삭제", onDelete)
     }
 }

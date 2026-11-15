@@ -21,7 +21,6 @@ import kotlinx.datetime.isoDayNumber
 import com.looin.finance.core.period.Period
 import com.looin.finance.core.validation.AccountRules
 import com.looin.finance.core.model.TransactionSource
-import com.looin.finance.core.limit.LimitCalculator
 import com.looin.finance.core.limit.LimitTarget
 import com.looin.finance.core.limit.SpendingLimit
 import com.looin.finance.core.validation.TransactionValidator
@@ -48,6 +47,7 @@ data class FinanceData(
     val rules: List<RecurringRule> = emptyList(),
     val goals: List<SavingsGoal> = emptyList(),
     val allocations: List<SavingsAllocation> = emptyList(),
+    /** 예전 지출 한도(백업에서 읽은 것). 복원 후 예산으로 옮긴다. 화면에서는 쓰지 않는다. */
     val limits: List<SpendingLimit> = emptyList(),
 ) {
     val goalStatuses: List<GoalStatus> by lazy { SavingsCalculator.statuses(goals, allocations) }
@@ -89,7 +89,6 @@ class FinanceRepository(
     }.combine(dao.observeRules()) { d, r -> d.copy(rules = r.map { it.toModel() }) }
         .combine(dao.observeGoals()) { d, g -> d.copy(goals = g.map { it.toModel() }) }
         .combine(dao.observeAllocations()) { d, a -> d.copy(allocations = a.map { it.toModel() }) }
-        .combine(dao.observeLimits()) { d, l -> d.copy(limits = l.map { it.toModel() }) }
 
     val settings: Flow<FinanceSettings> = dao.observeSettings().map { it?.toModel() ?: FinanceSettings() }
 
@@ -102,6 +101,7 @@ class FinanceRepository(
             }
         }
         generateRecurring()
+        convertLegacyLimits()
     }
 
     suspend fun snapshot(): FinanceData = FinanceData(
@@ -114,7 +114,6 @@ class FinanceRepository(
         rules = dao.rules().map { it.toModel() },
         goals = dao.goals().map { it.toModel() },
         allocations = dao.allocations().map { it.toModel() },
-        limits = dao.limits().map { it.toModel() },
     )
 
     // ── 저축 목표 ─────────────────────────────────────────
@@ -332,9 +331,12 @@ class FinanceRepository(
 
     suspend fun saveBudget(budget: Budget): Long = tx {
         if (budget.amount < 0) throw FinanceException("예산은 0원 이상이어야 합니다.")
+        if (budget.warnPercent !in 1..99) throw FinanceException("경고 시점은 1~99% 사이여야 합니다.")
+        if (budget.categoryId != null && budget.accountId != null) throw FinanceException("예산은 카테고리와 계좌 중 하나만 정할 수 있습니다.")
+        if (budget.accountId != null && dao.accounts().none { it.id == budget.accountId }) throw FinanceException("계좌를 찾을 수 없습니다.")
         val duplicate = dao.budgets().any {
             it.id != budget.id && it.basis == budget.basis && it.periodStart == budget.periodStart &&
-                it.categoryId == budget.categoryId
+                it.categoryId == budget.categoryId && it.accountId == budget.accountId
         }
         if (duplicate) throw FinanceException("이 기간에 같은 항목의 예산이 이미 있습니다.")
         if (budget.categoryId != null) {
@@ -351,8 +353,8 @@ class FinanceRepository(
     /** 이전 기간 예산을 대상 기간으로 복사(이미 있는 항목은 건너뜀). 복사된 개수 반환. */
     suspend fun copyBudgets(from: Period, to: Period): Int = tx {
         val all = dao.budgets().map { it.toModel() }
-        val existing = all.filter { it.basis == to.basis && it.periodStart == to.start }.map { it.categoryId }.toSet()
-        val source = all.filter { it.basis == from.basis && it.periodStart == from.start && it.categoryId !in existing }
+        val existing = all.filter { it.basis == to.basis && it.periodStart == to.start }.map { it.categoryId to it.accountId }.toSet()
+        val source = all.filter { it.basis == from.basis && it.periodStart == from.start && (it.categoryId to it.accountId) !in existing }
         source.forEach {
             dao.insertBudget(it.copy(id = 0, basis = to.basis, periodStart = to.start, periodEndExclusive = to.endExclusive).toEntity())
         }
@@ -406,32 +408,34 @@ class FinanceRepository(
         u
     }
 
-    // ── 지출 한도 ─────────────────────────────────────────
+    // ── 예전 지출 한도 → 예산 ──────────────────────────────
 
-    /** 한도 저장. 같은 대상(전체/같은 카테고리/같은 계좌)에는 하나만. */
-    suspend fun saveLimit(limit: SpendingLimit): Long = tx {
-        val errors = LimitCalculator.validate(limit)
-        if (errors.isNotEmpty()) throw FinanceException(errors.joinToString("\n"))
-        val all = dao.limits().map { it.toModel() }
-        if (all.any { it.id != limit.id && it.target == limit.target && it.targetId == limit.targetId }) {
-            throw FinanceException("이 대상에는 이미 한도가 있어요. 기존 한도를 고치세요.")
+    /**
+     * 예전 "지출 한도"(v5)를 이번 주 기간 예산으로 옮긴다(사용자 결정 2026-11-15: 한도는 예산에 합친다).
+     * 같은 범위의 예산이 이미 있으면 금액은 두고 경고 비율만 가져온다. 옮긴 뒤 한도 행은 지운다.
+     */
+    suspend fun convertLegacyLimits(): Int = tx {
+        val limits = dao.limits().map { it.toModel() }
+        if (limits.isEmpty()) return@tx 0
+        val st = dao.settings()?.toModel() ?: FinanceSettings()
+        val p = PeriodCalculator.periodContaining(today(), st.primaryBasis, st.paydayDay)
+        val budgets = dao.budgets().map { it.toModel() }.filter { it.basis == p.basis && it.periodStart == p.start }
+        val accounts = dao.accounts().map { it.id }.toSet()
+        val categories = dao.categories().map { it.id }.toSet()
+        var n = 0
+        limits.filter { it.active }.forEach { l ->
+            val cat = if (l.target == LimitTarget.CATEGORY) l.targetId else null
+            val acc = if (l.target == LimitTarget.ACCOUNT) l.targetId else null
+            if ((cat != null && cat !in categories) || (acc != null && acc !in accounts)) return@forEach
+            val same = budgets.firstOrNull { it.categoryId == cat && it.accountId == acc }
+            if (same != null) dao.updateBudget(same.copy(warnPercent = l.warnPercent).toEntity())
+            else dao.insertBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive,
+                categoryId = cat, amount = l.amount, accountId = acc, warnPercent = l.warnPercent).toEntity())
+            n++
         }
-        val s = snapshot()
-        when (limit.target) {
-            LimitTarget.CATEGORY -> if (s.categories.none { it.id == limit.targetId }) throw FinanceException("카테고리를 찾을 수 없습니다.")
-            LimitTarget.ACCOUNT -> if (s.accounts.none { it.id == limit.targetId }) throw FinanceException("계좌를 찾을 수 없습니다.")
-            LimitTarget.ALL -> Unit
-        }
-        val t = now()
-        if (limit.id == 0L) dao.upsertLimit(limit.copy(createdAt = t, updatedAt = t).toEntity())
-        else {
-            val old = all.firstOrNull { it.id == limit.id } ?: throw FinanceException("한도를 찾을 수 없습니다.")
-            dao.upsertLimit(limit.copy(createdAt = old.createdAt, updatedAt = t).toEntity())
-            limit.id
-        }
+        dao.clearLimits()
+        n
     }
-
-    suspend fun deleteLimit(id: Long) = dao.deleteLimit(id)
 
     /** 기간 설정을 바꿔도 거래·예산 기록은 그대로 둔다(예산은 생성 당시 기간을 저장하고 있음). */
     suspend fun updateSettings(settings: FinanceSettings) {
@@ -460,12 +464,13 @@ class FinanceRepository(
             dao.insertRules(incoming.rules.map { it.toEntity() })
             dao.insertGoals(incoming.goals.map { it.toEntity() })
             dao.insertAllocations(incoming.allocations.map { it.toEntity() })
-            dao.insertLimits(incoming.limits.map { it.toEntity() })
+            dao.insertLimits(incoming.limits.map { it.toEntity() }) // 예전 백업의 한도 → 아래에서 예산으로 옮김
             dao.upsertSettings(incoming.settings.toEntity())
             val after = BackupCodec.summarize(snapshot())
             if (after != BackupCodec.summarize(incoming)) throw FinanceException("복원 결과가 백업과 일치하지 않아 취소했습니다.")
         }
         generateRecurring()
+        convertLegacyLimits() // 예전 백업의 지출 한도 → 이번 기간 예산
         return BackupCodec.summarize(incoming)
     }
 
@@ -510,7 +515,7 @@ fun RecurringRule.toEntity() = RecurringRuleEntity(
 )
 fun SpendingLimitEntity.toModel() = SpendingLimit(id, target, targetId, amount, warnPercent, active, createdAt, updatedAt)
 fun SpendingLimit.toEntity() = SpendingLimitEntity(id, target, targetId, amount, warnPercent, active, createdAt, updatedAt)
-fun BudgetEntity.toModel() = Budget(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
-fun Budget.toEntity() = BudgetEntity(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
+fun BudgetEntity.toModel() = Budget(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo, accountId, warnPercent)
+fun Budget.toEntity() = BudgetEntity(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo, accountId, warnPercent)
 fun SettingsEntity.toModel() = FinanceSettings(paydayDay, primaryBasis)
 fun FinanceSettings.toEntity() = SettingsEntity(1, paydayDay, primaryBasis)

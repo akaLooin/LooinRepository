@@ -36,7 +36,7 @@ class BudgetDialogTest {
         rule.setContent { LooinTheme { BudgetForm(draft, FinanceData(categories = cats, loaded = true), emptyList(), { saved = it }, {}) } }
 
         rule.onNodeWithText("식비").performClick()
-        rule.onNode(hasSetTextAction() and hasContentDescription("예산 금액")).performTextInput("400000")
+        rule.onNode(hasSetTextAction() and hasContentDescription("예산 금액 (직접 정하는 금액)")).performTextInput("400000")
         rule.onNodeWithText("400,000", substring = true).assertExists() // 천 단위 쉼표 표시
         rule.onNodeWithText("저장").performClick()
 

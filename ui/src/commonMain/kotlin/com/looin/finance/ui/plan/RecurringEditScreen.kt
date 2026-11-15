@@ -63,7 +63,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 
-/** 반복 거래(정기 결제·급여) 규칙 추가·수정. 저장하면 다음 기간 말까지 예정 거래가 자동으로 생긴다. */
+/** 고정 비용(반복 거래: 정기 결제·급여) 추가·수정. 저장하면 다음 기간 말까지 예정 거래가 자동으로 생긴다. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClose: () -> Unit) {
@@ -73,7 +73,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
     val existing = ruleId?.let { id -> data.rules.firstOrNull { it.id == id } }
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding().imePadding()) {
         if (ruleId != null && existing == null) {
-            ScreenHeader("반복 거래", onClose); EmptyHint("반복 거래를 찾을 수 없습니다."); return@Column
+            ScreenHeader("고정 비용", onClose); EmptyHint("고정 비용을 찾을 수 없습니다."); return@Column
         }
         val accounts = data.accounts.filter { !it.archived }
         val defaultAccount = accounts.firstOrNull { it.includeInAvailable }?.id ?: accounts.firstOrNull()?.id
@@ -118,7 +118,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
             else RecurrenceCalculator.occurrences(r, state.today, state.today.plus(DatePeriod(years = 1))).take(3)
         }
 
-        ScreenHeader(if (existing == null) "반복 거래 추가" else "반복 거래 수정", onClose)
+        ScreenHeader(if (existing == null) "고정 비용 추가" else "고정 비용 수정", onClose)
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = GUTTER),
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -189,7 +189,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
                 if (existing != null) SmallLabel("수정하면 오늘 이후 아직 처리하지 않은 예정 거래가 새 내용으로 바뀌어요. 완료·취소한 기록은 그대로예요.", color = c.planned)
             }
             error?.let { Text(it, color = c.danger, style = LooinType.body) }
-            if (existing != null) DangerButton("반복 거래 삭제", { confirmDelete = true })
+            if (existing != null) DangerButton("고정 비용 삭제", { confirmDelete = true })
             Spacer(Modifier.height(16.dp))
         }
         PrimaryButton("저장", {
@@ -201,7 +201,7 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
         }, Modifier.padding(horizontal = GUTTER, vertical = 12.dp), strong = true)
 
         if (confirmDelete && existing != null) {
-            ConfirmDialog("반복 거래 삭제", "규칙과 오늘 이후의 미처리 예정 거래를 지워요. 완료한 거래 기록은 남아요.", "삭제",
+            ConfirmDialog("고정 비용 삭제", "규칙과 오늘 이후의 미처리 예정 거래를 지워요. 완료한 거래 기록은 남아요.", "삭제",
                 { confirmDelete = false }, danger = true) { vm.deleteRule(existing.id, onClose) }
         }
     }

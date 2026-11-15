@@ -105,7 +105,7 @@ fun CategoryScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit) {
     deleting?.let { (cat, u) ->
         val effects = buildList {
             if (u.transactions > 0) add("거래 ${u.transactions}건은 '미분류'로 남아요(금액·잔고는 그대로).")
-            if (u.rules > 0) add("반복 거래 ${u.rules}개도 '미분류'가 돼요.")
+            if (u.rules > 0) add("고정 비용 ${u.rules}개도 '미분류'가 돼요.")
             if (u.budgets > 0) add("이 카테고리 예산 ${u.budgets}개는 함께 삭제돼요.")
         }
         ConfirmDialog("'${cat.name}' 삭제", (effects.ifEmpty { listOf("사용한 기록이 없어 바로 지워져요.") }).joinToString("\n") + "\n\n되돌릴 수 없어요. 삭제할까요?", "삭제",

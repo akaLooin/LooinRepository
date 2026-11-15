@@ -79,8 +79,8 @@ object StatisticsCalculator {
             .forEach { byDay[(it.effectiveDate.toEpochDays() - period.start.toEpochDays()).toInt()] += it.amount }
         var run = 0L
         val cumulative = (0 until elapsed).map { run += byDay[it]; run }
-        val pb = BudgetCalculator.budgetsFor(budgets, period)
-        val budget = (pb.firstOrNull { it.categoryId == null }?.amount ?: pb.sumOf { it.amount }).takeIf { it > 0 }
+        val st = BudgetCalculator.statuses(budgets, period, transactions).filter { !it.budget.isAccount }
+        val budget = (st.firstOrNull { it.budget.isOverall }?.effective ?: st.sumOf { it.effective }).takeIf { it > 0 }
         val expected = budget?.let { it * elapsed / days }
         return SpendingPace(days, cumulative, budget, expected, expected?.let { (cumulative.lastOrNull() ?: 0) - it })
     }
@@ -91,7 +91,7 @@ object StatisticsCalculator {
 
     /** 계획(예산) 대비 실제 — 카테고리 예산 기준. 예산이 없는 카테고리의 지출도 포함. */
     fun planVsActual(period: Period, budgets: List<Budget>, transactions: List<Transaction>): List<PlanVsActual> {
-        val periodBudgets = BudgetCalculator.budgetsFor(budgets, period).filter { it.categoryId != null }
+        val periodBudgets = BudgetCalculator.budgetsFor(budgets, period).filter { it.categoryId != null && !it.isAccount }
         val s = stats(period, transactions)
         val plannedByCategory = transactions
             .filter { it.isPlanned && it.type == TransactionType.EXPENSE && it.currency == KRW && it.date in period }
@@ -100,7 +100,7 @@ object StatisticsCalculator {
         return categoryIds.map { id ->
             PlanVsActual(
                 categoryId = id,
-                budget = periodBudgets.filter { it.categoryId == id }.sumOf { it.amount },
+                budget = periodBudgets.filter { it.categoryId == id }.sumOf { BudgetCalculator.status(it, period, transactions).effective }, // 고정 비용 포함
                 actual = s.expenseByCategory[id] ?: 0,
                 planned = plannedByCategory[id] ?: 0,
             )

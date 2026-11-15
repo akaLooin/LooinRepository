@@ -120,20 +120,27 @@ data class RecurringRuleEntity(
 @Entity(
     tableName = "budgets",
     foreignKeys = [ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["category_id"])],
-    indices = [Index(value = ["basis", "period_start", "category_id"], unique = true), Index("category_id")],
+    indices = [Index(value = ["basis", "period_start", "category_id", "account_id"], unique = true), Index("category_id")],
 )
 data class BudgetEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val basis: PeriodBasis,
     @ColumnInfo(name = "period_start") val periodStart: LocalDate,
     @ColumnInfo(name = "period_end_exclusive") val periodEndExclusive: LocalDate,
-    /** null = 전체 생활비 예산. (SQLite UNIQUE 는 NULL 을 중복 허용하므로 저장소에서 별도 확인) */
+    /** null = 전체 생활비 또는 계좌 예산. (SQLite UNIQUE 는 NULL 을 중복 허용하므로 저장소에서 별도 확인) */
     @ColumnInfo(name = "category_id") val categoryId: Long?,
     val amount: Long,
     val memo: String,
+    /** v6: 계좌 예산(출금 계좌). 경고용. */
+    @ColumnInfo(name = "account_id") val accountId: Long? = null,
+    /** v6: 경고 비율(%). */
+    @ColumnInfo(name = "warn_percent", defaultValue = "80") val warnPercent: Int = 80,
 )
 
-/** 지출 한도 (v5). 대상: ALL / CATEGORY(target_id = 카테고리) / ACCOUNT(target_id = 출금 계좌). 매 기간 반복. */
+/**
+ * 예전 지출 한도 (v5). v6 부터 예산에 합쳐져 쓰지 않는다: 남은 행은 앱 시작 시 이번 기간 예산으로 옮기고 지운다
+ * ([FinanceRepository.convertLegacyLimits]). 표는 다음 정리 때 삭제.
+ */
 @Entity(tableName = "spending_limits")
 data class SpendingLimitEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -233,10 +240,7 @@ interface FinanceDao {
     @Query("DELETE FROM recurring_rules WHERE id = :id") suspend fun deleteRule(id: Long)
 
     // 저축 목표
-    @Query("SELECT * FROM spending_limits ORDER BY target, id") fun observeLimits(): Flow<List<SpendingLimitEntity>>
     @Query("SELECT * FROM spending_limits") suspend fun limits(): List<SpendingLimitEntity>
-    @Upsert suspend fun upsertLimit(l: SpendingLimitEntity): Long
-    @Query("DELETE FROM spending_limits WHERE id = :id") suspend fun deleteLimit(id: Long)
     @Query("DELETE FROM spending_limits WHERE target = 'CATEGORY' AND target_id = :categoryId") suspend fun deleteCategoryLimits(categoryId: Long): Int
     @Query("DELETE FROM spending_limits") suspend fun clearLimits()
     @Insert suspend fun insertLimits(l: List<SpendingLimitEntity>)
@@ -281,11 +285,11 @@ interface FinanceDao {
         AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
         RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class, SpendingLimitEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
     // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
     // v2 → v3: 저축 목표·배정 기록 테이블 추가(기존 테이블 변경 없음).
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6)],
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(FinanceDatabaseConstructor::class)

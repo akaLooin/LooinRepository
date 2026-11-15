@@ -87,7 +87,7 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
     // 복원은 파일을 고른 뒤 한 번 더 확인받는다.
     var pendingRestore by remember { mutableStateOf<(() -> String)?>(null) }
     pendingRestore?.let { read ->
-        ConfirmDialog("백업에서 복원", "지금 기기의 계좌·거래·예산·반복 거래가 모두 백업 파일 내용으로 바뀌어요. 계속할까요?", "복원",
+        ConfirmDialog("백업에서 복원", "지금 기기의 계좌·거래·예산·고정 비용이 모두 백업 파일 내용으로 바뀌어요. 계속할까요?", "복원",
             { pendingRestore = null }, danger = true) {
             vm.restoreBackup(read)
         }

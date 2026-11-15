@@ -60,14 +60,16 @@ class RecurringTest {
         assertEquals(0, RecurrenceCalculator.plan(monthly(25).copy(active = false), LocalDate(2026, 11, 13), LocalDate(2027, 2, 28), 1).first.size)
     }
 
-    @Test fun `반복으로 만든 예정 지출은 예산 안에서 한 번만 확보된다`() {
+    @Test fun `고정 비용(반복 거래)은 예산에 자동으로 더해지고 한 번만 확보된다`() {
         val period = PeriodCalculator.periodContaining(LocalDate(2026, 11, 13), PeriodBasis.CALENDAR, 25)
         val (txs, _) = RecurrenceCalculator.plan(monthly(25), LocalDate(2026, 11, 13), period.lastDay, 1)
         val budget = Budget(1, PeriodBasis.CALENDAR, period.start, period.endExclusive, F.food.id, 600_000)
         val s = BudgetCalculator.status(budget, period, txs)
+        assertEquals(500_000, s.fixed)          // 월세(고정 비용)가 자동 포함
+        assertEquals(1_100_000, s.effective)    // 직접 정한 600,000 + 고정 500,000
         assertEquals(500_000, s.planned)
-        assertEquals(600_000, s.remaining)
-        assertEquals(100_000, s.unreserved)
+        assertEquals(1_100_000, s.remaining)
+        assertEquals(600_000, s.unreserved)     // 직접 정한 금액은 변동 지출에 그대로 남는다
         // 실제 잔고는 그대로, 예상 잔고에만 반영
         assertEquals(1_000_000, BalanceCalculator.actualBalance(F.checking, txs))
         assertEquals(500_000, BalanceCalculator.projectedBalance(F.checking, txs, period.lastDay))

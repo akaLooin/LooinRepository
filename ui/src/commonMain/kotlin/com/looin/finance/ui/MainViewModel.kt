@@ -91,8 +91,9 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         viewModelScope.launch { onResult(repo.validate(tx)) }
     }
 
-    fun saveTransaction(tx: Transaction, onSuccess: () -> Unit) =
-        run(if (tx.id == 0L) "저장했습니다" else "수정했습니다", onSuccess) { repo.saveTransaction(tx) }
+    /** [notice] 가 있으면 저장 안내 대신 보여 준다(예: 예산 경고 — 저장은 그대로 된다). */
+    fun saveTransaction(tx: Transaction, onSuccess: () -> Unit, notice: String? = null) =
+        run(notice ?: if (tx.id == 0L) "저장했습니다" else "수정했습니다", onSuccess) { repo.saveTransaction(tx) }
 
     fun deleteTransaction(id: Long, onSuccess: () -> Unit = {}) = run("삭제했습니다", onSuccess) { repo.deleteTransaction(id) }
     fun completeTransaction(id: Long, date: LocalDate, amount: Long?) = run("완료 처리했습니다") { repo.completeTransaction(id, date, amount) }
@@ -130,9 +131,9 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         run(if (archived) "목표를 보관하고 배정을 풀었습니다" else "목표를 다시 사용합니다") { repo.setGoalArchived(goalId, archived) }
 
     fun saveRule(rule: RecurringRule, onSuccess: () -> Unit) =
-        run(if (rule.id == 0L) "반복 거래를 만들었습니다" else "반복 거래를 수정했습니다", onSuccess) { repo.saveRule(rule) }
+        run(if (rule.id == 0L) "고정 비용을 만들었습니다" else "고정 비용을 수정했습니다", onSuccess) { repo.saveRule(rule) }
 
-    fun deleteRule(id: Long, onSuccess: () -> Unit) = run("반복 거래를 삭제했습니다", onSuccess) { repo.deleteRule(id) }
+    fun deleteRule(id: Long, onSuccess: () -> Unit) = run("고정 비용을 삭제했습니다", onSuccess) { repo.deleteRule(id) }
 
     /** 백업 파일 쓰기. [write] 는 IO 스레드에서 호출된다. */
     fun exportBackup(appVersion: String, write: (String) -> Unit) = run("백업 파일을 저장했습니다") {
@@ -228,10 +229,4 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         onCreated(id)
     }
 
-    // ── 지출 한도 ─────────────────────────────────────────
-
-    fun saveLimit(limit: com.looin.finance.core.limit.SpendingLimit, onSuccess: () -> Unit) =
-        run(if (limit.id == 0L) "지출 한도를 만들었습니다" else "지출 한도를 고쳤습니다", onSuccess) { repo.saveLimit(limit) }
-
-    fun deleteLimit(id: Long) = run("지출 한도를 삭제했습니다") { repo.deleteLimit(id) }
 }

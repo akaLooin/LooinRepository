@@ -64,8 +64,7 @@ import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.TransactionRow
 import com.looin.finance.ui.components.Card
 import com.looin.finance.ui.components.AdaptiveColumns
-import com.looin.finance.core.limit.LimitCalculator
-import com.looin.finance.ui.plan.LimitRow
+import com.looin.finance.ui.plan.BudgetRow
 import com.looin.finance.ui.components.HBar
 import com.looin.finance.ui.components.TextAction
 import androidx.compose.foundation.border
@@ -127,7 +126,9 @@ fun HomeScreen(
         },
         formula = "${period.lastDay.korean()}까지 처리되지 않은 예정 지출 (지난 예정 포함)",
     )
-    val upcoming = txs.filter { it.isPlanned }.sortedBy { it.date }.take(6)
+    // 가장 가까운 예정 거래 3개(지난 미처리 예정이 있으면 그것부터). 나머지는 "외 N건"
+    val allPlanned = txs.filter { it.isPlanned }.sortedBy { it.date }
+    val upcoming = allPlanned.take(3)
     val recent = txs.filter { it.isCompleted }.sortedWith(compareByDescending<Transaction> { it.effectiveDate }.thenByDescending { it.id }).take(6)
     val budgetTotal = statuses.firstOrNull { it.budget.categoryId == null }?.budget?.amount ?: statuses.sumOf { it.budget.amount }
     val usage = if (budgetTotal > 0) (stats.expense.toFloat() / budgetTotal) else null
@@ -208,6 +209,7 @@ fun HomeScreen(
                     TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true, onComplete = { completing = tx })
                     if (tx.date < state.today) SmallLabel("예정일이 지났어요 · 동그라미를 눌러 완료 처리", color = c.danger, modifier = Modifier.padding(start = 45.dp))
                 }
+                if (allPlanned.size > upcoming.size) TextAction("외 ${allPlanned.size - upcoming.size}건 · 돈 관리에서 모두 보기 ›", onOpenPlan, color = c.textMuted)
             }
         }
         // 4) 최근 거래
@@ -218,34 +220,11 @@ fun HomeScreen(
                 recent.forEach { tx -> TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = true) }
             }
         }
-        // 5) 남은 예산
+        // 5) 남은 예산(고정 비용 자동 포함, 경고·초과 표시)
         right += {
             Section("남은 예산", dot = c.accent, onAdd = onOpenPlan, addLabel = "예산 관리") {
                 if (statuses.isEmpty()) EmptyHint("이번 기간 예산이 없어요. 추가를 눌러 돈 관리에서 만들어 보세요.")
-                statuses.forEach { s ->
-                    val name = s.budget.categoryId?.let { data.categoryName(it) } ?: "전체 생활비"
-                    val dot = s.budget.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: c.primary
-                    Column(Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(dot))
-                            Spacer(Modifier.width(8.dp))
-                            Text(name, Modifier.weight(1f), style = LooinType.bodyLg, color = c.text)
-                            AmountText(s.remaining, color = if (s.isOver) c.danger else c.text, style = LooinType.bodyLg)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        val total = s.budget.amount.coerceAtLeast(1).toFloat()
-                        BudgetBar(s.spent / total, s.planned / total, s.isOver)
-                        Spacer(Modifier.height(3.dp))
-                        SmallLabel("예산 ${fmt(s.budget.amount)} · 사용 ${fmt(s.spent)} · 예정 ${fmt(s.planned)}" + if (s.isOver) " · 초과" else "")
-                    }
-                }
-            }
-        }
-        // 지출 한도(있을 때만): 경고·제한에 걸린 것을 먼저
-        val limitStatuses = LimitCalculator.statuses(data.limits, period, txs).sortedByDescending { it.level.ordinal }
-        if (limitStatuses.isNotEmpty()) right += {
-            Section("지출 한도", dot = c.danger, onAdd = onOpenPlan, addLabel = "한도 관리") {
-                limitStatuses.forEach { s -> LimitRow(s, data) }
+                statuses.forEach { s -> BudgetRow(s, data) }
             }
         }
         // 6) 잔고

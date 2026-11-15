@@ -117,4 +117,25 @@ class MigrationTest {
             db.close()
         }
     }
+
+    /** v5 → v6(예산에 계좌·경고 비율): 기존 예산은 계좌 없음·경고 80% */
+    @Test fun v5BudgetsGetDefaults() = runTest {
+        val n = "migration-v5.db"
+        helper.createDatabase(n, 5).apply {
+            val start = LocalDate(2026, 11, 1).toEpochDays(); val end = LocalDate(2026, 12, 1).toEpochDays()
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO budgets (id, basis, period_start, period_end_exclusive, category_id, amount, memo) VALUES (1, 'CALENDAR', $start, $end, NULL, 900000, '')")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 6, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val b = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 15) }).snapshot().budgets.single()
+            assertEquals(900_000, b.amount)
+            assertEquals(null, b.accountId)
+            assertEquals(80, b.warnPercent)
+        } finally {
+            db.close()
+        }
+    }
 }

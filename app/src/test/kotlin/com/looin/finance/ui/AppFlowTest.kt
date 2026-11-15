@@ -52,6 +52,8 @@ open class AppFlowTest {
     }
 
     private fun waitText(text: String) = rule.waitUntilAtLeastOneExists(hasText(text, substring = true), 10_000)
+    /** 금액처럼 다른 문장 안에도 들어갈 수 있는 글자는 정확히 일치하는 칸만 찾는다. */
+    private fun waitExact(text: String) = rule.waitUntilAtLeastOneExists(hasText(text), 10_000)
 
     private fun field(label: String) = rule.onNode(hasSetTextAction() and hasContentDescription(label))
 
@@ -98,10 +100,10 @@ open class AppFlowTest {
         waitText("488,000원")
         shot("05_plan")
 
-        // 반복 거래: 매월 31일(짧은 달은 말일) 월세 300,000원 → 이번 달 말 예정 거래가 자동 생성
-        rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("반복 거래 추가"))
-        rule.onNodeWithContentDescription("반복 거래 추가").performSemanticsAction(SemanticsActions.OnClick)
-        waitText("반복 거래 추가")
+        // 고정 비용(반복 거래): 매월 31일(짧은 달은 말일) 월세 300,000원 → 이번 달 말 예정 거래가 자동 생성
+        rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("고정 비용 추가"))
+        rule.onNodeWithContentDescription("고정 비용 추가").performSemanticsAction(SemanticsActions.OnClick)
+        waitText("고정 비용 추가")
         field("이름").performTextInput("월세")
         field("금액").performTextInput("300000")
         field("반복일 (1~31)").performTextReplacement("31")
@@ -110,27 +112,27 @@ open class AppFlowTest {
         waitText("매월 31일")
         shot("05c_plan_recurring")
 
-        // 홈: 사용 가능 = 잔고 1,488,000 − 예산 확보 488,000 = 1,000,000
-        //   (월세 예정 300,000 은 전체 생활비 예산 안에서 확보되므로 이중 차감 없음)
+        // 홈: 고정 비용(월세 300,000)은 예산에 자동으로 더해진다 → 전체 예산 800,000
+        // 사용 가능 = 잔고 1,488,000 − 예산 확보(800,000 − 사용 12,000 = 788,000) = 700,000 (월세는 예산 안에서 한 번만 확보)
         // 기간 말 예상 잔고 = 1,488,000 − 300,000 = 1,188,000
         rule.onAllNodesWithText("홈").onFirst().performClick()
-        waitText("1,000,000원")
+        waitExact("700,000원")
         waitText("1,188,000원")
 
-        // 저축 목표: 생활비 계좌에서 200,000원을 떼어 두면 사용 가능 금액만 800,000원으로 줄고,
+        // 저축 목표: 생활비 계좌에서 200,000원을 떼어 두면 사용 가능 금액만 500,000원으로 줄고,
         // 실제 돈의 흐름인 기간 말 예상 잔고(1,188,000원)는 그대로다. (목표 입력 폼 자체는 GoalFormTest)
         kotlinx.coroutines.runBlocking {
             val goal = app.repository.saveGoal(com.looin.finance.core.savings.SavingsGoal(name = "여행", targetAmount = 1_000_000))
             app.repository.allocate(goal, 200_000, app.repository.today(), "")
         }
-        waitText("800,000원")
+        waitExact("500,000원")
         waitText("1,188,000원")
         rule.onAllNodesWithText("돈 관리").onFirst().performClick()
         rule.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("저축 목표 추가"))
         waitText("생활비에서 빼 둠")
         shot("05d_plan_goals")
         rule.onAllNodesWithText("홈").onFirst().performClick()
-        waitText("800,000원")
+        waitExact("500,000원")
 
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         waitText("예정 지출")
