@@ -54,6 +54,8 @@ import com.looin.finance.ui.components.AmountText
 import com.looin.finance.ui.components.CoinMarker
 import com.looin.finance.ui.components.CompleteSheet
 import com.looin.finance.ui.components.EmptyHint
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.looin.finance.ui.components.typeColor
 import com.looin.finance.ui.components.AddRowButton
 import com.looin.finance.ui.components.AdaptiveColumns
 import com.looin.finance.ui.components.GUTTER
@@ -99,6 +101,9 @@ fun compact(v: Long): String {
 
 fun startOfWeek(d: LocalDate): LocalDate = d.minus(DatePeriod(days = if (d.dayOfWeek == DayOfWeek.SUNDAY) 0 else d.dayOfWeek.ordinal + 1))
 
+/** 모아 보기 방식. */
+enum class CalendarGrouping(val label: String) { DATE("날짜순"), TYPE("유형별"), CATEGORY("카테고리별") }
+
 private const val PAGE_COUNT = 2401
 private const val CENTER_PAGE = 1200
 
@@ -136,6 +141,7 @@ fun CalendarScreen(
         }
     }
     var filter by rememberSaveable { mutableStateOf(CalendarFilter.ALL) }
+    var grouping by rememberSaveable { mutableStateOf(CalendarGrouping.TYPE) }
     val display = ThemePrefs.calendarDisplay
     var completing by remember { mutableStateOf<Transaction?>(null) }
     val anchor = LocalDate.fromEpochDays(anchorDays)
@@ -209,6 +215,14 @@ fun CalendarScreen(
                 Spacer(Modifier.height(8.dp))
                 // 날짜가 적힌 버튼 전체가 눌리는 영역
                 AddRowButton("${selected.korean()} 수입·지출 추가", { onAddTx(selected) }, description = "이 날 거래 추가")
+            }
+        }
+        // 이번 달(주) 거래를 유형별·카테고리별로 모아 보기(위의 수입/지출/저축 필터도 함께 적용)
+        right += {
+            Section(if (weekMode) "이번 주 모아 보기" else "${anchor.month.number}월 모아 보기", dot = c.primary) {
+                PillTabs(CalendarGrouping.entries, grouping, { it.label }, { grouping = it })
+                Spacer(Modifier.height(8.dp))
+                GroupedTransactions(rangeTxs, data, grouping, onOpenTx)
             }
         }
         AdaptiveColumns(left, right, mobilePadding = PaddingValues(start = GUTTER, end = GUTTER, top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding() + 96.dp), spacing = 14.dp, leftWeight = 1.25f)
@@ -318,4 +332,68 @@ fun CalendarGrid(
             }
         }
     }
+}
+
+/**
+ * 거래 모아 보기. 그룹 머리(이름·건수·합계)를 누르면 그 안의 거래가 펼쳐진다. 취소한 거래는 합계·목록에서 뺀다.
+ *  - 날짜순: 날마다(펼친 채로)
+ *  - 유형별: 수입 / 지출 / 저축 및 이체 / 잔고 조정
+ *  - 카테고리별: 식비·교통… (수입 카테고리는 +, 지출은 −, 많은 순). 이체는 "저축 및 이체"로 묶음
+ */
+@Composable
+fun GroupedTransactions(txs: List<Transaction>, data: com.looin.finance.data.FinanceData, grouping: CalendarGrouping, onOpenTx: (Transaction) -> Unit) {
+    val c = Looin.colors
+    val live = txs.filter { !it.isCancelled }
+    if (live.isEmpty()) { EmptyHint("이 기간 거래가 없어요."); return }
+    data class Group(val key: String, val title: String, val dot: Color, val items: List<Transaction>) {
+        // 합계는 확정(완료) 거래만, 예정은 따로(확정과 섞지 않음)
+        val net: Long get() = items.filter { it.currency == KRW && it.isCompleted }.sumOf { signedAmount(it) }
+        val plannedNet: Long get() = items.filter { it.currency == KRW && it.isPlanned }.sumOf { signedAmount(it) }
+    }
+    val groups: List<Group> = when (grouping) {
+        CalendarGrouping.DATE -> live.groupBy { it.effectiveDate }.toList().sortedBy { it.first }
+            .map { (d, l) -> Group(d.toString(), d.korean(), c.textMuted, l) }
+        CalendarGrouping.TYPE -> live.groupBy { it.type }.toList().sortedBy { it.first.ordinal }
+            .map { (t, l) -> Group(t.name, t.label, typeColor(t), l) }
+        CalendarGrouping.CATEGORY -> live.groupBy { if (it.type == TransactionType.INCOME || it.type == TransactionType.EXPENSE) "c${it.categoryId}" else "t${it.type}" }
+            .map { (k, l) ->
+                val t = l.first()
+                val cat = t.categoryId?.let { data.categoryById[it] }
+                val title = when {
+                    t.type == TransactionType.TRANSFER -> "저축 및 이체"
+                    t.type == TransactionType.ADJUSTMENT -> "잔고 조정"
+                    cat != null -> cat.name + if (t.type == TransactionType.INCOME) " (수입)" else ""
+                    else -> "미분류" + if (t.type == TransactionType.INCOME) " (수입)" else ""
+                }
+                Group(k, title, cat?.let { Color(it.colorArgb) } ?: typeColor(t.type), l)
+            }.sortedByDescending { kotlin.math.abs(it.net) + kotlin.math.abs(it.plannedNet) }
+    }
+    var open by remember(grouping) { mutableStateOf(if (grouping == CalendarGrouping.DATE) groups.map { it.key }.toSet() else emptySet()) }
+    Column { groups.forEach { g ->
+        val expanded = g.key in open
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { open = if (expanded) open - g.key else open + g.key }
+            .padding(horizontal = 4.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(9.dp).clip(CircleShape).background(g.dot))
+            Spacer(Modifier.width(8.dp))
+            Text(g.title, style = LooinType.bodyLg.copy(fontWeight = FontWeight.SemiBold), color = c.text, modifier = Modifier.weight(1f))
+            SmallLabel("${g.items.size}건  ")
+            Column(horizontalAlignment = Alignment.End) {
+                AmountText(g.net, signed = g.items.any { it.type != TransactionType.TRANSFER }, style = LooinType.body,
+                    color = if (g.net < 0) c.expense else if (g.items.all { it.type == TransactionType.TRANSFER }) c.transfer else c.income)
+                if (g.plannedNet != 0L) SmallLabel("예정 ${MoneyFormat.format(g.plannedNet, signed = g.items.any { it.type != TransactionType.TRANSFER })}", color = c.planned)
+            }
+            Text(if (expanded) " ▴" else " ▾", style = LooinType.body, color = c.textMuted)
+        }
+        if (expanded) g.items.sortedWith(compareBy<Transaction> { it.effectiveDate }.thenBy { it.id }).forEach { tx ->
+            TransactionRow(tx, data, onClick = { onOpenTx(tx) }, showDate = grouping != CalendarGrouping.DATE)
+        }
+    } }
+}
+
+/** 모아 보기 합계용 부호: 수입 +, 지출 −, 이체는 옮긴 금액(+), 조정은 증감. */
+private fun signedAmount(t: Transaction): Long = when (t.type) {
+    TransactionType.INCOME -> t.amount
+    TransactionType.EXPENSE -> -t.amount
+    TransactionType.ADJUSTMENT -> if (t.toAccountId != null) t.amount else -t.amount
+    else -> t.amount
 }

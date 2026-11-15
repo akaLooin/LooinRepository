@@ -65,4 +65,25 @@ class BudgetWarningTest {
         val p = BudgetCalculator.impact(b, period, listOf(existing), planned).single()
         assertEquals(BudgetLevel.OK, p.level); assertEquals(BudgetLevel.OVER, p.forecastLevel)
     }
+
+    /** 카테고리 예산만 있을 때 예산 밖(미분류 등) 지출은 예산 여유를 깎지 않고 따로 센다 */
+    @Test fun summaryCountsOnlyBudgetedScopes() {
+        val txs = listOf(
+            F.expense(30_000, date = LocalDate(2026, 11, 3)),                                        // 식비(예산 있음)
+            F.expense(20_000, date = LocalDate(2026, 11, 4), category = null),                       // 미분류
+            F.expense(500_000, date = LocalDate(2026, 11, 25), status = TransactionStatus.PLANNED, category = null), // 미분류 예정
+        )
+        val st = BudgetCalculator.statuses(listOf(budget(100_000)), period, txs)
+        val s = BudgetCalculator.summary(st, period, txs)!!
+        assertEquals(70_000L, s.left)          // 예전에는 100,000 − 50,000 − 500,000 = −450,000 으로 빨갛게 보였다
+        assertEquals(20_000L, s.outsideSpent)
+        assertEquals(500_000L, s.outsidePlanned)
+        assertEquals(0.3f, s.usage!!, 0.001f)
+        // 전체 생활비 예산이 있으면 모든 지출이 범위 안
+        val all = BudgetCalculator.summary(BudgetCalculator.statuses(listOf(budget(1_000_000, category = null)), period, txs), period, txs)!!
+        assertEquals(1_000_000L - 50_000 - 500_000, all.left)
+        assertEquals(0L, all.outsidePlanned)
+        // 계좌 예산만 있으면 요약 없음(경고용)
+        assertNull(BudgetCalculator.summary(BudgetCalculator.statuses(listOf(budget(1, category = null, account = F.card.id)), period, txs), period, txs))
+    }
 }

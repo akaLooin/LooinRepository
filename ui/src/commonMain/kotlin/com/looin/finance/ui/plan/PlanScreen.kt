@@ -117,18 +117,22 @@ fun PlanScreen(
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showSummary by remember { mutableStateOf(false) }
 
-    val totalBudget = overall?.effective ?: categoryStatuses.sumOf { it.effective }
-    val left = totalBudget - stats.expense - stats.plannedExpense
+    // 예산 요약: 예산이 정해진 범위의 지출만(예산 밖 미분류 등은 따로 — 사용 가능 금액에서 별도로 확보되므로 여기서 깎지 않음)
+    val sum = BudgetCalculator.summary(statuses, period, txs)
+    val totalBudget = sum?.effective ?: 0
+    val left = sum?.left ?: 0
     val budgetSummary = Breakdown(
-        title = "예정 지출 확보 후 남는 예산",
+        title = "예정 지출까지 확보하고 남는 예산",
         total = left,
-        lines = listOf(
-            BreakdownLine(if (overall != null) "전체 생활비 예산(고정 비용 포함)" else "카테고리 예산 합계(고정 비용 포함)", totalBudget, 1),
-            BreakdownLine("확정 지출", stats.expense, -1),
-            BreakdownLine("예정 지출", stats.plannedExpense, -1),
-        ),
-        formula = "예산 − 확정 지출 − 예정 지출 (예정 지출은 예산 안에서 확보, 이중 차감 없음)",
-        notes = if (overall == null && categoryStatuses.isNotEmpty()) listOf("예산 없는 카테고리 지출도 확정·예정 지출에 포함됩니다.") else emptyList(),
+        lines = buildList {
+            add(BreakdownLine(if (sum?.hasOverall == true) "전체 생활비 예산(고정 비용 포함)" else "카테고리 예산 합계(고정 비용 포함)", totalBudget, 1))
+            add(BreakdownLine("예산 안 확정 지출", sum?.spent ?: 0, -1))
+            add(BreakdownLine("예산 안 예정 지출", sum?.planned ?: 0, -1))
+            if ((sum?.outsideSpent ?: 0) > 0) add(BreakdownLine("참고: 예산 밖 확정 지출(미분류 등)", sum!!.outsideSpent, 0, "예산이 없는 카테고리"))
+            if ((sum?.outsidePlanned ?: 0) > 0) add(BreakdownLine("참고: 예산 밖 예정 지출", sum!!.outsidePlanned, 0, "사용 가능 금액에서 따로 확보"))
+        },
+        formula = "예산 − 예산 안 확정 지출 − 예산 안 예정 지출 (예정 지출은 예산 안에서 확보, 이중 차감 없음)",
+        notes = listOf("예산이 없는 카테고리·미분류 지출은 예산 여유를 깎지 않아요. 대신 '생활비로 사용 가능한 금액'에서 따로 확보돼요."),
     )
 
     LazyColumn(
@@ -142,19 +146,22 @@ fun PlanScreen(
                 onPrev = { offset-- }, onNext = { offset++ }, onToday = if (isCurrent) null else ({ offset = 0 }),
             )
             Spacer(Modifier.height(10.dp))
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(enabled = statuses.isNotEmpty()) { showSummary = true }.padding(vertical = 4.dp)) {
-                SmallLabel(if (statuses.isEmpty()) "예산이 없어요" else "예정 지출까지 확보하고 남는 예산 ⓘ")
-                AmountText(if (statuses.isEmpty()) 0 else left, style = LooinType.bigAmount, color = if (left < 0 && statuses.isNotEmpty()) c.danger else c.text)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(enabled = sum != null) { showSummary = true }.padding(vertical = 4.dp)) {
+                SmallLabel(if (sum == null) "예산이 없어요" else "예정 지출까지 확보하고 남는 예산 ⓘ")
+                AmountText(left, style = LooinType.bigAmount, color = if (left < 0) c.danger else c.text)
                 // 한 문장으로 그려 좁은 화면에서도 금액 단위로 줄바꿈되게 한다(줄바꿈 금지 공백 사용)
                 Text(buildAnnotatedString {
                     append(glue("예산 ${fmt(totalBudget)}"))
                     append("  ·  ")
                     append(glue("쓴 돈 "))
-                    withStyle(SpanStyle(color = c.expense)) { append(glue(fmt(stats.expense))) }
+                    withStyle(SpanStyle(color = c.expense)) { append(glue(fmt(sum?.spent ?: 0))) }
                     append("  ·  ")
                     append(glue("예정 "))
-                    withStyle(SpanStyle(color = c.planned)) { append(glue(fmt(stats.plannedExpense))) }
+                    withStyle(SpanStyle(color = c.planned)) { append(glue(fmt(sum?.planned ?: 0))) }
                 }, style = LooinType.body, color = c.textSecondary)
+                if ((sum?.outsidePlanned ?: 0) + (sum?.outsideSpent ?: 0) > 0) SmallLabel(
+                    "예산 밖(미분류 등) 지출 ${fmt(sum!!.outsideSpent)} · 예정 ${fmt(sum.outsidePlanned)}은 따로 계산해요",
+                )
             }
         }
         item {

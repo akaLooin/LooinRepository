@@ -128,4 +128,38 @@ object BudgetCalculator {
             .map { status(it, period, others + tx) }
             .filter { it.level != BudgetLevel.OK || it.forecastLevel != BudgetLevel.OK }
     }
+
+    /**
+     * 기간 예산 요약(돈 관리 머리·홈 예산 막대): **예산이 정해진 범위의 지출만** 센다.
+     *  - 전체 생활비 예산이 있으면 그것 하나(모든 지출이 범위 안)
+     *  - 없으면 카테고리 예산들의 합 — 예산 없는 카테고리·미분류 지출은 여기서 빼고 [outsideSpent]·[outsidePlanned] 로 따로
+     *  - 계좌 예산은 경고용이라 넣지 않는다
+     * 예산 밖 예정 지출은 사용 가능 금액 계산에서 따로 확보되므로(이중 차감 없음) 예산 여유를 깎지 않는다.
+     */
+    data class Summary(
+        val effective: Long,
+        val spent: Long,
+        val planned: Long,
+        val outsideSpent: Long,
+        val outsidePlanned: Long,
+        val hasOverall: Boolean,
+    ) {
+        /** 예정 지출까지 확보하고 남는 예산. */
+        val left: Long get() = effective - spent - planned
+        val usage: Float? get() = if (effective > 0) spent.toFloat() / effective else null
+    }
+
+    fun summary(statuses: List<BudgetStatus>, period: Period, transactions: List<Transaction>): Summary? {
+        val main = statuses.filter { !it.budget.isAccount }
+        if (main.isEmpty()) return null
+        val overall = main.firstOrNull { it.budget.isOverall }
+        val scoped = if (overall != null) listOf(overall) else main.filter { it.budget.categoryId != null }
+        val spentIn = scoped.sumOf { it.spent }
+        val plannedIn = scoped.sumOf { it.planned }
+        // 기간 전체 원화 지출 − 예산 범위 안 = 예산 밖
+        val allSpent = spentIn(period, transactions, null)
+        val allPlanned = plannedIn(period, transactions, null)
+        return Summary(scoped.sumOf { it.effective }, spentIn, plannedIn,
+            (allSpent - spentIn).coerceAtLeast(0), (allPlanned - plannedIn).coerceAtLeast(0), overall != null)
+    }
 }

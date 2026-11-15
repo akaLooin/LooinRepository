@@ -130,8 +130,10 @@ fun HomeScreen(
     val allPlanned = txs.filter { it.isPlanned }.sortedBy { it.date }
     val upcoming = allPlanned.take(3)
     val recent = txs.filter { it.isCompleted }.sortedWith(compareByDescending<Transaction> { it.effectiveDate }.thenByDescending { it.id }).take(6)
-    val budgetTotal = statuses.firstOrNull { it.budget.categoryId == null }?.budget?.amount ?: statuses.sumOf { it.budget.amount }
-    val usage = if (budgetTotal > 0) (stats.expense.toFloat() / budgetTotal) else null
+    // 예산 사용률: 예산이 정해진 범위의 지출만(예산 밖 미분류 등은 넣지 않음, 계좌 예산 제외, 고정 비용 포함)
+    val budgetSum = BudgetCalculator.summary(statuses, period, txs)
+    val budgetTotal = budgetSum?.effective ?: 0
+    val usage = budgetSum?.usage
     val daysLeft = period.endExclusive.toEpochDays() - state.today.toEpochDays()
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showAvailable by remember { mutableStateOf(false) }
