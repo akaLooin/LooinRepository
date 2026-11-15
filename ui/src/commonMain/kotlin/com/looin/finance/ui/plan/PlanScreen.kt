@@ -203,6 +203,7 @@ fun PlanScreen(
                 }
             }
         }
+        item { SpendingLimitsSection(data, period, vm) }
         item { SavingsGoalsSection(data, state.today, vm) }
         item {
             val rows = StatisticsCalculator.planVsActual(period, data.budgets, txs)

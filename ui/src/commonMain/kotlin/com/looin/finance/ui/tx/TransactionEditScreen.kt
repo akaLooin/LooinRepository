@@ -1,6 +1,21 @@
 package com.looin.finance.ui.tx
 
 import com.looin.finance.core.calc.MemoSuggest
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import com.looin.finance.core.limit.LimitCalculator
+import com.looin.finance.core.limit.LimitLevel
+import com.looin.finance.core.limit.LimitStatus
+import com.looin.finance.ui.plan.levelColor
+import com.looin.finance.ui.plan.limitName
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+import com.looin.finance.core.calc.RecentPicks
+import com.looin.finance.ui.components.PickerField
+import com.looin.finance.ui.components.PickItem
 import com.looin.finance.core.money.AmountExpression
 import com.looin.finance.core.model.Category
 import com.looin.finance.core.model.AccountType
@@ -116,6 +131,7 @@ fun TransactionEditScreen(
         var memoEdited by remember { mutableStateOf(false) }
         val focus = remember { FocusRequester() }
 
+        fun recentAccounts(side: RecentPicks.Side) = RecentPicks.accounts(data.transactions, type, side)
         val showActualDate = existing?.completedDate != null && existing.completedDate != existing.date
         val currency = data.accountById[if (type == TransactionType.INCOME) toId else fromId]?.currency ?: KRW
         val accent = categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: typeColor(type)
@@ -137,12 +153,25 @@ fun TransactionEditScreen(
             )
         }
 
+        /** 지금 입력값으로 저장하면 걸리는 지출 한도(지출일 때만). */
+        fun limitImpact(): List<LimitStatus> {
+            if (type != TransactionType.EXPENSE || status == TransactionStatus.CANCELLED || data.limits.isEmpty()) return emptyList()
+            val amount = AmountExpression.parse(amountText, currency)?.takeIf { it > 0 } ?: return emptyList()
+            val probe = Transaction(id = existing?.id ?: 0, type = type, status = status, amount = amount, currency = currency, date = date,
+                completedDate = if (status == TransactionStatus.COMPLETED) date else null, fromAccountId = fromId, categoryId = categoryId)
+            return LimitCalculator.impact(data.limits, state.periodOf(probe.effectiveDate), data.transactions, probe)
+        }
+
         fun submit() {
             val tx = build() ?: return
             vm.validate(tx) { r ->
                 errors = r.errors
                 if (r.isValid) {
-                    if (r.warnings.isEmpty()) vm.saveTransaction(tx, onClose) else { warnings = r.warnings; pending = tx }
+                    // 한도를 넘는 지출은 한 번 더 확인(막지는 않음)
+                    val over = limitImpact().filter { it.level == LimitLevel.OVER }
+                        .map { "${limitName(it.limit, data)} 한도(${MoneyFormat.format(it.limit.amount)})를 ${MoneyFormat.format(-it.remaining)} 넘어요." }
+                    val all = r.warnings + over
+                    if (all.isEmpty()) vm.saveTransaction(tx, onClose) else { warnings = all; pending = tx }
                 }
             }
         }
@@ -167,24 +196,33 @@ fun TransactionEditScreen(
                 }
             })
             AmountField(amountText, { amountText = it }, "금액", Modifier.focusRequester(focus), currency = currency, accent = accent, calculator = true)
-            if (type != TransactionType.TRANSFER) {
-                val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallLabel("카테고리")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        data.categories.filter { it.kind == kind && (!it.archived || it.id == categoryId) }.forEach { cat ->
-                            ChipPill(cat.name, cat.id == categoryId, { categoryId = if (categoryId == cat.id) null else cat.id }, dot = Color(cat.colorArgb))
-                        }
-                        ChipPill("+ 카테고리", false, { newCategory = true })
-                    }
+            // 지출 한도: 이 거래를 저장하면 경고·제한에 걸리는지 바로 보여 준다
+            limitImpact().forEach { st ->
+                val col = levelColor(st.level)
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(col.copy(alpha = 0.12f)).padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(st.level.label, style = LooinType.helper.copy(fontWeight = FontWeight.Bold), color = col)
+                    Spacer(Modifier.width(8.dp))
+                    Text(limitName(st.limit, data) + if (st.level == LimitLevel.OVER) " 한도를 ${MoneyFormat.format(-st.remaining)} 넘어요"
+                        else " 한도의 ${(st.ratio * 100).toInt()}% (${MoneyFormat.format(st.used)} / ${MoneyFormat.format(st.limit.amount)})",
+                        style = LooinType.body, color = c.text)
                 }
             }
+            if (type != TransactionType.TRANSFER) {
+                val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
+                PickerField(
+                    "카테고리",
+                    data.categories.filter { it.kind == kind && (!it.archived || it.id == categoryId) }.map { PickItem(it.id, it.name, Color(it.colorArgb)) },
+                    categoryId, RecentPicks.categories(data.transactions, type), { categoryId = it },
+                    addLabel = "새 ${kind.label} 카테고리", onAdd = { newCategory = true }, noneLabel = "미분류",
+                )
+            }
             when (type) {
-                TransactionType.INCOME -> AccountChips("입금 계좌", activeAccounts, toId, { newAccountFor = "to" }) { toId = it }
-                TransactionType.EXPENSE -> AccountChips("출금 계좌", activeAccounts, fromId, { newAccountFor = "from" }) { fromId = it }
+                TransactionType.INCOME -> AccountChips("입금 계좌", activeAccounts, toId, recentAccounts(RecentPicks.Side.TO), { newAccountFor = "to" }) { toId = it }
+                TransactionType.EXPENSE -> AccountChips("출금 계좌", activeAccounts, fromId, recentAccounts(RecentPicks.Side.FROM), { newAccountFor = "from" }) { fromId = it }
                 else -> {
-                    AccountChips("출금 계좌", activeAccounts, fromId, { newAccountFor = "from" }) { fromId = it; if (toId == it) toId = null }
-                    AccountChips("입금 계좌 (넣을 자산)", activeAccounts.filter { it.id != fromId }, toId, { newAccountFor = "to" }) { toId = it }
+                    AccountChips("출금 계좌", activeAccounts, fromId, recentAccounts(RecentPicks.Side.FROM), { newAccountFor = "from" }) { fromId = it; if (toId == it) toId = null }
+                    AccountChips("입금 계좌 (넣을 자산)", activeAccounts.filter { it.id != fromId }, toId, recentAccounts(RecentPicks.Side.TO), { newAccountFor = "to" }) { toId = it }
                     SmallLabel("계좌 간 저축·이체는 소비로 계산하지 않아요. 넣을 자산이 없으면 '+ 새 계좌'로 바로 만들 수 있어요.")
                 }
             }
@@ -254,18 +292,12 @@ fun TransactionEditScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AccountChips(label: String, accounts: List<Account>, selected: Long?, onAddNew: () -> Unit, onSelect: (Long) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SmallLabel(label)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            accounts.forEach { a ->
-                ChipPill(if (a.currency == KRW) a.name else "${a.name} (${a.currency})", a.id == selected, { onSelect(a.id) })
-            }
-            ChipPill("+ 새 계좌", false, onAddNew)
-        }
-    }
+private fun AccountChips(label: String, accounts: List<Account>, selected: Long?, recent: List<Long>, onAddNew: () -> Unit, onSelect: (Long) -> Unit) {
+    PickerField(
+        label, accounts.map { a -> PickItem(a.id, if (a.currency == KRW) a.name else "${a.name} (${a.currency})") },
+        selected, recent, { id -> id?.let(onSelect) }, addLabel = "새 계좌", onAdd = onAddNew,
+    )
 }
 
 private val DateSaver = Saver<LocalDate, Long>(save = { it.toEpochDays() }, restore = { LocalDate.fromEpochDays(it) })

@@ -154,7 +154,15 @@ fun LooinAppRoot(
     // 캘린더에서 고른 날짜. + 버튼이 이 날짜로 새 거래를 연다(없으면 오늘).
     var calendarDay by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    val goTab: (Tab) -> Unit = { t -> nav.navigate(t.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true; restoreState = true } }
+    // 탭 이동. 홈은 저장해 둔 화면 묶음을 되살리지 않고 항상 맨 아래 홈으로 돌아간다
+    // (예전에는 홈의 섹션 버튼으로 돈 관리에 간 뒤 "홈"을 누르면 돈 관리가 되살아나는 문제가 있었다).
+    val goTab: (Tab) -> Unit = { t ->
+        if (t == Tab.HOME) {
+            if (!nav.popBackStack(Tab.HOME.route, inclusive = false)) nav.navigate(Tab.HOME.route) { launchSingleTop = true }
+        } else {
+            nav.navigate(t.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true; restoreState = true }
+        }
+    }
     val addTx: () -> Unit = {
         val day = if (tab == Tab.CALENDAR) calendarDay?.let { LocalDate.fromEpochDays(it) } else null
         nav.navigate(txRoute(date = day))
@@ -221,7 +229,7 @@ fun LooinAppRoot(
         },
     ) { padding ->
         val host: @Composable (PaddingValues) -> Unit = { p ->
-            AppNavHost(nav, state, vm, p, calendarDay ?: state.today.toEpochDays(), { calendarDay = it }) { sheetTx = it }
+            AppNavHost(nav, state, vm, p, calendarDay ?: state.today.toEpochDays(), { calendarDay = it }, goTab) { sheetTx = it }
         }
         if (!wide) host(padding)
         else Row(Modifier.fillMaxSize().padding(padding)) {
@@ -333,7 +341,7 @@ private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit) {
 @Composable
 private fun AppNavHost(
     nav: NavHostController, state: UiState, vm: MainViewModel, padding: PaddingValues,
-    calendarDay: Long, onCalendarDay: (Long) -> Unit, openSheet: (Transaction) -> Unit,
+    calendarDay: Long, onCalendarDay: (Long) -> Unit, goTab: (Tab) -> Unit, openSheet: (Transaction) -> Unit,
 ) {
     // 화면 전환은 애니메이션 없이 즉시 바꾼다(사용자 요청: 페이드 없이). 탭 이동·화면 열기·뒤로 가기 모두.
     NavHost(
@@ -346,8 +354,8 @@ private fun AppNavHost(
         page(Tab.HOME.route, wideMax = null) {
             HomeScreen(state, vm, padding, openSheet,
                 onAddTx = { d, t, planned -> nav.navigate(txRoute(date = d, type = t, status = if (planned) TransactionStatus.PLANNED else null)) },
-                onAddAccount = { nav.navigate("accountEdit") }, onOpenPlan = { nav.navigate(Tab.PLAN.route) },
-                onOpenCalendar = { nav.navigate(Tab.CALENDAR.route) { popUpTo(Tab.HOME.route) { saveState = true }; launchSingleTop = true } })
+                onAddAccount = { nav.navigate("accountEdit") }, onOpenPlan = { goTab(Tab.PLAN) },
+                onOpenCalendar = { goTab(Tab.CALENDAR) })
         }
         page(Tab.CALENDAR.route, wideMax = null) {
             CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }, selectedDays = calendarDay, onSelectDays = onCalendarDay)

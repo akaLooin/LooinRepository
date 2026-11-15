@@ -81,6 +81,9 @@ class DesktopWideLayoutTest {
         val p = PeriodCalculator.periodContaining(today, PeriodBasis.CALENDAR, 25)
         repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = null, amount = 1_200_000))
         repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = cat("식비"), amount = 300_000))
+        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.CATEGORY, targetId = cat("식비"), amount = 50_000))
+        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.CATEGORY, targetId = cat("카페·간식"), amount = 5_000))
+        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.ALL, amount = 1_000_000))
     }
 
     private fun ComposeUiTest.shot(name: String) {

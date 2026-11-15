@@ -46,6 +46,9 @@ import com.looin.finance.ui.components.FieldGroup
 import com.looin.finance.ui.components.GUTTER
 import com.looin.finance.ui.components.PillTabs
 import com.looin.finance.ui.components.PrimaryButton
+import com.looin.finance.ui.components.PickerField
+import com.looin.finance.ui.components.PickItem
+import com.looin.finance.core.calc.RecentPicks
 import com.looin.finance.ui.components.ScreenHeader
 import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.ToggleRow
@@ -173,14 +176,10 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
             }
             if (type != TransactionType.TRANSFER) {
                 val kind = if (type == TransactionType.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SmallLabel("카테고리")
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        data.categories.filter { it.kind == kind && !it.archived }.forEach { cat ->
-                            ChipPill(cat.name, cat.id == categoryId, { categoryId = if (categoryId == cat.id) null else cat.id }, dot = Color(cat.colorArgb))
-                        }
-                    }
-                }
+                PickerField(
+                    "카테고리", data.categories.filter { it.kind == kind && (!it.archived || it.id == categoryId) }.map { PickItem(it.id, it.name, Color(it.colorArgb)) },
+                    categoryId, RecentPicks.categories(data.transactions, type), { categoryId = it }, noneLabel = "미분류",
+                )
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 SmallLabel("다음 발생일")
@@ -211,10 +210,6 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RuleAccountChips(label: String, accounts: List<Pair<Long, String>>, selected: Long?, onSelect: (Long) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SmallLabel(label)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            accounts.forEach { (id, name) -> ChipPill(name, id == selected, { onSelect(id) }) }
-        }
-    }
+    // 거래 입력과 같은 선택 칸(목록 펼치기). 반복 규칙은 최근 기록 대신 목록만.
+    PickerField(label, accounts.map { (id, name) -> PickItem(id, name) }, selected, emptyList(), { id -> id?.let(onSelect) })
 }

@@ -64,6 +64,8 @@ import com.looin.finance.ui.components.SmallLabel
 import com.looin.finance.ui.components.TransactionRow
 import com.looin.finance.ui.components.Card
 import com.looin.finance.ui.components.AdaptiveColumns
+import com.looin.finance.core.limit.LimitCalculator
+import com.looin.finance.ui.plan.LimitRow
 import com.looin.finance.ui.components.HBar
 import com.looin.finance.ui.components.TextAction
 import androidx.compose.foundation.border
@@ -237,6 +239,13 @@ fun HomeScreen(
                         SmallLabel("예산 ${fmt(s.budget.amount)} · 사용 ${fmt(s.spent)} · 예정 ${fmt(s.planned)}" + if (s.isOver) " · 초과" else "")
                     }
                 }
+            }
+        }
+        // 지출 한도(있을 때만): 경고·제한에 걸린 것을 먼저
+        val limitStatuses = LimitCalculator.statuses(data.limits, period, txs).sortedByDescending { it.level.ordinal }
+        if (limitStatuses.isNotEmpty()) right += {
+            Section("지출 한도", dot = c.danger, onAdd = onOpenPlan, addLabel = "한도 관리") {
+                limitStatuses.forEach { s -> LimitRow(s, data) }
             }
         }
         // 6) 잔고

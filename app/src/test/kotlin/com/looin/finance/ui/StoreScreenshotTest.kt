@@ -84,6 +84,11 @@ class StoreScreenshotTest {
             categoryId = cat["통신"]!!.id, frequency = Frequency.MONTHLY, dayOfMonth = 28, startDate = monthStart))
         repo.saveRule(RecurringRule(name = "급여", type = TransactionType.INCOME, amount = 3_200_000, toAccountId = main,
             categoryId = cat["급여"]!!.id, frequency = Frequency.MONTHLY, dayOfMonth = 25, startDate = monthStart))
+        // 지출 한도: 카페·간식(경고에 가깝게), 신용카드
+        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.CATEGORY,
+            targetId = cat["카페·간식"]!!.id, amount = 30_000))
+        repo.saveLimit(com.looin.finance.core.limit.SpendingLimit(target = com.looin.finance.core.limit.LimitTarget.ACCOUNT,
+            targetId = card, amount = 300_000))
     }
 
     @Test fun captureStoreScreenshots() {

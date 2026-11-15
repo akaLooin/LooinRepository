@@ -1,6 +1,7 @@
 package com.looin.finance.data
 
 import androidx.room.AutoMigration
+import com.looin.finance.core.limit.LimitTarget
 import androidx.room.ConstructedBy
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.ColumnInfo
@@ -132,6 +133,19 @@ data class BudgetEntity(
     val memo: String,
 )
 
+/** 지출 한도 (v5). 대상: ALL / CATEGORY(target_id = 카테고리) / ACCOUNT(target_id = 출금 계좌). 매 기간 반복. */
+@Entity(tableName = "spending_limits")
+data class SpendingLimitEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val target: LimitTarget,
+    @ColumnInfo(name = "target_id") val targetId: Long?,
+    val amount: Long,
+    @ColumnInfo(name = "warn_percent") val warnPercent: Int,
+    val active: Boolean,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+)
+
 /** 저축 목표 (v3). 지우지 않고 보관(archived)한다. */
 @Entity(
     tableName = "savings_goals",
@@ -219,6 +233,13 @@ interface FinanceDao {
     @Query("DELETE FROM recurring_rules WHERE id = :id") suspend fun deleteRule(id: Long)
 
     // 저축 목표
+    @Query("SELECT * FROM spending_limits ORDER BY target, id") fun observeLimits(): Flow<List<SpendingLimitEntity>>
+    @Query("SELECT * FROM spending_limits") suspend fun limits(): List<SpendingLimitEntity>
+    @Upsert suspend fun upsertLimit(l: SpendingLimitEntity): Long
+    @Query("DELETE FROM spending_limits WHERE id = :id") suspend fun deleteLimit(id: Long)
+    @Query("DELETE FROM spending_limits WHERE target = 'CATEGORY' AND target_id = :categoryId") suspend fun deleteCategoryLimits(categoryId: Long): Int
+    @Query("DELETE FROM spending_limits") suspend fun clearLimits()
+    @Insert suspend fun insertLimits(l: List<SpendingLimitEntity>)
     @Query("SELECT * FROM savings_goals ORDER BY archived, id") fun observeGoals(): Flow<List<SavingsGoalEntity>>
     @Query("SELECT * FROM savings_goals") suspend fun goals(): List<SavingsGoalEntity>
     @Query("SELECT * FROM savings_allocations ORDER BY date DESC, id DESC") fun observeAllocations(): Flow<List<SavingsAllocationEntity>>
@@ -258,13 +279,13 @@ interface FinanceDao {
 @Database(
     entities = [
         AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
-        RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class,
+        RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class, SpendingLimitEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
     // v2 → v3: 저축 목표·배정 기록 테이블 추가(기존 테이블 변경 없음).
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5)],
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(FinanceDatabaseConstructor::class)

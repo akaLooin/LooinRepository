@@ -21,6 +21,9 @@ import kotlinx.datetime.isoDayNumber
 import com.looin.finance.core.period.Period
 import com.looin.finance.core.validation.AccountRules
 import com.looin.finance.core.model.TransactionSource
+import com.looin.finance.core.limit.LimitCalculator
+import com.looin.finance.core.limit.LimitTarget
+import com.looin.finance.core.limit.SpendingLimit
 import com.looin.finance.core.validation.TransactionValidator
 import com.looin.finance.core.validation.ValidationResult
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +48,7 @@ data class FinanceData(
     val rules: List<RecurringRule> = emptyList(),
     val goals: List<SavingsGoal> = emptyList(),
     val allocations: List<SavingsAllocation> = emptyList(),
+    val limits: List<SpendingLimit> = emptyList(),
 ) {
     val goalStatuses: List<GoalStatus> by lazy { SavingsCalculator.statuses(goals, allocations) }
     val accountById by lazy { accounts.associateBy { it.id } }
@@ -85,6 +89,7 @@ class FinanceRepository(
     }.combine(dao.observeRules()) { d, r -> d.copy(rules = r.map { it.toModel() }) }
         .combine(dao.observeGoals()) { d, g -> d.copy(goals = g.map { it.toModel() }) }
         .combine(dao.observeAllocations()) { d, a -> d.copy(allocations = a.map { it.toModel() }) }
+        .combine(dao.observeLimits()) { d, l -> d.copy(limits = l.map { it.toModel() }) }
 
     val settings: Flow<FinanceSettings> = dao.observeSettings().map { it?.toModel() ?: FinanceSettings() }
 
@@ -109,6 +114,7 @@ class FinanceRepository(
         rules = dao.rules().map { it.toModel() },
         goals = dao.goals().map { it.toModel() },
         allocations = dao.allocations().map { it.toModel() },
+        limits = dao.limits().map { it.toModel() },
     )
 
     // ── 저축 목표 ─────────────────────────────────────────
@@ -395,9 +401,37 @@ class FinanceRepository(
     suspend fun deleteCategory(id: Long): CategoryUsage = tx {
         if (dao.categories().none { it.id == id }) throw FinanceException("카테고리를 찾을 수 없습니다.")
         val u = CategoryUsage(dao.uncategorizeTransactions(id), dao.deleteCategoryBudgets(id), dao.uncategorizeRules(id))
+        dao.deleteCategoryLimits(id) // 이 카테고리 한도도 함께 삭제
         dao.deleteCategory(id)
         u
     }
+
+    // ── 지출 한도 ─────────────────────────────────────────
+
+    /** 한도 저장. 같은 대상(전체/같은 카테고리/같은 계좌)에는 하나만. */
+    suspend fun saveLimit(limit: SpendingLimit): Long = tx {
+        val errors = LimitCalculator.validate(limit)
+        if (errors.isNotEmpty()) throw FinanceException(errors.joinToString("\n"))
+        val all = dao.limits().map { it.toModel() }
+        if (all.any { it.id != limit.id && it.target == limit.target && it.targetId == limit.targetId }) {
+            throw FinanceException("이 대상에는 이미 한도가 있어요. 기존 한도를 고치세요.")
+        }
+        val s = snapshot()
+        when (limit.target) {
+            LimitTarget.CATEGORY -> if (s.categories.none { it.id == limit.targetId }) throw FinanceException("카테고리를 찾을 수 없습니다.")
+            LimitTarget.ACCOUNT -> if (s.accounts.none { it.id == limit.targetId }) throw FinanceException("계좌를 찾을 수 없습니다.")
+            LimitTarget.ALL -> Unit
+        }
+        val t = now()
+        if (limit.id == 0L) dao.upsertLimit(limit.copy(createdAt = t, updatedAt = t).toEntity())
+        else {
+            val old = all.firstOrNull { it.id == limit.id } ?: throw FinanceException("한도를 찾을 수 없습니다.")
+            dao.upsertLimit(limit.copy(createdAt = old.createdAt, updatedAt = t).toEntity())
+            limit.id
+        }
+    }
+
+    suspend fun deleteLimit(id: Long) = dao.deleteLimit(id)
 
     /** 기간 설정을 바꿔도 거래·예산 기록은 그대로 둔다(예산은 생성 당시 기간을 저장하고 있음). */
     suspend fun updateSettings(settings: FinanceSettings) {
@@ -417,7 +451,7 @@ class FinanceRepository(
     suspend fun restoreBackup(text: String): BackupCodec.Summary {
         val incoming = BackupCodec.decode(text)
         tx {
-            dao.clearAllocations(); dao.clearGoals()
+            dao.clearAllocations(); dao.clearGoals(); dao.clearLimits()
             dao.clearTransactions(); dao.clearBudgets(); dao.clearRules(); dao.clearAccounts(); dao.clearCategories()
             dao.insertCategories(incoming.categories.map { it.toEntity() })
             dao.insertAccounts(incoming.accounts.map { it.toEntity() })
@@ -426,6 +460,7 @@ class FinanceRepository(
             dao.insertRules(incoming.rules.map { it.toEntity() })
             dao.insertGoals(incoming.goals.map { it.toEntity() })
             dao.insertAllocations(incoming.allocations.map { it.toEntity() })
+            dao.insertLimits(incoming.limits.map { it.toEntity() })
             dao.upsertSettings(incoming.settings.toEntity())
             val after = BackupCodec.summarize(snapshot())
             if (after != BackupCodec.summarize(incoming)) throw FinanceException("복원 결과가 백업과 일치하지 않아 취소했습니다.")
@@ -473,6 +508,8 @@ fun RecurringRule.toEntity() = RecurringRuleEntity(
     id, name.trim(), type, amount, currency, fromAccountId, toAccountId, categoryId, frequency, interval, dayOfMonth,
     dayOfWeek?.isoDayNumber, startDate, endDate, active, generatedThrough, memo, createdAt, updatedAt, autoComplete,
 )
+fun SpendingLimitEntity.toModel() = SpendingLimit(id, target, targetId, amount, warnPercent, active, createdAt, updatedAt)
+fun SpendingLimit.toEntity() = SpendingLimitEntity(id, target, targetId, amount, warnPercent, active, createdAt, updatedAt)
 fun BudgetEntity.toModel() = Budget(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
 fun Budget.toEntity() = BudgetEntity(id, basis, periodStart, periodEndExclusive, categoryId, amount, memo)
 fun SettingsEntity.toModel() = FinanceSettings(paydayDay, primaryBasis)

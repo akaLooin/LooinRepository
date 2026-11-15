@@ -97,4 +97,24 @@ class MigrationTest {
             db.close()
         }
     }
+
+    /** v4 → v5(지출 한도 표): 기존 데이터 유지, 한도는 비어 있음 */
+    @Test fun v4DataSurvivesUpgradeToV5() = runTest {
+        val n = "migration-v4.db"
+        helper.createDatabase(n, 4).apply {
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO accounts (id, name, type, currency, opening_balance, include_in_available, archived, memo, sort_order, rate_to_krw_x10000, created_at, updated_at) " +
+                "VALUES (1, '주거래', 'CHECKING', 'KRW', 700000, 1, 0, '', 0, NULL, 0, 0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 5, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val s = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 15) }).snapshot()
+            assertEquals(700_000, s.accounts.single().openingBalance)
+            assertEquals(0, s.limits.size)
+        } finally {
+            db.close()
+        }
+    }
 }

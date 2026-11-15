@@ -13,6 +13,8 @@ import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.period.PeriodBasis
 import com.looin.finance.core.recurring.Frequency
 import com.looin.finance.core.recurring.RecurringRule
+import com.looin.finance.core.limit.LimitTarget
+import com.looin.finance.core.limit.SpendingLimit
 import com.looin.finance.core.savings.SavingsAllocation
 import com.looin.finance.core.savings.SavingsGoal
 import kotlinx.datetime.DayOfWeek
@@ -142,6 +144,15 @@ object BackupCodec {
                     })
                 }
             })
+            // 지출 한도(앱 v5~). 없으면 한도 없음 — 형식 2 그대로라 옛 앱도 읽고 이 항목만 무시한다
+            put("spendingLimits", buildJsonArray {
+                d.limits.forEach { l ->
+                    add(buildJsonObject {
+                        put("id", l.id); put("target", l.target.name); putOpt("targetId", l.targetId); put("amount", l.amount)
+                        put("warnPercent", l.warnPercent); put("active", l.active); put("createdAt", l.createdAt); put("updatedAt", l.updatedAt)
+                    })
+                }
+            })
             put("summary", buildJsonObject {
                 put("accounts", s.accounts); put("categories", s.categories); put("transactions", s.transactions)
                 put("budgets", s.budgets); put("recurringRules", s.rules); put("transactionAmountSum", s.transactionAmountSum)
@@ -217,7 +228,12 @@ object BackupCodec {
         val allocations = (root["savingsAllocations"] as? JsonArray)?.map { it.jsonObject }?.map { o ->
             SavingsAllocation(o.long("id"), o.long("goalId"), o.long("amount"), LocalDate.parse(o.req("date")), o.str("memo") ?: "", o.longOrNull("createdAt") ?: 0)
         } ?: emptyList()
-        return FinanceData(accounts, categories, transactions, budgets, settings, loaded = true, rules = rules, goals = goals, allocations = allocations)
+        val limits = (root["spendingLimits"] as? JsonArray)?.map { it.jsonObject }?.map { o ->
+            SpendingLimit(o.long("id"), LimitTarget.valueOf(o.req("target")), o.longOrNull("targetId"), o.long("amount"),
+                o.intOrNull("warnPercent") ?: 80, o.boolOrNull("active") ?: true, o.longOrNull("createdAt") ?: 0, o.longOrNull("updatedAt") ?: 0)
+        } ?: emptyList()
+        return FinanceData(accounts, categories, transactions, budgets, settings, loaded = true, rules = rules, goals = goals, allocations = allocations,
+            limits = limits)
     }
 
     /** 요약값 일치 + 참조 무결성(거래·예산·규칙이 가리키는 계좌·카테고리가 파일 안에 있는지) 검사. */
@@ -237,6 +253,13 @@ object BackupCodec {
         d.goals.forEach { checkAcc(it.accountId) }
         val goalIds = d.goals.map { it.id }.toSet()
         d.allocations.forEach { if (it.goalId !in goalIds) throw FinanceException("없는 저축 목표(#${it.goalId})의 배정 기록이 있습니다.") }
+        d.limits.forEach { l ->
+            when (l.target) {
+                LimitTarget.CATEGORY -> checkCat(l.targetId ?: -1)
+                LimitTarget.ACCOUNT -> checkAcc(l.targetId)
+                LimitTarget.ALL -> Unit
+            }
+        }
         if (d.settings.paydayDay !in 1..31) throw FinanceException("급여 기준일 값이 올바르지 않습니다.")
         if (d.categories.isEmpty()) throw FinanceException("카테고리가 없는 백업은 복원할 수 없습니다.")
     }

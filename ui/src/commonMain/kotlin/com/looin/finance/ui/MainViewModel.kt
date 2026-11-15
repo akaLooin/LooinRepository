@@ -227,4 +227,11 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         val id = repo.saveAccount(account)
         onCreated(id)
     }
+
+    // ── 지출 한도 ─────────────────────────────────────────
+
+    fun saveLimit(limit: com.looin.finance.core.limit.SpendingLimit, onSuccess: () -> Unit) =
+        run(if (limit.id == 0L) "지출 한도를 만들었습니다" else "지출 한도를 고쳤습니다", onSuccess) { repo.saveLimit(limit) }
+
+    fun deleteLimit(id: Long) = run("지출 한도를 삭제했습니다") { repo.deleteLimit(id) }
 }
