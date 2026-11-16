@@ -1,38 +1,37 @@
 # Graph Report - LooinRepository  (2026-11-16)
 
 ## Corpus Check
-- 199 files · ~118,602 words
+- 209 files · ~127,831 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 36 file(s) not represented in the graph (top: .xml 17, (none) 4, .otf 4)
 
 ## Summary
-- 2584 nodes · 7206 edges · 153 communities (97 shown, 56 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 150 edges (avg confidence: 0.89)
+- 2729 nodes · 7628 edges · 169 communities (103 shown, 66 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 197 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `46a738a1`
+- Built from commit: `382f27dc`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- FinanceRepository
+- toEntity
 - TransactionEditScreen.kt
 - Receipts.kt
 - Account
 - SmallLabel
 - RecurringAndBackupTest.kt
-- FinanceRepository.kt
+- TransactionType
 - localdate
 - HomeScreen.kt
 - LooinWidget.kt
 - Components.kt
 - LooinAppRoot.kt
 - .periodContaining
-- DesktopWideLayoutTest.kt
 - env
 - Transaction
-- TransactionType
+- krw
 - Platform.kt
 - MainActivity.kt
 - FinanceDao
@@ -48,12 +47,12 @@
 - steps
 - AppFlowTest.kt
 - ThemePrefs
-- AppLockFlowTest.kt
+- InstantTransitionTest.kt
 - Database.kt
-- AnalysisScreen
+- CalendarScreen.kt
 - TransactionSheet.kt
 - AppLock
-- draw_icon.py
+- Pen
 - RepositoryPersistenceTest.kt
 - TabNavigationTest.kt
 - ReminderScheduler
@@ -64,10 +63,10 @@
 - reviews.py
 - steps
 - Csv.kt
-- CsvTest
+- .income
 - CsvImportTest.kt
 - MemoSuggestUiTest.kt
-- Pen
+- ForeignUiTest.kt
 - AccountColorTest.kt
 - Biometric.kt
 - ReminderWorkerTest.kt
@@ -89,7 +88,6 @@
 - ShortcutTest.kt
 - BudgetMergeTest
 - CalendarAddAndToastTest.kt
-- MainViewModel.kt
 - Phase 1 설계·구현 기록
 - PHASE2_NOTES.md
 - AutoBackup
@@ -121,23 +119,24 @@
 - Phase 2-1: 반복 거래 · 백업/복원 · DB v2
 - Phase 2-3: 저축 목표 · 예산 이월 규칙 확정 (2026-11-13)
 - Architecture: {{your app}} (a rebuild of {{app}}'s core features)
-- QuickEntries
+- TransactionEditScreen.kt
 - 테스트 (219개 통과)
 - Android 출시 절차
 - release/README.md
-- PC 출시 (Windows 우선 → macOS)
+- DesktopAppTest
 - Google Play 스토어 등록정보 (초안)
 - OffsetMapping
 - Deploy checklist: {{your app}}
-- Phase 2-5: 새 디자인 · 색 직접 지정 · 입력 편의 (2026-11-13)
+- FinanceRepository.kt
 - Phase 3-8: 카드 결제일 · 영수증 스캔 · 알림에서 완료 (2026-11-16)
-- iOS 앱 (페즈뱅크)
+- FinanceData
 - 테스트 (176개 통과)
 - 데이터 보안 · 개인정보 라벨 답변 초안
 - CalendarFilter
 - RangeFilter
 - StatusFilter
 - TypeFilter
+- FinanceRepository
 - Phase 3-1: PC 창에 맞춘 화면 (2026-11-14)
 - ios_sim_screenshot.sh
 - CalendarGrouping
@@ -147,18 +146,29 @@
 - graphify-stop.sh
 - bug-report.md
 - test-plan.md
+- SavingsGoal
+- ReceiptStoreTest.kt
+- ReceiptScanTest.kt
+- Platform.kt
+- AppLockFlowTest.kt
+- Phase 3-9: 외화 기록 정확도 · 실시간 환율 (2026-11-16)
+- ReceiptScanner
+- Phase 3-2: Android 편의 기능 (2026-11-14)
+- HttpGet.ios.kt
+- .restoreBackup
+- .dataSurvivesReopenOnDesktop
 
 ## God Nodes (most connected - your core abstractions)
-1. `Transaction` - 144 edges
-2. `Account` - 102 edges
-3. `MainViewModel` - 88 edges
-4. `FinanceRepository` - 78 edges
-5. `TransactionType` - 69 edges
+1. `Transaction` - 164 edges
+2. `Account` - 121 edges
+3. `MainViewModel` - 94 edges
+4. `FinanceRepository` - 84 edges
+5. `TransactionType` - 73 edges
 6. `Budget` - 62 edges
-7. `FinanceDao` - 60 edges
-8. `SmallLabel()` - 57 edges
-9. `TransactionStatus` - 56 edges
-10. `FinanceData` - 44 edges
+7. `TransactionStatus` - 61 edges
+8. `SmallLabel()` - 61 edges
+9. `FinanceDao` - 60 edges
+10. `TransactionEditScreen()` - 56 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `DB 스키마 v2` --references--> `MigrationTest`  [INFERRED]
@@ -167,103 +177,99 @@
   docs/release/ANDROID_RELEASE.md → app/src/test/kotlin/com/looin/finance/data/MigrationTest.kt
 - `1단계: 공용 데이터 계층 — ✅ 완료 (2026-11-13)` --references--> `MigrationTest`  [INFERRED]
   docs/release/MULTIPLATFORM_ROADMAP.md → app/src/test/kotlin/com/looin/finance/data/MigrationTest.kt
-- `6. 알려진 제한` --references--> `BudgetDialogTest`  [INFERRED]
-  docs/PHASE1_PLAN.md → app/src/test/kotlin/com/looin/finance/ui/BudgetDialogTest.kt
-- `화면 전환` --references--> `InstantTransitionTest`  [INFERRED]
-  docs/PHASE2_NOTES.md → app/src/test/kotlin/com/looin/finance/ui/InstantTransitionTest.kt
+- `예정 거래 알림 (Android)` --references--> `ReminderPlanner`  [INFERRED]
+  docs/PHASE2_NOTES.md → core/src/commonMain/kotlin/com/looin/finance/core/calc/ReminderPlanner.kt
+- `테스트` --references--> `DesktopWideLayoutTest`  [INFERRED]
+  docs/PHASE2_NOTES.md → desktopApp/src/test/kotlin/com/looin/finance/desktop/DesktopWideLayoutTest.kt
 
 ## Import Cycles
 - None detected.
 
-## Communities (153 total, 56 thin omitted)
+## Communities (169 total, 66 thin omitted)
 
-### Community 0 - "FinanceRepository"
-Cohesion: 0.05
-Nodes (21): MigrationTest, LimitTarget, ACCOUNT, ALL, CATEGORY, SpendingLimit, FinanceSettings, GoalStatus (+13 more)
+### Community 0 - "toEntity"
+Cohesion: 0.15
+Nodes (4): FinanceSettings, FinanceException, toEntity(), toModel()
 
 ### Community 1 - "TransactionEditScreen.kt"
-Cohesion: 0.14
-Nodes (3): korean(), Looin, LooinType
+Cohesion: 0.07
+Nodes (7): BudgetMeter(), budgetName(), BudgetRow(), levelColor(), glue(), Looin, LooinType
 
 ### Community 2 - "Receipts.kt"
-Cohesion: 0.05
-Nodes (10): ReceiptOcr, ReceiptStore, rememberAndroidReceiptScanner(), ReceiptScanner, ReceiptStoreTest, FakeScanner, ReceiptScanTest, NoReceiptScanner (+2 more)
+Cohesion: 0.11
+Nodes (4): ReceiptOcr, rememberAndroidReceiptScanner(), ReceiptScanner, ReceiptScan
 
 ### Community 3 - "Account"
 Cohesion: 0.08
-Nodes (15): AssetSummary, BalanceCalculator, BalanceForecast, Shortfall, CardBilling, Statement, Account, AccountRules (+7 more)
+Nodes (15): AssetSummary, BalanceCalculator, Account, AccountFx, CurrencyConversion, RateKind, LAST_RECORD, LIVE (+7 more)
 
 ### Community 4 - "SmallLabel"
-Cohesion: 0.12
-Nodes (42): AccountEditScreen(), AdjustForm(), AddRowButton(), AmountField(), amountToInput(), ChipPill(), DangerButton(), DateField() (+34 more)
+Cohesion: 0.11
+Nodes (41): MoneyFormat, AccountRatesScreen(), RateRow(), AccountEditScreen(), AdjustForm(), AmountField(), amountToInput(), ChipPill() (+33 more)
 
 ### Community 5 - "RecurringAndBackupTest.kt"
 Cohesion: 0.09
 Nodes (18): autopayCompletesOnDueDateAndSurvivesBackup(), backupRoundTrip(), CategoryRulesTest, corruptedBackupRejectedAndDataKept(), deletedOccurrenceIsNotRecreated(), deleteRuleAndArchiveGuard(), editingRuleReplacesOnlyFuturePlanned(), generatesUpToNextPeriodWithoutDuplicates() (+10 more)
 
-### Community 6 - "FinanceRepository.kt"
-Cohesion: 0.05
-Nodes (22): CalendarGroupingTest, AccountType, CASH, CHECKING, FOREIGN, LIABILITY, OTHER_ASSET, SAVINGS (+14 more)
+### Community 6 - "TransactionType"
+Cohesion: 0.07
+Nodes (25): CalendarGroupingTest, RecentPicks, Side, FROM, TO, AccountType, CASH, CHECKING (+17 more)
 
 ### Community 7 - "localdate"
-Cohesion: 0.11
-Nodes (11): AvailableFundsCalculator, TransactionActions, TransactionStatus, CANCELLED, COMPLETED, PLANNED, PeriodBasis, CALENDAR (+3 more)
+Cohesion: 0.10
+Nodes (13): TransactionCsvExport, TransactionStatus, CANCELLED, COMPLETED, PLANNED, PeriodBasis, CALENDAR, PAYDAY (+5 more)
 
 ### Community 8 - "HomeScreen.kt"
-Cohesion: 0.10
-Nodes (21): Breakdown, BreakdownLine, AccountDetailScreen(), AmountText(), BreakdownContent(), BreakdownSheet(), EmptyHint(), LooinSheet() (+13 more)
+Cohesion: 0.12
+Nodes (17): Breakdown, BreakdownLine, AnalysisScreen(), Bar(), PaceChart(), compact(), AmountText(), BreakdownContent() (+9 more)
 
 ### Community 9 - "LooinWidget.kt"
-Cohesion: 0.07
-Nodes (17): LooinWidget, LooinWidgetReceiver, WidgetButton(), WidgetContent(), WidgetData, WidgetSummary, WidgetTest, MemoSuggest (+9 more)
+Cohesion: 0.10
+Nodes (8): LooinWidget, LooinWidgetReceiver, WidgetButton(), WidgetContent(), WidgetData, WidgetSummary, WidgetTest, AndroidKeyValueStore
 
 ### Community 10 - "Components.kt"
 Cohesion: 0.06
-Nodes (10): AddPill(), Card(), CoinMarker(), MenuRow(), onColor(), OutlineIcon(), Section(), SectionPill() (+2 more)
+Nodes (16): AddPill(), Card(), CoinMarker(), LooinToggle(), MenuRow(), onColor(), OpKey(), OutlineIcon() (+8 more)
 
 ### Community 11 - "LooinAppRoot.kt"
 Cohesion: 0.06
 Nodes (5): AppNavHost(), argInt(), argLong(), argString(), page()
 
 ### Community 12 - ".periodContaining"
-Cohesion: 0.11
-Nodes (8): CategoryChange, PeriodStats, PlanVsActual, SpendingPace, StatisticsCalculator, CommonSmokeTest, PeriodTest, SpendingPaceTest
+Cohesion: 0.16
+Nodes (3): PeriodCalculator, CommonSmokeTest, PeriodTest
 
 ### Community 14 - "env"
 Cohesion: 0.06
 Nodes (37): concurrency, cancel-in-progress, group, KEYSTORE_BASE64, LOOIN_KEY_ALIAS, LOOIN_KEY_PASSWORD, LOOIN_KEYSTORE_PASSWORD, LOOIN_KEYSTORE_PATH (+29 more)
 
 ### Community 15 - "Transaction"
-Cohesion: 0.13
-Nodes (11): BudgetCalculator, BudgetLevel, OK, OVER, WARN, BudgetStatus, Summary, Budget (+3 more)
+Cohesion: 0.10
+Nodes (16): BudgetCalculator, BudgetLevel, OK, OVER, WARN, BudgetStatus, Summary, CategoryChange (+8 more)
 
-### Community 16 - "TransactionType"
-Cohesion: 0.09
-Nodes (17): RecentPicks, Side, FROM, TO, TransactionType, ADJUSTMENT, EXCHANGE, EXPENSE (+9 more)
+### Community 16 - "krw"
+Cohesion: 0.10
+Nodes (12): BalanceForecast, Entry, QuickEntries, Shortfall, TransactionSource, ADJUSTMENT, BANK_SYNC, CARD_BILL (+4 more)
 
 ### Community 17 - "Platform.kt"
-Cohesion: 0.09
-Nodes (12): saveText(), FileActions, FileKind, CSV, JSON, NoAutoBackup, NoFileActions, NoReminders (+4 more)
-
-### Community 18 - "MainActivity.kt"
-Cohesion: 0.08
-Nodes (8): AppInfo, AppPlatform, ANDROID, DESKTOP, IOS, MainViewController(), IosKeyValueStore, IosReminderControl
+Cohesion: 0.13
+Nodes (8): FileActions, FileKind, CSV, JSON, NoFileActions, decodeKoreanText(), DesktopFileActions, TextDecodeTest
 
 ### Community 20 - ".expense"
-Cohesion: 0.16
-Nodes (4): Result, BudgetAndAvailableTest, BudgetWarningTest, ValidationAndMoneyTest
+Cohesion: 0.15
+Nodes (5): AvailableFundsCalculator, Result, BudgetAndAvailableTest, BudgetWarningTest, ValidationAndMoneyTest
 
 ### Community 21 - "base"
 Cohesion: 0.06
 Nodes (32): ASSETCATALOG_COMPILER_APPICON_NAME, CURRENT_PROJECT_VERSION, ENABLE_USER_SCRIPT_SANDBOXING, FRAMEWORK_SEARCH_PATHS, INFOPLIST_FILE, MARKETING_VERSION, OTHER_LDFLAGS, PRODUCT_BUNDLE_IDENTIFIER (+24 more)
 
 ### Community 22 - "TransactionEntity"
-Cohesion: 0.13
-Nodes (8): AccountEntity, BudgetEntity, CategoryEntity, SavingsAllocationEntity, SavingsGoalEntity, SettingsEntity, SpendingLimitEntity, TransactionEntity
+Cohesion: 0.19
+Nodes (7): AccountEntity, BudgetEntity, CategoryEntity, SavingsAllocationEntity, SavingsGoalEntity, SpendingLimitEntity, TransactionEntity
 
 ### Community 23 - "AssetsScreens.kt"
-Cohesion: 0.09
-Nodes (8): Currencies, CurrencyInfo, MoneyFormat, AccountAvatar(), AssetsScreen(), icon(), accountColor(), defaultAccountColor()
+Cohesion: 0.16
+Nodes (7): AccountAvatar(), AccountDetailScreen(), AssetsScreen(), ForeignSummary(), icon(), TextAction(), liveRates()
 
 ### Community 24 - "imgdiff.py"
 Cohesion: 0.12
@@ -272,6 +278,10 @@ Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngErro
 ### Community 25 - "steps"
 Cohesion: 0.08
 Nodes (29): concurrency, cancel-in-progress, group, jobs, macos, windows, runs-on, steps (+21 more)
+
+### Community 26 - "Reminders.kt"
+Cohesion: 0.09
+Nodes (5): AutoBackupState, AutoBackupWorker, rememberAndroidAutoBackup(), PlannedReminderWorker, saveText()
 
 ### Community 27 - "AppCommand"
 Cohesion: 0.09
@@ -293,36 +303,32 @@ Nodes (5): AppFlowDarkTest, AppFlowTest, 구조, 실행 및 빌드, 페즈뱅크
 Cohesion: 0.10
 Nodes (12): InMemoryKeyValueStore, KeyValueStore, CalendarDisplay, AMOUNT, BALANCE, DOT, ThemeMode, DARK (+4 more)
 
-### Community 32 - "AppLockFlowTest.kt"
-Cohesion: 0.13
-Nodes (3): MainActivity, AppLockFlowTest, InstantTransitionTest
+### Community 32 - "InstantTransitionTest.kt"
+Cohesion: 0.16
+Nodes (7): InstantTransitionTest, CSV 가져오기 (설정 → 데이터), CSV 내보내기 (설정 → 데이터), Phase 2-4: 즉시 화면 전환 · CSV 내보내기/가져오기 (2026-11-13), 테스트, 화면 전환, ⚠️ 확인이 필요한 규칙 (제안 기본값으로 구현)
 
 ### Community 33 - "Database.kt"
-Cohesion: 0.12
-Nodes (6): Converters, FinanceDatabase, FinanceDatabaseConstructor, openDefaultDatabase(), testDatabase(), testDatabase()
-
-### Community 34 - "AnalysisScreen"
-Cohesion: 0.11
-Nodes (13): AnalysisScreen(), Bar(), PaceChart(), CalendarGrid(), CalendarScreen(), compact(), Group, matches() (+5 more)
-
-### Community 35 - "TransactionSheet.kt"
 Cohesion: 0.10
-Nodes (6): TextAction(), ReceiptRow(), ReceiptViewer(), short2(), stamp(), TransactionActionSheet()
+Nodes (7): Converters, FinanceDatabase, FinanceDatabaseConstructor, openDefaultDatabase(), SettingsEntity, testDatabase(), testDatabase()
+
+### Community 34 - "CalendarScreen.kt"
+Cohesion: 0.11
+Nodes (8): CalendarGrid(), CalendarScreen(), Group, matches(), startOfWeek(), Summary(), AdaptiveColumns(), AddRowButton()
 
 ### Community 36 - "AppLock"
-Cohesion: 0.17
-Nodes (3): AppLock, hashPin(), AppLockTest
+Cohesion: 0.15
+Nodes (4): 테스트 (176개 통과), AppLock, hashPin(), AppLockTest
 
-### Community 37 - "draw_icon.py"
-Cohesion: 0.16
-Nodes (10): circle_mask(), coin(), engraving_mask(), gradient(), render(), android(), desktop(), ios_icon() (+2 more)
+### Community 37 - "Pen"
+Cohesion: 0.08
+Nodes (16): App Store 제출 전 준비(사용자), CI (`.github/workflows/ios-app.yml`), iOS 앱 (페즈뱅크), iOS 에서 아직 다른 점, Mac 에서 열기, circle_mask(), coin(), engraving_mask() (+8 more)
 
 ### Community 39 - "TabNavigationTest.kt"
 Cohesion: 0.16
 Nodes (7): TabNavigationTest, Phase 3-4: 탭 오류 수정 · 선택 칸 정리 · 지출 한도 (2026-11-15), 고친 오류: "홈"을 눌렀는데 돈 관리 탭이 열림, 지출 한도 (경고·제한) — 돈 관리 → 지출 한도, 카테고리·계좌 선택 정리 (거래 입력, 반복 거래 편집), 테스트, ⚠️ 확인이 필요한 규칙 → Phase 3-5에서 결정됨
 
 ### Community 42 - "Main.kt"
-Cohesion: 0.13
+Cohesion: 0.11
 Nodes (4): DesktopRoot(), main(), shortcut(), DesktopKeyValueStore
 
 ### Community 44 - "DatabaseBuilder.ios.kt"
@@ -338,32 +344,40 @@ Cohesion: 0.11
 Nodes (18): runs-on, steps, timeout-minutes, jobs, ios-core, name, on, pull_request (+10 more)
 
 ### Community 47 - "Csv.kt"
-Cohesion: 0.18
-Nodes (9): Csv, ImportItem, ImportPreview, ImportStatus, DUPLICATE, ERROR, NEW, TransactionCsvExport (+1 more)
+Cohesion: 0.12
+Nodes (9): Csv, ImportItem, ImportPreview, ImportStatus, DUPLICATE, ERROR, NEW, TransactionCsvImport (+1 more)
 
-### Community 48 - "CsvTest"
-Cohesion: 0.17
-Nodes (7): CsvTest, CSV 가져오기 (설정 → 데이터), CSV 내보내기 (설정 → 데이터), Phase 2-4: 즉시 화면 전환 · CSV 내보내기/가져오기 (2026-11-13), 테스트, 화면 전환, ⚠️ 확인이 필요한 규칙 (제안 기본값으로 구현)
+### Community 48 - ".income"
+Cohesion: 0.11
+Nodes (7): MemoSuggest, MemoSuggestion, CardBilling, Statement, BalanceOnDateTest, CardBillingTest, MemoSuggestTest
+
+### Community 49 - "CsvImportTest.kt"
+Cohesion: 0.14
+Nodes (7): CsvImportTest, Phase 2-5: 새 디자인 · 색 직접 지정 · 입력 편의 (2026-11-13), 기능, 디자인 ("장부" 테마, 투두메이트 모양에서 변경), 사용자 결정, 색 직접 지정 (설정 → 색상), 테스트
+
+### Community 51 - "ForeignUiTest.kt"
+Cohesion: 0.08
+Nodes (8): ForeignUiTest, Fx, platformHttpGet(), ExchangeRates, HttpGet, platformHttpGet(), Quote, platformHttpGet()
 
 ### Community 52 - "AccountColorTest.kt"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (5): AccountColorTest, Phase 3-7: 통장 색 · 자주 쓰는 거래 · 잔고 부족 알림 · 지난 기간 대비 (2026-11-16), 추가로 넣은 것 (제안), 테스트 (227개 통과), 통장 색 (요청)
 
 ### Community 54 - "Biometric.kt"
-Cohesion: 0.16
+Cohesion: 0.15
 Nodes (4): AndroidBiometric, AuthenticationCallback, BiometricControl, NoBiometric
 
 ### Community 57 - "LooinAppRoot"
-Cohesion: 0.18
-Nodes (10): BottomNav(), LooinAppRoot(), Sidebar(), SideItem(), Tab, ANALYSIS, ASSETS, CALENDAR (+2 more)
+Cohesion: 0.20
+Nodes (11): BottomNav(), LooinAppRoot(), nowMs(), Sidebar(), SideItem(), Tab, ANALYSIS, ASSETS (+3 more)
 
 ### Community 59 - ".plan"
-Cohesion: 0.25
+Cohesion: 0.30
 Nodes (3): Reminder, ReminderPlanner, ReminderPlannerTest
 
 ### Community 60 - "TransactionQuery"
-Cohesion: 0.29
-Nodes (4): Result, TransactionQuery, TransactionSearch, SearchTest
+Cohesion: 0.21
+Nodes (5): TransactionActions, Result, TransactionQuery, TransactionSearch, SearchTest
 
 ### Community 61 - "ReceiptParser"
 Cohesion: 0.26
@@ -374,7 +388,7 @@ Cohesion: 0.19
 Nodes (5): ComposeView, LooinBudgetApp, .body, LooinUi, SwiftUI
 
 ### Community 64 - "contrast.py"
-Cohesion: 0.26
+Cohesion: 0.23
 Nodes (9): check(), colours(), default_pairs(), flatten(), luminance(), main(), parse_hex(), ratio() (+1 more)
 
 ### Community 65 - "json"
@@ -390,7 +404,7 @@ Cohesion: 0.22
 Nodes (3): IosFileActions, NSObject, topViewController()
 
 ### Community 70 - "LockScreen"
-Cohesion: 0.22
+Cohesion: 0.24
 Nodes (10): Key(), LockScreen(), nowMs(), PinDots(), PinFlow, CHANGE, DISABLE, SET (+2 more)
 
 ### Community 75 - "Phase 1 설계·구현 기록"
@@ -399,11 +413,7 @@ Nodes (9): 글꼴, 1. 기술 선택, 2. 구현한 계산 규칙 (기획서 근�
 
 ### Community 76 - "PHASE2_NOTES.md"
 Cohesion: 0.17
-Nodes (11): Android 다듬기, Phase 2-7: iOS 앱 (2026-11-14), Phase 3-3: 이름(가칭)·아이콘 · Android 다듬기 (2026-11-14), Phase 3-6: 캘린더 모아 보기 · 예산 요약 수정 (2026-11-15), 고친 문제, 고친 문제: 돈 관리 머리의 "남는 예산"이 사용 가능 금액과 어긋나던 것, 남은 일(iOS), 앱 아이콘: 깃털 만년필이 새겨진 금화 (+3 more)
-
-### Community 79 - "rememberAndroidAutoBackup"
-Cohesion: 0.20
-Nodes (4): AutoBackupState, rememberAndroidAutoBackup(), AutoBackupControl, AutoBackupControl
+Nodes (11): Phase 2-2: 캘린더 확장 · 예정 거래 알림 · 미리보기 빌드 (2026-11-13), Phase 2-7: iOS 앱 (2026-11-14), Phase 3-6: 캘린더 모아 보기 · 예산 요약 수정 (2026-11-15), 고친 문제, 고친 문제: 돈 관리 머리의 "남는 예산"이 사용 가능 금액과 어긋나던 것, 남은 일(iOS), 미리보기 빌드 (`preview`), 예정 거래 알림 (Android) (+3 more)
 
 ### Community 83 - "listing.py"
 Cohesion: 0.33
@@ -426,8 +436,8 @@ Cohesion: 0.20
 Nodes (9): Definition of done, per screen, Output, replica-build, Step 1: the shell, Step 2: the vertical slice, Step 3: screen by screen, Step 4: the build log, The rules (+1 more)
 
 ### Community 91 - ".parse"
-Cohesion: 0.36
-Nodes (3): AmountExpression, AmountExpressionTest, 테스트
+Cohesion: 0.15
+Nodes (9): AmountExpression, Currencies, CurrencyInfo, AmountExpressionTest, Android 다듬기, Phase 3-3: 이름(가칭)·아이콘 · Android 다듬기 (2026-11-14), 앱 아이콘: 깃털 만년필이 새겨진 금화, 앱 이름: 가칭 "페즈뱅크" (영문 PezBank) (+1 more)
 
 ### Community 93 - "replica-brand"
 Cohesion: 0.22
@@ -452,6 +462,10 @@ Nodes (8): 1단계: 공용 데이터 계층 — ✅ 완료 (2026-11-13), 2단계
 ### Community 99 - "페즈뱅크 개인정보처리방침"
 Cohesion: 0.22
 Nodes (9): 1. 수집하는 개인정보, 2. 이용자가 입력한 데이터의 저장, 3. 백업, 4. 데이터 삭제, 5. 제3자 제공, 6. 아동, 7. 방침 변경, 8. 문의 (+1 more)
+
+### Community 100 - "RecurringRuleEntity"
+Cohesion: 0.17
+Nodes (4): Frequency, MONTHLY, WEEKLY, RecurringRuleEntity
 
 ### Community 101 - "replica-architect"
 Cohesion: 0.25
@@ -481,9 +495,9 @@ Nodes (6): Phase 2-3: 저축 목표 · 예산 이월 규칙 확정 (2026-11-13),
 Cohesion: 0.29
 Nodes (6): API, Architecture: {{your app}} (a rebuild of {{app}}'s core features), Build order, Schema, Stack, The parts that bite
 
-### Community 109 - "QuickEntries"
-Cohesion: 0.38
-Nodes (3): Entry, QuickEntries, InsightsTest
+### Community 109 - "TransactionEditScreen.kt"
+Cohesion: 0.09
+Nodes (7): accountColor(), defaultAccountColor(), PickerField(), PickItem, RuleAccountChips(), AccountChips(), nextCategoryColor()
 
 ### Community 110 - "테스트 (219개 통과)"
 Cohesion: 0.29
@@ -497,9 +511,9 @@ Nodes (6): 1. 업로드 키 만들기 (한 번만, 사용자 PC에서), 2. 로�
 Cohesion: 0.29
 Nodes (3): ✋ 사용자가 결정·준비해야 하는 것, 출시 준비 (Google Play · App Store · PC), 출시 체크리스트 (Android 1.0.0)
 
-### Community 113 - "PC 출시 (Windows 우선 → macOS)"
-Cohesion: 0.29
-Nodes (7): PC 출시 (Windows 우선 → macOS), 검증 상태 (2026-11-13), 남은 PC 작업 (로드맵 3단계 — 모바일 기능 완성 후 진행), 만들기, 버전 올리기, 서명 (출시 전 필수), 설치·데이터 위치
+### Community 113 - "DesktopAppTest"
+Cohesion: 0.10
+Nodes (9): DesktopAppTest, LifecycleOwner, PC 출시 (Windows 우선 → macOS), 검증 상태 (2026-11-13), 남은 PC 작업 (로드맵 3단계 — 모바일 기능 완성 후 진행), 만들기, 버전 올리기, 서명 (출시 전 필수) (+1 more)
 
 ### Community 114 - "Google Play 스토어 등록정보 (초안)"
 Cohesion: 0.29
@@ -509,21 +523,21 @@ Nodes (7): Google Play 스토어 등록정보 (초안), 그래픽 (`store/`), �
 Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
-### Community 117 - "Phase 2-5: 새 디자인 · 색 직접 지정 · 입력 편의 (2026-11-13)"
-Cohesion: 0.33
-Nodes (6): Phase 2-5: 새 디자인 · 색 직접 지정 · 입력 편의 (2026-11-13), 기능, 디자인 ("장부" 테마, 투두메이트 모양에서 변경), 사용자 결정, 색 직접 지정 (설정 → 색상), 테스트
+### Community 117 - "FinanceRepository.kt"
+Cohesion: 0.09
+Nodes (5): LimitTarget, ACCOUNT, ALL, CATEGORY, SpendingLimit
 
 ### Community 118 - "Phase 3-8: 카드 결제일 · 영수증 스캔 · 알림에서 완료 (2026-11-16)"
 Cohesion: 0.33
 Nodes (6): Phase 3-8: 카드 결제일 · 영수증 스캔 · 알림에서 완료 (2026-11-16), 고친 것, 알림에서 바로 완료 (Android), 영수증 사진 + 스캔으로 자동 입력 (Android), 카드 결제일 관리 (부채 계좌), 캘린더 버튼 이동
 
-### Community 119 - "iOS 앱 (페즈뱅크)"
-Cohesion: 0.33
-Nodes (5): App Store 제출 전 준비(사용자), CI (`.github/workflows/ios-app.yml`), iOS 앱 (페즈뱅크), iOS 에서 아직 다른 점, Mac 에서 열기
+### Community 119 - "FinanceData"
+Cohesion: 0.21
+Nodes (4): BackupCodec, Summary, FinanceData, IosReminderControl
 
 ### Community 121 - "테스트 (176개 통과)"
-Cohesion: 0.40
-Nodes (5): Phase 2-6: 자동이체 · 앱 잠금 · 백업 알림 (2026-11-14), 반복 거래 "자동이체" (규칙별 선택, 기본 꺼짐), 백업 알림, 앱 잠금 (설정 → 보안), 테스트 (176개 통과)
+Cohesion: 0.50
+Nodes (4): Phase 2-6: 자동이체 · 앱 잠금 · 백업 알림 (2026-11-14), 반복 거래 "자동이체" (규칙별 선택, 기본 꺼짐), 백업 알림, 앱 잠금 (설정 → 보안)
 
 ### Community 122 - "데이터 보안 · 개인정보 라벨 답변 초안"
 Cohesion: 0.40
@@ -545,6 +559,10 @@ Nodes (5): StatusFilter, ALL, CANCELLED, COMPLETED, PLANNED
 Cohesion: 0.40
 Nodes (5): TypeFilter, ALL, EXPENSE, INCOME, TRANSFER
 
+### Community 127 - "FinanceRepository"
+Cohesion: 0.19
+Nodes (3): MigrationTest, CategoryUsage, FinanceRepository
+
 ### Community 128 - "Phase 3-1: PC 창에 맞춘 화면 (2026-11-14)"
 Cohesion: 0.50
 Nodes (4): PC 조작, Phase 3-1: PC 창에 맞춘 화면 (2026-11-14), 넓은 창(840dp 이상) 배치, 테스트
@@ -565,25 +583,41 @@ Nodes (4): BudgetKind, ACCOUNT, ALL, CATEGORY
 Cohesion: 0.67
 Nodes (3): AllocMode, ADD, RELEASE
 
+### Community 150 - "SavingsGoal"
+Cohesion: 0.26
+Nodes (5): GoalStatus, SavingsAllocation, SavingsCalculator, SavingsGoal, SavingsAndRolloverTest
+
+### Community 153 - "Platform.kt"
+Cohesion: 0.16
+Nodes (8): AppInfo, AppPlatform, ANDROID, DESKTOP, IOS, NoAutoBackup, NoReminders, ReminderControl
+
+### Community 155 - "Phase 3-9: 외화 기록 정확도 · 실시간 환율 (2026-11-16)"
+Cohesion: 0.29
+Nodes (7): Phase 3-9: 외화 기록 정확도 · 실시간 환율 (2026-11-16), 거래가 있는 원화 계좌 → 외화 계좌, 거래별 당시 환율, 기존 외화 계좌의 환율 채우기, 앱 이름, 외화 잔고 표시와 실시간 환율, 테스트
+
+### Community 157 - "Phase 3-2: Android 편의 기능 (2026-11-14)"
+Cohesion: 0.33
+Nodes (6): Phase 3-2: Android 편의 기능 (2026-11-14), 메모 추천 (모든 플랫폼 공용), 앱 바로가기, 자동 백업, 테스트, 홈 화면 위젯
+
 ## Knowledge Gaps
-- **100 isolated node(s):** `OK`, `WARN`, `OVER`, `FROM`, `TO` (+95 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 791 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **56 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **103 isolated node(s):** `CHECKING`, `CASH`, `SAVINGS`, `FOREIGN`, `OTHER_ASSET` (+98 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 831 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **66 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Transaction` connect `Transaction` to `FinanceRepository`, `TransactionEditScreen.kt`, `Account`, `RecurringAndBackupTest.kt`, `FinanceRepository.kt`, `localdate`, `HomeScreen.kt`, `LooinWidget.kt`, `Components.kt`, `LooinAppRoot.kt`, `.periodContaining`, `DesktopWideLayoutTest.kt`, `TransactionType`, `.expense`, `AssetsScreens.kt`, `.saveTransaction`, `ThemePrefs`, `AnalysisScreen`, `TransactionSheet.kt`, `RepositoryPersistenceTest.kt`, `TabNavigationTest.kt`, `Csv.kt`, `CsvImportTest.kt`, `MemoSuggestUiTest.kt`, `ReminderWorkerTest.kt`, `.plan`, `TransactionQuery`, `StoreScreenshotTest.kt`, `MainViewModel`, `MainViewModel.kt`, `CardBillTest.kt`, `QuickEntries`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
-- **Are the 9 inferred relationships involving `MainViewModel` (e.g. with `.pickColorAndSave()` and `.duplicateCanBeKeptAfterConfirming()`) actually correct?**
-  _`MainViewModel` has 9 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `OK`, `WARN`, `OVER` to the rest of the system?**
-  _100 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `FinanceRepository` be split into smaller, more focused modules?**
-  _Cohesion score 0.05404503753127606 - nodes in this community are weakly interconnected._
-- **Why does `FinanceRepository` connect `FinanceRepository` to `Database.kt`, `Receipts.kt`, `RecurringAndBackupTest.kt`, `RepositoryPersistenceTest.kt`, `FinanceRepository.kt`, `BudgetMergeTest`, `MainViewModel`, `Main.kt`, `MainViewModel.kt`, `DesktopWideLayoutTest.kt`, `CardBillTest.kt`, `CsvImportTest.kt`, `MemoSuggestUiTest.kt`, `AccountColorTest.kt`, `MainActivity.kt`, `DesktopWideLayoutTest`, `CsvImportScreenTest.kt`, `LooinApp.kt`?**
-  _High betweenness centrality (0.059) - this node is a cross-community bridge._
-- **Are the 8 inferred relationships involving `FinanceRepository` (e.g. with `.v1DataSurvivesUpgradeToV2()` and `.v2DataSurvivesUpgradeToV3()`) actually correct?**
-  _`FinanceRepository` has 8 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Transaction` connect `Transaction` to `toEntity`, `TransactionEditScreen.kt`, `Account`, `SmallLabel`, `RecurringAndBackupTest.kt`, `TransactionType`, `localdate`, `HomeScreen.kt`, `LooinWidget.kt`, `Components.kt`, `LooinAppRoot.kt`, `.periodContaining`, `DesktopWideLayoutTest.kt`, `krw`, `.expense`, `AssetsScreens.kt`, `ThemePrefs`, `CalendarScreen.kt`, `TransactionSheet.kt`, `RepositoryPersistenceTest.kt`, `TabNavigationTest.kt`, `Csv.kt`, `.income`, `CsvImportTest.kt`, `MemoSuggestUiTest.kt`, `ForeignUiTest.kt`, `ReminderWorkerTest.kt`, `.plan`, `TransactionQuery`, `StoreScreenshotTest.kt`, `MainViewModel`, `MainViewModel.kt`, `.run`, `CardBillTest.kt`, `TransactionEditScreen.kt`, `FinanceRepository.kt`, `FinanceData`?**
+  _High betweenness centrality (0.111) - this node is a cross-community bridge._
+- **Are the 11 inferred relationships involving `MainViewModel` (e.g. with `.pickColorAndSave()` and `.duplicateCanBeKeptAfterConfirming()`) actually correct?**
+  _`MainViewModel` has 11 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `CHECKING`, `CASH`, `SAVINGS` to the rest of the system?**
+  _103 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `TransactionEditScreen.kt` be split into smaller, more focused modules?**
-  _Cohesion score 0.1376176566049984 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06837786661056175 - nodes in this community are weakly interconnected._
+- **Why does `MainViewModel` connect `MainViewModel` to `TransactionEditScreen.kt`, `SmallLabel`, `.saveCategory`, `HomeScreen.kt`, `Components.kt`, `LooinAppRoot.kt`, `.saveAccount`, `DesktopWideLayoutTest.kt`, `MainActivity.kt`, `.adjustBalance`, `.cancelTransaction`, `AssetsScreens.kt`, `ReceiptScanTest.kt`, `AppCommand`, `.restoreBackup`, `CalendarScreen.kt`, `TransactionSheet.kt`, `.deleteTransaction`, `.saveRule`, `Main.kt`, `MemoSuggestUiTest.kt`, `ForeignUiTest.kt`, `AccountColorTest.kt`, `DesktopWideLayoutTest`, `LooinAppRoot`, `CsvImportScreenTest.kt`, `MainViewModel.kt`, `.run`, `TransactionEditScreen.kt`, `DesktopAppTest`, `FinanceRepository`?**
+  _High betweenness centrality (0.081) - this node is a cross-community bridge._
+- **Are the 10 inferred relationships involving `FinanceRepository` (e.g. with `ForeignCurrencyTest` and `.v1DataSurvivesUpgradeToV2()`) actually correct?**
+  _`FinanceRepository` has 10 INFERRED edges - model-reasoned connections that need verification._
+- **Should `Receipts.kt` be split into smaller, more focused modules?**
+  _Cohesion score 0.10952380952380952 - nodes in this community are weakly interconnected._
