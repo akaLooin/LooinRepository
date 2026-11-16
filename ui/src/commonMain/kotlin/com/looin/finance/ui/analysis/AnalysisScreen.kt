@@ -114,6 +114,12 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
             Section("카테고리별 소비", dot = c.sunday) {
                 val entries = s.expenseByCategory.entries.sortedByDescending { it.value }
                 if (entries.isEmpty()) EmptyHint("소비 기록이 없어요.")
+                // 지난 기간 대비 변화
+                val prevStats = StatisticsCalculator.stats(PeriodCalculator.previous(period, payday), txs)
+                val changes = StatisticsCalculator.categoryChanges(s, prevStats).associateBy { it.categoryId }
+                val top = changes.values.filter { it.diff > 0 }.maxByOrNull { it.diff }
+                if (top != null && prevStats.expense > 0) SmallLabel("지난 기간보다 ${data.categoryName(top.categoryId)}에 가장 많이 더 썼어요 (+${MoneyFormat.format(top.diff)})",
+                    color = c.textSecondary, weight = FontWeight.SemiBold)
                 val max = entries.maxOfOrNull { it.value }?.coerceAtLeast(1) ?: 1
                 entries.forEach { (cat, amount) ->
                     val color = cat?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: c.expense
@@ -128,6 +134,15 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
                         }
                         Spacer(Modifier.height(6.dp))
                         HBar(amount.toFloat() / max, color)
+                        changes[cat]?.let { ch ->
+                            Spacer(Modifier.height(3.dp))
+                            SmallLabel(when {
+                                ch.isNew -> "지난 기간엔 없던 지출"
+                                ch.diff > 0 -> "지난 기간보다 +${MoneyFormat.format(ch.diff)}"
+                                ch.diff < 0 -> "지난 기간보다 −${MoneyFormat.format(-ch.diff)}"
+                                else -> "지난 기간과 같아요"
+                            }, color = if (ch.diff > 0) c.expense else if (ch.diff < 0) c.accent else c.textMuted)
+                        }
                     }
                 }
             }

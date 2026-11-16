@@ -45,6 +45,8 @@ data class AccountEntity(
     @ColumnInfo(name = "rate_to_krw_x10000") val rateToKrwX10000: Long?,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    /** v7: 통장 색(0 = 기본). */
+    @ColumnInfo(name = "color_argb", defaultValue = "0") val colorArgb: Long = 0,
 )
 
 @Entity(tableName = "categories")
@@ -285,11 +287,11 @@ interface FinanceDao {
         AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
         RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class, SpendingLimitEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
     // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
     // v2 → v3: 저축 목표·배정 기록 테이블 추가(기존 테이블 변경 없음).
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7)],
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(FinanceDatabaseConstructor::class)

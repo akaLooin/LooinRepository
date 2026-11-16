@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.looin.finance.core.calc.RecentPicks
 import com.looin.finance.ui.components.PickerField
 import com.looin.finance.ui.components.PickItem
+import com.looin.finance.ui.components.accountColor
 import com.looin.finance.core.money.AmountExpression
 import com.looin.finance.core.model.Category
 import com.looin.finance.core.model.AccountType
@@ -294,7 +295,7 @@ fun TransactionEditScreen(
 @Composable
 private fun AccountChips(label: String, accounts: List<Account>, selected: Long?, recent: List<Long>, onAddNew: () -> Unit, onSelect: (Long) -> Unit) {
     PickerField(
-        label, accounts.map { a -> PickItem(a.id, if (a.currency == KRW) a.name else "${a.name} (${a.currency})") },
+        label, accounts.map { a -> PickItem(a.id, if (a.currency == KRW) a.name else "${a.name} (${a.currency})", accountColor(a)) },
         selected, recent, { id -> id?.let(onSelect) }, addLabel = "새 계좌", onAdd = onAddNew,
     )
 }

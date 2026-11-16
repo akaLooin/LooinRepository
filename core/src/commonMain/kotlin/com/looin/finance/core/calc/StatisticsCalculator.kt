@@ -85,6 +85,17 @@ object StatisticsCalculator {
         return SpendingPace(days, cumulative, budget, expected, expected?.let { (cumulative.lastOrNull() ?: 0) - it })
     }
 
+    /** 카테고리별 소비 변화(이번 − 지난). 이번이나 지난 기간에 쓴 카테고리 모두, 많이 는 순. */
+    data class CategoryChange(val categoryId: Long?, val now: Long, val before: Long) {
+        val diff: Long get() = now - before
+        val isNew: Boolean get() = before == 0L && now > 0
+    }
+
+    fun categoryChanges(current: PeriodStats, previous: PeriodStats): List<CategoryChange> =
+        (current.expenseByCategory.keys + previous.expenseByCategory.keys).distinct()
+            .map { CategoryChange(it, current.expenseByCategory[it] ?: 0, previous.expenseByCategory[it] ?: 0) }
+            .sortedByDescending { it.diff }
+
     /** 최근 [count]개 기간 추이(오래된 순). */
     fun trend(current: Period, count: Int, paydayDay: Int, transactions: List<Transaction>): List<PeriodStats> =
         PeriodCalculator.recent(current, count, paydayDay).map { stats(it, transactions) }

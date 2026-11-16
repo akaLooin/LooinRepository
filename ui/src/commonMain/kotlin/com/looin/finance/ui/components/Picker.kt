@@ -118,3 +118,17 @@ fun PickerField(
         }
     }
 }
+
+/** 계좌 종류별 기본 색(사용자가 통장 색을 정하지 않았을 때). */
+fun defaultAccountColor(type: com.looin.finance.core.model.AccountType): Long = when (type) {
+    com.looin.finance.core.model.AccountType.CHECKING -> 0xFF2F6FED
+    com.looin.finance.core.model.AccountType.CASH -> 0xFFD9861C
+    com.looin.finance.core.model.AccountType.SAVINGS -> 0xFF0E9F8A
+    com.looin.finance.core.model.AccountType.FOREIGN -> 0xFF7C5CDB
+    com.looin.finance.core.model.AccountType.OTHER_ASSET -> 0xFF677080
+    com.looin.finance.core.model.AccountType.LIABILITY -> 0xFFE0484D
+}
+
+/** 통장 색: 정한 색이 있으면 그것, 없으면 종류별 기본 색. */
+fun accountColor(a: com.looin.finance.core.model.Account?): Color =
+    Color(a?.let { if (it.colorArgb != 0L) it.colorArgb else defaultAccountColor(it.type) } ?: 0xFF677080)

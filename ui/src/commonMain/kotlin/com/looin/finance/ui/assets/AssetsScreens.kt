@@ -84,6 +84,14 @@ import com.looin.finance.ui.components.UnderlineField
 import com.looin.finance.ui.components.amountToInput
 import com.looin.finance.ui.components.korean
 import com.looin.finance.ui.theme.Looin
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.border
+import com.looin.finance.ui.components.hexOf
+import com.looin.finance.ui.components.HexColorField
+import com.looin.finance.ui.components.defaultAccountColor
+import com.looin.finance.ui.components.accountColor
 import com.looin.finance.ui.theme.LooinType
 
 fun AccountType.icon(): ImageVector = when (this) {
@@ -95,11 +103,12 @@ fun AccountType.icon(): ImageVector = when (this) {
     AccountType.LIABILITY -> Icons.Outlined.CreditCard
 }
 
+/** 계좌 아이콘: 통장 색을 옅게 깐 원 + 그 색 아이콘. */
 @Composable
-private fun AccountAvatar(type: AccountType, size: Int = 40) {
-    val c = Looin.colors
-    Box(Modifier.size(size.dp).clip(CircleShape).background(c.surfaceButton), contentAlignment = Alignment.Center) {
-        Icon(type.icon(), null, tint = if (type.isLiability) c.expense else c.text, modifier = Modifier.size((size * 0.5).dp))
+private fun AccountAvatar(account: Account, size: Int = 40) {
+    val col = accountColor(account)
+    Box(Modifier.size(size.dp).clip(CircleShape).background(col.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+        Icon(account.type.icon(), null, tint = col, modifier = Modifier.size((size * 0.5).dp))
     }
 }
 
@@ -135,7 +144,7 @@ fun AssetsScreen(state: UiState, padding: PaddingValues, onOpenAccount: (Long) -
                         val bal = BalanceCalculator.actualBalance(a, data.transactions)
                         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onOpenAccount(a.id) }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically) {
-                            AccountAvatar(a.type)
+                            AccountAvatar(a)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(a.name + if (a.archived) " (보관)" else "", style = LooinType.bodyLg, color = if (a.archived) c.textMuted else c.text)
@@ -201,7 +210,7 @@ fun AccountDetailScreen(
         ) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    AccountAvatar(account.type, 56)
+                    AccountAvatar(account, 56)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         SmallLabel("${account.type.label}${if (account.archived) " · 보관됨" else ""}${if (account.includeInAvailable) " · 생활비 계산 대상" else ""}")
@@ -294,6 +303,7 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
     var include by rememberSaveable { mutableStateOf(existing?.includeInAvailable ?: true) }
     var rateText by rememberSaveable { mutableStateOf(existing?.rateToKrwX10000?.let(::formatRate) ?: "") }
     var memo by rememberSaveable { mutableStateOf(existing?.memo ?: "") }
+    var color by rememberSaveable { mutableStateOf(existing?.colorArgb ?: 0L) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val effectiveCurrency = if (type == AccountType.FOREIGN) (if (currency == KRW) "USD" else currency) else KRW
@@ -311,7 +321,7 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
                 openingBalance = if (type.isLiability) -opening else opening,
                 includeInAvailable = include && includeAllowed, archived = existing?.archived ?: false, memo = memo,
                 sortOrder = existing?.sortOrder ?: state.data.accounts.size, rateToKrwX10000 = rate,
-                createdAt = existing?.createdAt ?: 0,
+                createdAt = existing?.createdAt ?: 0, colorArgb = color,
             ),
             onDone,
         )
@@ -324,6 +334,24 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             UnderlineField(name, { name = it }, "이름", placeholder = "예: 주거래 통장", textStyle = LooinType.bodyLg.copy(fontWeight = FontWeight.SemiBold))
+            // 통장 색: 목록·선택 칸·예산에 쓰인다. "기본"은 종류별 색
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallLabel("통장 색")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val def = defaultAccountColor(type)
+                    Box(Modifier.size(34.dp).clip(CircleShape).background(Color(def).copy(alpha = 0.25f))
+                        .then(if (color == 0L) Modifier.border(3.dp, c.text, CircleShape) else Modifier)
+                        .clickable { color = 0L }.semantics { contentDescription = "기본 색" }, contentAlignment = Alignment.Center) {
+                        Text("기본", style = LooinType.tiny, color = Color(def))
+                    }
+                    com.looin.finance.ui.settings.CATEGORY_PALETTE.forEach { argb ->
+                        Box(Modifier.size(34.dp).clip(CircleShape).background(Color(argb))
+                            .then(if (argb == color) Modifier.border(3.dp, c.text, CircleShape) else Modifier)
+                            .clickable { color = argb }.semantics { contentDescription = "색 ${hexOf(argb)}" })
+                    }
+                }
+                HexColorField(if (color == 0L) defaultAccountColor(type) else color, { color = it }, "색 코드 직접 입력 (예: #12A594)")
+            }
             Column {
                 SmallLabel("종류")
                 Spacer(Modifier.height(8.dp))

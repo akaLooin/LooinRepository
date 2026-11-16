@@ -40,6 +40,8 @@ data class Account(
     val rateToKrwX10000: Long? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
+    /** 통장 색(ARGB). 0 이면 정하지 않음 → 화면이 계좌 종류별 기본 색을 쓴다. */
+    val colorArgb: Long = 0,
 )
 
 enum class TransactionType(val label: String) {

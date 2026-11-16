@@ -70,6 +70,7 @@ import com.looin.finance.ui.components.PrimaryButton
 import com.looin.finance.core.money.AmountExpression
 import com.looin.finance.ui.components.PillTabs
 import com.looin.finance.ui.components.PickItem
+import com.looin.finance.ui.components.accountColor
 import com.looin.finance.ui.components.PickerField
 import com.looin.finance.ui.components.Section
 import com.looin.finance.ui.components.SmallLabel
@@ -326,7 +327,7 @@ fun BudgetForm(
                     data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived && it.id !in usedCats }.map { PickItem(it.id, it.name, Color(it.colorArgb)) },
                     categoryId, emptyList(), { categoryId = it })
                 BudgetKind.ACCOUNT -> PickerField("출금 계좌",
-                    data.accounts.filter { !it.archived && it.id !in usedAccs }.map { PickItem(it.id, it.name) }, accountId, emptyList(), { accountId = it })
+                    data.accounts.filter { !it.archived && it.id !in usedAccs }.map { PickItem(it.id, it.name, accountColor(it)) }, accountId, emptyList(), { accountId = it })
             }
         } else {
             Text(budgetName(budget, data), style = LooinType.pill, color = c.text)

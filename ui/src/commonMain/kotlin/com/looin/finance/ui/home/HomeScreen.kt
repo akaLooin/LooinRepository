@@ -65,6 +65,12 @@ import com.looin.finance.ui.components.TransactionRow
 import com.looin.finance.ui.components.Card
 import com.looin.finance.ui.components.AdaptiveColumns
 import com.looin.finance.ui.plan.BudgetRow
+import com.looin.finance.core.calc.BalanceForecast
+import com.looin.finance.core.calc.QuickEntries
+import com.looin.finance.ui.components.accountColor
+import com.looin.finance.ui.components.typeColor
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.looin.finance.ui.components.HBar
 import com.looin.finance.ui.components.TextAction
 import androidx.compose.foundation.border
@@ -90,6 +96,8 @@ fun HomeScreen(
     onAddAccount: () -> Unit,
     onOpenPlan: () -> Unit,
     onOpenCalendar: () -> Unit,
+    /** 이 거래 내용을 복사해 새로 입력(자주 쓰는 거래 칩). */
+    onCopyTx: (Long) -> Unit = {},
 ) {
     val c = Looin.colors
     val files = LocalFileActions.current
@@ -177,6 +185,31 @@ fun HomeScreen(
                 }
             }
         }
+        // 잔고 부족 미리 알림: 예정 거래를 반영하면 0원 아래로 내려가는 통장
+        val shortfalls = BalanceForecast.shortfalls(data.accounts, txs, state.today)
+        if (shortfalls.isNotEmpty()) left += {
+            Card {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(4.dp, 16.dp).clip(RoundedCornerShape(50)).background(c.danger))
+                    Spacer(Modifier.width(10.dp))
+                    Text("잔고 부족 예상", style = LooinType.sheetTitle, color = c.danger)
+                }
+                Spacer(Modifier.height(8.dp))
+                shortfalls.forEach { sf ->
+                    val cause = sf.cause?.let { it.memo.ifBlank { data.categoryName(it.categoryId) } } ?: "예정 거래"
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { sf.cause?.let(onOpenTx) }.padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(accountColor(sf.account)))
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("${sf.account.name} · ${sf.date.korean()} $cause 뒤", style = LooinType.body, color = c.text)
+                            SmallLabel("미리 이체하거나 예정 거래를 조정하세요")
+                        }
+                        AmountText(sf.balance, color = c.danger, style = LooinType.body.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
         // 백업 알림(필요할 때만)
         BackupReminder.message(txs, state.today, ThemePrefs.lastBackupDay, ThemePrefs.backupSnoozeUntil)?.let { msg ->
             left += {
@@ -196,12 +229,26 @@ fun HomeScreen(
             }
         }
         // 2) 빠른 입력
-        left += {
+        left += { Column {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 QuickAdd("지출", c.expense, Modifier.weight(1f)) { onAddTx(null, TransactionType.EXPENSE, false) }
                 QuickAdd("수입", c.income, Modifier.weight(1f)) { onAddTx(null, TransactionType.INCOME, false) }
                 QuickAdd("저축 및 이체", c.transfer, Modifier.weight(1f)) { onAddTx(null, TransactionType.TRANSFER, false) }
             }
+            // 자주 쓰는 거래: 누르면 같은 내용으로 오늘 날짜 새 거래(금액 등은 고칠 수 있음)
+            val quick = QuickEntries.suggest(txs, state.today)
+            if (quick.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    SmallLabel("자주 쓰는")
+                    quick.forEach { q ->
+                        val t = q.sample
+                        ChipPill("${t.memo.trim()} ${MoneyFormat.format(t.amount, t.currency)}", false, { onCopyTx(t.id) },
+                            dot = t.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: typeColor(t.type))
+                    }
+                }
+            } }
         }
         // 3) 예정 거래
         left += {

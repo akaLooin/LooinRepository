@@ -355,7 +355,7 @@ private fun AppNavHost(
             HomeScreen(state, vm, padding, openSheet,
                 onAddTx = { d, t, planned -> nav.navigate(txRoute(date = d, type = t, status = if (planned) TransactionStatus.PLANNED else null)) },
                 onAddAccount = { nav.navigate("accountEdit") }, onOpenPlan = { goTab(Tab.PLAN) },
-                onOpenCalendar = { goTab(Tab.CALENDAR) })
+                onOpenCalendar = { goTab(Tab.CALENDAR) }, onCopyTx = { nav.navigate(txRoute(copy = it)) })
         }
         page(Tab.CALENDAR.route, wideMax = null) {
             CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }, selectedDays = calendarDay, onSelectDays = onCalendarDay)

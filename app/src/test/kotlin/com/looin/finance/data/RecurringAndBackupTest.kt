@@ -130,7 +130,7 @@ class RecurringAndBackupTest {
     /** 백업 → 다른 DB 로 복원 → 모든 데이터와 잔고가 같다 */
     @Test fun backupRoundTrip() = runTest {
         val (acc, cat) = setup()
-        val savings = repo.saveAccount(Account(name = "적금", type = AccountType.SAVINGS, openingBalance = 0))
+        val savings = repo.saveAccount(Account(name = "적금", type = AccountType.SAVINGS, openingBalance = 0, colorArgb = 0xFF12A594)) // 통장 색도 백업
         repo.saveRule(rent(acc, cat))
         repo.saveTransaction(Transaction(type = TransactionType.TRANSFER, status = TransactionStatus.COMPLETED, amount = 300_000,
             date = today, completedDate = today, fromAccountId = acc, toAccountId = savings, memo = "저축"))

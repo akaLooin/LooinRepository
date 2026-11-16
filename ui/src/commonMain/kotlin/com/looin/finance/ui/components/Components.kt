@@ -887,7 +887,12 @@ fun TransactionRow(
                 }
                 StatusBadge(tx.status)
             }
-            if (subtitle.isNotEmpty()) Text(subtitle, style = LooinType.helper, color = c.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+                // 통장 색 점: 어느 통장 거래인지 한눈에
+                val acc = data.accountById[if (tx.type == TransactionType.INCOME) tx.toAccountId else tx.fromAccountId ?: tx.toAccountId]
+                if (acc != null) { Box(Modifier.size(6.dp).clip(CircleShape).background(accountColor(acc))); Spacer(Modifier.width(5.dp)) }
+                Text(subtitle, style = LooinType.helper, color = c.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         Spacer(Modifier.width(8.dp))
         AmountText(signed, currency = tx.currency, color = amountColor,

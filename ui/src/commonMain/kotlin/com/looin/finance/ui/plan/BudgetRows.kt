@@ -31,6 +31,7 @@ import com.looin.finance.core.money.MoneyFormat
 import com.looin.finance.data.FinanceData
 import com.looin.finance.ui.components.AmountText
 import com.looin.finance.ui.components.SmallLabel
+import com.looin.finance.ui.components.accountColor
 import com.looin.finance.ui.theme.Looin
 import com.looin.finance.ui.theme.LooinType
 
@@ -75,7 +76,7 @@ fun BudgetMeter(s: BudgetStatus) {
 fun BudgetRow(s: BudgetStatus, data: FinanceData, onClick: (() -> Unit)? = null) {
     val c = Looin.colors
     val dot = s.budget.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) }
-        ?: if (s.budget.isAccount) c.transfer else c.primary
+        ?: if (s.budget.isAccount) accountColor(data.accountById[s.budget.accountId]) else c.primary
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(horizontal = 4.dp, vertical = 9.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {

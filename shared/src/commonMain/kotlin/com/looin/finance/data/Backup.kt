@@ -82,6 +82,7 @@ object BackupCodec {
                         put("openingBalance", a.openingBalance); put("includeInAvailable", a.includeInAvailable); put("archived", a.archived)
                         put("memo", a.memo); put("sortOrder", a.sortOrder); putOpt("rateToKrwX10000", a.rateToKrwX10000)
                         put("createdAt", a.createdAt); put("updatedAt", a.updatedAt)
+                        if (a.colorArgb != 0L) put("colorArgb", a.colorArgb) // 앱 v7~, 없으면 기본 색
                     })
                 }
             })
@@ -177,7 +178,8 @@ object BackupCodec {
         val accounts = root.arr("accounts").map { o ->
             Account(o.long("id"), o.req("name"), AccountType.valueOf(o.req("type")), o.req("currency"),
                 o.long("openingBalance"), o.bool("includeInAvailable"), o.bool("archived"), o.str("memo") ?: "",
-                o.intOrNull("sortOrder") ?: 0, o.longOrNull("rateToKrwX10000"), o.longOrNull("createdAt") ?: 0, o.longOrNull("updatedAt") ?: 0)
+                o.intOrNull("sortOrder") ?: 0, o.longOrNull("rateToKrwX10000"), o.longOrNull("createdAt") ?: 0, o.longOrNull("updatedAt") ?: 0,
+                o.longOrNull("colorArgb") ?: 0)
         }
         val categories = root.arr("categories").map { o ->
             Category(o.long("id"), o.req("name"), CategoryKind.valueOf(o.req("kind")), o.long("colorArgb"),

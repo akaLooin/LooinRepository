@@ -138,4 +138,24 @@ class MigrationTest {
             db.close()
         }
     }
+
+    /** v6 → v7(통장 색): 기존 계좌는 색 0(기본) */
+    @Test fun v6AccountsGetDefaultColor() = runTest {
+        val n = "migration-v6.db"
+        helper.createDatabase(n, 6).apply {
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO accounts (id, name, type, currency, opening_balance, include_in_available, archived, memo, sort_order, rate_to_krw_x10000, created_at, updated_at) " +
+                "VALUES (1, '주거래', 'CHECKING', 'KRW', 300000, 1, 0, '', 0, NULL, 0, 0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 7, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val a = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 16) }).snapshot().accounts.single()
+            assertEquals(300_000, a.openingBalance)
+            assertEquals(0L, a.colorArgb)
+        } finally {
+            db.close()
+        }
+    }
 }

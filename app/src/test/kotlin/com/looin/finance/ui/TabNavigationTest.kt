@@ -85,4 +85,27 @@ class TabNavigationTest {
         rule.onNode(hasText("오늘")).performClick()
         rule.waitUntilAtLeastOneExists(hasText(label(today)), 5_000)
     }
+
+    /** 홈: 예정 지출로 마이너스가 될 통장을 미리 알리고, 자주 쓰는 거래 칩으로 같은 내용을 바로 입력 */
+    @Test fun homeShortfallAndQuickEntry() {
+        val app = rule.activity.application as LooinApp
+        val today = app.repository.today()
+        runBlocking {
+            val r = app.repository
+            val acc = r.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 100_000, includeInAvailable = true))
+            repeat(2) { r.saveTransaction(com.looin.finance.core.model.Transaction(type = com.looin.finance.core.model.TransactionType.EXPENSE,
+                status = com.looin.finance.core.model.TransactionStatus.COMPLETED, amount = 4_500, date = today, completedDate = today, fromAccountId = acc, memo = "커피")) }
+            r.saveTransaction(com.looin.finance.core.model.Transaction(type = com.looin.finance.core.model.TransactionType.EXPENSE,
+                status = com.looin.finance.core.model.TransactionStatus.PLANNED, amount = 150_000, date = today.plus(kotlinx.datetime.DatePeriod(days = 5)),
+                fromAccountId = acc, memo = "카드값"))
+        }
+        homeShown()
+        rule.waitUntilAtLeastOneExists(hasText("잔고 부족 예상"), 5_000)
+        rule.waitUntilAtLeastOneExists(hasText("카드값 뒤", substring = true), 5_000)
+        rule.onNode(hasText("커피 4,500원")).performClick()
+        rule.waitUntilAtLeastOneExists(hasText("거래 추가"), 5_000)
+        rule.onNode(hasText("저장")).performClick()
+        homeShown()
+        runBlocking { check(app.repository.snapshot().transactions.count { it.memo == "커피" } == 3) }
+    }
 }
