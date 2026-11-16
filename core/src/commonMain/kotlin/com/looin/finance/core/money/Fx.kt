@@ -73,6 +73,13 @@ object Fx {
 }
 
 /**
+ * 통계·예산에 쓰는 원화 금액: 원화 거래는 그대로, 외화 거래는 **기록한 당시 환율**로 환산.
+ * 외화인데 환율이 없으면 null(계산에서 빠짐 → 계좌 화면에서 환율을 채우면 들어감).
+ */
+fun Transaction.krwAmount(): Long? =
+    if (currency == KRW) amount else rateToKrwX10000?.let { MoneyFormat.toKrw(amount, currency, it) }
+
+/**
  * 외화 계좌의 환율 기록 상태와 원화 평가.
  */
 object AccountFx {
@@ -118,59 +125,99 @@ enum class RateKind(val label: String) { LIVE("실시간 환율"), MANUAL("직�
 data class RateSource(val rateX10000: Long, val kind: RateKind)
 
 /**
- * 거래가 있는 원화 계좌를 외화 계좌로 바꾸기.
- *  - [amountsAreForeign] = true: 그동안 적은 숫자가 이미 외화 금액(예: ¥1,000 을 1,000 으로 적음) → 숫자는 그대로, 통화만 바꿈
- *  - false: 원화로 적었음 → 각 거래의 환율로 외화 금액을 계산
- * 모든 거래(예정·취소 포함)와 초기 잔고(0 이 아니면)에 당시 환율이 있어야 한다.
- * 다른 원화 계좌와의 이체는 상대 계좌 쪽 숫자를 그대로 두고 이 계좌 쪽만 외화로 바꾼다(환전 기록이 됨).
+ * 거래가 있는 계좌의 통화 바꾸기: 원화 → 외화, 외화 → 원화, 외화 → 다른 외화.
+ *
+ * [rates] 는 거래별 "1 X 당 원" 환율이고, X 는 새 통화가 외화면 새 통화, 원화로 바꾸면 원래 통화다.
+ * [openingRate] 도 같은 뜻(초기 잔고).
+ *  - [amountsAsIs] = true: 그동안 적은 숫자가 이미 새 통화 금액 → 숫자는 그대로, 통화만 바꿈
+ *  - false: 원래 통화 금액 → 환율로 새 통화 금액을 계산
+ *    (외화 → 다른 외화는 원래 통화의 기록 환율로 원화로 바꾼 뒤 새 통화 환율로 나눈다 → 원래 기록 환율이 모두 있어야 함)
+ * 모든 거래(예정·취소 포함)와 초기 잔고(0 이 아니면)에 환율이 있어야 한다(원화로 숫자 그대로 바꿀 때만 필요 없음).
+ * 원화 계좌와 오간 이체는 그 계좌 쪽 금액은 그대로 둔다:
+ *   새 통화가 외화면 이 계좌 쪽만 바꿔 환전 기록이 되고, 원화로 바꾸면 이 계좌 쪽도 원화 계좌 쪽 금액과 같아진다(같은 통화 이체).
+ * 다른 외화 계좌와 오간 거래가 있으면 바꿀 수 없다.
  */
 object CurrencyConversion {
     data class Result(val account: Account, val transactions: List<Transaction>, val errors: List<String>)
 
+    /** 이 바꾸기에 환율 입력이 필요한지. */
+    fun needsRates(oldCurrency: String, newCurrency: String, amountsAsIs: Boolean) = !(newCurrency == KRW && amountsAsIs)
+
+    /** 환율 칸이 묻는 통화(1 X 당 원). */
+    fun rateCurrency(oldCurrency: String, newCurrency: String) = if (newCurrency == KRW) oldCurrency else newCurrency
+
+    /** 금액 하나를 새 통화로. [oldRate] 는 원래 통화의 기록 환율(외화 → 다른 외화에서만 씀). */
+    fun convertAmount(v: Long, old: String, new: String, asIs: Boolean, rate: Long?, oldRate: Long?): Long? = when {
+        asIs -> v
+        rate == null -> null
+        old == KRW -> Fx.fromKrw(v, new, rate)
+        new == KRW -> Fx.toKrw(v, old, rate)
+        else -> oldRate?.let { Fx.fromKrw(Fx.toKrw(v, old, it), new, rate) }
+    }
+
     fun convert(
         account: Account,
         newCurrency: String,
-        amountsAreForeign: Boolean,
+        amountsAsIs: Boolean,
         openingRate: Long?,
         rates: Map<Long, Long>,
         txs: List<Transaction>,
         accounts: Map<Long, Account>,
     ): Result {
+        val old = account.currency
         val errors = mutableListOf<String>()
-        if (account.currency != KRW) errors += "원화 계좌만 외화 계좌로 바꿀 수 있어요."
-        if (newCurrency == KRW) errors += "바꿀 외화를 고르세요."
-        if (account.type.isLiability) errors += "부채 계좌는 외화로 바꿀 수 없어요."
-        if (account.openingBalance != 0L && openingRate == null) errors += "초기 잔고의 당시 환율을 적어 주세요."
+        if (newCurrency == old) errors += "지금과 다른 통화를 고르세요."
+        if (account.type.isLiability) errors += "부채 계좌는 통화를 바꿀 수 없어요."
+        val need = needsRates(old, newCurrency, amountsAsIs)
+        val viaKrw = old != KRW && newCurrency != KRW && !amountsAsIs
         val mine = txs.filter { it.touches(account.id) }
-        val missing = mine.count { rates[it.id] == null }
-        if (missing > 0) errors += "환율이 비어 있는 거래가 ${missing}건 있어요."
+        if (need && account.openingBalance != 0L && openingRate == null) errors += "초기 잔고의 당시 환율을 적어 주세요."
+        if (viaKrw && account.openingBalance != 0L && account.openingRateX10000 == null) errors += "초기 잔고의 원래($old) 환율이 없어요. 먼저 거래별 환율을 채워 주세요."
+        if (need) mine.count { rates[it.id] == null }.takeIf { it > 0 }?.let { errors += "환율이 비어 있는 거래가 ${it}건 있어요." }
+        if (viaKrw) mine.count { it.rateToKrwX10000 == null }.takeIf { it > 0 }?.let { errors += "원래($old) 환율이 없는 거래가 ${it}건 있어요. 먼저 거래별 환율을 채운 뒤 바꾸세요." }
         mine.forEach { t ->
             val other = (if (t.fromAccountId == account.id) t.toAccountId else t.fromAccountId)?.let { accounts[it] }
-            if (other != null && other.currency != KRW && other.currency != newCurrency) errors += "다른 외화 계좌(${other.name})와 오간 거래는 바꿀 수 없어요."
-            if (t.type == TransactionType.EXCHANGE) errors += "환전 거래가 있는 계좌는 바꿀 수 없어요."
+            if (other != null && other.currency != KRW) errors += "다른 외화 계좌(${other.name})와 오간 거래가 있어 바꿀 수 없어요."
+            if (t.type == com.looin.finance.core.model.TransactionType.EXCHANGE) errors += "환전 거래가 있는 계좌는 바꿀 수 없어요."
         }
         if (errors.isNotEmpty()) return Result(account, emptyList(), errors.distinct())
 
-        fun conv(krwOrForeign: Long, rate: Long) = if (amountsAreForeign) krwOrForeign else Fx.fromKrw(krwOrForeign, newCurrency, rate)
+        val toKrwAccount = newCurrency == KRW
+        fun conv(v: Long, rate: Long?, oldRate: Long?) = convertAmount(v, old, newCurrency, amountsAsIs, rate, oldRate)!!
         val newAcc = account.copy(
-            currency = newCurrency, type = com.looin.finance.core.model.AccountType.FOREIGN, includeInAvailable = false,
-            openingBalance = if (account.openingBalance == 0L) 0L else conv(account.openingBalance, openingRate!!),
-            openingRateX10000 = openingRate, billingDay = null, billingAccountId = null,
+            currency = newCurrency,
+            type = if (toKrwAccount) com.looin.finance.core.model.AccountType.CHECKING else com.looin.finance.core.model.AccountType.FOREIGN,
+            includeInAvailable = if (toKrwAccount) account.includeInAvailable else false,
+            openingBalance = if (account.openingBalance == 0L) 0L else conv(account.openingBalance, openingRate, account.openingRateX10000),
+            openingRateX10000 = if (toKrwAccount) null else openingRate,
+            rateToKrwX10000 = null, billingDay = null, billingAccountId = null,
         )
         val out = mine.map { t ->
-            val rate = rates.getValue(t.id)
+            val rate = rates[t.id]
+            val newRate = if (toKrwAccount) null else rate
             val otherId = if (t.fromAccountId == account.id) t.toAccountId else t.fromAccountId
             val other = otherId?.let { accounts[it] }
+            val isFrom = t.fromAccountId == account.id
             when {
-                // 원화 계좌와의 이체: 상대 쪽 숫자는 그대로, 이 계좌 쪽만 외화로
-                t.type == TransactionType.TRANSFER && other != null && other.currency == KRW ->
-                    if (t.fromAccountId == account.id) t.copy(amount = conv(t.amount, rate), currency = newCurrency, toAmount = t.toAmount ?: t.amount, rateToKrwX10000 = rate)
-                    else t.copy(toAmount = conv(t.toAmount ?: t.amount, rate), rateToKrwX10000 = rate)
-                else -> t.copy(amount = conv(t.amount, rate), currency = newCurrency, rateToKrwX10000 = rate)
+                t.type == com.looin.finance.core.model.TransactionType.TRANSFER && other != null -> {
+                    // 원화 계좌와의 이체: 그 계좌 쪽 금액은 그대로
+                    val counterpart = if (isFrom) (t.toAmount ?: t.amount) else t.amount
+                    val mineSide = if (isFrom) t.amount else (t.toAmount ?: t.amount)
+                    if (toKrwAccount) {
+                        // 둘 다 원화가 됨 → 같은 금액의 원화 이체
+                        if (isFrom) t.copy(amount = counterpart, currency = KRW, toAmount = null, rateToKrwX10000 = null)
+                        else t.copy(toAmount = null, rateToKrwX10000 = null)
+                    } else {
+                        val converted = conv(mineSide, rate, t.rateToKrwX10000)
+                        if (isFrom) t.copy(amount = converted, currency = newCurrency, toAmount = counterpart, rateToKrwX10000 = newRate)
+                        else t.copy(toAmount = converted, rateToKrwX10000 = newRate)
+                    }
+                }
+                else -> t.copy(amount = conv(t.amount, rate, t.rateToKrwX10000), currency = newCurrency, rateToKrwX10000 = newRate)
             }
         }
         val zero = out.firstOrNull { it.amount <= 0 || (it.toAmount != null && it.toAmount <= 0) }
-        if (zero != null) return Result(account, emptyList(), listOf("환율로 나누면 0이 되는 거래가 있어요(${zero.date}). 환율을 확인하세요."))
+        if (zero != null) return Result(account, emptyList(), listOf("환율로 바꾸면 0이 되는 거래가 있어요(${zero.date}). 환율을 확인하세요."))
         return Result(newAcc, out, emptyList())
     }
 }

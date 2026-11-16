@@ -71,4 +71,23 @@ class ForeignCurrencyTest {
         repo.setRates(trip, null, mapOf(t2 to 96_000))
         assertEquals(96_000L, repo.snapshot().transactions.first { it.id == t2 }.rateToKrwX10000)
     }
+
+    /** 엔화 계좌 → 원화 계좌로 되돌리기: 기록 환율로 원화 금액, 환전 이체는 원화 계좌 쪽과 같은 원화 이체가 된다. */
+    @Test fun convertYenBackToKrw() = runBlocking {
+        repo.ensureInitialized()
+        val krw = repo.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 1_000_000, includeInAvailable = true))
+        val yen = repo.saveAccount(Account(name = "엔화", type = AccountType.FOREIGN, currency = "JPY", openingBalance = 0))
+        val ex = repo.saveTransaction(Transaction(type = TransactionType.TRANSFER, status = TransactionStatus.COMPLETED, amount = 90_000, date = today,
+            fromAccountId = krw, toAccountId = yen, toAmount = 10_000, rateToKrwX10000 = 90_000))
+        val sp = repo.saveTransaction(Transaction(type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 1_000, currency = "JPY", date = today,
+            fromAccountId = yen, rateToKrwX10000 = 90_000))
+        repo.convertAccountCurrency(yen, "KRW", false, null, mapOf(ex to 90_000, sp to 90_000))
+        val s = repo.snapshot()
+        val acc = s.accounts.first { it.id == yen }
+        assertEquals("KRW", acc.currency)
+        assertEquals(81_000L, BalanceCalculator.actualBalance(acc, s.transactions)) // 90,000 − 9,000
+        assertEquals(910_000L, BalanceCalculator.actualBalance(s.accounts.first { it.id == krw }, s.transactions))
+        // 원화 지출로 통계에 9,000원
+        assertEquals(9_000L, s.transactions.first { it.id == sp }.amount)
+    }
 }

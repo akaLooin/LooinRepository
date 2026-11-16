@@ -1,5 +1,6 @@
 package com.looin.finance.ui.calendar
 
+import com.looin.finance.core.money.krwAmount
 import androidx.compose.foundation.background
 import kotlinx.datetime.number
 import androidx.compose.foundation.clickable
@@ -159,10 +160,11 @@ fun CalendarScreen(
     }
     val rangeTxs = data.transactions.filter { it.effectiveDate >= rangeStart && it.effectiveDate < rangeEnd && it.matches(filter) }
     val byDay = rangeTxs.groupBy { it.effectiveDate }
-    val active = rangeTxs.filter { !it.isCancelled && it.currency == KRW }
-    val sumIncome = active.filter { it.isCompleted && it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val sumExpense = active.filter { it.isCompleted && it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-    val sumPlanned = active.filter { it.isPlanned && it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    // 외화 거래는 기록한 당시 환율로 원화 환산해서 합친다
+    val active = rangeTxs.filter { !it.isCancelled && it.krwAmount() != null }
+    val sumIncome = active.filter { it.isCompleted && it.type == TransactionType.INCOME }.sumOf { it.krwAmount()!! }
+    val sumExpense = active.filter { it.isCompleted && it.type == TransactionType.EXPENSE }.sumOf { it.krwAmount()!! }
+    val sumPlanned = active.filter { it.isPlanned && it.type == TransactionType.EXPENSE }.sumOf { it.krwAmount()!! }
 
     // 버튼(‹ › 오늘)은 애니메이션 없이 즉시 넘어간다. 손가락으로 밀 때만 부드럽게
     fun go(delta: Int) { scope.launch { pager.scrollToPage(pager.currentPage + delta) } }
@@ -281,9 +283,9 @@ fun CalendarGrid(
                     val list = byDay[date].orEmpty().filter { !it.isCancelled }
                     val planned = list.count { it.isPlanned }
                     val done = list.count { it.isCompleted }
-                    val krw = list.filter { it.currency == KRW && it.isCompleted }
-                    val inc = krw.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-                    val exp = krw.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+                    val krw = list.filter { it.krwAmount() != null && it.isCompleted }
+                    val inc = krw.filter { it.type == TransactionType.INCOME }.sumOf { it.krwAmount()!! }
+                    val exp = krw.filter { it.type == TransactionType.EXPENSE }.sumOf { it.krwAmount()!! }
                     val isToday = date == today
                     val isSel = date == selected && !isToday
                     val dayColor = when (col) { 0 -> c.sunday; 6 -> c.saturday; else -> c.text }
@@ -348,8 +350,8 @@ fun GroupedTransactions(txs: List<Transaction>, data: com.looin.finance.data.Fin
     if (live.isEmpty()) { EmptyHint("이 기간 거래가 없어요."); return }
     data class Group(val key: String, val title: String, val dot: Color, val items: List<Transaction>) {
         // 합계는 확정(완료) 거래만, 예정은 따로(확정과 섞지 않음)
-        val net: Long get() = items.filter { it.currency == KRW && it.isCompleted }.sumOf { signedAmount(it) }
-        val plannedNet: Long get() = items.filter { it.currency == KRW && it.isPlanned }.sumOf { signedAmount(it) }
+        val net: Long get() = items.filter { it.krwAmount() != null && it.isCompleted }.sumOf { signedAmount(it) }
+        val plannedNet: Long get() = items.filter { it.krwAmount() != null && it.isPlanned }.sumOf { signedAmount(it) }
     }
     val groups: List<Group> = when (grouping) {
         CalendarGrouping.DATE -> live.groupBy { it.effectiveDate }.toList().sortedBy { it.first }
@@ -392,9 +394,13 @@ fun GroupedTransactions(txs: List<Transaction>, data: com.looin.finance.data.Fin
 }
 
 /** 모아 보기 합계용 부호: 수입 +, 지출 −, 이체는 옮긴 금액(+), 조정은 증감. */
-private fun signedAmount(t: Transaction): Long = when (t.type) {
-    TransactionType.INCOME -> t.amount
-    TransactionType.EXPENSE -> -t.amount
-    TransactionType.ADJUSTMENT -> if (t.toAccountId != null) t.amount else -t.amount
-    else -> t.amount
+/** 원화 기준 부호 있는 금액(외화는 기록 환율로 환산). */
+private fun signedAmount(t: Transaction): Long {
+    val v = t.krwAmount() ?: 0
+    return when (t.type) {
+        TransactionType.INCOME -> v
+        TransactionType.EXPENSE -> -v
+        TransactionType.ADJUSTMENT -> if (t.toAccountId != null) v else -v
+        else -> v
+    }
 }

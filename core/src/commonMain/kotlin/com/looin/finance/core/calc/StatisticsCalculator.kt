@@ -3,6 +3,7 @@ package com.looin.finance.core.calc
 import kotlinx.datetime.LocalDate
 import com.looin.finance.core.model.Budget
 import com.looin.finance.core.model.KRW
+import com.looin.finance.core.money.krwAmount
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.period.Period
@@ -39,10 +40,11 @@ object StatisticsCalculator {
         transactions.filter { !it.isCancelled && it.effectiveDate in period }
 
     fun stats(period: Period, transactions: List<Transaction>): PeriodStats {
-        val inPeriod = transactionsIn(period, transactions).filter { it.currency == KRW }
+        // 외화 거래는 기록한 당시 환율로 원화 환산해서 합친다(환율이 없는 외화 거래는 빠짐)
+        val inPeriod = transactionsIn(period, transactions).filter { it.krwAmount() != null }
         val completed = inPeriod.filter { it.isCompleted }
         val planned = inPeriod.filter { it.isPlanned }
-        fun List<Transaction>.sumType(t: TransactionType) = filter { it.type == t }.sumOf { it.amount }
+        fun List<Transaction>.sumType(t: TransactionType) = filter { it.type == t }.sumOf { it.krwAmount()!! }
         return PeriodStats(
             period = period,
             income = completed.sumType(TransactionType.INCOME),
@@ -50,9 +52,9 @@ object StatisticsCalculator {
             plannedIncome = planned.sumType(TransactionType.INCOME),
             plannedExpense = planned.sumType(TransactionType.EXPENSE),
             expenseByCategory = completed.filter { it.type == TransactionType.EXPENSE }
-                .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.amount } },
+                .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.krwAmount()!! } },
             incomeByCategory = completed.filter { it.type == TransactionType.INCOME }
-                .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.amount } },
+                .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.krwAmount()!! } },
         )
     }
 
@@ -75,8 +77,8 @@ object StatisticsCalculator {
         val elapsed = (today.toEpochDays() - period.start.toEpochDays() + 1).toInt().coerceIn(0, days)
         val byDay = LongArray(days)
         transactionsIn(period, transactions)
-            .filter { it.isCompleted && it.type == TransactionType.EXPENSE && it.currency == KRW }
-            .forEach { byDay[(it.effectiveDate.toEpochDays() - period.start.toEpochDays()).toInt()] += it.amount }
+            .filter { it.isCompleted && it.type == TransactionType.EXPENSE && it.krwAmount() != null }
+            .forEach { byDay[(it.effectiveDate.toEpochDays() - period.start.toEpochDays()).toInt()] += it.krwAmount()!! }
         var run = 0L
         val cumulative = (0 until elapsed).map { run += byDay[it]; run }
         val st = BudgetCalculator.statuses(budgets, period, transactions).filter { !it.budget.isAccount }
@@ -105,8 +107,8 @@ object StatisticsCalculator {
         val periodBudgets = BudgetCalculator.budgetsFor(budgets, period).filter { it.categoryId != null && !it.isAccount }
         val s = stats(period, transactions)
         val plannedByCategory = transactions
-            .filter { it.isPlanned && it.type == TransactionType.EXPENSE && it.currency == KRW && it.date in period }
-            .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.amount } }
+            .filter { it.isPlanned && it.type == TransactionType.EXPENSE && it.krwAmount() != null && it.date in period }
+            .groupBy { it.categoryId }.mapValues { (_, v) -> v.sumOf { it.krwAmount()!! } }
         val categoryIds = (periodBudgets.map { it.categoryId } + s.expenseByCategory.keys + plannedByCategory.keys).distinct()
         return categoryIds.map { id ->
             PlanVsActual(

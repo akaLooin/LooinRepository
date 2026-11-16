@@ -102,9 +102,9 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
     fun setRates(accountId: Long, openingRate: Long?, rates: Map<Long, Long>, onSuccess: () -> Unit) =
         run("환율을 저장했습니다", onSuccess) { repo.setRates(accountId, openingRate, rates) }
 
-    /** 거래가 있는 원화 계좌를 외화 계좌로 바꾸기. */
-    fun convertAccount(accountId: Long, currency: String, amountsAreForeign: Boolean, openingRate: Long?, rates: Map<Long, Long>, onSuccess: () -> Unit) =
-        run("$currency 계좌로 바꿨습니다", onSuccess) { repo.convertAccountCurrency(accountId, currency, amountsAreForeign, openingRate, rates) }
+    /** 거래가 있는 계좌의 통화 바꾸기(원화 ↔ 외화, 외화 → 다른 외화). */
+    fun convertAccount(accountId: Long, currency: String, amountsAsIs: Boolean, openingRate: Long?, rates: Map<Long, Long>, onSuccess: () -> Unit) =
+        run("${if (currency == com.looin.finance.core.model.KRW) "원화" else currency} 계좌로 바꿨습니다", onSuccess) { repo.convertAccountCurrency(accountId, currency, amountsAsIs, openingRate, rates) }
     fun cancelTransaction(id: Long) = run("취소 처리했습니다") { repo.cancelTransaction(id) }
     fun reopenTransaction(id: Long) = run("예정으로 되돌렸습니다") { repo.reopenTransaction(id) }
 

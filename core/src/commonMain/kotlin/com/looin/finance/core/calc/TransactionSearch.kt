@@ -1,5 +1,6 @@
 package com.looin.finance.core.calc
 
+import com.looin.finance.core.money.krwAmount
 import com.looin.finance.core.model.KRW
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionStatus
@@ -67,12 +68,13 @@ object TransactionSearch {
             }
             .sortedWith(compareByDescending<Transaction> { it.effectiveDate }.thenByDescending { it.id })
             .toList()
-        val krw = items.filter { !it.isCancelled && it.currency == KRW }
+        // 외화는 기록 환율로 원화 환산
+        val krw = items.filter { !it.isCancelled && it.krwAmount() != null }
         return Result(
             items = items,
-            completedIncome = krw.filter { it.isCompleted && it.type == TransactionType.INCOME }.sumOf { it.amount },
-            completedExpense = krw.filter { it.isCompleted && it.type == TransactionType.EXPENSE }.sumOf { it.amount },
-            plannedExpense = krw.filter { it.isPlanned && it.type == TransactionType.EXPENSE }.sumOf { it.amount },
+            completedIncome = krw.filter { it.isCompleted && it.type == TransactionType.INCOME }.sumOf { it.krwAmount()!! },
+            completedExpense = krw.filter { it.isCompleted && it.type == TransactionType.EXPENSE }.sumOf { it.krwAmount()!! },
+            plannedExpense = krw.filter { it.isPlanned && it.type == TransactionType.EXPENSE }.sumOf { it.krwAmount()!! },
         )
     }
 }

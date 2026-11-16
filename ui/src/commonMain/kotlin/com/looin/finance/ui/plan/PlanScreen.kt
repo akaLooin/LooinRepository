@@ -1,5 +1,6 @@
 package com.looin.finance.ui.plan
 
+import com.looin.finance.core.money.krwAmount
 import androidx.compose.foundation.background
 import kotlinx.datetime.number
 import androidx.compose.foundation.clickable
@@ -109,7 +110,7 @@ fun PlanScreen(
     val overall = statuses.firstOrNull { it.budget.isOverall }
     val categoryStatuses = statuses.filter { it.budget.categoryId != null }
     // 이 기간 고정 비용(반복 거래로 생긴 지출): 예산에 자동으로 더해진다
-    val fixedTxs = txs.filter { it.recurringId != null && it.type == TransactionType.EXPENSE && it.currency == KRW && !it.isCancelled &&
+    val fixedTxs = txs.filter { it.recurringId != null && it.type == TransactionType.EXPENSE && it.krwAmount() != null && !it.isCancelled &&
         ((it.isCompleted && it.effectiveDate in period) || (it.isPlanned && it.date in period)) }
     val stats = StatisticsCalculator.stats(period, txs)
     val plannedInPeriod = txs.filter { it.isPlanned && it.date in period }.sortedBy { it.date }
@@ -189,7 +190,7 @@ fun PlanScreen(
                 // 고정 비용: 예산에 자동 포함. 여기서는 고칠 수 없고 누르면 고정 비용 편집으로 간다
                 if (fixedTxs.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
-                    SmallLabel("고정 비용 · 예산에 자동 포함 (합계 ${fmt(fixedTxs.sumOf { it.amount })})", weight = FontWeight.SemiBold)
+                    SmallLabel("고정 비용 · 예산에 자동 포함 (합계 ${fmt(fixedTxs.sumOf { it.krwAmount()!! })})", weight = FontWeight.SemiBold)
                     fixedTxs.groupBy { it.recurringId }.forEach { (ruleId, list) ->
                         val rule = data.rules.firstOrNull { it.id == ruleId }
                         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onOpenRule(ruleId) }.padding(horizontal = 4.dp, vertical = 8.dp),
@@ -201,7 +202,7 @@ fun PlanScreen(
                                 SmallLabel(data.categoryName(list.first().categoryId) + " · " +
                                     list.joinToString { "${it.date.month.number}.${it.date.day}" + if (it.isCompleted) " 완료" else " 예정" })
                             }
-                            AmountText(-list.sumOf { it.amount }, signed = true, color = c.expense, style = LooinType.body)
+                            AmountText(-list.sumOf { it.krwAmount()!! }, signed = true, color = c.expense, style = LooinType.body)
                             Text(" ›", style = LooinType.body, color = c.textMuted)
                         }
                     }

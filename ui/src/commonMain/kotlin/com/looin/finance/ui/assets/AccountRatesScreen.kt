@@ -38,6 +38,7 @@ import com.looin.finance.core.model.KRW
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionStatus
 import com.looin.finance.core.money.Currencies
+import com.looin.finance.core.money.CurrencyConversion
 import com.looin.finance.core.money.Fx
 import com.looin.finance.core.money.MoneyFormat
 import com.looin.finance.ui.MainViewModel
@@ -61,7 +62,8 @@ private const val OPENING = -1L
 /**
  * 거래별 당시 환율 적기.
  *  - 외화 계좌([convert] = false): 완료 거래마다 그때 환율(이미 적은 것도 고칠 수 있음)
- *  - 원화 계좌 → 외화 계좌로 바꾸기([convert] = true): 모든 거래와 초기 잔고에 당시 환율을 적어야 바꿀 수 있다
+ *  - 통화 바꾸기([convert] = true, 원화 ↔ 외화 · 외화 → 다른 외화): 모든 거래와 초기 잔고에 당시 환율을 적어야 바꿀 수 있다
+ *    (원화로 바꾸면서 숫자를 그대로 둘 때만 환율이 필요 없음)
  * "기록 날짜 환율로 채우기"는 유럽중앙은행 기준 환율을 날짜별로 받아 빈 칸만 채운다(실제 환전 환율과 다르면 고쳐 쓰기).
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -72,19 +74,23 @@ fun AccountRatesScreen(state: UiState, vm: MainViewModel, accountId: Long, conve
     if (!data.loaded) return
     val account = data.accountById[accountId]
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding().navigationBarsPadding().imePadding()) {
-        ScreenHeader(if (convert) "외화 계좌로 바꾸기" else "거래별 환율", onDone)
+        ScreenHeader(if (!convert) "거래별 환율" else if (account?.currency == KRW) "외화 계좌로 바꾸기" else "통화 바꾸기", onDone)
         if (account == null) { EmptyHint("계좌를 찾을 수 없습니다."); return@Column }
-        var target by rememberSaveable { mutableStateOf(Currencies.all.first { it.code != KRW }.code) }
-        // 그동안 적은 숫자가 무엇인지: null = 아직 안 고름
-        var asForeign by rememberSaveable { mutableStateOf<Boolean?>(null) }
-        val cur = if (convert) target else account.currency
+        val old = account.currency
+        var target by rememberSaveable { mutableStateOf(if (old == KRW) Currencies.all.first { it.code != KRW }.code else KRW) }
+        // 그동안 적은 숫자를 그대로 둘지(새 통화 숫자였음): null = 아직 안 고름
+        var asIs by rememberSaveable { mutableStateOf<Boolean?>(null) }
+        // 환율 칸이 묻는 통화(1 cur 당 원): 원화로 바꾸면 원래 통화
+        val cur = if (convert) CurrencyConversion.rateCurrency(old, target) else old
+        val needRates = !convert || CurrencyConversion.needsRates(old, target, asIs == true)
         val rows = remember(data.transactions, convert) {
             data.transactions.filter { it.touches(account.id) && (convert || it.status == TransactionStatus.COMPLETED) }
                 .sortedWith(compareBy<Transaction> { it.effectiveDate }.thenBy { it.id })
         }
-        val texts = remember(account.id) {
+        // 원래 통화의 환율을 묻는 경우(거래별 환율, 원화로 바꾸기)는 적어 둔 환율로 시작
+        val texts = remember(account.id, cur) {
             mutableStateMapOf<Long, String>().apply {
-                if (!convert) {
+                if (cur == old) {
                     account.openingRateX10000?.let { put(OPENING, Fx.formatRate(it).replace(",", "")) }
                     rows.forEach { t -> t.rateToKrwX10000?.let { put(t.id, Fx.formatRate(it).replace(",", "")) } }
                 }
@@ -99,6 +105,11 @@ fun AccountRatesScreen(state: UiState, vm: MainViewModel, accountId: Long, conve
         val keys = (if (hasOpening) listOf(OPENING) else emptyList()) + rows.map { it.id }
         fun rate(k: Long) = texts[k]?.let(Fx::parseRate)
         val filled = keys.count { rate(it) != null }
+        fun preview(amount: Long, r: Long?, oldRate: Long?): String? = when {
+            convert && asIs == false -> CurrencyConversion.convertAmount(amount, old, target, false, r, oldRate)?.let { "→ ${MoneyFormat.format(it, target, signed = true)}" }
+            !convert && r != null -> "≈ ${MoneyFormat.format(Fx.toKrw(amount, old, r), signed = true)}"
+            else -> null
+        }
 
         fun fillByDate() {
             if (busy) return
@@ -125,33 +136,39 @@ fun AccountRatesScreen(state: UiState, vm: MainViewModel, accountId: Long, conve
             val bad = keys.count { k -> !texts[k].isNullOrBlank() && rate(k) == null }
             if (bad > 0) { error = "환율 형식이 잘못된 칸이 ${bad}개 있어요(예: 9.1234)."; return }
             if (convert) {
-                if (asForeign == null) { error = "그동안 적은 금액이 원화인지 ${cur}인지 골라 주세요."; return }
-                if (filled < keys.size) { error = "모든 거래(${keys.size - filled}칸 남음)에 당시 환율을 적어야 바꿀 수 있어요."; return }
-                vm.convertAccount(account.id, cur, asForeign!!, rate(OPENING), rates, onDone)
+                if (asIs == null) { error = "그동안 적은 금액을 어떻게 바꿀지 골라 주세요."; return }
+                if (needRates && filled < keys.size) { error = "모든 거래(${keys.size - filled}칸 남음)에 당시 환율을 적어야 바꿀 수 있어요."; return }
+                vm.convertAccount(account.id, target, asIs!!, if (needRates) rate(OPENING) else null, if (needRates) rates else emptyMap(), onDone)
             } else vm.setRates(account.id, rate(OPENING), rates, onDone)
         }
 
         LazyColumn(Modifier.weight(1f).padding(horizontal = GUTTER), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val newLabel = if (target == KRW) "원화" else target
+                    val oldLabel = if (old == KRW) "원화" else old
                     SmallLabel(
-                        if (convert) "‘${account.name}’을 외화 계좌로 바꿔요. 정확한 원화 계산을 위해 거래마다 그때 환율(1 $cur 당 원)을 모두 적어 주세요. 다른 원화 계좌와 오간 이체는 그 계좌 쪽 금액은 그대로 두고 환전 기록이 돼요."
-                        else "거래마다 그때 환율(1 $cur 당 원)을 적으면 기록 환율 기준 원화와 환율 변동 손익을 정확하게 계산해요.",
+                        if (!convert) "거래마다 그때 환율(1 $cur 당 원)을 적으면 기록 환율 기준 원화와 환율 변동 손익을 정확하게 계산해요."
+                        else "‘${account.name}’을 $newLabel 계좌로 바꿔요. 정확한 계산을 위해 거래마다 그때 환율(1 $cur 당 원)을 모두 적어 주세요. 다른 원화 계좌와 오간 이체는 그 계좌 쪽 금액은 그대로 둬요." +
+                            if (old != KRW && target != KRW) " $old → $target 는 기록해 둔 $old 환율로 원화로 바꾼 뒤 $target 환율로 계산해요." else "",
                         color = c.textSecondary,
                     )
                     if (convert) {
                         SmallLabel("바꿀 통화")
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Currencies.all.filter { it.code != KRW }.forEach { ci -> ChipPill("${ci.code} ${ci.label}", target == ci.code, { target = ci.code }) }
+                            Currencies.all.filter { it.code != old }.forEach { ci ->
+                                ChipPill(if (ci.code == KRW) "원화 (KRW)" else "${ci.code} ${ci.label}", target == ci.code, { target = ci.code })
+                            }
                         }
                         SmallLabel("그동안 적은 금액은")
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ChipPill("원화로 적었어요 → 환율로 $cur 계산", asForeign == false, { asForeign = false })
-                            ChipPill("이미 $cur 숫자예요 → 그대로", asForeign == true, { asForeign = true })
+                            ChipPill("${oldLabel}로 적었어요 → 환율로 $newLabel 계산", asIs == false, { asIs = false })
+                            ChipPill("이미 $newLabel 숫자예요 → 그대로", asIs == true, { asIs = true })
                         }
+                        if (!needRates) SmallLabel("숫자를 그대로 원화로 바꾸므로 환율은 적지 않아도 돼요.", color = c.textSecondary)
                     }
-                    if (ExchangeRates.supported) ChipPill(if (busy) "받아 오는 중…" else "기록 날짜 환율로 빈 칸 채우기", false, ::fillByDate, enabled = !busy)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (ExchangeRates.supported && needRates) ChipPill(if (busy) "받아 오는 중…" else "기록 날짜 환율로 빈 칸 채우기", false, ::fillByDate, enabled = !busy)
+                    if (needRates) Row(verticalAlignment = Alignment.CenterVertically) {
                         UnderlineField(bulk, { v -> bulk = v.filter { it.isDigit() || it == '.' } }, "같은 환율 한꺼번에", Modifier.weight(1f),
                             placeholder = "예: 9.12", keyboardType = KeyboardType.Decimal)
                         Spacer(Modifier.width(8.dp))
@@ -160,33 +177,34 @@ fun AccountRatesScreen(state: UiState, vm: MainViewModel, accountId: Long, conve
                         }, enabled = Fx.parseRate(bulk) != null)
                     }
                     status?.let { SmallLabel(it, color = c.textSecondary) }
-                    Text("${keys.size}칸 중 ${filled}칸 입력", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold),
+                    if (needRates) Text("${keys.size}칸 중 ${filled}칸 입력", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold),
                         color = if (filled == keys.size) c.income else c.text)
                 }
             }
             if (hasOpening) item(key = "opening") {
-                RateRow("초기 잔고", "계좌를 만들 때 잔고", account.openingBalance, if (convert) KRW else cur, cur, convert && asForeign == false,
-                    texts[OPENING] ?: "", { texts[OPENING] = it })
+                RateRow("초기 잔고", "계좌를 만들 때 잔고", account.openingBalance, old, cur, needRates,
+                    texts[OPENING] ?: "", { texts[OPENING] = it }) { r -> preview(account.openingBalance, r, account.openingRateX10000) }
             }
             items(rows, key = { it.id }) { t ->
                 val label = listOf(t.type.label + if (t.isPlanned) " · 예정" else if (t.isCancelled) " · 취소" else "",
                     t.memo.ifBlank { data.categoryName(t.categoryId).takeIf { t.categoryId != null } ?: "" }).filter { it.isNotBlank() }.joinToString(" · ")
                 val delta = t.deltaFor(account.id)
-                RateRow(t.effectiveDate.korean(true), label, delta, if (convert) KRW else cur, cur, convert && asForeign == false,
-                    texts[t.id] ?: "", { texts[t.id] = it })
+                RateRow(t.effectiveDate.korean(true), label, delta, old, cur, needRates,
+                    texts[t.id] ?: "", { texts[t.id] = it }) { r -> preview(delta, r, t.rateToKrwX10000) }
             }
             if (rows.isEmpty() && !hasOpening) item { EmptyHint("환율을 적을 기록이 없어요.") }
             item { Spacer(Modifier.height(8.dp)) }
         }
         error?.let { Text(it, color = c.danger, style = LooinType.body, modifier = Modifier.padding(horizontal = GUTTER)) }
-        PrimaryButton(if (convert) "$cur 계좌로 바꾸기" else "저장", ::save, Modifier.padding(horizontal = GUTTER, vertical = 12.dp),
-            enabled = if (convert) filled == keys.size && asForeign != null else true, strong = true)
+        PrimaryButton(if (convert) "${if (target == KRW) "원화" else target} 계좌로 바꾸기" else "저장", ::save, Modifier.padding(horizontal = GUTTER, vertical = 12.dp),
+            enabled = if (convert) asIs != null && (!needRates || filled == keys.size) else true, strong = true)
     }
 }
 
-/** 한 줄: 날짜·내용·금액 + 환율 칸. 원화로 적은 기록을 바꾸는 중이면 환율로 계산한 외화 금액을 미리 보여 준다. */
+/** 한 줄: 날짜·내용·금액 + 환율 칸. [preview] 는 적은 환율로 계산한 금액(바꿀 통화 또는 원화) 미리보기. */
 @Composable
-private fun RateRow(title: String, sub: String, amount: Long, amountCurrency: String, target: String, previewConvert: Boolean, text: String, onChange: (String) -> Unit) {
+private fun RateRow(title: String, sub: String, amount: Long, amountCurrency: String, target: String, showRate: Boolean, text: String,
+                    onChange: (String) -> Unit, preview: (Long?) -> String?) {
     val c = Looin.colors
     val r = Fx.parseRate(text)
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.card).padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -198,14 +216,10 @@ private fun RateRow(title: String, sub: String, amount: Long, amountCurrency: St
             Column(horizontalAlignment = Alignment.End) {
                 Text(MoneyFormat.format(amount, amountCurrency, signed = true), style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.text,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
-                when {
-                    r == null -> {}
-                    previewConvert -> SmallLabel("→ ${MoneyFormat.format(Fx.fromKrw(amount, target, r), target, signed = true)}")
-                    amountCurrency != KRW -> SmallLabel("≈ ${MoneyFormat.format(Fx.toKrw(amount, amountCurrency, r), signed = true)}")
-                }
+                preview(r)?.let { SmallLabel(it) }
             }
         }
-        UnderlineField(text, { v -> onChange(v.filter { it.isDigit() || it == '.' }) }, "1 $target 당 원", placeholder = "예: 9.1234",
+        if (showRate) UnderlineField(text, { v -> onChange(v.filter { it.isDigit() || it == '.' }) }, "1 $target 당 원", placeholder = "예: 9.1234",
             keyboardType = KeyboardType.Decimal, isError = text.isNotBlank() && r == null)
     }
 }

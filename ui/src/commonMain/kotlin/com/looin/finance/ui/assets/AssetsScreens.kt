@@ -232,7 +232,7 @@ fun AccountDetailScreen(
                 }
                 if (account.currency != KRW) {
                     Spacer(Modifier.height(6.dp))
-                    ForeignSummary(account, actual, data.transactions, live) { onRates(false) }
+                    ForeignSummary(account, actual, data.transactions, live, onConvert = { onRates(true) }) { onRates(false) }
                 } else if (!account.type.isLiability && !account.archived && txs.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
                     ChipPill("외화 계좌로 바꾸기", false, { onRates(true) })
@@ -419,9 +419,9 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onCon
                 }
                 if (hasTx) { Spacer(Modifier.height(6.dp)); SmallLabel("거래가 있는 계좌는 자산↔부채 종류를 바꿀 수 없어요.") }
                 // 거래가 있는 원화 계좌 → 외화 계좌: 거래마다 당시 환율을 적는 화면으로
-                if (hasTx && existing != null && existing.currency == KRW && !existing.type.isLiability) {
+                if (hasTx && existing != null && !existing.type.isLiability) {
                     Spacer(Modifier.height(8.dp))
-                    ChipPill("외화 계좌로 바꾸기 (거래별 환율 기입)", false, { onConvert(existing.id) })
+                    ChipPill(if (existing.currency == KRW) "외화 계좌로 바꾸기 (거래별 환율 기입)" else "통화 바꾸기 (원화·다른 외화)", false, { onConvert(existing.id) })
                 }
             }
             if (type == AccountType.FOREIGN) {
@@ -460,7 +460,7 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onCon
 
 /** 외화 계좌 머리: 원화 평가액(실시간 환율), 쓴 환율, 기록 환율 기준 원화와 환율 변동, 비어 있는 환율 안내. */
 @Composable
-private fun ForeignSummary(account: Account, balance: Long, txs: List<Transaction>, live: Map<String, Long>, onRates: () -> Unit) {
+private fun ForeignSummary(account: Account, balance: Long, txs: List<Transaction>, live: Map<String, Long>, onConvert: () -> Unit, onRates: () -> Unit) {
     val c = Looin.colors
     val src = AccountFx.valuationRate(account, txs, live)
     val quote = com.looin.finance.ui.platform.ExchangeRates.quotes.collectAsState().value[account.currency]
@@ -484,5 +484,6 @@ private fun ForeignSummary(account: Account, balance: Long, txs: List<Transactio
             Text("당시 환율이 비어 있는 기록 ${missing}건 · 눌러서 채우기 ›", style = LooinType.body, color = c.danger,
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(c.danger.copy(alpha = 0.10f)).clickable(onClick = onRates).padding(10.dp))
         } else TextAction("거래별 환율 보기·고치기", onRates, color = c.textSecondary)
+        if (!account.archived && txs.any { it.touches(account.id) }) TextAction("다른 통화로 바꾸기 (원화·다른 외화)", onConvert, color = c.textSecondary)
     }
 }

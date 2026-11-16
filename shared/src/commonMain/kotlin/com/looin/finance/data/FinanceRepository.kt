@@ -379,10 +379,10 @@ class FinanceRepository(
     }
 
     /**
-     * 거래가 있는 원화 계좌를 외화 계좌로 바꾼다([com.looin.finance.core.money.CurrencyConversion]).
+     * 거래가 있는 계좌의 통화를 바꾼다: 원화 → 외화, 외화 → 원화, 외화 → 다른 외화([com.looin.finance.core.money.CurrencyConversion]).
      * 이 계좌를 쓰는 고정 비용·카드 대금 연결이 있으면 먼저 정리해야 한다.
      */
-    suspend fun convertAccountCurrency(accountId: Long, newCurrency: String, amountsAreForeign: Boolean, openingRate: Long?, rates: Map<Long, Long>) = tx {
+    suspend fun convertAccountCurrency(accountId: Long, newCurrency: String, amountsAsIs: Boolean, openingRate: Long?, rates: Map<Long, Long>) = tx {
         val s = snapshot()
         val acc = s.accounts.firstOrNull { it.id == accountId } ?: throw FinanceException("계좌를 찾을 수 없습니다.")
         if (dao.rules().any { it.fromAccountId == accountId || it.toAccountId == accountId }) {
@@ -391,7 +391,7 @@ class FinanceRepository(
         if (s.accounts.any { it.billingAccountId == accountId && it.billingDay != null }) {
             throw FinanceException("이 계좌가 카드 대금을 내는 계좌로 지정되어 있어요. 카드 계좌에서 대금 계좌를 바꾼 뒤 다시 시도하세요.")
         }
-        val r = com.looin.finance.core.money.CurrencyConversion.convert(acc, newCurrency, amountsAreForeign, openingRate, rates, s.transactions, s.accountById)
+        val r = com.looin.finance.core.money.CurrencyConversion.convert(acc, newCurrency, amountsAsIs, openingRate, rates, s.transactions, s.accountById)
         if (r.errors.isNotEmpty()) throw FinanceException(r.errors.joinToString("\n"))
         val t = now()
         dao.updateAccount(r.account.copy(updatedAt = t).toEntity())

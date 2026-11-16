@@ -87,4 +87,52 @@ class FxTest {
         val same = CurrencyConversion.convert(acc, "JPY", true, 90_000, mapOf(20L to 90_000, 21L to 95_000), listOf(inTx, spend), accounts)
         assertEquals(19_000L, same.transactions.first { it.id == 21L }.amount)
     }
+
+    /** 엔화 → 원화: 기록 환율로 원화 금액, 원화 계좌와 오간 이체는 원화 계좌 쪽 금액과 같아진다. 숫자 그대로면 환율이 필요 없다. */
+    @Test fun convertYenToKrw() {
+        val acc = yen.copy(id = 2, openingBalance = 10_000, openingRateX10000 = 90_000)
+        val ex = Transaction(id = 30, type = TransactionType.TRANSFER, status = TransactionStatus.COMPLETED, amount = 95_000, date = d,
+            fromAccountId = 1, toAccountId = 2, toAmount = 10_000, rateToKrwX10000 = 95_000)
+        val spend = Transaction(id = 31, type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 2_000, currency = "JPY", date = d,
+            fromAccountId = 2, rateToKrwX10000 = 92_000)
+        val accounts = mapOf(1L to krw, 2L to acc)
+        val r = CurrencyConversion.convert(acc, "KRW", false, 90_000, mapOf(30L to 95_000, 31L to 92_000), listOf(ex, spend), accounts)
+        assertTrue(r.errors.toString(), r.errors.isEmpty())
+        assertEquals("KRW", r.account.currency); assertEquals(AccountType.CHECKING, r.account.type)
+        assertEquals(90_000L, r.account.openingBalance); assertNull(r.account.openingRateX10000)
+        val t30 = r.transactions.first { it.id == 30L }
+        assertNull(t30.toAmount); assertNull(t30.rateToKrwX10000); assertEquals(95_000L, t30.deltaFor(2))
+        val t31 = r.transactions.first { it.id == 31L }
+        assertEquals(18_400L, t31.amount); assertEquals("KRW", t31.currency); assertNull(t31.rateToKrwX10000)
+        // 숫자 그대로(원래 원화였음): 환율 없이 바뀐다
+        val asIs = CurrencyConversion.convert(acc, "KRW", true, null, emptyMap(), listOf(ex, spend), accounts)
+        assertTrue(asIs.errors.isEmpty()); assertEquals(2_000L, asIs.transactions.first { it.id == 31L }.amount)
+    }
+
+    /** 엔화 → 달러: 엔화 기록 환율로 원화 → 달러 환율로 나눔. 원래 환율이 빠진 기록이 있으면 먼저 채우라고 막는다. */
+    @Test fun convertYenToUsd() {
+        val acc = yen.copy(id = 2, openingBalance = 0)
+        val spend = Transaction(id = 40, type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 10_000, currency = "JPY", date = d,
+            fromAccountId = 2, rateToKrwX10000 = 90_000) // ¥10,000 = 90,000원
+        val r = CurrencyConversion.convert(acc, "USD", false, null, mapOf(40L to 13_500_000), listOf(spend), mapOf(2L to acc))
+        assertTrue(r.errors.isEmpty())
+        val t = r.transactions.single()
+        assertEquals(6_667L, t.amount) // 90,000 ÷ 1,350 = $66.67
+        assertEquals("USD", t.currency); assertEquals(13_500_000L, t.rateToKrwX10000)
+        val blocked = CurrencyConversion.convert(acc, "USD", false, null, mapOf(40L to 13_500_000), listOf(spend.copy(rateToKrwX10000 = null)), mapOf(2L to acc))
+        assertTrue(blocked.errors.any { "원래(JPY)" in it })
+    }
+
+    /** 외화 지출도 통계·예산에 기록 환율로 원화 환산해 들어간다(환율 없으면 빠짐). */
+    @Test fun foreignSpendingInStatsAndBudget() {
+        val period = com.looin.finance.core.period.PeriodCalculator.periodContaining(d, com.looin.finance.core.period.PeriodBasis.CALENDAR, 25)
+        val krwSpend = Transaction(id = 50, type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 10_000, date = d, fromAccountId = 1)
+        val yenSpend = Transaction(id = 51, type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 1_000, currency = "JPY", date = d,
+            fromAccountId = 2, rateToKrwX10000 = 90_000)
+        val noRate = yenSpend.copy(id = 52, rateToKrwX10000 = null)
+        val txs = listOf(krwSpend, yenSpend, noRate)
+        assertEquals(19_000L, com.looin.finance.core.calc.StatisticsCalculator.stats(period, txs).expense)
+        val budget = com.looin.finance.core.model.Budget(basis = period.basis, periodStart = period.start, periodEndExclusive = period.endExclusive, categoryId = null, amount = 100_000)
+        assertEquals(19_000L, com.looin.finance.core.calc.BudgetCalculator.status(budget, period, txs).spent)
+    }
 }

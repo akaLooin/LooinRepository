@@ -2,6 +2,7 @@ package com.looin.finance.core.calc
 
 import com.looin.finance.core.model.Budget
 import com.looin.finance.core.model.KRW
+import com.looin.finance.core.money.krwAmount
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.period.Period
@@ -70,8 +71,8 @@ data class BudgetStatus(
 
 object BudgetCalculator {
 
-    /** 예산·통계 집계 대상: 원화 지출(이체·조정·환전 제외). */
-    private fun Transaction.isKrwExpense() = type == TransactionType.EXPENSE && currency == KRW
+    /** 예산·통계 집계 대상: 지출(이체·조정·환전 제외). 외화 지출은 기록한 당시 환율로 원화 환산(환율이 없으면 제외). */
+    private fun Transaction.isKrwExpense() = type == TransactionType.EXPENSE && krwAmount() != null
 
     /** 이 예산 범위에 드는 지출인지: 전체 / 카테고리 / 출금 계좌. */
     fun inScope(budget: Budget, tx: Transaction): Boolean =
@@ -88,17 +89,17 @@ object BudgetCalculator {
         planned(Budget(basis = period.basis, periodStart = period.start, periodEndExclusive = period.endExclusive, categoryId = categoryId, amount = 0), period, transactions)
 
     private fun spent(b: Budget, period: Period, txs: List<Transaction>) =
-        txs.asSequence().filter { it.isCompleted && it.effectiveDate in period && inScope(b, it) }.sumOf { it.amount }
+        txs.asSequence().filter { it.isCompleted && it.effectiveDate in period && inScope(b, it) }.sumOf { it.krwAmount()!! }
 
     private fun planned(b: Budget, period: Period, txs: List<Transaction>) =
-        txs.asSequence().filter { it.isPlanned && it.date in period && inScope(b, it) }.sumOf { it.amount }
+        txs.asSequence().filter { it.isPlanned && it.date in period && inScope(b, it) }.sumOf { it.krwAmount()!! }
 
     /** 범위 안의 고정 비용(반복 거래로 생긴 지출): 완료는 실제 금액, 예정은 예정 금액. */
     fun fixedIn(b: Budget, period: Period, txs: List<Transaction>): Long =
         txs.asSequence().filter {
             it.recurringId != null && !it.isCancelled && inScope(b, it) &&
                 ((it.isCompleted && it.effectiveDate in period) || (it.isPlanned && it.date in period))
-        }.sumOf { it.amount }
+        }.sumOf { it.krwAmount()!! }
 
     fun status(budget: Budget, period: Period, transactions: List<Transaction>): BudgetStatus =
         BudgetStatus(
