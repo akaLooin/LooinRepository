@@ -9,6 +9,7 @@
   - WorkManager 의 포그라운드 서비스와 `FOREGROUND_SERVICE` 권한은 매니페스트에서 제거(사용 안 함 → 포그라운드 서비스 신고 불필요)
   - AndroidX 내부 전용 서명 권한 `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
 - 모든 데이터는 기기 안의 앱 전용 DB(Room/SQLite)와 화면 설정(SharedPreferences)에만 저장
+- 영수증 사진(선택): 기기의 카메라 앱 또는 Android 사진 선택기로 받아 앱 안 저장소에만 보관, 글자 읽기(ML Kit 한국어, 모델 내장)도 기기 안에서 처리. 카메라·저장소 권한 없음, ML Kit 이 덧붙이는 `INTERNET` 권한은 매니페스트에서 제거. 백업 파일에는 사진을 넣지 않음
 - 사용자가 직접 고른 위치에 백업 파일(JSON)을 저장하고 불러오는 기능 있음(Android 저장소 접근 프레임워크, 권한 불필요)
 - Android 자동 백업·기기 이전에 DB와 설정을 포함(`data_extraction_rules.xml`). 이 백업은 사용자의 Google 계정으로 OS가 처리하며, 개발자는 접근할 수 없음
 

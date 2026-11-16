@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.foundation.layout.FlowRow
@@ -65,6 +66,7 @@ fun TransactionActionSheet(
     val c = Looin.colors
     var mode by remember { mutableStateOf("menu") }
     var confirmDelete by remember { mutableStateOf(false) }
+    var viewPhoto by remember { mutableStateOf(false) }
     val title = when (tx.type) {
         TransactionType.TRANSFER -> "저축 및 이체 ${MoneyFormat.format(tx.amount, tx.currency)}"
         TransactionType.ADJUSTMENT -> "잔고 조정"
@@ -135,10 +137,14 @@ fun TransactionActionSheet(
                 if (editable) MenuRow(Icons.Outlined.ContentCopy, "복사해서 새로 입력", c.menuSoft, { onDismiss(); onCopy(tx) })
                 val rule = tx.recurringId?.let { id -> data.rules.firstOrNull { it.id == id } }
                 if (rule != null) MenuRow(Icons.Outlined.Repeat, "고정 비용 보기", c.menuMove, { onDismiss(); onOpenRule(rule.id) }, rule.scheduleLabel)
+                if (tx.attachment != null && com.looin.finance.ui.platform.LocalReceiptScanner.current.supported) {
+                    MenuRow(Icons.Outlined.Image, "영수증 사진 보기", c.menuSoft, { viewPhoto = true })
+                }
                 MenuRow(Icons.Outlined.Info, "정보 보기", c.menuInfo, { mode = "info" })
             }
         }
     }
+    if (viewPhoto) tx.attachment?.let { ReceiptViewer(it) { viewPhoto = false } }
     if (confirmDelete) {
         ConfirmDialog("거래 삭제", "삭제하면 관련 잔고와 통계가 다시 계산됩니다. 기록을 남기려면 '취소 처리'를 쓰세요.", "삭제",
             { confirmDelete = false }, danger = true) { onDismiss(); vm.deleteTransaction(tx.id) }

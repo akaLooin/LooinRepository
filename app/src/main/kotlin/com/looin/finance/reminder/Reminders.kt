@@ -31,6 +31,7 @@ import com.looin.finance.core.calc.ReminderPlanner
 import com.looin.finance.ui.platform.ReminderControl
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.launch
 
 /**
  * 예정 거래 알림 (Android).
@@ -94,14 +95,22 @@ class PlannedReminderWorker(context: Context, params: WorkerParameters) : Corout
         ReminderScheduler.ensureChannel(ctx)
         val open = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val notification = NotificationCompat.Builder(ctx, ReminderScheduler.CHANNEL_ID)
+        val builder = NotificationCompat.Builder(ctx, ReminderScheduler.CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher_foreground)
             .setContentTitle(reminder.title)
             .setContentText(reminder.body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(reminder.body))
             .setContentIntent(open)
             .setAutoCancel(true)
-            .build()
+        // 알림에서 바로 완료: 오늘 예정분을 예정 금액·오늘 날짜로 완료(금액이 달랐다면 앱에서 고치면 된다)
+        if (reminder.dueToday.isNotEmpty()) {
+            val ids = reminder.dueToday.map { it.id }.toLongArray()
+            val done = PendingIntent.getBroadcast(ctx, 1, Intent(ctx, ReminderActionReceiver::class.java)
+                .setAction(ReminderActionReceiver.ACTION_COMPLETE).putExtra(ReminderActionReceiver.EXTRA_IDS, ids),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            builder.addAction(0, "오늘 예정 ${ids.size}건 완료", done)
+        }
+        val notification = builder.build()
         @Suppress("MissingPermission") // hasPermission 으로 확인함
         NotificationManagerCompat.from(ctx).notify(NOTIFICATION_ID, notification)
         return Result.success()
@@ -136,4 +145,52 @@ fun rememberAndroidReminderControl(): ReminderControl {
 private class ReminderState(initial: Boolean) {
     var enabled by mutableStateOf(initial)
     var denied by mutableStateOf(false)
+}
+
+/**
+ * 알림의 "오늘 예정 N건 완료" 버튼. 앱을 열지 않고 오늘 예정 거래를 예정 금액 그대로 완료 처리한 뒤
+ * 알림을 "완료했어요"로 바꾼다. 이미 처리된 거래는 건너뛴다.
+ */
+class ReminderActionReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != ACTION_COMPLETE) return
+        val ids = intent.getLongArrayExtra(EXTRA_IDS) ?: return
+        val pending = goAsync()
+        val app = context.applicationContext as LooinApp
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val n = completeAll(app, ids)
+                ReminderScheduler.ensureChannel(context)
+                val done = NotificationCompat.Builder(context, ReminderScheduler.CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher_foreground)
+                    .setContentTitle(if (n > 0) "${n}건을 완료 처리했어요" else "이미 처리된 거래예요")
+                    .setContentText("금액이 달랐다면 앱에서 고쳐 주세요")
+                    .setAutoCancel(true)
+                    .build()
+                @Suppress("MissingPermission")
+                if (ReminderScheduler.hasPermission(context)) NotificationManagerCompat.from(context).notify(PlannedReminderWorker.NOTIFICATION_ID, done)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
+    companion object {
+        const val ACTION_COMPLETE = "com.looin.finance.action.COMPLETE_DUE"
+        const val EXTRA_IDS = "ids"
+
+        /** 아직 예정인 것만 완료(예정일이 오늘 이후면 오늘로). 완료한 건수. */
+        suspend fun completeAll(app: LooinApp, ids: LongArray): Int {
+            val repo = app.repository
+            val today = repo.today()
+            val txs = repo.snapshot().transactions.associateBy { it.id }
+            var n = 0
+            ids.forEach { id ->
+                val t = txs[id] ?: return@forEach
+                if (!t.isPlanned) return@forEach
+                runCatching { repo.completeTransaction(id, minOf(t.date, today), null) }.onSuccess { n++ }
+            }
+            return n
+        }
+    }
 }

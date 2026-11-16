@@ -164,7 +164,8 @@ fun CalendarScreen(
     val sumExpense = active.filter { it.isCompleted && it.type == TransactionType.EXPENSE }.sumOf { it.amount }
     val sumPlanned = active.filter { it.isPlanned && it.type == TransactionType.EXPENSE }.sumOf { it.amount }
 
-    fun go(delta: Int) { scope.launch { pager.animateScrollToPage(pager.currentPage + delta) } }
+    // 버튼(‹ › 오늘)은 애니메이션 없이 즉시 넘어간다. 손가락으로 밀 때만 부드럽게
+    fun go(delta: Int) { scope.launch { pager.scrollToPage(pager.currentPage + delta) } }
     val title = if (weekMode) {
         val w = startOfWeek(anchor)
         "${w.year}년 ${w.month.number}월 ${(w.day - 1) / 7 + 1}주차"
@@ -175,7 +176,7 @@ fun CalendarScreen(
     val right = mutableListOf<@Composable () -> Unit>()
         left += {
             PeriodSwitcher(title, null, onPrev = { go(-1) }, onNext = { go(1) },
-                onToday = { scope.launch { pager.animateScrollToPage(CENTER_PAGE) }; onSelectDays(state.today.toEpochDays()) },
+                onToday = { scope.launch { pager.scrollToPage(CENTER_PAGE) }; onSelectDays(state.today.toEpochDays()) },
                 extra = { OutlinePill(if (weekMode) "월" else "주") { weekMode = !weekMode } })
             Spacer(Modifier.height(4.dp))
             PillTabs(CalendarFilter.entries, filter, { it.label }, { filter = it })

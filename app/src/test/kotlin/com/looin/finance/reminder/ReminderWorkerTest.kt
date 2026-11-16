@@ -59,6 +59,24 @@ class ReminderWorkerTest {
         assertTrue(n.extras.getCharSequence("android.text").toString().contains("550,000원"))
     }
 
+    /** 알림의 "오늘 예정 1건 완료" 버튼 → 앱을 열지 않고 완료 처리 */
+    @Test fun completeFromNotification() {
+        seedPlannedToday()
+        ReminderScheduler.enable(context)
+        runWorker()
+        val n = nm.allNotifications.single()
+        val action = n.actions.single()
+        assertEquals("오늘 예정 1건 완료", action.title.toString())
+        val ids = shadowOf(action.actionIntent).savedIntent.getLongArrayExtra(ReminderActionReceiver.EXTRA_IDS)!!
+        val app = context as LooinApp
+        assertEquals(1, runBlocking { ReminderActionReceiver.completeAll(app, ids) })
+        val tx = runBlocking { app.repository.snapshot().transactions.single() }
+        assertTrue(tx.isCompleted)
+        assertEquals(550_000L, tx.amount)
+        // 두 번 눌러도 다시 처리하지 않는다
+        assertEquals(0, runBlocking { ReminderActionReceiver.completeAll(app, ids) })
+    }
+
     /** 꺼져 있으면 알리지 않음 */
     @Test fun silentWhenDisabled() {
         seedPlannedToday()

@@ -24,6 +24,12 @@ import com.looin.finance.ui.platform.AppInfo
 import com.looin.finance.ui.platform.AppPlatform
 import com.looin.finance.ui.platform.LocalAppInfo
 import com.looin.finance.ui.platform.LocalFileActions
+import com.looin.finance.ui.platform.LocalReceiptScanner
+import com.looin.finance.receipt.ReceiptStore
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import com.looin.finance.receipt.rememberAndroidReceiptScanner
 import com.looin.finance.ui.platform.LocalReminderControl
 import com.looin.finance.reminder.rememberAndroidReminderControl
 import com.looin.finance.ui.platform.rememberAndroidFileActions
@@ -56,6 +62,10 @@ class MainActivity : FragmentActivity() { // 생체 인증 창(BiometricPrompt)�
         if (!AppLock.initialized) AppLock.init(AndroidKeyValueStore(this))
         val biometric = AndroidBiometric(this)
         val repo = (application as LooinApp).repository
+        // 어떤 거래에도 붙어 있지 않은 영수증 사진 정리
+        if (savedInstanceState == null) lifecycleScope.launch(Dispatchers.IO) {
+            runCatching { ReceiptStore.cleanup(this@MainActivity, repo.snapshot().transactions.mapNotNull { it.attachment }.toSet()) }
+        }
         setContent {
             LooinTheme {
                 val dark = Looin.colors.isDark
@@ -71,6 +81,7 @@ class MainActivity : FragmentActivity() { // 생체 인증 창(BiometricPrompt)�
                     LocalReminderControl provides rememberAndroidReminderControl(),
                     LocalBiometric provides biometric,
                     LocalAutoBackup provides rememberAndroidAutoBackup(),
+                    LocalReceiptScanner provides rememberAndroidReceiptScanner(),
                 ) {
                     LooinAppRoot(vm, commandFlow)
                 }

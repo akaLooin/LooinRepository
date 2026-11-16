@@ -37,7 +37,7 @@ class ShortcutTest {
         runBlocking { app.repository.ensureInitialized(); app.repository.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 0, includeInAvailable = true)) }
         ActivityScenario.launch<MainActivity>(Shortcuts.intent(app, AppCommand.NEW_INCOME)).use {
             rule.waitUntilAtLeastOneExists(hasText("거래 추가"), 10_000)
-            assertEquals(setOf("expense", "income", "calendar"), ShortcutManagerCompat.getDynamicShortcuts(app).map { it.id }.toSet())
+            assertEquals(setOf("expense", "income", "receipt", "calendar"), ShortcutManagerCompat.getDynamicShortcuts(app).map { it.id }.toSet())
             rule.onNode(hasSetTextAction() and hasContentDescription("금액")).performTextInput("50000")
             rule.onNodeWithText("저장").performClick()
             rule.waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)

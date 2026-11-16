@@ -42,6 +42,12 @@ data class Account(
     val updatedAt: Long = 0,
     /** 통장 색(ARGB). 0 이면 정하지 않음 → 화면이 계좌 종류별 기본 색을 쓴다. */
     val colorArgb: Long = 0,
+    /** 카드 결제일(1~31, 부채 계좌). null 이면 카드 대금 자동 예정을 만들지 않는다. */
+    val billingDay: Int? = null,
+    /** 카드 이용 기간 시작일: 결제월 기준 "전월 이 날 ~ 당월 이 날 전날". 1이면 전월 1일~말일. */
+    val billingStartDay: Int = 1,
+    /** 카드 대금을 내는 계좌. */
+    val billingAccountId: Long? = null,
 )
 
 enum class TransactionType(val label: String) {
@@ -64,7 +70,9 @@ enum class TransactionSource(val label: String) {
     ADJUSTMENT("잔고 조정"),
     IMPORT("가져오기"),
     BANK_SYNC("금융 연동"),
-    RECURRING("반복 거래"),
+    RECURRING("고정 비용"),
+    /** 카드 이용액을 모아 결제일에 자동으로 만든 예정 이체. */
+    CARD_BILL("카드 대금"),
 }
 
 /**
@@ -97,8 +105,10 @@ data class Transaction(
     val updatedAt: Long = 0,
     /** 이 거래를 만든 반복 규칙(없으면 직접 입력). */
     val recurringId: Long? = null,
-    /** 반복 규칙상의 원래 발생일. 사용자가 예정일을 옮겨도 그대로 둔다(중복 생성 방지). */
+    /** 반복 규칙상의 원래 발생일(카드 대금이면 결제일). 사용자가 예정일을 옮겨도 그대로 둔다(중복 생성 방지). */
     val recurringOccurrence: LocalDate? = null,
+    /** 첨부 사진(영수증) 파일 경로. 기기 안에만 있고 백업 파일에는 넣지 않는다. */
+    val attachment: String? = null,
 ) {
     /**
      * 기간 집계·잔고 기준일.

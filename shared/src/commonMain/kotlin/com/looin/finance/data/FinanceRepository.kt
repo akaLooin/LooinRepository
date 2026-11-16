@@ -22,6 +22,7 @@ import com.looin.finance.core.period.Period
 import com.looin.finance.core.validation.AccountRules
 import com.looin.finance.core.model.TransactionSource
 import com.looin.finance.core.limit.LimitTarget
+import com.looin.finance.core.card.CardBilling
 import com.looin.finance.core.limit.SpendingLimit
 import com.looin.finance.core.validation.TransactionValidator
 import com.looin.finance.core.validation.ValidationResult
@@ -171,7 +172,38 @@ class FinanceRepository(
             if (txs.isNotEmpty()) created += dao.insertGenerated(txs.map { it.toEntity() }).count { it != -1L }
             if (through != rule.generatedThrough) dao.updateRule(rule.copy(generatedThrough = through).toEntity())
         }
+        syncCardBills()
         created
+    }
+
+    /**
+     * 카드 대금 예정 이체를 이용액에 맞춘다(결제일 관리를 켠 카드만).
+     *  - 결제일이 오늘 이후이고 이용이 시작된 명세마다 예정 이체 하나(원천 CARD_BILL, 결제일로 구분)
+     *  - 금액이 바뀌면 고치고, 0원이면 지운다. 사용자가 완료·취소한 대금은 건드리지 않는다
+     *  - 결제일 관리를 끄면 아직 예정인 대금 이체를 지운다
+     */
+    suspend fun syncCardBills(): Unit = tx {
+        val all = dao.transactions().map { it.toModel() }
+        val bills = all.filter { it.source == TransactionSource.CARD_BILL }
+        val cards = dao.accounts().map { it.toModel() }.filter { it.type.isLiability }
+        for (card in cards) {
+            val active = CardBilling.activeStatements(card, today())
+            val mine = bills.filter { it.toAccountId == card.id }
+            // 관리 대상이 아닌(꺼짐·결제 계좌 바뀜) 미래 예정 대금은 정리
+            mine.filter { b -> b.isPlanned && b.date >= today() && active.none { it.paymentDate == b.recurringOccurrence } }
+                .forEach { dao.deleteTransaction(it.id) }
+            for (st in active) {
+                val amount = CardBilling.amount(card, all, st)
+                val existing = mine.firstOrNull { it.recurringOccurrence == st.paymentDate }
+                when {
+                    existing != null && !existing.isPlanned -> Unit // 완료·취소한 대금은 그대로
+                    existing != null && amount == 0L -> dao.deleteTransaction(existing.id)
+                    existing != null -> if (existing.amount != amount || existing.fromAccountId != card.billingAccountId)
+                        dao.updateTransaction(existing.copy(amount = amount, fromAccountId = card.billingAccountId, updatedAt = now()).toEntity())
+                    amount > 0 -> dao.insertTransaction(CardBilling.billTransaction(card, st, amount, now()).toEntity())
+                }
+            }
+        }
     }
 
     /**
@@ -217,8 +249,16 @@ class FinanceRepository(
 
     suspend fun saveAccount(account: Account): Long = tx {
         if (account.name.isBlank()) throw FinanceException("계좌 이름을 입력하세요.")
+        // 카드 결제일 관리: 부채 계좌만, 날짜 1~31, 결제 계좌는 다른 자산 계좌
+        if (account.billingDay != null) {
+            if (!account.type.isLiability) throw FinanceException("결제일 관리는 카드(부채) 계좌에서만 쓸 수 있습니다.")
+            if (account.billingDay !in 1..31 || account.billingStartDay !in 1..31) throw FinanceException("결제일·이용 기간 시작일은 1~31 사이여야 합니다.")
+            val pay = dao.accounts().firstOrNull { it.id == account.billingAccountId }
+                ?: throw FinanceException("카드 대금을 낼 계좌를 고르세요.")
+            if (pay.id == account.id || pay.type.isLiability) throw FinanceException("대금을 낼 계좌는 입출금 등 자산 계좌여야 합니다.")
+        }
         val t = now()
-        if (account.id == 0L) {
+        val savedId = if (account.id == 0L) {
             dao.insertAccount(account.copy(createdAt = t, updatedAt = t).toEntity())
         } else {
             val old = dao.accounts().firstOrNull { it.id == account.id }?.toModel()
@@ -236,6 +276,8 @@ class FinanceRepository(
             dao.updateAccount(account.copy(createdAt = old.createdAt, updatedAt = t).toEntity())
             account.id
         }
+        syncCardBills()
+        savedId
     }
 
     suspend fun setArchived(accountId: Long, archived: Boolean) {
@@ -269,16 +311,18 @@ class FinanceRepository(
         val result = TransactionValidator.validate(tx, s.accounts, s.categories, s.transactions, today())
         if (!result.isValid) throw FinanceException(result.errors.joinToString("\n"))
         val t = now()
-        if (tx.id == 0L) {
+        val id = if (tx.id == 0L) {
             dao.insertTransaction(tx.copy(createdAt = t, updatedAt = t).toEntity())
         } else {
             val old = dao.transaction(tx.id) ?: throw FinanceException("거래를 찾을 수 없습니다.")
             dao.updateTransaction(tx.copy(createdAt = old.createdAt, updatedAt = t).toEntity())
             tx.id
         }
+        syncCardBills() // 카드 이용액이 바뀌었을 수 있다
+        id
     }
 
-    suspend fun deleteTransaction(id: Long) = dao.deleteTransaction(id)
+    suspend fun deleteTransaction(id: Long) = tx { dao.deleteTransaction(id); syncCardBills() }
 
     // ── CSV ──────────────────────────────────────────────
 
@@ -320,6 +364,7 @@ class FinanceRepository(
     suspend fun cancelTransaction(id: Long) {
         val tx = dao.transaction(id)?.toModel() ?: throw FinanceException("거래를 찾을 수 없습니다.")
         dao.updateTransaction(TransactionActions.cancel(tx, now()).toEntity())
+        syncCardBills()
     }
 
     suspend fun reopenTransaction(id: Long) {
@@ -494,12 +539,12 @@ object DefaultData {
 
 // ── 매퍼 ─────────────────────────────────────────────────
 
-fun AccountEntity.toModel() = Account(id, name, type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb)
-fun Account.toEntity() = AccountEntity(id, name.trim(), type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb)
+fun AccountEntity.toModel() = Account(id, name, type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb, billingDay, billingStartDay, billingAccountId)
+fun Account.toEntity() = AccountEntity(id, name.trim(), type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb, billingDay, billingStartDay, billingAccountId)
 fun CategoryEntity.toModel() = Category(id, name, kind, colorArgb, sortOrder, archived)
 fun Category.toEntity() = CategoryEntity(id, name.trim(), kind, colorArgb, sortOrder, archived)
-fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence)
-fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence)
+fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence, attachment)
+fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence, attachment)
 fun SavingsGoalEntity.toModel() = SavingsGoal(id, name, targetAmount, targetDate, accountId, colorArgb, archived, memo, createdAt, updatedAt)
 fun SavingsGoal.toEntity() = SavingsGoalEntity(id, name, targetAmount, targetDate, accountId, colorArgb, archived, memo, createdAt, updatedAt)
 fun SavingsAllocationEntity.toModel() = SavingsAllocation(id, goalId, amount, date, memo, createdAt)

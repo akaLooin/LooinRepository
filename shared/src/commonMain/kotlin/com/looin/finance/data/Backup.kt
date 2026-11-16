@@ -83,6 +83,8 @@ object BackupCodec {
                         put("memo", a.memo); put("sortOrder", a.sortOrder); putOpt("rateToKrwX10000", a.rateToKrwX10000)
                         put("createdAt", a.createdAt); put("updatedAt", a.updatedAt)
                         if (a.colorArgb != 0L) put("colorArgb", a.colorArgb) // 앱 v7~, 없으면 기본 색
+                        // 앱 v8~: 카드 결제일 관리(없으면 꺼짐)
+                        putOpt("billingDay", a.billingDay); put("billingStartDay", a.billingStartDay); putOpt("billingAccountId", a.billingAccountId)
                     })
                 }
             })
@@ -179,7 +181,7 @@ object BackupCodec {
             Account(o.long("id"), o.req("name"), AccountType.valueOf(o.req("type")), o.req("currency"),
                 o.long("openingBalance"), o.bool("includeInAvailable"), o.bool("archived"), o.str("memo") ?: "",
                 o.intOrNull("sortOrder") ?: 0, o.longOrNull("rateToKrwX10000"), o.longOrNull("createdAt") ?: 0, o.longOrNull("updatedAt") ?: 0,
-                o.longOrNull("colorArgb") ?: 0)
+                o.longOrNull("colorArgb") ?: 0, o.intOrNull("billingDay"), o.intOrNull("billingStartDay") ?: 1, o.longOrNull("billingAccountId"))
         }
         val categories = root.arr("categories").map { o ->
             Category(o.long("id"), o.req("name"), CategoryKind.valueOf(o.req("kind")), o.long("colorArgb"),
@@ -246,6 +248,7 @@ object BackupCodec {
         d.transactions.forEach { checkAcc(it.fromAccountId); checkAcc(it.toAccountId); checkCat(it.categoryId) }
         d.budgets.forEach { checkCat(it.categoryId); checkAcc(it.accountId) }
         d.rules.forEach { checkAcc(it.fromAccountId); checkAcc(it.toAccountId); checkCat(it.categoryId) }
+        d.accounts.forEach { checkAcc(it.billingAccountId) }
         d.goals.forEach { checkAcc(it.accountId) }
         val goalIds = d.goals.map { it.id }.toSet()
         d.allocations.forEach { if (it.goalId !in goalIds) throw FinanceException("없는 저축 목표(#${it.goalId})의 배정 기록이 있습니다.") }

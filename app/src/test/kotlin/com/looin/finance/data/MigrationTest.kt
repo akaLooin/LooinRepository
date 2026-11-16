@@ -158,4 +158,28 @@ class MigrationTest {
             db.close()
         }
     }
+
+    /** v7 → v8(카드 결제일·첨부 사진): 기존 계좌는 결제일 관리 꺼짐, 거래는 첨부 없음 */
+    @Test fun v7ToV8() = runTest {
+        val n = "migration-v7.db"
+        helper.createDatabase(n, 7).apply {
+            val day = LocalDate(2026, 11, 1).toEpochDays()
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO accounts (id, name, type, currency, opening_balance, include_in_available, archived, memo, sort_order, rate_to_krw_x10000, created_at, updated_at, color_argb) " +
+                "VALUES (1, '카드', 'LIABILITY', 'KRW', 0, 0, 0, '', 0, NULL, 0, 0, 0)")
+            execSQL("INSERT INTO transactions (id, type, status, amount, currency, date, completed_date, from_account_id, to_account_id, category_id, memo, source, linked_planned_id, to_amount, created_at, updated_at) " +
+                "VALUES (1, 'EXPENSE', 'COMPLETED', 1000, 'KRW', $day, $day, 1, NULL, NULL, '', 'MANUAL', NULL, NULL, 0, 0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 8, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val s = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 16) }).snapshot()
+            assertEquals(null, s.accounts.single().billingDay)
+            assertEquals(1, s.accounts.single().billingStartDay)
+            assertEquals(null, s.transactions.single().attachment)
+        } finally {
+            db.close()
+        }
+    }
 }

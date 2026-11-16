@@ -47,6 +47,10 @@ data class AccountEntity(
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     /** v7: 통장 색(0 = 기본). */
     @ColumnInfo(name = "color_argb", defaultValue = "0") val colorArgb: Long = 0,
+    /** v8: 카드 결제일·이용 기간 시작일·결제 계좌. */
+    @ColumnInfo(name = "billing_day") val billingDay: Int? = null,
+    @ColumnInfo(name = "billing_start_day", defaultValue = "1") val billingStartDay: Int = 1,
+    @ColumnInfo(name = "billing_account_id") val billingAccountId: Long? = null,
 )
 
 @Entity(tableName = "categories")
@@ -91,6 +95,8 @@ data class TransactionEntity(
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     @ColumnInfo(name = "recurring_id") val recurringId: Long? = null,
     @ColumnInfo(name = "recurring_occurrence") val recurringOccurrence: LocalDate? = null,
+    /** v8: 첨부 사진(영수증) 파일 경로. */
+    val attachment: String? = null,
 )
 
 /** 반복 거래 규칙 (v2). 요일은 ISO 번호(월=1 … 일=7)로 저장한다. */
@@ -287,11 +293,11 @@ interface FinanceDao {
         AccountEntity::class, CategoryEntity::class, TransactionEntity::class, BudgetEntity::class, SettingsEntity::class,
         RecurringRuleEntity::class, SavingsGoalEntity::class, SavingsAllocationEntity::class, SpendingLimitEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
     // v1 → v2: 반복 규칙 테이블과 거래의 반복 연결 열 추가. 기존 데이터는 그대로 둔다.
     // v2 → v3: 저축 목표·배정 기록 테이블 추가(기존 테이블 변경 없음).
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8)],
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(FinanceDatabaseConstructor::class)

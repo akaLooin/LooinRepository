@@ -1,5 +1,6 @@
 [versions]
 glance = "1.1.1"
+mlkitTextKorean = "16.0.1"
 documentfile = "1.0.1"
 biometric = "1.1.0"
 agp = "8.13.2"
@@ -24,6 +25,7 @@ robolectric = "4.14.1"
 androidxTestCore = "1.6.1"
 
 [libraries]
+mlkit-text-korean = { group = "com.google.mlkit", name = "text-recognition-korean", version.ref = "mlkitTextKorean" }
 androidx-glance-testing = { group = "androidx.glance", name = "glance-appwidget-testing", version.ref = "glance" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }

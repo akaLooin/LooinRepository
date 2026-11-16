@@ -67,6 +67,7 @@ import com.looin.finance.ui.components.AdaptiveColumns
 import com.looin.finance.ui.plan.BudgetRow
 import com.looin.finance.core.calc.BalanceForecast
 import com.looin.finance.core.calc.QuickEntries
+import com.looin.finance.ui.platform.LocalReceiptScanner
 import com.looin.finance.ui.components.accountColor
 import com.looin.finance.ui.components.typeColor
 import androidx.compose.foundation.horizontalScroll
@@ -98,6 +99,8 @@ fun HomeScreen(
     onOpenCalendar: () -> Unit,
     /** 이 거래 내용을 복사해 새로 입력(자주 쓰는 거래 칩). */
     onCopyTx: (Long) -> Unit = {},
+    /** 영수증을 찍어 바로 지출 입력(지원하는 기기만). */
+    onScanReceipt: () -> Unit = {},
 ) {
     val c = Looin.colors
     val files = LocalFileActions.current
@@ -237,11 +240,13 @@ fun HomeScreen(
             }
             // 자주 쓰는 거래: 누르면 같은 내용으로 오늘 날짜 새 거래(금액 등은 고칠 수 있음)
             val quick = QuickEntries.suggest(txs, state.today)
-            if (quick.isNotEmpty()) {
+            val canScan = LocalReceiptScanner.current.supported
+            if (quick.isNotEmpty() || canScan) {
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
-                    SmallLabel("자주 쓰는")
+                    if (canScan) ChipPill("영수증 스캔", false, onScanReceipt, dot = c.expense)
+                    if (quick.isNotEmpty()) SmallLabel("자주 쓰는")
                     quick.forEach { q ->
                         val t = q.sample
                         ChipPill("${t.memo.trim()} ${MoneyFormat.format(t.amount, t.currency)}", false, { onCopyTx(t.id) },

@@ -10,7 +10,7 @@ import com.looin.finance.R
 import com.looin.finance.ui.AppCommand
 
 /**
- * 앱 아이콘을 길게 누르면 나오는 바로가기(지출 추가·수입 추가·캘린더).
+ * 앱 아이콘을 길게 누르면 나오는 바로가기(지출 추가·수입 추가·영수증 스캔·캘린더).
  * 미리보기 빌드는 앱 ID 가 달라 정적 shortcuts.xml 대신 실행 중에 등록한다.
  */
 object Shortcuts {
@@ -33,7 +33,8 @@ object Shortcuts {
             ShortcutManagerCompat.setDynamicShortcuts(context, listOf(
                 item("expense", "지출 추가", "지출 기록하기", R.drawable.ic_shortcut_expense, AppCommand.NEW_EXPENSE, 0),
                 item("income", "수입 추가", "수입 기록하기", R.drawable.ic_shortcut_income, AppCommand.NEW_INCOME, 1),
-                item("calendar", "캘린더", "캘린더 열기", R.drawable.ic_shortcut_calendar, AppCommand.TAB_CALENDAR, 2),
+                item("receipt", "영수증 스캔", "영수증 찍어서 지출 기록", R.drawable.ic_shortcut_receipt, AppCommand.SCAN_RECEIPT, 2),
+                item("calendar", "캘린더", "캘린더 열기", R.drawable.ic_shortcut_calendar, AppCommand.TAB_CALENDAR, 3),
             ))
         }
     }

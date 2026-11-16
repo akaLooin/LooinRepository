@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- WorkManager 의 포그라운드 서비스는 쓰지 않는다(알림 작업은 짧은 일반 작업) → Play 포그라운드 서비스 신고 대상에서 제외 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <!-- 인터넷을 쓰지 않는다: 영수증 글자 읽기(ML Kit)는 앱에 포함된 모델로 기기 안에서만 처리하고,
+         라이브러리가 덧붙이는 인터넷 권한(사용 통계 전송용)은 뺀다 -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
 
     <application
         android:name=".LooinApp"
@@ -28,6 +31,21 @@
             </intent-filter>
         </activity>
         <service android:name="androidx.work.impl.foreground.SystemForegroundService" tools:node="remove" />
+        <!-- 영수증 촬영: 카메라 앱에 사진을 쓸 임시 위치를 넘긴다(카메라 권한은 쓰지 않음) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <!-- 예정 거래 알림의 "완료" 버튼 -->
+        <receiver
+            android:name=".reminder.ReminderActionReceiver"
+            android:exported="false" />
+
         <!-- 홈 화면 위젯 -->
         <receiver
             android:name=".widget.LooinWidgetReceiver"

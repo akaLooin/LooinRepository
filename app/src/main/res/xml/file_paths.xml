@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 영수증 촬영: 카메라 앱이 사진을 쓸 임시 위치(앱 캐시). 찍은 뒤 앱 안 저장소로 옮기고 지운다. -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

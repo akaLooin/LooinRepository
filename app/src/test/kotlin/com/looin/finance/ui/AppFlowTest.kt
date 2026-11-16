@@ -51,9 +51,19 @@ open class AppFlowTest {
         File(dir, "${prefix}_$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
-    private fun waitText(text: String) = rule.waitUntilAtLeastOneExists(hasText(text, substring = true), 10_000)
+    private fun waitText(text: String) = waitNode(hasText(text, substring = true))
+
+    /** 목록 위·아래에 있어 아직 그려지지 않은 칸이면 스크롤해서 찾는다. */
+    private fun waitNode(m: androidx.compose.ui.test.SemanticsMatcher) {
+        val until = System.currentTimeMillis() + 10_000
+        while (rule.onAllNodes(m).fetchSemanticsNodes().isEmpty()) {
+            runCatching { rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(m) }
+            check(System.currentTimeMillis() < until) { "$m 가 보이지 않음" }
+            rule.waitForIdle()
+        }
+    }
     /** 금액처럼 다른 문장 안에도 들어갈 수 있는 글자는 정확히 일치하는 칸만 찾는다. */
-    private fun waitExact(text: String) = rule.waitUntilAtLeastOneExists(hasText(text), 10_000)
+    private fun waitExact(text: String) = waitNode(hasText(text))
 
     private fun field(label: String) = rule.onNode(hasSetTextAction() and hasContentDescription(label))
 

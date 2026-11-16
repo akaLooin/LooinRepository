@@ -1,6 +1,10 @@
 package com.looin.finance.ui.tx
 
 import com.looin.finance.core.calc.MemoSuggest
+import com.looin.finance.core.receipt.ReceiptParser
+import com.looin.finance.ui.platform.LocalReceiptScanner
+import com.looin.finance.ui.platform.ReceiptScan
+import com.looin.finance.ui.components.korean
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
@@ -95,6 +99,8 @@ fun TransactionEditScreen(
     initialAccountId: Long?,
     onClose: () -> Unit,
     copyFromId: Long? = null,
+    /** 열자마자 영수증 촬영(홈·앱 바로가기의 '영수증 스캔'). */
+    autoScan: Boolean = false,
 ) {
     val c = Looin.colors
     val data = state.data
@@ -131,6 +137,11 @@ fun TransactionEditScreen(
         var newAccountFor by remember { mutableStateOf<String?>(null) }
         var newCategory by remember { mutableStateOf(false) }
         var memoEdited by remember { mutableStateOf(false) }
+        // 영수증 사진(앱 안 저장소 경로). 복사한 새 거래는 사진을 가져오지 않는다
+        var attachment by rememberSaveable { mutableStateOf(existing?.attachment) }
+        var scanNotice by rememberSaveable { mutableStateOf<String?>(null) }
+        var viewPhoto by remember { mutableStateOf(false) }
+        val scanner = LocalReceiptScanner.current
         val focus = remember { FocusRequester() }
 
         fun recentAccounts(side: RecentPicks.Side) = RecentPicks.accounts(data.transactions, type, side)
@@ -152,7 +163,49 @@ fun TransactionEditScreen(
                 source = existing?.source ?: TransactionSource.MANUAL,
                 linkedPlannedId = existing?.linkedPlannedId,
                 createdAt = existing?.createdAt ?: 0,
+                recurringId = existing?.recurringId, recurringOccurrence = existing?.recurringOccurrence,
+                toAmount = existing?.toAmount,
+                attachment = attachment,
             )
+        }
+
+        /**
+         * 영수증에서 읽은 값으로 빈칸을 채운다. 금액·날짜는 읽은 값으로 바꾸고, 메모·카테고리는 비어 있을 때만 채운다.
+         * 사용자가 확인하고 저장하도록 무엇을 채웠는지 안내한다(못 읽은 값은 그대로 둠).
+         */
+        fun applyScan(r: ReceiptScan) {
+            if (r.path == null && r.text.isBlank()) { scanNotice = r.error ?: "사진을 불러오지 못했어요."; return }
+            r.path?.let { attachment = it }
+            if (r.text.isBlank()) {
+                scanNotice = "글자를 읽지 못해 사진만 첨부했어요" + (r.error?.let { " ($it)" } ?: "") + ". 금액을 직접 입력해 주세요."
+                return
+            }
+            val g = ReceiptParser.parse(r.text, state.today)
+            val filled = mutableListOf<String>()
+            if (type != TransactionType.EXPENSE) {
+                fromId = (if (type == TransactionType.INCOME) toId else fromId) ?: defaultAccount
+                toId = null; categoryId = null; type = TransactionType.EXPENSE
+            }
+            g.amount?.takeIf { currency == KRW }?.let { amountText = amountToInput(it, KRW); filled += MoneyFormat.format(it) }
+            g.date?.let {
+                date = it
+                if (existing == null && status == TransactionStatus.PLANNED) status = TransactionStatus.COMPLETED
+                filled += it.korean(true)
+            }
+            g.merchant?.let { m ->
+                if (memo.isBlank()) { memo = m; memoEdited = false }
+                filled += m
+            }
+            if (categoryId == null) {
+                val active = data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived }
+                // 같은 가게를 전에 기록했으면 그때 카테고리, 아니면 가게 이름으로 짐작한 기본 카테고리
+                val past = g.merchant?.let { m -> MemoSuggest.suggest(data.transactions, m, TransactionType.EXPENSE).firstOrNull { it.memo == m }?.categoryId }
+                    ?.takeIf { id -> active.any { it.id == id } }
+                val guess = past ?: g.categoryHint?.let { h -> active.firstOrNull { it.name == h }?.id }
+                guess?.let { id -> categoryId = id; filled += data.categoryById[id]?.name ?: "" }
+            }
+            scanNotice = if (g.amount == null && g.date == null) "금액·날짜를 찾지 못해 사진만 첨부했어요. 직접 입력해 주세요."
+            else "영수증에서 읽었어요 · ${filled.filter { it.isNotBlank() }.joinToString(" · ")}\n맞는지 확인하고 저장하세요."
         }
 
         /** 지금 입력값으로 저장하면 경고·초과에 걸리는 예산(지출일 때만). */
@@ -196,6 +249,11 @@ fun TransactionEditScreen(
                     }
                 }
             })
+            if (scanner.supported || attachment != null) ReceiptRow(
+                attachment, scanNotice, canScan = scanner.supported && type != TransactionType.TRANSFER,
+                onScan = { camera -> scanner.scan(camera, ::applyScan) },
+                onView = { viewPhoto = true }, onRemove = { attachment = null; scanNotice = null },
+            )
             AmountField(amountText, { amountText = it }, "금액", Modifier.focusRequester(focus), currency = currency, accent = accent, calculator = true)
             // 예산: 이 거래를 저장하면 경고·초과(예정 포함)에 걸리는지 바로 보여 준다. 저장은 막지 않는다(기록 앱)
             budgetImpact().forEach { st ->
@@ -288,7 +346,13 @@ fun TransactionEditScreen(
                 vm.addCategory(Category(name = name, kind = kind, colorArgb = nextCategoryColor(data.categories.size))) { categoryId = it }
             }
         }
-        LaunchedEffect(Unit) { if (existing == null && source == null) runCatching { focus.requestFocus() } }
+        if (viewPhoto) attachment?.let { ReceiptViewer(it) { viewPhoto = false } }
+        // 영수증 스캔으로 열었으면 바로 카메라(한 번만 — 화면 회전 등으로 다시 열리지 않게)
+        var autoScanned by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            if (autoScan && !autoScanned && scanner.supported) { autoScanned = true; scanner.scan(true, ::applyScan) }
+            else if (existing == null && source == null) runCatching { focus.requestFocus() }
+        }
     }
 }
 

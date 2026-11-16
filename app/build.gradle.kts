@@ -54,7 +54,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (releaseStoreFile != null) signingConfigs.getByName("release") else null
-            ndk { debugSymbolLevel = "NONE" } // 네이티브 코드 없음
+            ndk { debugSymbolLevel = "NONE" } // 직접 만든 네이티브 코드 없음(ML Kit 글자 읽기 라이브러리만, 기호 정보 불필요)
         }
         /**
          * 직접 설치해 써 보는 미리보기: 출시와 같은 R8 최적화 + 개발용 키 서명.
@@ -67,6 +67,9 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
             manifestPlaceholders["appLabel"] = "@string/app_name_preview"
+            // 휴대폰에 직접 설치하는 APK 라 에뮬레이터용(x86) 글자 읽기 라이브러리는 빼서 크기를 줄인다
+            // (스토어용 AAB 는 Play 가 기기에 맞는 것만 내려 준다)
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
     }
     compileOptions {
@@ -101,6 +104,7 @@ dependencies {
     implementation(libs.androidx.biometric) // 앱 잠금: 지문·얼굴 인증
     implementation(libs.androidx.documentfile) // 자동 백업: 사용자가 고른 폴더에 쓰기
     implementation(libs.androidx.glance.appwidget) // 홈 화면 위젯
+    implementation(libs.mlkit.text.korean) // 영수증 글자 읽기(한국어 모델을 앱에 포함 — 기기 안에서만 처리)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 

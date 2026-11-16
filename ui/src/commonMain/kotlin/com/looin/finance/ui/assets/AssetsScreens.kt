@@ -84,6 +84,8 @@ import com.looin.finance.ui.components.UnderlineField
 import com.looin.finance.ui.components.amountToInput
 import com.looin.finance.ui.components.korean
 import com.looin.finance.ui.theme.Looin
+import com.looin.finance.ui.components.PickItem
+import com.looin.finance.ui.components.PickerField
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -304,6 +306,11 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
     var rateText by rememberSaveable { mutableStateOf(existing?.rateToKrwX10000?.let(::formatRate) ?: "") }
     var memo by rememberSaveable { mutableStateOf(existing?.memo ?: "") }
     var color by rememberSaveable { mutableStateOf(existing?.colorArgb ?: 0L) }
+    // 카드 결제일 관리(부채 계좌)
+    var billingOn by rememberSaveable { mutableStateOf(existing?.billingDay != null) }
+    var billingDayText by rememberSaveable { mutableStateOf(existing?.billingDay?.toString() ?: "14") }
+    var billingStart by rememberSaveable { mutableStateOf(existing?.billingStartDay ?: 1) }
+    var billingAccount by rememberSaveable { mutableStateOf(existing?.billingAccountId) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val effectiveCurrency = if (type == AccountType.FOREIGN) (if (currency == KRW) "USD" else currency) else KRW
@@ -313,6 +320,10 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
         val opening = if (openingText.isBlank()) 0L else MoneyFormat.parse(openingText, effectiveCurrency)
         if (opening == null) { error = "초기 잔고를 확인하세요."; return }
         if (name.isBlank()) { error = "이름을 입력하세요."; return }
+        if (type.isLiability && billingOn) {
+            if (billingDayText.toIntOrNull() !in 1..31) { error = "결제일은 1~31 사이로 입력하세요."; return }
+            if (billingAccount == null) { error = "카드 대금을 낼 계좌를 고르세요."; return }
+        }
         val rate = if (effectiveCurrency == KRW || rateText.isBlank()) null else parseRate(rateText)
         if (effectiveCurrency != KRW && rateText.isNotBlank() && rate == null) { error = "환율 형식을 확인하세요(예: 1380.5)."; return }
         vm.saveAccount(
@@ -322,6 +333,8 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
                 includeInAvailable = include && includeAllowed, archived = existing?.archived ?: false, memo = memo,
                 sortOrder = existing?.sortOrder ?: state.data.accounts.size, rateToKrwX10000 = rate,
                 createdAt = existing?.createdAt ?: 0, colorArgb = color,
+                billingDay = if (type.isLiability && billingOn) billingDayText.toIntOrNull() else null,
+                billingStartDay = billingStart, billingAccountId = if (type.isLiability && billingOn) billingAccount else null,
             ),
             onDone,
         )
@@ -334,6 +347,29 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             UnderlineField(name, { name = it }, "이름", placeholder = "예: 주거래 통장", textStyle = LooinType.bodyLg.copy(fontWeight = FontWeight.SemiBold))
+            if (type.isLiability) {
+                // 카드 결제일 관리: 이용 기간의 카드 지출을 모아 결제일에 대금 이체 예정을 자동으로 만든다
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FieldGroup { ToggleRow("카드 결제일 관리", "이용액을 모아 결제일에 대금 이체 예정을 자동으로 만들어요", billingOn, { billingOn = it }) }
+                    if (billingOn) {
+                        UnderlineField(billingDayText, { v -> billingDayText = v.filter { it.isDigit() }.take(2) }, "결제일 (1~31)", keyboardType = KeyboardType.Number,
+                            isError = billingDayText.toIntOrNull() !in 1..31)
+                        SmallLabel("이용 기간")
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(1, 12, 15, 25).forEach { d ->
+                                ChipPill(if (d == 1) "전월 1일~말일" else "전월 ${d}일~당월 ${d - 1}일", billingStart == d, { billingStart = d })
+                            }
+                        }
+                        PickerField("대금을 낼 계좌", state.data.accounts.filter { !it.archived && !it.type.isLiability && it.id != existing?.id }
+                            .map { PickItem(it.id, it.name, accountColor(it)) }, billingAccount, emptyList(), { billingAccount = it })
+                        val pay = billingDayText.toIntOrNull()
+                        if (pay != null && pay in 1..31) SmallLabel(
+                            "매월 ${pay}일에 " + (if (billingStart == 1) "전월 1일~말일" else "전월 ${billingStart}일~당월 ${billingStart - 1}일") +
+                                " 이용액을 " + (state.data.accountName(billingAccount).takeIf { billingAccount != null } ?: "고른 계좌") + "에서 내는 예정 이체가 생겨요. 이용액이 바뀌면 금액도 따라 바뀌어요.",
+                            color = c.textSecondary)
+                    }
+                }
+            }
             // 통장 색: 목록·선택 칸·예산에 쓰인다. "기본"은 종류별 색
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallLabel("통장 색")

@@ -119,16 +119,16 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 /** 거래 편집 경로. 날짜는 epoch day 로 전달. */
 private fun txRoute(
     id: Long? = null, date: LocalDate? = null, type: TransactionType? = null,
-    status: TransactionStatus? = null, account: Long? = null, copy: Long? = null,
+    status: TransactionStatus? = null, account: Long? = null, copy: Long? = null, scan: Boolean = false,
 ) = "tx?id=${id ?: -1}&date=${date?.toEpochDays() ?: Int.MIN_VALUE}&type=${type?.name ?: ""}&status=${status?.name ?: ""}" +
-    "&account=${account ?: -1}&copy=${copy ?: -1}"
+    "&account=${account ?: -1}&copy=${copy ?: -1}&scan=$scan"
 
 /**
  * 앱 전체 화면(하단 탭 + 화면 이동 + 거래 메뉴 시트). Android·PC 가 같은 코드를 쓴다.
  * 테마([com.looin.finance.ui.theme.LooinTheme])와 플랫폼 구현([com.looin.finance.ui.platform])은 각 진입점이 감싸서 넣는다.
  */
 /** 화면 밖에서 오는 명령: PC 키보드 단축키, Android 앱 바로가기·위젯. */
-enum class AppCommand { NEW_TRANSACTION, NEW_EXPENSE, NEW_INCOME, SEARCH, SETTINGS, BACK, TAB_HOME, TAB_CALENDAR, TAB_PLAN, TAB_ASSETS, TAB_ANALYSIS }
+enum class AppCommand { NEW_TRANSACTION, NEW_EXPENSE, NEW_INCOME, SCAN_RECEIPT, SEARCH, SETTINGS, BACK, TAB_HOME, TAB_CALENDAR, TAB_PLAN, TAB_ASSETS, TAB_ANALYSIS }
 
 @Composable
 fun LooinAppRoot(
@@ -177,6 +177,7 @@ fun LooinAppRoot(
                 AppCommand.NEW_TRANSACTION -> addTx()
                 AppCommand.NEW_EXPENSE -> nav.navigate(txRoute(type = TransactionType.EXPENSE))
                 AppCommand.NEW_INCOME -> nav.navigate(txRoute(type = TransactionType.INCOME))
+                AppCommand.SCAN_RECEIPT -> nav.navigate(txRoute(type = TransactionType.EXPENSE, scan = true))
                 AppCommand.SEARCH -> nav.navigate("search") { launchSingleTop = true }
                 AppCommand.SETTINGS -> nav.navigate("settings") { launchSingleTop = true }
                 AppCommand.BACK -> if (sheetTx != null) sheetTx = null else if (tab == null) nav.popBackStack()
@@ -355,7 +356,8 @@ private fun AppNavHost(
             HomeScreen(state, vm, padding, openSheet,
                 onAddTx = { d, t, planned -> nav.navigate(txRoute(date = d, type = t, status = if (planned) TransactionStatus.PLANNED else null)) },
                 onAddAccount = { nav.navigate("accountEdit") }, onOpenPlan = { goTab(Tab.PLAN) },
-                onOpenCalendar = { goTab(Tab.CALENDAR) }, onCopyTx = { nav.navigate(txRoute(copy = it)) })
+                onOpenCalendar = { goTab(Tab.CALENDAR) }, onCopyTx = { nav.navigate(txRoute(copy = it)) },
+                onScanReceipt = { nav.navigate(txRoute(type = TransactionType.EXPENSE, scan = true)) })
         }
         page(Tab.CALENDAR.route, wideMax = null) {
             CalendarScreen(state, vm, padding, openSheet, onAddTx = { nav.navigate(txRoute(date = it)) }, selectedDays = calendarDay, onSelectDays = onCalendarDay)
@@ -385,7 +387,7 @@ private fun AppNavHost(
         page("categories") { CategoryScreen(state, vm, onBack = { nav.popBackStack() }) }
         page("search") { SearchScreen(state, onBack = { nav.popBackStack() }, onOpenTx = openSheet) }
         page(
-            "tx?id={id}&date={date}&type={type}&status={status}&account={account}&copy={copy}",
+            "tx?id={id}&date={date}&type={type}&status={status}&account={account}&copy={copy}&scan={scan}",
             arguments = listOf(
                 navArgument("id") { type = NavType.LongType; defaultValue = -1L },
                 navArgument("date") { type = NavType.IntType; defaultValue = Int.MIN_VALUE },
@@ -393,6 +395,7 @@ private fun AppNavHost(
                 navArgument("status") { type = NavType.StringType; defaultValue = "" },
                 navArgument("account") { type = NavType.LongType; defaultValue = -1L },
                 navArgument("copy") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("scan") { type = NavType.BoolType; defaultValue = false },
             ),
         ) { entry ->
             val a = entry
@@ -405,6 +408,7 @@ private fun AppNavHost(
                 initialAccountId = a.argLong("account").takeIf { it > 0 },
                 onClose = { nav.popBackStack() },
                 copyFromId = a.argLong("copy").takeIf { it > 0 },
+                autoScan = a.arguments?.read { contains("scan") && getBoolean("scan") } == true,
             )
         }
         page("account/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->

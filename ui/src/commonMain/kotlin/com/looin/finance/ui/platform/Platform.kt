@@ -1,6 +1,7 @@
 package com.looin.finance.ui.platform
 
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.ImageBitmap
 
 /**
  * 화면 코드가 플랫폼(Android·PC·iOS)에 따라 달라지는 부분. 각 앱 진입점이 구현을 넣어 준다.
@@ -79,6 +80,27 @@ object NoAutoBackup : AutoBackupControl {
     override fun runNow() = Unit
 }
 
+/**
+ * 영수증 사진(Android): 촬영하거나 앨범에서 골라 앱 안에 저장하고, 기기 안에서 글자를 읽는다(인터넷 전송 없음).
+ * 지원하지 않는 플랫폼은 [supported] = false 로 버튼을 숨긴다.
+ */
+interface ReceiptScanner {
+    val supported: Boolean
+    /** [fromCamera] 면 카메라, 아니면 앨범. 사용자가 취소하면 [onResult] 를 부르지 않는다. */
+    fun scan(fromCamera: Boolean, onResult: (ReceiptScan) -> Unit)
+    /** 저장된 사진(첨부 경로)을 화면에 보일 크기로 읽는다. 없으면 null. */
+    fun load(path: String, maxSize: Int = 1200): ImageBitmap?
+}
+
+/** 저장된 사진 경로(앱 안 저장소 기준)와 읽은 글자. 글자 읽기에 실패하면 [text] 가 비고 [error] 에 이유. */
+data class ReceiptScan(val path: String?, val text: String, val error: String? = null)
+
+object NoReceiptScanner : ReceiptScanner {
+    override val supported = false
+    override fun scan(fromCamera: Boolean, onResult: (ReceiptScan) -> Unit) = Unit
+    override fun load(path: String, maxSize: Int): ImageBitmap? = null
+}
+
 enum class AppPlatform(val label: String) { ANDROID("Android"), DESKTOP("PC"), IOS("iOS") }
 
 data class AppInfo(val versionName: String, val platform: AppPlatform)
@@ -87,3 +109,4 @@ val LocalAppInfo = staticCompositionLocalOf { AppInfo("dev", AppPlatform.ANDROID
 val LocalFileActions = staticCompositionLocalOf<FileActions> { NoFileActions }
 val LocalReminderControl = staticCompositionLocalOf<ReminderControl> { NoReminders }
 val LocalAutoBackup = staticCompositionLocalOf<AutoBackupControl> { NoAutoBackup }
+val LocalReceiptScanner = staticCompositionLocalOf<ReceiptScanner> { NoReceiptScanner }
