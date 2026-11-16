@@ -2,6 +2,11 @@ package com.looin.finance.ui.tx
 
 import com.looin.finance.core.calc.MemoSuggest
 import com.looin.finance.core.receipt.ReceiptParser
+import com.looin.finance.core.money.Fx
+import com.looin.finance.ui.components.liveRates
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.input.KeyboardType
+import kotlinx.coroutines.launch
 import com.looin.finance.ui.platform.LocalReceiptScanner
 import com.looin.finance.ui.platform.ReceiptScan
 import com.looin.finance.ui.components.korean
@@ -142,6 +147,14 @@ fun TransactionEditScreen(
         var scanNotice by rememberSaveable { mutableStateOf<String?>(null) }
         var viewPhoto by remember { mutableStateOf(false) }
         val scanner = LocalReceiptScanner.current
+        // 외화: 당시 환율, 원화↔외화 이체면 받은 금액(입금 계좌 통화)
+        var rateText by rememberSaveable { mutableStateOf(source?.rateToKrwX10000?.let { Fx.formatRate(it).replace(",", "") } ?: "") }
+        var receivedText by rememberSaveable {
+            mutableStateOf(existing?.toAmount?.let { amt -> amountToInput(amt, data.accountById[existing.toAccountId]?.currency ?: KRW) } ?: "")
+        }
+        val live = liveRates()
+        val scope = rememberCoroutineScope()
+        var rateStatus by remember { mutableStateOf<String?>(null) }
         val focus = remember { FocusRequester() }
 
         fun recentAccounts(side: RecentPicks.Side) = RecentPicks.accounts(data.transactions, type, side)
@@ -149,8 +162,30 @@ fun TransactionEditScreen(
         val currency = data.accountById[if (type == TransactionType.INCOME) toId else fromId]?.currency ?: KRW
         val accent = categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: typeColor(type)
 
+        val fromAcc = fromId?.let { data.accountById[it] }
+        val toAcc = toId?.let { data.accountById[it] }
+        val cross = type == TransactionType.TRANSFER && fromAcc != null && toAcc != null && fromAcc.currency != toAcc.currency
+        val fxCur = when (type) {
+            TransactionType.INCOME -> toAcc?.currency
+            TransactionType.EXPENSE -> fromAcc?.currency
+            else -> listOfNotNull(fromAcc?.currency, toAcc?.currency).firstOrNull { it != KRW }
+        }?.takeIf { it != KRW }
+        val parsedAmount = AmountExpression.parse(amountText, currency)
+        val parsedRate = Fx.parseRate(rateText)
+        val parsedReceived = if (cross) MoneyFormat.parse(receivedText, toAcc!!.currency)?.takeIf { it > 0 } else null
+        // 받은 금액을 적었으면 환율은 그것으로 계산, 아니면 적은 환율로 받은 금액을 계산
+        val effRate: Long? = if (cross && parsedReceived != null && parsedAmount != null) {
+            if (fromAcc!!.currency == KRW) Fx.rateOf(parsedAmount, parsedReceived, toAcc!!.currency) else Fx.rateOf(parsedReceived, parsedAmount, fromAcc.currency)
+        } else parsedRate
+        val effReceived: Long? = if (!cross) null else parsedReceived ?: if (parsedAmount != null && parsedRate != null) {
+            if (fromAcc!!.currency == KRW) Fx.fromKrw(parsedAmount, toAcc!!.currency, parsedRate) else Fx.toKrw(parsedAmount, fromAcc.currency, parsedRate)
+        } else null
+        // 오늘 거래면 실시간 환율을 미리 넣어 둔다(고칠 수 있음)
+        LaunchedEffect(fxCur) { if (fxCur != null && rateText.isBlank() && date == state.today) live[fxCur]?.let { rateText = Fx.formatRate(it).replace(",", "") } }
+
         fun build(): Transaction? {
             val amount = AmountExpression.parse(amountText, currency) ?: run { errors = listOf("금액을 확인하세요."); return null }
+            if (fxCur != null && rateText.isNotBlank() && parsedRate == null) { errors = listOf("환율 형식을 확인하세요(예: 9.1234)."); return null }
             val isCompleted = status == TransactionStatus.COMPLETED
             return Transaction(
                 id = existing?.id ?: 0, type = type, status = status, amount = amount, currency = currency, date = date,
@@ -164,8 +199,9 @@ fun TransactionEditScreen(
                 linkedPlannedId = existing?.linkedPlannedId,
                 createdAt = existing?.createdAt ?: 0,
                 recurringId = existing?.recurringId, recurringOccurrence = existing?.recurringOccurrence,
-                toAmount = existing?.toAmount,
+                toAmount = effReceived,
                 attachment = attachment,
+                rateToKrwX10000 = if (fxCur != null) effRate else null,
             )
         }
 
@@ -283,6 +319,32 @@ fun TransactionEditScreen(
                     AccountChips("입금 계좌 (넣을 자산)", activeAccounts.filter { it.id != fromId }, toId, recentAccounts(RecentPicks.Side.TO), { newAccountFor = "to" }) { toId = it }
                     SmallLabel("계좌 간 저축·이체는 소비로 계산하지 않아요. 넣을 자산이 없으면 '+ 새 계좌'로 바로 만들 수 있어요.")
                 }
+            }
+            if (fxCur != null) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (cross) {
+                    AmountField(receivedText, { receivedText = it }, "받은 금액 (${toAcc!!.currency})", currency = toAcc.currency, accent = accent)
+                    SmallLabel("실제로 받은 금액을 적으면 환율은 자동으로 계산돼요. 비워 두면 아래 환율로 계산해요.")
+                }
+                UnderlineField(rateText, { v -> rateText = v.filter { it.isDigit() || it == '.' } }, "당시 환율 (1 $fxCur 당 원)",
+                    placeholder = "예: 9.1234", keyboardType = KeyboardType.Decimal, accent = accent, isError = rateText.isNotBlank() && parsedRate == null)
+                val hint = when {
+                    cross && effReceived != null && effRate != null -> "${MoneyFormat.format(effReceived, toAcc!!.currency)} 받음 · ${Fx.rateLabel(fxCur, effRate)}"
+                    !cross && parsedAmount != null && parsedRate != null -> "≈ ${MoneyFormat.format(Fx.toKrw(parsedAmount, fxCur, parsedRate))} (${Fx.rateLabel(fxCur, parsedRate)})"
+                    else -> "외화 거래는 정확한 원화 계산을 위해 그때 환율을 적어요."
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SmallLabel(hint, color = c.textSecondary, modifier = Modifier.weight(1f))
+                    live[fxCur]?.let { r -> ChipPill("실시간", false, { rateText = Fx.formatRate(r).replace(",", ""); if (cross) receivedText = "" }) }
+                    if (com.looin.finance.ui.platform.ExchangeRates.supported) ChipPill("그날 환율", false, {
+                        rateStatus = "받아 오는 중…"
+                        scope.launch {
+                            val r = runCatching { Fx.rateOn(com.looin.finance.ui.platform.ExchangeRates.history(fxCur, date, date), date) }.getOrNull()
+                            if (r != null) { rateText = Fx.formatRate(r).replace(",", ""); if (cross) receivedText = ""; rateStatus = "${date.korean(true)} 유럽중앙은행 기준 환율이에요." }
+                            else rateStatus = "환율을 받아 오지 못했어요. 직접 입력해 주세요."
+                        }
+                    })
+                }
+                rateStatus?.let { SmallLabel(it, color = c.textSecondary) }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallLabel("상태")

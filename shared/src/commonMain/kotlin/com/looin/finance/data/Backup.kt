@@ -84,7 +84,7 @@ object BackupCodec {
                         put("createdAt", a.createdAt); put("updatedAt", a.updatedAt)
                         if (a.colorArgb != 0L) put("colorArgb", a.colorArgb) // 앱 v7~, 없으면 기본 색
                         // 앱 v8~: 카드 결제일 관리(없으면 꺼짐)
-                        putOpt("billingDay", a.billingDay); put("billingStartDay", a.billingStartDay); putOpt("billingAccountId", a.billingAccountId)
+                        putOpt("billingDay", a.billingDay); put("billingStartDay", a.billingStartDay); putOpt("billingAccountId", a.billingAccountId); putOpt("openingRateX10000", a.openingRateX10000)
                     })
                 }
             })
@@ -105,6 +105,7 @@ object BackupCodec {
                         put("memo", t.memo); put("source", t.source.name); putOpt("linkedPlannedId", t.linkedPlannedId); putOpt("toAmount", t.toAmount)
                         put("createdAt", t.createdAt); put("updatedAt", t.updatedAt)
                         putOpt("recurringId", t.recurringId); putOpt("recurringOccurrence", t.recurringOccurrence?.toString())
+                        putOpt("rateToKrwX10000", t.rateToKrwX10000)
                     })
                 }
             })
@@ -181,7 +182,7 @@ object BackupCodec {
             Account(o.long("id"), o.req("name"), AccountType.valueOf(o.req("type")), o.req("currency"),
                 o.long("openingBalance"), o.bool("includeInAvailable"), o.bool("archived"), o.str("memo") ?: "",
                 o.intOrNull("sortOrder") ?: 0, o.longOrNull("rateToKrwX10000"), o.longOrNull("createdAt") ?: 0, o.longOrNull("updatedAt") ?: 0,
-                o.longOrNull("colorArgb") ?: 0, o.intOrNull("billingDay"), o.intOrNull("billingStartDay") ?: 1, o.longOrNull("billingAccountId"))
+                o.longOrNull("colorArgb") ?: 0, o.intOrNull("billingDay"), o.intOrNull("billingStartDay") ?: 1, o.longOrNull("billingAccountId"), o.longOrNull("openingRateX10000"))
         }
         val categories = root.arr("categories").map { o ->
             Category(o.long("id"), o.req("name"), CategoryKind.valueOf(o.req("kind")), o.long("colorArgb"),
@@ -197,6 +198,7 @@ object BackupCodec {
                 linkedPlannedId = o.longOrNull("linkedPlannedId"), toAmount = o.longOrNull("toAmount"),
                 createdAt = o.longOrNull("createdAt") ?: 0, updatedAt = o.longOrNull("updatedAt") ?: 0,
                 recurringId = o.longOrNull("recurringId"), recurringOccurrence = o.str("recurringOccurrence")?.let(LocalDate::parse),
+                rateToKrwX10000 = o.longOrNull("rateToKrwX10000"),
             )
         }
         val budgets = root.arr("budgets").map { o ->

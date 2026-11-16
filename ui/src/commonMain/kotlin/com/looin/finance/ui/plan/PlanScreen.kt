@@ -272,7 +272,7 @@ fun PlanScreen(
         }
     }
     completing?.let { tx ->
-        CompleteSheet(tx, state.today, { completing = null }) { d, a -> completing = null; vm.completeTransaction(tx.id, d, a) }
+        CompleteSheet(tx, state.today, { completing = null }) { d, a, r -> completing = null; vm.completeTransaction(tx.id, d, a, r) }
     }
 }
 

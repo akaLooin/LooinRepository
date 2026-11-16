@@ -1,5 +1,6 @@
 package com.looin.finance.ui.components
 
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -132,3 +133,11 @@ fun defaultAccountColor(type: com.looin.finance.core.model.AccountType): Long = 
 /** 통장 색: 정한 색이 있으면 그것, 없으면 종류별 기본 색. */
 fun accountColor(a: com.looin.finance.core.model.Account?): Color =
     Color(a?.let { if (it.colorArgb != 0L) it.colorArgb else defaultAccountColor(it.type) } ?: 0xFF677080)
+
+/** 화면 계산에 쓸 실시간 환율(통화 → 외화 1단위당 원 × 10,000). 설정에서 끄면 빈 값. */
+@androidx.compose.runtime.Composable
+fun liveRates(): Map<String, Long> {
+    val q = com.looin.finance.ui.platform.ExchangeRates.quotes.collectAsState().value
+    val on = com.looin.finance.ui.platform.ExchangeRates.enabled.collectAsState().value
+    return androidx.compose.runtime.remember(q, on) { if (on) q.mapValues { it.value.rateX10000 } else emptyMap() }
+}

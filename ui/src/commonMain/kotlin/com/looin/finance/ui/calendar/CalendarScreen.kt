@@ -228,7 +228,7 @@ fun CalendarScreen(
         }
         AdaptiveColumns(left, right, mobilePadding = PaddingValues(start = GUTTER, end = GUTTER, top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding() + 96.dp), spacing = 14.dp, leftWeight = 1.25f)
     completing?.let { tx ->
-        CompleteSheet(tx, state.today, { completing = null }) { d, a -> completing = null; vm.completeTransaction(tx.id, d, a) }
+        CompleteSheet(tx, state.today, { completing = null }) { d, a, r -> completing = null; vm.completeTransaction(tx.id, d, a, r) }
     }
 }
 

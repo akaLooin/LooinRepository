@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -143,6 +144,15 @@ fun LooinAppRoot(
     val snackbar = remember { SnackbarHostState() }
     // 새 메시지가 오면 이전 메시지를 바로 닫아 오래된 안내가 쌓이지 않게 한다.
     LaunchedEffect(Unit) { vm.messages.collectLatest { snackbar.currentSnackbarData?.dismiss(); snackbar.showSnackbar(it) } }
+    // 외화 계좌가 있으면 최신 환율을 받아 둔다(30분마다, 설정에서 끌 수 있음)
+    val foreignCurrencies = state.data.accounts.filter { !it.archived && it.currency != com.looin.finance.core.model.KRW }.map { it.currency }.toSet()
+    val fxOn by com.looin.finance.ui.platform.ExchangeRates.enabled.collectAsState()
+    LaunchedEffect(foreignCurrencies, fxOn) {
+        if (foreignCurrencies.isNotEmpty() && fxOn) while (true) {
+            com.looin.finance.ui.platform.ExchangeRates.refresh(foreignCurrencies, nowMs())
+            kotlinx.coroutines.delay(com.looin.finance.ui.platform.ExchangeRates.REFRESH_MS)
+        }
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refreshToday() }
     // 앱 잠금: 백그라운드에 오래 있다 돌아오면 잠근다
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { AppLock.onBackground(kotlin.time.Clock.System.now().toEpochMilliseconds()) }
@@ -414,10 +424,19 @@ private fun AppNavHost(
         page("account/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
             val id = entry.argLong("id")
             AccountDetailScreen(state, vm, id, onBack = { nav.popBackStack() }, onEdit = { nav.navigate("accountEdit?id=$id") },
-                onOpenTx = openSheet, onAddTx = { nav.navigate(txRoute(type = it, account = id)) })
+                onOpenTx = openSheet, onAddTx = { nav.navigate(txRoute(type = it, account = id)) },
+                onRates = { convert -> nav.navigate("accountRates/$id?convert=$convert") })
         }
         page("accountEdit?id={id}", arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
-            AccountEditScreen(state, vm, entry.argLong("id").takeIf { it > 0 }, onDone = { nav.popBackStack() })
+            AccountEditScreen(state, vm, entry.argLong("id").takeIf { it > 0 }, onDone = { nav.popBackStack() },
+                onConvert = { id -> nav.popBackStack(); nav.navigate("accountRates/$id?convert=true") })
+        }
+        page("accountRates/{id}?convert={convert}", arguments = listOf(
+            navArgument("id") { type = NavType.LongType },
+            navArgument("convert") { type = NavType.BoolType; defaultValue = false },
+        )) { entry ->
+            com.looin.finance.ui.assets.AccountRatesScreen(state, vm, entry.argLong("id"),
+                convert = entry.arguments?.read { contains("convert") && getBoolean("convert") } == true, onDone = { nav.popBackStack() })
         }
     }
 }
@@ -447,3 +466,6 @@ private fun NavGraphBuilder.page(
 private fun NavBackStackEntry.argLong(key: String): Long = arguments?.read { if (contains(key)) getLong(key) else -1L } ?: -1L
 private fun NavBackStackEntry.argInt(key: String): Int = arguments?.read { if (contains(key)) getInt(key) else Int.MIN_VALUE } ?: Int.MIN_VALUE
 private fun NavBackStackEntry.argString(key: String): String? = arguments?.read { if (contains(key)) getString(key) else null }
+
+@OptIn(kotlin.time.ExperimentalTime::class)
+internal fun nowMs(): Long = kotlin.time.Clock.System.now().toEpochMilliseconds()

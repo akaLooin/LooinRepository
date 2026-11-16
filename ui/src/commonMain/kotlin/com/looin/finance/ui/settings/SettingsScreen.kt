@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -146,6 +147,17 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
                         reminders.enabled, { reminders.setEnabled(it) })
                 }
                 if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → $APP_NAME → 알림에서 허용해 주세요.", color = c.danger)
+            }
+
+            if (com.looin.finance.ui.platform.ExchangeRates.supported) {
+                val fxOn = com.looin.finance.ui.platform.ExchangeRates.enabled.collectAsState().value
+                Spacer(Modifier.height(8.dp))
+                Title("환율")
+                FieldGroup {
+                    ToggleRow("실시간 환율 받기", "외화 계좌가 있을 때만 30분마다 통화 코드만 보내 최신 환율을 받아요(유럽중앙은행 기준 환율, 영업일마다 갱신)",
+                        fxOn, { com.looin.finance.ui.platform.ExchangeRates.setEnabled(it) })
+                }
+                if (!fxOn) SmallLabel("끄면 계좌에 직접 적은 현재 환율 → 최근 거래의 환율로 원화를 계산해요.", color = c.textSecondary)
             }
 
             Spacer(Modifier.height(8.dp))

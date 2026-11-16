@@ -92,7 +92,7 @@ fun TransactionActionSheet(
                 }
                 TextAction("돌아가기", { mode = "menu" })
             }
-            "complete" -> CompleteForm(tx, today) { d, a -> onDismiss(); vm.completeTransaction(tx.id, d, a) }
+            "complete" -> CompleteForm(tx, today) { d, a, r -> onDismiss(); vm.completeTransaction(tx.id, d, a, r) }
             "info" -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 SmallLabel("유형 ${tx.type.label} · 상태 ${tx.status.label} · 출처 ${tx.source.label}", color = c.textSecondary)
                 SmallLabel("금액 ${MoneyFormat.format(tx.amount, tx.currency)}", color = c.textSecondary)

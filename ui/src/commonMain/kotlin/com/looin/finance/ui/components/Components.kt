@@ -903,30 +903,38 @@ fun TransactionRow(
 // ── 완료 처리 시트 ──────────────────────────────────────────
 
 @Composable
-fun CompleteSheet(tx: Transaction, today: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate, Long) -> Unit) {
+fun CompleteSheet(tx: Transaction, today: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate, Long, Long?) -> Unit) {
     LooinSheet(onDismiss, "완료 처리") { CompleteForm(tx, today, onConfirm) }
 }
 
 @Composable
-fun CompleteDialog(tx: Transaction, today: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate, Long) -> Unit) =
+fun CompleteDialog(tx: Transaction, today: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate, Long, Long?) -> Unit) =
     CompleteSheet(tx, today, onDismiss, onConfirm)
 
 @Composable
-fun CompleteForm(tx: Transaction, today: LocalDate, onConfirm: (LocalDate, Long) -> Unit) {
+fun CompleteForm(tx: Transaction, today: LocalDate, onConfirm: (LocalDate, Long, Long?) -> Unit) {
     var date by remember { mutableStateOf(if (tx.date < today) tx.date else today) }
     var text by remember { mutableStateOf(amountToInput(tx.amount, tx.currency)) }
     val amount = AmountExpression.parse(text, tx.currency)
+    // 외화 예정 거래: 처리한 날의 환율을 함께 적는다(실시간 환율을 미리 넣어 둠)
+    val needRate = tx.currency != com.looin.finance.core.model.KRW && tx.toAmount == null
+    val liveRate = liveRates()[tx.currency]
+    var rateText by remember { mutableStateOf((tx.rateToKrwX10000 ?: liveRate)?.let { com.looin.finance.core.money.Fx.formatRate(it).replace(",", "") } ?: "") }
+    val rate = com.looin.finance.core.money.Fx.parseRate(rateText)
     val error = when {
         amount == null || amount <= 0 -> "금액을 확인하세요"
         date > today -> "실제 처리일은 오늘 이후일 수 없습니다"
+        needRate && rate == null -> "처리한 날의 환율(1 ${tx.currency} 당 원)을 입력하세요"
         else -> null
     }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SmallLabel("예정일 ${tx.date.korean()} · 실제 금액과 날짜가 다르면 고쳐 주세요")
         AmountField(text, { text = it }, "실제 금액", currency = tx.currency, isError = amount == null, accent = typeColor(tx.type), calculator = true)
         FieldGroup { DateField("실제 처리일", date, { date = it }) }
+        if (needRate) UnderlineField(rateText, { v -> rateText = v.filter { it.isDigit() || it == '.' } }, "환율 (1 ${tx.currency} 당 원)",
+            placeholder = "예: 9.1234", keyboardType = KeyboardType.Decimal)
         if (error != null) SmallLabel(error, color = Looin.colors.danger)
-        PrimaryButton("완료", { onConfirm(date, amount!!) }, enabled = error == null, strong = true)
+        PrimaryButton("완료", { onConfirm(date, amount!!, if (needRate) rate else null) }, enabled = error == null, strong = true)
     }
 }
 

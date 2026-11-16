@@ -57,6 +57,7 @@ class MainActivity : FragmentActivity() { // 생체 인증 창(BiometricPrompt)�
         if (savedInstanceState == null) Shortcuts.commandOf(intent)?.let { commands.trySend(it) }
         val commandFlow = commands.receiveAsFlow()
         ThemePrefs.init(AndroidKeyValueStore(this))
+        com.looin.finance.ui.platform.ExchangeRates.init(AndroidKeyValueStore(this))
         // 앱 잠금: 프로세스마다 한 번만 초기화(화면 회전으로는 잠금이 풀리거나 다시 걸리지 않고,
         // 시스템이 앱을 정리했다가 다시 열면 새 프로세스라 잠근 상태로 시작한다)
         if (!AppLock.initialized) AppLock.init(AndroidKeyValueStore(this))

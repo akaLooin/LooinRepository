@@ -1,5 +1,10 @@
 package com.looin.finance.ui.assets
 
+import com.looin.finance.core.money.AccountFx
+import com.looin.finance.core.money.Fx
+import com.looin.finance.ui.components.liveRates
+import androidx.compose.runtime.collectAsState
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -118,7 +123,8 @@ private fun AccountAvatar(account: Account, size: Int = 40) {
 fun AssetsScreen(state: UiState, padding: PaddingValues, onOpenAccount: (Long) -> Unit, onAddAccount: () -> Unit) {
     val c = Looin.colors
     val data = state.data
-    val summary = BalanceCalculator.assetSummary(data.accounts, data.transactions)
+    val live = liveRates()
+    val summary = BalanceCalculator.assetSummary(data.accounts, data.transactions, live)
     var showArchived by rememberSaveable { mutableStateOf(false) }
     val visible = data.accounts.filter { showArchived || !it.archived }
     LazyColumn(
@@ -159,8 +165,10 @@ fun AssetsScreen(state: UiState, padding: PaddingValues, onOpenAccount: (Long) -
                             Column(horizontalAlignment = Alignment.End) {
                                 AmountText(bal, currency = a.currency, color = if (bal < 0) c.expense else c.text)
                                 if (a.currency != KRW) {
-                                    val krw = BalanceCalculator.valuationKrw(a, bal)
-                                    SmallLabel(if (krw == null) "환율 미설정" else "≈ ${MoneyFormat.format(krw)}")
+                                    // 외화 잔고는 외화로, 원화는 실시간(없으면 최근) 환율로 함께
+                                    val krw = BalanceCalculator.valuationKrw(a, bal, data.transactions, live)
+                                    SmallLabel(if (krw == null) "환율 정보 없음" else "≈ ${MoneyFormat.format(krw)}")
+                                    if (AccountFx.missingRates(a, data.transactions).isNotEmpty() || AccountFx.openingRateMissing(a)) SmallLabel("환율 기입 필요", color = c.danger)
                                 }
                             }
                         }
@@ -186,10 +194,13 @@ fun AccountDetailScreen(
     onEdit: () -> Unit,
     onOpenTx: (Transaction) -> Unit,
     onAddTx: (TransactionType) -> Unit,
+    /** 환율 기입 화면(convert = 원화 계좌를 외화 계좌로 바꾸기). */
+    onRates: (convert: Boolean) -> Unit = {},
 ) {
     val c = Looin.colors
     val data = state.data
     val account = data.accountById[accountId]
+    val live = liveRates()
     Column(Modifier.fillMaxSize().background(c.bg).statusBarsPadding()) {
         ScreenHeader(account?.name ?: "계좌", onBack) { if (account != null) TextAction("편집", onEdit) }
         if (account == null) {
@@ -220,8 +231,11 @@ fun AccountDetailScreen(
                     }
                 }
                 if (account.currency != KRW) {
-                    val krw = BalanceCalculator.valuationKrw(account, actual)
-                    SmallLabel("원화 평가액 " + (krw?.let { "≈ ${MoneyFormat.format(it)}" } ?: "· 평가 환율 미설정"))
+                    Spacer(Modifier.height(6.dp))
+                    ForeignSummary(account, actual, data.transactions, live) { onRates(false) }
+                } else if (!account.type.isLiability && !account.archived && txs.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    ChipPill("외화 계좌로 바꾸기", false, { onRates(true) })
                 }
                 Spacer(Modifier.height(8.dp))
                 MetricRow("${period.lastDay.korean()} 예상 잔고", projected.total, projected)
@@ -291,7 +305,7 @@ private fun AdjustForm(account: Account, current: Long, state: UiState, onConfir
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDone: () -> Unit) {
+fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onConvert: (Long) -> Unit = {}, onDone: () -> Unit) {
     if (!state.data.loaded) return
     val c = Looin.colors
     val existing = accountId?.let { state.data.accountById[it] }
@@ -303,7 +317,8 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
         mutableStateOf(existing?.let { amountToInput(if (it.type.isLiability) -it.openingBalance else it.openingBalance, it.currency) } ?: "")
     }
     var include by rememberSaveable { mutableStateOf(existing?.includeInAvailable ?: true) }
-    var rateText by rememberSaveable { mutableStateOf(existing?.rateToKrwX10000?.let(::formatRate) ?: "") }
+    var rateText by rememberSaveable { mutableStateOf(existing?.rateToKrwX10000?.let(Fx::formatRate)?.replace(",", "") ?: "") }
+    var openingRateText by rememberSaveable { mutableStateOf(existing?.openingRateX10000?.let(Fx::formatRate)?.replace(",", "") ?: "") }
     var memo by rememberSaveable { mutableStateOf(existing?.memo ?: "") }
     var color by rememberSaveable { mutableStateOf(existing?.colorArgb ?: 0L) }
     // 카드 결제일 관리(부채 계좌)
@@ -324,14 +339,19 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
             if (billingDayText.toIntOrNull() !in 1..31) { error = "결제일은 1~31 사이로 입력하세요."; return }
             if (billingAccount == null) { error = "카드 대금을 낼 계좌를 고르세요."; return }
         }
-        val rate = if (effectiveCurrency == KRW || rateText.isBlank()) null else parseRate(rateText)
+        val rate = if (effectiveCurrency == KRW || rateText.isBlank()) null else Fx.parseRate(rateText)
         if (effectiveCurrency != KRW && rateText.isNotBlank() && rate == null) { error = "환율 형식을 확인하세요(예: 1380.5)."; return }
+        val openingRate = if (effectiveCurrency == KRW || openingRateText.isBlank()) null else Fx.parseRate(openingRateText)
+        if (effectiveCurrency != KRW && openingRateText.isNotBlank() && openingRate == null) { error = "초기 잔고 환율 형식을 확인하세요(예: 9.12)."; return }
+        // 정확한 원화 계산을 위해 외화 초기 잔고는 당시 환율이 꼭 있어야 한다
+        if (effectiveCurrency != KRW && opening != 0L && openingRate == null) { error = "초기 잔고를 기록할 당시 환율을 입력하세요."; return }
         vm.saveAccount(
             Account(
                 id = existing?.id ?: 0, name = name.trim(), type = type, currency = effectiveCurrency,
                 openingBalance = if (type.isLiability) -opening else opening,
                 includeInAvailable = include && includeAllowed, archived = existing?.archived ?: false, memo = memo,
                 sortOrder = existing?.sortOrder ?: state.data.accounts.size, rateToKrwX10000 = rate,
+                openingRateX10000 = openingRate,
                 createdAt = existing?.createdAt ?: 0, colorArgb = color,
                 billingDay = if (type.isLiability && billingOn) billingDayText.toIntOrNull() else null,
                 billingStartDay = billingStart, billingAccountId = if (type.isLiability && billingOn) billingAccount else null,
@@ -397,7 +417,12 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
                         ChipPill(t.label, type == t, { type = t }, enabled = enabled)
                     }
                 }
-                if (hasTx) { Spacer(Modifier.height(6.dp)); SmallLabel("거래가 있는 계좌는 자산↔부채, 원화↔외화 종류를 바꿀 수 없어요.") }
+                if (hasTx) { Spacer(Modifier.height(6.dp)); SmallLabel("거래가 있는 계좌는 자산↔부채 종류를 바꿀 수 없어요.") }
+                // 거래가 있는 원화 계좌 → 외화 계좌: 거래마다 당시 환율을 적는 화면으로
+                if (hasTx && existing != null && existing.currency == KRW && !existing.type.isLiability) {
+                    Spacer(Modifier.height(8.dp))
+                    ChipPill("외화 계좌로 바꾸기 (거래별 환율 기입)", false, { onConvert(existing.id) })
+                }
             }
             if (type == AccountType.FOREIGN) {
                 Column {
@@ -409,9 +434,11 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
                         }
                     }
                 }
-                UnderlineField(rateText, { v -> rateText = v.filter { it.isDigit() || it == '.' } }, "평가 환율 (1 $effectiveCurrency 당 원, 선택)",
-                    placeholder = "예: 1380.5", keyboardType = KeyboardType.Decimal)
-                SmallLabel("외화 잔액은 원래 통화로 보존되고, 순자산에는 이 환율로 환산한 평가액이 반영돼요. 환전 거래는 추후 지원.")
+                UnderlineField(openingRateText, { v -> openingRateText = v.filter { it.isDigit() || it == '.' } }, "초기 잔고 당시 환율 (1 $effectiveCurrency 당 원)",
+                    placeholder = "예: 9.12", keyboardType = KeyboardType.Decimal)
+                UnderlineField(rateText, { v -> rateText = v.filter { it.isDigit() || it == '.' } }, "현재 환율 직접 입력 (선택)",
+                    placeholder = "비워 두면 실시간 환율", keyboardType = KeyboardType.Decimal)
+                SmallLabel("잔고는 ${effectiveCurrency}로 기록하고, 원화는 실시간 환율로 함께 보여 줘요. 실시간 환율을 받을 수 없을 때만 직접 적은 현재 환율 → 최근 기록 환율을 써요. 거래마다 당시 환율을 함께 적어요.")
             }
             AmountField(openingText, { openingText = it }, if (type.isLiability) "초기 부채 금액 (갚아야 할 돈)" else "초기 잔고",
                 currency = effectiveCurrency, allowNegative = !type.isLiability)
@@ -429,17 +456,33 @@ fun AccountEditScreen(state: UiState, vm: MainViewModel, accountId: Long?, onDon
     }
 }
 
-fun formatRate(x10000: Long): String {
-    val frac = (x10000 % 10_000).toString().padStart(4, '0').trimEnd('0')
-    return if (frac.isEmpty()) "${x10000 / 10_000}" else "${x10000 / 10_000}.$frac"
-}
 
-/** "1380.5" → 13,805,000 (×10,000 정수). 소수 4자리까지. */
-fun parseRate(text: String): Long? {
-    val parts = text.trim().split(".")
-    if (parts.size > 2 || parts[0].isEmpty() || !parts.all { p -> p.all { it.isDigit() } }) return null
-    val frac = parts.getOrElse(1) { "" }
-    if (frac.length > 4) return null
-    return parts[0].toLong() * 10_000 + frac.padEnd(4, '0').toLong()
-}
 
+/** 외화 계좌 머리: 원화 평가액(실시간 환율), 쓴 환율, 기록 환율 기준 원화와 환율 변동, 비어 있는 환율 안내. */
+@Composable
+private fun ForeignSummary(account: Account, balance: Long, txs: List<Transaction>, live: Map<String, Long>, onRates: () -> Unit) {
+    val c = Looin.colors
+    val src = AccountFx.valuationRate(account, txs, live)
+    val quote = com.looin.finance.ui.platform.ExchangeRates.quotes.collectAsState().value[account.currency]
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (src == null) SmallLabel("원화 환산: 환율 정보가 없어요", color = c.danger)
+        else {
+            val krw = MoneyFormat.toKrw(balance, account.currency, src.rateX10000)
+            Text("≈ ${MoneyFormat.format(krw)}", style = LooinType.bodyLg.copy(fontWeight = FontWeight.SemiBold), color = c.text)
+            val when_ = if (src.kind == com.looin.finance.core.money.RateKind.LIVE && quote != null) " · ${quote.source}${if (quote.date.isNotEmpty()) " ${quote.date}" else ""}" else ""
+            SmallLabel("${Fx.rateLabel(account.currency, src.rateX10000)} · ${src.kind.label}$when_")
+            AccountFx.bookValueKrw(account, txs)?.let { book ->
+                val diff = krw - book
+                Row {
+                    SmallLabel("기록 환율 기준 ${MoneyFormat.format(book)} · 환율 변동 ")
+                    SmallLabel(MoneyFormat.format(diff, signed = true), color = if (diff >= 0) c.income else c.expense)
+                }
+            }
+        }
+        val missing = AccountFx.missingRates(account, txs).size + if (AccountFx.openingRateMissing(account)) 1 else 0
+        if (missing > 0) {
+            Text("당시 환율이 비어 있는 기록 ${missing}건 · 눌러서 채우기 ›", style = LooinType.body, color = c.danger,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(c.danger.copy(alpha = 0.10f)).clickable(onClick = onRates).padding(10.dp))
+        } else TextAction("거래별 환율 보기·고치기", onRates, color = c.textSecondary)
+    }
+}

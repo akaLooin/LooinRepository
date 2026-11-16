@@ -36,6 +36,7 @@ private val repository by lazy { FinanceRepository(openDefaultDatabase()) }
 fun MainViewController(): UIViewController {
     val store = IosKeyValueStore()
     ThemePrefs.init(store)
+    com.looin.finance.ui.platform.ExchangeRates.init(store)
     if (!AppLock.initialized) AppLock.init(store)
     val version = NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "dev"
     val files = IosFileActions()

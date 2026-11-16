@@ -96,7 +96,15 @@ class MainViewModel(private val repo: FinanceRepository) : ViewModel() {
         run(notice ?: if (tx.id == 0L) "저장했습니다" else "수정했습니다", onSuccess) { repo.saveTransaction(tx) }
 
     fun deleteTransaction(id: Long, onSuccess: () -> Unit = {}) = run("삭제했습니다", onSuccess) { repo.deleteTransaction(id) }
-    fun completeTransaction(id: Long, date: LocalDate, amount: Long?) = run("완료 처리했습니다") { repo.completeTransaction(id, date, amount) }
+    fun completeTransaction(id: Long, date: LocalDate, amount: Long?, rate: Long? = null) = run("완료 처리했습니다") { repo.completeTransaction(id, date, amount, rate) }
+
+    /** 외화 계좌의 당시 환율 저장(초기 잔고 + 거래별). */
+    fun setRates(accountId: Long, openingRate: Long?, rates: Map<Long, Long>, onSuccess: () -> Unit) =
+        run("환율을 저장했습니다", onSuccess) { repo.setRates(accountId, openingRate, rates) }
+
+    /** 거래가 있는 원화 계좌를 외화 계좌로 바꾸기. */
+    fun convertAccount(accountId: Long, currency: String, amountsAreForeign: Boolean, openingRate: Long?, rates: Map<Long, Long>, onSuccess: () -> Unit) =
+        run("$currency 계좌로 바꿨습니다", onSuccess) { repo.convertAccountCurrency(accountId, currency, amountsAreForeign, openingRate, rates) }
     fun cancelTransaction(id: Long) = run("취소 처리했습니다") { repo.cancelTransaction(id) }
     fun reopenTransaction(id: Long) = run("예정으로 되돌렸습니다") { repo.reopenTransaction(id) }
 

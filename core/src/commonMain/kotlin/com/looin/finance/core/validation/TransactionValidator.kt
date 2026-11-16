@@ -6,6 +6,8 @@ import com.looin.finance.core.model.Category
 import com.looin.finance.core.model.CategoryKind
 import com.looin.finance.core.model.Transaction
 import com.looin.finance.core.model.TransactionStatus
+import com.looin.finance.core.model.TransactionSource
+import com.looin.finance.core.model.KRW
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.money.MoneyFormat
 import kotlinx.datetime.LocalDate
@@ -50,7 +52,12 @@ object TransactionValidator {
                 if (to == null) errors += "입금 계좌를 선택하세요."
                 if (from != null && from.id == to?.id) errors += "같은 계좌로는 이체할 수 없습니다."
                 if (from != null && to != null && from.currency != to.currency) {
-                    errors += "통화가 다른 계좌 간 이동은 환전 기능(추후 지원)을 사용해야 합니다."
+                    // 원화↔외화 이체(환전): 받은 금액(입금 계좌 통화)과 환율이 있어야 한다. 외화끼리는 원화를 거쳐 기록
+                    if (from.currency != KRW && to.currency != KRW) errors += "외화끼리 바로 옮기는 기록은 지원하지 않아요. 원화 계좌를 거쳐 기록하세요."
+                    else {
+                        if ((tx.toAmount ?: 0) <= 0) errors += "받은 금액(${to.currency})을 입력하세요."
+                        if (tx.rateToKrwX10000 == null) errors += "환율을 입력하세요."
+                    }
                 }
             }
             TransactionType.EXCHANGE -> errors += "환전은 아직 지원하지 않습니다."
@@ -60,9 +67,18 @@ object TransactionValidator {
             }
         }
 
-        listOfNotNull(from, to).forEach { acc ->
+        // 거래 통화 = 출금 계좌 통화(수입은 입금 계좌). 통화가 다른 이체의 입금 쪽은 toAmount 로 따로 적는다
+        val crossTransfer = tx.type == TransactionType.TRANSFER && from != null && to != null && from.currency != to.currency
+        (if (crossTransfer) listOf(from!!) else listOfNotNull(from, to)).forEach { acc ->
             if (acc.currency != tx.currency) errors += "'${acc.name}' 계좌 통화(${acc.currency})와 거래 통화가 다릅니다."
         }
+        // 외화가 오간 거래는 당시 환율을 적어야 한다(직접 입력한 완료 거래). 자동으로 만든 거래는 계좌 화면에서 나중에 채운다
+        val foreign = listOfNotNull(from, to).any { it.currency != KRW }
+        if (foreign && tx.rateToKrwX10000 == null && tx.status == TransactionStatus.COMPLETED && tx.source == TransactionSource.MANUAL &&
+            tx.type in setOf(TransactionType.INCOME, TransactionType.EXPENSE, TransactionType.TRANSFER) && !crossTransfer) {
+            errors += "외화 거래는 당시 환율을 입력하세요."
+        }
+        if (tx.rateToKrwX10000 != null && tx.rateToKrwX10000 <= 0) errors += "환율은 0보다 커야 합니다."
 
         // 새 거래·수정 시 보관 계좌는 사용할 수 없다(취소는 허용).
         if (tx.status != TransactionStatus.CANCELLED) {

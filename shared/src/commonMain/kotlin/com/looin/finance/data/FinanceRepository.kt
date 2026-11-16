@@ -354,11 +354,49 @@ class FinanceRepository(
     }
 
 
-    suspend fun completeTransaction(id: Long, actualDate: LocalDate, actualAmount: Long?) {
+    /** [rateX10000]: 외화 거래면 처리한 날의 환율(이미 적혀 있으면 null 로 두어도 됨). */
+    suspend fun completeTransaction(id: Long, actualDate: LocalDate, actualAmount: Long?, rateX10000: Long? = null) {
         val tx = dao.transaction(id)?.toModel() ?: throw FinanceException("거래를 찾을 수 없습니다.")
         val done = runCatching { TransactionActions.complete(tx, actualDate, actualAmount, now()) }
             .getOrElse { throw FinanceException(it.message ?: "완료 처리할 수 없습니다.") }
-        saveTransaction(done)
+        saveTransaction(if (rateX10000 != null) done.copy(rateToKrwX10000 = rateX10000) else done)
+    }
+
+    // ── 외화 ──────────────────────────────────────────────
+
+    /** 외화 계좌의 당시 환율 채우기: 초기 잔고 환율과 거래별 환율(이 계좌가 낀 거래만). 금액은 바꾸지 않는다. */
+    suspend fun setRates(accountId: Long, openingRate: Long?, rates: Map<Long, Long>) = tx {
+        val acc = dao.accounts().firstOrNull { it.id == accountId }?.toModel() ?: throw FinanceException("계좌를 찾을 수 없습니다.")
+        if (acc.currency == com.looin.finance.core.model.KRW) throw FinanceException("원화 계좌에는 환율을 적지 않습니다.")
+        if (rates.values.any { it <= 0 } || (openingRate != null && openingRate <= 0)) throw FinanceException("환율은 0보다 커야 합니다.")
+        val t = now()
+        if (openingRate != null && openingRate != acc.openingRateX10000) dao.updateAccount(acc.copy(openingRateX10000 = openingRate, updatedAt = t).toEntity())
+        rates.forEach { (id, r) ->
+            val tx = dao.transaction(id)?.toModel() ?: return@forEach
+            if (!tx.touches(accountId) || tx.rateToKrwX10000 == r) return@forEach
+            dao.updateTransaction(tx.copy(rateToKrwX10000 = r, updatedAt = t).toEntity())
+        }
+    }
+
+    /**
+     * 거래가 있는 원화 계좌를 외화 계좌로 바꾼다([com.looin.finance.core.money.CurrencyConversion]).
+     * 이 계좌를 쓰는 고정 비용·카드 대금 연결이 있으면 먼저 정리해야 한다.
+     */
+    suspend fun convertAccountCurrency(accountId: Long, newCurrency: String, amountsAreForeign: Boolean, openingRate: Long?, rates: Map<Long, Long>) = tx {
+        val s = snapshot()
+        val acc = s.accounts.firstOrNull { it.id == accountId } ?: throw FinanceException("계좌를 찾을 수 없습니다.")
+        if (dao.rules().any { it.fromAccountId == accountId || it.toAccountId == accountId }) {
+            throw FinanceException("이 계좌를 쓰는 고정 비용이 있어요. 고정 비용을 지우거나 다른 계좌로 바꾼 뒤 다시 시도하세요.")
+        }
+        if (s.accounts.any { it.billingAccountId == accountId && it.billingDay != null }) {
+            throw FinanceException("이 계좌가 카드 대금을 내는 계좌로 지정되어 있어요. 카드 계좌에서 대금 계좌를 바꾼 뒤 다시 시도하세요.")
+        }
+        val r = com.looin.finance.core.money.CurrencyConversion.convert(acc, newCurrency, amountsAreForeign, openingRate, rates, s.transactions, s.accountById)
+        if (r.errors.isNotEmpty()) throw FinanceException(r.errors.joinToString("\n"))
+        val t = now()
+        dao.updateAccount(r.account.copy(updatedAt = t).toEntity())
+        r.transactions.forEach { dao.updateTransaction(it.copy(updatedAt = t).toEntity()) }
+        syncCardBills()
     }
 
     suspend fun cancelTransaction(id: Long) {
@@ -539,12 +577,12 @@ object DefaultData {
 
 // ── 매퍼 ─────────────────────────────────────────────────
 
-fun AccountEntity.toModel() = Account(id, name, type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb, billingDay, billingStartDay, billingAccountId)
-fun Account.toEntity() = AccountEntity(id, name.trim(), type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb, billingDay, billingStartDay, billingAccountId)
+fun AccountEntity.toModel() = Account(id, name, type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb, billingDay, billingStartDay, billingAccountId, openingRateX10000)
+fun Account.toEntity() = AccountEntity(id, name.trim(), type, currency, openingBalance, includeInAvailable, archived, memo, sortOrder, rateToKrwX10000, createdAt, updatedAt, colorArgb, billingDay, billingStartDay, billingAccountId, openingRateX10000)
 fun CategoryEntity.toModel() = Category(id, name, kind, colorArgb, sortOrder, archived)
 fun Category.toEntity() = CategoryEntity(id, name.trim(), kind, colorArgb, sortOrder, archived)
-fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence, attachment)
-fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence, attachment)
+fun TransactionEntity.toModel() = Transaction(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence, attachment, rateToKrwX10000)
+fun Transaction.toEntity() = TransactionEntity(id, type, status, amount, currency, date, completedDate, fromAccountId, toAccountId, categoryId, memo, source, linkedPlannedId, toAmount, createdAt, updatedAt, recurringId, recurringOccurrence, attachment, rateToKrwX10000)
 fun SavingsGoalEntity.toModel() = SavingsGoal(id, name, targetAmount, targetDate, accountId, colorArgb, archived, memo, createdAt, updatedAt)
 fun SavingsGoal.toEntity() = SavingsGoalEntity(id, name, targetAmount, targetDate, accountId, colorArgb, archived, memo, createdAt, updatedAt)
 fun SavingsAllocationEntity.toModel() = SavingsAllocation(id, goalId, amount, date, memo, createdAt)

@@ -51,6 +51,7 @@ val appVersion: String = System.getProperty("jpackage.app-version") ?: "dev"
 
 fun main() {
     ThemePrefs.init(DesktopKeyValueStore())
+    com.looin.finance.ui.platform.ExchangeRates.init(DesktopKeyValueStore())
     com.looin.finance.ui.security.AppLock.init(DesktopKeyValueStore())
     val db = FinanceDatabase.build(FinanceDatabase.defaultDesktopFile())
     val repo = FinanceRepository(db)

@@ -182,4 +182,28 @@ class MigrationTest {
             db.close()
         }
     }
+
+    @Test fun v8ToV9() = runTest {
+        val n = "migration-v8.db"
+        helper.createDatabase(n, 8).apply {
+            val day = LocalDate(2026, 11, 1).toEpochDays()
+            execSQL("INSERT INTO settings (id, payday_day, primary_basis) VALUES (1, 25, 'CALENDAR')")
+            execSQL("INSERT INTO accounts (id, name, type, currency, opening_balance, include_in_available, archived, memo, sort_order, rate_to_krw_x10000, created_at, updated_at, color_argb, billing_start_day) " +
+                "VALUES (1, '엔화', 'FOREIGN', 'JPY', 10000, 0, 0, '', 0, 90000, 0, 0, 0, 1)")
+            execSQL("INSERT INTO transactions (id, type, status, amount, currency, date, completed_date, from_account_id, to_account_id, category_id, memo, source, linked_planned_id, to_amount, created_at, updated_at) " +
+                "VALUES (1, 'EXPENSE', 'COMPLETED', 1000, 'JPY', $day, $day, 1, NULL, NULL, '', 'MANUAL', NULL, NULL, 0, 0)")
+            close()
+        }
+        helper.runMigrationsAndValidate(n, 9, true).close()
+        val db = FinanceDatabase.build(ApplicationProvider.getApplicationContext(), n)
+        try {
+            val s = FinanceRepository(db, now = { 1 }, today = { LocalDate(2026, 11, 16) }).snapshot()
+            // 예전 기록은 환율이 비어 있다 → 계좌 화면에서 채우도록 안내
+            assertEquals(null, s.accounts.single().openingRateX10000)
+            assertEquals(90_000L, s.accounts.single().rateToKrwX10000)
+            assertEquals(null, s.transactions.single().rateToKrwX10000)
+        } finally {
+            db.close()
+        }
+    }
 }

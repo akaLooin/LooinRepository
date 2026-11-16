@@ -42,9 +42,17 @@ object BalanceCalculator {
     }
 
     /**
-     * 자산 요약. 보관 계좌도 포함한다(보관은 잔액 0·예정 거래 없음일 때만 허용되므로 값에 영향 없음).
+     * 외화 계좌의 원화 평가액: 실시간 환율([live]) > 계좌에 직접 적은 환율 > 최근 기록 환율 순으로 쓴다(없으면 null).
      */
-    fun assetSummary(accounts: List<Account>, transactions: List<Transaction>): AssetSummary {
+    fun valuationKrw(account: Account, balance: Long, transactions: List<Transaction>, live: Map<String, Long>): Long? =
+        if (account.currency == KRW) balance
+        else com.looin.finance.core.money.AccountFx.valuationRate(account, transactions, live)?.let { MoneyFormat.toKrw(balance, account.currency, it.rateX10000) }
+
+    /**
+     * 자산 요약. 보관 계좌도 포함한다(보관은 잔액 0·예정 거래 없음일 때만 허용되므로 값에 영향 없음).
+     * [live]: 통화별 실시간 환율(외화 1단위당 원 × 10,000).
+     */
+    fun assetSummary(accounts: List<Account>, transactions: List<Transaction>, live: Map<String, Long> = emptyMap()): AssetSummary {
         var assets = 0L
         var liabilities = 0L
         val unvalued = mutableListOf<Account>()
@@ -52,7 +60,7 @@ object BalanceCalculator {
         val liabilityLines = mutableListOf<BreakdownLine>()
         for (account in accounts) {
             val balance = actualBalance(account, transactions)
-            val krw = valuationKrw(account, balance)
+            val krw = valuationKrw(account, balance, transactions, live)
             if (krw == null) {
                 unvalued += account
                 continue
@@ -70,7 +78,7 @@ object BalanceCalculator {
             }
         }
         val notes = buildList {
-            if (unvalued.isNotEmpty()) add("평가 환율 미설정으로 제외: " + unvalued.joinToString { it.name })
+            if (unvalued.isNotEmpty()) add("환율 정보가 없어 제외: " + unvalued.joinToString { it.name })
         }
         val netWorth = assets - liabilities
         return AssetSummary(

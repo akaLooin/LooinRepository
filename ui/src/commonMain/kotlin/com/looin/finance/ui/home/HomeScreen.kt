@@ -122,7 +122,7 @@ fun HomeScreen(
 
     val available = AvailableFundsCalculator.calculate(data.accounts, txs, data.budgets, period, data.goalStatuses)
     val cash = BalanceCalculator.cashBreakdown(data.accounts, txs)
-    val assets = BalanceCalculator.assetSummary(data.accounts, txs)
+    val assets = BalanceCalculator.assetSummary(data.accounts, txs, com.looin.finance.ui.components.liveRates())
     val stats = StatisticsCalculator.stats(period, txs)
     val statuses = BudgetCalculator.statuses(data.budgets, period, txs)
     var projectionDate by remember(period) { mutableStateOf(period.lastDay) }
@@ -295,7 +295,7 @@ fun HomeScreen(
 
     if (showAvailable) BreakdownSheet(available.breakdown) { showAvailable = false }
     completing?.let { tx ->
-        CompleteSheet(tx, state.today, { completing = null }) { d, a -> completing = null; vm.completeTransaction(tx.id, d, a) }
+        CompleteSheet(tx, state.today, { completing = null }) { d, a, r -> completing = null; vm.completeTransaction(tx.id, d, a, r) }
     }
 }
 

@@ -48,6 +48,8 @@ data class Account(
     val billingStartDay: Int = 1,
     /** 카드 대금을 내는 계좌. */
     val billingAccountId: Long? = null,
+    /** 외화 계좌의 초기 잔고를 기록할 당시 환율(외화 1단위당 원 × 10,000). 원화 계좌는 null. */
+    val openingRateX10000: Long? = null,
 )
 
 enum class TransactionType(val label: String) {
@@ -109,6 +111,11 @@ data class Transaction(
     val recurringOccurrence: LocalDate? = null,
     /** 첨부 사진(영수증) 파일 경로. 기기 안에만 있고 백업 파일에는 넣지 않는다. */
     val attachment: String? = null,
+    /**
+     * 외화가 오간 거래의 당시 환율(외화 1단위당 원 × 10,000). 원화끼리 거래는 null.
+     * 원화↔외화 이체(환전)는 [amount]=출금 계좌 통화, [toAmount]=입금 계좌 통화이고, 이 환율로 둘을 잇는다.
+     */
+    val rateToKrwX10000: Long? = null,
 ) {
     /**
      * 기간 집계·잔고 기준일.
@@ -126,7 +133,8 @@ data class Transaction(
         var delta = 0L
         if (fromAccountId == accountId) delta -= amount
         if (toAccountId == accountId) {
-            delta += if (type == TransactionType.EXCHANGE) (toAmount ?: amount) else amount
+            // 환전·통화가 다른 계좌 간 이체: 입금 계좌는 자기 통화 금액(toAmount)만큼 늘어난다
+            delta += if (type == TransactionType.EXCHANGE || type == TransactionType.TRANSFER) (toAmount ?: amount) else amount
         }
         return delta
     }
