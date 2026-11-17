@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-17)
 
 ## Corpus Check
-- 63 files · ~45,556 words
+- 63 files · ~46,827 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 26 file(s) not represented in the graph (top: .xml 10, (none) 7, .csv 2)
 
 ## Summary
-- 617 nodes · 1242 edges · 43 communities (26 shown, 17 thin omitted)
+- 622 nodes · 1272 edges · 43 communities (26 shown, 17 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 67 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `27befcfa`
+- Built from commit: `c965db6b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -52,16 +52,16 @@
 - components.md
 
 ## God Nodes (most connected - your core abstractions)
-1. `World` - 40 edges
+1. `World` - 41 edges
 2. `Game` - 27 edges
-3. `UI` - 18 edges
-4. `Character` - 16 edges
-5. `derive()` - 16 edges
-6. `GameScene` - 14 edges
-7. `Paint` - 14 edges
-8. `computeAfk()` - 13 edges
-9. `buildLook()` - 13 edges
-10. `boot()` - 12 edges
+3. `UI` - 19 edges
+4. `derive()` - 18 edges
+5. `Character` - 17 edges
+6. `GameScene` - 15 edges
+7. `computeAfk()` - 14 edges
+8. `Paint` - 14 edges
+9. `Derived` - 13 edges
+10. `buildLook()` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `권한 모델 (이 게임에서 가장 중요한 결정)` --references--> `computeAfk()`  [INFERRED]
@@ -70,10 +70,10 @@
   game/README.md → game/src/game.ts
 - `구조` --references--> `SaveBackend`  [INFERRED]
   game/README.md → game/src/game.ts
-- `World` --references--> `Platform`  [EXTRACTED]
-  game/src/core/world.ts → game/src/core/data.ts
-- `World` --references--> `MapDef`  [EXTRACTED]
-  game/src/core/world.ts → game/src/core/data.ts
+- `Game` --references--> `AfkReport`  [EXTRACTED]
+  game/src/game.ts → game/src/core/afk.ts
+- `UI` --references--> `AfkReport`  [EXTRACTED]
+  game/src/ui/ui.ts → game/src/core/afk.ts
 
 ## Import Cycles
 - None detected.
@@ -82,7 +82,7 @@
 
 ### Community 0 - "ui.ts"
 Cohesion: 0.05
-Nodes (100): AfkReport, computeAfk(), settle(), AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_CHANCE, CardDef (+92 more)
+Nodes (101): AfkReport, computeAfk(), settle(), AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_CHANCE, CardDef (+93 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
@@ -97,15 +97,15 @@ Cohesion: 0.07
 Nodes (32): author, dependencies, @capacitor/android@^7.6.10, @capacitor/core@^7.6.10, galmuri@^2.40.3, phaser@^3.90.0, description, devDependencies (+24 more)
 
 ### Community 4 - "Game"
-Cohesion: 0.14
-Nodes (10): Looin Idle (가제), 구조, 다음 단계(제안), 멀티 전환을 위한 설계, 실행, 현재 들어간 것, PortalDef, Game (+2 more)
+Cohesion: 0.13
+Nodes (11): Looin Idle (가제), 구조, 다음 단계(제안), 멀티 전환을 위한 설계, 실행, 현재 들어간 것, PortalDef, Input (+3 more)
 
 ### Community 5 - "imgdiff.py"
 Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
 ### Community 6 - "World"
-Cohesion: 0.16
+Cohesion: 0.15
 Nodes (5): Rng, Derived, clamp(), World, run()
 
 ### Community 7 - "UI"
@@ -191,9 +191,9 @@ Nodes (8): API, 구현 순서, 권한 모델 (이 게임에서 가장 중요한 
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `World` connect `World` to `ui.ts`, `Game`, `scene.ts`?**
-  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+  _High betweenness centrality (0.039) - this node is a cross-community bridge._
 - **Should `ui.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.0518018018018018 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05309734513274336 - nodes in this community are weakly interconnected._
 - **Why does `phaser` connect `package.json` to `scene.ts`, `UI`?**
   _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
@@ -203,4 +203,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07308377896613191 - nodes in this community are weakly interconnected._
 - **Should `Game` be split into smaller, more focused modules?**
-  _Cohesion score 0.14153846153846153 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1339031339031339 - nodes in this community are weakly interconnected._
