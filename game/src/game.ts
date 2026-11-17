@@ -192,6 +192,9 @@ export class Game {
     return r;
   }
 
+  /** 순간이동처럼 행동으로 맵이 바뀐 뒤 월드를 다시 만든다 */
+  travelTo() { this.enterWorld(); }
+
   /** 포탈로 이동(서버에서는 처치 조건·열쇠를 다시 확인) */
   travel(portal: number) {
     const r = this.act({ t: 'travel', portal });

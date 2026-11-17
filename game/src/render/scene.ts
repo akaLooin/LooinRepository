@@ -42,14 +42,14 @@ class CharRig {
     ensureTextures(scene);
     const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy);
     this.shadow = add('shadow', 0.5, 0.5).setAlpha(0.22);
-    this.legB = add(`${k}_leg`, 0.43, 0.05);
-    this.legF = add(`${k}_leg`, 0.43, 0.05);
+    this.legB = add(`${k}_leg`, 0.4, 0.05);
+    this.legF = add(`${k}_leg`, 0.4, 0.05);
     this.armB = add(`${k}_arm`, 0.5, 0.1);
     this.torso = add(`${k}_torso`, 0.5, 1);
     this.head = add(`${k}_head`, HEAD_ORIGIN[0], HEAD_ORIGIN[1]);
     this.weapon = add('wp_sword_wood', 0.5, 0.82);
     const arm = add(`${k}_arm`, 0.5, 0.1);
-    this.weapon.setPosition(0, 7.5);
+    this.weapon.setPosition(0, 6.5);
     this.armF = scene.add.container(0, 0, [this.weapon, arm]);
     this.body = scene.add.container(0, 0, [this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
@@ -139,14 +139,14 @@ class CharRig {
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
     // 다리는 골반, 팔은 몸통 양옆 어깨, 머리는 목에 붙는다
-    this.legB.setPosition(-2.4, -8.5).setRotation(P.legB);
-    this.legF.setPosition(2.4, -8.5).setRotation(P.legF);
-    this.torso.setPosition(0, -6.5 + P.by).setRotation(P.lean);
-    const sx = P.lean * 9;
-    this.armB.setPosition(-5.5 + sx, -15.5 + P.by).setRotation(P.armB);
-    this.armF.setPosition(5.5 + sx, -15.5 + P.by).setRotation(P.armF);
+    this.legB.setPosition(-2, -7.5).setRotation(P.legB);
+    this.legF.setPosition(2, -7.5).setRotation(P.legF);
+    this.torso.setPosition(0, -6 + P.by).setRotation(P.lean);
+    const sx = P.lean * 8;
+    this.armB.setPosition(-4.5 + sx, -13.5 + P.by).setRotation(P.armB);
+    this.armF.setPosition(4.5 + sx, -13.5 + P.by).setRotation(P.armF);
     this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, tool?.includes('bow') ? 0.5 : 0.82);
-    this.head.setPosition(sx * 1.3, -14.5 + P.by + P.hy).setRotation(P.lean * 0.5 + P.hr);
+    this.head.setPosition(sx * 1.2, -13 + P.by + P.hy).setRotation(P.lean * 0.4 + P.hr);
     // 피격 표현: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
     const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
     for (const o of [this.torso, this.head, this.legF, this.legB, this.armB]) o.setTint(tint);
@@ -391,7 +391,8 @@ export class GameScene extends Phaser.Scene {
         portraitUrl(npc.look);
         ensureTextures(this);
         const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(npc.look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(f.x > map.width / 2));
-        keep(label(this, npc.name, 6.5, '#fff3d6').setOrigin(0.5, 0).setPosition(f.x, f.y + 3).setDepth(31));
+        // NPC 이름은 머리 위(플레이어 이름은 발밑이라 겹치지 않게)
+        keep(label(this, npc.name, 6.5, '#fff3d6').setPosition(f.x, f.y - 31).setDepth(31));
         const mark = keep(label(this, '', 13, '#ffd84a').setDepth(31));
         this.npcs.push({ id: npc.id, img, mark, x: f.x, y: f.y });
         continue;
@@ -526,7 +527,7 @@ export class GameScene extends Phaser.Scene {
       const promo = n.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL;
       const m = promo ? '★' : !q ? '' : !c.quests[n.id]?.accepted ? '!' : qp?.done ? '?' : '';
       if (n.mark.text !== m) n.mark.setText(m);
-      n.mark.setPosition(n.x, n.y - 34 + Math.sin(this.time0 * 4) * 1.5);
+      n.mark.setPosition(n.x, n.y - 41 + Math.sin(this.time0 * 4) * 1.5);
       n.img.setScale(1 - Math.sin(this.time0 * 2.2) * 0.012, 1 + Math.sin(this.time0 * 2.2) * 0.02);
     }
     for (const pv of this.portals) {

@@ -1,7 +1,7 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
   CARDS, CARD_BOSS_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
-  SKILL_NAMES, SMASH_RANGE, TALENT, TALENTS, healPct, smashMult,
+  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
 import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
@@ -300,12 +300,12 @@ export class World {
     if (c.food && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
     p.hurtT = Math.max(0, p.hurtT - dt);
     for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);
-    if (c.auto) {
-      // 자동 조작 중에는 스킬도 알아서 쓴다
-      for (const t of TALENTS) {
-        if (!t.active || !c.talents[t.id]) continue;
-        if (t.id === 'heal') { if (c.hp < d.maxHp * 0.5) this.useSkill('heal'); }
-        else if (c.activity.k !== 'gather') this.useSkill(t.id);
+    if (c.auto && this.acc.options.autoAttacks) {
+      // 원작처럼: 지금 공격 바의 왼쪽 칸부터 쓸 수 있는 것을 시전
+      for (const id of c.attackBars[c.attackPage] ?? []) {
+        if (!id) continue;
+        if (id === 'heal') { if (c.hp < d.maxHp * 0.5 && this.useSkill('heal')) break; }
+        else if (c.activity.k !== 'gather' && this.useSkill(id)) break;
       }
     }
 

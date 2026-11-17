@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>스프라이트 확인</title>
+<style>body{margin:0;background:#2a2c33;color:#ddd;font:12px sans-serif}#g{display:flex;flex-wrap:wrap;gap:6px;padding:8px}
+.c{display:flex;flex-direction:column;align-items:center;width:72px}.c img{image-rendering:pixelated;width:64px;height:64px;object-fit:contain;background:#3a3d46;border-radius:4px}</style></head>
+<body><div id="g"></div><script type="module">
+import { buildAll, canvases, iconUrl, portraitUrl } from '/src/render/sprites.ts';
+buildAll();
+const looks = [{ hair: 0, hairColor: '#6b4a3a', skin: '#ffd9b8', outfit: '#e25d4e' }, { hair: 1, hairColor: '#f2a0c8', skin: '#f2bd94', outfit: '#4e8de2' }, { hair: 2, hairColor: '#e8b24a', skin: '#c98a5e', outfit: '#5fb859' }];
+for (const l of looks) portraitUrl(l);
+const want = new URLSearchParams(location.search).get('f') ?? '';
+const g = document.getElementById('g');
+for (const k of canvases.keys()) { if (want && !k.startsWith(want)) continue; const d = document.createElement('div'); d.className = 'c'; d.innerHTML = `<img src="${iconUrl(k)}"><span>${k}</span>`; g.appendChild(d); }
+</script></body></html>

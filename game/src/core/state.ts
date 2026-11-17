@@ -1,5 +1,5 @@
 import {
-  AFK_BASE, ANVIL, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  AFK_BASE, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -24,6 +24,9 @@ export interface Character {
   pouches: string[];
   /** 모루 생산: 칸마다 품목·보관량. 포인트는 칸 공용 */
   anvil: { slots: AnvilSlot[]; pts: { cap: number; spd: number; xp: number } };
+  /** 공격 바: [장][칸] = 특성 ID. 자동은 지금 장의 왼쪽부터 시전 */
+  attackBars: (string | null)[][];
+  attackPage: number;
   /** 장착한 카드(몬스터 ID). 장착한 카드만 효과가 있다 */
   cardSlots: (string | null)[];
   auto: boolean; activity: Activity;
@@ -56,13 +59,19 @@ export interface Account {
   bosses: Record<string, number>;
   /** 모루 단계(모루 확장으로 오른다, 계정 공용) */
   anvilTier: number;
+  /** 옵션(원작처럼 모든 캐릭터 공용) */
+  options: { autoAttacks: boolean };
+  /** 지도 순간이동 남은 횟수와 마지막으로 채운 날 */
+  teleports: { n: number; day: string };
   characters: Character[];
   active: number;
   nextId: number;
 }
 
+export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
+
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -77,6 +86,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
+    attackBars: emptyBars(), attackPage: 0,
   };
   c.hp = derive(c).maxHp; c.mp = derive(c).maxMp;
   acc.characters.push(c);
@@ -197,7 +207,28 @@ export function learnTalent(c: Character, id: string): boolean {
   const t = TALENT[id], lv = c.talents[id] ?? 0;
   if (!t || c.talentPoints <= 0 || lv >= t.max || (t.cls && t.cls !== c.cls)) return false;
   c.talents[id] = lv + 1; c.talentPoints--;
+  // 액티브를 처음 배우면 지금 공격 바의 빈 칸에 놓아 준다(옮기는 것은 특성 화면에서)
+  if (lv === 0 && t.active && !c.attackBars.some((b) => b.includes(id))) {
+    const bar = c.attackBars[c.attackPage], free = bar.indexOf(null);
+    if (free >= 0) bar[free] = id;
+  }
   return true;
+}
+
+/** 공격 바 칸에 특성을 놓거나(같은 장에 이미 있으면 옮김) 비운다 */
+export function setBarSlot(c: Character, bar: number, slot: number, id: string | null): string | null {
+  const b = c.attackBars[bar];
+  if (!b || slot < 0 || slot >= b.length) return '없는 칸';
+  if (id) {
+    const t = TALENT[id];
+    if (!t?.active) return '액티브 특성만 놓을 수 있습니다';
+    if (!(c.talents[id] > 0)) return '아직 배우지 않은 특성';
+    if (t.cls && t.cls !== c.cls) return '이 직업의 특성이 아닙니다';
+    const prev = b.indexOf(id);
+    if (prev >= 0) b[prev] = b[slot]; // 자리 바꾸기
+  }
+  b[slot] = id;
+  return null;
 }
 
 /** 전직. 실패 사유 또는 null */
@@ -497,6 +528,36 @@ export function collectAnvil(acc: Account, c: Character, toStorage: boolean, slo
   return n;
 }
 
+// ───────── 지도 순간이동 ─────────
+/** 이 캐릭터가 열어 둔 맵: 앞 맵에서 다음 맵 포탈 조건을 채웠으면 열림 */
+export function mapUnlocked(c: Character, id: string): boolean {
+  const i = WORLD1.indexOf(id);
+  if (i < 0) return false;
+  for (let k = 1; k <= i; k++) {
+    const prev = MAPS[WORLD1[k - 1]], gate = prev.portals.find((p) => p.to === WORLD1[k]);
+    if ((c.kills[prev.id] ?? 0) < (gate?.reqKills ?? 0)) return false;
+  }
+  return true;
+}
+/** 날이 바뀌었으면 무료 횟수를 채운다(쌓이되 최대치까지) */
+export function refillTeleports(acc: Account, now: number) {
+  const d = today(now);
+  if (acc.teleports.day === d) return;
+  const days = acc.teleports.day ? Math.max(1, Math.round((new Date(d).getTime() - new Date(acc.teleports.day).getTime()) / 864e5)) : 1;
+  acc.teleports = { n: Math.min(TELEPORTS_MAX, acc.teleports.n + days * TELEPORTS_PER_DAY), day: d };
+}
+export function teleport(acc: Account, c: Character, id: string, now: number): string | null {
+  if (!MAPS[id] || !mapUnlocked(c, id)) return '아직 열리지 않은 맵';
+  if (c.mapId === id) return '이미 이 맵에 있습니다';
+  refillTeleports(acc, now);
+  if (id !== 'town') {
+    if (acc.teleports.n <= 0) return '오늘 순간이동을 다 썼습니다';
+    acc.teleports.n--;
+  }
+  c.mapId = id; c.x = id === 'town' ? 120 : 50; c.y = 0;
+  return null;
+}
+
 // ───────── 잡화점 ─────────
 export const today = (now: number) => { const d = new Date(now); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 export function shopLeft(acc: Account, idx: number, now: number): number {
@@ -528,9 +589,16 @@ export function deserialize(json: string | null): Account | null {
     a.storage ??= []; a.chests ??= []; a.bosses ??= {};
     a.shop ??= { day: '', bought: {} };
     a.anvilTier ??= 1;
+    a.options ??= { autoAttacks: true };
+    a.teleports ??= { n: 5, day: '' };
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
+      // 공격 바가 없던 형식: 이미 배운 액티브 특성을 첫 장에 차례로
+      if (!c.attackBars) {
+        c.attackBars = emptyBars(); c.attackPage = 0;
+        Object.keys(c.talents ?? {}).filter((id) => TALENT[id]?.active && c.talents[id] > 0).slice(0, ATTACK_SLOTS).forEach((id, i) => (c.attackBars[0][i] = id));
+      }
       c.anvil ??= { slots: [], pts: { cap: 0, spd: 0, xp: 0 } } as Character['anvil'];
       // 생산 칸이 하나뿐이던 저장 형식 → 칸 목록
       const old = c.anvil as unknown as { prod?: string | null; stored?: number; frac?: number };

@@ -216,6 +216,14 @@ export const TALENTS: TalentDef[] = [
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
+/** 공격 바: 칸 수와 장 수(원작처럼 6칸, 넘겨 쓰는 두 번째 장) */
+export const ATTACK_SLOTS = 6;
+/** 지도 순간이동: 하루에 무료로 쌓이는 횟수와 최대 보유량. 마을은 언제나 무료 */
+export const TELEPORTS_PER_DAY = 5;
+export const TELEPORTS_MAX = 50;
+/** 1월드 맵 순서(앞 맵의 처치 조건을 채우면 다음 맵이 열린다) */
+export const WORLD1 = ['town', 'meadow', 'hills', 'forest'];
+export const ATTACK_BARS = 2;
 export const smashMult = (lv: number) => 1.8 + lv * 0.2;
 export const healPct = (lv: number) => 0.25 + lv * 0.05;
 export const SMASH_RANGE = 46;

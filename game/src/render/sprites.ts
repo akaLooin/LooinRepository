@@ -54,7 +54,21 @@ class Paint {
     const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
     for (let i = 0; i <= n; i++) this.set(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, c);
   }
-  outline(c = OUT) {
+  /** 입체 음영: 빛이 왼쪽 위에서 온다고 보고 가장자리를 밝게/어둡게. 이미 칠한 색을 기준으로 단계만 더한다 */
+  shadeAll() {
+    const src = this.px.slice();
+    const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < this.w && y < this.h ? src[y * this.w + x] : null);
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+      const c = src[y * this.w + x];
+      if (!c || c === OUT || c === '#000000') continue;
+      if (!at(x - 1, y) || !at(x, y - 1)) this.px[y * this.w + x] = shade(c, 1.22);
+      else if (!at(x + 1, y) || !at(x, y + 1)) this.px[y * this.w + x] = shade(c, 0.68);
+      else if (!at(x + 2, y) || !at(x, y + 2)) this.px[y * this.w + x] = shade(c, 0.86);
+    }
+    return this;
+  }
+  outline(c = OUT, shaded = true) {
+    if (shaded) this.shadeAll();
     const src = this.px.slice();
     for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
       if (src[y * this.w + x]) continue;
@@ -97,48 +111,41 @@ const AXE = [
 
 export const lookKey = (l: Look) => `${l.hair}_${l.hairColor}_${l.skin}_${l.outfit}`.replace(/#/g, '');
 /** 머리 텍스처에서 목(회전축)의 위치 비율 */
-export const HEAD_ORIGIN: [number, number] = [0.5, 0.86];
+export const HEAD_ORIGIN: [number, number] = [0.5, 0.92];
 
-/** 외형별 캐릭터 파츠 텍스처 생성(이미 있으면 재사용). 반환값은 텍스처 key 접두사 */
+/** 외형별 캐릭터 파츠 텍스처 생성(이미 있으면 재사용). 반환값은 텍스처 key 접두사
+ *  체형: 머리가 키의 절반 가까이 되는 큰 둥근 머리, 작은 몸통, 가는 팔다리. 얼굴은 점 눈 두 개만. */
 export function buildLook(l: Look): string {
-  const k = `r_${lookKey(l)}`;
+  const k = `v3_${lookKey(l)}`;
   if (canvases.has(`${k}_head`)) return k;
-  const hair = l.hairColor, hairL = shade(hair, 1.3), hairD = shade(hair, 0.72);
-  const skin = l.skin, skinD = shade(skin, 0.86);
-  const cloth = l.outfit, clothL = shade(cloth, 1.25), clothD = shade(cloth, 0.75);
+  const hair = l.hairColor, hairD = shade(hair, 0.72);
+  const skin = l.skin;
+  const cloth = l.outfit, clothD = shade(cloth, 0.75);
   const style = l.hair % HAIR_STYLES;
   for (const blink of [false, true]) {
-    const p = new Paint(22, 22);
-    if (style === 1) { p.disc(4.5, 14, 2.6, 5, hair); p.disc(4, 16, 1.6, 3, hairD); } // 긴 머리
-    p.disc(10.5, 10, 7.2, 6.8, hair);                 // 머리카락(뒤통수 포함)
-    p.disc(11.2, 12.2, 5.8, 4.9, skin);               // 얼굴
-    p.disc(11.2, 15.4, 3.6, 1.2, skinD);              // 턱 그늘
-    p.rect(6, 7, 9, 2, hair); p.rect(8, 9, 2, 1, hair); p.rect(13, 9, 2, 1, hair); // 앞머리
-    p.disc(8, 5.5, 2.4, 1.2, hairL);                  // 윤기
-    p.disc(5, 11, 1.2, 2.5, hairD);
-    if (style === 2) for (const [x, y] of [[6, 3], [10, 1], [14, 3]]) { p.line(x, y + 2, x + 1, y, hair); p.line(x + 1, y + 2, x + 1, y, hair); p.set(x + 2, y + 2, hair); }
-    for (const ex of [9, 13]) {
-      if (blink) p.set(ex, 13, OUT);
-      else { p.rect(ex, 11, 1, 3, OUT); p.set(ex, 11, '#5a4a6a'); }
+    const p = new Paint(20, 19);
+    if (style === 1) { p.disc(4, 12, 2.4, 5, hair); p.disc(15.5, 12, 2.2, 4, hairD); } // 긴 머리
+    p.disc(9.5, 9.5, 8, 7.6, skin);                         // 큰 둥근 얼굴
+    // 머리카락: 정수리를 덮는 모자 모양
+    for (let y = 0; y < 19; y++) for (let x = 0; x < 20; x++) {
+      const inHead = ((x - 9.5) / 8) ** 2 + ((y - 9.5) / 7.6) ** 2 <= 1;
+      if (inHead && (y < 6 || (y < 8 && (x < 5 || x > 14)) || (y < 11 && x < 3))) p.set(x, y, hair);
     }
-    p.set(7, 14, '#f4a3a0'); p.set(8, 14, '#f4a3a0'); p.set(14, 14, '#f4a3a0'); p.set(15, 14, '#f4a3a0');
-    p.set(11, 15, '#b5525c');
+    if (style === 2) for (const [x, y] of [[4, 1], [8, 0], [12, 0], [15, 2]]) { p.rect(x, y, 2, 2, hair); }
+    // 눈: 세로 점 두 개(깜빡이면 가로 선)
+    for (const ex of [11, 15]) { if (blink) p.rect(ex, 10, 2, 1, OUT); else p.rect(ex, 9, 2, 3, OUT); }
     p.outline().save(`${k}_head${blink ? '_b' : ''}`);
   }
-  let p = new Paint(12, 11);
-  p.rect(2, 1, 8, 8, cloth); p.rect(1, 2, 10, 6, cloth);       // 모서리를 굴린 몸통
-  p.rect(2, 2, 2, 3, clothL); p.rect(9, 3, 2, 5, clothD);
-  p.rect(1, 7, 10, 1, clothD); p.rect(5, 7, 2, 1, '#f6c945');   // 허리띠
-  p.rect(2, 8, 8, 2, '#4a5a8a'); p.rect(3, 9, 6, 1, '#39466e');
-  p.rect(1, 9, 1, 1, null); p.rect(10, 9, 1, 1, null);
+  let p = new Paint(10, 9);
+  p.rect(1, 0, 8, 7, cloth); p.rect(0, 1, 10, 5, cloth);
+  p.rect(1, 6, 8, 1, clothD); p.rect(4, 6, 2, 1, '#e8c060');   // 허리띠
+  p.rect(1, 7, 8, 2, '#3e4a6e');
   p.outline().save(`${k}_torso`);
-  p = new Paint(5, 11);
-  p.rect(1, 1, 3, 6, cloth); p.set(3, 4, clothD); p.set(3, 5, clothD); p.set(3, 6, clothD);
-  p.disc(2, 8, 1.4, 1.4, skin); p.set(3, 9, skinD);            // 동그란 손
+  p = new Paint(4, 9);
+  p.rect(1, 0, 2, 6, cloth); p.disc(1.5, 7, 1.2, 1.2, skin);
   p.outline().save(`${k}_arm`);
-  p = new Paint(7, 10);
-  p.rect(1, 0, 4, 6, '#4a5a8a'); p.rect(4, 0, 1, 6, '#39466e');
-  p.disc(3, 7.4, 2.4, 1.6, '#6b4a3a'); p.rect(1, 7, 5, 2, '#6b4a3a'); p.set(5, 8, '#553828'); // 둥근 신발
+  p = new Paint(5, 8);
+  p.rect(1, 0, 2, 5, '#3e4a6e'); p.rect(1, 5, 3, 2, '#5a3f30');
   p.outline().save(`${k}_leg`);
   return k;
 }
@@ -252,6 +259,10 @@ function buildTheme(name: ThemeKey) {
     if (hash(x + 200) > 0.8) p.set(x, 1, t.grass[2]);
   }
   p.rect(0, 5 + 2, 32, 1, t.dirt[2]);
+  // 흙 속 돌덩이: 밝은 윗면과 어두운 아랫면, 검은 테두리
+  for (const [x, y, r] of [[7, 20, 3], [22, 31, 4], [12, 41, 2.5], [28, 15, 2]] as const) {
+    p.disc(x, y, r + 1, r * 0.8 + 1, OUT); p.disc(x, y, r, r * 0.8, t.dirt[0]); p.disc(x - 0.6, y - 0.8, r * 0.55, r * 0.35, shade(t.dirt[0], 1.25)); p.rect(x - r + 1, y + r * 0.5, r * 2 - 1, 1, t.dirt[2]);
+  }
   p.save(`tile_${name}`);
 
   // 발판 조각: 왼끝/가운데/오른끝 (각 16x12)
@@ -455,11 +466,74 @@ export const ITEM_ICON: Record<string, string> = {
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
 };
 
+// ───────── 아이콘 세트 ─────────
+function icon(key: string, draw: (p: Paint) => void, size = 16) { const p = new Paint(size, size); draw(p); p.outline().save(key); }
+const C = {
+  steel: '#a9b1bd', steelD: '#6f7887', gold: '#f2c14e', goldD: '#c08a2a', red: '#e0483e', redD: '#a52a2a', blue: '#4a90e2', blueD: '#2c5ea8',
+  green: '#5cc25a', greenD: '#3a8a3c', wood: '#b07a4a', woodD: '#7a4f2e', paper: '#f1e3c0', paperD: '#cdb788', purple: '#9b6ad8', white: '#f4f4f4', skin: '#f2c9a0',
+};
+function buildIcons() {
+  // 메뉴
+  icon('ui_auto', (p) => { p.disc(7.5, 7.5, 7, 7, C.green); p.disc(7.5, 7.5, 4.5, 4.5, null); p.rect(6, 0, 4, 4, null); p.line(9, 0, 12, 3, C.green); p.line(10, 1, 12, 1, C.green); p.rect(5, 5, 6, 6, C.white); p.rect(6, 6, 4, 4, C.green); });
+  icon('ui_attacks', (p) => { p.line(2, 13, 13, 2, C.steel); p.line(3, 13, 14, 2, C.steel); p.line(2, 2, 13, 13, C.steel); p.line(2, 3, 13, 14, C.steel); p.rect(1, 12, 3, 3, C.wood); p.rect(12, 12, 3, 3, C.wood); p.line(3, 10, 6, 13, C.gold); p.line(10, 13, 13, 10, C.gold); });
+  icon('ui_items', (p) => { p.disc(7.5, 9.5, 6.5, 5.5, C.wood); p.rect(5, 2, 6, 4, C.wood); p.rect(6, 3, 4, 2, null); p.rect(3, 8, 10, 2, C.woodD); p.rect(7, 8, 2, 3, C.gold); });
+  icon('ui_talents', (p) => { p.rect(2, 1, 12, 14, C.purple); p.rect(3, 2, 10, 12, '#7d4fb8'); p.disc(8, 8, 3.5, 3.5, C.gold); p.disc(8, 8, 1.5, 1.5, '#fff1a8'); p.rect(2, 13, 12, 2, C.paper); });
+  icon('ui_codex', (p) => { p.rect(1, 3, 7, 11, C.paper); p.rect(8, 3, 7, 11, C.paper); p.rect(7, 2, 2, 13, C.woodD); for (const y of [5, 7, 9, 11]) { p.rect(2, y, 4, 1, C.paperD); p.rect(10, y, 4, 1, C.paperD); } });
+  icon('ui_map', (p) => { p.rect(1, 2, 14, 12, C.paper); p.rect(1, 2, 1, 12, C.paperD); p.rect(14, 2, 1, 12, C.paperD); p.line(3, 11, 7, 7, C.redD); p.line(7, 7, 11, 9, C.redD); p.disc(12, 5, 1.6, 1.6, C.red); p.disc(4, 5, 1.5, 1, C.green); });
+  icon('ui_chat', (p) => { p.rect(1, 2, 14, 9, C.white); p.rect(2, 1, 12, 11, C.white); p.rect(3, 11, 3, 2, C.white); p.set(3, 13, C.white); for (const x of [4, 7, 10]) p.rect(x, 5, 2, 2, C.steelD); });
+  icon('ui_menu', (p) => { p.disc(7.5, 7.5, 6.5, 6.5, C.steel); for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; p.rect(7 + Math.round(Math.cos(a) * 6.5), 7 + Math.round(Math.sin(a) * 6.5), 2, 2, C.steel); } p.disc(7.5, 7.5, 2.5, 2.5, '#3a3f48'); });
+  // HUD·기타
+  icon('ui_heart', (p) => { p.disc(5, 6, 3.5, 3.5, C.red); p.disc(10.5, 6, 3.5, 3.5, C.red); for (let y = 7; y < 14; y++) p.rect(2 + (y - 7), y, 12 - (y - 7) * 2 + 1, 1, C.red); });
+  icon('ui_mana', (p) => { p.disc(7.5, 10, 5, 4.5, C.blue); for (let y = 2; y < 8; y++) p.rect(7 - Math.floor((y - 2) / 2), y, 1 + Math.floor((y - 2) / 2) * 2 + 1, 1, C.blue); });
+  icon('ui_xp', (p) => { for (let y = 0; y < 16; y++) { const w = y < 6 ? y : y < 9 ? 15 - (y - 6) * 2 : (15 - y) ; if (w > 0) p.rect(8 - Math.ceil(w / 2), y, w, 1, C.gold); } p.disc(7.5, 8, 3, 3, C.gold); });
+  icon('ui_afk', (p) => { p.rect(3, 1, 10, 2, C.wood); p.rect(3, 13, 10, 2, C.wood); for (let y = 3; y < 13; y++) { const w = Math.abs(y - 8) + 1; p.rect(8 - w, y, w * 2, 1, '#a7d8f0'); } p.rect(6, 10, 4, 3, C.gold); });
+  icon('ui_options', (p) => { p.rect(2, 3, 12, 2, C.steel); p.rect(2, 7, 12, 2, C.steel); p.rect(2, 11, 12, 2, C.steel); p.rect(4, 2, 3, 4, C.gold); p.rect(9, 6, 3, 4, C.gold); p.rect(5, 10, 3, 4, C.gold); });
+  icon('ui_swap', (p) => { p.disc(5, 5, 3, 3, C.skin); p.rect(2, 9, 6, 5, C.blue); p.disc(11, 6, 3, 3, C.skin); p.rect(8, 10, 6, 5, C.red); p.line(6, 1, 10, 1, C.gold); p.set(9, 0, C.gold); p.set(9, 2, C.gold); });
+  icon('ui_quest', (p) => { p.rect(3, 1, 10, 14, C.paper); p.rect(2, 1, 12, 2, C.paperD); p.rect(2, 13, 12, 2, C.paperD); p.rect(7, 4, 2, 5, C.red); p.rect(7, 10, 2, 2, C.red); });
+  icon('ui_card', (p) => { p.rect(3, 1, 10, 14, C.steel); p.rect(4, 2, 8, 9, '#5a7fb8'); p.disc(8, 6, 2.5, 2.5, C.green); p.rect(4, 12, 8, 2, C.paper); });
+  icon('ui_quick', (p) => { p.rect(2, 4, 12, 10, C.wood); p.rect(2, 4, 12, 3, C.woodD); p.rect(7, 6, 2, 3, C.gold); p.disc(11.5, 3.5, 3, 3, '#a7d8f0'); p.disc(11.5, 3.5, 1.6, 1.6, null); p.line(13, 6, 15, 8, C.steelD); });
+  icon('ui_teleport', (p) => { p.disc(7.5, 8, 6, 7, C.purple); p.disc(7.5, 8, 4, 5, '#c8b2f0'); p.disc(7.5, 8, 2, 3, C.white); });
+  icon('ui_assign', (p) => { p.rect(3, 0, 2, 16, C.woodD); p.rect(5, 1, 10, 8, C.red); p.rect(12, 3, 3, 4, null); p.rect(13, 4, 2, 2, C.red); p.line(7, 3, 9, 5, C.gold); p.line(9, 5, 7, 7, C.gold); });
+  icon('ui_trash', (p) => { p.rect(3, 4, 10, 11, C.steel); p.rect(2, 2, 12, 2, C.steelD); p.rect(6, 1, 4, 1, C.steelD); for (const x of [5, 8, 11]) p.rect(x, 6, 1, 7, C.steelD); });
+  icon('ui_up', (p) => { for (let y = 2; y < 9; y++) p.rect(8 - (y - 1), y, (y - 1) * 2, 1, C.green); p.rect(5, 9, 6, 5, C.green); });
+  icon('ui_lock', (p) => { p.disc(8, 5, 4, 4, C.steel); p.disc(8, 5, 2, 2, null); p.rect(3, 7, 10, 8, C.gold); p.rect(7, 9, 2, 3, C.woodD); });
+  icon('ui_coin', (p) => { p.disc(7.5, 7.5, 6.5, 6.5, C.gold); p.disc(7.5, 7.5, 4, 4, '#ffd76e'); p.rect(7, 4, 2, 7, C.goldD); });
+  icon('ui_sound', (p) => { p.rect(2, 5, 4, 6, C.steel); for (let y = 2; y < 14; y++) p.rect(6, y, Math.max(1, 5 - Math.abs(y - 8) / 2), 1, C.steel); p.line(12, 5, 13, 8, C.white); p.line(13, 8, 12, 11, C.white); p.line(14, 3, 15, 8, C.white); p.line(15, 8, 14, 13, C.white); });
+  icon('ui_music', (p) => { p.rect(5, 2, 2, 10, C.gold); p.rect(11, 1, 2, 10, C.gold); p.rect(5, 1, 8, 2, C.gold); p.disc(4.5, 12, 2.5, 2, C.gold); p.disc(10.5, 11, 2.5, 2, C.gold); });
+  // 빈 장비 칸 실루엣(회색)
+  const sil = '#5a606b';
+  icon('eq_weapon', (p) => { p.line(3, 12, 12, 3, sil); p.line(4, 12, 13, 3, sil); p.rect(2, 11, 4, 2, sil); p.rect(2, 12, 2, 3, sil); });
+  icon('eq_hat', (p) => { p.disc(8, 8, 5, 4, sil); p.rect(1, 10, 14, 2, sil); });
+  icon('eq_body', (p) => { p.rect(4, 3, 8, 10, sil); p.rect(1, 3, 3, 5, sil); p.rect(12, 3, 3, 5, sil); p.rect(6, 2, 4, 1, null); });
+  icon('eq_ring', (p) => { p.disc(8, 9, 5, 5, sil); p.disc(8, 9, 3, 3, null); p.disc(8, 3.5, 2, 1.6, sil); });
+  icon('eq_pickaxe', (p) => { p.rect(7, 4, 2, 11, sil); p.line(1, 5, 7, 2, sil); p.line(9, 2, 15, 5, sil); p.rect(6, 2, 4, 3, sil); });
+  icon('eq_axe', (p) => { p.rect(7, 2, 2, 13, sil); p.disc(11, 6, 4, 4, sil); });
+  icon('eq_food', (p) => { p.disc(8, 9, 5.5, 5, sil); p.line(8, 4, 10, 1, sil); p.disc(11, 3, 1.6, 1, sil); });
+  // 능력치
+  icon('st_str', (p) => { p.rect(3, 5, 10, 8, C.skin); p.rect(3, 3, 3, 3, C.skin); p.rect(6, 2, 3, 4, C.skin); p.rect(9, 3, 3, 3, C.skin); p.rect(12, 6, 2, 4, C.skin); p.rect(4, 12, 8, 3, C.red); });
+  icon('st_agi', (p) => { p.rect(5, 1, 5, 9, C.green); p.rect(3, 9, 11, 4, C.green); p.rect(3, 12, 12, 2, C.woodD); p.line(1, 4, 4, 4, C.white); p.line(0, 7, 4, 7, C.white); });
+  icon('st_wis', (p) => { p.rect(2, 2, 12, 12, C.blue); p.rect(3, 3, 10, 9, '#6fb0f0'); p.rect(2, 12, 12, 2, C.paper); p.disc(8, 7, 2.5, 2.5, C.white); p.disc(8, 7, 1, 1, C.blueD); });
+  icon('st_luk', (p) => { for (const [x, y] of [[5, 4], [10, 4], [5, 9], [10, 9]]) p.disc(x, y, 3, 3, C.green); p.disc(7.5, 6.5, 1.5, 1.5, C.green); p.line(8, 9, 11, 15, C.greenD); });
+  // 특성(틀 안에 들어가는 그림)
+  icon('tl_smash', (p) => { p.rect(6, 6, 3, 10, C.wood); p.rect(2, 1, 11, 6, C.steel); p.rect(2, 1, 11, 2, C.white); for (const [x, y] of [[1, 9], [13, 10], [12, 13]]) p.rect(x, y, 2, 2, C.gold); });
+  icon('tl_heal', (p) => { p.disc(7.5, 9, 6, 6, C.red); p.rect(6, 1, 4, 4, C.paper); p.rect(6, 6, 4, 8, C.white); p.rect(3, 8, 10, 4, C.white); });
+  icon('tl_sharp', (p) => { p.line(3, 13, 12, 4, C.steel); p.line(4, 13, 13, 4, C.steel); p.line(4, 12, 13, 3, C.white); p.rect(1, 12, 4, 3, C.wood); p.set(13, 1, C.gold); p.set(14, 2, C.gold); p.set(12, 0, C.gold); });
+  icon('tl_tough', (p) => { p.disc(7.5, 7, 6.5, 6.5, C.steel); for (let y = 10; y < 15; y++) p.rect(2 + (y - 10), y, 12 - (y - 10) * 2, 1, C.steel); p.disc(5.5, 6, 2, 2, C.red); p.disc(9.5, 6, 2, 2, C.red); p.rect(5, 7, 6, 2, C.red); p.rect(6, 9, 4, 1, C.red); });
+  icon('tl_idler', (p) => { p.rect(3, 1, 10, 2, C.wood); p.rect(3, 13, 10, 2, C.wood); for (let y = 3; y < 13; y++) { const w = Math.abs(y - 8) + 1; p.rect(8 - w, y, w * 2, 1, '#a7d8f0'); } p.rect(6, 4, 4, 2, C.gold); p.rect(5, 11, 6, 2, C.gold); });
+  icon('tl_worker', (p) => { p.rect(7, 4, 2, 11, C.wood); p.line(1, 4, 7, 1, C.steel); p.line(9, 1, 15, 4, C.steel); p.rect(6, 1, 4, 3, C.steelD); p.disc(4, 12, 3, 2.5, C.gold); });
+  icon('tl_cleave', (p) => { p.rect(7, 2, 2, 14, C.wood); p.disc(10, 5, 5, 4.5, C.steel); p.rect(7, 0, 2, 10, C.wood); p.line(1, 12, 5, 8, C.red); p.line(2, 14, 6, 10, C.red); });
+  icon('tl_ironskin', (p) => { p.rect(2, 1, 12, 8, C.steel); for (let y = 9; y < 16; y++) p.rect(2 + (y - 9), y, 12 - (y - 9) * 2, 1, C.steel); p.rect(7, 2, 2, 11, C.steelD); p.rect(3, 5, 10, 2, C.steelD); });
+  icon('tl_volley', (p) => { for (const o of [0, 4, 8]) { p.line(1, 12 - o, 11, 2 + o / 2, C.wood); p.rect(11, 1 + o / 2, 3, 2, C.steel); p.rect(0, 11 - o, 2, 3, C.red); } });
+  icon('tl_swift', (p) => { p.line(1, 14, 13, 2, C.wood); p.rect(12, 1, 3, 3, C.steel); p.rect(1, 11, 3, 4, C.green); for (const y of [5, 8, 11]) p.line(4, y, 8, y - 4, '#d8f0ff'); });
+  icon('tl_nova', (p) => { p.disc(7.5, 7.5, 3, 3, C.white); for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, r = i % 2 ? 5 : 7; p.line(7.5, 7.5, 7.5 + Math.cos(a) * r, 7.5 + Math.sin(a) * r, i % 2 ? '#a7d8f0' : C.gold); } });
+  icon('tl_insight', (p) => { p.disc(7.5, 8, 7, 4.5, C.white); p.disc(7.5, 8, 3.5, 3.5, C.blue); p.disc(7.5, 8, 1.5, 1.5, '#1a2a4a'); p.set(6, 6, C.white); });
+}
+
 let built = false;
 export function buildAll() {
   if (built) return;
   built = true;
-  buildWeapons(); buildMonsters(); buildObjects(); buildItems();
+  buildWeapons(); buildMonsters(); buildObjects(); buildItems(); buildIcons();
   (Object.keys(THEMES) as ThemeKey[]).forEach(buildTheme);
 }
 
@@ -475,9 +549,9 @@ export function iconUrl(key: string): string {
 export function portraitUrl(l: Look): string {
   const k = buildLook(l), key = `${k}_portrait`;
   if (!canvases.has(key)) {
-    const ctx = mk(key, 22, 38);
+    const ctx = mk(key, 22, 34);
     const d = (part: string, x: number, y: number) => ctx.drawImage(canvases.get(`${k}_${part}`)!, x, y);
-    d('leg', 5, 28); d('leg', 10, 28); d('arm', 2, 19); d('arm', 15, 19); d('torso', 5, 18); d('head', 0, 0);
+    d('leg', 6, 25); d('leg', 11, 25); d('arm', 3, 18); d('arm', 15, 18); d('torso', 6, 17); d('head', 1, 0);
   }
   return iconUrl(key);
 }

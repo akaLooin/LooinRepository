@@ -105,3 +105,78 @@ html, body {
 #chatin { user-select: text; -webkit-user-select: text; }
 
 .ui-btn.grow { flex: 1; }
+
+/* ───────── 강철 테마(재디자인) ───────── */
+/* 글자는 흰색 + 검은 외곽선(원작 계열의 읽기 쉬운 픽셀 글씨) */
+.ui-menubtn span, .ui-btn, .ui-tabs button span, .menurow, .tal .lvp, #where, #quest, .who b, .ui-gauges label {
+  text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 1px 0 #000;
+}
+.ui-btn, .ui-menubtn, .ui-tabs button, .menurow {
+  background: linear-gradient(#6b7380, #4a505b 55%, #3d424c); color: #fff; border-color: var(--c-border);
+  box-shadow: var(--sh-bevel);
+}
+.ui-btn.primary { background: linear-gradient(#f7d27a, #e2aa3a 60%, #b98222); color: #fff; }
+.ui-btn.success, .ui-menubtn.on, .pill.on { background: linear-gradient(#5fb95c, #2f7a2e 70%); }
+.ui-btn.danger { background: linear-gradient(#e2685c, #b8392b 70%); }
+.ui-bottom { background: linear-gradient(#4a505b, #2c3038); border-top: 3px solid #0b0c0f; box-shadow: inset 0 2px 0 #7d8592; }
+.ui-summary, .ui-gauges .ui-bar { box-shadow: inset 0 2px 0 rgba(0,0,0,.5); }
+.ui-win { background: #2e3239; box-shadow: var(--sh-card); border-radius: var(--r-md); }
+.ui-win > header { background: linear-gradient(#5d6471, #444a55); border-bottom: 3px solid #0b0c0f; }
+.ui-tabs button[aria-selected="true"] { background: linear-gradient(#f7d27a, #d79b2f); color: #fff; }
+.ui-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); }
+
+/* 아이콘 크기 */
+img.ic, img.mi, img.tic, img.bigic { image-rendering: pixelated; flex: none; }
+img.mi { width: 2.1em; height: 2.1em; }
+img.tic { width: 1.4em; height: 1.4em; vertical-align: -0.3em; }
+img.bigic { width: 3.2em; height: 3.2em; }
+.ui-menubtn { gap: 0.05em; }
+.ui-menubtn span { font-size: var(--fs-xs); }
+.rot { transform: rotate(-90deg); }
+
+/* 하단 공격 바 */
+.bslot { position: relative; background: linear-gradient(#3d424c, #23262c); }
+.bslot .keyno { position: absolute; left: 0.25em; top: 0.1em; font-size: 0.6em; color: var(--c-text-muted); }
+.bslot .empty-plus { font-size: 1.6em; color: #5d6471; }
+.bslot .cool { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.6); border-radius: inherit; font-size: var(--fs-lg); }
+.bslot.nomp img { filter: grayscale(.9) brightness(.6); }
+.bslot.drop { animation: droppulse .9s ease-in-out infinite; border-color: var(--c-accent); }
+@keyframes droppulse { 50% { box-shadow: 0 0 0 3px var(--c-accent), var(--sh-bevel); } }
+.dragghost { position: fixed; z-index: 99; pointer-events: none; transform: translate(-50%, -60%) scale(1.3); filter: drop-shadow(0 4px 0 rgba(0,0,0,.5)); }
+
+/* 특성 화면: 틀 + LV 판, 왼쪽 공격 지정 깃발 */
+.talentpanel { position: relative; padding-left: 3.6em; min-height: 14em; }
+.assignflag { position: absolute; left: var(--sp-2); top: var(--sp-3); width: 2.9em; padding: var(--sp-2) 0 var(--sp-3); display: flex; flex-direction: column; align-items: center; gap: var(--sp-1);
+  font: inherit; font-size: var(--fs-xs); color: #fff; line-height: 1.1; background: linear-gradient(#d65a4c, #9c2f24); border: var(--sp-1) solid var(--c-border);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%); cursor: pointer; text-shadow: 1px 1px 0 #000; }
+.assignflag.on { background: linear-gradient(#f7d27a, #d79b2f); }
+.talgrid { display: grid; grid-template-columns: repeat(5, calc(var(--slot) * 1.15)); gap: var(--sp-3); flex: none; }
+.tal { position: relative; width: calc(var(--slot) * 1.15); padding: var(--sp-2) 0 0; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1);
+  background: linear-gradient(#7d8592, #4f5561); border: var(--sp-1) solid #0b0c0f; border-radius: var(--r-md); box-shadow: inset 0 2px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.35); cursor: pointer; touch-action: none; }
+.tal img.tic { width: 2.2em; height: 2.2em; background: radial-gradient(#3b3550, #1d1a28); border-radius: var(--r-sm); padding: 0.15em; box-shadow: inset 0 0 0 2px #0b0c0f; }
+.tal .lvp { width: 100%; font-size: 0.62em; color: #fff; background: #2b2f36; border-top: 2px solid #0b0c0f; border-radius: 0 0 var(--r-sm) var(--r-sm); padding: 0.1em 0; }
+.tal.zero img { filter: grayscale(.7) brightness(.75); }
+.tal.sel { outline: 3px solid var(--c-accent); outline-offset: 1px; }
+.tal.act::after { content: ''; position: absolute; right: 0.25em; top: 0.25em; width: 0.55em; height: 0.55em; background: #d65a4c; border: 1px solid #000; transform: rotate(45deg); }
+.tal .onbar { position: absolute; left: 0.25em; top: 0.25em; width: 0.6em; height: 0.6em; background: var(--c-accent); border: 1px solid #000; border-radius: 50%; }
+.iconbtn { display: inline-flex; align-items: center; gap: var(--sp-2); }
+
+/* 메뉴 */
+.menulist { display: flex; flex-direction: column; gap: var(--sp-2); }
+.menurow { display: flex; align-items: center; gap: var(--sp-4); width: 100%; min-height: var(--touch); padding: var(--sp-2) var(--sp-4); font: inherit; border: var(--sp-1) solid var(--c-border); border-radius: var(--r-md); cursor: pointer; text-align: left; }
+.pill { padding: 0 var(--sp-3); border-radius: var(--r-pill); background: #23262c; font-size: var(--fs-xs); }
+
+/* 지도 노드 */
+.mapnode { font: inherit; color: var(--c-text); cursor: pointer; }
+.mapnode img { width: 2.4em; height: 2.4em; image-rendering: pixelated; }
+.mapnode:disabled { cursor: default; }
+.mapnode:not(:disabled):not(.locked):hover { border-color: var(--c-accent); }
+
+/* 빠른 참조 */
+.qface { width: 2.2em; image-rendering: pixelated; }
+.qanvil img { height: 1.1em; vertical-align: -0.2em; }
+
+#ui img { -webkit-user-drag: none; user-select: none; }
+
+img.sil { width: 70%; height: 70%; opacity: .55; image-rendering: pixelated; }
+img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }

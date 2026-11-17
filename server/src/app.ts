@@ -56,6 +56,10 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('travel'), portal: z.number().int().min(0).max(20) }),
   z.object({ t: z.literal('respawn') }),
   z.object({ t: z.literal('auto'), on: z.boolean() }),
+  z.object({ t: z.literal('barSet'), bar: z.number().int().min(0).max(9), slot: z.number().int().min(0).max(19), id: id.nullable() }),
+  z.object({ t: z.literal('barPage'), page: z.number().int().min(0).max(9) }),
+  z.object({ t: z.literal('option'), autoAttacks: z.boolean() }),
+  z.object({ t: z.literal('teleport'), map: id }),
   z.object({ t: z.literal('target'), activity: z.union([z.object({ k: z.literal('none') }), z.object({ k: z.literal('fight') }), z.object({ k: z.literal('gather'), node: id })]) }),
 ]) as z.ZodType<Action>;
 // 캐릭터 상태는 모양만 대강 확인하고, 의미 검증은 checkSync 가 한다

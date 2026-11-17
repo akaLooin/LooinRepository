@@ -3,7 +3,7 @@
 import { ClassId, EquipSlot, MAPS, NODES, StatKey } from './data';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnTalent, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, learnTalent, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 
@@ -31,7 +31,11 @@ export type Action =
   | { t: 'travel'; portal: number }
   | { t: 'respawn' }
   | { t: 'auto'; on: boolean }
-  | { t: 'target'; activity: Activity };
+  | { t: 'target'; activity: Activity }
+  | { t: 'barSet'; bar: number; slot: number; id: string | null }
+  | { t: 'barPage'; page: number }
+  | { t: 'option'; autoAttacks: boolean }
+  | { t: 'teleport'; map: string };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -77,6 +81,10 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     }
     case 'respawn': c.mapId = 'town'; c.x = 120; c.y = 0; return ok();
     case 'auto': c.auto = a.on; return ok();
+    case 'barSet': return res(setBarSlot(c, a.bar, a.slot, a.id));
+    case 'barPage': if (a.page < 0 || a.page >= c.attackBars.length) return fail('없는 장'); c.attackPage = a.page; return ok();
+    case 'option': acc.options.autoAttacks = a.autoAttacks; return ok();
+    case 'teleport': return res(teleport(acc, c, a.map, now));
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

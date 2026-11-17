@@ -92,3 +92,69 @@ describe('플레이 기록 검증', () => {
     expect(checkSync(server, 0, c, ca, 2)).not.toBeNull();
   });
 });
+
+describe('공격 바', () => {
+  it('액티브를 배우면 빈 칸에 놓이고, 칸 옮기기·비우기·장 넘기기, 배우지 않은 것은 못 놓는다', () => {
+    const acc = setup(), c = acc.characters[0];
+    c.talentPoints = 5;
+    expect(applyAction(acc, 0, { t: 'talent', id: 'smash' }, 0).ok).toBe(true);
+    expect(c.attackBars[0][0]).toBe('smash');
+    expect(applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 3, id: 'heal' }, 0).err).toMatch(/배우지/);
+    applyAction(acc, 0, { t: 'talent', id: 'heal' }, 0);
+    expect(c.attackBars[0][1]).toBe('heal');
+    // 강타를 4번째 칸으로 옮기면 원래 칸은 비거나 그 칸에 있던 것과 자리를 바꾼다
+    expect(applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 3, id: 'smash' }, 0).ok).toBe(true);
+    expect(c.attackBars[0].slice(0, 4)).toEqual([null, 'heal', null, 'smash']);
+    expect(applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 1, id: 'sharp' }, 0).err).toMatch(/액티브/);
+    expect(applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 1, id: null }, 0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'barPage', page: 1 }, 0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'barPage', page: 5 }, 0).ok).toBe(false);
+  });
+  it('자동은 지금 장의 왼쪽부터 시전하고, 옵션을 끄면 쓰지 않는다', () => {
+    const acc = setup(), c = acc.characters[0];
+    c.mapId = 'meadow'; c.auto = true; c.talents = { smash: 1 }; c.attackBars[0] = ['smash', null, null, null, null, null];
+    const run = () => {
+      const w = new World(acc, c, new Rng(2));
+      let casts = 0;
+      for (let i = 0; i < 60 * 40; i++) { w.step(1 / 60, { move: 0, climb: 0 }); casts += w.events.filter((e) => e.t === 'cast').length; w.events.length = 0; }
+      return casts;
+    };
+    expect(run()).toBeGreaterThan(0);
+    applyAction(acc, 0, { t: 'option', autoAttacks: false }, 0);
+    expect(run()).toBe(0);
+    applyAction(acc, 0, { t: 'option', autoAttacks: true }, 0);
+    applyAction(acc, 0, { t: 'barPage', page: 1 }, 0); // 빈 장
+    expect(run()).toBe(0);
+  });
+  it('예전 저장: 배운 액티브가 공격 바 첫 장에 놓인다', () => {
+    const acc = setup(); const raw = JSON.parse(serialize(acc));
+    raw.characters[0].talents = { smash: 2, sharp: 3, heal: 1 }; delete raw.characters[0].attackBars; delete raw.options;
+    const a = deserialize(JSON.stringify(raw))!;
+    expect(a.characters[0].attackBars[0].filter(Boolean)).toEqual(['smash', 'heal']);
+    expect(a.options.autoAttacks).toBe(true);
+  });
+  it('플레이 기록으로 공격 바를 바꿀 수는 없다', () => {
+    const { server, c, ca } = play('meadow', 30);
+    const x = clone(c); x.attackBars[0][0] = 'smash';
+    expect(checkSync(server, 0, x, ca, 30)).toMatch(/attackBars/);
+  });
+});
+
+describe('지도 순간이동', () => {
+  it('열린 맵만, 마을은 무료, 나머지는 하루 횟수를 쓰고 날이 바뀌면 채워진다', () => {
+    const acc = setup(), c = acc.characters[0];
+    const day1 = new Date(2026, 0, 1, 12).getTime(), day3 = new Date(2026, 0, 3, 12).getTime();
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'hills' }, day1).err).toMatch(/열리지/);
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, day1).ok).toBe(true);
+    const n = acc.teleports.n;
+    c.kills.meadow = 15;
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'hills' }, day1).ok).toBe(true);
+    expect(acc.teleports.n).toBe(n - 1);
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'town' }, day1).ok).toBe(true);
+    expect(acc.teleports.n).toBe(n - 1); // 마을은 무료
+    acc.teleports.n = 0;
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, day1).err).toMatch(/다 썼/);
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, day3).ok).toBe(true); // 이틀 치가 쌓임
+    expect(acc.teleports.n).toBe(9);
+  });
+});
