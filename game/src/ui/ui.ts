@@ -14,6 +14,7 @@ import {
 import { WorldEvent } from '../core/world';
 import { Game } from '../game';
 import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
+import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
 type Panel = 'afk' | 'items' | 'attacks' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | null;
@@ -34,6 +35,7 @@ const tabs = (names: string[], cur: number, act: string) =>
 
 export class UI {
   private root = document.getElementById('ui')!;
+  audio: Audio | null = null;
   private panel: Panel = null;
   private tab: Partial<Record<Exclude<Panel, null> | 'talentTab', number>> = {};
   private sel: string | null = null;      // 가방에서 선택한 아이템
@@ -365,6 +367,8 @@ export class UI {
       case 'menu':
         return win('메뉴', `<div class="stack">
           <button class="ui-btn block" data-act="open:afkinfo">방치 정보</button>
+          <div class="ui-row"><button class="ui-btn grow ${this.audio?.sfxOn ? 'success' : ''}" data-act="sfx" aria-pressed="${!!this.audio?.sfxOn}">효과음 ${this.audio?.sfxOn ? '켜짐' : '꺼짐'}</button>
+            <button class="ui-btn grow ${this.audio?.bgmOn ? 'success' : ''}" data-act="bgm" aria-pressed="${!!this.audio?.bgmOn}">배경음 ${this.audio?.bgmOn ? '켜짐' : '꺼짐'}</button></div>
           <button class="ui-btn block" data-act="chars">캐릭터 선택으로</button>
           <p class="ui-xs ${g.netState === 'offline' ? 'ui-bad' : 'ui-muted'}">${g.netState === 'online' ? '서버에 연결됨 — 진행은 서버에 저장됩니다.' : g.netState === 'offline' ? '서버에 연결할 수 없어 이 기기에서 진행 중입니다. 다시 연결되면 서버 기록에 맞춥니다.' : '이 기기에만 저장됩니다(서버 미설정).'}</p>
           <button class="ui-btn danger sm" data-act="delacc">계정 삭제</button>
@@ -567,6 +571,7 @@ export class UI {
       return;
     }
     const [act, a, b] = el.dataset.act!.split(':');
+    this.audio?.play('click');
     const g = this.game, c = g.char;
     const fail = (msg: string | null) => { if (msg) this.toast(msg); };
     switch (act) {
@@ -591,6 +596,8 @@ export class UI {
       case 'pslot': this.prodSlot = +a; break;
       case 'ttab': this.tab.talentTab = +a; break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
+      case 'sfx': this.audio?.setSfx(!this.audio.sfxOn); break;
+      case 'bgm': this.audio?.setBgm(!this.audio.bgmOn); break;
       case 'delacc':
         if (confirm('계정을 삭제할까요? 모든 캐릭터와 진행이 사라지며 되돌릴 수 없습니다.')) {
           this.panel = null;

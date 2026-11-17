@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { Audio } from './audio';
 import { Game } from './game';
 import { GameScene } from './render/scene';
 import { buildAll } from './render/sprites';
@@ -17,7 +18,19 @@ async function boot() {
   const ui = new UI(game);
   const onWorld = game.onWorld;
   game.onWorld = (w) => { scene.setWorld(w); onWorld(w); };
-  game.onEvent = (e) => { scene.handle(e); ui.onEvent(e); };
+  const audio = new Audio();
+  ui.audio = audio;
+  game.onEvent = (e) => {
+    scene.handle(e); ui.onEvent(e);
+    // 효과음
+    if (e.t === 'dmg') audio.play(e.miss ? 'miss' : e.onPlayer ? (e.amount ? 'hurt' : 'miss') : e.crit ? 'crit' : 'hit');
+    else if (e.t === 'loot') audio.play(e.text.includes('코인') ? 'coin' : e.item ? 'item' : 'click');
+    else if (e.t === 'level' || e.t === 'skill' || e.t === 'boss') audio.play('level');
+    else if (e.t === 'yield') audio.play(e.item === 'ore' ? 'mine' : 'chop');
+    else if (e.t === 'slam') audio.play('slam');
+    else if (e.t === 'heal') audio.play('heal');
+    else if (e.t === 'cast') audio.play('skill');
+  };
   game.onNet = (st, msg) => {
     if (st === 'online') ui.toast('서버에 연결되었습니다');
     else if (st === 'offline') ui.toast(`오프라인으로 진행합니다${msg ? ` — ${msg}` : ''}`);
@@ -35,7 +48,7 @@ async function boot() {
     scene,
   });
   addEventListener('resize', () => phaser.scale.resize(innerWidth * dpr(), innerHeight * dpr()));
-  document.addEventListener('visibilitychange', () => (document.hidden ? game.suspend() : game.resume()));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { game.suspend(); audio.suspend(); } else { game.resume(); audio.resume(); } });
   addEventListener('pagehide', () => game.save());
   // 개발/테스트용 핸들
   Object.assign(window, { __game: game, __scene: scene });

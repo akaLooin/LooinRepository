@@ -7,6 +7,7 @@
 
 ```bash
 npm install
+cp .env.example .env   # 서버에 붙이려면 VITE_SERVER_URL 을 채운다(비우면 이 기기에만 저장)
 npm run dev        # 브라우저에서 개발 (화면 터치/클릭으로 조작. PC는 방향키 ←→ 이동, ↑↓ 로프)
 npm test           # 코어 로직 테스트
 npm run build      # dist/ 로 웹 빌드
@@ -48,3 +49,8 @@ cd android && ./gradlew assembleDebug   # APK: android/app/build/outputs/apk/deb
 5. iOS(Capacitor) / PC(웹·데스크톱 래퍼) 확장
 
 글꼴: [Galmuri](https://github.com/quiple/galmuri) (SIL OFL 1.1)
+
+## 서버
+
+`../server` 에 있습니다. 게스트 계정, 클라우드 저장, 서버 측 방치 보상 계산·플레이 기록 검증, 같은 맵 플레이어 표시와 채팅.
+실행·배포 방법과 API는 `../replica/backend.md` 를 보세요.
