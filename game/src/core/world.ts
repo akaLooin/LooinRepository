@@ -1,7 +1,9 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
-import { ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NodeDef, Platform, PortalDef, SKILL_NAMES } from './data';
+import {
+  ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NodeDef, Platform, PortalDef, SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
+} from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, derive, gainSkillXp, gainXp, mitigate } from './state';
+import { Account, Character, Derived, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
 
 export interface Input { move: number; jump: boolean; down: boolean }
 export type SwingKind = 'attack' | 'mining' | 'chopping';
@@ -11,6 +13,8 @@ export interface Player {
   onGround: boolean; facing: 1 | -1;
   attackT: number; swingT: number; swingKind: SwingKind; swingId: number;
   dead: number; dropT: number; hurtT: number;
+  /** 액티브 스킬별 남은 재사용 대기시간 */
+  cd: Record<string, number>;
 }
 export interface Mob {
   uid: number; def: MonsterDef; plat: Platform;
@@ -31,6 +35,7 @@ export type WorldEvent =
   | { t: 'level'; level: number }
   | { t: 'skill'; name: string; level: number }
   | { t: 'yield'; x: number; y: number; item: string }
+  | { t: 'cast'; id: string; x: number; y: number }
   | { t: 'faint' };
 
 export const SWING_TIME = 0.32;
@@ -61,7 +66,7 @@ export class World {
     this.d = derive(char);
     this.player = {
       x: clamp(char.x, 10, this.map.width - 10), y: 0, vx: 0, vy: 0, onGround: true, facing: 1,
-      attackT: 0, swingT: 0, swingKind: 'attack', swingId: 0, dead: 0, dropT: 0, hurtT: 0,
+      attackT: 0, swingT: 0, swingKind: 'attack', swingId: 0, dead: 0, dropT: 0, hurtT: 0, cd: {},
     };
     const totalW = this.platforms.reduce((s, p) => s + p.w, 0);
     for (const s of this.map.spawns) {
@@ -100,6 +105,37 @@ export class World {
     return this.map.portals.find((q) => Math.abs(q.x - p.x) < 16) ?? null;
   }
   portalOpen(q: PortalDef) { return (this.char.kills[this.map.id] ?? 0) >= (q.reqKills ?? 0); }
+  nearNpc() { return this.map.npcX !== undefined && Math.abs(this.map.npcX - this.player.x) < 26 && this.player.y > -4; }
+
+  /** 액티브 스킬 사용. 성공 여부 반환 */
+  useSkill(id: string): boolean {
+    const p = this.player, c = this.char, lv = c.talents[id] ?? 0, t = TALENT[id];
+    if (!t?.active || lv <= 0 || p.dead > 0 || (p.cd[id] ?? 0) > 0) return false;
+    const d = this.d;
+    if (id === 'smash') {
+      const hit = this.mobs.filter((m) => m.alive && m.spawnAge > 0.4 && Math.abs(m.x - p.x) <= SMASH_RANGE && Math.abs(m.y - p.y) < 22);
+      if (!hit.length) return false;
+      p.swingKind = 'attack'; p.swingT = SWING_TIME; p.swingId++; p.attackT = Math.max(p.attackT, d.atkInterval * 0.6);
+      this.hitDone = true;
+      for (const m of hit) this.damageMob(m, d, smashMult(lv), m.x >= p.x ? 1 : -1);
+    } else if (id === 'heal') {
+      if (c.hp >= d.maxHp) return false;
+      c.hp = Math.min(d.maxHp, c.hp + d.maxHp * healPct(lv));
+    }
+    p.cd[id] = t.active.cooldown;
+    this.events.push({ t: 'cast', id, x: p.x, y: p.y });
+    return true;
+  }
+
+  private damageMob(m: Mob, d: Derived, mult: number, push: number) {
+    const crit = this.rng.chance(d.crit);
+    const amount = Math.max(1, Math.round(d.dmg * mult * this.rng.range(0.8, 1.2) * (crit ? d.critMult : 1)));
+    m.hp -= amount; m.hitT = 0.22;
+    m.x = clamp(m.x + push * 5, m.plat.x + 8, m.plat.x + m.plat.w - 8);
+    this.events.push({ t: 'dmg', x: m.x, y: m.y - 18, amount, crit, onPlayer: false });
+    if (m.hp <= 0) this.kill(m, d);
+  }
+
   nearCraft() { return this.map.craftX !== undefined && Math.abs(this.map.craftX - this.player.x) < 26 && this.player.y > -4; }
 
   step(dt: number, manual: Input) {
@@ -119,6 +155,12 @@ export class World {
     }
     c.hp = Math.min(d.maxHp, c.hp + d.regen * dt);
     p.hurtT = Math.max(0, p.hurtT - dt);
+    for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);
+    if (c.auto) {
+      // 자동 조작 중에는 스킬도 알아서 쓴다
+      if (c.hp < d.maxHp * 0.5) this.useSkill('heal');
+      if (c.mode === 'fight') this.useSkill('smash');
+    }
 
     const inp = c.auto ? this.ai() : manual;
 
@@ -188,12 +230,7 @@ export class World {
     if (!t) return;
     if ('hp' in t) {
       if (!t.alive) return;
-      const crit = this.rng.chance(d.crit);
-      const amount = Math.max(1, Math.round(d.dmg * this.rng.range(0.8, 1.2) * (crit ? d.critMult : 1)));
-      t.hp -= amount; t.hitT = 0.22;
-      t.x = clamp(t.x + this.player.facing * 5, t.plat.x + 8, t.plat.x + t.plat.w - 8);
-      this.events.push({ t: 'dmg', x: t.x, y: t.y - 18, amount, crit, onPlayer: false });
-      if (t.hp <= 0) this.kill(t, d);
+      this.damageMob(t, d, 1, this.player.facing);
     } else {
       t.progress += d[t.def.skill]; t.shakeT = 0.3;
       while (t.progress >= t.def.hp) {
@@ -210,6 +247,7 @@ export class World {
     const c = this.char;
     m.alive = false; m.respawnT = this.rng.range(3.5, 5.5);
     c.kills[this.map.id] = (c.kills[this.map.id] ?? 0) + 1;
+    noteKill(c, m.def.id);
     this.events.push({ t: 'kill', uid: m.uid, x: m.x, y: m.y });
     if (gainXp(c, Math.max(1, Math.round(m.def.xp * d.xpMult)))) this.events.push({ t: 'level', level: c.level });
     this.spawnDrop(true, 'coin', this.rng.int(m.def.coins[0], m.def.coins[1]), m.x, m.y - 10, m.y);

@@ -65,6 +65,11 @@ button.gold { background: #c98a1e; } button.green { background: #3f9a4a; } butto
 #ctx { position: absolute; left: 50%; bottom: 5.4em; transform: translateX(-50%); font-size: 1.05em; animation: bob 1s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translate(-50%, -0.3em); } }
 
+#skills { position: absolute; right: 0.8em; bottom: 5.4em; display: flex; gap: 0.5em; }
+#skills button { width: 5em; height: 5em; padding: 0; border-radius: 50%; font-size: 0.68em; word-break: keep-all; line-height: 1.15; background: #b9453c; }
+#skills button.cd { background: rgba(58,45,74,.9); color: var(--dim); font-size: 1em; width: 3.4em; height: 3.4em; }
+#quest { position: absolute; left: 0.9em; top: 6.6em; font-size: 0.78em; pointer-events: none; text-shadow: 0 1px 0 var(--ink), 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 -1px 0 var(--ink); }
+
 /* 토스트 */
 #toasts { position: absolute; left: 0.8em; bottom: 5.6em; display: flex; flex-direction: column; gap: 0.2em; pointer-events: none; font-size: 0.78em; }
 .toast { background: rgba(43,29,46,.78); padding: 0.15em 0.6em; border-radius: 0.4em; width: max-content; animation: toast 2.6s forwards; }

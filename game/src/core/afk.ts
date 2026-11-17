@@ -4,7 +4,7 @@ import {
   AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES, SkillKey,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, addItem, derive, gainSkillXp, gainXp, mitigate } from './state';
+import { Account, Character, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
 
 export interface AfkReport {
   seconds: number; mapName: string; mode: 'fight' | 'gather' | 'rest';
@@ -58,6 +58,7 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     for (const s of map.spawns) {
       const m = MONSTERS[s.monster], k = kills * (s.count / total);
       xp += k * m.xp;
+      noteKill(c, m.id, Math.floor(k));
       coins += k * (m.coins[0] + m.coins[1]) / 2;
       for (const dr of m.drops) {
         give(dr.item, settle(k * Math.min(1, dr.chance * d.dropMult) * (dr.qty[0] + dr.qty[1]) / 2, rng));

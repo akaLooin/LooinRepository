@@ -1,5 +1,5 @@
 import {
-  EquipSlot, INVENTORY_SIZE, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey,
+  EquipSlot, INVENTORY_SIZE, ITEMS, ItemStats, MAX_CHARACTERS, QUESTS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -17,6 +17,10 @@ export interface Character {
   equipment: Partial<Record<EquipSlot, string>>;
   skills: Record<SkillKey, { lv: number; xp: number }>;
   kills: Record<string, number>;
+  talentPoints: number;
+  talents: Record<string, number>;
+  /** 진행 중인 퀘스트: QUESTS의 순번, 수락 여부, 처치 진행도 */
+  quest: { idx: number; accepted: boolean; prog: number };
   /** 이 캐릭터를 마지막으로 직접 플레이한 시각(ms). 방치 보상 계산 기준. */
   lastActive: number;
 }
@@ -42,6 +46,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     inventory: [], equipment: { weapon: 'sword_wood' },
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
+    talentPoints: 0, talents: {}, quest: { idx: 0, accepted: false, prog: 0 },
   };
   c.hp = derive(c).maxHp;
   acc.characters.push(c);
@@ -73,18 +78,20 @@ export function derive(c: Character): Derived {
   const e = equipStats(c);
   const str = c.stats.str + e.str, agi = c.stats.agi + e.agi;
   const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
-  const maxHp = Math.floor(40 + c.level * 8 + str * 3 + e.hp);
+  const tl = (id: string) => c.talents[id] ?? 0;
+  const work = 1 + tl('worker') * 0.05;
+  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp) * (1 + tl('tough') * 0.04));
   return {
     str, agi, wis, luk, maxHp,
-    dmg: 2 + e.dmg + str * 0.5 + c.level * 0.4,
+    dmg: (2 + e.dmg + str * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03),
     def: e.def + c.level * 0.3,
     atkInterval: Math.max(0.32, 0.75 - agi * 0.004),
     speed: 80 + Math.min(40, agi * 0.6),
     crit: Math.min(0.6, 0.04 + luk * 0.004), critMult: 1.6,
     xpMult: 1 + wis * 0.005, dropMult: 1 + luk * 0.004,
     regen: maxHp * 0.02,
-    mining: 1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05,
-    chopping: 1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05,
+    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work,
+    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work,
   };
 }
 
@@ -98,7 +105,7 @@ export function gainXp(c: Character, amount: number): number {
   let ups = 0;
   while (c.xp >= xpToNext(c.level)) {
     c.xp -= xpToNext(c.level);
-    c.level++; c.statPoints += 3; ups++;
+    c.level++; c.statPoints += 3; c.talentPoints++; ups++;
   }
   if (ups) c.hp = derive(c).maxHp;
   return ups;
@@ -115,6 +122,46 @@ export function spendStat(c: Character, k: StatKey, n = 1): boolean {
   if (n <= 0) return false;
   c.stats[k] += n; c.statPoints -= n;
   return true;
+}
+
+export function learnTalent(c: Character, id: string): boolean {
+  const t = TALENT[id], lv = c.talents[id] ?? 0;
+  if (!t || c.talentPoints <= 0 || lv >= t.max) return false;
+  c.talents[id] = lv + 1; c.talentPoints--;
+  return true;
+}
+
+// ───────── 퀘스트 ─────────
+export const currentQuest = (c: Character) => QUESTS[c.quest.idx] ?? null;
+export function questProgress(c: Character): { have: number; need: number; done: boolean } | null {
+  const q = currentQuest(c);
+  if (!q) return null;
+  const have = 'kill' in q.goal ? c.quest.prog : countItem(c, q.goal.item);
+  return { have: Math.min(have, q.goal.n), need: q.goal.n, done: c.quest.accepted && have >= q.goal.n };
+}
+/** 처치를 퀘스트 진행도에 반영 */
+export function noteKill(c: Character, monster: string, n = 1) {
+  const q = currentQuest(c);
+  if (q && c.quest.accepted && 'kill' in q.goal && q.goal.kill === monster) c.quest.prog += n;
+}
+export function acceptQuest(c: Character): boolean {
+  if (!currentQuest(c) || c.quest.accepted) return false;
+  c.quest.accepted = true; c.quest.prog = 0;
+  return true;
+}
+/** 완료 처리. 실패 사유 문자열 또는 null(성공) */
+export function completeQuest(acc: Account, c: Character): string | null {
+  const q = currentQuest(c), p = questProgress(c);
+  if (!q || !p?.done) return '아직 조건을 채우지 못했습니다';
+  const r = q.reward;
+  if (r.item && countItem(c, r.item) === 0 && c.inventory.length >= INVENTORY_SIZE
+    && !('item' in q.goal && countItem(c, q.goal.item) === q.goal.n)) return '가방이 가득 찼습니다';
+  if ('item' in q.goal) removeItem(c, q.goal.item, q.goal.n);
+  if (r.item) addItem(c, r.item, 1);
+  acc.coins += r.coins ?? 0;
+  c.quest = { idx: c.quest.idx + 1, accepted: false, prog: 0 };
+  if (r.xp) gainXp(c, r.xp);
+  return null;
 }
 
 // ───────── 인벤토리 ─────────
@@ -185,6 +232,12 @@ export function deserialize(json: string | null): Account | null {
   try {
     const a = JSON.parse(json) as Account;
     if (a?.version !== 1 || !Array.isArray(a.characters)) return null;
+    // 이전 저장 데이터에 없는 필드 보충
+    for (const c of a.characters) {
+      c.talents ??= {};
+      c.talentPoints ??= c.level - 1;
+      c.quest ??= { idx: 0, accepted: false, prog: 0 };
+    }
     return a;
   } catch { return null; }
 }

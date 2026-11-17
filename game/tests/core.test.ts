@@ -4,7 +4,7 @@ import { MAPS, RECIPES } from '../src/core/data';
 import { Rng } from '../src/core/rng';
 import {
   addItem, countItem, craft, createCharacter, derive, deserialize, equipItem, gainXp, newAccount, serialize,
-  unequipItem, xpToNext,
+  unequipItem, xpToNext, acceptQuest, completeQuest, learnTalent, questProgress,
 } from '../src/core/state';
 import { World } from '../src/core/world';
 
@@ -140,5 +140,58 @@ describe('방치 보상', () => {
     expect(r.mode).toBe('gather');
     expect(countItem(c, 'ore')).toBeGreaterThan(50);
     expect(r.skill!.levels).toBeGreaterThan(0);
+  });
+});
+
+describe('퀘스트와 특성', () => {
+  it('처치 퀘스트: 수락 후 처치만 집계하고 보상을 준다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow'; c.auto = true;
+    const w = new World(acc, c, new Rng(2));
+    run(w, 20);
+    expect(questProgress(c)!.have).toBe(0); // 수락 전에는 집계하지 않는다
+    expect(completeQuest(acc, c)).not.toBeNull();
+    expect(acceptQuest(c)).toBe(true);
+    run(w, 60);
+    expect(questProgress(c)!.done).toBe(true);
+    const coins = acc.coins;
+    expect(completeQuest(acc, c)).toBeNull();
+    expect(acc.coins).toBe(coins + 30);
+    expect(c.quest).toEqual({ idx: 1, accepted: false, prog: 0 });
+  });
+  it('납품 퀘스트: 아이템을 소모한다', () => {
+    const { acc, c } = setup();
+    c.quest = { idx: 2, accepted: true, prog: 0 };
+    addItem(c, 'moss', 10);
+    expect(completeQuest(acc, c)).toBeNull();
+    expect(countItem(c, 'moss')).toBe(2);
+    expect(countItem(c, 'hat_moss')).toBe(1);
+  });
+  it('특성: 포인트 소모, 패시브 반영, 강타는 범위 피해 후 재사용 대기', () => {
+    const { acc, c } = setup();
+    expect(learnTalent(c, 'smash')).toBe(false);
+    gainXp(c, xpToNext(1) + xpToNext(2) + xpToNext(3));
+    expect(c.talentPoints).toBe(3);
+    const hp0 = derive(c).maxHp;
+    expect(learnTalent(c, 'tough')).toBe(true);
+    expect(derive(c).maxHp).toBeGreaterThan(hp0);
+    learnTalent(c, 'smash');
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(4));
+    expect(w.useSkill('heal')).toBe(false); // 배우지 않음
+    for (const m of w.mobs) { m.x = w.player.x + 20; m.y = 0; m.spawnAge = 1; }
+    expect(w.useSkill('smash')).toBe(true);
+    expect(w.events.filter((e) => e.t === 'dmg').length).toBe(w.mobs.length);
+    expect(w.useSkill('smash')).toBe(false);
+    expect(w.player.cd.smash).toBeGreaterThan(0);
+  });
+  it('이전 저장 데이터를 불러오면 새 필드가 채워진다', () => {
+    const { acc, c } = setup();
+    c.level = 4;
+    const raw = JSON.parse(serialize(acc));
+    delete raw.characters[0].talents; delete raw.characters[0].talentPoints; delete raw.characters[0].quest;
+    const a = deserialize(JSON.stringify(raw))!;
+    expect(a.characters[0].talentPoints).toBe(3);
+    expect(a.characters[0].quest.idx).toBe(0);
   });
 });

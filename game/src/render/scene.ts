@@ -4,7 +4,9 @@ import { MAPS } from '../core/data';
 import { Look } from '../core/state';
 import { Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
-import { HEAD_PAD, ITEM_ICON, THEMES, buildAll, buildLook, canvases } from './sprites';
+import { HEAD_PAD, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
+import { currentQuest, questProgress } from '../core/state';
+import { NPC_NAME, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
 const FONT = 'Galmuri11';
@@ -247,6 +249,7 @@ export class GameScene extends Phaser.Scene {
   private swayers: { img: Img; ph: number }[] = [];
   private portals: { ring: Img; glow: Img; lock: Img; text: Phaser.GameObjects.Text; idx: number }[] = [];
   private flames: Img[] = [];
+  private npc: { img: Img; mark: Phaser.GameObjects.Text } | null = null;
   private camX = 0; private camY = 0; private time0 = 0;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private pending: World | null | undefined;
@@ -278,7 +281,7 @@ export class GameScene extends Phaser.Scene {
     for (const v of this.mobs) v.root.destroy();
     for (const d of this.dropViews.values()) d.destroy();
     this.statics = []; this.mobs = []; this.nodeViews = []; this.dropViews.clear();
-    this.hills = []; this.clouds = []; this.swayers = []; this.portals = []; this.flames = [];
+    this.hills = []; this.clouds = []; this.swayers = []; this.portals = []; this.flames = []; this.npc = null;
     const sky = document.getElementById('sky')!;
     if (!w) { sky.style.background = 'linear-gradient(#3b3355, #6a5a8a)'; return; }
 
@@ -324,6 +327,15 @@ export class GameScene extends Phaser.Scene {
       keep(this.add.image(fx, 1, 'obj_logs').setOrigin(0.5, 1).setDepth(20));
       for (let i = 0; i < 3; i++) this.flames.push(keep(this.add.image(fx + (i - 1) * 4, -4, 'fx_flame').setOrigin(0.5, 1).setDepth(21)));
     }
+    if (map.npcX !== undefined) {
+      const look = { hair: 2, hairColor: '#e9e4f0', skin: '#f2bd94', outfit: '#8a6fd1' };
+      portraitUrl(look);
+      ensureTextures(this);
+      const img = keep(this.add.image(map.npcX, 1, `${buildLook(look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(true));
+      keep(label(this, NPC_NAME, 6.5, '#fff3d6').setOrigin(0.5, 0).setPosition(map.npcX, 3).setDepth(31));
+      const mark = keep(label(this, '!', 13, '#ffd84a').setDepth(31));
+      this.npc = { img, mark };
+    }
     // 포탈
     map.portals.forEach((q, idx) => {
       const glow = keep(this.add.image(q.x, -22, 'portal_glow').setDepth(18));
@@ -363,6 +375,19 @@ export class GameScene extends Phaser.Scene {
         const s = this.add.image(p.x, p.y - 16, 'fx_px').setTint(e.t === 'level' ? 0xffe98a : 0xa5f0c0).setDepth(94).setScale(0.6);
         this.tweens.add({ targets: s, x: p.x + Math.cos(a) * 30, y: p.y - 16 + Math.sin(a) * 30, alpha: 0, angle: 180, duration: 700, ease: 'Cubic.easeOut', onComplete: () => s.destroy() });
       }
+    } else if (e.t === 'cast') {
+      if (e.id === 'smash') {
+        // 충격파 고리
+        const ring = this.add.ellipse(e.x, e.y - 3, 10, 4).setStrokeStyle(2, 0xffe98a).setDepth(86);
+        this.tweens.add({ targets: ring, width: SMASH_RANGE * 2, height: 14, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onUpdate: () => ring.setSize(ring.width, ring.height), onComplete: () => ring.destroy() });
+        this.puff(e.x, e.y - 4, 0xffe98a, 10);
+        this.cameras.main.shake(120, 0.006);
+      } else {
+        for (let i = 0; i < 8; i++) {
+          const s = this.add.image(e.x + (Math.random() - 0.5) * 20, e.y - 6 - Math.random() * 10, 'fx_px').setTint(0x8fde5d).setDepth(94).setScale(0.7);
+          this.tweens.add({ targets: s, y: s.y - 24, alpha: 0, delay: i * 40, duration: 600, onComplete: () => s.destroy() });
+        }
+      }
     } else if (e.t === 'yield') {
       this.puff(e.x, e.y + 10, 0xe8c08a, 5);
     }
@@ -396,6 +421,13 @@ export class GameScene extends Phaser.Scene {
     this.syncDrops(w);
     for (const s of this.swayers) s.img.setRotation(Math.sin(this.time0 * 1.6 + s.ph) * 0.12);
     this.flames.forEach((f, i) => f.setScale(0.9 + Math.sin(this.time0 * 11 + i * 2) * 0.25, 1 + Math.sin(this.time0 * 8 + i * 1.3) * 0.35).setAlpha(0.85));
+    if (this.npc) {
+      const q = currentQuest(w.char), qp = questProgress(w.char);
+      const m = !q ? '' : !w.char.quest.accepted ? '!' : qp?.done ? '?' : '';
+      if (this.npc.mark.text !== m) this.npc.mark.setText(m);
+      this.npc.mark.setPosition(w.map.npcX!, -34 + Math.sin(this.time0 * 4) * 1.5);
+      this.npc.img.setScale(1 - Math.sin(this.time0 * 2.2) * 0.012, 1 + Math.sin(this.time0 * 2.2) * 0.02);
+    }
     for (const pv of this.portals) {
       const q = w.map.portals[pv.idx], open = w.portalOpen(q);
       pv.ring.setVisible(open); pv.glow.setVisible(open); pv.lock.setVisible(!open);

@@ -40,6 +40,8 @@ export interface MapDef {
   portals: PortalDef[];
   /** 제작대 위치(마을 전용) */
   craftX?: number;
+  /** 퀘스트 NPC 위치(마을 전용) */
+  npcX?: number;
 }
 export interface RecipeDef { item: string; coins: number; mats: [string, number][] }
 
@@ -89,7 +91,7 @@ export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) =
 
 const maps: MapDef[] = [
   { id: 'town', name: '모닥불 마을', width: 520, theme: 'town', platforms: [], spawns: [], nodes: [],
-    craftX: 210, portals: [{ x: 496, to: 'meadow', toX: 50 }] },
+    craftX: 210, npcX: 335, portals: [{ x: 496, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
     spawns: [{ monster: 'mossblob', count: 8 }],
@@ -115,6 +117,38 @@ export const RECIPES: RecipeDef[] = [
   { item: 'sword_stone', coins: 40, mats: [['pebble', 10], ['log', 5]] },
   { item: 'armor_log', coins: 60, mats: [['log', 12], ['moss', 5]] },
   { item: 'sword_leaf', coins: 250, mats: [['leaf', 15], ['ore', 10]] },
+];
+
+export interface TalentDef {
+  id: string; name: string; max: number; active?: { cooldown: number };
+  /** 레벨에 따른 설명 */
+  desc: (lv: number) => string;
+}
+export const TALENTS: TalentDef[] = [
+  { id: 'smash', name: '강타', max: 10, active: { cooldown: 6 }, desc: (lv) => `주변의 모든 적에게 ${180 + lv * 20}% 피해` },
+  { id: 'heal', name: '응급 처치', max: 10, active: { cooldown: 20 }, desc: (lv) => `체력을 ${25 + lv * 5}% 회복` },
+  { id: 'sharp', name: '예리함', max: 10, desc: (lv) => `공격력 +${lv * 3}%` },
+  { id: 'tough', name: '단련', max: 10, desc: (lv) => `최대 체력 +${lv * 4}%` },
+  { id: 'worker', name: '일꾼의 손', max: 10, desc: (lv) => `채집 효율 +${lv * 5}%` },
+];
+export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
+export const smashMult = (lv: number) => 1.8 + lv * 0.2;
+export const healPct = (lv: number) => 0.25 + lv * 0.05;
+export const SMASH_RANGE = 46;
+
+export interface QuestDef {
+  name: string; text: string;
+  goal: { kill: string; n: number } | { item: string; n: number };
+  reward: { coins?: number; xp?: number; item?: string };
+}
+export const NPC_NAME = '촌장 모루';
+export const QUESTS: QuestDef[] = [
+  { name: '첫 걸음', text: '풀밭의 이끼방울이 너무 늘었어. 조금만 정리해 주겠나?', goal: { kill: 'mossblob', n: 5 }, reward: { coins: 30, xp: 20 } },
+  { name: '장작 모으기', text: '모닥불이 꺼지려 해. 풀밭의 참나무를 베어 통나무를 가져다 주게.', goal: { item: 'log', n: 8 }, reward: { coins: 40, xp: 40 } },
+  { name: '폭신한 모자', text: '이끼 덩이를 모아 오면 모자를 하나 만들어 주지.', goal: { item: 'moss', n: 8 }, reward: { item: 'hat_moss', xp: 40 } },
+  { name: '언덕으로', text: '자갈 언덕의 돌콩이들이 길을 막고 있다네.', goal: { kill: 'pebbler', n: 20 }, reward: { coins: 120, xp: 150 } },
+  { name: '붉은 광석', text: '붉은돌 광석이 필요해. 넉넉히 캐 오면 좋은 곡괭이를 주겠네.', goal: { item: 'ore', n: 15 }, reward: { item: 'pick_stone', xp: 200 } },
+  { name: '숲의 속삭임', text: '숲에서 이상한 소리가 들려. 잎새깨비를 쫓아내 주게.', goal: { kill: 'leafling', n: 30 }, reward: { coins: 400, xp: 600 } },
 ];
 
 export const HAIR_COLORS = ['#6b4a3a', '#2f2a3a', '#e8b24a', '#d9574a', '#5aa9e6', '#f2a0c8', '#8fde5d', '#e9e4f0'];

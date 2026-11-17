@@ -1,17 +1,18 @@
 // DOM 기반 UI. 게임 상태를 읽어 HTML을 만들고, data-act 속성으로 동작을 위임 처리한다.
 import { AfkReport } from '../core/afk';
 import {
-  EquipSlot, HAIR_COLORS, HAIR_STYLES, INVENTORY_SIZE, ITEMS, MAPS, MAX_CHARACTERS, OUTFIT_COLORS, RECIPES,
+  EquipSlot, HAIR_COLORS, HAIR_STYLES, INVENTORY_SIZE, ITEMS, MAPS, MAX_CHARACTERS, MONSTERS, NPC_NAME, OUTFIT_COLORS, QUESTS, RECIPES, TALENT, TALENTS,
   SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC, STAT_NAMES, SkillKey, StatKey,
 } from '../core/data';
 import {
-  Character, Look, canCraft, countItem, craft, derive, equipItem, sellItem, skillXpToNext, spendStat, unequipItem, xpToNext,
+  Character, Look, acceptQuest, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem, learnTalent, questProgress,
+  sellItem, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { Game } from '../game';
 import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 
-type Panel = 'bag' | 'stats' | 'craft' | 'afk' | null;
+type Panel = 'bag' | 'stats' | 'craft' | 'afk' | 'talents' | 'quest' | null;
 const icon = (id: string, cls = 'px') => `<img class="${cls}" src="${iconUrl(ITEM_ICON[id])}" alt="">`;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const pct = (a: number, b: number) => `${Math.max(0, Math.min(100, (a / b) * 100)).toFixed(1)}%`;
@@ -30,7 +31,8 @@ export class UI {
 
   constructor(private game: Game) {
     this.root.innerHTML = `
-      <div id="hud" class="box hidden"></div><div id="top" class="hidden"></div>
+      <div id="hud" class="box hidden"></div><div id="quest" class="hidden"></div><div id="top" class="hidden"></div>
+      <div id="skills" class="hidden"></div>
       <div id="toasts"></div>
       <div id="pad" class="hidden"><button data-hold="left">◀</button><button data-hold="right">▶</button></div>
       <div id="act" class="hidden"></div>
@@ -40,6 +42,8 @@ export class UI {
     this.root.addEventListener('click', (e) => this.onClick(e));
     // 누르고 있는 동안 동작하는 버튼(이동/점프)
     const hold = (e: Event, on: boolean) => {
+      const sk = on ? (e.target as HTMLElement).closest<HTMLElement>('[data-skill]') : null;
+      if (sk) { e.preventDefault(); this.game.world?.useSkill(sk.dataset.skill!); this.refresh(); return; }
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-hold]');
       if (!b) return;
       e.preventDefault();
@@ -92,6 +96,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
+    else if (e.t === 'cast') { /* 연출은 렌더러가 담당 */ }
     else if (e.t === 'faint') this.toast('쓰러졌습니다... 잠시 후 부활합니다');
   }
 
@@ -100,7 +105,7 @@ export class UI {
     if (force) this.last = {};
     const g = this.game, c = g.char, w = g.world;
     const playing = !!c && !!w;
-    for (const id of ['hud', 'top', 'pad', 'act']) this.show(id, playing);
+    for (const id of ['hud', 'top', 'pad', 'act', 'skills', 'quest']) this.show(id, playing);
     this.show('title', !playing);
     if (!playing) {
       this.show('ctx', false); this.show('modal', false); this.put('title', this.titleHtml());
@@ -121,6 +126,7 @@ export class UI {
       <div class="info box"><div>${w.map.name}</div><div class="coin">${icon('coin')}${g.acc.coins.toLocaleString()}</div></div>
       <button data-act="open:bag">가방</button>
       <button data-act="open:stats">능력치${c.statPoints ? '<i class="dot"></i>' : ''}</button>
+      <button data-act="open:talents">특성${c.talentPoints ? '<i class="dot"></i>' : ''}</button>
       <button data-act="chars">캐릭터</button>`);
     this.put('act', `
       <div class="stack">
@@ -130,10 +136,19 @@ export class UI {
       <button class="round" data-hold="down">▼</button>
       <button class="round" data-hold="jump">▲</button>`);
 
+    this.put('skills', TALENTS.filter((t) => t.active && c.talents[t.id]).map((t) => {
+      const cd = w.player.cd[t.id] ?? 0;
+      return `<button class="round ${cd > 0 ? 'cd' : ''}" data-skill="${t.id}">${cd > 0 ? Math.ceil(cd) : t.name}</button>`;
+    }).join(''));
+    const q = currentQuest(c), qp = questProgress(c);
+    this.put('quest', q && qp && c.quest.accepted
+      ? `<div class="${qp.done ? 'green-t' : ''}">📜 ${q.name} ${qp.done ? '— 완료! 촌장에게 돌아가세요' : `${qp.have}/${qp.need}`}</div>`
+      : q && w.map.id !== 'town' ? '' : q ? `<div class="dim">📜 마을의 ${NPC_NAME}에게 말을 걸어 보세요</div>` : '');
+
     const portal = w.portalNear();
-    const ctx = portal && w.portalOpen(portal) ? `${MAPS[portal.to].name}(으)로 이동` : w.nearCraft() ? '제작대 사용' : '';
+    const ctx = portal && w.portalOpen(portal) ? `${MAPS[portal.to].name}(으)로 이동` : w.nearCraft() ? '제작대 사용' : w.nearNpc() ? `${NPC_NAME}와 대화` : '';
     this.show('ctx', !!ctx && !this.panel);
-    if (ctx) { this.$('ctx').textContent = ctx; this.$('ctx').dataset.act = portal ? 'portal' : 'open:craft'; }
+    if (ctx) { this.$('ctx').textContent = ctx; this.$('ctx').dataset.act = portal && w.portalOpen(portal) ? 'portal' : w.nearCraft() ? 'open:craft' : 'open:quest'; }
 
     this.show('modal', !!this.panel);
     if (this.panel) this.put('modal', this.panelHtml(c));
@@ -238,6 +253,32 @@ export class UI {
         </div>
         <h4>기술</h4>${skills}`);
     }
+    if (this.panel === 'talents') {
+      const list = TALENTS.map((t) => {
+        const lv = c.talents[t.id] ?? 0;
+        return `<div class="recipe"><div class="grow"><div><b>${t.name}</b> <span class="small gold-t">Lv.${lv}/${t.max}</span>
+          <span class="small dim">${t.active ? `액티브 · 재사용 ${t.active.cooldown}초` : '패시브'}</span></div>
+          <div class="small ${lv ? 'green-t' : 'dim'}">${t.desc(Math.max(1, lv))}</div>
+          ${lv && lv < t.max ? `<div class="small dim">다음: ${t.desc(lv + 1)}</div>` : ''}</div>
+          <button class="gold" data-act="talent:${t.id}" ${c.talentPoints && lv < t.max ? '' : 'disabled'}>＋</button></div>`;
+      }).join('');
+      return win('특성', `<div class="row" style="margin-bottom:.5em"><span>남은 포인트</span><b class="gold-t big">${c.talentPoints}</b>
+        <span class="small dim">레벨이 오를 때마다 1 포인트 · AUTO 중에는 액티브 스킬을 자동으로 사용</span></div>${list}`);
+    }
+    if (this.panel === 'quest') {
+      const q = currentQuest(c), p = questProgress(c);
+      if (!q || !p) return win(NPC_NAME, '<div>고맙네! 지금은 부탁할 일이 없다네. 다음 이야기를 기다려 주게.</div>');
+      const goal = 'kill' in q.goal ? `${MONSTERS[q.goal.kill].name} ${q.goal.n}마리 처치` : `${icon(q.goal.item)}${ITEMS[q.goal.item].name} ${q.goal.n}개 납품`;
+      const r = q.reward;
+      const rew = [r.coins ? `<span>${icon('coin')}${r.coins}</span>` : '', r.xp ? `<span>경험치 +${r.xp}</span>` : '', r.item ? `<span>${icon(r.item)}${ITEMS[r.item].name}</span>` : ''].join('');
+      const btn = !c.quest.accepted ? '<button class="gold" data-act="qaccept">수락</button>'
+        : `<button class="green" data-act="qdone" ${p.done ? '' : 'disabled'}>완료</button>`;
+      return win(`${NPC_NAME} <span class="small dim">퀘스트 ${c.quest.idx + 1}/${QUESTS.length}</span>`, `
+        <div><b class="gold-t">${q.name}</b></div><div style="margin:.4em 0">“${q.text}”</div>
+        <div class="small">목표: ${goal} ${c.quest.accepted ? `<b class="${p.done ? 'green-t' : 'gold-t'}">(${p.have}/${p.need})</b>` : ''}</div>
+        <h4>보상</h4><div class="loot">${rew}</div>
+        <div class="row" style="margin-top:.9em"><span class="grow"></span>${btn}</div>`);
+    }
     if (this.panel === 'craft') {
       const list = RECIPES.map((r, i) => {
         const it = ITEMS[r.item];
@@ -285,6 +326,9 @@ export class UI {
       case 'unequip': if (c) { fail(unequipItem(c, a as EquipSlot)); this.sel = null; } break;
       case 'sell': if (c) { const gain = sellItem(g.acc, c, a, +b); if (gain) this.toast(`+${gain} 코인`, 'coin'); } break;
       case 'stat': if (c) spendStat(c, a as StatKey); break;
+      case 'talent': if (c) learnTalent(c, a); break;
+      case 'qaccept': if (c && acceptQuest(c)) { this.toast(`퀘스트 수락: ${currentQuest(c)!.name}`); this.panel = null; } break;
+      case 'qdone': if (c) { const name = currentQuest(c)?.name; const err = completeQuest(g.acc, c); fail(err); if (!err) this.toast(`퀘스트 완료: ${name}`); } break;
       case 'craft': if (c) { const err = craft(g.acc, c, +a); fail(err); if (!err) this.toast(`${ITEMS[RECIPES[+a].item].name} 제작 완료!`, RECIPES[+a].item); } break;
     }
     if (c && act !== 'select' && act !== 'chars') g.save();
