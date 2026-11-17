@@ -1,0 +1,190 @@
+import {
+  EquipSlot, INVENTORY_SIZE, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey,
+} from './data';
+
+export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
+export interface Stack { id: string; qty: number }
+export type Mode = 'fight' | 'gather';
+
+export interface Character {
+  id: number; name: string; look: Look;
+  level: number; xp: number; statPoints: number;
+  stats: Record<StatKey, number>;
+  hp: number;
+  mapId: string; x: number;
+  auto: boolean; mode: Mode;
+  inventory: Stack[];
+  equipment: Partial<Record<EquipSlot, string>>;
+  skills: Record<SkillKey, { lv: number; xp: number }>;
+  kills: Record<string, number>;
+  /** 이 캐릭터를 마지막으로 직접 플레이한 시각(ms). 방치 보상 계산 기준. */
+  lastActive: number;
+}
+export interface Account {
+  version: 1;
+  coins: number;
+  characters: Character[];
+  active: number;
+  nextId: number;
+}
+
+export function newAccount(): Account {
+  return { version: 1, coins: 0, characters: [], active: -1, nextId: 1 };
+}
+
+export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
+  if (acc.characters.length >= MAX_CHARACTERS) return null;
+  const c: Character = {
+    id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
+    level: 1, xp: 0, statPoints: 0,
+    stats: { str: 1, agi: 1, wis: 1, luk: 1 },
+    hp: 1, mapId: 'town', x: 120, auto: false, mode: 'fight',
+    inventory: [], equipment: { weapon: 'sword_wood' },
+    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 } },
+    kills: {}, lastActive: now,
+  };
+  c.hp = derive(c).maxHp;
+  acc.characters.push(c);
+  return c;
+}
+
+// ───────── 공식 ─────────
+export const xpToNext = (lv: number) => Math.floor(18 * Math.pow(lv, 1.8) + 12 * lv);
+export const skillXpToNext = (lv: number) => Math.floor(14 * Math.pow(lv, 1.6) + 6);
+
+export interface Derived {
+  str: number; agi: number; wis: number; luk: number;
+  maxHp: number; dmg: number; def: number;
+  atkInterval: number; speed: number; crit: number; critMult: number;
+  xpMult: number; dropMult: number; regen: number;
+  mining: number; chopping: number;
+}
+
+export function equipStats(c: Character): Required<ItemStats> {
+  const t: Required<ItemStats> = { dmg: 0, def: 0, hp: 0, str: 0, agi: 0, wis: 0, luk: 0, mining: 0, chopping: 0 };
+  for (const id of Object.values(c.equipment)) {
+    const s = id && ITEMS[id]?.stats;
+    if (s) for (const k in s) t[k as keyof ItemStats] += s[k as keyof ItemStats]!;
+  }
+  return t;
+}
+
+export function derive(c: Character): Derived {
+  const e = equipStats(c);
+  const str = c.stats.str + e.str, agi = c.stats.agi + e.agi;
+  const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
+  const maxHp = Math.floor(40 + c.level * 8 + str * 3 + e.hp);
+  return {
+    str, agi, wis, luk, maxHp,
+    dmg: 2 + e.dmg + str * 0.5 + c.level * 0.4,
+    def: e.def + c.level * 0.3,
+    atkInterval: Math.max(0.32, 0.75 - agi * 0.004),
+    speed: 80 + Math.min(40, agi * 0.6),
+    crit: Math.min(0.6, 0.04 + luk * 0.004), critMult: 1.6,
+    xpMult: 1 + wis * 0.005, dropMult: 1 + luk * 0.004,
+    regen: maxHp * 0.02,
+    mining: 1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05,
+    chopping: 1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05,
+  };
+}
+
+/** 몬스터 공격을 방어력으로 경감한 피해 */
+export const mitigate = (atk: number, def: number) => Math.max(1, Math.round(atk - def * 0.5));
+
+// ───────── 성장 ─────────
+/** 경험치 지급. 오른 레벨 수를 반환 */
+export function gainXp(c: Character, amount: number): number {
+  c.xp += amount;
+  let ups = 0;
+  while (c.xp >= xpToNext(c.level)) {
+    c.xp -= xpToNext(c.level);
+    c.level++; c.statPoints += 3; ups++;
+  }
+  if (ups) c.hp = derive(c).maxHp;
+  return ups;
+}
+export function gainSkillXp(c: Character, skill: SkillKey, amount: number): number {
+  const s = c.skills[skill];
+  s.xp += amount;
+  let ups = 0;
+  while (s.xp >= skillXpToNext(s.lv)) { s.xp -= skillXpToNext(s.lv); s.lv++; ups++; }
+  return ups;
+}
+export function spendStat(c: Character, k: StatKey, n = 1): boolean {
+  n = Math.min(n, c.statPoints);
+  if (n <= 0) return false;
+  c.stats[k] += n; c.statPoints -= n;
+  return true;
+}
+
+// ───────── 인벤토리 ─────────
+export const countItem = (c: Character, id: string) => c.inventory.find((s) => s.id === id)?.qty ?? 0;
+
+export function addItem(c: Character, id: string, qty = 1): boolean {
+  if (qty <= 0) return true;
+  const s = c.inventory.find((x) => x.id === id);
+  if (s) { s.qty += qty; return true; }
+  if (c.inventory.length >= INVENTORY_SIZE) return false;
+  c.inventory.push({ id, qty });
+  return true;
+}
+export function removeItem(c: Character, id: string, qty = 1): boolean {
+  const i = c.inventory.findIndex((x) => x.id === id);
+  if (i < 0 || c.inventory[i].qty < qty) return false;
+  c.inventory[i].qty -= qty;
+  if (c.inventory[i].qty === 0) c.inventory.splice(i, 1);
+  return true;
+}
+
+export function equipItem(c: Character, id: string): string | null {
+  const def = ITEMS[id];
+  if (!def?.slot || countItem(c, id) < 1) return '장착할 수 없는 아이템';
+  if ((def.reqLv ?? 1) > c.level) return `레벨 ${def.reqLv} 필요`;
+  const prev = c.equipment[def.slot];
+  removeItem(c, id, 1);
+  c.equipment[def.slot] = id;
+  if (prev) addItem(c, prev, 1); // 방금 한 칸을 비웠으므로 항상 성공
+  c.hp = Math.min(c.hp, derive(c).maxHp);
+  return null;
+}
+export function unequipItem(c: Character, slot: EquipSlot): string | null {
+  const id = c.equipment[slot];
+  if (!id) return null;
+  if (!addItem(c, id, 1)) return '가방이 가득 찼습니다';
+  delete c.equipment[slot];
+  c.hp = Math.min(c.hp, derive(c).maxHp);
+  return null;
+}
+export function sellItem(acc: Account, c: Character, id: string, qty: number): number {
+  qty = Math.min(qty, countItem(c, id));
+  if (qty <= 0 || !removeItem(c, id, qty)) return 0;
+  const gain = ITEMS[id].sell * qty;
+  acc.coins += gain;
+  return gain;
+}
+
+export function canCraft(acc: Account, c: Character, idx: number): boolean {
+  const r = RECIPES[idx];
+  return !!r && acc.coins >= r.coins && r.mats.every(([id, n]) => countItem(c, id) >= n);
+}
+export function craft(acc: Account, c: Character, idx: number): string | null {
+  const r = RECIPES[idx];
+  if (!canCraft(acc, c, idx)) return '재료가 부족합니다';
+  const freed = r.mats.some(([id, n]) => countItem(c, id) === n);
+  if (!freed && countItem(c, r.item) === 0 && c.inventory.length >= INVENTORY_SIZE) return '가방이 가득 찼습니다';
+  acc.coins -= r.coins;
+  for (const [id, n] of r.mats) removeItem(c, id, n);
+  addItem(c, r.item, 1);
+  return null;
+}
+
+// ───────── 저장 ─────────
+export function serialize(acc: Account): string { return JSON.stringify(acc); }
+export function deserialize(json: string | null): Account | null {
+  if (!json) return null;
+  try {
+    const a = JSON.parse(json) as Account;
+    if (a?.version !== 1 || !Array.isArray(a.characters)) return null;
+    return a;
+  } catch { return null; }
+}
