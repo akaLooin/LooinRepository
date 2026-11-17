@@ -4,7 +4,8 @@ import {
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
 export interface Stack { id: string; qty: number }
-export type Mode = 'fight' | 'gather';
+/** 마지막으로 지정한 대상. AUTO와 방치 보상이 이 활동을 이어간다 */
+export type Activity = { k: 'none' } | { k: 'fight' } | { k: 'gather'; node: string };
 
 export interface Character {
   id: number; name: string; look: Look;
@@ -13,7 +14,7 @@ export interface Character {
   stats: Record<StatKey, number>;
   hp: number;
   mapId: string; x: number;
-  auto: boolean; mode: Mode;
+  auto: boolean; activity: Activity;
   inventory: Stack[];
   equipment: Partial<Record<EquipSlot, string>>;
   skills: Record<SkillKey, { lv: number; xp: number }>;
@@ -45,7 +46,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
     cls: 'beginner', level: 1, xp: 0, statPoints: 0,
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
-    hp: 1, mapId: 'town', x: 120, auto: false, mode: 'fight',
+    hp: 1, mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' },
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
@@ -267,6 +268,8 @@ export function deserialize(json: string | null): Account | null {
     a.cards ??= {};
     for (const c of a.characters) {
       c.cls ??= 'beginner';
+      c.activity ??= { k: 'none' };
+      delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
       c.talentPoints ??= c.level - 1;
       c.quest ??= { idx: 0, accepted: false, prog: 0 };

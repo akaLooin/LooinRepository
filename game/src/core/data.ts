@@ -40,6 +40,8 @@ export interface MapDef {
   spawns: { monster: string; count: number }[];
   nodes: { node: string; x: number }[];
   portals: PortalDef[];
+  /** 위아래 발판을 잇는 로프. top/bottom은 이어지는 두 발판의 y */
+  ropes: { x: number; top: number; bottom: number }[];
   /** 제작대 위치(마을 전용) */
   craftX?: number;
   /** 퀘스트 NPC 위치(마을 전용) */
@@ -96,22 +98,25 @@ const nodes: NodeDef[] = [
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
 const maps: MapDef[] = [
-  { id: 'town', name: '모닥불 마을', width: 520, theme: 'town', platforms: [], spawns: [], nodes: [],
+  { id: 'town', name: '모닥불 마을', width: 520, theme: 'town', platforms: [], spawns: [], nodes: [], ropes: [],
     craftX: 210, npcX: 335, portals: [{ x: 496, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
     spawns: [{ monster: 'mossblob', count: 8 }],
     nodes: [{ node: 'oak', x: 95 }, { node: 'oak', x: 705 }],
+    ropes: [{ x: 205, top: -48, bottom: 0 }, { x: 445, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }],
     portals: [{ x: 24, to: 'town', toX: 455 }, { x: 796, to: 'hills', toX: 50, reqKills: 15 }] },
   { id: 'hills', name: '자갈 언덕', width: 920, theme: 'hills',
     platforms: [{ x: 110, y: -48, w: 180 }, { x: 370, y: -48, w: 140 }, { x: 570, y: -48, w: 230 }, { x: 630, y: -96, w: 140 }],
     spawns: [{ monster: 'pebbler', count: 7 }, { monster: 'mossblob', count: 2 }],
     nodes: [{ node: 'redrock', x: 330 }, { node: 'redrock', x: 535 }],
+    ropes: [{ x: 165, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 600, top: -48, bottom: 0 }, { x: 740, top: -96, bottom: -48 }],
     portals: [{ x: 24, to: 'meadow', toX: 765 }, { x: 896, to: 'forest', toX: 50, reqKills: 40 }] },
   { id: 'forest', name: '속삭임 숲', width: 920, theme: 'forest',
     platforms: [{ x: 90, y: -48, w: 220 }, { x: 180, y: -96, w: 110 }, { x: 430, y: -48, w: 160 }, { x: 660, y: -48, w: 190 }],
     spawns: [{ monster: 'leafling', count: 8 }],
     nodes: [{ node: 'silvertree', x: 380 }, { node: 'oak', x: 620 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 510, top: -48, bottom: 0 }, { x: 760, top: -48, bottom: 0 }],
     portals: [{ x: 24, to: 'hills', toX: 865 }] },
 ];
 export const MAPS: Record<string, MapDef> = Object.fromEntries(maps.map((m) => [m.id, m]));

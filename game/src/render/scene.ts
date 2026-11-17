@@ -2,9 +2,9 @@
 import Phaser from 'phaser';
 import { MAPS } from '../core/data';
 import { Look } from '../core/state';
-import { Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core/world';
+import { HURT_TIME, Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
-import { HEAD_PAD, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
+import { HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
 import { currentQuest, questProgress } from '../core/state';
 import { NPC_NAME, SMASH_RANGE } from '../core/data';
 
@@ -39,15 +39,14 @@ class CharRig {
     ensureTextures(scene);
     const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy);
     this.shadow = add('shadow', 0.5, 0.5).setAlpha(0.22);
-    this.legB = add(`${k}_leg`, 0.4, 0.05);
-    this.legF = add(`${k}_leg`, 0.4, 0.05);
+    this.legB = add(`${k}_leg`, 0.43, 0.05);
+    this.legF = add(`${k}_leg`, 0.43, 0.05);
     this.armB = add(`${k}_arm`, 0.5, 0.1);
     this.torso = add(`${k}_torso`, 0.5, 1);
-    const hc = canvases.get(`${k}_head`)!;
-    this.head = add(`${k}_head`, (HEAD_PAD + 6) / hc.width, (HEAD_PAD + 11) / hc.height);
+    this.head = add(`${k}_head`, HEAD_ORIGIN[0], HEAD_ORIGIN[1]);
     this.weapon = add('wp_sword_wood', 0.5, 0.82);
     const arm = add(`${k}_arm`, 0.5, 0.1);
-    this.weapon.setPosition(0, 8);
+    this.weapon.setPosition(0, 7.5);
     this.armF = scene.add.container(0, 0, [this.weapon, arm]);
     this.body = scene.add.container(0, 0, [this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
@@ -57,7 +56,7 @@ class CharRig {
   update(dt: number, w: World) {
     const p = w.player, c = w.char, P = this.pose;
     this.t += dt;
-    const moving = Math.abs(p.vx) > 1 && p.onGround;
+    const moving = Math.abs(p.vx) > 6 && p.onGround && p.swingT <= 0;
     const dead = p.dead > 0;
     // 목표 포즈
     let legF = 0, legB = 0, armF = -0.25 + Math.sin(this.t * 2.2) * 0.05, armB = 0.1 - Math.sin(this.t * 2.2) * 0.05;
@@ -92,6 +91,16 @@ class CharRig {
       legF = -0.25 * e; legB = 0.3 * e;
       direct = s > 0.25;
     }
+    if (p.rope >= 0) {
+      // 로프: 두 팔을 번갈아 위로 뻗고 다리도 번갈아 움직인다
+      this.walkPh += dt * Math.abs(p.vy) * 0.16;
+      const s = Math.sin(this.walkPh);
+      armF = -2.75 + s * 0.35; armB = 2.75 + s * 0.35; legF = s * 0.45; legB = -s * 0.45;
+      by = Math.abs(s) * 0.6; lean = 0; hy = 0; hr = 0; direct = false;
+    }
+    // 피격: 뒤로 움찔했다가 돌아온다
+    const hurtK = p.hurtT > 0 ? Math.max(0, (p.hurtT - (HURT_TIME - 0.22)) / 0.22) : 0;
+    if (hurtK > 0) { lean = -0.3 * hurtK; hr = -0.25 * hurtK; armF -= 0.5 * hurtK; armB += 0.5 * hurtK; }
     if (dead) { legF = 0.2; legB = -0.2; armF = -0.6; armB = 0.6; wpn = 1.4; by = 0; lean = 0; hy = 0; }
 
     const r = direct ? 60 : 16;
@@ -108,7 +117,7 @@ class CharRig {
     this.lie = smooth(this.lie, dead ? 1 : 0, dt, 8);
 
     // 무기 텍스처
-    const tool = p.swingT > 0 && (p.swingKind === 'mining' || p.swingKind === 'chopping')
+    const tool = p.rope >= 0 ? null : p.swingT > 0 && (p.swingKind === 'mining' || p.swingKind === 'chopping')
       ? (p.swingKind === 'mining' ? (c.equipment.pickaxe ? 'wp_pick_stone' : 'wp_pick') : (c.equipment.axe ? 'wp_axe_stone' : 'wp_axe'))
       : c.equipment.weapon ? `wp_${c.equipment.weapon}` : null;
     this.weapon.setVisible(!!tool);
@@ -127,16 +136,19 @@ class CharRig {
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
     // 다리는 골반, 팔은 몸통 양옆 어깨, 머리는 목에 붙는다
-    this.legB.setPosition(-2, -9.5).setRotation(P.legB);
-    this.legF.setPosition(2, -9.5).setRotation(P.legF);
-    this.torso.setPosition(0, -8.5 + P.by).setRotation(P.lean);
+    this.legB.setPosition(-2.4, -8.5).setRotation(P.legB);
+    this.legF.setPosition(2.4, -8.5).setRotation(P.legF);
+    this.torso.setPosition(0, -6.5 + P.by).setRotation(P.lean);
     const sx = P.lean * 9;
-    this.armB.setPosition(-4.5 + sx, -17 + P.by).setRotation(P.armB);
-    this.armF.setPosition(4.5 + sx, -17 + P.by).setRotation(P.armF);
-    this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, c.cls === 'archer' && !tool?.startsWith('wp_pick') && !tool?.startsWith('wp_axe') ? 0.5 : 0.82);
-    this.head.setPosition(sx * 1.2, -17.5 + P.by + P.hy).setRotation(P.lean * 0.5 + P.hr);
-    const tint = p.hurtT > 0.12 ? 0xff8a8a : 0xffffff;
-    for (const o of [this.torso, this.head, this.legF]) o.setTint(tint);
+    this.armB.setPosition(-5.5 + sx, -15.5 + P.by).setRotation(P.armB);
+    this.armF.setPosition(5.5 + sx, -15.5 + P.by).setRotation(P.armF);
+    this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, tool?.includes('bow') ? 0.5 : 0.82);
+    this.head.setPosition(sx * 1.3, -14.5 + P.by + P.hy).setRotation(P.lean * 0.5 + P.hr);
+    // 피격 표현: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
+    const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
+    for (const o of [this.torso, this.head, this.legF, this.legB, this.armB]) o.setTint(tint);
+    b.setAlpha(p.hurtT > 0 && !dead && Math.sin(this.t * 38) > 0 ? 0.35 : 1);
+    b.x = -p.facing * hurtK * 2.5;
 
     this.root.setPosition(p.x, p.y);
     this.shadow.setScale(p.onGround ? 1 : 0.7).setAlpha(p.onGround ? 0.22 : 0.1);
@@ -260,6 +272,7 @@ export class GameScene extends Phaser.Scene {
   private swayers: { img: Img; ph: number }[] = [];
   private portals: { ring: Img; glow: Img; lock: Img; text: Phaser.GameObjects.Text; idx: number }[] = [];
   private flames: Img[] = [];
+  private arrow: Img | null = null;
   private npc: { img: Img; mark: Phaser.GameObjects.Text } | null = null;
   private camX = 0; private camY = 0; private time0 = 0;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -322,6 +335,12 @@ export class GameScene extends Phaser.Scene {
       keep(this.add.tileSprite(p.x + 14, p.y, p.w - 28, 12, `plat_${map.theme}_m`).setOrigin(0, 0).setDepth(11));
       keep(this.add.image(p.x + p.w + 2, p.y, `plat_${map.theme}_r`).setOrigin(1, 0).setDepth(11));
     }
+    // 로프
+    for (const r of map.ropes) {
+      keep(this.add.tileSprite(r.x, r.top - 3, 5, r.bottom - r.top + 1, 'rope').setOrigin(0.5, 0).setDepth(13));
+      keep(this.add.image(r.x, r.top + 1, 'rope_knot').setDepth(14));
+    }
+    this.arrow = keep(this.add.image(0, 0, 'ui_arrow').setDepth(96).setVisible(false));
     // 풀/꽃 장식
     const seed = map.id.length * 13 + map.width;
     const surfaces = [{ x: 0, y: 0, w: map.width }, ...map.platforms];
@@ -377,7 +396,6 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: t, y: e.y - 20, duration: 750, ease: 'Cubic.easeOut' });
       this.tweens.add({ targets: t, alpha: 0, delay: 480, duration: 270, onComplete: () => t.destroy() });
       if (!e.onPlayer) this.puff(e.x, e.y + 8, 0xfff3b0, 3);
-      else this.cameras.main.shake(90, 0.004);
     } else if (e.t === 'level' || e.t === 'skill') {
       const p = this.world.player;
       const txt = e.t === 'level' ? 'LEVEL UP!' : `${e.name} Lv.${e.level}`;
@@ -426,13 +444,9 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(deltaMs / 1000, 0.05), g = this.game_, k = this.keys;
     this.time0 += dt;
     // 키보드 입력 합치기 (PC)
-    const kb = (k.LEFT.isDown || k.A.isDown ? -1 : 0) + (k.RIGHT.isDown || k.D.isDown ? 1 : 0);
-    const saved = { ...g.input };
-    if (kb) g.input.move = kb;
-    if (Phaser.Input.Keyboard.JustDown(k.SPACE) || Phaser.Input.Keyboard.JustDown(k.UP) || Phaser.Input.Keyboard.JustDown(k.W)) g.input.jump = true;
-    if (k.DOWN.isDown || k.S.isDown) g.input.down = true;
+    g.input.move = (k.LEFT.isDown || k.A.isDown ? -1 : 0) + (k.RIGHT.isDown || k.D.isDown ? 1 : 0);
+    g.input.climb = (k.UP.isDown || k.W.isDown ? -1 : 0) + (k.DOWN.isDown || k.S.isDown ? 1 : 0);
     g.tick(dt);
-    g.input.move = saved.move; g.input.down = saved.down;
 
     const w = this.world;
     if (!w || w !== g.world) return;
@@ -443,6 +457,12 @@ export class GameScene extends Phaser.Scene {
     this.syncShots(w);
     for (const s of this.swayers) s.img.setRotation(Math.sin(this.time0 * 1.6 + s.ph) * 0.12);
     this.flames.forEach((f, i) => f.setScale(0.9 + Math.sin(this.time0 * 11 + i * 2) * 0.25, 1 + Math.sin(this.time0 * 8 + i * 1.3) * 0.35).setAlpha(0.85));
+    // 터치로 지정한 대상 위에 화살표를 띄운다
+    const tgt = w.commandTarget();
+    if (this.arrow) {
+      this.arrow.setVisible(!!tgt);
+      if (tgt) this.arrow.setPosition(tgt.x, tgt.y + Math.sin(this.time0 * 7) * 2.2);
+    }
     if (this.npc) {
       const q = currentQuest(w.char), qp = questProgress(w.char);
       const m = !q ? '' : !w.char.quest.accepted ? '!' : qp?.done ? '?' : '';
@@ -463,7 +483,7 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main, p = w.player;
     const halfW = cam.width / cam.zoom / 2, halfH = cam.height / cam.zoom / 2;
     const tx = w.map.width > halfW * 2 ? Phaser.Math.Clamp(p.x + p.facing * 14, halfW, w.map.width - halfW) : w.map.width / 2;
-    const base = 34 - halfH;
+    const base = 52 - halfH;
     const ty = base + Math.min(0, (p.y + 50) * 0.7);
     this.camX = smooth(this.camX, tx, dt, 5); this.camY = smooth(this.camY, ty, dt, 4);
     if (Math.abs(this.camX - tx) > halfW * 2) this.camX = tx;

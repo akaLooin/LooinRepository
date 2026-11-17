@@ -1,7 +1,7 @@
 // DOM 기반 UI. 게임 상태를 읽어 HTML을 만들고, data-act 속성으로 동작을 위임 처리한다.
 import { AfkReport } from '../core/afk';
 import {
-  CARDS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, cardNext, cardTier, HAIR_STYLES, INVENTORY_SIZE, ITEMS, MAPS, MAX_CHARACTERS, MONSTERS, NPC_NAME, OUTFIT_COLORS, QUESTS, RECIPES, TALENT, TALENTS,
+  CARDS, CLASSES, NODES, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, cardNext, cardTier, HAIR_STYLES, INVENTORY_SIZE, ITEMS, MAPS, MAX_CHARACTERS, MONSTERS, NPC_NAME, OUTFIT_COLORS, QUESTS, RECIPES, TALENT, TALENTS,
   SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC, STAT_NAMES, SkillKey, StatKey,
 } from '../core/data';
 import {
@@ -25,6 +25,8 @@ export class UI {
   private panel: Panel = null;
   private sel: string | null = null;      // 가방에서 선택한 아이템
   private afk: AfkReport | null = null;
+  private craftTab = 0;
+  private craftSel = -1;
   private creating = false;
   private draft: { name: string; look: Look } = this.randomDraft();
   private last: Record<string, string> = {};
@@ -38,22 +40,11 @@ export class UI {
       <div id="modal" class="hidden"></div>
       <div id="title"></div>`;
     this.root.addEventListener('click', (e) => this.onClick(e));
-    // 누르고 있는 동안 동작하는 버튼(이동/점프)
-    const hold = (e: Event, on: boolean) => {
-      const sk = on ? (e.target as HTMLElement).closest<HTMLElement>('[data-skill]') : null;
-      if (sk) { e.preventDefault(); this.game.world?.useSkill(sk.dataset.skill!); this.refresh(); return; }
-      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-hold]');
-      if (!b) return;
-      e.preventDefault();
-      b.classList.toggle('down', on);
-      const k = b.dataset.hold!, inp = this.game.input;
-      if (k === 'left') inp.move = on ? -1 : inp.move === -1 ? 0 : inp.move;
-      else if (k === 'right') inp.move = on ? 1 : inp.move === 1 ? 0 : inp.move;
-      else if (k === 'jump') { if (on) inp.jump = true; }
-      else if (k === 'down') inp.down = on;
-    };
-    this.root.addEventListener('pointerdown', (e) => hold(e, true));
-    for (const ev of ['pointerup', 'pointercancel', 'pointerleave', 'pointerout']) this.root.addEventListener(ev, (e) => hold(e, false));
+    // 스킬 버튼은 누르는 즉시 발동
+    this.root.addEventListener('pointerdown', (e) => {
+      const sk = (e.target as HTMLElement).closest<HTMLElement>('[data-skill]');
+      if (sk) { e.preventDefault(); this.game.world?.useSkill(sk.dataset.skill!); this.refresh(); }
+    });
     this.root.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
       if (t.id === 'cname') this.draft.name = t.value;
@@ -121,18 +112,13 @@ export class UI {
         <div class="bar hp"><i style="width:${pct(c.hp, d.maxHp)}"></i><span>${Math.ceil(c.hp)} / ${d.maxHp}</span></div>
         <div class="bar xp"><i style="width:${pct(c.xp, xpToNext(c.level))}"></i><span>${pct(c.xp, xpToNext(c.level))}</span></div>
       </div>`);
-    this.put('top', `
-      <div class="info box"><div>${w.map.name}</div><div class="coin">${icon('coin')}${g.acc.coins.toLocaleString()}</div></div>
-      <button data-act="open:bag">가방</button>
-      <button data-act="open:stats">능력치${c.statPoints ? '<i class="dot"></i>' : ''}</button>
-      <button data-act="open:talents">특성${c.talentPoints ? '<i class="dot"></i>' : ''}</button>
-      <button data-act="open:cards">카드</button>
-      <button data-act="chars">캐릭터</button>`);
+    const act = c.activity.k === 'gather' ? `${NODES[c.activity.node].name} 채집` : w.map.spawns.length ? '사냥' : '휴식';
+    this.put('top', `<div class="info box"><div>${w.map.name} <span class="dim">· ${act}</span></div><div class="coin">${icon('coin')}${g.acc.coins.toLocaleString()}</div></div>`);
+    const menu = (act_: string, label: string, dot = false) => `<button class="menu" data-act="${act_}"><b>${label}</b>${dot ? '<i class="dot"></i>' : ''}</button>`;
     this.put('act', `
-      <div class="stack">
-        <button data-act="mode">${c.mode === 'fight' ? '⚔ 전투' : '⛏ 채집'}</button>
-        <button data-act="auto" class="${c.auto ? 'on' : ''}">AUTO ${c.auto ? 'ON' : 'OFF'}</button>
-      </div>`);
+      <button class="auto ${c.auto ? 'on' : ''}" data-act="auto"><b>AUTO</b><span>${c.auto ? 'ON' : 'OFF'}</span></button>
+      <span class="grow"></span>
+      ${menu('open:bag', '가방')}${menu('open:stats', '능력치', c.statPoints > 0)}${menu('open:talents', '특성', c.talentPoints > 0)}${menu('open:cards', '카드')}${menu('chars', '캐릭터')}`);
 
     this.put('skills', TALENTS.filter((t) => t.active && c.talents[t.id] && (!t.cls || t.cls === c.cls)).map((t) => {
       const cd = w.player.cd[t.id] ?? 0;
@@ -170,7 +156,7 @@ export class UI {
     const now = Date.now();
     const cards = acc.characters.map((c, i) => {
       const map = MAPS[c.mapId], away = Math.floor((now - c.lastActive) / 1000);
-      const st = !c.auto ? '휴식 중' : c.mode === 'fight' && map.spawns.length ? '사냥 중' : c.mode === 'gather' && map.nodes.length ? '채집 중' : '휴식 중';
+      const st = c.activity.k === 'gather' && map.nodes.some((n) => n.node === (c.activity as { node: string }).node) ? '채집 중' : map.spawns.length ? '사냥 중' : '휴식 중';
       return `<div class="card box" data-act="select:${i}">
         <img class="px" src="${portraitUrl(c.look)}">
         <div><b>${esc(c.name)}</b></div><div class="small gold-t">Lv.${c.level}</div>
@@ -290,16 +276,30 @@ export class UI {
         <div class="row" style="margin-top:.9em"><span class="grow"></span>${btn}</div>`);
     }
     if (this.panel === 'craft') {
-      const list = RECIPES.map((r, i) => {
+      // 분류 탭 + 아이콘 격자 + 선택한 품목 상세. 품목이 늘어도 목록이 길어지지 않는다.
+      const tabs: [string, (slot: EquipSlot) => boolean][] = [
+        ['무기', (sl) => sl === 'weapon'], ['방어구', (sl) => sl === 'hat' || sl === 'body'], ['도구', (sl) => sl === 'pickaxe' || sl === 'axe'],
+      ];
+      const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => tabs[this.craftTab][1](ITEMS[r.item].slot!));
+      if (!list.some((x) => x.i === this.craftSel)) this.craftSel = list[0]?.i ?? -1;
+      let cells = '';
+      for (let n = 0; n < Math.max(12, Math.ceil(list.length / 4) * 4); n++) {
+        const x = list[n];
+        cells += x ? `<div class="slot ${x.i === this.craftSel ? 'sel' : ''} ${canCraft(g.acc, c, x.i) ? 'can' : 'cant'}" data-act="csel:${x.i}">${icon(x.r.item)}</div>` : '<div class="slot empty"></div>';
+      }
+      let detail = '';
+      const r = RECIPES[this.craftSel];
+      if (r) {
         const it = ITEMS[r.item];
-        const mats = r.mats.map(([id, n]) => `<span class="${countItem(c, id) >= n ? '' : 'red-t'}">${icon(id)}${countItem(c, id)}/${n}</span>`).join(' ');
-        return `<div class="recipe"><img class="px ic" src="${iconUrl(ITEM_ICON[r.item])}">
-          <div class="grow"><div><b>${it.name}</b> <span class="small dim">${SLOT_NAMES[it.slot!]}${it.reqLv ? ` · Lv.${it.reqLv}` : ''}</span></div>
-          <div class="small green-t">${statLine(it.id)}</div>
-          <div class="small mats"><span class="${g.acc.coins >= r.coins ? '' : 'red-t'}">${icon('coin')}${r.coins}</span> ${mats}</div></div>
-          <button class="gold" data-act="craft:${i}" ${canCraft(g.acc, c, i) ? '' : 'disabled'}>제작</button></div>`;
-      }).join('');
-      return win('제작대', list);
+        const mats = r.mats.map(([id, n]) => `<div class="row"><span class="mat">${icon(id)}</span><span class="grow">${ITEMS[id].name}</span><b class="${countItem(c, id) >= n ? 'green-t' : 'red-t'}">${countItem(c, id)}/${n}</b></div>`).join('');
+        detail = `<div class="row"><span class="bigic">${icon(r.item)}</span><div><b>${it.name}</b><div class="small dim">${SLOT_NAMES[it.slot!]}${it.reqLv ? ` · Lv.${it.reqLv}` : ''}${it.wtype ? ` · ${Object.values(CLASSES).filter((k) => k.weapon === it.wtype && k.id !== 'beginner').map((k) => k.name).join('/')}` : ''}</div></div></div>
+          <div class="small green-t" style="margin:.3em 0">${statLine(it.id)}</div>
+          <h4>재료</h4>${mats}
+          <div class="row"><span class="mat">${icon('coin')}</span><span class="grow">코인</span><b class="${g.acc.coins >= r.coins ? 'green-t' : 'red-t'}">${g.acc.coins}/${r.coins}</b></div>
+          <button class="gold wide" data-act="craft:${this.craftSel}" ${canCraft(g.acc, c, this.craftSel) ? '' : 'disabled'}>제작</button>`;
+      }
+      return win('제작대', `<div class="tabs">${tabs.map(([name], i) => `<button class="${i === this.craftTab ? 'on' : ''}" data-act="ctab:${i}">${name}</button>`).join('')}</div>
+        <div class="craft"><div class="slots c4">${cells}</div><div class="detail">${detail}</div></div>`);
     }
     return '';
   }
@@ -329,7 +329,8 @@ export class UI {
       case 'open': this.panel = a as Panel; this.sel = null; break;
       case 'close': this.panel = null; this.afk = null; break;
       case 'auto': if (c) c.auto = !c.auto; break;
-      case 'mode': if (c) c.mode = c.mode === 'fight' ? 'gather' : 'fight'; break;
+      case 'ctab': this.craftTab = +a; this.craftSel = -1; break;
+      case 'csel': this.craftSel = +a; break;
       case 'class': if (c) { const err = advanceClass(c, a as ClassId); fail(err); if (!err) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'talents'; } } break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
       case 'equip': if (c) { fail(equipItem(c, a)); this.sel = null; } break;

@@ -6,7 +6,8 @@ import {
 import { Rng } from './rng';
 import { Account, Character, Derived, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
 
-export interface Input { move: number; jump: boolean; down: boolean }
+/** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
+export interface Input { move: number; climb: number }
 export type SwingKind = 'attack' | 'shoot' | 'cast' | 'mining' | 'chopping';
 
 /** 터치로 내린 명령. 도착하거나 끝나면 사라진다. */
@@ -21,7 +22,9 @@ export interface Player {
   x: number; y: number; vx: number; vy: number;
   onGround: boolean; facing: 1 | -1;
   attackT: number; swingT: number; swingKind: SwingKind; swingId: number;
-  dead: number; dropT: number; hurtT: number;
+  dead: number; hurtT: number;
+  /** 매달린 로프 번호(-1이면 없음) */
+  rope: number;
   /** 액티브 스킬별 남은 재사용 대기시간 */
   cd: Record<string, number>;
 }
@@ -51,10 +54,16 @@ export type WorldEvent =
 
 export const SWING_TIME = 0.32;
 export const GATHER_INTERVAL = 0.7;
-const GRAVITY = 900, JUMP = 335, JUMP_REACH = 58, SHOT_SPEED = 330;
+const GRAVITY = 900, SHOT_SPEED = 330, CLIMB_SPEED = 62, ACCEL = 620;
+/** 근접 공격은 대상과 절반쯤 겹칠 만큼 다가가서 시작한다 */
+const MELEE_NEAR = 11;
+/** 포탈·NPC 등은 대상과 겹치는 지점까지 걸어가서 상호작용한다 */
+const INTERACT_STOP = 3;
+export const HURT_TIME = 0.55;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-const IDLE: Input = { move: 0, jump: false, down: false };
+const IDLE: Input = { move: 0, climb: 0 };
+interface Rope { x: number; top: number; bottom: number; a: number; b: number }
 
 export class World {
   readonly map: MapDef;
@@ -71,7 +80,11 @@ export class World {
   private swingTarget: Mob | NodeInst | null = null;
   private hitDone = true;
   private aiTarget: Mob | NodeInst | null = null;
-  private aiGoalX = 0;
+  /** 로프와 그 양 끝 발판(a: 아래, b: 위) */
+  readonly ropes: Rope[] = [];
+  private engaged = -1;
+  /** 길 찾기가 고른 로프 진행 방향 */
+  private climbDir = 0;
 
   constructor(readonly acc: Account, readonly char: Character, readonly rng: Rng) {
     this.map = MAPS[char.mapId] ?? MAPS.town;
@@ -80,8 +93,13 @@ export class World {
     this.d = derive(char, acc.cards);
     this.player = {
       x: clamp(char.x, 10, this.map.width - 10), y: 0, vx: 0, vy: 0, onGround: true, facing: 1,
-      attackT: 0, swingT: 0, swingKind: 'attack', swingId: 0, dead: 0, dropT: 0, hurtT: 0, cd: {},
+      attackT: 0, swingT: 0, swingKind: 'attack', swingId: 0, dead: 0, hurtT: 0, rope: -1, cd: {},
     };
+    for (const r of this.map.ropes) {
+      const at = (y: number) => this.platforms.findIndex((q) => q.y === y && r.x >= q.x && r.x <= q.x + q.w);
+      const a = at(r.bottom), b = at(r.top);
+      if (a >= 0 && b >= 0) this.ropes.push({ ...r, a, b });
+    }
     const totalW = this.platforms.reduce((s, p) => s + p.w, 0);
     for (const s of this.map.spawns) {
       for (let i = 0; i < s.count; i++) {
@@ -119,27 +137,30 @@ export class World {
   tap(x: number, y: number): Command | null {
     const p = this.player, c = this.char, map = this.map;
     if (p.dead > 0) return null;
+    this.engaged = -1;
     const near = (tx: number, w: number, top: number) => Math.abs(tx - x) <= w && y >= top && y <= 8;
     let cmd: Command | null = null;
     const mob = this.mobs.filter((m) => m.alive && Math.abs(m.x - x) <= 15 && y >= m.y - 30 && y <= m.y + 8)
       .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
     const node = this.nodes.find((n) => near(n.x, 18, -62));
     const portal = map.portals.findIndex((q) => near(q.x, 16, -48));
-    if (mob) { cmd = { k: 'mob', uid: mob.uid }; c.mode = 'fight'; }
+    if (mob) { cmd = { k: 'mob', uid: mob.uid }; c.activity = { k: 'fight' }; }
     else if (portal >= 0) cmd = { k: 'portal', idx: portal };
     else if (map.npcX !== undefined && near(map.npcX, 14, -36)) cmd = { k: 'npc' };
     else if (map.craftX !== undefined && near(map.craftX, 20, -28)) cmd = { k: 'craft' };
     else if (node) {
       if (!this.canUse(node)) { this.events.push({ t: 'loot', text: `${SKILL_NAMES[node.def.skill]} Lv.${node.def.reqLv} 필요` }); return null; }
-      cmd = { k: 'node', uid: node.uid }; c.mode = 'gather';
+      cmd = { k: 'node', uid: node.uid }; c.activity = { k: 'gather', node: node.def.id };
     } else {
-      // 터치 지점 바로 아래의 발판 위로
-      let py = 0, best = 1e9;
+      // 바닥(발판 윗면 근처, 지면은 그 아래 흙까지)을 눌렀을 때만 이동한다. 허공은 무시.
+      let py: number | null = null, best = 1e9;
       for (const q of this.platforms) {
         if (x < q.x || x > q.x + q.w) continue;
-        const gap = q.y - y;
-        if (gap >= -14 && gap < best) { best = gap; py = q.y; }
+        const gap = y - q.y; // 양수면 윗면보다 아래를 누른 것
+        if (gap < -16 || gap > (q.y === 0 ? 1e9 : 14)) continue;
+        if (Math.abs(gap) < best) { best = Math.abs(gap); py = q.y; }
       }
+      if (py === null) return null;
       cmd = { k: 'move', x: clamp(x, 10, map.width - 10), y: py };
     }
     this.aiTarget = null;
@@ -212,7 +233,7 @@ export class World {
     this.stepShots(dt, d);
 
     if (p.dead > 0) {
-      p.dead -= dt; this.command = null;
+      p.dead -= dt; this.command = null; p.rope = -1;
       if (p.dead <= 0) { p.x = this.map.portals[0]?.x ?? 60; p.y = 0; p.vy = 0; p.onGround = true; c.hp = d.maxHp; }
       return;
     }
@@ -224,36 +245,43 @@ export class World {
       for (const t of TALENTS) {
         if (!t.active || !c.talents[t.id]) continue;
         if (t.id === 'heal') { if (c.hp < d.maxHp * 0.5) this.useSkill('heal'); }
-        else if (c.mode === 'fight') this.useSkill(t.id);
+        else if (c.activity.k !== 'gather') this.useSkill(t.id);
       }
     }
 
     // 조작 우선순위: 키보드 > 터치 명령 > AUTO
-    const keyed = manual.move !== 0 || manual.jump || manual.down;
-    if (keyed) this.command = null;
+    const keyed = manual.move !== 0 || manual.climb !== 0;
+    if (keyed) { this.command = null; this.engaged = -1; this.climbDir = 0; }
     const inp = keyed ? manual : this.command ? this.follow(d) : c.auto ? this.ai(d) : IDLE;
 
-    // 이동
-    p.vx = inp.move * d.speed;
-    if (inp.move) p.facing = inp.move > 0 ? 1 : -1;
-    if (inp.jump && p.onGround) { p.vy = -JUMP; p.onGround = false; }
-    if (inp.down && p.onGround && p.y < 0) { p.dropT = 0.25; p.onGround = false; }
-    p.dropT = Math.max(0, p.dropT - dt);
-    p.x = clamp(p.x + p.vx * dt, 10, this.map.width - 10);
-    if (p.onGround) {
-      const under = this.platforms.some((q) => q.y === p.y && p.x >= q.x && p.x <= q.x + q.w);
-      if (!under) p.onGround = false;
-    }
-    if (!p.onGround) {
-      const prevY = p.y;
-      p.vy += GRAVITY * dt;
+    if (p.rope >= 0) {
+      // 로프: 위아래로만 움직이고, 끝에 닿으면 그 발판에 선다
+      const r = this.ropes[p.rope];
+      p.x = r.x; p.vx = 0; p.vy = inp.climb * CLIMB_SPEED;
       p.y += p.vy * dt;
-      if (p.vy > 0) {
+      if (p.y <= r.top) { p.y = r.top; p.rope = -1; p.onGround = true; p.vy = 0; }
+      else if (p.y >= r.bottom) { p.y = r.bottom; p.rope = -1; p.onGround = true; p.vy = 0; }
+      else if (keyed && manual.move) { p.rope = -1; p.onGround = false; p.vy = 0; }
+    } else {
+      // 좌우 이동: 가속/감속을 줘서 뚝뚝 끊기지 않게. 공격 모션 중에는 제자리.
+      const want = p.swingT > 0 ? 0 : inp.move * d.speed;
+      p.vx += clamp(want - p.vx, -ACCEL * dt, ACCEL * dt);
+      if (inp.move && p.swingT <= 0) p.facing = inp.move > 0 ? 1 : -1;
+      p.x = clamp(p.x + p.vx * dt, 10, this.map.width - 10);
+      if (inp.climb && p.onGround) {
+        const i = this.ropes.findIndex((r) => Math.abs(r.x - p.x) < 5 && p.y === (inp.climb < 0 ? r.bottom : r.top));
+        if (i >= 0) { p.rope = i; p.onGround = false; p.x = this.ropes[i].x; p.vx = 0; p.vy = 0; }
+      }
+      if (p.onGround) {
+        const under = this.platforms.some((q) => q.y === p.y && p.x >= q.x && p.x <= q.x + q.w);
+        if (!under) p.onGround = false;
+      }
+      if (!p.onGround && p.rope < 0) {
+        const prevY = p.y;
+        p.vy += GRAVITY * dt;
+        p.y += p.vy * dt;
         for (const q of this.platforms) {
-          if (q.y !== 0 && p.dropT > 0) continue;
-          if (prevY <= q.y && p.y >= q.y && p.x >= q.x && p.x <= q.x + q.w) {
-            p.y = q.y; p.vy = 0; p.onGround = true; break;
-          }
+          if (prevY <= q.y && p.y >= q.y && p.x >= q.x && p.x <= q.x + q.w) { p.y = q.y; p.vy = 0; p.onGround = true; break; }
         }
       }
     }
@@ -264,14 +292,16 @@ export class World {
       p.swingT -= dt;
       if (!this.hitDone && p.swingT <= SWING_TIME * 0.55) { this.hitDone = true; this.applyHit(d); }
     }
-    if (p.attackT <= 0 && p.swingT <= 0) {
+    if (p.attackT <= 0 && p.swingT <= 0 && p.onGround) {
       const cmd = this.command;
-      // 이동 명령 중에는 멈춰서 싸우지 않는다(원거리 직업이 걸음을 못 떼는 것 방지)
-      const mob = cmd && cmd.k !== 'mob' ? null : this.mobInRange(d, cmd?.k === 'mob' ? cmd.uid : undefined);
-      if (mob && (d.ranged ? p.onGround && inp.move === 0 : true)) {
+      // 터치/AUTO 중에는 자리를 잡은(engaged) 대상만 친다 → 지나가다 멈칫거리지 않는다.
+      // 한 번 시작한 공격은 대상이 자리를 벗어나도 적용된다(applyHit는 거리 검사를 하지 않음).
+      const mob = keyed || (!cmd && !c.auto) ? this.mobInRange(d)
+        : this.mobs.find((m) => m.uid === this.engaged && m.alive && m.spawnAge >= 0.4) ?? null;
+      if (mob && (d.ranged ? inp.move === 0 : true)) {
         this.startSwing(d.ranged ? (c.cls === 'mage' ? 'cast' : 'shoot') : 'attack', mob, d.atkInterval);
       } else {
-        const wants = cmd ? cmd.k === 'node' : c.auto && c.mode === 'gather';
+        const wants = cmd ? cmd.k === 'node' : c.auto && c.activity.k === 'gather';
         const node = wants && inp.move === 0 ? this.nodes.find((n) => Math.abs(n.x - p.x) < 20 && Math.abs(n.y - p.y) < 6 && this.canUse(n)
           && (cmd?.k !== 'node' || cmd.uid === n.uid)) : null;
         if (node) this.startSwing(node.def.skill, node, GATHER_INTERVAL);
@@ -286,15 +316,14 @@ export class World {
     this.swingTarget = target; this.hitDone = false;
   }
 
-  /** 사거리 안의 몬스터. prefer가 있으면 그 개체를 우선한다 */
-  private mobInRange(d: Derived, prefer?: number): Mob | null {
+  /** 사거리 안에서 가장 가까운 몬스터(키보드 조작용) */
+  private mobInRange(d: Derived): Mob | null {
     const p = this.player;
     let best: Mob | null = null, bd = 1e9;
     for (const m of this.mobs) {
       if (!m.alive || m.spawnAge < 0.4) continue;
       const dx = Math.abs(m.x - p.x);
       if (dx > d.range + m.def.radius * 0.5 || Math.abs(m.y - p.y) >= 18) continue;
-      if (m.uid === prefer) return m;
       if (dx < bd) { best = m; bd = dx; }
     }
     return best;
@@ -378,7 +407,7 @@ export class World {
         && Math.abs(m.x - p.x) < m.def.radius + 5 && Math.abs(m.y - p.y) < 14) {
         m.contactCd = 1.2;
         const amount = mitigate(m.def.atk * this.rng.range(0.8, 1.2), d.def);
-        c.hp -= amount; p.hurtT = 0.25;
+        c.hp -= amount; p.hurtT = HURT_TIME;
         this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount, crit: false, onPlayer: true });
         if (c.hp <= 0) { c.hp = 0; p.dead = 3; p.swingT = 0; p.vx = 0; this.events.push({ t: 'faint' }); }
       }
@@ -412,31 +441,58 @@ export class World {
   }
 
   // ───────── 길 찾기 ─────────
-  /** (tx, ty) 지점까지 가는 입력을 만든다. stop 이내면 멈춘다. 도착 여부는 arrived로 확인 */
+  private platAt(x: number, y: number): number {
+    let best = -1, bd = 1e9;
+    this.platforms.forEach((q, i) => {
+      if (q.y !== y) return;
+      const dx = x < q.x ? q.x - x : x > q.x + q.w ? x - (q.x + q.w) : 0;
+      if (dx < bd) { bd = dx; best = i; }
+    });
+    return best;
+  }
+  /** from 발판에서 to 발판으로 가기 위해 처음 타야 할 로프와 방향(너비 우선 탐색) */
+  private route(from: number, to: number): { rope: number; dir: number } | null {
+    const p = this.player;
+    const first = new Map<number, { rope: number; dir: number }>();
+    const queue = [from], seen = new Set([from]);
+    while (queue.length) {
+      const cur = queue.shift()!;
+      if (cur === to) return first.get(cur) ?? null;
+      const edges = this.ropes.map((r, i) => ({ r, i })).filter(({ r }) => r.a === cur || r.b === cur)
+        .sort((u, v) => Math.abs(u.r.x - p.x) - Math.abs(v.r.x - p.x));
+      for (const { r, i } of edges) {
+        const next = r.a === cur ? r.b : r.a;
+        if (seen.has(next)) continue;
+        seen.add(next);
+        first.set(next, first.get(cur) ?? { rope: i, dir: r.a === cur ? -1 : 1 });
+        queue.push(next);
+      }
+    }
+    return null;
+  }
+
+  /** (tx, ty) 지점까지 가는 입력을 만든다. 높이가 다르면 로프를 찾아 탄다. */
   private navigate(tx: number, ty: number, stop: number): Input {
     const p = this.player;
-    const inp: Input = { move: 0, jump: false, down: false };
-    const dy = ty - p.y;
+    const inp: Input = { move: 0, climb: 0 };
+    if (p.rope >= 0) {
+      // 타고 있는 로프는 목표 높이 쪽으로 끝까지
+      const r = this.ropes[p.rope];
+      inp.climb = this.climbDir || (ty <= r.top ? -1 : 1);
+      return inp;
+    }
+    if (!p.onGround) return inp;
     const toward = (gx: number, s: number) => { if (Math.abs(gx - p.x) > s) inp.move = gx > p.x ? 1 : -1; };
-    if (dy < -6) {
-      if (!p.onGround) { toward(this.aiGoalX, 3); return inp; }
-      // 한 번의 점프로 닿는 발판 중 목표에 가장 가까운 것을 디딘다
-      let plat: Platform | null = null, bd = 1e9;
-      for (const q of this.platforms) {
-        if (q.y >= p.y - 6 || q.y < p.y - JUMP_REACH) continue;
-        const gx = clamp(tx, q.x + 8, q.x + q.w - 8);
-        const s = Math.abs(gx - tx) + Math.abs(q.y - ty) + Math.abs(gx - p.x) * 0.1;
-        if (s < bd) { bd = s; plat = q; }
-      }
-      if (!plat) { toward(tx, 4); return inp; }
-      this.aiGoalX = clamp(tx, plat.x + 8, plat.x + plat.w - 8);
-      if (Math.abs(this.aiGoalX - p.x) > 4) toward(this.aiGoalX, 4); else inp.jump = true;
-    } else if (dy > 6) {
-      if (p.onGround) inp.down = true; else toward(tx, 6);
-    } else {
+    const cur = this.platAt(p.x, p.y), dst = this.platAt(tx, ty);
+    if (cur === dst || cur < 0 || dst < 0) {
       toward(tx, stop);
       if (!inp.move && tx !== p.x && p.swingT <= 0) p.facing = tx > p.x ? 1 : -1;
+      return inp;
     }
+    const step = this.route(cur, dst);
+    if (!step) return inp; // 갈 수 없는 곳
+    const r = this.ropes[step.rope];
+    if (Math.abs(r.x - p.x) > 2) toward(r.x, 2); else inp.climb = this.climbDir = step.dir;
     return inp;
   }
   private arrived(tx: number, ty: number, stop: number) {
@@ -447,7 +503,6 @@ export class World {
   /** 터치 명령 수행 */
   private follow(d: Derived): Input {
     const cmd = this.command!;
-    const fightStop = d.ranged ? d.range * 0.85 : d.range * 0.6;
     switch (cmd.k) {
       case 'move':
         if (this.arrived(cmd.x, cmd.y, 3)) { this.command = null; return IDLE; }
@@ -455,7 +510,7 @@ export class World {
       case 'mob': {
         const m = this.mobs.find((x) => x.uid === cmd.uid);
         if (!m || !m.alive) { this.command = null; return IDLE; }
-        return this.navigate(m.x, m.y, fightStop);
+        return this.chase(m, d);
       }
       case 'node': {
         const n = this.nodes.find((x) => x.uid === cmd.uid);
@@ -464,7 +519,7 @@ export class World {
       }
       default: {
         const tx = cmd.k === 'portal' ? this.map.portals[cmd.idx].x : cmd.k === 'npc' ? this.map.npcX! : this.map.craftX!;
-        const stop = cmd.k === 'portal' ? 6 : 16;
+        const stop = INTERACT_STOP;
         if (this.arrived(tx, 0, stop)) {
           this.command = null;
           this.events.push({ t: 'arrive', what: cmd.k, idx: cmd.k === 'portal' ? cmd.idx : 0 });
@@ -479,20 +534,46 @@ export class World {
   private pickTarget(): Mob | NodeInst | null {
     const p = this.player, c = this.char;
     const cur = this.aiTarget;
-    if (cur && ('hp' in cur ? cur.alive && c.mode === 'fight' : c.mode === 'gather')) return cur;
+    const act = c.activity;
+    if (cur && ('hp' in cur ? cur.alive && act.k !== 'gather' : act.k === 'gather' && cur.def.id === act.node)) return cur;
     let best: Mob | NodeInst | null = null, bd = 1e9;
     const consider = (t: Mob | NodeInst) => {
       const s = Math.abs(t.x - p.x) + Math.abs(t.y - p.y) * 1.5;
       if (s < bd) { bd = s; best = t; }
     };
-    if (c.mode === 'fight') { for (const m of this.mobs) if (m.alive) consider(m); }
-    else for (const n of this.nodes) if (this.canUse(n)) consider(n);
+    if (act.k === 'gather') { for (const n of this.nodes) if (n.def.id === act.node && this.canUse(n)) consider(n); }
+    else for (const m of this.mobs) if (m.alive) consider(m);
     return (this.aiTarget = best);
+  }
+
+  /** 몬스터 추적. 한 번 자리를 잡으면 대상이 사거리를 벗어날 때까지 멈춰서 싸운다(왔다 갔다 떨림 방지) */
+  private chase(m: Mob, d: Derived): Input {
+    const p = this.player;
+    const near = d.ranged ? d.range * 0.8 : MELEE_NEAR, far = d.range;
+    const dx = Math.abs(m.x - p.x), level = p.onGround && Math.abs(m.y - p.y) < 6;
+    if (level && dx <= (this.engaged === m.uid ? far : near)) {
+      this.engaged = m.uid;
+      if (m.x !== p.x && p.swingT <= 0) p.facing = m.x > p.x ? 1 : -1;
+      return IDLE;
+    }
+    if (p.swingT > 0) return IDLE;
+    this.engaged = -1;
+    return this.navigate(m.x, m.y, near);
   }
 
   private ai(d: Derived): Input {
     const t = this.pickTarget();
     if (!t) return IDLE;
-    return this.navigate(t.x, t.y, 'hp' in t ? (d.ranged ? d.range * 0.85 : d.range * 0.6) : 10);
+    return 'hp' in t ? this.chase(t, d) : this.navigate(t.x, t.y, 10);
+  }
+
+  /** 현재 명령의 대상 위치(강조 화살표용). 단순 이동이면 null */
+  commandTarget(): { x: number; y: number } | null {
+    const cmd = this.command;
+    if (!cmd || cmd.k === 'move') return null;
+    if (cmd.k === 'mob') { const m = this.mobs.find((x) => x.uid === cmd.uid); return m ? { x: m.x, y: m.y - (m.def.motion === 'float' ? 38 : 28) } : null; }
+    if (cmd.k === 'node') { const n = this.nodes.find((x) => x.uid === cmd.uid); return n ? { x: n.x, y: n.y - (n.def.skill === 'chopping' ? 74 : 44) } : null; }
+    if (cmd.k === 'portal') return { x: this.map.portals[cmd.idx].x, y: -60 };
+    return { x: cmd.k === 'npc' ? this.map.npcX! : this.map.craftX!, y: cmd.k === 'npc' ? -50 : -40 };
   }
 }

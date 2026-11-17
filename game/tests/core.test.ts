@@ -15,7 +15,7 @@ const setup = () => {
   return { acc, c };
 };
 const run = (w: World, seconds: number) => {
-  for (let i = 0; i < seconds * 60; i++) { w.step(1 / 60, { move: 0, jump: false, down: false }); w.events.length = 0; }
+  for (let i = 0; i < seconds * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; }
 };
 
 describe('성장', () => {
@@ -56,7 +56,7 @@ describe('성장', () => {
 describe('월드 시뮬레이션', () => {
   it('자동 전투: 발판 위 몬스터까지 찾아가 사냥한다', () => {
     const { acc, c } = setup();
-    c.mapId = 'meadow'; c.auto = true; c.mode = 'fight';
+    c.mapId = 'meadow'; c.auto = true;
     const w = new World(acc, c, new Rng(7));
     run(w, 120);
     expect(c.kills.meadow).toBeGreaterThan(25);
@@ -73,7 +73,7 @@ describe('월드 시뮬레이션', () => {
       const w = new World(acc, c, new Rng(3));
       const seen = new Set<number>();
       for (let i = 0; i < 180 * 60; i++) {
-        w.step(1 / 60, { move: 0, jump: false, down: false });
+        w.step(1 / 60, { move: 0, climb: 0 });
         for (const e of w.events) if (e.t === 'kill') seen.add(e.uid);
         w.events.length = 0;
       }
@@ -82,20 +82,23 @@ describe('월드 시뮬레이션', () => {
   });
   it('자동 채집: 나무를 베어 통나무와 스킬 경험치를 얻는다', () => {
     const { acc, c } = setup();
-    c.mapId = 'meadow'; c.auto = true; c.mode = 'gather';
+    c.mapId = 'meadow'; c.auto = true; c.activity = { k: 'gather', node: 'oak' };
     const w = new World(acc, c, new Rng(1));
     run(w, 60);
     expect(countItem(c, 'log')).toBeGreaterThan(5);
     expect(c.skills.chopping.lv).toBeGreaterThan(1);
   });
-  it('수동 조작: 이동과 점프', () => {
+  it('수동 조작: 걷기와 로프 오르내리기', () => {
     const { acc, c } = setup();
+    c.mapId = 'meadow'; c.x = 180;
     const w = new World(acc, c, new Rng(1));
-    const x0 = w.player.x;
-    for (let i = 0; i < 30; i++) w.step(1 / 60, { move: 1, jump: i === 0, down: false });
-    expect(w.player.x).toBeGreaterThan(x0 + 20);
-    expect(w.player.y).toBeLessThan(0);
-    run(w, 2);
+    for (const m of w.mobs) m.alive = false, m.respawnT = 999;
+    for (let i = 0; i < 600 && Math.abs(w.player.x - 205) > 2; i++) w.step(1 / 60, { move: 1, climb: 0 });
+    expect(Math.abs(w.player.x - 205)).toBeLessThan(4);
+    for (let i = 0; i < 300 && w.player.y !== -48; i++) w.step(1 / 60, { move: 0, climb: -1 });
+    expect(w.player.y).toBe(-48);
+    expect(w.player.onGround).toBe(true);
+    for (let i = 0; i < 300 && w.player.y !== 0; i++) w.step(1 / 60, { move: 0, climb: 1 });
     expect(w.player.y).toBe(0);
   });
 });
@@ -108,7 +111,7 @@ describe('방치 보상', () => {
   });
   it('자동 전투 중이던 캐릭터는 처치/경험치/코인을 얻는다', () => {
     const { acc, c } = setup();
-    c.mapId = 'meadow'; c.auto = true; c.mode = 'fight';
+    c.mapId = 'meadow'; c.auto = true;
     const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
     expect(r.mode).toBe('fight');
     expect(r.kills).toBeGreaterThan(100);
@@ -126,16 +129,21 @@ describe('방치 보상', () => {
     expect(r.kills).toBeLessThan(a.c.kills.meadow);
     expect(r.kills).toBeGreaterThan(a.c.kills.meadow * 0.2);
   });
-  it('자동이 꺼진 캐릭터는 쉬기만 한다', () => {
+  it('AUTO가 꺼져 있어도 사냥터에 있으면 방치 사냥으로 처리한다', () => {
     const { acc, c } = setup();
     c.mapId = 'meadow'; c.auto = false;
+    expect(computeAfk(acc, c, 3600_000, new Rng(1))!.mode).toBe('fight');
+  });
+  it('마을에서는 쉬기만 한다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'town';
     const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
     expect(r.mode).toBe('rest');
     expect(r.xp).toBe(0);
   });
   it('채집 방치', () => {
     const { acc, c } = setup();
-    c.mapId = 'hills'; c.auto = true; c.mode = 'gather';
+    c.mapId = 'hills'; c.activity = { k: 'gather', node: 'redrock' };
     const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
     expect(r.mode).toBe('gather');
     expect(countItem(c, 'ore')).toBeGreaterThan(50);
@@ -197,7 +205,7 @@ describe('퀘스트와 특성', () => {
 });
 
 describe('터치 조작', () => {
-  const idle = { move: 0, jump: false, down: false };
+  const idle = { move: 0, climb: 0 };
   const until = (w: World, pred: () => boolean, seconds = 30) => {
     for (let i = 0; i < seconds * 60 && !pred(); i++) { w.step(1 / 60, idle); }
     return pred();
@@ -214,6 +222,8 @@ describe('터치 조작', () => {
     w.tap(300, 20);
     expect(until(w, () => w.command === null)).toBe(true);
     expect(w.player.y).toBe(0);
+    expect(w.tap(300, -30)).toBeNull(); // 허공은 무시
+    expect(w.tap(300, -130)).toBeNull();
   });
   it('몬스터를 터치하면 다가가 쓰러뜨린다 (AUTO 꺼짐)', () => {
     const { acc, c } = setup();
@@ -253,7 +263,7 @@ describe('전직과 카드', () => {
     const w = new World(acc, c, new Rng(3));
     let shots = 0, minDist = 1e9;
     for (let i = 0; i < 60 * 60; i++) {
-      w.step(1 / 60, { move: 0, jump: false, down: false });
+      w.step(1 / 60, { move: 0, climb: 0 });
       shots = Math.max(shots, w.shots.length);
       for (const e of w.events) if (e.t === 'dmg' && !e.onPlayer) minDist = Math.min(minDist, Math.abs(e.x - w.player.x));
       w.events.length = 0;

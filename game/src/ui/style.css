@@ -12,7 +12,7 @@
 :root {
   --ink: #2b1d2e; --panel: #3a2d4a; --panel2: #4a3b5e; --line: #6b5a82;
   --text: #fff6e6; --dim: #c9bcd6; --gold: #f6c945; --green: #8fde5d; --red: #e25d4e; --blue: #5aa9e6;
-  --u: clamp(11px, 2.9vh, 22px);
+  --u: clamp(13px, 3.7vh, 28px);
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -45,33 +45,30 @@ button.gold { background: #c98a1e; } button.green { background: #3f9a4a; } butto
 /* HUD */
 #hud { position: absolute; left: 0.6em; top: 0.6em; display: flex; gap: 0.5em; padding: 0.4em 0.6em 0.45em 0.4em; align-items: center; min-width: 13em; }
 #hud .face { width: 2.9em; height: 2.9em; background: #57466e; border: 0.14em solid var(--ink); border-radius: 0.4em; overflow: hidden; flex: none; }
-#hud .face img { display: block; width: 3.6em; margin: -0.42em 0 0 -0.5em; }
+#hud .face img { display: block; width: 3.6em; margin: -0.62em 0 0 -0.52em; }
 #hud .col { flex: 1; display: flex; flex-direction: column; gap: 0.22em; }
 #hud .nm { display: flex; justify-content: space-between; font-size: 0.8em; } #hud .nm b { color: var(--gold); }
 #top { position: absolute; right: 0.6em; top: 0.6em; display: flex; gap: 0.4em; align-items: flex-start; }
 #top .info { padding: 0.35em 0.7em; font-size: 0.8em; text-align: right; }
 #top .info .coin { color: var(--gold); } #top .info img { height: 1em; vertical-align: -0.12em; margin-right: 0.2em; }
-#top button { font-size: 0.85em; position: relative; }
+
 .dot { position: absolute; right: -0.3em; top: -0.3em; width: 0.8em; height: 0.8em; background: var(--red); border: 0.12em solid var(--ink); border-radius: 50%; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { transform: scale(1.3); } }
 
-/* 조작 */
-#pad, #act { position: absolute; bottom: 0.8em; display: flex; gap: 0.5em; align-items: flex-end; }
-#pad { left: 0.8em; } #act { right: 0.8em; }
-#pad button, #act button.round { width: 3.6em; height: 3.6em; padding: 0; font-size: 1.05em; border-radius: 50%; background: rgba(58,45,74,.82); }
-#act .stack { display: flex; flex-direction: column; gap: 0.4em; align-items: stretch; }
-#act .stack button { font-size: 0.85em; background: rgba(58,45,74,.9); }
-#act .stack button.on { background: #3f9a4a; }
-#ctx { position: absolute; left: 50%; bottom: 5.4em; transform: translateX(-50%); font-size: 1.05em; animation: bob 1s ease-in-out infinite; }
-@keyframes bob { 50% { transform: translate(-50%, -0.3em); } }
-
-#skills { position: absolute; right: 0.8em; bottom: 5.4em; display: flex; gap: 0.5em; }
-#skills button { width: 5em; height: 5em; padding: 0; border-radius: 50%; font-size: 0.68em; word-break: keep-all; line-height: 1.15; background: #b9453c; }
-#skills button.cd { background: rgba(58,45,74,.9); color: var(--dim); font-size: 1em; width: 3.4em; height: 3.4em; }
-#quest { position: absolute; left: 0.9em; top: 6.6em; font-size: 0.78em; pointer-events: none; text-shadow: 0 1px 0 var(--ink), 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 -1px 0 var(--ink); }
+/* 하단 바: 왼쪽 AUTO, 오른쪽 큰 메뉴 버튼 */
+#act { position: absolute; left: 0.6em; right: 0.6em; bottom: 0.6em; display: flex; gap: 0.45em; align-items: flex-end; pointer-events: none; }
+#act > button { pointer-events: auto; }
+#act .menu { position: relative; width: 4.3em; height: 3.5em; padding: 0; font-size: 0.95em; background: rgba(58,45,74,.94); }
+#act .auto { width: 4.6em; height: 4.6em; padding: 0; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; background: rgba(58,45,74,.94); }
+#act .auto span { font-size: 0.8em; color: var(--dim); }
+#act .auto.on { background: #3f9a4a; } #act .auto.on span { color: #fff; }
+#skills { position: absolute; right: 0.7em; bottom: 4.9em; display: flex; gap: 0.5em; align-items: flex-end; }
+#skills button { width: 4.6em; height: 4.6em; padding: 0; border-radius: 50%; font-size: 0.8em; word-break: keep-all; line-height: 1.15; background: #b9453c; }
+#skills button.cd { background: rgba(58,45,74,.9); color: var(--dim); font-size: 1.2em; width: 3.07em; height: 3.07em; }
+#quest { position: absolute; left: 0.9em; top: 5.6em; font-size: 0.85em; pointer-events: none; text-shadow: 0 1px 0 var(--ink), 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 -1px 0 var(--ink); }
 
 /* 토스트 */
-#toasts { position: absolute; left: 0.8em; bottom: 5.6em; display: flex; flex-direction: column; gap: 0.2em; pointer-events: none; font-size: 0.78em; }
+#toasts { position: absolute; left: 0.8em; bottom: 6.2em; display: flex; flex-direction: column; gap: 0.2em; pointer-events: none; font-size: 0.78em; }
 .toast { background: rgba(43,29,46,.78); padding: 0.15em 0.6em; border-radius: 0.4em; width: max-content; animation: toast 2.6s forwards; }
 .toast img { height: 1.1em; vertical-align: -0.2em; margin-right: 0.3em; }
 @keyframes toast { 0% { opacity: 0; transform: translateX(-1em); } 8% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-0.6em); } }
@@ -131,3 +128,18 @@ h4 { margin: 0.9em 0 0.3em; font-size: 0.85em; color: var(--dim); font-weight: n
 .sw button { padding: 0.1em 0.7em; }
 
 @media (max-aspect-ratio: 1/1) { .creator { flex-direction: column; align-items: center; } .slots { grid-template-columns: repeat(6, 1fr); } }
+
+/* 제작대 */
+.tabs { display: flex; gap: 0.3em; margin-bottom: 0.6em; }
+.tabs button { flex: 1; } .tabs button.on { background: #c98a1e; }
+.craft { display: flex; gap: 0.7em; align-items: flex-start; }
+.craft .slots.c4 { grid-template-columns: repeat(4, 3.3em); flex: none; }
+.craft .slot.cant img { filter: grayscale(.9) brightness(.6); }
+.craft .slot.can { box-shadow: inset 0 0 0 0.12em var(--green); }
+.craft .slot.sel { box-shadow: 0 0 0 0.14em var(--gold); }
+.craft .detail { flex: 1; margin-top: 0; min-height: 10.5em; display: flex; flex-direction: column; gap: 0.15em; }
+.craft .detail h4 { margin: 0.2em 0 0.1em; }
+.craft .mat img { height: 1.3em; vertical-align: -0.3em; } .craft .mat { width: 1.6em; text-align: center; }
+.craft .bigic img { width: 2.6em; height: 2.6em; object-fit: contain; }
+button.wide { width: 100%; margin-top: 0.5em; padding: 0.55em; }
+@media (max-aspect-ratio: 1/1) { .craft { flex-direction: column; } .craft .detail { width: 100%; } #act .menu { width: 3.4em; font-size: 0.8em; } }

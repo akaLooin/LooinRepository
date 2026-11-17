@@ -17,7 +17,7 @@ export class Game {
   acc: Account;
   world: World | null = null;
   /** 터치/키보드 입력 상태 */
-  input: Input = { move: 0, jump: false, down: false };
+  input: Input = { move: 0, climb: 0 };
   paused = false;
   onWorld: (w: World | null) => void = () => {};
   onEvent: (e: WorldEvent) => void = () => {};
@@ -76,7 +76,6 @@ export class Game {
     const w = this.world;
     if (!w || this.paused) return;
     w.step(dt, this.input);
-    this.input.jump = false; // 점프는 1회성
     if (w.events.length) {
       const evs = w.events.splice(0);
       for (const e of evs) {

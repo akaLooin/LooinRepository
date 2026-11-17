@@ -80,44 +80,8 @@ const shade = (hex: string, f: number) => {
   return `#${[ch(n >> 16), ch((n >> 8) & 255), ch(n & 255)].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 };
 
-// ───────── 캐릭터 파츠 (오른쪽을 보는 기준) ─────────
-// 체형: 작은 머리 + 길쭉한 몸(약 3등신). 정면을 보고 서며 팔은 몸통 양옆 어깨에 붙는다.
-const HEAD = [
-  '...oooooo...',
-  '..ohhhhhho..',
-  '.ohhHHhhhho.',
-  '.ohHhhhhhho.',
-  'ohhhhhhhhhho',
-  'ohhhhsshssho',
-  'ohhsssssssso',
-  'ohsssessseso',
-  'ohsssessseso',
-  '.ossbsssssbo',
-  '..ossssmsso.',
-  '...oooooo...',
-];
-// 머리 모양: 기본 머리 위에 덧그리는 조각 [x, y, rows]
-const HAIR_EXTRA: [number, number, string[]][][] = [
-  [],
-  // 긴 머리(뒤로 흘러내림)
-  [[-2, 5, ['.oo.', 'ohho', 'ohhho', 'ohkho', 'ohhho', '.ohko', '.ohho', '..oo.']]],
-  // 삐죽 머리
-  [[0, -3, ['..o...o.....', '.oho.oho.o..', '.ohhohhhoho.', '.ohhhhhhhho.']]],
-];
-const TORSO = [
-  '.oooooo.',
-  'ocCCccxo',
-  'ocCcccxo',
-  'occcccxo',
-  'occcccxo',
-  'occcccxo',
-  'oxxyyxxo',
-  'oppppPPo',
-  'oppppPPo',
-  '.oooooo.',
-];
-const ARM = ['.o.', 'oco', 'oco', 'oco', 'oxo', 'oxo', 'oxo', 'oso', 'oso', '.o.'];
-const LEG = ['oppo', 'opPo', 'opPo', 'opPo', 'opPo', 'opPo', 'opPo', 'offo', 'offfo', 'ooooo'];
+// ───────── 캐릭터 파츠 ─────────
+// 둥글둥글한 체형: 동그란 머리, 모서리를 굴린 몸통, 끝이 둥근 팔다리. 도형으로 그리고 외곽선을 자동으로 두른다.
 const SWORD = [
   '..o..', '.oBo.', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo',
   'ooooooo', 'onnnnno', 'ooooooo', '..ouo..', '..ouo..', '..ooo..',
@@ -132,41 +96,52 @@ const AXE = [
 ];
 
 export const lookKey = (l: Look) => `${l.hair}_${l.hairColor}_${l.skin}_${l.outfit}`.replace(/#/g, '');
+/** 머리 텍스처에서 목(회전축)의 위치 비율 */
+export const HEAD_ORIGIN: [number, number] = [0.5, 0.86];
 
 /** 외형별 캐릭터 파츠 텍스처 생성(이미 있으면 재사용). 반환값은 텍스처 key 접두사 */
 export function buildLook(l: Look): string {
-  const k = `ch_${lookKey(l)}`;
+  const k = `r_${lookKey(l)}`;
   if (canvases.has(`${k}_head`)) return k;
-  const over = {
-    h: l.hairColor, H: shade(l.hairColor, 1.3), k: shade(l.hairColor, 0.72),
-    s: l.skin, d: shade(l.skin, 0.84),
-    c: l.outfit, C: shade(l.outfit, 1.25), x: shade(l.outfit, 0.75),
-  };
-  const extra = HAIR_EXTRA[l.hair % HAIR_STYLES];
-  const pad = 3; // 머리 모양이 삐져나올 여백
+  const hair = l.hairColor, hairL = shade(hair, 1.3), hairD = shade(hair, 0.72);
+  const skin = l.skin, skinD = shade(skin, 0.86);
+  const cloth = l.outfit, clothL = shade(cloth, 1.25), clothD = shade(cloth, 0.75);
+  const style = l.hair % HAIR_STYLES;
   for (const blink of [false, true]) {
-    const rows = HEAD.map((r, y) => {
-      if (!blink) return r;
-      if (y === 7) return r.replace(/e/g, 's');
-      return r;
-    });
-    const ctx = mk(`${k}_head${blink ? '_b' : ''}`, 12 + pad * 2, HEAD.length + pad * 2 + 3);
-    const draw = (ox: number, oy: number, rs: string[]) => rs.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        const col = (over as Record<string, string>)[row[x]] ?? PAL[row[x]];
-        if (col) { ctx.fillStyle = col; ctx.fillRect(ox + x + pad, oy + y + pad, 1, 1); }
-      }
-    });
-    for (const [x, y, rs] of extra) if (y >= 3) draw(x, y, rs);
-    draw(0, 0, rows);
-    for (const [x, y, rs] of extra) if (y < 3) draw(x, y, rs);
+    const p = new Paint(22, 22);
+    if (style === 1) { p.disc(4.5, 14, 2.6, 5, hair); p.disc(4, 16, 1.6, 3, hairD); } // 긴 머리
+    p.disc(10.5, 10, 7.2, 6.8, hair);                 // 머리카락(뒤통수 포함)
+    p.disc(11.2, 12.2, 5.8, 4.9, skin);               // 얼굴
+    p.disc(11.2, 15.4, 3.6, 1.2, skinD);              // 턱 그늘
+    p.rect(6, 7, 9, 2, hair); p.rect(8, 9, 2, 1, hair); p.rect(13, 9, 2, 1, hair); // 앞머리
+    p.disc(8, 5.5, 2.4, 1.2, hairL);                  // 윤기
+    p.disc(5, 11, 1.2, 2.5, hairD);
+    if (style === 2) for (const [x, y] of [[6, 3], [10, 1], [14, 3]]) { p.line(x, y + 2, x + 1, y, hair); p.line(x + 1, y + 2, x + 1, y, hair); p.set(x + 2, y + 2, hair); }
+    for (const ex of [9, 13]) {
+      if (blink) p.set(ex, 13, OUT);
+      else { p.rect(ex, 11, 1, 3, OUT); p.set(ex, 11, '#5a4a6a'); }
+    }
+    p.set(7, 14, '#f4a3a0'); p.set(8, 14, '#f4a3a0'); p.set(14, 14, '#f4a3a0'); p.set(15, 14, '#f4a3a0');
+    p.set(11, 15, '#b5525c');
+    p.outline().save(`${k}_head${blink ? '_b' : ''}`);
   }
-  grid(`${k}_torso`, TORSO, over);
-  grid(`${k}_arm`, ARM, over);
-  grid(`${k}_leg`, LEG, over);
+  let p = new Paint(12, 11);
+  p.rect(2, 1, 8, 8, cloth); p.rect(1, 2, 10, 6, cloth);       // 모서리를 굴린 몸통
+  p.rect(2, 2, 2, 3, clothL); p.rect(9, 3, 2, 5, clothD);
+  p.rect(1, 7, 10, 1, clothD); p.rect(5, 7, 2, 1, '#f6c945');   // 허리띠
+  p.rect(2, 8, 8, 2, '#4a5a8a'); p.rect(3, 9, 6, 1, '#39466e');
+  p.rect(1, 9, 1, 1, null); p.rect(10, 9, 1, 1, null);
+  p.outline().save(`${k}_torso`);
+  p = new Paint(5, 11);
+  p.rect(1, 1, 3, 6, cloth); p.set(3, 4, clothD); p.set(3, 5, clothD); p.set(3, 6, clothD);
+  p.disc(2, 8, 1.4, 1.4, skin); p.set(3, 9, skinD);            // 동그란 손
+  p.outline().save(`${k}_arm`);
+  p = new Paint(7, 10);
+  p.rect(1, 0, 4, 6, '#4a5a8a'); p.rect(4, 0, 1, 6, '#39466e');
+  p.disc(3, 7.4, 2.4, 1.6, '#6b4a3a'); p.rect(1, 7, 5, 2, '#6b4a3a'); p.set(5, 8, '#553828'); // 둥근 신발
+  p.outline().save(`${k}_leg`);
   return k;
 }
-export const HEAD_PAD = 3;
 
 function buildWeapons() {
   grid('wp_sword_wood', SWORD, { B: '#c9925a', q: '#a06f42' });
@@ -360,6 +335,18 @@ function buildObjects() {
   p.disc(3.5, 6, 3, 3.5, '#f6c945'); p.disc(3.5, 2.5, 1.4, 2.5, '#f6c945'); p.disc(3.5, 7, 1.6, 2, '#fff3b0');
   p.save('fx_flame');
 
+  // 로프(세로로 반복)와 대상 강조 화살표
+  p = new Paint(5, 8);
+  p.rect(1, 0, 3, 8, '#c9a26a'); p.rect(3, 0, 1, 8, '#a07c48'); p.rect(1, 3, 3, 1, '#8a6a3c'); p.rect(1, 7, 3, 1, '#8a6a3c');
+  p.rect(0, 0, 1, 8, OUT); p.rect(4, 0, 1, 8, OUT);
+  p.save('rope');
+  p = new Paint(9, 5);
+  p.rect(1, 1, 7, 3, '#8a6a3c'); p.outline().save('rope_knot');
+  p = new Paint(11, 9);
+  for (let y = 0; y < 5; y++) p.rect(1 + y, 1 + y, 9 - y * 2, 1, y < 2 ? '#ffe98a' : '#f6c945');
+  p.rect(4, 0, 3, 2, '#ffe98a');
+  p.outline().save('ui_arrow');
+
   // 장식: 풀/꽃, 구름, 파티클, 그림자, 코인
   p = new Paint(9, 7);
   p.line(4, 6, 4, 2, '#3b8c4f'); p.line(3, 6, 1, 3, '#5fb859'); p.line(5, 6, 7, 3, '#5fb859');
@@ -435,9 +422,9 @@ export function iconUrl(key: string): string {
 export function portraitUrl(l: Look): string {
   const k = buildLook(l), key = `${k}_portrait`;
   if (!canvases.has(key)) {
-    const ctx = mk(key, 20, 36);
+    const ctx = mk(key, 22, 38);
     const d = (part: string, x: number, y: number) => ctx.drawImage(canvases.get(`${k}_${part}`)!, x, y);
-    d('leg', 6, 26); d('leg', 10, 26); d('arm', 3, 17); d('arm', 14, 17); d('torso', 6, 17); d('head', 1, 3);
+    d('leg', 5, 28); d('leg', 10, 28); d('arm', 2, 19); d('arm', 15, 19); d('torso', 5, 18); d('head', 0, 0);
   }
   return iconUrl(key);
 }

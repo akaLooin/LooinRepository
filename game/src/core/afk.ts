@@ -37,7 +37,11 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
   };
   const time = elapsed * AFK_EFFICIENCY;
 
-  if (c.auto && c.mode === 'fight' && map.spawns.length) {
+  // AUTO 여부와 무관: 마지막으로 지정한 대상을 기준으로 한다. 지정이 없으면 사냥터에서는 사냥.
+  const act = c.activity;
+  const gatherNode = act.k === 'gather' && map.nodes.some((n) => n.node === act.node)
+    && c.skills[NODES[act.node].skill].lv >= NODES[act.node].reqLv ? NODES[act.node] : null;
+  if (!gatherNode && map.spawns.length) {
     rep.mode = 'fight';
     const total = map.spawns.reduce((s, x) => s + x.count, 0);
     const avgHit = d.dmg * (1 + d.crit * (d.critMult - 1));
@@ -74,10 +78,8 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     c.kills[map.id] = (c.kills[map.id] ?? 0) + kills;
     acc.coins += rep.coins;
     rep.levels = gainXp(c, rep.xp);
-  } else if (c.auto && c.mode === 'gather') {
-    // 현재 맵에서 캘 수 있는 가장 좋은 자원 하나를 계속 캔다
-    const usable = map.nodes.map((n) => NODES[n.node]).filter((n) => c.skills[n.skill].lv >= n.reqLv);
-    const node = usable.sort((a, b) => b.xp - a.xp)[0];
+  } else if (gatherNode) {
+    const node = gatherNode;
     if (node) {
       rep.mode = 'gather';
       const swings = Math.ceil(node.hp / d[node.skill]);
