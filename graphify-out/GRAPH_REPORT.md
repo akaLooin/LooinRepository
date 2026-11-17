@@ -1,30 +1,29 @@
 # Graph Report - LooinRepository  (2026-11-17)
 
 ## Corpus Check
-- 62 files · ~44,742 words
+- 63 files · ~45,556 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 26 file(s) not represented in the graph (top: .xml 10, (none) 7, .csv 2)
-- WARNING: 26 of 117 files seen (22%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 609 nodes · 1222 edges · 43 communities (27 shown, 16 thin omitted)
+- 617 nodes · 1242 edges · 43 communities (26 shown, 17 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 67 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `91c61e74`
+- Built from commit: `27befcfa`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - ui.ts
 - reviews.py
-- Looin Idle (가제)
+- sprites.ts
 - package.json
 - Game
 - imgdiff.py
 - World
-- .panelHtml
+- UI
 - replica-recon
 - ExampleInstrumentedTest.java
 - Recon map: {{app}} ({{platform}})
@@ -49,20 +48,20 @@
 - test-plan.md
 - scene.ts
 - 설계: Looin Idle (방치형 횡스크롤 RPG, 1월드부터 단계 확장)
-- design-page.ts
+- build-log.md
 - components.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `World` - 40 edges
 2. `Game` - 27 edges
-3. `derive()` - 16 edges
-4. `UI` - 15 edges
-5. `GameScene` - 14 edges
-6. `Character` - 14 edges
+3. `UI` - 18 edges
+4. `Character` - 16 edges
+5. `derive()` - 16 edges
+6. `GameScene` - 14 edges
 7. `Paint` - 14 edges
 8. `computeAfk()` - 13 edges
 9. `buildLook()` - 13 edges
-10. `Derived` - 12 edges
+10. `boot()` - 12 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `권한 모델 (이 게임에서 가장 중요한 결정)` --references--> `computeAfk()`  [INFERRED]
@@ -71,35 +70,35 @@
   game/README.md → game/src/game.ts
 - `구조` --references--> `SaveBackend`  [INFERRED]
   game/README.md → game/src/game.ts
-- `Game` --references--> `AfkReport`  [EXTRACTED]
-  game/src/game.ts → game/src/core/afk.ts
-- `Game` --references--> `Account`  [EXTRACTED]
-  game/src/game.ts → game/src/core/state.ts
+- `World` --references--> `Platform`  [EXTRACTED]
+  game/src/core/world.ts → game/src/core/data.ts
+- `World` --references--> `MapDef`  [EXTRACTED]
+  game/src/core/world.ts → game/src/core/data.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (43 total, 16 thin omitted)
+## Communities (43 total, 17 thin omitted)
 
 ### Community 0 - "ui.ts"
 Cohesion: 0.05
-Nodes (99): AfkReport, computeAfk(), settle(), AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_CHANCE, CardDef (+91 more)
+Nodes (100): AfkReport, computeAfk(), settle(), AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_CHANCE, CardDef (+92 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
 Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), check(), colours() (+32 more)
 
-### Community 2 - "Looin Idle (가제)"
-Cohesion: 0.22
-Nodes (7): Looin Idle (가제), 구조, 다음 단계(제안), 멀티 전환을 위한 설계, 실행, 현재 들어간 것, SaveBackend
+### Community 2 - "sprites.ts"
+Cohesion: 0.16
+Nodes (23): HAIR_STYLES, AXE, buildAll(), buildItems(), buildLook(), buildMonsters(), buildObjects(), buildTheme() (+15 more)
 
 ### Community 3 - "package.json"
 Cohesion: 0.07
 Nodes (32): author, dependencies, @capacitor/android@^7.6.10, @capacitor/core@^7.6.10, galmuri@^2.40.3, phaser@^3.90.0, description, devDependencies (+24 more)
 
 ### Community 4 - "Game"
-Cohesion: 0.23
-Nodes (3): PortalDef, Game, boot()
+Cohesion: 0.14
+Nodes (10): Looin Idle (가제), 구조, 다음 단계(제안), 멀티 전환을 위한 설계, 실행, 현재 들어간 것, PortalDef, Game (+2 more)
 
 ### Community 5 - "imgdiff.py"
 Cohesion: 0.12
@@ -109,9 +108,9 @@ Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngErro
 Cohesion: 0.16
 Nodes (5): Rng, Derived, clamp(), World, run()
 
-### Community 7 - ".panelHtml"
-Cohesion: 0.24
-Nodes (8): iconUrl(), portraitUrl(), dur(), esc(), icon(), pct(), statLine(), UI
+### Community 7 - "UI"
+Cohesion: 0.10
+Nodes (14): iconUrl(), portraitUrl(), bar, colors, menu, ART, FILL, pixelIcon() (+6 more)
 
 ### Community 8 - "replica-recon"
 Cohesion: 0.15
@@ -178,34 +177,30 @@ Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
 ### Community 38 - "scene.ts"
-Cohesion: 0.07
-Nodes (38): NodeDef, SMASH_RANGE, Look, HURT_TIME, NodeInst, SWING_TIME, WorldEvent, CharRig (+30 more)
+Cohesion: 0.09
+Nodes (17): NodeDef, NPC_LOOK, NPC_NAME, SMASH_RANGE, HURT_TIME, NodeInst, SWING_TIME, WorldEvent (+9 more)
 
 ### Community 40 - "설계: Looin Idle (방치형 횡스크롤 RPG, 1월드부터 단계 확장)"
 Cohesion: 0.22
 Nodes (8): API, 구현 순서, 권한 모델 (이 게임에서 가장 중요한 결정), 설계: Looin Idle (방치형 횡스크롤 RPG, 1월드부터 단계 확장), 스키마, 스택, 조심할 부분, 클라이언트 구조 변경 (참고 화면 기준)
 
-### Community 41 - "design-page.ts"
-Cohesion: 0.18
-Nodes (6): bar, colors, menu, ART, FILL, pixelIcon()
-
 ## Knowledge Gaps
-- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `World` connect `World` to `ui.ts`, `Game`, `scene.ts`?**
-  _High betweenness centrality (0.037) - this node is a cross-community bridge._
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Should `ui.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05334692490655794 - nodes in this community are weakly interconnected._
-- **Why does `phaser` connect `package.json` to `Game`, `scene.ts`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
+  _Cohesion score 0.0518018018018018 - nodes in this community are weakly interconnected._
+- **Why does `phaser` connect `package.json` to `scene.ts`, `UI`?**
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
   _Cohesion score 0.05875251509054326 - nodes in this community are weakly interconnected._
-- **Why does `Game` connect `Game` to `ui.ts`, `scene.ts`, `World`, `.panelHtml`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `Game` connect `Game` to `ui.ts`, `scene.ts`, `World`, `UI`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07308377896613191 - nodes in this community are weakly interconnected._
-- **Should `imgdiff.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
+- **Should `Game` be split into smaller, more focused modules?**
+  _Cohesion score 0.14153846153846153 - nodes in this community are weakly interconnected._

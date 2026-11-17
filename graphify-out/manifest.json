@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1794897070.1004963,
-    "seen": 1794897470.0063932,
-    "ast_hash": "a54a3777fe4947ba3037b383f8bcb88c",
+    "mtime": 1794916129.8796985,
+    "seen": 1794916442.6827757,
+    "ast_hash": "97488179417c92b1610db5ad84af1e9f",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -174,15 +174,15 @@
     "semantic_hash": ""
   },
   "game/src/main.ts": {
-    "mtime": 1794888429.7644758,
-    "seen": 1794888635.8673105,
-    "ast_hash": "13cfbe2b6404ed685dacd049153a86c5",
+    "mtime": 1794916129.8803804,
+    "seen": 1794916442.6828432,
+    "ast_hash": "d3605bfcc998a125ae74a58717c99f69",
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1794897214.1703033,
-    "seen": 1794897470.006401,
-    "ast_hash": "047ddabcd9d0ccc72512c122b2fd6796",
+    "mtime": 1794916129.8801558,
+    "seen": 1794916442.6828446,
+    "ast_hash": "9b1f4c7b4829b292996358ae8a305e2b",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1794897253.6134198,
-    "seen": 1794897470.0064037,
-    "ast_hash": "3942e695dc36eec51158871a55077f1d",
+    "mtime": 1794916229.5303903,
+    "seen": 1794916442.6829007,
+    "ast_hash": "691cbb594b4d69a3278ee6435da9c010",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
@@ -537,6 +537,192 @@
     "mtime": 1794905696.0466478,
     "seen": 1794905733.0727403,
     "ast_hash": "f938ccb4178f04f08a30c55d4b6ba9a4",
+    "semantic_hash": ""
+  },
+  "replica/build-log.md": {
+    "mtime": 1794916435.7933571,
+    "seen": 1794916442.683307,
+    "ast_hash": "8775220a632c3ea90b03dc663aa5f39c",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S01-pc.png": {
+    "mtime": 1794916395.6904001,
+    "seen": 1794916442.6840484,
+    "ast_hash": "573314eed07482ec0290eba38288f480",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S01-phone.png": {
+    "mtime": 1794916341.678397,
+    "seen": 1794916442.6840503,
+    "ast_hash": "9ff50869c77cf97589dee4469938673a",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S02-pc.png": {
+    "mtime": 1794916351.3743975,
+    "seen": 1794916442.6840525,
+    "ast_hash": "338e8c1d9d07fef75ce315e890ae8431",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S02-phone.png": {
+    "mtime": 1794916285.9863937,
+    "seen": 1794916442.6840532,
+    "ast_hash": "24f0503f3b414bcd895553a18ccbf948",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S03-fight-pc.png": {
+    "mtime": 1794916402.6744006,
+    "seen": 1794916442.6840546,
+    "ast_hash": "c5017957fe910da3cc83f4ac75c72cef",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S03-fight-phone.png": {
+    "mtime": 1794916349.3527117,
+    "seen": 1794916442.6840558,
+    "ast_hash": "f3f1f17b3e1047e36eeb1d506c05c2ce",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S03-pc.png": {
+    "mtime": 1794916353.1543977,
+    "seen": 1794916442.6840568,
+    "ast_hash": "480280bf2e18220bb1f5a435ccedbe12",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S03-phone.png": {
+    "mtime": 1794916288.0845447,
+    "seen": 1794916442.6840577,
+    "ast_hash": "cc61529a6e5f70198e5be291d17a9bd9",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S04a-pc.png": {
+    "mtime": 1794916381.3366861,
+    "seen": 1794916442.684059,
+    "ast_hash": "30a7b0f0747d9fc1a892265880ad5f30",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S04a-phone.png": {
+    "mtime": 1794916324.0583959,
+    "seen": 1794916442.6840596,
+    "ast_hash": "8e40be22dfa0f81350d8cc386ba127d7",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S05-pc.png": {
+    "mtime": 1794916375.938399,
+    "seen": 1794916442.6840606,
+    "ast_hash": "d0a1a0f7dfe3ecc41a5f3ed46cd4bd2e",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S05-phone.png": {
+    "mtime": 1794916317.2463956,
+    "seen": 1794916442.6840618,
+    "ast_hash": "50d853fc7a19c2ec32b480ec1fbecdc1",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S06-pc.png": {
+    "mtime": 1794916378.034399,
+    "seen": 1794916442.6840682,
+    "ast_hash": "8b92ffe2c99565beb085bcad4746ca5c",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S06-phone.png": {
+    "mtime": 1794916319.8663957,
+    "seen": 1794916442.6840694,
+    "ast_hash": "fd4f51bbf1db391a1bbdb34a3903fddd",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S06b-pc.png": {
+    "mtime": 1794916379.1870832,
+    "seen": 1794916442.6840703,
+    "ast_hash": "1def7091d623677b35b1b076576be2d1",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S06b-phone.png": {
+    "mtime": 1794916321.3503957,
+    "seen": 1794916442.6840715,
+    "ast_hash": "5dbef8836aa199504d3e3400198c22c9",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S08-pc.png": {
+    "mtime": 1794916383.5383995,
+    "seen": 1794916442.6840725,
+    "ast_hash": "9de58e7efb4738f01a08c9712cb588df",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S08-phone.png": {
+    "mtime": 1794916326.622396,
+    "seen": 1794916442.6840734,
+    "ast_hash": "e8b9bba96c0d0f7dc71f79144b708e37",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S08b-pc.png": {
+    "mtime": 1794916384.6959634,
+    "seen": 1794916442.6840746,
+    "ast_hash": "08a2ddf81ab938cc4370e5ada8db938d",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S08b-phone.png": {
+    "mtime": 1794916328.1901226,
+    "seen": 1794916442.6840758,
+    "ast_hash": "ca8f8b791eff4d63bb10dfdeaab1f98b",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S10-pc.png": {
+    "mtime": 1794916397.5824003,
+    "seen": 1794916442.6840768,
+    "ast_hash": "7c7c28fedba2b770ce8ca3e2240f7453",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S10-phone.png": {
+    "mtime": 1794916343.898397,
+    "seen": 1794916442.6840777,
+    "ast_hash": "542d6a3309381ea80c3d10663787149a",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S11-pc.png": {
+    "mtime": 1794916391.7784,
+    "seen": 1794916442.6840792,
+    "ast_hash": "f3b05a023528080ca3ce27bafce9c54d",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S11-phone.png": {
+    "mtime": 1794916336.8863966,
+    "seen": 1794916442.6840801,
+    "ast_hash": "6730ec47847b666b19d74dce79ff426a",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S16-pc.png": {
+    "mtime": 1794916394.3944001,
+    "seen": 1794916442.6840813,
+    "ast_hash": "3c237fd19bec1ace9efe955f057ac146",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S16-phone.png": {
+    "mtime": 1794916340.0943968,
+    "seen": 1794916442.6840823,
+    "ast_hash": "504076e0f3b41b0211f8374f9a12b539",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S18-pc.png": {
+    "mtime": 1794916386.8343997,
+    "seen": 1794916442.6840832,
+    "ast_hash": "04f9cf38247b82d20d41aa417e89708b",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S18-phone.png": {
+    "mtime": 1794916330.8590076,
+    "seen": 1794916442.6840842,
+    "ast_hash": "424b9accbbf6191cbc6cffa355e80b5d",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S21-pc.png": {
+    "mtime": 1794916388.9073496,
+    "seen": 1794916442.6840851,
+    "ast_hash": "f5810bda8518a09e47f2721164c29dc4",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S21-phone.png": {
+    "mtime": 1794916333.4023964,
+    "seen": 1794916442.6840868,
+    "ast_hash": "11613dc04b5fac425eb7645387ce54ae",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
