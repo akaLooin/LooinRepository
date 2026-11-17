@@ -344,7 +344,9 @@ export class UI {
         return win('메뉴', `<div class="stack">
           <button class="ui-btn block" data-act="open:afkinfo">방치 정보</button>
           <button class="ui-btn block" data-act="chars">캐릭터 선택으로</button>
-          <p class="ui-xs ui-muted">진행 상황은 이 기기에 자동 저장됩니다. 선택하지 않은 캐릭터도 마지막 대상을 계속 사냥·채집합니다.</p></div>`);
+          <p class="ui-xs ${g.netState === 'offline' ? 'ui-bad' : 'ui-muted'}">${g.netState === 'online' ? '서버에 연결됨 — 진행은 서버에 저장됩니다.' : g.netState === 'offline' ? '서버에 연결할 수 없어 이 기기에서 진행 중입니다. 다시 연결되면 서버 기록에 맞춥니다.' : '이 기기에만 저장됩니다(서버 미설정).'}</p>
+          <button class="ui-btn danger sm" data-act="delacc">계정 삭제</button>
+          <p class="ui-xs ui-muted">선택하지 않은 캐릭터도 마지막 대상을 계속 사냥·채집합니다.</p></div>`);
 
       case 'npc': {
         const npc = NPCS[this.npcId] ?? NPCS.elder;
@@ -551,8 +553,10 @@ export class UI {
       case 'hair': this.draft.look.hair = (this.draft.look.hair + +a + HAIR_STYLES) % HAIR_STYLES; break;
       case 'look': this.draft.look[a as 'hairColor' | 'skin' | 'outfit'] = b; break;
       case 'create': {
-        const made = g.create(this.draft.name || '모험가', { ...this.draft.look });
-        if (made) { this.creating = false; g.select(g.acc.characters.length - 1); }
+        g.create(this.draft.name || '모험가', { ...this.draft.look }).then((made) => {
+          if (made) { this.creating = false; g.select(g.acc.characters.length - 1); }
+          this.refresh(true);
+        });
         break;
       }
       case 'select': g.select(+a); break;
@@ -561,33 +565,44 @@ export class UI {
       case 'open': if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
       case 'close': this.panel = null; this.afk = null; break;
       case 'tab': this.tab[a as Exclude<Panel, null>] = +b; this.craftSel = -1; break;
-      case 'auto': if (c) c.auto = !c.auto; break;
       case 'csel': this.craftSel = +a; break;
-      case 'use': if (c) { const err = useItem(g.acc, c, a); fail(err); if (!err) { this.toast(`${ITEMS[a].name} 사용!`, a); this.sel = null; } } break;
-      case 'put': if (c) deposit(g.acc, c, a); break;
-      case 'take': if (c) { if (!withdraw(g.acc, c, a)) this.toast('가방에 자리가 없습니다'); } break;
-      case 'putall': if (c) { const n = depositAll(g.acc, c); this.toast(n ? `${n}종류를 창고에 맡겼습니다` : '맡길 재료가 없습니다'); } break;
-      case 'buy': if (c) { const err = buy(g.acc, c, +a, +b, Date.now()); fail(err); if (!err) this.toast(`${ITEMS[SHOP[+a].item].name} ×${b} 구입`, SHOP[+a].item); } break;
-      case 'prod': if (c) fail(setProduct(c, a || null, this.prodSlot)); break;
       case 'pslot': this.prodSlot = +a; break;
       case 'ttab': this.tab.talentTab = +a; break;
-      case 'cardon': if (c) fail(equipCard(g.acc, c, a, c.cardSlots.indexOf(null))); break;
-      case 'cardoff': if (c) unequipCard(g.acc, c, +a); break;
-      case 'apt': if (c) spendAnvilPoint(c, a as 'cap' | 'spd' | 'xp'); break;
-      case 'collect': if (c) { const it = c.anvil.slots[this.prodSlot]?.prod; const n = collectAnvil(g.acc, c, a === 'store', this.prodSlot); if (n && it) this.toast(`${ITEMS[it].name} ${n}개를 ${a === 'store' ? '창고' : '가방'}로`, it); else this.toast(a === 'store' ? '창고가 가득 찼습니다' : '가방에 자리가 없습니다'); } break;
-      case 'class': if (c) { const err = advanceClass(c, a as ClassId); fail(err); if (!err) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'char'; this.tab.char = 1; } } break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
-      case 'equip': if (c) { fail(equipItem(c, a)); this.sel = null; } break;
-      case 'food': if (c) { fail(setFood(c, a || null)); this.sel = a ? 'food' : null; } break;
-      case 'unequip': if (c) { fail(unequipItem(c, a as EquipSlot)); this.sel = null; } break;
-      case 'sell': if (c) { const gain = sellItem(g.acc, c, a, +b); if (gain) this.toast(`+${gain} 코인`, 'coin'); } break;
-      case 'stat': if (c) spendStat(c, a as StatKey); break;
-      case 'talent': if (c) learnTalent(c, a); break;
-      case 'qaccept': if (c && acceptQuest(c, a)) { this.toast(`퀘스트 수락: ${currentQuest(c, a)!.name}`); this.panel = null; } break;
-      case 'qdone': if (c) { const name = currentQuest(c, a)?.name; const err = completeQuest(g.acc, c, a); fail(err); if (!err) this.toast(`퀘스트 완료: ${name}`); } break;
-      case 'craft': if (c) { const err = craft(g.acc, c, +a); fail(err); if (!err) this.toast(`${ITEMS[RECIPES[+a].item].name} 제작 완료!`, RECIPES[+a].item); } break;
+      case 'delacc':
+        if (confirm('계정을 삭제할까요? 모든 캐릭터와 진행이 사라지며 되돌릴 수 없습니다.')) {
+          this.panel = null;
+          g.deleteAccount().then(() => { this.toast('계정을 삭제했습니다'); this.refresh(true); }).catch((e) => this.toast((e as Error).message));
+        }
+        break;
+      // ── 게임 행동: 전부 g.act 로(기기와 서버가 같은 규칙으로 적용) ──
+      case 'auto': if (c) g.act({ t: 'auto', on: !c.auto }); break;
+      case 'use': { const r = g.act({ t: 'use', id: a }); fail(r.err ?? null); if (r.ok) { this.toast(`${ITEMS[a].name} 사용!`, a); this.sel = null; } break; }
+      case 'put': fail(g.act({ t: 'deposit', id: a }).err ?? null); break;
+      case 'take': fail(g.act({ t: 'withdraw', id: a }).err ?? null); break;
+      case 'putall': { const r = g.act({ t: 'depositAll' }); this.toast(r.n ? `${r.n}종류를 창고에 맡겼습니다` : '맡길 재료가 없습니다'); break; }
+      case 'buy': { const r = g.act({ t: 'buy', idx: +a, qty: +b }); fail(r.err ?? null); if (r.ok) this.toast(`${ITEMS[SHOP[+a].item].name} ×${b} 구입`, SHOP[+a].item); break; }
+      case 'prod': fail(g.act({ t: 'prod', slot: this.prodSlot, item: a || null }).err ?? null); break;
+      case 'cardon': fail(g.act({ t: 'cardOn', card: a }).err ?? null); break;
+      case 'cardoff': g.act({ t: 'cardOff', slot: +a }); break;
+      case 'apt': g.act({ t: 'apt', k: a as 'cap' | 'spd' | 'xp' }); break;
+      case 'collect': {
+        const it = c?.anvil.slots[this.prodSlot]?.prod;
+        const r = g.act({ t: 'collect', slot: this.prodSlot, toStorage: a === 'store' });
+        if (r.ok && it) this.toast(`${ITEMS[it].name} ${r.n}개를 ${a === 'store' ? '창고' : '가방'}로`, it); else fail(r.err ?? null);
+        break;
+      }
+      case 'class': { const r = g.act({ t: 'class', cls: a as ClassId }); fail(r.err ?? null); if (r.ok && c) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'char'; this.tab.char = 1; } break; }
+      case 'equip': fail(g.act({ t: 'equip', id: a }).err ?? null); this.sel = null; break;
+      case 'food': fail(g.act({ t: 'food', id: a || null }).err ?? null); this.sel = a ? 'food' : null; break;
+      case 'unequip': fail(g.act({ t: 'unequip', slot: a as EquipSlot }).err ?? null); this.sel = null; break;
+      case 'sell': { const r = g.act({ t: 'sell', id: a, qty: +b }); if (r.ok) this.toast(`+${r.n} 코인`, 'coin'); break; }
+      case 'stat': g.act({ t: 'stat', stat: a as StatKey }); break;
+      case 'talent': g.act({ t: 'talent', id: a }); break;
+      case 'qaccept': if (c && g.act({ t: 'qaccept', npc: a }).ok) { this.toast(`퀘스트 수락: ${currentQuest(c, a)!.name}`); this.panel = null; } break;
+      case 'qdone': { const name = c && currentQuest(c, a)?.name; const r = g.act({ t: 'qdone', npc: a }); fail(r.err ?? null); if (r.ok) this.toast(`퀘스트 완료: ${name}`); break; }
+      case 'craft': { const r = g.act({ t: 'craft', idx: +a }); fail(r.err ?? null); if (r.ok) this.toast(`${ITEMS[RECIPES[+a].item].name} ${RECIPES[+a].unlock ? '완료 — 모루가 한 단계 올랐습니다!' : '제작 완료!'}`, RECIPES[+a].item); break; }
     }
-    if (c && act !== 'select' && act !== 'chars') g.save();
     this.refresh();
   }
 }

@@ -1,17 +1,24 @@
-// 게임 컨트롤러: 계정/월드 수명주기, 저장, 방치 보상. UI와 렌더러가 공유한다.
-// 멀티 전환 시 SaveBackend 구현만 서버 API로 바꾸면 된다.
+// 게임 컨트롤러: 계정/월드 수명주기, 저장, 방치 보상, 서버 동기화. UI와 렌더러가 공유한다.
+// 서버가 있으면 서버가 기준(방치 보상·행동·플레이 기록 검증), 없거나 끊기면 이 기기에서 그대로 진행한다.
+import { Action, ActionResult, applyAction } from './core/actions';
 import { AfkReport, computeAfk } from './core/afk';
-import { ITEMS, MAPS, PortalDef } from './core/data';
+import { MAPS } from './core/data';
 import { Rng } from './core/rng';
-import { Account, Character, Look, countItem, createCharacter, deserialize, newAccount, removeItem, serialize } from './core/state';
+import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
+import { Net, SyncBody } from './net';
 
 export interface SaveBackend { load(): string | null; save(data: string): void }
-const KEY = 'looin-idle-save-v1';
-export const localBackend: SaveBackend = {
-  load: () => { try { return localStorage.getItem(KEY); } catch { return null; } },
-  save: (d) => { try { localStorage.setItem(KEY, d); } catch { /* 저장 불가 환경에서는 무시 */ } },
-};
+const store = (key: string): SaveBackend => ({
+  load: () => { try { return localStorage.getItem(key); } catch { return null; } },
+  save: (d) => { try { localStorage.setItem(key, d); } catch { /* 저장 불가 환경에서는 무시 */ } },
+});
+export const localBackend = store('looin-idle-save-v1');
+/** 온라인 계정은 따로 보관(혹시 끊겼을 때 이어서 보여주기 위한 사본) */
+const onlineCache = store('looin-idle-online-cache-v1');
+
+export type NetState = 'local' | 'online' | 'offline';
+const SYNC_EVERY = 15;
 
 export class Game {
   acc: Account;
@@ -19,40 +26,108 @@ export class Game {
   /** 터치/키보드 입력 상태 */
   input: Input = { move: 0, climb: 0 };
   paused = false;
+  /** local: 서버 없이, online: 서버 연결됨, offline: 서버가 있지만 지금 끊김 */
+  netState: NetState = 'local';
   onWorld: (w: World | null) => void = () => {};
   onEvent: (e: WorldEvent) => void = () => {};
   onAfk: (r: AfkReport, c: Character) => void = () => {};
+  onNet: (s: NetState, msg?: string) => void = () => {};
   private rng = new Rng(Date.now());
-  private saveT = 0;
+  private saveT = 0; private syncT = 0; private retryT = 0;
+  private net: Net | null = null;
+  private backend: SaveBackend;
+  private busy = false;
 
-  constructor(private backend: SaveBackend = localBackend) {
-    this.acc = deserialize(backend.load()) ?? newAccount();
+  constructor(serverUrl?: string, backend: SaveBackend = localBackend) {
+    this.backend = serverUrl ? onlineCache : backend;
+    this.acc = deserialize(this.backend.load()) ?? newAccount();
     this.acc.active = -1;
+    if (serverUrl) this.net = new Net(serverUrl.replace(/\/$/, ''));
+  }
+
+  /** 서버에 로그인하고 서버의 계정을 받아온다. 실패하면 기기 사본으로 진행 */
+  async connect() {
+    if (!this.net) return;
+    try {
+      await this.net.login();
+      const { account } = await this.net.account();
+      this.adopt(account);
+      this.setNet('online');
+    } catch (e) {
+      this.setNet('offline', (e as Error).message);
+    }
+  }
+  private setNet(s: NetState, msg?: string) { this.netState = s; this.onNet(s, msg); }
+  private get online() { return this.net && this.netState === 'online'; }
+  /** 서버 상태를 받아들인다(서버가 기준) */
+  private adopt(account: Account) {
+    const active = this.acc.active;
+    const fixed = deserialize(serialize(account));
+    if (!fixed) return;
+    this.acc = fixed;
+    this.acc.active = active;
+    this.backend.save(serialize(this.acc));
+  }
+  private syncBody(): SyncBody {
+    return { character: this.char!, coins: this.acc.coins, cards: this.acc.cards, bosses: this.acc.bosses };
+  }
+  /** 서버와 어긋났을 때: 서버 상태로 맞추고 월드를 다시 만든다 */
+  private resync(account: Account | undefined, why?: string) {
+    if (!account) return;
+    this.adopt(account);
+    if (this.char) this.enterWorld();
+    this.onEvent({ t: 'loot', text: `서버 기록과 맞추었습니다${why ? ` (${why})` : ''}` });
+  }
+  private netFail(e: unknown) {
+    if ((e as { status?: number }).status === 409 || (e as { status?: number }).status === 401) this.connect();
+    else this.setNet('offline', (e as Error).message);
   }
 
   get char(): Character | null { return this.acc.characters[this.acc.active] ?? null; }
 
-  create(name: string, look: Look): Character | null {
+  async create(name: string, look: Look): Promise<boolean> {
+    if (this.online) {
+      try {
+        const r = await this.net!.create(name, look);
+        if (r.error) { this.onEvent({ t: 'loot', text: r.error }); return false; }
+        this.adopt(r.account);
+        return true;
+      } catch (e) { this.netFail(e); }
+    }
     const c = createCharacter(this.acc, name, look, Date.now());
     this.save();
-    return c;
+    return !!c;
   }
 
-  select(idx: number) {
-    this.leave();
-    const c = this.acc.characters[idx];
-    if (!c) return;
-    this.acc.active = idx;
-    const rep = computeAfk(this.acc, c, Date.now(), this.rng);
-    this.enterWorld();
-    if (rep) this.onAfk(rep, c);
-    this.save();
+  async select(idx: number) {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      await this.leave();
+      if (!this.acc.characters[idx]) return;
+      this.acc.active = idx;
+      let rep: AfkReport | null = null;
+      if (this.online) {
+        try {
+          const r = await this.net!.enter(idx);
+          this.adopt(r.account);
+          rep = r.report;
+        } catch (e) { this.netFail(e); }
+      }
+      if (!this.online) rep = computeAfk(this.acc, this.char!, Date.now(), this.rng);
+      this.enterWorld();
+      if (rep) this.onAfk(rep, this.char!);
+      this.save();
+    } finally { this.busy = false; }
   }
 
   /** 현재 캐릭터를 방치 상태로 두고 캐릭터 선택으로 */
-  leave() {
+  async leave() {
     const c = this.char;
-    if (c) c.lastActive = Date.now();
+    if (c) {
+      c.lastActive = Date.now();
+      if (this.online) await this.pushSync().catch(() => undefined);
+    }
     this.acc.active = -1;
     this.world = null;
     this.save();
@@ -61,25 +136,49 @@ export class Game {
 
   private enterWorld() {
     this.world = new World(this.acc, this.char!, this.rng);
+    this.syncT = 0;
     this.onWorld(this.world);
   }
 
-  travel(p: PortalDef) {
-    const c = this.char;
-    if (!c || !this.world || !MAPS[p.to] || !this.world.portalOpen(p)) return;
-    // 열쇠가 필요한 문: 들어갈 때 열쇠가 사라진다
-    if (p.key) {
-      if (countItem(c, p.key) < 1) { this.onEvent({ t: 'loot', text: `${ITEMS[p.key].name}가 있어야 들어갈 수 있습니다` }); return; }
-      removeItem(c, p.key, 1);
-    }
-    c.mapId = p.to; c.x = p.toX; c.y = p.toY ?? 0;
-    this.enterWorld();
+  /** 행동: 이 기기에 바로 적용하고(반응 빠르게), 온라인이면 서버에도 보낸다. 서버와 결과가 다르면 서버를 따른다 */
+  act(a: Action): ActionResult {
+    const i = this.acc.active;
+    if (i < 0) return { ok: false, err: '캐릭터를 고르세요' };
+    const body = this.online ? this.syncBody() : undefined;
+    const snapshot = body ? JSON.parse(JSON.stringify(body)) as SyncBody : undefined;
+    const r = applyAction(this.acc, i, a, Date.now());
+    if (!r.ok) return r;
     this.save();
+    if (this.online) {
+      this.net!.action(i, a, snapshot).then((s) => {
+        if (!s.ok) this.resync(s.account, s.err);
+        else this.syncT = 0;
+      }).catch((e) => this.netFail(e));
+    }
+    return r;
+  }
+
+  /** 포탈로 이동(서버에서는 처치 조건·열쇠를 다시 확인) */
+  travel(portal: number) {
+    const r = this.act({ t: 'travel', portal });
+    if (!r.ok) { this.onEvent({ t: 'loot', text: r.err ?? '이동할 수 없습니다' }); return; }
+    this.enterWorld();
+  }
+
+  private pushSync() {
+    const i = this.acc.active;
+    if (!this.online || i < 0) return Promise.resolve();
+    return this.net!.sync(i, this.syncBody()).then((s) => { if (!s.ok) this.resync(s.account, s.reason); }).catch((e) => this.netFail(e));
   }
 
   tick(dt: number) {
+    // 끊겼으면 가끔 다시 붙어 본다
+    if (this.net && this.netState === 'offline') {
+      this.retryT += dt;
+      if (this.retryT > 30) { this.retryT = 0; this.net.health().then(() => this.connect().then(() => this.char && this.select(this.acc.active))).catch(() => undefined); }
+    }
     const w = this.world;
-    if (!w || this.paused) return;
+    if (!w || this.paused || this.busy) return;
     w.step(dt, this.input);
     if (w.events.length) {
       const evs = w.events.splice(0);
@@ -87,20 +186,23 @@ export class Game {
         this.onEvent(e);
         if (e.t === 'respawn') {
           // 원작처럼 쓰러지면 마을에서 다시 시작한다
-          const c = this.char!;
-          c.mapId = 'town'; c.x = 120; c.y = 0;
-          this.enterWorld(); this.save();
+          this.act({ t: 'respawn' });
+          this.enterWorld();
           return;
         }
         if (e.t === 'arrive' && e.what === 'portal') {
           const q = w.map.portals[e.idx];
-          if (w.portalOpen(q)) { this.travel(q); return; }
-          this.onEvent({ t: 'loot', text: `이 맵에서 ${q.reqKills}마리를 처치해야 열립니다` });
+          if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `이 맵에서 ${q.reqKills}마리를 처치해야 열립니다` }); continue; }
+          if (!MAPS[q.to]) continue;
+          this.travel(e.idx);
+          return;
         }
       }
     }
     this.saveT += dt;
     if (this.saveT > 5) { this.saveT = 0; this.save(); }
+    this.syncT += dt;
+    if (this.syncT > SYNC_EVERY) { this.syncT = 0; this.pushSync(); }
   }
 
   save() {
@@ -113,6 +215,7 @@ export class Game {
   suspend() {
     if (this.paused) return;
     this.save();
+    this.pushSync();
     this.paused = true;
   }
   /** 앱이 다시 보일 때: 자리를 비운 동안의 보상 지급 */
@@ -120,10 +223,20 @@ export class Game {
     if (!this.paused) return;
     this.paused = false;
     const c = this.char;
-    if (c) {
-      const rep = computeAfk(this.acc, c, Date.now(), this.rng);
-      if (rep) this.onAfk(rep, c);
-    }
+    if (!c) return;
+    if (this.online) { this.select(this.acc.active); return; }
+    const rep = computeAfk(this.acc, c, Date.now(), this.rng);
+    if (rep) this.onAfk(rep, c);
     this.save();
+  }
+
+  /** 계정 삭제(온라인이면 서버에서도) */
+  async deleteAccount() {
+    if (this.online) await this.net!.remove();
+    this.acc = newAccount(); this.acc.active = -1;
+    this.world = null;
+    this.backend.save(serialize(this.acc));
+    try { localStorage.removeItem('looin-idle-auth-v1'); } catch { /* 없음 */ }
+    this.onWorld(null);
   }
 }

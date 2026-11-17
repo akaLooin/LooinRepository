@@ -11,12 +11,19 @@ async function boot() {
   // 캔버스 텍스트가 픽셀 폰트로 그려지도록 폰트를 먼저 불러온다
   try { await Promise.all([document.fonts.load('11px Galmuri11'), document.fonts.load('bold 11px Galmuri11')]); } catch { /* 폰트 실패 시 기본 글꼴 */ }
   buildAll();
-  const game = new Game();
+  // 서버 주소가 설정돼 있으면 온라인(게스트 계정), 아니면 이 기기에만 저장
+  const game = new Game(import.meta.env.VITE_SERVER_URL as string | undefined);
   const scene = new GameScene(game);
   const ui = new UI(game);
   const onWorld = game.onWorld;
   game.onWorld = (w) => { scene.setWorld(w); onWorld(w); };
   game.onEvent = (e) => { scene.handle(e); ui.onEvent(e); };
+  game.onNet = (st, msg) => {
+    if (st === 'online') ui.toast('서버에 연결되었습니다');
+    else if (st === 'offline') ui.toast(`오프라인으로 진행합니다${msg ? ` — ${msg}` : ''}`);
+    ui.refresh(true);
+  };
+  game.connect().then(() => ui.refresh(true));
 
   const dpr = () => Math.min(window.devicePixelRatio || 1, 3);
   const phaser = new Phaser.Game({
