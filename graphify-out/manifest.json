@@ -503,6 +503,12 @@
     "ast_hash": "e56cee3d1375c7657c4d1c9df1346edf",
     "semantic_hash": ""
   },
+  "replica/architecture.md": {
+    "mtime": 1794898282.2085226,
+    "seen": 1794898283.4913793,
+    "ast_hash": "b14914316664a98b015a73b84508263f",
+    "semantic_hash": ""
+  },
   "game/package-lock.json": {
     "mtime": 1794885213.1855917,
     "seen": 1794885259.7177675,
