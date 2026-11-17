@@ -53,15 +53,20 @@ object Csv {
 
 /** 거래 → CSV (엑셀에서 바로 열리는 UTF-8 BOM). 이 앱의 가져오기와 같은 열 구성. */
 object TransactionCsvExport {
-    val HEADER = listOf("날짜", "실제 처리일", "상태", "유형", "금액", "통화", "출금 계좌", "입금 계좌", "카테고리", "메모", "반복")
+    val HEADER = listOf("날짜", "실제 처리일", "상태", "유형", "금액", "통화", "출금 계좌", "입금 계좌", "카테고리", "메모", "반복", "받은 금액", "받은 통화", "환율")
 
-    fun export(txs: List<Transaction>, accountName: (Long?) -> String, categoryName: (Long?) -> String): String =
+    /** [accountCurrency]: 받은 금액(환전) 통화를 쓰기 위한 계좌 통화. */
+    fun export(txs: List<Transaction>, accountName: (Long?) -> String, categoryName: (Long?) -> String, accountCurrency: (Long?) -> String? = { null }): String =
         Csv.write(HEADER, txs.sortedWith(compareBy<Transaction> { it.date }.thenBy { it.id }).map { t ->
+            val toCur = accountCurrency(t.toAccountId)
+            val received = t.toAmount?.takeIf { toCur != null && toCur != t.currency }
             listOf(
                 t.date.toString(), t.completedDate?.toString() ?: "", t.status.label, t.type.label,
                 MoneyFormat.number(t.amount, t.currency).replace(",", ""), t.currency,
                 t.fromAccountId?.let(accountName) ?: "", t.toAccountId?.let(accountName) ?: "",
                 t.categoryId?.let(categoryName) ?: "", t.memo, if (t.recurringId != null) "예" else "",
+                received?.let { MoneyFormat.number(it, toCur!!).replace(",", "") } ?: "", if (received != null) toCur!! else "",
+                t.rateToKrwX10000?.let { com.looin.finance.core.money.Fx.formatRate(it).replace(",", "") } ?: "",
             )
         })
 }
@@ -101,6 +106,8 @@ object TransactionCsvImport {
     private val ACCOUNT = listOf("계좌", "계좌명")
     private val CATEGORY = listOf("카테고리", "분류")
     private val ACTUAL = listOf("실제 처리일")
+    private val RECEIVED = listOf("받은 금액")
+    private val RATE = listOf("환율")
 
     fun preview(
         text: String,
@@ -118,6 +125,7 @@ object TransactionCsvImport {
         val cDate = col(DATE); val cAmount = col(AMOUNT); val cOut = col(OUT); val cIn = col(IN)
         val cMemo = col(MEMO); val cType = col(TYPE); val cStatus = col(STATUS); val cFrom = col(FROM); val cTo = col(TO)
         val cAccount = col(ACCOUNT); val cCategory = col(CATEGORY); val cActual = col(ACTUAL)
+        val cReceived = col(RECEIVED); val cRate = col(RATE)
         if (cDate == null || (cAmount == null && cOut == null && cIn == null)) {
             return ImportPreview(listOf(ImportItem(1, ImportStatus.ERROR, null, "날짜와 금액(또는 출금액/입금액) 열을 찾을 수 없습니다. 첫 줄에 열 이름이 있어야 합니다.")), false, "알 수 없음")
         }
@@ -144,7 +152,10 @@ object TransactionCsvImport {
                     type = if (out != 0L) TransactionType.EXPENSE else TransactionType.INCOME
                     amount = kotlin.math.abs(if (out != 0L) out else inn)
                 } else {
-                    val a = parseAmount(get(cAmount)) ?: return@mapIndexed ImportItem(line, ImportStatus.ERROR, null, "금액을 읽을 수 없습니다: '${get(cAmount)}'", r)
+                    // 외화(소수) 금액은 정수 부분으로 유형만 정하고, 계좌 통화를 안 뒤 다시 읽는다
+                    val raw = get(cAmount)
+                    val a = parseAmount(raw) ?: raw.takeIf { it.contains('.') }?.let { parseAmount(it.substringBefore('.')) }
+                        ?: return@mapIndexed ImportItem(line, ImportStatus.ERROR, null, "금액을 읽을 수 없습니다: '${get(cAmount)}'", r)
                     type = when {
                         typeText.contains("이체") -> TransactionType.TRANSFER
                         typeText.contains("수입") || typeText.contains("입금") -> TransactionType.INCOME
@@ -181,8 +192,19 @@ object TransactionCsvImport {
                     else get(cCategory).takeIf { it.isNotEmpty() }?.let { n -> categories.firstOrNull { it.name == n && it.kind == kind && !it.archived } }
                 val currency = (from ?: to)?.currency ?: KRW
                 val actual = parseDate(get(cActual))
+                val rawAmount = get(cAmount)
+                val finalAmount = if (cAmount != null && rawAmount.contains('.')) {
+                    MoneyFormat.parse(rawAmount.replace("-", "").replace("+", ""), currency)
+                        ?: return@mapIndexed ImportItem(line, ImportStatus.ERROR, null, "$currency 금액의 소수 자리가 맞지 않습니다: '$rawAmount'", r)
+                } else if (currency != KRW && cAmount != null && com.looin.finance.core.money.Currencies.of(currency).decimals > 0) {
+                    MoneyFormat.parse(rawAmount.replace("-", "").replace("+", ""), currency) ?: amount
+                } else amount
+                val rate = get(cRate).takeIf { it.isNotEmpty() }?.let { com.looin.finance.core.money.Fx.parseRate(it) }
+                val received = if (type == TransactionType.TRANSFER && to != null && from != null && to.currency != from.currency)
+                    get(cReceived).takeIf { it.isNotEmpty() }?.let { MoneyFormat.parse(it, to.currency) } else null
                 val tx = Transaction(
-                    type = type, status = status, amount = amount, currency = currency, date = date,
+                    type = type, status = status, amount = finalAmount, currency = currency, date = date,
+                    toAmount = received, rateToKrwX10000 = rate,
                     completedDate = if (status == TransactionStatus.COMPLETED) (actual ?: date) else null,
                     fromAccountId = from?.id, toAccountId = to?.id, categoryId = category?.id,
                     memo = get(cMemo), source = TransactionSource.IMPORT, createdAt = now, updatedAt = now,

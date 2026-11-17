@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
@@ -114,5 +115,34 @@ class ForeignUiTest {
         val t = runBlocking { repo.snapshot().transactions.single() }
         assertEquals(85_000L, t.rateToKrwX10000)
         assertEquals("JPY", t.currency)
+    }
+
+    /** 오류 수정: 엔화 계좌 화면의 거래·예상 잔고·초기 잔고가 원(₩)이 아니라 엔(¥)으로 보인다. */
+    @Test fun yenAccountShowsYenUnits() {
+        fakeRates()
+        val yen = runBlocking {
+            repo.ensureInitialized()
+            val krw = repo.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 1_000_000, includeInAvailable = true))
+            val yen = repo.saveAccount(Account(name = "엔화", type = AccountType.FOREIGN, currency = "JPY", openingBalance = 5_000, openingRateX10000 = 90_000))
+            // 원화 90,000원 → ¥10,000 환전(거래 통화는 출금 쪽 원화)
+            repo.saveTransaction(Transaction(type = TransactionType.TRANSFER, status = TransactionStatus.COMPLETED, amount = 90_000, date = today,
+                fromAccountId = krw, toAccountId = yen, toAmount = 10_000, rateToKrwX10000 = 90_000))
+            repo.saveTransaction(Transaction(type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 1_200, currency = "JPY", date = today,
+                fromAccountId = yen, rateToKrwX10000 = 90_000, memo = "라멘"))
+            yen
+        }
+        val vm = MainViewModel(repo)
+        rule.setContent {
+            val state by vm.state.collectAsState()
+            LooinTheme { com.looin.finance.ui.assets.AccountDetailScreen(state, vm, yen, {}, {}, {}, {}) }
+        }
+        await { vm.state.value.data.loaded }
+        rule.onNodeWithText("+¥10,000").assertExists()       // 환전으로 받은 엔화
+        rule.onNodeWithText("90,000원 보냄", substring = true).assertExists()
+        rule.onNodeWithText("-¥1,200").assertExists()
+        rule.onNodeWithText("≈ 10,800원", substring = true).assertExists() // 기록 환율로 바꾼 원화
+        rule.onNodeWithText("¥5,000").assertExists()         // 초기 잔고
+        rule.onAllNodesWithText("¥13,800").fetchSemanticsNodes().let { assertTrue(it.isNotEmpty()) } // 잔고·예상 잔고
+        assertTrue(rule.onAllNodesWithText("+10,000원").fetchSemanticsNodes().isEmpty())
     }
 }

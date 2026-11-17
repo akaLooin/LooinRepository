@@ -96,6 +96,13 @@ fun TransactionActionSheet(
             "info" -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 SmallLabel("유형 ${tx.type.label} · 상태 ${tx.status.label} · 출처 ${tx.source.label}", color = c.textSecondary)
                 SmallLabel("금액 ${MoneyFormat.format(tx.amount, tx.currency)}", color = c.textSecondary)
+                tx.toAmount?.let { r -> data.accountById[tx.toAccountId]?.currency?.takeIf { it != tx.currency }?.let { cur -> SmallLabel("받은 금액 ${MoneyFormat.format(r, cur)}", color = c.textSecondary) } }
+                val fxCur = com.looin.finance.core.money.Fx.foreignCurrencyOf(tx, data.accountById)
+                if (fxCur != null) SmallLabel(tx.rateToKrwX10000?.let { "당시 환율 ${com.looin.finance.core.money.Fx.rateLabel(fxCur, it)}" } ?: "당시 환율 없음 · 계좌 화면에서 채울 수 있어요",
+                    color = if (tx.rateToKrwX10000 == null) c.danger else c.textSecondary)
+                if (tx.currency != com.looin.finance.core.model.KRW) tx.rateToKrwX10000?.let { r ->
+                    SmallLabel("원화 환산 ≈ ${MoneyFormat.format(com.looin.finance.core.money.Fx.toKrw(tx.amount, tx.currency, r))} (통계·예산에 이 금액으로 들어가요)", color = c.textSecondary)
+                }
                 SmallLabel((if (tx.isPlanned) "예정일 " else "발생일 ") + tx.date.korean(true), color = c.textSecondary)
                 tx.completedDate?.let { SmallLabel("실제 처리일 ${it.korean(true)}", color = c.textSecondary) }
                 tx.fromAccountId?.let { SmallLabel("출금 ${data.accountName(it)}", color = c.textSecondary) }

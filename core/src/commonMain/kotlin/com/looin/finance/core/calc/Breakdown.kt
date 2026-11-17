@@ -10,4 +10,6 @@ data class Breakdown(
     val lines: List<BreakdownLine>,
     val formula: String = "",
     val notes: List<String> = emptyList(),
+    /** 금액들의 통화(외화 계좌 하나의 근거면 그 통화). */
+    val currency: String = com.looin.finance.core.model.KRW,
 )

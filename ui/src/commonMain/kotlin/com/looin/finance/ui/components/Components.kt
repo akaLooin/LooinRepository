@@ -88,6 +88,7 @@ import com.looin.finance.core.model.TransactionStatus
 import com.looin.finance.core.model.TransactionType
 import com.looin.finance.core.money.Currencies
 import com.looin.finance.core.money.MoneyFormat
+import com.looin.finance.core.money.krwAmount
 import com.looin.finance.core.money.AmountExpression
 import com.looin.finance.data.FinanceData
 import com.looin.finance.ui.theme.AmountStyle
@@ -378,6 +379,8 @@ fun MetricRow(
     color: Color = Color.Unspecified,
     emphasize: Boolean = false,
     sub: String? = null,
+    /** 금액 통화(외화 계좌 지표). 기본은 계산 근거의 통화, 없으면 원. */
+    currency: String = breakdown?.currency ?: KRW,
 ) {
     var show by remember { mutableStateOf(false) }
     val c = Looin.colors
@@ -397,7 +400,7 @@ fun MetricRow(
             }
             if (sub != null) SmallLabel(sub)
         }
-        AmountText(amount, color = color, style = if (emphasize) LooinType.monthTitle else LooinType.bodyLg)
+        AmountText(amount, currency = currency, color = color, style = if (emphasize) LooinType.monthTitle else LooinType.bodyLg)
     }
     if (show && breakdown != null) BreakdownSheet(breakdown) { show = false }
 }
@@ -452,14 +455,14 @@ fun BreakdownContent(b: Breakdown) {
                     Text(line.label, style = LooinType.body, color = if (line.sign == 0) c.textMuted else c.text)
                     if (line.note.isNotEmpty()) SmallLabel(line.note)
                 }
-                AmountText(line.amount, style = LooinType.body, color = if (line.sign == 0) c.textMuted else c.text)
+                AmountText(line.amount, currency = b.currency, style = LooinType.body, color = if (line.sign == 0) c.textMuted else c.text)
             }
         }
         if (b.lines.isEmpty()) EmptyHint("해당 항목 없음")
         Box(Modifier.fillMaxWidth().padding(vertical = 10.dp).height(1.dp).background(c.surfaceStrong))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(b.title, style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f), color = c.text)
-            AmountText(b.total, style = LooinType.monthTitle)
+            AmountText(b.total, currency = b.currency, style = LooinType.monthTitle)
         }
         b.notes.forEach { Spacer(Modifier.height(6.dp)); SmallLabel(it) }
     }
@@ -858,7 +861,18 @@ fun TransactionRow(
             add(data.accountName(if (tx.type == TransactionType.INCOME) tx.toAccountId else tx.fromAccountId))
         } else if (tx.type == TransactionType.ADJUSTMENT) add(data.accountName(tx.fromAccountId ?: tx.toAccountId))
         else if (tx.memo.isNotBlank()) add(tx.memo)
+        // 통화가 다른 이체(환전): 받은 쪽 금액·환율
+        val toAcc = tx.toAccountId?.let { data.accountById[it] }
+        if (tx.type == TransactionType.TRANSFER && tx.toAmount != null && toAcc != null && toAcc.currency != tx.currency) {
+            add(if (perspectiveAccountId == tx.toAccountId) "${MoneyFormat.format(tx.amount, tx.currency)} 보냄" else "${MoneyFormat.format(tx.toAmount ?: 0, toAcc.currency)} 받음")
+        } else if (tx.currency != KRW && tx.type != TransactionType.TRANSFER) {
+            // 외화 거래: 기록 환율로 바꾼 원화(환율이 비었으면 안내)
+            add(tx.krwAmount()?.let { "≈ ${MoneyFormat.format(it)}" } ?: "환율 없음")
+        }
     }.joinToString(" · ")
+    // 계좌 화면에서는 그 계좌 통화로(원화 → 엔화 환전이면 엔화 계좌에선 받은 엔화 금액)
+    val perspective = perspectiveAccountId?.let { data.accountById[it] }
+    val shownCurrency = perspective?.currency ?: tx.currency
     val signed = when {
         perspectiveAccountId != null -> tx.deltaFor(perspectiveAccountId)
         tx.type == TransactionType.INCOME -> tx.amount
@@ -895,7 +909,7 @@ fun TransactionRow(
             }
         }
         Spacer(Modifier.width(8.dp))
-        AmountText(signed, currency = tx.currency, color = amountColor,
+        AmountText(signed, currency = shownCurrency, color = amountColor,
             signed = tx.type != TransactionType.TRANSFER || perspectiveAccountId != null, strike = cancelled, style = LooinType.bodyLg)
     }
 }

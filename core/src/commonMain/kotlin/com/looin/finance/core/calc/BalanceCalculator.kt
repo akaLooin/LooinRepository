@@ -137,6 +137,7 @@ object BalanceCalculator {
             ),
             formula = "예상 잔고 = 실제 잔고 + 예정 입금 − 예정 출금",
             notes = listOf("대상: " + accounts.joinToString { it.name }.ifEmpty { "없음" }),
+            currency = accounts.map { it.currency }.distinct().singleOrNull() ?: KRW,
         )
     }
 

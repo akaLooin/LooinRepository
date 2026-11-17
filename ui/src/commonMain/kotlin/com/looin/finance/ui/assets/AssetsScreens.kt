@@ -239,7 +239,7 @@ fun AccountDetailScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 MetricRow("${period.lastDay.korean()} 예상 잔고", projected.total, projected)
-                MetricRow("초기 잔고", account.openingBalance)
+                MetricRow("초기 잔고", account.openingBalance, currency = account.currency)
                 Spacer(Modifier.height(8.dp))
                 if (!account.archived) PrimaryButton("이 계좌로 기록하기", { menu = true }, strong = true)
                 Spacer(Modifier.height(8.dp))

@@ -98,6 +98,15 @@ object StatisticsCalculator {
             .map { CategoryChange(it, current.expenseByCategory[it] ?: 0, previous.expenseByCategory[it] ?: 0) }
             .sortedByDescending { it.diff }
 
+    /** 기간 안 통화별 외화 소비(완료 지출): 외화 합계, 기록 환율로 바꾼 원화, 환율이 없어 원화 통계에서 빠진 건수. */
+    data class ForeignSpend(val currency: String, val amount: Long, val krw: Long, val count: Int, val missingRate: Int)
+
+    fun foreignSpending(period: Period, transactions: List<Transaction>): List<ForeignSpend> =
+        transactionsIn(period, transactions).filter { it.isCompleted && it.type == TransactionType.EXPENSE && it.currency != KRW }
+            .groupBy { it.currency }.map { (cur, l) ->
+                ForeignSpend(cur, l.sumOf { it.amount }, l.sumOf { it.krwAmount() ?: 0 }, l.size, l.count { it.rateToKrwX10000 == null })
+            }.sortedByDescending { it.krw }
+
     /** 최근 [count]개 기간 추이(오래된 순). */
     fun trend(current: Period, count: Int, paydayDay: Int, transactions: List<Transaction>): List<PeriodStats> =
         PeriodCalculator.recent(current, count, paydayDay).map { stats(it, transactions) }

@@ -135,4 +135,23 @@ class FxTest {
         val budget = com.looin.finance.core.model.Budget(basis = period.basis, periodStart = period.start, periodEndExclusive = period.endExclusive, categoryId = null, amount = 100_000)
         assertEquals(19_000L, com.looin.finance.core.calc.BudgetCalculator.status(budget, period, txs).spent)
     }
+
+    /** CSV 로 내보낸 외화 거래(환율·받은 금액·달러 소수)를 다시 가져오면 그대로다. */
+    @Test fun csvKeepsRatesAndReceivedAmount() {
+        val usd = Account(id = 4, name = "달러", type = AccountType.FOREIGN, currency = "USD")
+        val accs = listOf(krw, yen, usd)
+        val byId = accs.associateBy { it.id }
+        val ex = Transaction(id = 1, type = TransactionType.TRANSFER, status = TransactionStatus.COMPLETED, amount = 90_000, date = d,
+            fromAccountId = 1, toAccountId = 2, toAmount = 10_000, rateToKrwX10000 = 90_000)
+        val sp = Transaction(id = 2, type = TransactionType.EXPENSE, status = TransactionStatus.COMPLETED, amount = 1_250, currency = "USD", date = d,
+            fromAccountId = 4, rateToKrwX10000 = 13_800_000, memo = "커피")
+        val csv = com.looin.finance.core.csv.TransactionCsvExport.export(listOf(ex, sp), { id -> byId[id]?.name ?: "" }, { "" }) { id -> byId[id]?.currency }
+        val p = com.looin.finance.core.csv.TransactionCsvImport.preview(csv, accs, emptyList(), emptyList(), null, d)
+        val got = p.items.mapNotNull { it.tx }
+        assertTrue(p.items.joinToString { it.message }, p.items.all { it.status == com.looin.finance.core.csv.ImportStatus.NEW })
+        val g1 = got.first { it.type == TransactionType.TRANSFER }
+        assertEquals(10_000L, g1.toAmount); assertEquals(90_000L, g1.rateToKrwX10000)
+        val g2 = got.first { it.type == TransactionType.EXPENSE }
+        assertEquals(1_250L, g2.amount); assertEquals("USD", g2.currency); assertEquals(13_800_000L, g2.rateToKrwX10000)
+    }
 }

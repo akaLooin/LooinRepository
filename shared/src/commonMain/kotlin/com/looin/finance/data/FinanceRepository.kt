@@ -329,7 +329,7 @@ class FinanceRepository(
     /** 모든 거래를 CSV 로(엑셀용 UTF-8 BOM). 보관한 계좌·카테고리 이름도 그대로 쓴다. */
     suspend fun exportCsv(): String {
         val s = snapshot()
-        return com.looin.finance.core.csv.TransactionCsvExport.export(s.transactions, s::accountName, s::categoryName)
+        return com.looin.finance.core.csv.TransactionCsvExport.export(s.transactions, s::accountName, s::categoryName) { id -> id?.let { s.accountById[it]?.currency } }
     }
 
     /** CSV 를 읽어 새 거래·중복·오류로 나눈다(저장하지 않음). */

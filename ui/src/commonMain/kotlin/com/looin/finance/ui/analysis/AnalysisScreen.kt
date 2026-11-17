@@ -66,6 +66,7 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
     val s = StatisticsCalculator.stats(period, txs)
     val trend = StatisticsCalculator.trend(period, 6, payday, txs)
     val planVsActual = StatisticsCalculator.planVsActual(period, data.budgets, txs).filter { it.budget > 0 }
+    val foreign = StatisticsCalculator.foreignSpending(period, txs)
 
     LazyColumn(
         contentPadding = PaddingValues(start = GUTTER, end = GUTTER, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 40.dp),
@@ -142,6 +143,24 @@ fun AnalysisScreen(state: UiState, padding: PaddingValues) {
                                 ch.diff < 0 -> "지난 기간보다 −${MoneyFormat.format(-ch.diff)}"
                                 else -> "지난 기간과 같아요"
                             }, color = if (ch.diff > 0) c.expense else if (ch.diff < 0) c.accent else c.textMuted)
+                        }
+                    }
+                }
+            }
+        }
+        // 외화 소비: 통화별 합계와 기록 환율로 바꾼 원화(위 통계에 이미 포함)
+        if (foreign.isNotEmpty()) item {
+            Section("외화 소비", dot = c.saturday) {
+                foreign.forEach { f ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${f.currency} · ${f.count}건", style = LooinType.body, color = c.text)
+                            SmallLabel(if (f.missingRate > 0) "환율 없는 ${f.missingRate}건은 원화 통계에서 빠졌어요" else "기록 환율로 원화 통계에 포함", 
+                                color = if (f.missingRate > 0) c.danger else c.textMuted)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(MoneyFormat.format(f.amount, f.currency), style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.text)
+                            SmallLabel("≈ ${MoneyFormat.format(f.krw)}")
                         }
                     }
                 }
