@@ -210,9 +210,9 @@
     "semantic_hash": ""
   },
   "game/vite.config.ts": {
-    "mtime": 1794881033.3249214,
-    "seen": 1794885259.717708,
-    "ast_hash": "9388cc2822c6a001f48847441e34171f",
+    "mtime": 1794905696.1194456,
+    "seen": 1794905733.0720758,
+    "ast_hash": "15918cd1c8acd8d37faeb42a7daaf764",
     "semantic_hash": ""
   },
   ".claude/skills/replica-architect/SKILL.md": {
@@ -507,6 +507,36 @@
     "mtime": 1794898282.2085226,
     "seen": 1794898283.4913793,
     "ast_hash": "b14914316664a98b015a73b84508263f",
+    "semantic_hash": ""
+  },
+  "game/src/ui/design-page.ts": {
+    "mtime": 1794905722.861474,
+    "seen": 1794905733.0719712,
+    "ast_hash": "09391e171fbe0ce8903ecd87091f602b",
+    "semantic_hash": ""
+  },
+  "game/src/ui/icons.ts": {
+    "mtime": 1794905696.0483294,
+    "seen": 1794905733.071982,
+    "ast_hash": "8c7dd8dda8d54bad46fc3bcbbf221cfc",
+    "semantic_hash": ""
+  },
+  "replica/design/build_tokens.py": {
+    "mtime": 1794905696.0716214,
+    "seen": 1794905733.0720782,
+    "ast_hash": "4c108f49862e4f8ed316b14409e693ad",
+    "semantic_hash": ""
+  },
+  "game/design.html": {
+    "mtime": 1794905696.049973,
+    "seen": 1794905733.0726745,
+    "ast_hash": "a638813fe691d55eb2b40de532914e3c",
+    "semantic_hash": ""
+  },
+  "replica/design/components.md": {
+    "mtime": 1794905696.0466478,
+    "seen": 1794905733.0727403,
+    "ast_hash": "f938ccb4178f04f08a30c55d4b6ba9a4",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
