@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1794888605.323172,
-    "seen": 1794888635.867286,
+    "mtime": 1794897448.2402034,
+    "seen": 1794897470.006377,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -84,9 +84,9 @@
     "semantic_hash": ""
   },
   "game/android/app/src/main/java/com/looin/idle/MainActivity.java": {
-    "mtime": 1794885221.2619424,
-    "seen": 1794885259.7176862,
-    "ast_hash": "4ddb37758eff95cb60fc20d6cab2a3b1",
+    "mtime": 1794897273.338974,
+    "seen": 1794897470.0063803,
+    "ast_hash": "55af32c5cb6cfb03bfef76f1f0fe26a1",
     "semantic_hash": ""
   },
   "game/android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java": {
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1794888605.323172,
-    "seen": 1794888635.8672934,
+    "mtime": 1794897448.2402034,
+    "seen": 1794897470.0063841,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -138,15 +138,15 @@
     "semantic_hash": ""
   },
   "game/src/core/afk.ts": {
-    "mtime": 1794888238.9985814,
-    "seen": 1794888635.8673034,
-    "ast_hash": "b2a052aa1f0f38b2200fdb12976d56e5",
+    "mtime": 1794897070.1018195,
+    "seen": 1794897470.0063918,
+    "ast_hash": "97d3d65f012edea63c079e960aa7b9b0",
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1794888238.997916,
-    "seen": 1794888635.8673048,
-    "ast_hash": "20c77e61c0303533178c38c5d516b9ff",
+    "mtime": 1794897070.1004963,
+    "seen": 1794897470.0063932,
+    "ast_hash": "a54a3777fe4947ba3037b383f8bcb88c",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -156,21 +156,21 @@
     "semantic_hash": ""
   },
   "game/src/core/state.ts": {
-    "mtime": 1794888238.998337,
-    "seen": 1794888635.8673072,
-    "ast_hash": "c76d86f0bd88d1943155317a00bfacd2",
+    "mtime": 1794897070.1011205,
+    "seen": 1794897470.0063958,
+    "ast_hash": "1c5007340a857b69b11e53f8019d3837",
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1794888316.7351549,
-    "seen": 1794888635.8673086,
-    "ast_hash": "7b371837596498028e337c5f4474bfe3",
+    "mtime": 1794897169.023713,
+    "seen": 1794897470.006397,
+    "ast_hash": "f12897626750695d3fec986572a7e80b",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
-    "mtime": 1794888366.939425,
-    "seen": 1794888635.8673096,
-    "ast_hash": "cc70f82c64340fc2a8cd0ef35abd3b8e",
+    "mtime": 1794897156.6707137,
+    "seen": 1794897470.0063982,
+    "ast_hash": "3f0eb701a3c05658746ee5ede8417950",
     "semantic_hash": ""
   },
   "game/src/main.ts": {
@@ -180,27 +180,27 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1794888543.2683487,
-    "seen": 1794888635.867312,
-    "ast_hash": "59b6e10025475217f51c2ef9d5af3d8f",
+    "mtime": 1794897214.1703033,
+    "seen": 1794897470.006401,
+    "ast_hash": "047ddabcd9d0ccc72512c122b2fd6796",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1794888366.9366546,
-    "seen": 1794888635.867313,
-    "ast_hash": "8ce55738c0a3e29d4bd36275e29e5bd6",
+    "mtime": 1794897214.1694071,
+    "seen": 1794897470.0064025,
+    "ast_hash": "db9837840b12892bed5a038a5cef6196",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1794888411.60674,
-    "seen": 1794888635.8673139,
-    "ast_hash": "aa5d01be14ba277069a6c8afd737baa5",
+    "mtime": 1794897253.6134198,
+    "seen": 1794897470.0064037,
+    "ast_hash": "3942e695dc36eec51158871a55077f1d",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
-    "mtime": 1794888411.6071117,
-    "seen": 1794888635.867315,
-    "ast_hash": "cea6cdeb11e5634797d523af9b6bcd35",
+    "mtime": 1794897136.5915647,
+    "seen": 1794897470.0064049,
+    "ast_hash": "0027be1002122c857deac2e108f5a9e5",
     "semantic_hash": ""
   },
   "game/tsconfig.json": {
@@ -318,9 +318,9 @@
     "semantic_hash": ""
   },
   "game/README.md": {
-    "mtime": 1794888597.7398117,
-    "seen": 1794888635.867341,
-    "ast_hash": "7a1d5a0481ad08658d223eedacce7d00",
+    "mtime": 1794897439.7662745,
+    "seen": 1794897470.00643,
+    "ast_hash": "74cd786736bda2c5694f857279029637",
     "semantic_hash": ""
   },
   "game/index.html": {
