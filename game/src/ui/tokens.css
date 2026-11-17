@@ -1,0 +1,65 @@
+/* 자동 생성: replica/design/build_tokens.py — 직접 고치지 말 것 */
+@font-face { font-family: "Galmuri11"; font-weight: normal; src: url("../../node_modules/galmuri/dist/Galmuri11.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Galmuri11"; font-weight: bold; src: url("../../node_modules/galmuri/dist/Galmuri11-Bold.woff2") format("woff2"); font-display: block; }
+:root {
+  /* 기준 단위: 화면 높이에 비례. 모든 크기가 이 값을 따른다. */
+  --u: clamp(13px, 3.7vh, 28px);
+  --c-bg: #2b1d2e;
+  --c-surface: #3a2d4a;
+  --c-surface-raised: #4a3b5e;
+  --c-surface-inset: #241a30;
+  --c-border: #1c1322;
+  --c-border-input: #8f7fa8;
+  --c-text: #fff6e6;
+  --c-text-muted: #c9bcd6;
+  --c-accent: #f0b23a;
+  --c-on-accent: #2b1d2e;
+  --c-danger: #b9453c;
+  --c-on-danger: #ffffff;
+  --c-success: #2f7d3a;
+  --c-on-success: #ffffff;
+  --c-text-good: #8fde5d;
+  --c-text-bad: #ff9a8a;
+  --c-text-accent: #f6c945;
+  --c-bar-hp: #c9423a;
+  --c-bar-mp: #2f6fc4;
+  --c-bar-xp: #2a7d3e;
+  --c-bar-skill: #8a5a1e;
+  --c-on-bar: #ffffff;
+  --c-rarity-1: #c9bcd6;
+  --c-rarity-2: #8fde5d;
+  --c-rarity-3: #7fc4ff;
+  --c-rarity-4: #f6c945;
+  --c-focus: #ffe98a;
+  --font: 'Galmuri11', 'Malgun Gothic', sans-serif;
+  --fs-xs: 0.7333em; --lh-xs: 1.27; --fw-xs: 400;
+  --fs-sm: 0.8667em; --lh-sm: 1.31; --fw-sm: 400;
+  --fs-base: 1em; --lh-base: 1.33; --fw-base: 400;
+  --fs-lg: 1.2em; --lh-lg: 1.33; --fw-lg: 700;
+  --fs-xl: 1.6em; --lh-xl: 1.25; --fw-xl: 700;
+  --fs-display: 2.133em; --lh-display: 1.19; --fw-display: 700;
+  --sp-0: 0;
+  --sp-1: 0.1333em;
+  --sp-2: 0.2667em;
+  --sp-3: 0.4em;
+  --sp-4: 0.5333em;
+  --sp-5: 0.8em;
+  --sp-6: 1.067em;
+  --sp-7: 1.6em;
+  --sp-8: 2.133em;
+  --r-sm: 0.2em;
+  --r-md: 0.4em;
+  --r-lg: 0.6em;
+  --r-pill: 999px;
+  --sh-card: inset 0 0 0 2px rgba(255,255,255,.10), 0 4px 0 rgba(0,0,0,.35);
+  --sh-pop: 0 10px 0 rgba(0,0,0,.30), 0 0 0 9999px rgba(20,14,26,.55);
+  --sh-bevel: inset 0 -3px 0 rgba(0,0,0,.30), inset 0 2px 0 rgba(255,255,255,.14);
+  --sh-inset: inset 0 2px 0 rgba(0,0,0,.35);
+  --m-fast: 60ms;
+  --m-base: 150ms;
+  --m-ease: cubic-bezier(.2,1.4,.5,1);
+  --bar-h: max(52px, 12.5vh);
+  --touch: 44px;
+  --slot: max(44px, 2.933em);
+  --win-w: 72vw; --win-h: 82vh;
+}

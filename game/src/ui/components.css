@@ -1,0 +1,103 @@
+/* UI 부품(primitives). 색·크기는 전부 tokens.css 의 역할 토큰만 쓴다(직접 색상값 금지).
+   명세: replica/design/components.md, 확인 페이지: game/design.html */
+.ui { font-family: var(--font); font-size: var(--u); line-height: var(--lh-base); color: var(--c-text); }
+.ui *, .ui *::before, .ui *::after { box-sizing: border-box; }
+.ui img.px, .ui svg.px { image-rendering: pixelated; shape-rendering: crispEdges; }
+.ui :focus-visible { outline: var(--sp-1) solid var(--c-focus); outline-offset: var(--sp-1); }
+.ui-muted { color: var(--c-text-muted); } .ui-good { color: var(--c-text-good); } .ui-bad { color: var(--c-text-bad); } .ui-accent { color: var(--c-text-accent); }
+.ui-xs { font-size: var(--fs-xs); line-height: var(--lh-xs); } .ui-sm { font-size: var(--fs-sm); line-height: var(--lh-sm); }
+.ui-lg { font-size: var(--fs-lg); font-weight: var(--fw-lg); } .ui-xl { font-size: var(--fs-xl); font-weight: var(--fw-xl); }
+
+/* ── 버튼 ── */
+.ui-btn {
+  font: inherit; font-size: var(--fs-base); color: var(--c-text); background: var(--c-surface-raised);
+  border: var(--sp-1) solid var(--c-border); border-radius: var(--r-md); box-shadow: var(--sh-bevel);
+  min-height: var(--touch); padding: var(--sp-2) var(--sp-5); cursor: pointer;
+  transition: transform var(--m-fast), filter var(--m-fast);
+}
+.ui-btn:active:not(:disabled) { transform: translateY(var(--sp-1)); filter: brightness(.85); }
+.ui-btn:disabled { opacity: .45; cursor: default; }
+.ui-btn.primary { background: var(--c-accent); color: var(--c-on-accent); font-weight: 700; }
+.ui-btn.success { background: var(--c-success); color: var(--c-on-success); }
+.ui-btn.danger { background: var(--c-danger); color: var(--c-on-danger); }
+.ui-btn.sm { min-height: 0; padding: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); }
+.ui-btn.block { width: 100%; }
+
+/* ── 게이지 ── */
+.ui-bar { position: relative; height: 1.15em; background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border); border-radius: var(--r-sm); overflow: hidden; }
+.ui-bar > i { position: absolute; inset: 0 auto 0 0; transition: width var(--m-base) ease-out; box-shadow: inset 0 var(--sp-1) 0 rgba(255,255,255,.25); }
+.ui-bar > span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); color: var(--c-on-bar); text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+.ui-bar.hp > i { background: var(--c-bar-hp); } .ui-bar.mp > i { background: var(--c-bar-mp); }
+.ui-bar.xp > i { background: var(--c-bar-xp); } .ui-bar.skill > i { background: var(--c-bar-skill); }
+
+/* ── 하단 바: 화면 전체 폭. 왼쪽 요약 / 가운데 게이지 / 오른쪽 메뉴 버튼 줄 ── */
+.ui-bottom {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--bar-h);
+  display: flex; align-items: stretch; gap: var(--sp-3); padding: var(--sp-2) max(var(--sp-3), env(safe-area-inset-right)) max(var(--sp-2), env(safe-area-inset-bottom)) max(var(--sp-3), env(safe-area-inset-left));
+  background: var(--c-surface); border-top: var(--sp-1) solid var(--c-border); box-shadow: inset 0 var(--sp-1) 0 rgba(255,255,255,.12);
+}
+.ui-summary { flex: 0 0 auto; min-width: 12vw; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-3); background: var(--c-surface-inset); border-radius: var(--r-sm); box-shadow: var(--sh-inset); }
+.ui-summary .face { height: 78%; aspect-ratio: 1; background: var(--c-surface-raised); border-radius: var(--r-sm); overflow: hidden; }
+.ui-summary .who { display: flex; flex-direction: column; justify-content: center; font-size: var(--fs-xs); line-height: 1.25; white-space: nowrap; }
+.ui-summary .who b { font-size: var(--fs-sm); }
+.ui-gauges { flex: 1 1 25vw; max-width: 30vw; display: grid; grid-template-columns: auto 1fr; align-content: center; gap: var(--sp-1) var(--sp-2); font-size: var(--fs-xs); }
+.ui-gauges .ui-bar { height: auto; min-height: 0.95em; align-self: stretch; }
+.ui-gauges label { color: var(--c-text-muted); align-self: center; }
+.ui-menu { flex: 1 1 auto; display: flex; justify-content: flex-end; gap: var(--sp-2); }
+.ui-menubtn {
+  position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 1.05; min-width: var(--touch);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0;
+  font: inherit; font-size: var(--fs-xs); line-height: 1.1; color: var(--c-text);
+  background: var(--c-surface-raised); border: var(--sp-1) solid var(--c-border); border-radius: var(--r-md); box-shadow: var(--sh-bevel); cursor: pointer;
+  transition: transform var(--m-fast), filter var(--m-fast);
+}
+.ui-menubtn svg { width: 52%; height: auto; aspect-ratio: 1; }
+.ui-menubtn:active { transform: translateY(var(--sp-1)); filter: brightness(.85); }
+.ui-menubtn.on { background: var(--c-success); color: var(--c-on-success); }
+.ui-menubtn .dot, .ui-dot { position: absolute; right: -0.25em; top: -0.25em; width: 0.9em; height: 0.9em; background: var(--c-danger); border: var(--sp-1) solid var(--c-border); border-radius: 50%; }
+.ui-menu .gap { width: var(--sp-3); flex: none; }
+
+/* ── 창 ── */
+.ui-win { width: min(var(--win-w), 46em); max-height: var(--win-h); display: flex; flex-direction: column; background: var(--c-surface); border: var(--sp-2) solid var(--c-border); border-radius: var(--r-lg); box-shadow: var(--sh-card); }
+.ui-win > header { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-5); background: var(--c-surface-raised); border-bottom: var(--sp-1) solid var(--c-border); border-radius: var(--r-md) var(--r-md) 0 0; }
+.ui-win > header h2 { flex: 1; margin: 0; font-size: var(--fs-lg); color: var(--c-text-accent); }
+.ui-win > .body { padding: var(--sp-5); overflow-y: auto; }
+.ui-tabs { display: flex; gap: var(--sp-2); }
+.ui-tabs button { flex: 1; font: inherit; font-size: var(--fs-sm); min-height: var(--touch); color: var(--c-text-muted); background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border); border-bottom: 0; border-radius: var(--r-md) var(--r-md) 0 0; cursor: pointer; }
+.ui-tabs button[aria-selected="true"] { color: var(--c-on-accent); background: var(--c-accent); font-weight: 700; }
+.ui-tabs button:disabled { opacity: .4; }
+.ui-tabpanel { background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border); border-radius: 0 0 var(--r-md) var(--r-md); padding: var(--sp-4); box-shadow: var(--sh-inset); }
+
+/* ── 칸(아이템·레시피·특성·카드 공용) ── */
+.ui-grid { display: grid; grid-template-columns: repeat(auto-fill, var(--slot)); gap: var(--sp-2); }
+.ui-slot { position: relative; width: var(--slot); height: var(--slot); display: flex; align-items: center; justify-content: center; padding: 0; font: inherit; color: var(--c-text); background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border); border-radius: var(--r-sm); box-shadow: var(--sh-inset); cursor: pointer; }
+.ui-slot img, .ui-slot svg { width: 70%; height: 70%; object-fit: contain; }
+.ui-slot .qty { position: absolute; right: 0.2em; bottom: 0; font-size: var(--fs-xs); text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
+.ui-slot .lv { position: absolute; left: 0; right: 0; bottom: 0; font-size: var(--fs-xs); text-align: center; background: rgba(0,0,0,.55); }
+.ui-slot[aria-selected="true"] { border-color: var(--c-accent); box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
+.ui-slot.empty { cursor: default; }
+.ui-slot.locked { opacity: .45; } .ui-slot.locked::after { content: '🔒'; position: absolute; font-size: var(--fs-sm); }
+.ui-slot.short img, .ui-slot.short svg { filter: grayscale(.9) brightness(.6); }
+.ui-slot.ready { border-color: var(--c-text-good); }
+.ui-slot.r2 { border-color: var(--c-rarity-2); } .ui-slot.r3 { border-color: var(--c-rarity-3); } .ui-slot.r4 { border-color: var(--c-rarity-4); }
+.ui-slot .cool { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--fs-lg); background: rgba(0,0,0,.6); border-radius: inherit; }
+.ui-slot.round { border-radius: 50%; }
+
+/* ── 상세·목록 ── */
+.ui-detail { background: var(--c-surface-inset); border-radius: var(--r-md); padding: var(--sp-4); box-shadow: var(--sh-inset); display: flex; flex-direction: column; gap: var(--sp-2); }
+.ui-row { display: flex; align-items: center; gap: var(--sp-3); }
+.ui-grow { flex: 1; }
+.ui-kv { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-1) var(--sp-5); font-size: var(--fs-sm); }
+.ui-kv > :nth-child(even) { color: var(--c-text-accent); text-align: right; }
+
+/* ── 대화·알림 ── */
+.ui-dialog { width: min(80vw, 40em); background: var(--c-surface); border: var(--sp-2) solid var(--c-border); border-radius: var(--r-lg); box-shadow: var(--sh-card); padding: var(--sp-4) var(--sp-5); display: flex; gap: var(--sp-4); }
+.ui-dialog .speaker { flex: none; width: 4.5em; text-align: center; font-size: var(--fs-sm); color: var(--c-text-accent); }
+.ui-dialog .speaker .face { width: 100%; aspect-ratio: 1; background: var(--c-surface-inset); border-radius: var(--r-md); margin-bottom: var(--sp-1); }
+.ui-toast { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); background: color-mix(in srgb, var(--c-bg) 82%, transparent); border-radius: var(--r-md); }
+.ui-toast img, .ui-toast svg { height: 1.2em; width: auto; }
+.ui-bubble { display: inline-flex; align-items: center; justify-content: center; min-width: 2em; height: 1.8em; padding: 0 var(--sp-2); font-weight: 700; color: var(--c-on-accent); background: var(--c-text); border: var(--sp-1) solid var(--c-border); border-radius: var(--r-lg); position: relative; }
+.ui-bubble::after { content: ''; position: absolute; left: 50%; bottom: -0.45em; width: 0.5em; height: 0.5em; background: inherit; border-right: var(--sp-1) solid var(--c-border); border-bottom: var(--sp-1) solid var(--c-border); transform: translateX(-50%) rotate(45deg); }
+.ui-bubble.done { background: var(--c-accent); }
+.ui-input { font: inherit; width: 100%; min-height: var(--touch); padding: var(--sp-2) var(--sp-4); color: var(--c-text); background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border-input); border-radius: var(--r-md); }
+.ui-input::placeholder { color: var(--c-text-muted); }
