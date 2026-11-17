@@ -306,15 +306,15 @@
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/BalanceCalculator.kt": {
-    "mtime": 1794869319.3817644,
-    "seen": 1794870007.1115127,
-    "ast_hash": "dd1b6309620a23e702e4f14dc5eca256",
+    "mtime": 1794874749.2376323,
+    "seen": 1794875291.6693704,
+    "ast_hash": "c1267aa66e30fe5689e17f2f93889843",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/Breakdown.kt": {
-    "mtime": 1794525811.0286942,
-    "seen": 1794866888.34453,
-    "ast_hash": "92c7cd91a8e0068a0cce85f4e2017b43",
+    "mtime": 1794874749.2373726,
+    "seen": 1794875291.669386,
+    "ast_hash": "4fabd9f8358ef3566ff57fcb5a3ffdac",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/BudgetCalculator.kt": {
@@ -348,9 +348,9 @@
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/StatisticsCalculator.kt": {
-    "mtime": 1794872256.882486,
-    "seen": 1794872921.9497304,
-    "ast_hash": "1bf14812564f42bba80251e7739ae6ad",
+    "mtime": 1794874912.7467446,
+    "seen": 1794875291.6694036,
+    "ast_hash": "a99d388c52f824f27d25058b9072422f",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/TransactionActions.kt": {
@@ -372,9 +372,9 @@
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/csv/Csv.kt": {
-    "mtime": 1794671420.744816,
-    "seen": 1794866888.344538,
-    "ast_hash": "f806241268242d8942816afd77b98518",
+    "mtime": 1794874912.7473838,
+    "seen": 1794875291.6694148,
+    "ast_hash": "31e75a6caf344038f6466af5e9429476",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/limit/LegacyLimit.kt": {
@@ -702,9 +702,9 @@
     "semantic_hash": ""
   },
   "shared/src/commonMain/kotlin/com/looin/finance/data/FinanceRepository.kt": {
-    "mtime": 1794872489.3798761,
-    "seen": 1794872921.9498572,
-    "ast_hash": "753c49804322019e2f27efb8b3eefd40",
+    "mtime": 1794874912.7479103,
+    "seen": 1794875291.6695976,
+    "ast_hash": "44b010d3d966d35bb0bd1a137a00d98f",
     "semantic_hash": ""
   },
   "shared/src/iosMain/kotlin/com/looin/finance/data/DatabaseBuilder.ios.kt": {
@@ -792,15 +792,15 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/analysis/AnalysisScreen.kt": {
-    "mtime": 1794826228.3439217,
-    "seen": 1794866888.3445885,
-    "ast_hash": "0b88fbf290887518af53ba33c4cc9d81",
+    "mtime": 1794874912.750506,
+    "seen": 1794875291.669631,
+    "ast_hash": "3d8f9902b36bf50a15368bd92d39059f",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/assets/AssetsScreens.kt": {
-    "mtime": 1794872489.3816345,
-    "seen": 1794872921.9499097,
-    "ast_hash": "c78ee7925ff25d9a75c32a3b2d5398f2",
+    "mtime": 1794874749.2388132,
+    "seen": 1794875291.6696353,
+    "ast_hash": "b5180f247a964e9e4945dfc5c8acb60e",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/calendar/CalendarScreen.kt": {
@@ -816,9 +816,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/components/Components.kt": {
-    "mtime": 1794869541.0430145,
-    "seen": 1794870007.1115901,
-    "ast_hash": "4793c8956e8212cf2fdaef002b6e76b8",
+    "mtime": 1794874912.7495377,
+    "seen": 1794875291.6696405,
+    "ast_hash": "4ccd427d9011cf55d9c2178e460ebd65",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/components/Picker.kt": {
@@ -930,9 +930,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/tx/TransactionSheet.kt": {
-    "mtime": 1794869541.048967,
-    "seen": 1794870007.1116073,
-    "ast_hash": "7113dba7c87c4949eaeb1110ee30264f",
+    "mtime": 1794874912.7500834,
+    "seen": 1794875291.6696758,
+    "ast_hash": "5c5c4d5926dc7f56abe7465ad7f26324",
     "semantic_hash": ""
   },
   "ui/src/iosMain/kotlin/com/looin/finance/ui/MainViewController.kt": {
@@ -1134,9 +1134,9 @@
     "semantic_hash": ""
   },
   "docs/PHASE2_NOTES.md": {
-    "mtime": 1794872911.4749975,
-    "seen": 1794872921.9500425,
-    "ast_hash": "c41c4f7fa4f5ceb87f35a70d4336bcd0",
+    "mtime": 1794875285.6156363,
+    "seen": 1794875291.6697361,
+    "ast_hash": "a1792cd3a64a2fba2ddee990ddc7d564",
     "semantic_hash": ""
   },
   "docs/licenses/FONTS.md": {
@@ -1446,9 +1446,9 @@
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/ForeignUiTest.kt": {
-    "mtime": 1794869727.3935838,
-    "seen": 1794870007.1115003,
-    "ast_hash": "30f2676b4d3ea8ef9afc24190dbd532a",
+    "mtime": 1794874946.7460487,
+    "seen": 1794875291.669277,
+    "ast_hash": "e9643ac57c3449d660344ad5bceb6291",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/money/Fx.kt": {
@@ -1458,9 +1458,9 @@
     "semantic_hash": ""
   },
   "core/src/jvmTest/kotlin/com/looin/finance/core/FxTest.kt": {
-    "mtime": 1794872538.048747,
-    "seen": 1794872921.9497752,
-    "ast_hash": "bfa60afe7c14c2813fadd98d83dda132",
+    "mtime": 1794874956.0175004,
+    "seen": 1794875291.669517,
+    "ast_hash": "d3e65ed2656aacdfa245fa2a0d9e8225",
     "semantic_hash": ""
   },
   "shared/schemas/com.looin.finance.data.FinanceDatabase/9.json": {
