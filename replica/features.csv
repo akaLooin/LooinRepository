@@ -16,7 +16,7 @@ AUTO(대상 자동 선택·스킬 자동 사용),조작,must,yes,yes,
 체력·쓰러짐·마을 부활,전투,must,yes,partial,현재는 맵 입구에서 부활
 음식 자동 섭취로 회복,전투,should,yes,no,
 원거리·마법 발사체,전투,must,yes,yes,
-공격 바(스킬 슬롯 편집),전투,should,yes,partial,배운 액티브가 자동 표시됨
+공격 바(스킬 슬롯 편집),전투,should,yes,partial,배운 액티브가 공격 칸에 자동 배치. 편집은 아직 없음(공격 창은 목록만)
 멀티킬,전투,could,yes,no,후반 시스템
 경험치·레벨·스탯 포인트,성장,must,yes,yes,
 STR/AGI/WIS/LUK와 직업별 주력·명중 능력치,성장,must,yes,partial,명중 능력치 없음
@@ -42,7 +42,7 @@ AFK 정보 창(시간당 처치·명중·생존력),방치,must,yes,no,
 계정 공용 창고,보관,must,yes,no,
 장비 칸(무기·방어구·도구·장신구),보관,must,yes,partial,5칸
 아이템 판매,보관,should,yes,yes,
-모루 제작: 단계 탭과 레시피 격자,제작,must,yes,partial,종류 탭 3개
+모루 제작: 단계 탭과 레시피 격자,제작,must,yes,partial,분류 탭 3개 + 격자 + 상세. 단계(티어) 탭은 아님
 레시피 해금(작업판·드롭·퀘스트),제작,should,yes,no,전부 처음부터 공개
 창고 재료로 제작,제작,should,yes,no,
 길게 눌러 연속 제작,제작,could,yes,no,
@@ -55,11 +55,11 @@ AFK 정보 창(시간당 처치·명중·생존력),방치,must,yes,no,
 카드 장착 칸과 프리셋,카드,should,yes,no,현재는 보유만으로 적용
 카드 세트 보너스,카드,could,yes,no,
 마을 + 일렬 사냥터 + 처치 수 포탈,맵,must,yes,yes,
-월드 지도 화면,맵,should,yes,no,
+월드 지도 화면,맵,should,yes,partial,맵 목록과 처치 진행만. 지도 그림·순간이동 없음
 월드 보스와 다음 월드 관문,맵,must,yes,no,
 열쇠로 입장하는 보스방,맵,should,yes,no,
 여러 NPC의 퀘스트 연쇄,퀘스트,must,yes,partial,NPC 1명 6개
-퀘스트 목록 화면,퀘스트,should,yes,no,
+퀘스트 목록 화면,퀘스트,should,yes,yes,도감 > 퀘스트 탭
 작업판(계정 과제 → 해금),퀘스트,should,yes,no,
 상점(일일 한정 품목),경제,should,yes,no,
 우표(코인·재료로 올리는 계정 영구 보너스),경제,should,yes,no,

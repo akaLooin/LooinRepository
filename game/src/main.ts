@@ -3,6 +3,8 @@ import { Game } from './game';
 import { GameScene } from './render/scene';
 import { buildAll } from './render/sprites';
 import { UI } from './ui/ui';
+import './ui/tokens.css';
+import './ui/components.css';
 import './ui/style.css';
 
 async function boot() {

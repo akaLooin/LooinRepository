@@ -6,7 +6,7 @@ import { HURT_TIME, Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core
 import { Game } from '../game';
 import { HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
 import { currentQuest, questProgress } from '../core/state';
-import { NPC_NAME, SMASH_RANGE } from '../core/data';
+import { NPC_LOOK, NPC_NAME, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
 const FONT = 'Galmuri11';
@@ -361,7 +361,7 @@ export class GameScene extends Phaser.Scene {
       for (let i = 0; i < 3; i++) this.flames.push(keep(this.add.image(fx + (i - 1) * 4, -4, 'fx_flame').setOrigin(0.5, 1).setDepth(21)));
     }
     if (map.npcX !== undefined) {
-      const look = { hair: 2, hairColor: '#e9e4f0', skin: '#f2bd94', outfit: '#8a6fd1' };
+      const look = NPC_LOOK;
       portraitUrl(look);
       ensureTextures(this);
       const img = keep(this.add.image(map.npcX, 1, `${buildLook(look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(true));

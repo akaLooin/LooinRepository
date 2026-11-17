@@ -185,6 +185,7 @@ export interface QuestDef {
   reward: { coins?: number; xp?: number; item?: string };
 }
 export const NPC_NAME = '촌장 모루';
+export const NPC_LOOK = { hair: 2, hairColor: '#e9e4f0', skin: '#f2bd94', outfit: '#8a6fd1' };
 export const QUESTS: QuestDef[] = [
   { name: '첫 걸음', text: '풀밭의 이끼방울이 너무 늘었어. 조금만 정리해 주겠나?', goal: { kill: 'mossblob', n: 5 }, reward: { coins: 30, xp: 20 } },
   { name: '장작 모으기', text: '모닥불이 꺼지려 해. 풀밭의 참나무를 베어 통나무를 가져다 주게.', goal: { item: 'log', n: 8 }, reward: { coins: 40, xp: 40 } },
