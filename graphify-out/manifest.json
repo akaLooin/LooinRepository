@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1794926447.8579006,
-    "seen": 1794926466.0398755,
+    "mtime": 1794933733.8671787,
+    "seen": 1794933769.1677554,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1794926447.8579006,
-    "seen": 1794926466.0399995,
+    "mtime": 1794933733.8671787,
+    "seen": 1794933769.167874,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -174,9 +174,9 @@
     "semantic_hash": ""
   },
   "game/src/main.ts": {
-    "mtime": 1794933567.9835541,
-    "seen": 1794933639.387372,
-    "ast_hash": "be1dbf5b397626f39d2e461e8a46d40d",
+    "mtime": 1794933684.380543,
+    "seen": 1794933769.168137,
+    "ast_hash": "69fc1f264cef619f02ac75ff5737e602",
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1794933567.9829648,
-    "seen": 1794933639.3874369,
-    "ast_hash": "8ed234af5ae5ee4ac33b407567f64c87",
+    "mtime": 1794933684.381427,
+    "seen": 1794933769.168239,
+    "ast_hash": "029ab9c0f92c7f2edd39cc3aac2a5c6a",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
@@ -318,9 +318,9 @@
     "semantic_hash": ""
   },
   "game/README.md": {
-    "mtime": 1794926439.4695396,
-    "seen": 1794926466.0405693,
-    "ast_hash": "64bce820bb2e9f14608aed180a29352f",
+    "mtime": 1794933714.471344,
+    "seen": 1794933769.1687932,
+    "ast_hash": "391ddc92195fb0a4eafa3199b76c2a1b",
     "semantic_hash": ""
   },
   "game/index.html": {
@@ -939,6 +939,12 @@
     "mtime": 1794933611.5057857,
     "seen": 1794933639.3887856,
     "ast_hash": "6f5a6c2eab8107dc78f31fe29d6b5afa",
+    "semantic_hash": ""
+  },
+  "game/src/audio.ts": {
+    "mtime": 1794933668.97104,
+    "seen": 1794933769.1679556,
+    "ast_hash": "7092143a53d4bb8506b644a2f8ed3878",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
