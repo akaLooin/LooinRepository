@@ -1,0 +1,3 @@
+# 원작 참고 화면은 비교용이라 저장소에 올리지 않는다
+screens/*
+!screens/README.md
