@@ -1,12 +1,21 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NodeDef, Platform, PortalDef, SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
+  CARDS, CARD_CHANCE, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  SKILL_NAMES, SMASH_RANGE, TALENT, TALENTS, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
 import { Account, Character, Derived, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
 
 export interface Input { move: number; jump: boolean; down: boolean }
-export type SwingKind = 'attack' | 'mining' | 'chopping';
+export type SwingKind = 'attack' | 'shoot' | 'cast' | 'mining' | 'chopping';
+
+/** 터치로 내린 명령. 도착하거나 끝나면 사라진다. */
+export type Command =
+  | { k: 'move'; x: number; y: number }
+  | { k: 'mob'; uid: number }
+  | { k: 'node'; uid: number }
+  | { k: 'portal'; idx: number }
+  | { k: 'npc' } | { k: 'craft' };
 
 export interface Player {
   x: number; y: number; vx: number; vy: number;
@@ -27,6 +36,7 @@ export interface Drop {
   x: number; y: number; vx: number; vy: number; floorY: number; age: number;
 }
 export interface NodeInst { uid: number; def: NodeDef; x: number; y: number; progress: number; shakeT: number }
+export interface Shot { uid: number; kind: 'arrow' | 'orb'; x: number; y: number; target: Mob; mult: number; angle: number }
 
 export type WorldEvent =
   | { t: 'dmg'; x: number; y: number; amount: number; crit: boolean; onPlayer: boolean }
@@ -36,13 +46,15 @@ export type WorldEvent =
   | { t: 'skill'; name: string; level: number }
   | { t: 'yield'; x: number; y: number; item: string }
   | { t: 'cast'; id: string; x: number; y: number }
+  | { t: 'arrive'; what: 'portal' | 'npc' | 'craft'; idx: number }
   | { t: 'faint' };
 
 export const SWING_TIME = 0.32;
 export const GATHER_INTERVAL = 0.7;
-const GRAVITY = 900, JUMP = 335, RANGE = 26, JUMP_REACH = 58;
+const GRAVITY = 900, JUMP = 335, JUMP_REACH = 58, SHOT_SPEED = 330;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+const IDLE: Input = { move: 0, jump: false, down: false };
 
 export class World {
   readonly map: MapDef;
@@ -51,7 +63,9 @@ export class World {
   readonly mobs: Mob[] = [];
   readonly drops: Drop[] = [];
   readonly nodes: NodeInst[] = [];
+  readonly shots: Shot[] = [];
   events: WorldEvent[] = [];
+  command: Command | null = null;
   d: Derived;
   private uid = 1;
   private swingTarget: Mob | NodeInst | null = null;
@@ -63,7 +77,7 @@ export class World {
     this.map = MAPS[char.mapId] ?? MAPS.town;
     char.mapId = this.map.id;
     this.platforms = [{ x: 0, y: 0, w: this.map.width }, ...this.map.platforms];
-    this.d = derive(char);
+    this.d = derive(char, acc.cards);
     this.player = {
       x: clamp(char.x, 10, this.map.width - 10), y: 0, vx: 0, vy: 0, onGround: true, facing: 1,
       attackT: 0, swingT: 0, swingKind: 'attack', swingId: 0, dead: 0, dropT: 0, hurtT: 0, cd: {},
@@ -98,36 +112,86 @@ export class World {
     }
   }
 
-  /** 플레이어가 서 있는 포탈 */
-  portalNear(): PortalDef | null {
-    const p = this.player;
-    if (p.dead > 0 || p.y < -4) return null;
-    return this.map.portals.find((q) => Math.abs(q.x - p.x) < 16) ?? null;
-  }
   portalOpen(q: PortalDef) { return (this.char.kills[this.map.id] ?? 0) >= (q.reqKills ?? 0); }
-  nearNpc() { return this.map.npcX !== undefined && Math.abs(this.map.npcX - this.player.x) < 26 && this.player.y > -4; }
+  private canUse(n: NodeInst) { return this.char.skills[n.def.skill].lv >= n.def.reqLv; }
+
+  /** 화면을 터치한 월드 좌표를 명령으로 바꾼다. 대상이 있으면 그 대상, 없으면 그 지점으로 이동 */
+  tap(x: number, y: number): Command | null {
+    const p = this.player, c = this.char, map = this.map;
+    if (p.dead > 0) return null;
+    const near = (tx: number, w: number, top: number) => Math.abs(tx - x) <= w && y >= top && y <= 8;
+    let cmd: Command | null = null;
+    const mob = this.mobs.filter((m) => m.alive && Math.abs(m.x - x) <= 15 && y >= m.y - 30 && y <= m.y + 8)
+      .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
+    const node = this.nodes.find((n) => near(n.x, 18, -62));
+    const portal = map.portals.findIndex((q) => near(q.x, 16, -48));
+    if (mob) { cmd = { k: 'mob', uid: mob.uid }; c.mode = 'fight'; }
+    else if (portal >= 0) cmd = { k: 'portal', idx: portal };
+    else if (map.npcX !== undefined && near(map.npcX, 14, -36)) cmd = { k: 'npc' };
+    else if (map.craftX !== undefined && near(map.craftX, 20, -28)) cmd = { k: 'craft' };
+    else if (node) {
+      if (!this.canUse(node)) { this.events.push({ t: 'loot', text: `${SKILL_NAMES[node.def.skill]} Lv.${node.def.reqLv} 필요` }); return null; }
+      cmd = { k: 'node', uid: node.uid }; c.mode = 'gather';
+    } else {
+      // 터치 지점 바로 아래의 발판 위로
+      let py = 0, best = 1e9;
+      for (const q of this.platforms) {
+        if (x < q.x || x > q.x + q.w) continue;
+        const gap = q.y - y;
+        if (gap >= -14 && gap < best) { best = gap; py = q.y; }
+      }
+      cmd = { k: 'move', x: clamp(x, 10, map.width - 10), y: py };
+    }
+    this.aiTarget = null;
+    return (this.command = cmd);
+  }
 
   /** 액티브 스킬 사용. 성공 여부 반환 */
   useSkill(id: string): boolean {
     const p = this.player, c = this.char, lv = c.talents[id] ?? 0, t = TALENT[id];
     if (!t?.active || lv <= 0 || p.dead > 0 || (p.cd[id] ?? 0) > 0) return false;
     const d = this.d;
-    if (id === 'smash') {
-      const hit = this.mobs.filter((m) => m.alive && m.spawnAge > 0.4 && Math.abs(m.x - p.x) <= SMASH_RANGE && Math.abs(m.y - p.y) < 22);
-      if (!hit.length) return false;
-      p.swingKind = 'attack'; p.swingT = SWING_TIME; p.swingId++; p.attackT = Math.max(p.attackT, d.atkInterval * 0.6);
+    const live = (r: number, cx = p.x, cy = p.y) => this.mobs.filter((m) => m.alive && m.spawnAge > 0.4 && Math.abs(m.x - cx) <= r && Math.abs(m.y - cy) < 22);
+    const pose = (kind: SwingKind) => {
+      p.swingKind = kind; p.swingT = SWING_TIME; p.swingId++; p.attackT = Math.max(p.attackT, d.atkInterval * 0.6);
       this.hitDone = true;
-      for (const m of hit) this.damageMob(m, d, smashMult(lv), m.x >= p.x ? 1 : -1);
+    };
+    let fx = p.x, fy = p.y;
+    if (id === 'smash' || id === 'cleave') {
+      const hit = live(id === 'smash' ? SMASH_RANGE : CLEAVE_RANGE);
+      if (!hit.length) return false;
+      pose('attack');
+      const mult = id === 'smash' ? smashMult(lv) : 3 + lv * 0.3;
+      for (const m of hit) this.damageMob(m, d, mult, m.x >= p.x ? 1 : -1);
+    } else if (id === 'volley') {
+      const hit = live(d.range + 20).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x)).slice(0, 4);
+      if (!hit.length) return false;
+      p.facing = hit[0].x >= p.x ? 1 : -1;
+      pose('shoot');
+      for (const m of hit) this.fire(m, 1.5 + lv * 0.15);
+    } else if (id === 'nova') {
+      const tgt = live(d.range + 20).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
+      if (!tgt) return false;
+      p.facing = tgt.x >= p.x ? 1 : -1;
+      pose('cast');
+      fx = tgt.x; fy = tgt.y;
+      for (const m of live(NOVA_RADIUS, tgt.x, tgt.y)) this.damageMob(m, d, 2.2 + lv * 0.25, m.x >= tgt.x ? 1 : -1);
     } else if (id === 'heal') {
       if (c.hp >= d.maxHp) return false;
       c.hp = Math.min(d.maxHp, c.hp + d.maxHp * healPct(lv));
     }
     p.cd[id] = t.active.cooldown;
-    this.events.push({ t: 'cast', id, x: p.x, y: p.y });
+    this.events.push({ t: 'cast', id, x: fx, y: fy });
     return true;
   }
 
+  private fire(target: Mob, mult: number) {
+    const p = this.player;
+    this.shots.push({ uid: this.uid++, kind: this.char.cls === 'mage' ? 'orb' : 'arrow', x: p.x + p.facing * 8, y: p.y - 15, target, mult, angle: p.facing > 0 ? 0 : Math.PI });
+  }
+
   private damageMob(m: Mob, d: Derived, mult: number, push: number) {
+    if (!m.alive) return;
     const crit = this.rng.chance(d.crit);
     const amount = Math.max(1, Math.round(d.dmg * mult * this.rng.range(0.8, 1.2) * (crit ? d.critMult : 1)));
     m.hp -= amount; m.hitT = 0.22;
@@ -136,20 +200,19 @@ export class World {
     if (m.hp <= 0) this.kill(m, d);
   }
 
-  nearCraft() { return this.map.craftX !== undefined && Math.abs(this.map.craftX - this.player.x) < 26 && this.player.y > -4; }
-
   step(dt: number, manual: Input) {
     dt = Math.min(dt, 0.05);
     const p = this.player, c = this.char;
-    const d = (this.d = derive(c));
+    const d = (this.d = derive(c, this.acc.cards));
     c.x = p.x;
 
     for (const n of this.nodes) n.shakeT = Math.max(0, n.shakeT - dt);
     this.stepMobs(dt, d);
     this.stepDrops(dt);
+    this.stepShots(dt, d);
 
     if (p.dead > 0) {
-      p.dead -= dt;
+      p.dead -= dt; this.command = null;
       if (p.dead <= 0) { p.x = this.map.portals[0]?.x ?? 60; p.y = 0; p.vy = 0; p.onGround = true; c.hp = d.maxHp; }
       return;
     }
@@ -158,11 +221,17 @@ export class World {
     for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);
     if (c.auto) {
       // 자동 조작 중에는 스킬도 알아서 쓴다
-      if (c.hp < d.maxHp * 0.5) this.useSkill('heal');
-      if (c.mode === 'fight') this.useSkill('smash');
+      for (const t of TALENTS) {
+        if (!t.active || !c.talents[t.id]) continue;
+        if (t.id === 'heal') { if (c.hp < d.maxHp * 0.5) this.useSkill('heal'); }
+        else if (c.mode === 'fight') this.useSkill(t.id);
+      }
     }
 
-    const inp = c.auto ? this.ai() : manual;
+    // 조작 우선순위: 키보드 > 터치 명령 > AUTO
+    const keyed = manual.move !== 0 || manual.jump || manual.down;
+    if (keyed) this.command = null;
+    const inp = keyed ? manual : this.command ? this.follow(d) : c.auto ? this.ai(d) : IDLE;
 
     // 이동
     p.vx = inp.move * d.speed;
@@ -196,13 +265,16 @@ export class World {
       if (!this.hitDone && p.swingT <= SWING_TIME * 0.55) { this.hitDone = true; this.applyHit(d); }
     }
     if (p.attackT <= 0 && p.swingT <= 0) {
-      const mob = this.mobInRange();
-      if (mob) {
-        this.startSwing('attack', mob, d.atkInterval);
+      const cmd = this.command;
+      // 이동 명령 중에는 멈춰서 싸우지 않는다(원거리 직업이 걸음을 못 떼는 것 방지)
+      const mob = cmd && cmd.k !== 'mob' ? null : this.mobInRange(d, cmd?.k === 'mob' ? cmd.uid : undefined);
+      if (mob && (d.ranged ? p.onGround && inp.move === 0 : true)) {
+        this.startSwing(d.ranged ? (c.cls === 'mage' ? 'cast' : 'shoot') : 'attack', mob, d.atkInterval);
       } else {
-        const node = this.nodes.find((n) => Math.abs(n.x - p.x) < 20 && Math.abs(n.y - p.y) < 6 && c.skills[n.def.skill].lv >= n.def.reqLv);
-        const wants = c.auto ? c.mode === 'gather' : inp.move === 0 && p.onGround;
-        if (node && wants) this.startSwing(node.def.skill, node, GATHER_INTERVAL);
+        const wants = cmd ? cmd.k === 'node' : c.auto && c.mode === 'gather';
+        const node = wants && inp.move === 0 ? this.nodes.find((n) => Math.abs(n.x - p.x) < 20 && Math.abs(n.y - p.y) < 6 && this.canUse(n)
+          && (cmd?.k !== 'node' || cmd.uid === n.uid)) : null;
+        if (node) this.startSwing(node.def.skill, node, GATHER_INTERVAL);
       }
     }
   }
@@ -214,13 +286,16 @@ export class World {
     this.swingTarget = target; this.hitDone = false;
   }
 
-  private mobInRange(): Mob | null {
+  /** 사거리 안의 몬스터. prefer가 있으면 그 개체를 우선한다 */
+  private mobInRange(d: Derived, prefer?: number): Mob | null {
     const p = this.player;
     let best: Mob | null = null, bd = 1e9;
     for (const m of this.mobs) {
       if (!m.alive || m.spawnAge < 0.4) continue;
       const dx = Math.abs(m.x - p.x);
-      if (dx <= RANGE + m.def.radius * 0.5 && Math.abs(m.y - p.y) < 18 && dx < bd) { best = m; bd = dx; }
+      if (dx > d.range + m.def.radius * 0.5 || Math.abs(m.y - p.y) >= 18) continue;
+      if (m.uid === prefer) return m;
+      if (dx < bd) { best = m; bd = dx; }
     }
     return best;
   }
@@ -230,7 +305,7 @@ export class World {
     if (!t) return;
     if ('hp' in t) {
       if (!t.alive) return;
-      this.damageMob(t, d, 1, this.player.facing);
+      if (d.ranged) this.fire(t, 1); else this.damageMob(t, d, 1, this.player.facing);
     } else {
       t.progress += d[t.def.skill]; t.shakeT = 0.3;
       while (t.progress >= t.def.hp) {
@@ -240,6 +315,21 @@ export class World {
         const ups = gainSkillXp(c, t.def.skill, t.def.xp);
         if (ups) this.events.push({ t: 'skill', name: SKILL_NAMES[t.def.skill], level: c.skills[t.def.skill].lv });
       }
+    }
+  }
+
+  private stepShots(dt: number, d: Derived) {
+    for (let i = this.shots.length - 1; i >= 0; i--) {
+      const s = this.shots[i], m = s.target;
+      if (!m.alive) { this.shots.splice(i, 1); continue; }
+      const dx = m.x - s.x, dy = m.y - 10 - s.y, dist = Math.hypot(dx, dy), stepLen = SHOT_SPEED * dt;
+      if (dist <= Math.max(6, stepLen)) {
+        this.shots.splice(i, 1);
+        this.damageMob(m, d, s.mult, dx >= 0 ? 1 : -1);
+        continue;
+      }
+      s.angle = Math.atan2(dy, dx);
+      s.x += (dx / dist) * stepLen; s.y += (dy / dist) * stepLen;
     }
   }
 
@@ -253,6 +343,10 @@ export class World {
     this.spawnDrop(true, 'coin', this.rng.int(m.def.coins[0], m.def.coins[1]), m.x, m.y - 10, m.y);
     for (const dr of m.def.drops) {
       if (this.rng.chance(dr.chance * d.dropMult)) this.spawnDrop(false, dr.item, this.rng.int(dr.qty[0], dr.qty[1]), m.x, m.y - 10, m.y);
+    }
+    if (CARDS.some((cd) => cd.monster === m.def.id) && this.rng.chance(CARD_CHANCE * d.dropMult)) {
+      this.acc.cards[m.def.id] = (this.acc.cards[m.def.id] ?? 0) + 1;
+      this.events.push({ t: 'loot', text: `★ ${m.def.name} 카드 획득!` });
     }
     if (this.aiTarget === m) this.aiTarget = null;
   }
@@ -317,6 +411,70 @@ export class World {
     }
   }
 
+  // ───────── 길 찾기 ─────────
+  /** (tx, ty) 지점까지 가는 입력을 만든다. stop 이내면 멈춘다. 도착 여부는 arrived로 확인 */
+  private navigate(tx: number, ty: number, stop: number): Input {
+    const p = this.player;
+    const inp: Input = { move: 0, jump: false, down: false };
+    const dy = ty - p.y;
+    const toward = (gx: number, s: number) => { if (Math.abs(gx - p.x) > s) inp.move = gx > p.x ? 1 : -1; };
+    if (dy < -6) {
+      if (!p.onGround) { toward(this.aiGoalX, 3); return inp; }
+      // 한 번의 점프로 닿는 발판 중 목표에 가장 가까운 것을 디딘다
+      let plat: Platform | null = null, bd = 1e9;
+      for (const q of this.platforms) {
+        if (q.y >= p.y - 6 || q.y < p.y - JUMP_REACH) continue;
+        const gx = clamp(tx, q.x + 8, q.x + q.w - 8);
+        const s = Math.abs(gx - tx) + Math.abs(q.y - ty) + Math.abs(gx - p.x) * 0.1;
+        if (s < bd) { bd = s; plat = q; }
+      }
+      if (!plat) { toward(tx, 4); return inp; }
+      this.aiGoalX = clamp(tx, plat.x + 8, plat.x + plat.w - 8);
+      if (Math.abs(this.aiGoalX - p.x) > 4) toward(this.aiGoalX, 4); else inp.jump = true;
+    } else if (dy > 6) {
+      if (p.onGround) inp.down = true; else toward(tx, 6);
+    } else {
+      toward(tx, stop);
+      if (!inp.move && tx !== p.x && p.swingT <= 0) p.facing = tx > p.x ? 1 : -1;
+    }
+    return inp;
+  }
+  private arrived(tx: number, ty: number, stop: number) {
+    const p = this.player;
+    return p.onGround && Math.abs(ty - p.y) <= 6 && Math.abs(tx - p.x) <= stop;
+  }
+
+  /** 터치 명령 수행 */
+  private follow(d: Derived): Input {
+    const cmd = this.command!;
+    const fightStop = d.ranged ? d.range * 0.85 : d.range * 0.6;
+    switch (cmd.k) {
+      case 'move':
+        if (this.arrived(cmd.x, cmd.y, 3)) { this.command = null; return IDLE; }
+        return this.navigate(cmd.x, cmd.y, 3);
+      case 'mob': {
+        const m = this.mobs.find((x) => x.uid === cmd.uid);
+        if (!m || !m.alive) { this.command = null; return IDLE; }
+        return this.navigate(m.x, m.y, fightStop);
+      }
+      case 'node': {
+        const n = this.nodes.find((x) => x.uid === cmd.uid);
+        if (!n) { this.command = null; return IDLE; }
+        return this.navigate(n.x, n.y, 10);
+      }
+      default: {
+        const tx = cmd.k === 'portal' ? this.map.portals[cmd.idx].x : cmd.k === 'npc' ? this.map.npcX! : this.map.craftX!;
+        const stop = cmd.k === 'portal' ? 6 : 16;
+        if (this.arrived(tx, 0, stop)) {
+          this.command = null;
+          this.events.push({ t: 'arrive', what: cmd.k, idx: cmd.k === 'portal' ? cmd.idx : 0 });
+          return IDLE;
+        }
+        return this.navigate(tx, 0, stop);
+      }
+    }
+  }
+
   // ───────── 자동 조작 ─────────
   private pickTarget(): Mob | NodeInst | null {
     const p = this.player, c = this.char;
@@ -328,36 +486,13 @@ export class World {
       if (s < bd) { bd = s; best = t; }
     };
     if (c.mode === 'fight') { for (const m of this.mobs) if (m.alive) consider(m); }
-    else for (const n of this.nodes) if (c.skills[n.def.skill].lv >= n.def.reqLv) consider(n);
+    else for (const n of this.nodes) if (this.canUse(n)) consider(n);
     return (this.aiTarget = best);
   }
 
-  private ai(): Input {
-    const p = this.player;
-    const inp: Input = { move: 0, jump: false, down: false };
+  private ai(d: Derived): Input {
     const t = this.pickTarget();
-    if (!t) return inp;
-    const dx = t.x - p.x, dy = t.y - p.y;
-    const toward = (gx: number, stop: number) => { if (Math.abs(gx - p.x) > stop) inp.move = gx > p.x ? 1 : -1; };
-    if (dy < -6) {
-      if (!p.onGround) { toward(this.aiGoalX, 3); return inp; }
-      // 한 번의 점프로 닿는 발판 중 목표에 가장 가까운 것을 디딘다
-      let plat: Platform | null = null, bd = 1e9;
-      for (const q of this.platforms) {
-        if (q.y >= p.y - 6 || q.y < p.y - JUMP_REACH) continue;
-        const gx = clamp(t.x, q.x + 8, q.x + q.w - 8);
-        const s = Math.abs(gx - t.x) + Math.abs(q.y - t.y) + Math.abs(gx - p.x) * 0.1;
-        if (s < bd) { bd = s; plat = q; }
-      }
-      if (!plat) { toward(t.x, 4); return inp; }
-      this.aiGoalX = clamp(t.x, plat.x + 8, plat.x + plat.w - 8);
-      if (Math.abs(this.aiGoalX - p.x) > 4) toward(this.aiGoalX, 4); else inp.jump = true;
-    } else if (dy > 6) {
-      if (p.onGround) inp.down = true; else toward(t.x, 6);
-    } else {
-      toward(t.x, 'hp' in t ? RANGE * 0.6 : 10);
-      if (!inp.move && dx) p.facing = dx > 0 ? 1 : -1;
-    }
-    return inp;
+    if (!t) return IDLE;
+    return this.navigate(t.x, t.y, 'hp' in t ? (d.ranged ? d.range * 0.85 : d.range * 0.6) : 10);
   }
 }

@@ -39,17 +39,17 @@ class CharRig {
     ensureTextures(scene);
     const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy);
     this.shadow = add('shadow', 0.5, 0.5).setAlpha(0.22);
-    this.legB = add(`${k}_leg`, 0.4, 0.05).setTint(0xcfcfdf);
+    this.legB = add(`${k}_leg`, 0.4, 0.05);
     this.legF = add(`${k}_leg`, 0.4, 0.05);
-    this.armB = add(`${k}_arm`, 0.5, 0.1).setTint(0xcfcfdf);
+    this.armB = add(`${k}_arm`, 0.5, 0.1);
     this.torso = add(`${k}_torso`, 0.5, 1);
     const hc = canvases.get(`${k}_head`)!;
-    this.head = add(`${k}_head`, (HEAD_PAD + 8) / hc.width, (HEAD_PAD + 14) / hc.height);
+    this.head = add(`${k}_head`, (HEAD_PAD + 6) / hc.width, (HEAD_PAD + 11) / hc.height);
     this.weapon = add('wp_sword_wood', 0.5, 0.82);
     const arm = add(`${k}_arm`, 0.5, 0.1);
-    this.weapon.setPosition(0, 6);
+    this.weapon.setPosition(0, 8);
     this.armF = scene.add.container(0, 0, [this.weapon, arm]);
-    this.body = scene.add.container(0, 0, [this.legB, this.armB, this.legF, this.torso, this.head, this.armF]);
+    this.body = scene.add.container(0, 0, [this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
     this.root = scene.add.container(0, 0, [this.shadow, this.body, this.name]).setDepth(50);
   }
@@ -61,7 +61,8 @@ class CharRig {
     const dead = p.dead > 0;
     // 목표 포즈
     let legF = 0, legB = 0, armF = -0.25 + Math.sin(this.t * 2.2) * 0.05, armB = 0.1 - Math.sin(this.t * 2.2) * 0.05;
-    let wpn = 0.55, by = Math.sin(this.t * 2.2) * 0.5, lean = 0, hy = Math.sin(this.t * 2.2 - 0.6) * 0.4, hr = 0;
+    let direct = false;
+    let wpn = c.cls === 'archer' ? 0.25 : 0.55, by = Math.sin(this.t * 2.2) * 0.5, lean = 0, hy = Math.sin(this.t * 2.2 - 0.6) * 0.4, hr = 0;
     if (moving) {
       this.walkPh += dt * (p.vx ? Math.abs(p.vx) : 80) * 0.14;
       const s = Math.sin(this.walkPh);
@@ -72,8 +73,15 @@ class CharRig {
       legF = up ? -0.7 : -0.25; legB = up ? 0.5 : 0.35; armB = up ? 1.0 : 2.0; armF = up ? -1.2 : -2.2;
       lean = up ? -0.06 : 0.08; wpn = 0.2; by = 0; hy = up ? 0.6 : -0.6;
     }
-    let direct = false;
-    if (p.swingT > 0) {
+    const ranged = p.swingKind === 'shoot' || p.swingKind === 'cast';
+    if (p.swingT > 0 && ranged) {
+      // 활/지팡이: 앞으로 겨눴다가 살짝 반동
+      const s = 1 - p.swingT / SWING_TIME, kick = s > 0.45 ? Math.exp(-(s - 0.45) * 9) * 0.35 : 0;
+      armF = (p.swingKind === 'shoot' ? -1.5 : -2.0) + kick;
+      wpn = p.swingKind === 'shoot' ? 0 : armF + Math.PI - 0.2;
+      armB = p.swingKind === 'shoot' ? -1.2 + s * 0.5 : 0.3;
+      lean = -kick * 0.2; direct = true;
+    } else if (p.swingT > 0) {
       // 휘두르기: 뒤로 젖혔다가(와인드업) 빠르게 내려친다
       const s = 1 - p.swingT / SWING_TIME;
       const wind = Math.min(1, s / 0.3), strike = Phaser.Math.Clamp((s - 0.3) / 0.4, 0, 1);
@@ -100,7 +108,7 @@ class CharRig {
     this.lie = smooth(this.lie, dead ? 1 : 0, dt, 8);
 
     // 무기 텍스처
-    const tool = p.swingT > 0 && p.swingKind !== 'attack'
+    const tool = p.swingT > 0 && (p.swingKind === 'mining' || p.swingKind === 'chopping')
       ? (p.swingKind === 'mining' ? (c.equipment.pickaxe ? 'wp_pick_stone' : 'wp_pick') : (c.equipment.axe ? 'wp_axe_stone' : 'wp_axe'))
       : c.equipment.weapon ? `wp_${c.equipment.weapon}` : null;
     this.weapon.setVisible(!!tool);
@@ -118,13 +126,15 @@ class CharRig {
     b.setScale(this.flip * (1 + this.squash * 0.12), 1 - this.squash * 0.16);
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
-    this.legB.setPosition(-1.5, -6.5).setRotation(P.legB);
-    this.legF.setPosition(1.8, -6.5).setRotation(P.legF);
-    this.torso.setPosition(0, -5.5 + P.by).setRotation(P.lean);
-    this.armB.setPosition(-3.5, -12 + P.by).setRotation(P.armB);
-    this.armF.setPosition(3 + P.lean * 6, -12 + P.by).setRotation(P.armF);
-    this.weapon.setRotation(P.wpn - P.armF);
-    this.head.setPosition(0.5 + P.lean * 9, -12 + P.by + P.hy).setRotation(P.lean * 0.5 + P.hr);
+    // 다리는 골반, 팔은 몸통 양옆 어깨, 머리는 목에 붙는다
+    this.legB.setPosition(-2, -9.5).setRotation(P.legB);
+    this.legF.setPosition(2, -9.5).setRotation(P.legF);
+    this.torso.setPosition(0, -8.5 + P.by).setRotation(P.lean);
+    const sx = P.lean * 9;
+    this.armB.setPosition(-4.5 + sx, -17 + P.by).setRotation(P.armB);
+    this.armF.setPosition(4.5 + sx, -17 + P.by).setRotation(P.armF);
+    this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, c.cls === 'archer' && !tool?.startsWith('wp_pick') && !tool?.startsWith('wp_axe') ? 0.5 : 0.82);
+    this.head.setPosition(sx * 1.2, -17.5 + P.by + P.hy).setRotation(P.lean * 0.5 + P.hr);
     const tint = p.hurtT > 0.12 ? 0xff8a8a : 0xffffff;
     for (const o of [this.torso, this.head, this.legF]) o.setTint(tint);
 
@@ -243,6 +253,7 @@ export class GameScene extends Phaser.Scene {
   private mobs: MobView[] = [];
   private nodeViews: NodeView[] = [];
   private dropViews = new Map<number, Img>();
+  private shotViews = new Map<number, Img>();
   private statics: Phaser.GameObjects.GameObject[] = [];
   private hills: { ts: Phaser.GameObjects.TileSprite; f: number }[] = [];
   private clouds: { img: Img; x: number; y: number; sp: number }[] = [];
@@ -261,6 +272,7 @@ export class GameScene extends Phaser.Scene {
     ensureTextures(this);
     this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE') as Record<string, Phaser.Input.Keyboard.Key>;
     this.scale.on('resize', () => this.fitCamera());
+    document.getElementById('game')!.addEventListener('pointerdown', (e) => this.onTap(e));
     this.fitCamera();
     if (this.pending !== undefined) this.setWorld(this.pending);
     else this.setWorld(this.game_.world);
@@ -280,6 +292,8 @@ export class GameScene extends Phaser.Scene {
     for (const o of this.statics) o.destroy();
     for (const v of this.mobs) v.root.destroy();
     for (const d of this.dropViews.values()) d.destroy();
+    for (const d of this.shotViews.values()) d.destroy();
+    this.shotViews.clear();
     this.statics = []; this.mobs = []; this.nodeViews = []; this.dropViews.clear();
     this.hills = []; this.clouds = []; this.swayers = []; this.portals = []; this.flames = []; this.npc = null;
     const sky = document.getElementById('sky')!;
@@ -323,7 +337,7 @@ export class GameScene extends Phaser.Scene {
     if (map.craftX !== undefined) {
       keep(this.add.image(map.craftX, 1, 'obj_craft').setOrigin(0.5, 1).setDepth(20));
       keep(label(this, '제작대', 6.5, '#fff3d6').setPosition(map.craftX, -26).setDepth(22));
-      const fx = 120;
+      const fx = 62;
       keep(this.add.image(fx, 1, 'obj_logs').setOrigin(0.5, 1).setDepth(20));
       for (let i = 0; i < 3; i++) this.flames.push(keep(this.add.image(fx + (i - 1) * 4, -4, 'fx_flame').setOrigin(0.5, 1).setDepth(21)));
     }
@@ -376,7 +390,14 @@ export class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: s, x: p.x + Math.cos(a) * 30, y: p.y - 16 + Math.sin(a) * 30, alpha: 0, angle: 180, duration: 700, ease: 'Cubic.easeOut', onComplete: () => s.destroy() });
       }
     } else if (e.t === 'cast') {
-      if (e.id === 'smash') {
+      if (e.id === 'nova') {
+        const ring = this.add.circle(e.x, e.y - 10, 6, 0xa5d8ff, 0.5).setStrokeStyle(2, 0xffffff).setDepth(86);
+        this.tweens.add({ targets: ring, scale: 9, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+        this.puff(e.x, e.y - 10, 0xa5d8ff, 12);
+        this.cameras.main.shake(120, 0.005);
+      } else if (e.id === 'volley') {
+        this.puff(e.x, e.y - 16, 0xffffff, 4);
+      } else if (e.id === 'smash' || e.id === 'cleave') {
         // 충격파 고리
         const ring = this.add.ellipse(e.x, e.y - 3, 10, 4).setStrokeStyle(2, 0xffe98a).setDepth(86);
         this.tweens.add({ targets: ring, width: SMASH_RANGE * 2, height: 14, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onUpdate: () => ring.setSize(ring.width, ring.height), onComplete: () => ring.destroy() });
@@ -419,6 +440,7 @@ export class GameScene extends Phaser.Scene {
     for (const v of this.mobs) v.update(dt);
     for (const v of this.nodeViews) v.update(dt);
     this.syncDrops(w);
+    this.syncShots(w);
     for (const s of this.swayers) s.img.setRotation(Math.sin(this.time0 * 1.6 + s.ph) * 0.12);
     this.flames.forEach((f, i) => f.setScale(0.9 + Math.sin(this.time0 * 11 + i * 2) * 0.25, 1 + Math.sin(this.time0 * 8 + i * 1.3) * 0.35).setAlpha(0.85));
     if (this.npc) {
@@ -441,7 +463,7 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main, p = w.player;
     const halfW = cam.width / cam.zoom / 2, halfH = cam.height / cam.zoom / 2;
     const tx = w.map.width > halfW * 2 ? Phaser.Math.Clamp(p.x + p.facing * 14, halfW, w.map.width - halfW) : w.map.width / 2;
-    const base = 44 - halfH;
+    const base = 34 - halfH;
     const ty = base + Math.min(0, (p.y + 50) * 0.7);
     this.camX = smooth(this.camX, tx, dt, 5); this.camY = smooth(this.camY, ty, dt, 4);
     if (Math.abs(this.camX - tx) > halfW * 2) this.camX = tx;
@@ -453,6 +475,32 @@ export class GameScene extends Phaser.Scene {
       const x = (((c.x + this.time0 * c.sp - left * 0.08) % span) + span) % span;
       c.img.setPosition(left - 60 + x, c.y);
     }
+  }
+
+  private syncShots(w: World) {
+    const alive = new Set<number>();
+    for (const s of w.shots) {
+      alive.add(s.uid);
+      let img = this.shotViews.get(s.uid);
+      if (!img) { img = this.add.image(s.x, s.y, `shot_${s.kind}`).setDepth(80); this.shotViews.set(s.uid, img); }
+      img.setPosition(s.x, s.y).setRotation(s.kind === 'arrow' ? s.angle : this.time0 * 8);
+    }
+    for (const [uid, img] of this.shotViews) if (!alive.has(uid)) { img.destroy(); this.shotViews.delete(uid); }
+  }
+
+  /** 화면 터치 → 월드 좌표로 바꿔 명령을 내린다 */
+  private onTap(ev: PointerEvent) {
+    const w = this.world;
+    if (!w || w !== this.game_.world) return;
+    const v = this.cameras.main.worldView;
+    const x = v.x + (ev.clientX / innerWidth) * v.width, y = v.y + (ev.clientY / innerHeight) * v.height;
+    const cmd = w.tap(x, y);
+    if (!cmd) return;
+    // 터치 표시: 이동은 바닥에 고리, 대상 지정은 붉은 고리
+    const target = cmd.k !== 'move';
+    const ring = this.add.ellipse(cmd.k === 'move' ? cmd.x : x, cmd.k === 'move' ? cmd.y : y, 4, target ? 4 : 2)
+      .setStrokeStyle(1.5, target ? 0xff8a7a : 0xffffff).setDepth(88);
+    this.tweens.add({ targets: ring, scaleX: 5, scaleY: 5, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
   }
 
   private syncDrops(w: World) {

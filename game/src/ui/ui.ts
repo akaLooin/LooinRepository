@@ -1,18 +1,18 @@
 // DOM 기반 UI. 게임 상태를 읽어 HTML을 만들고, data-act 속성으로 동작을 위임 처리한다.
 import { AfkReport } from '../core/afk';
 import {
-  EquipSlot, HAIR_COLORS, HAIR_STYLES, INVENTORY_SIZE, ITEMS, MAPS, MAX_CHARACTERS, MONSTERS, NPC_NAME, OUTFIT_COLORS, QUESTS, RECIPES, TALENT, TALENTS,
+  CARDS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, cardNext, cardTier, HAIR_STYLES, INVENTORY_SIZE, ITEMS, MAPS, MAX_CHARACTERS, MONSTERS, NPC_NAME, OUTFIT_COLORS, QUESTS, RECIPES, TALENT, TALENTS,
   SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC, STAT_NAMES, SkillKey, StatKey,
 } from '../core/data';
 import {
-  Character, Look, acceptQuest, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem, learnTalent, questProgress,
+  Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem, learnTalent, questProgress,
   sellItem, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { Game } from '../game';
 import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 
-type Panel = 'bag' | 'stats' | 'craft' | 'afk' | 'talents' | 'quest' | null;
+type Panel = 'cards' | 'bag' | 'stats' | 'craft' | 'afk' | 'talents' | 'quest' | null;
 const icon = (id: string, cls = 'px') => `<img class="${cls}" src="${iconUrl(ITEM_ICON[id])}" alt="">`;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const pct = (a: number, b: number) => `${Math.max(0, Math.min(100, (a / b) * 100)).toFixed(1)}%`;
@@ -34,9 +34,7 @@ export class UI {
       <div id="hud" class="box hidden"></div><div id="quest" class="hidden"></div><div id="top" class="hidden"></div>
       <div id="skills" class="hidden"></div>
       <div id="toasts"></div>
-      <div id="pad" class="hidden"><button data-hold="left">◀</button><button data-hold="right">▶</button></div>
       <div id="act" class="hidden"></div>
-      <button id="ctx" class="gold hidden"></button>
       <div id="modal" class="hidden"></div>
       <div id="title"></div>`;
     this.root.addEventListener('click', (e) => this.onClick(e));
@@ -96,6 +94,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
+    else if (e.t === 'arrive' && e.what !== 'portal') { this.panel = e.what === 'npc' ? 'quest' : 'craft'; this.sel = null; this.refresh(true); }
     else if (e.t === 'cast') { /* 연출은 렌더러가 담당 */ }
     else if (e.t === 'faint') this.toast('쓰러졌습니다... 잠시 후 부활합니다');
   }
@@ -105,10 +104,10 @@ export class UI {
     if (force) this.last = {};
     const g = this.game, c = g.char, w = g.world;
     const playing = !!c && !!w;
-    for (const id of ['hud', 'top', 'pad', 'act', 'skills', 'quest']) this.show(id, playing);
+    for (const id of ['hud', 'top', 'act', 'skills', 'quest']) this.show(id, playing);
     this.show('title', !playing);
     if (!playing) {
-      this.show('ctx', false); this.show('modal', false); this.put('title', this.titleHtml());
+      this.show('modal', false); this.put('title', this.titleHtml());
       const nm = document.getElementById('cname') as HTMLInputElement | null;
       if (nm && nm.value !== this.draft.name) nm.value = this.draft.name;
       return;
@@ -118,7 +117,7 @@ export class UI {
     this.put('hud', `
       <div class="face"><img class="px" src="${portraitUrl(c.look)}"></div>
       <div class="col">
-        <div class="nm"><span>${esc(c.name)}</span><b>Lv.${c.level}</b></div>
+        <div class="nm"><span>${esc(c.name)} <span class="dim">${CLASSES[c.cls].name}</span></span><b>Lv.${c.level}</b></div>
         <div class="bar hp"><i style="width:${pct(c.hp, d.maxHp)}"></i><span>${Math.ceil(c.hp)} / ${d.maxHp}</span></div>
         <div class="bar xp"><i style="width:${pct(c.xp, xpToNext(c.level))}"></i><span>${pct(c.xp, xpToNext(c.level))}</span></div>
       </div>`);
@@ -127,28 +126,22 @@ export class UI {
       <button data-act="open:bag">가방</button>
       <button data-act="open:stats">능력치${c.statPoints ? '<i class="dot"></i>' : ''}</button>
       <button data-act="open:talents">특성${c.talentPoints ? '<i class="dot"></i>' : ''}</button>
+      <button data-act="open:cards">카드</button>
       <button data-act="chars">캐릭터</button>`);
     this.put('act', `
       <div class="stack">
         <button data-act="mode">${c.mode === 'fight' ? '⚔ 전투' : '⛏ 채집'}</button>
         <button data-act="auto" class="${c.auto ? 'on' : ''}">AUTO ${c.auto ? 'ON' : 'OFF'}</button>
-      </div>
-      <button class="round" data-hold="down">▼</button>
-      <button class="round" data-hold="jump">▲</button>`);
+      </div>`);
 
-    this.put('skills', TALENTS.filter((t) => t.active && c.talents[t.id]).map((t) => {
+    this.put('skills', TALENTS.filter((t) => t.active && c.talents[t.id] && (!t.cls || t.cls === c.cls)).map((t) => {
       const cd = w.player.cd[t.id] ?? 0;
       return `<button class="round ${cd > 0 ? 'cd' : ''}" data-skill="${t.id}">${cd > 0 ? Math.ceil(cd) : t.name}</button>`;
     }).join(''));
     const q = currentQuest(c), qp = questProgress(c);
-    this.put('quest', q && qp && c.quest.accepted
+    this.put('quest', c.cls === 'beginner' && c.level >= CLASS_LEVEL ? `<div class="gold-t">★ 전직 가능! 마을의 ${NPC_NAME}을(를) 찾아가세요</div>` : q && qp && c.quest.accepted
       ? `<div class="${qp.done ? 'green-t' : ''}">📜 ${q.name} ${qp.done ? '— 완료! 촌장에게 돌아가세요' : `${qp.have}/${qp.need}`}</div>`
       : q && w.map.id !== 'town' ? '' : q ? `<div class="dim">📜 마을의 ${NPC_NAME}에게 말을 걸어 보세요</div>` : '');
-
-    const portal = w.portalNear();
-    const ctx = portal && w.portalOpen(portal) ? `${MAPS[portal.to].name}(으)로 이동` : w.nearCraft() ? '제작대 사용' : w.nearNpc() ? `${NPC_NAME}와 대화` : '';
-    this.show('ctx', !!ctx && !this.panel);
-    if (ctx) { this.$('ctx').textContent = ctx; this.$('ctx').dataset.act = portal && w.portalOpen(portal) ? 'portal' : w.nearCraft() ? 'open:craft' : 'open:quest'; }
 
     this.show('modal', !!this.panel);
     if (this.panel) this.put('modal', this.panelHtml(c));
@@ -206,6 +199,7 @@ export class UI {
         <div><b>${esc(c.name)}</b>이(가) <span class="gold-t">${dur(r.seconds)}</span> 동안 <b>${r.mapName}</b>에서 ${what}.</div>
         <div class="kv big">${lines.join('')}</div>
         <div class="loot">${r.items.map((i) => `<span>${icon(i.id)}${i.name} ×${i.qty.toLocaleString()}</span>`).join('')}</div>
+        ${r.cards.length ? `<div class="loot">${r.cards.map((k) => `<span class="gold-t">★ ${k.name} 카드 ×${k.qty}</span>`).join('')}</div>` : ''}
         ${r.lost ? `<div class="small red-t" style="margin-top:.5em">가방이 가득 차 아이템 ${r.lost}개를 잃었습니다.</div>` : ''}
         <div class="row" style="margin-top:.9em"><span class="grow"></span><button class="gold" data-act="close">받기</button></div>`, false);
     }
@@ -234,7 +228,7 @@ export class UI {
       return win(`가방 <span class="small dim">${c.inventory.length}/${INVENTORY_SIZE}</span>`, `<div class="slots eq">${eq}</div><div class="slots">${cells}</div><div class="detail">${detail}</div>`);
     }
     if (this.panel === 'stats') {
-      const d = derive(c);
+      const d = derive(c, g.acc.cards);
       const stats = (Object.keys(STAT_NAMES) as StatKey[]).map((k) => `
         <div class="stat"><b>${STAT_NAMES[k]}</b><span class="v">${d[k]}</span><span class="grow small dim">${STAT_DESC[k]}</span>
         <button data-act="stat:${k}" ${c.statPoints ? '' : 'disabled'}>＋</button></div>`).join('');
@@ -254,9 +248,10 @@ export class UI {
         <h4>기술</h4>${skills}`);
     }
     if (this.panel === 'talents') {
-      const list = TALENTS.map((t) => {
+      const list = TALENTS.filter((t) => !t.cls || t.cls === c.cls).map((t) => {
         const lv = c.talents[t.id] ?? 0;
         return `<div class="recipe"><div class="grow"><div><b>${t.name}</b> <span class="small gold-t">Lv.${lv}/${t.max}</span>
+          ${t.cls ? `<span class="small green-t">${CLASSES[t.cls].name} 전용</span>` : ''}
           <span class="small dim">${t.active ? `액티브 · 재사용 ${t.active.cooldown}초` : '패시브'}</span></div>
           <div class="small ${lv ? 'green-t' : 'dim'}">${t.desc(Math.max(1, lv))}</div>
           ${lv && lv < t.max ? `<div class="small dim">다음: ${t.desc(lv + 1)}</div>` : ''}</div>
@@ -265,7 +260,22 @@ export class UI {
       return win('특성', `<div class="row" style="margin-bottom:.5em"><span>남은 포인트</span><b class="gold-t big">${c.talentPoints}</b>
         <span class="small dim">레벨이 오를 때마다 1 포인트 · AUTO 중에는 액티브 스킬을 자동으로 사용</span></div>${list}`);
     }
+    if (this.panel === 'cards') {
+      const list = CARDS.map((cd) => {
+        const n = g.acc.cards[cd.monster] ?? 0, tier = cardTier(n), next = cardNext(n);
+        return `<div class="recipe"><img class="px ic" style="${n ? '' : 'filter:brightness(0) opacity(.45)'}" src="${iconUrl(`mob_${cd.monster}`)}">
+          <div class="grow"><div><b>${n ? MONSTERS[cd.monster].name : '???'}</b> <span class="gold-t">${'★'.repeat(tier)}${'☆'.repeat(3 - tier)}</span></div>
+          <div class="small ${tier ? 'green-t' : 'dim'}">${cd.label} +${Math.round(cd.per * Math.max(1, tier) * 100)}%${tier ? '' : ' (미획득)'}</div>
+          <div class="small dim">${next ? `보유 ${n} / 다음 단계 ${next}` : `보유 ${n} · 최고 단계`}</div></div></div>`;
+      }).join('');
+      return win('몬스터 카드', `<div class="small dim" style="margin-bottom:.5em">몬스터가 가끔 카드를 떨어뜨립니다. 카드 효과는 모든 캐릭터에게 적용됩니다.</div>${list}`);
+    }
     if (this.panel === 'quest') {
+      if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
+        const opts = (['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="recipe"><div class="grow"><b>${CLASSES[id].name}</b>
+          <div class="small">${CLASSES[id].desc}</div></div><button class="gold" data-act="class:${id}">전직</button></div>`).join('');
+        return win(`${NPC_NAME} <span class="small dim">전직</span>`, `<div style="margin-bottom:.6em">“많이 강해졌구먼! 이제 자네의 길을 정할 때일세.” <span class="small red-t">(한 번 고르면 바꿀 수 없습니다)</span></div>${opts}`);
+      }
       const q = currentQuest(c), p = questProgress(c);
       if (!q || !p) return win(NPC_NAME, '<div>고맙네! 지금은 부탁할 일이 없다네. 다음 이야기를 기다려 주게.</div>');
       const goal = 'kill' in q.goal ? `${MONSTERS[q.goal.kill].name} ${q.goal.n}마리 처치` : `${icon(q.goal.item)}${ITEMS[q.goal.item].name} ${q.goal.n}개 납품`;
@@ -320,7 +330,7 @@ export class UI {
       case 'close': this.panel = null; this.afk = null; break;
       case 'auto': if (c) c.auto = !c.auto; break;
       case 'mode': if (c) c.mode = c.mode === 'fight' ? 'gather' : 'fight'; break;
-      case 'portal': { const p = g.world?.portalNear(); if (p) g.travel(p); break; }
+      case 'class': if (c) { const err = advanceClass(c, a as ClassId); fail(err); if (!err) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'talents'; } } break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
       case 'equip': if (c) { fail(equipItem(c, a)); this.sel = null; } break;
       case 'unequip': if (c) { fail(unequipItem(c, a as EquipSlot)); this.sel = null; } break;

@@ -1,5 +1,5 @@
 import {
-  EquipSlot, INVENTORY_SIZE, ITEMS, ItemStats, MAX_CHARACTERS, QUESTS, RECIPES, SkillKey, StatKey, TALENT,
+  CARDS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, cardTier, ITEMS, ItemStats, MAX_CHARACTERS, QUESTS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -8,6 +8,7 @@ export type Mode = 'fight' | 'gather';
 
 export interface Character {
   id: number; name: string; look: Look;
+  cls: ClassId;
   level: number; xp: number; statPoints: number;
   stats: Record<StatKey, number>;
   hp: number;
@@ -27,20 +28,22 @@ export interface Character {
 export interface Account {
   version: 1;
   coins: number;
+  /** 몬스터 카드 보유 수(계정 공용) */
+  cards: Record<string, number>;
   characters: Character[];
   active: number;
   nextId: number;
 }
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
   if (acc.characters.length >= MAX_CHARACTERS) return null;
   const c: Character = {
     id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
-    level: 1, xp: 0, statPoints: 0,
+    cls: 'beginner', level: 1, xp: 0, statPoints: 0,
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mapId: 'town', x: 120, auto: false, mode: 'fight',
     inventory: [], equipment: { weapon: 'sword_wood' },
@@ -63,6 +66,8 @@ export interface Derived {
   atkInterval: number; speed: number; crit: number; critMult: number;
   xpMult: number; dropMult: number; regen: number;
   mining: number; chopping: number;
+  /** 공격 사거리. 원거리 직업은 발사체를 쏜다 */
+  range: number; ranged: boolean;
 }
 
 export function equipStats(c: Character): Required<ItemStats> {
@@ -74,21 +79,29 @@ export function equipStats(c: Character): Required<ItemStats> {
   return t;
 }
 
-export function derive(c: Character): Derived {
+export type Cards = Record<string, number>;
+const NO_CARDS: Cards = {};
+
+export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
   const e = equipStats(c);
   const str = c.stats.str + e.str, agi = c.stats.agi + e.agi;
   const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
+  const cls = CLASSES[c.cls] ?? CLASSES.beginner;
+  const cb = { hp: 0, dmg: 0, drop: 0 };
+  for (const cd of CARDS) cb[cd.bonus] += cardTier(cards[cd.monster] ?? 0) * cd.per;
+  const main = { str, agi, wis, luk }[cls.main];
   const work = 1 + tl('worker') * 0.05;
-  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp) * (1 + tl('tough') * 0.04));
+  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
   return {
     str, agi, wis, luk, maxHp,
-    dmg: (2 + e.dmg + str * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03),
-    def: e.def + c.level * 0.3,
-    atkInterval: Math.max(0.32, 0.75 - agi * 0.004),
+    dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg),
+    def: e.def + c.level * 0.3 + tl('ironskin') * 1.5,
+    atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
     speed: 80 + Math.min(40, agi * 0.6),
     crit: Math.min(0.6, 0.04 + luk * 0.004), critMult: 1.6,
-    xpMult: 1 + wis * 0.005, dropMult: 1 + luk * 0.004,
+    xpMult: 1 + wis * 0.005 + tl('insight') * 0.03, dropMult: (1 + luk * 0.004) * (1 + cb.drop),
+    range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
     mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work,
     chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work,
@@ -126,9 +139,26 @@ export function spendStat(c: Character, k: StatKey, n = 1): boolean {
 
 export function learnTalent(c: Character, id: string): boolean {
   const t = TALENT[id], lv = c.talents[id] ?? 0;
-  if (!t || c.talentPoints <= 0 || lv >= t.max) return false;
+  if (!t || c.talentPoints <= 0 || lv >= t.max || (t.cls && t.cls !== c.cls)) return false;
   c.talents[id] = lv + 1; c.talentPoints--;
   return true;
+}
+
+/** 전직. 실패 사유 또는 null */
+export function advanceClass(c: Character, cls: ClassId): string | null {
+  const def = CLASSES[cls];
+  if (!def || cls === 'beginner' || c.cls !== 'beginner') return '전직할 수 없습니다';
+  if (c.level < CLASS_LEVEL) return `레벨 ${CLASS_LEVEL} 필요`;
+  if (def.starter && c.inventory.length >= INVENTORY_SIZE) return '가방이 가득 찼습니다';
+  c.cls = cls;
+  if (def.starter) {
+    // 새 무기를 쥐여 주고 쓰던 무기는 가방으로
+    const prev = c.equipment.weapon;
+    c.equipment.weapon = def.starter;
+    if (prev) addItem(c, prev, 1);
+  }
+  c.hp = derive(c).maxHp;
+  return null;
 }
 
 // ───────── 퀘스트 ─────────
@@ -187,6 +217,7 @@ export function equipItem(c: Character, id: string): string | null {
   const def = ITEMS[id];
   if (!def?.slot || countItem(c, id) < 1) return '장착할 수 없는 아이템';
   if ((def.reqLv ?? 1) > c.level) return `레벨 ${def.reqLv} 필요`;
+  if (def.wtype && def.wtype !== CLASSES[c.cls].weapon) return '이 직업은 쓸 수 없는 무기';
   const prev = c.equipment[def.slot];
   removeItem(c, id, 1);
   c.equipment[def.slot] = id;
@@ -233,7 +264,9 @@ export function deserialize(json: string | null): Account | null {
     const a = JSON.parse(json) as Account;
     if (a?.version !== 1 || !Array.isArray(a.characters)) return null;
     // 이전 저장 데이터에 없는 필드 보충
+    a.cards ??= {};
     for (const c of a.characters) {
+      c.cls ??= 'beginner';
       c.talents ??= {};
       c.talentPoints ??= c.level - 1;
       c.quest ??= { idx: 0, accepted: false, prog: 0 };

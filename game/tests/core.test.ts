@@ -4,7 +4,7 @@ import { MAPS, RECIPES } from '../src/core/data';
 import { Rng } from '../src/core/rng';
 import {
   addItem, countItem, craft, createCharacter, derive, deserialize, equipItem, gainXp, newAccount, serialize,
-  unequipItem, xpToNext, acceptQuest, completeQuest, learnTalent, questProgress,
+  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, learnTalent, questProgress,
 } from '../src/core/state';
 import { World } from '../src/core/world';
 
@@ -193,5 +193,81 @@ describe('퀘스트와 특성', () => {
     const a = deserialize(JSON.stringify(raw))!;
     expect(a.characters[0].talentPoints).toBe(3);
     expect(a.characters[0].quest.idx).toBe(0);
+  });
+});
+
+describe('터치 조작', () => {
+  const idle = { move: 0, jump: false, down: false };
+  const until = (w: World, pred: () => boolean, seconds = 30) => {
+    for (let i = 0; i < seconds * 60 && !pred(); i++) { w.step(1 / 60, idle); }
+    return pred();
+  };
+  it('빈 곳을 터치하면 그 지점(발판 위 포함)으로 걸어간다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(1));
+    for (const m of w.mobs) m.alive = false, m.respawnT = 999;
+    expect(w.tap(550, -100)).toEqual({ k: 'move', x: 550, y: -96 });
+    expect(until(w, () => w.command === null)).toBe(true);
+    expect(w.player.y).toBe(-96);
+    expect(Math.abs(w.player.x - 550)).toBeLessThan(5);
+    w.tap(300, 20);
+    expect(until(w, () => w.command === null)).toBe(true);
+    expect(w.player.y).toBe(0);
+  });
+  it('몬스터를 터치하면 다가가 쓰러뜨린다 (AUTO 꺼짐)', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(1));
+    const m = w.mobs[0];
+    expect(w.tap(m.x, m.y - 8)).toEqual({ k: 'mob', uid: m.uid });
+    expect(until(w, () => !m.alive)).toBe(true);
+    expect(c.kills.meadow).toBeGreaterThan(0);
+  });
+  it('나무를 터치하면 계속 벤다, 포탈을 터치하면 도착 이벤트', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(1));
+    for (const m of w.mobs) m.alive = false, m.respawnT = 999;
+    expect(w.tap(95, -20)?.k).toBe('node');
+    until(w, () => countItem(c, 'log') >= 2, 40);
+    expect(countItem(c, 'log')).toBeGreaterThanOrEqual(2);
+    expect(w.tap(24, -20)?.k).toBe('portal');
+    w.events.length = 0;
+    expect(until(w, () => w.events.some((e) => e.t === 'arrive'))).toBe(true);
+  });
+});
+
+describe('전직과 카드', () => {
+  it('레벨 10부터 전직, 궁수는 활을 받고 멀리서 발사체로 공격한다', () => {
+    const { acc, c } = setup();
+    expect(advanceClass(c, 'archer')).toMatch(/레벨/);
+    c.level = 10;
+    expect(advanceClass(c, 'archer')).toBeNull();
+    expect(c.equipment.weapon).toBe('bow_wood');
+    expect(countItem(c, 'sword_wood')).toBe(1);
+    expect(equipItem(c, 'sword_wood')).toMatch(/직업/);
+    expect(advanceClass(c, 'mage')).not.toBeNull();
+    expect(learnTalent(c, 'nova')).toBe(false);
+    c.mapId = 'meadow'; c.auto = true;
+    const w = new World(acc, c, new Rng(3));
+    let shots = 0, minDist = 1e9;
+    for (let i = 0; i < 60 * 60; i++) {
+      w.step(1 / 60, { move: 0, jump: false, down: false });
+      shots = Math.max(shots, w.shots.length);
+      for (const e of w.events) if (e.t === 'dmg' && !e.onPlayer) minDist = Math.min(minDist, Math.abs(e.x - w.player.x));
+      w.events.length = 0;
+    }
+    expect(shots).toBeGreaterThan(0);
+    expect(c.kills.meadow).toBeGreaterThan(10);
+  });
+  it('카드는 계정 전체 능력치를 올린다', () => {
+    const { acc, c } = setup();
+    const base = derive(c, acc.cards).maxHp;
+    acc.cards.mossblob = 3;
+    expect(derive(c, acc.cards).maxHp).toBeGreaterThan(base);
+    c.mapId = 'meadow'; c.auto = true;
+    const r = computeAfk(acc, c, 12 * 3600_000, new Rng(1))!;
+    expect(r.cards.length).toBeGreaterThan(0);
   });
 });

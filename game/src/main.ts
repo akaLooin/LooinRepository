@@ -28,6 +28,6 @@ async function boot() {
   document.addEventListener('visibilitychange', () => (document.hidden ? game.suspend() : game.resume()));
   addEventListener('pagehide', () => game.save());
   // 개발/테스트용 핸들
-  (window as unknown as { __game: Game }).__game = game;
+  Object.assign(window, { __game: game, __scene: scene });
 }
 boot();

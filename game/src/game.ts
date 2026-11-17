@@ -77,7 +77,17 @@ export class Game {
     if (!w || this.paused) return;
     w.step(dt, this.input);
     this.input.jump = false; // 점프는 1회성
-    if (w.events.length) { for (const e of w.events) this.onEvent(e); w.events.length = 0; }
+    if (w.events.length) {
+      const evs = w.events.splice(0);
+      for (const e of evs) {
+        this.onEvent(e);
+        if (e.t === 'arrive' && e.what === 'portal') {
+          const q = w.map.portals[e.idx];
+          if (w.portalOpen(q)) { this.travel(q); return; }
+          this.onEvent({ t: 'loot', text: `이 맵에서 ${q.reqKills}마리를 처치해야 열립니다` });
+        }
+      }
+    }
     this.saveT += dt;
     if (this.saveT > 5) { this.saveT = 0; this.save(); }
   }

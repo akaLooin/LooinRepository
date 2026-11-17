@@ -81,43 +81,43 @@ const shade = (hex: string, f: number) => {
 };
 
 // ───────── 캐릭터 파츠 (오른쪽을 보는 기준) ─────────
+// 체형: 작은 머리 + 길쭉한 몸(약 3등신). 정면을 보고 서며 팔은 몸통 양옆 어깨에 붙는다.
 const HEAD = [
-  '....oooooooo....',
-  '..oohhhhhhhhoo..',
-  '.ohhhHHHhhhhhho.',
-  '.ohhHHhhhhhhhho.',
-  'ohhhhhhhhhhhhhho',
-  'ohhhhhhshhhshhho',
-  'ohhhhsssssssssso',
-  'ohhhsswessswesso',
-  'ohhsssewsssewsso',
-  '.ohssseessseesso',
-  '.ohsbbssssssbbso',
-  '..osssssssmsssso',
-  '..oddsssssssso..',
-  '...oodddddddo...',
-  '.....ooooooo....',
+  '...oooooo...',
+  '..ohhhhhho..',
+  '.ohhHHhhhho.',
+  '.ohHhhhhhho.',
+  'ohhhhhhhhhho',
+  'ohhhhsshssho',
+  'ohhsssssssso',
+  'ohsssessseso',
+  'ohsssessseso',
+  '.ossbsssssbo',
+  '..ossssmsso.',
+  '...oooooo...',
 ];
 // 머리 모양: 기본 머리 위에 덧그리는 조각 [x, y, rows]
 const HAIR_EXTRA: [number, number, string[]][][] = [
   [],
   // 긴 머리(뒤로 흘러내림)
-  [[-2, 6, ['.oo.', 'ohho', 'ohhho', 'ohhho', 'ohkho', 'ohhho', '.ohko', '.ohho', '..oo.']]],
+  [[-2, 5, ['.oo.', 'ohho', 'ohhho', 'ohkho', 'ohhho', '.ohko', '.ohho', '..oo.']]],
   // 삐죽 머리
-  [[1, -3, ['...o....o.....', '..oho..oho.o..', '.ohhhoohhhoho.', '.ohhhhhhhhhho.']]],
+  [[0, -3, ['..o...o.....', '.oho.oho.o..', '.ohhohhhoho.', '.ohhhhhhhho.']]],
 ];
 const TORSO = [
-  '.oooooooo.',
-  'ocCCccccxo',
-  'ocCcccccxo',
-  'occcccccxo',
-  'occcccccxo',
-  'oxxxyyxxxo',
-  'oppppppPPo',
-  '.oooooooo.',
+  '.oooooo.',
+  'ocCCccxo',
+  'ocCcccxo',
+  'occcccxo',
+  'occcccxo',
+  'occcccxo',
+  'oxxyyxxo',
+  'oppppPPo',
+  'oppppPPo',
+  '.oooooo.',
 ];
-const ARM = ['.oo.', 'occo', 'occo', 'ocxo', 'ocxo', 'osso', 'osdo', '.oo.'];
-const LEG = ['oooo.', 'oppPo', 'oppPo', 'oppPo', 'offFo', 'offffo', 'oooooo'];
+const ARM = ['.o.', 'oco', 'oco', 'oco', 'oxo', 'oxo', 'oxo', 'oso', 'oso', '.o.'];
+const LEG = ['oppo', 'opPo', 'opPo', 'opPo', 'opPo', 'opPo', 'opPo', 'offo', 'offfo', 'ooooo'];
 const SWORD = [
   '..o..', '.oBo.', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo',
   'ooooooo', 'onnnnno', 'ooooooo', '..ouo..', '..ouo..', '..ooo..',
@@ -147,19 +147,19 @@ export function buildLook(l: Look): string {
   for (const blink of [false, true]) {
     const rows = HEAD.map((r, y) => {
       if (!blink) return r;
-      if (y === 7 || y === 8) return r.replace(/[we]/g, 's');
+      if (y === 7) return r.replace(/e/g, 's');
       return r;
     });
-    const ctx = mk(`${k}_head${blink ? '_b' : ''}`, 16 + pad * 2, HEAD.length + pad * 2 + 4);
+    const ctx = mk(`${k}_head${blink ? '_b' : ''}`, 12 + pad * 2, HEAD.length + pad * 2 + 3);
     const draw = (ox: number, oy: number, rs: string[]) => rs.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
         const col = (over as Record<string, string>)[row[x]] ?? PAL[row[x]];
         if (col) { ctx.fillStyle = col; ctx.fillRect(ox + x + pad, oy + y + pad, 1, 1); }
       }
     });
-    for (const [x, y, rs] of extra) if (y >= 4) draw(x, y, rs);
+    for (const [x, y, rs] of extra) if (y >= 3) draw(x, y, rs);
     draw(0, 0, rows);
-    for (const [x, y, rs] of extra) if (y < 4) draw(x, y, rs);
+    for (const [x, y, rs] of extra) if (y < 3) draw(x, y, rs);
   }
   grid(`${k}_torso`, TORSO, over);
   grid(`${k}_arm`, ARM, over);
@@ -172,6 +172,24 @@ function buildWeapons() {
   grid('wp_sword_wood', SWORD, { B: '#c9925a', q: '#a06f42' });
   grid('wp_sword_stone', SWORD, { B: '#c9d1d9', q: '#8d97a3' });
   grid('wp_sword_leaf', SWORD, { B: '#a8ee6a', q: '#5fb859', n: '#f6c945' });
+  // 활(세로로 쥔다)과 지팡이, 발사체
+  for (const [id, a, b] of [['bow_wood', '#c9925a', '#8a5a3c'], ['bow_leaf', '#a8ee6a', '#5fb859']] as const) {
+    const p = new Paint(9, 19);
+    for (let y = 1; y < 18; y++) { const x = 2 + Math.round(Math.sin(((y - 1) / 16) * Math.PI) * 4); p.set(x, y, a); p.set(x - 1, y, b); }
+    p.line(2, 1, 2, 17, '#e9e4f0');
+    p.outline().save(`wp_${id}`);
+  }
+  for (const [id, a, b] of [['wand_wood', '#a5d8ff', '#5aa9e6'], ['wand_leaf', '#b4f08a', '#5fb859']] as const) {
+    const p = new Paint(7, 17);
+    p.rect(3, 5, 1, 12, '#8a5a3c'); p.disc(3, 3, 2.3, 2.3, b); p.set(2, 2, a); p.set(3, 2, a); p.set(2, 3, a);
+    p.outline().save(`wp_${id}`);
+  }
+  let p = new Paint(11, 5);
+  p.rect(1, 2, 8, 1, '#b9824f'); p.set(9, 2, '#c9d1d9'); p.set(8, 1, '#c9d1d9'); p.set(8, 3, '#c9d1d9'); p.set(1, 1, '#e9e4f0'); p.set(1, 3, '#e9e4f0');
+  p.outline().save('shot_arrow');
+  p = new Paint(9, 9);
+  p.disc(4, 4, 3.2, 3.2, '#5aa9e6'); p.disc(3.6, 3.6, 2, 2, '#a5d8ff'); p.set(3, 3, '#ffffff');
+  p.outline('#3a5a9a').save('shot_orb');
   grid('wp_pick', PICK);
   grid('wp_axe', AXE);
   grid('wp_pick_stone', PICK, { A: '#e8dcc8', a: '#b5a78e' });
@@ -392,6 +410,7 @@ function buildItems() {
 export const ITEM_ICON: Record<string, string> = {
   moss: 'it_moss', pebble: 'it_pebble', leaf: 'it_leaf', log: 'it_log', ore: 'it_ore', silverlog: 'it_silverlog',
   sword_wood: 'wp_sword_wood', sword_stone: 'wp_sword_stone', sword_leaf: 'wp_sword_leaf',
+  bow_wood: 'wp_bow_wood', bow_leaf: 'wp_bow_leaf', wand_wood: 'wp_wand_wood', wand_leaf: 'wp_wand_leaf',
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
   coin: 'it_coin',
 };
@@ -416,9 +435,9 @@ export function iconUrl(key: string): string {
 export function portraitUrl(l: Look): string {
   const k = buildLook(l), key = `${k}_portrait`;
   if (!canvases.has(key)) {
-    const ctx = mk(key, 24, 32);
+    const ctx = mk(key, 20, 36);
     const d = (part: string, x: number, y: number) => ctx.drawImage(canvases.get(`${k}_${part}`)!, x, y);
-    d('leg', 7, 24); d('leg', 12, 24); d('arm', 5, 17); d('torso', 7, 17); d('arm', 14, 17); d('head', 1, 0);
+    d('leg', 6, 26); d('leg', 10, 26); d('arm', 3, 17); d('arm', 14, 17); d('torso', 6, 17); d('head', 1, 3);
   }
   return iconUrl(key);
 }

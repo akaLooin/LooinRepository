@@ -1,7 +1,7 @@
 // 방치(오프라인) 보상 계산. 실시간 시뮬레이션을 돌리지 않고 기대값으로 계산한다.
 // 멀티 전환 시 이 함수는 서버에서 실행되어 보상을 검증/지급한다.
 import {
-  AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES, SkillKey,
+  AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARDS, CARD_CHANCE, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES, SkillKey,
 } from './data';
 import { Rng } from './rng';
 import { Account, Character, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
@@ -11,6 +11,7 @@ export interface AfkReport {
   kills: number; xp: number; coins: number; levels: number;
   skill?: { key: SkillKey; name: string; xp: number; levels: number };
   items: { id: string; name: string; qty: number }[];
+  cards: { name: string; qty: number }[];
   lost: number;
 }
 
@@ -27,8 +28,8 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
   if (elapsed < AFK_MIN_SECONDS) return null;
 
   const map = MAPS[c.mapId];
-  const d = derive(c);
-  const rep: AfkReport = { seconds: elapsed, mapName: map.name, mode: 'rest', kills: 0, xp: 0, coins: 0, levels: 0, items: [], lost: 0 };
+  const d = derive(c, acc.cards);
+  const rep: AfkReport = { seconds: elapsed, mapName: map.name, mode: 'rest', kills: 0, xp: 0, coins: 0, levels: 0, items: [], cards: [], lost: 0 };
   const give = (id: string, qty: number) => {
     if (qty <= 0) return;
     if (addItem(c, id, qty)) rep.items.push({ id, name: ITEMS[id].name, qty });
@@ -44,7 +45,7 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     let killTime = 0, dps = 0;
     for (const s of map.spawns) {
       const m = MONSTERS[s.monster], w = s.count / total;
-      killTime += w * (Math.ceil(m.hp / avgHit) * d.atkInterval + TRAVEL);
+      killTime += w * (Math.ceil(m.hp / avgHit) * d.atkInterval + (d.ranged ? TRAVEL * 0.5 : TRAVEL));
       dps += w * (mitigate(m.atk, d.def) / 1.2) * 0.5;
     }
     let uptime = 1;
@@ -59,6 +60,10 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
       const m = MONSTERS[s.monster], k = kills * (s.count / total);
       xp += k * m.xp;
       noteKill(c, m.id, Math.floor(k));
+      if (CARDS.some((cd) => cd.monster === m.id)) {
+        const n = settle(k * CARD_CHANCE * d.dropMult, rng);
+        if (n) { acc.cards[m.id] = (acc.cards[m.id] ?? 0) + n; rep.cards.push({ name: m.name, qty: n }); }
+      }
       coins += k * (m.coins[0] + m.coins[1]) / 2;
       for (const dr of m.drops) {
         give(dr.item, settle(k * Math.min(1, dr.chance * d.dropMult) * (dr.qty[0] + dr.qty[1]) / 2, rng));
@@ -82,6 +87,6 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
       rep.skill = { key: node.skill, name: SKILL_NAMES[node.skill], xp: sxp, levels: gainSkillXp(c, node.skill, sxp) };
     }
   }
-  c.hp = derive(c).maxHp;
+  c.hp = derive(c, acc.cards).maxHp;
   return rep;
 }

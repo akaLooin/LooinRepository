@@ -3,6 +3,8 @@
 
 export type StatKey = 'str' | 'agi' | 'wis' | 'luk';
 export type SkillKey = 'mining' | 'chopping';
+export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
+export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'pickaxe' | 'axe';
 
 export interface ItemStats {
@@ -13,7 +15,7 @@ export interface ItemStats {
 export interface ItemDef {
   id: string; name: string; desc: string;
   kind: 'material' | 'equip';
-  slot?: EquipSlot; stats?: ItemStats; reqLv?: number;
+  slot?: EquipSlot; stats?: ItemStats; reqLv?: number; wtype?: WeaponType;
   sell: number;
 }
 export interface DropDef { item: string; chance: number; qty: [number, number] }
@@ -62,9 +64,13 @@ const items: ItemDef[] = [
   { id: 'log', name: '참나무 통나무', desc: '튼튼한 목재.', kind: 'material', sell: 2 },
   { id: 'ore', name: '붉은돌 광석', desc: '붉은 빛이 도는 광석.', kind: 'material', sell: 4 },
   { id: 'silverlog', name: '은빛 통나무', desc: '은은하게 빛나는 목재.', kind: 'material', sell: 9 },
-  { id: 'sword_wood', name: '나무 검', desc: '초보자의 친구.', kind: 'equip', slot: 'weapon', stats: { dmg: 3 }, sell: 2 },
-  { id: 'sword_stone', name: '돌날 검', desc: '묵직한 한 방.', kind: 'equip', slot: 'weapon', stats: { dmg: 9, str: 1 }, reqLv: 5, sell: 20 },
-  { id: 'sword_leaf', name: '잎새 칼', desc: '바람처럼 가볍다.', kind: 'equip', slot: 'weapon', stats: { dmg: 18, agi: 3 }, reqLv: 12, sell: 120 },
+  { id: 'sword_wood', name: '나무 검', desc: '초보자의 친구.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 3 }, sell: 2 },
+  { id: 'sword_stone', name: '돌날 검', desc: '묵직한 한 방.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 9, str: 1 }, reqLv: 5, sell: 20 },
+  { id: 'sword_leaf', name: '잎새 칼', desc: '바람처럼 가볍다.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 18, agi: 3 }, reqLv: 12, sell: 120 },
+  { id: 'bow_wood', name: '나무 활', desc: '멀리서 쏜다.', kind: 'equip', slot: 'weapon', wtype: 'bow', stats: { dmg: 8, agi: 1 }, reqLv: 10, sell: 20 },
+  { id: 'bow_leaf', name: '잎새 활', desc: '시위가 노래한다.', kind: 'equip', slot: 'weapon', wtype: 'bow', stats: { dmg: 17, agi: 4 }, reqLv: 14, sell: 120 },
+  { id: 'wand_wood', name: '나무 지팡이', desc: '끝이 희미하게 빛난다.', kind: 'equip', slot: 'weapon', wtype: 'wand', stats: { dmg: 8, wis: 1 }, reqLv: 10, sell: 20 },
+  { id: 'wand_leaf', name: '잎새 지팡이', desc: '숲의 기운이 깃들었다.', kind: 'equip', slot: 'weapon', wtype: 'wand', stats: { dmg: 17, wis: 4 }, reqLv: 14, sell: 120 },
   { id: 'hat_moss', name: '이끼 모자', desc: '머리가 시원해진다.', kind: 'equip', slot: 'hat', stats: { def: 2, hp: 10 }, sell: 8 },
   { id: 'armor_log', name: '통나무 갑옷', desc: '조금 뻣뻣하다.', kind: 'equip', slot: 'body', stats: { def: 4, hp: 25 }, reqLv: 4, sell: 25 },
   { id: 'pick_stone', name: '돌 곡괭이', desc: '채광 효율 +2', kind: 'equip', slot: 'pickaxe', stats: { mining: 2 }, sell: 12 },
@@ -117,10 +123,14 @@ export const RECIPES: RecipeDef[] = [
   { item: 'sword_stone', coins: 40, mats: [['pebble', 10], ['log', 5]] },
   { item: 'armor_log', coins: 60, mats: [['log', 12], ['moss', 5]] },
   { item: 'sword_leaf', coins: 250, mats: [['leaf', 15], ['ore', 10]] },
+  { item: 'bow_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8]] },
+  { item: 'wand_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8]] },
 ];
 
 export interface TalentDef {
   id: string; name: string; max: number; active?: { cooldown: number };
+  /** 지정하면 해당 직업 전용 */
+  cls?: ClassId;
   /** 레벨에 따른 설명 */
   desc: (lv: number) => string;
 }
@@ -130,11 +140,39 @@ export const TALENTS: TalentDef[] = [
   { id: 'sharp', name: '예리함', max: 10, desc: (lv) => `공격력 +${lv * 3}%` },
   { id: 'tough', name: '단련', max: 10, desc: (lv) => `최대 체력 +${lv * 4}%` },
   { id: 'worker', name: '일꾼의 손', max: 10, desc: (lv) => `채집 효율 +${lv * 5}%` },
+  { id: 'cleave', name: '분쇄 일격', max: 10, cls: 'warrior', active: { cooldown: 8 }, desc: (lv) => `넓은 범위의 적에게 ${300 + lv * 30}% 피해` },
+  { id: 'ironskin', name: '강철 피부', max: 10, cls: 'warrior', desc: (lv) => `방어력 +${(lv * 1.5).toFixed(1)}` },
+  { id: 'volley', name: '연속 사격', max: 10, cls: 'archer', active: { cooldown: 8 }, desc: (lv) => `가까운 적 최대 4마리에게 ${150 + lv * 15}% 피해` },
+  { id: 'swift', name: '날랜 손', max: 10, cls: 'archer', desc: (lv) => `공격 속도 +${lv * 2}%` },
+  { id: 'nova', name: '별빛 폭발', max: 10, cls: 'mage', active: { cooldown: 10 }, desc: (lv) => `대상 주변의 모든 적에게 ${220 + lv * 25}% 피해` },
+  { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
 export const smashMult = (lv: number) => 1.8 + lv * 0.2;
 export const healPct = (lv: number) => 0.25 + lv * 0.05;
 export const SMASH_RANGE = 46;
+export const CLEAVE_RANGE = 60;
+export const NOVA_RADIUS = 52;
+
+export interface ClassDef { id: ClassId; name: string; desc: string; main: StatKey; range: number; weapon: WeaponType; starter?: string }
+export const CLASSES: Record<ClassId, ClassDef> = {
+  beginner: { id: 'beginner', name: '초보자', desc: '', main: 'str', range: 26, weapon: 'sword' },
+  warrior: { id: 'warrior', name: '전사', desc: '근접 전투. 힘이 공격력이 되고 튼튼하다.', main: 'str', range: 28, weapon: 'sword' },
+  archer: { id: 'archer', name: '궁수', desc: '활로 멀리서 공격. 민첩이 공격력이 된다.', main: 'agi', range: 115, weapon: 'bow', starter: 'bow_wood' },
+  mage: { id: 'mage', name: '마법사', desc: '지팡이로 마법 공격. 지혜가 공격력이 된다.', main: 'wis', range: 95, weapon: 'wand', starter: 'wand_wood' },
+};
+export const CLASS_LEVEL = 10;
+
+/** 몬스터 카드: 계정 전체에 적용되는 수집 보너스. 1/3/10장에서 단계 상승 */
+export interface CardDef { monster: string; bonus: 'hp' | 'dmg' | 'drop'; per: number; label: string }
+export const CARDS: CardDef[] = [
+  { monster: 'mossblob', bonus: 'hp', per: 0.03, label: '최대 체력' },
+  { monster: 'pebbler', bonus: 'dmg', per: 0.03, label: '공격력' },
+  { monster: 'leafling', bonus: 'drop', per: 0.04, label: '드롭률' },
+];
+export const CARD_CHANCE = 1 / 30;
+export const cardTier = (n: number) => (n >= 10 ? 3 : n >= 3 ? 2 : n >= 1 ? 1 : 0);
+export const cardNext = (n: number) => (n >= 10 ? null : n >= 3 ? 10 : n >= 1 ? 3 : 1);
 
 export interface QuestDef {
   name: string; text: string;
