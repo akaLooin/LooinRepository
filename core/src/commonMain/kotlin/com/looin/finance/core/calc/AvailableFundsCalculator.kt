@@ -39,6 +39,54 @@ object AvailableFundsCalculator {
         val plannedIncomeNotCounted: Long,
         val breakdown: Breakdown,
         val savingsReserved: Long = 0,
+        /** 예산별 확보액 나눔(전체 생활비 예산이 있으면 그것 하나, 없으면 카테고리 예산들). */
+        val shares: List<BudgetShare> = emptyList(),
+    ) {
+        /** 아직 쓰지 않은(예정 지출도 아닌) 예산의 합. */
+        val budgetLeft: Long get() = shares.sumOf { it.left }
+
+        /**
+         * 지금까지 쓴 예산만 반영한 사용 가능 금액: 남은 예산을 따로 떼어 두지 않았을 때.
+         * (예정 지출·예정 이체·저축 목표는 그대로 뺀다) = [amount] + [budgetLeft]
+         */
+        val withoutBudgetLeft: Long get() = amount + budgetLeft
+
+        /** 예산대로 다 쓰면 모자랄 때, 예산을 얼마나 줄여야 하는지. 모자라지 않거나 예산이 없으면 null. */
+        val adjust: BudgetAdjust? get() {
+            if (amount >= 0 || shares.isEmpty()) return null
+            val deficit = -amount
+            val reducible = budgetLeft
+            val target = minOf(deficit, reducible)
+            // 남은 예산에 비례해서 나누고 1,000원 단위로 올림(각 예산의 남은 금액을 넘지 않게), 모자라면 남은 예산이 큰 순으로 채움
+            val open = shares.filter { it.left > 0 }.sortedByDescending { it.left }
+            val cut = LongArray(open.size) { i ->
+                val raw = if (reducible == 0L) 0L else (target * open[i].left + reducible - 1) / reducible
+                ((raw + 999) / 1000 * 1000).coerceAtMost(open[i].left)
+            }
+            var over = cut.sum() - target
+            for (i in open.indices.reversed()) { if (over <= 0) break; val d = minOf(over, cut[i]); cut[i] -= d; over -= d }
+            var rest = target - cut.sum()
+            for (i in open.indices) { if (rest <= 0) break; val d = minOf(rest, open[i].left - cut[i]); cut[i] += d; rest -= d }
+            val cuts = open.indices.filter { cut[it] > 0 }.map { open[it].status to cut[it] }
+            val total = shares.sumOf { it.status.effective }
+            return BudgetAdjust(deficit, reducible, total, total - cuts.sumOf { it.second }, cuts, maxOf(deficit - reducible, 0))
+        }
+    }
+
+    /** 예산 하나의 확보액: [left] 아직 안 쓴 예산, [planned] 예산 안 예정 지출. */
+    data class BudgetShare(val status: BudgetStatus, val left: Long, val planned: Long)
+
+    /**
+     * 예산 조정 안내. [suggestedTotal] 이하로 예산 합계를 줄이면 예산대로 다 써도 모자라지 않는다.
+     * [shortAfterAll] > 0 이면 남은 예산을 모두 줄여도 그만큼 모자란다(예정 지출·이체를 줄이거나 돈을 넣어야 함).
+     */
+    data class BudgetAdjust(
+        val deficit: Long,
+        val reducible: Long,
+        val currentTotal: Long,
+        val suggestedTotal: Long,
+        val cuts: List<Pair<BudgetStatus, Long>>,
+        val shortAfterAll: Long,
     )
 
     fun includedAccounts(accounts: List<Account>) = accounts.filter {
@@ -125,6 +173,10 @@ object AvailableFundsCalculator {
                 "기준 기간: ${period.label}",
             ),
         )
-        return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown, savingsReserved)
+        val shares = (if (overall != null) listOf(overall) else categoryStatuses).map { st ->
+            val planned = minOf(st.planned, st.reserve)
+            BudgetShare(st, st.reserve - planned, planned)
+        }
+        return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown, savingsReserved, shares)
     }
 }

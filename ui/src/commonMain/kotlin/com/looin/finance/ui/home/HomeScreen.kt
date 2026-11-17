@@ -1,5 +1,7 @@
 package com.looin.finance.ui.home
 
+import com.looin.finance.ui.components.LooinSheet
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -148,6 +150,7 @@ fun HomeScreen(
     val daysLeft = period.endExclusive.toEpochDays() - state.today.toEpochDays()
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showAvailable by remember { mutableStateOf(false) }
+    var showSplit by remember { mutableStateOf(false) }
 
     // 넓은 화면(PC)에서는 왼쪽: 요약·입력·거래, 오른쪽: 예산·잔고. 휴대폰에서는 이 순서대로 한 줄.
     val left = mutableListOf<@Composable () -> Unit>()
@@ -165,8 +168,24 @@ fun HomeScreen(
                 Spacer(Modifier.height(12.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { showAvailable = true }
                     .semantics(mergeDescendants = true) { contentDescription = "생활비로 사용 가능한 금액 ${fmt(available.amount)}, 계산 근거 보기" }) {
-                    SmallLabel("생활비로 사용 가능한 금액 ⓘ")
+                    SmallLabel(if (available.shares.isEmpty()) "생활비로 사용 가능한 금액 ⓘ" else "생활비로 사용 가능한 금액 · 예산을 다 쓴다면 ⓘ")
                     AmountText(available.amount, style = LooinType.bigAmount, color = if (available.amount < 0) c.danger else c.text)
+                }
+                // 예산이 있으면: 지금까지 쓴 예산만 반영한 금액과, 그 돈이 예산별로 어떻게 나뉘는지
+                if (available.shares.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { showSplit = true }.padding(vertical = 4.dp)
+                        .semantics(mergeDescendants = true) { contentDescription = "지금까지 쓴 예산만 반영하면 ${fmt(available.withoutBudgetLeft)}, 예산별로 나눠 보기" }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SmallLabel("지금까지 쓴 예산만 반영하면 ", color = c.textSecondary)
+                            Text(fmt(available.withoutBudgetLeft), style = LooinType.body.copy(fontWeight = FontWeight.Bold),
+                                color = if (available.withoutBudgetLeft < 0) c.danger else c.text)
+                            Spacer(Modifier.weight(1f))
+                            SmallLabel("예산별 보기 ›")
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        AvailableSplitBar(available, data)
+                    }
                 }
                 if (AvailableFundsCalculator.includedAccounts(data.accounts).isEmpty()) {
                     SmallLabel("생활비 계산 대상 계좌가 없어요. 자산 탭에서 계좌를 '생활비 계산 대상'으로 켜 주세요.", color = c.danger)
@@ -185,6 +204,39 @@ fun HomeScreen(
                     MiniStat("수입", stats.income, c.income, StatisticsCalculator.incomeBreakdown(stats, data::categoryName), Modifier.weight(1f))
                     MiniStat("확정 소비", stats.expense, c.expense, StatisticsCalculator.expenseBreakdown(stats, data::categoryName), Modifier.weight(1f))
                     MiniStat("미완료 예정 지출", pendingBreakdown.total, c.planned, pendingBreakdown, Modifier.weight(1f))
+                }
+            }
+        }
+        // 예산대로 다 쓰면 모자랄 때: 예산 합계를 얼마나 줄여야 하는지
+        available.adjust?.let { adj ->
+            left += {
+                Card {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(4.dp, 16.dp).clip(RoundedCornerShape(50)).background(c.danger))
+                        Spacer(Modifier.width(10.dp))
+                        Text("예산대로 다 쓰면 ${fmt(adj.deficit)} 모자라요", style = LooinType.sheetTitle, color = c.danger)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (adj.shortAfterAll == 0L) {
+                        Text("예산 합계를 ${fmt(adj.currentTotal)}에서 ${fmt(adj.suggestedTotal)} 이하로 줄여야 해요.", style = LooinType.body, color = c.text)
+                        Spacer(Modifier.height(6.dp))
+                        adj.cuts.forEach { (st, cut) ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(budgetColor(st, data)))
+                                Spacer(Modifier.width(8.dp))
+                                Text(com.looin.finance.ui.plan.budgetName(st.budget, data), style = LooinType.body, color = c.text, modifier = Modifier.weight(1f))
+                                SmallLabel("${fmt(st.budget.amount)} → ${fmt(st.budget.amount - cut)}", color = c.textSecondary)
+                                Spacer(Modifier.width(8.dp))
+                                Text("−${fmt(cut)}", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.danger)
+                            }
+                        }
+                        SmallLabel("남은 예산에 비례해서 나눈 제안이에요. 줄일 곳은 직접 정해도 돼요.")
+                    } else {
+                        Text("남은 예산(${fmt(adj.reducible)})을 모두 줄여도 ${fmt(adj.shortAfterAll)} 모자라요. 예정 지출·이체를 줄이거나 생활비 계좌에 돈을 더 넣어야 해요.",
+                            style = LooinType.body, color = c.text)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    PrimaryButton("돈 관리에서 예산 조정", onOpenPlan)
                 }
             }
         }
@@ -294,6 +346,7 @@ fun HomeScreen(
         AdaptiveColumns(left, right, mobilePadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 96.dp))
 
     if (showAvailable) BreakdownSheet(available.breakdown) { showAvailable = false }
+    if (showSplit) LooinSheet({ showSplit = false }, "예산별로 나눠 보기") { AvailableSplit(available, data) }
     completing?.let { tx ->
         CompleteSheet(tx, state.today, { completing = null }) { d, a, r -> completing = null; vm.completeTransaction(tx.id, d, a, r) }
     }
@@ -344,5 +397,68 @@ private fun QuickAdd(label: String, color: Color, modifier: Modifier, onClick: (
         Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(color))
         Spacer(Modifier.width(6.dp))
         Text("+ $label", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.text, maxLines = 1)
+    }
+}
+
+/** 예산 색: 카테고리 예산은 카테고리 색, 전체 생활비는 강조 색. */
+@Composable
+private fun budgetColor(st: com.looin.finance.core.calc.BudgetStatus, data: com.looin.finance.data.FinanceData): Color =
+    st.budget.categoryId?.let { data.categoryById[it]?.colorArgb }?.let { Color(it) } ?: Looin.colors.accent
+
+/** 지금 쓸 수 있는 돈(쓴 예산만 반영)을 남은 예산별 + 예산 밖 여유로 나눈 막대. */
+@Composable
+private fun AvailableSplitBar(a: AvailableFundsCalculator.Result, data: com.looin.finance.data.FinanceData) {
+    val c = Looin.colors
+    val free = maxOf(a.amount, 0)
+    val parts = a.shares.filter { it.left > 0 }.map { it.left to budgetColor(it.status, data) } + listOfNotNull((free to c.income).takeIf { free > 0 })
+    val total = parts.sumOf { it.first }
+    Row(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50)).background(c.surfaceStrong)) {
+        if (total > 0) parts.forEach { (v, col) -> Box(Modifier.weight(v.toFloat()).fillMaxHeight().background(col)) }
+    }
+    if (a.amount < 0) { Spacer(Modifier.height(4.dp)); SmallLabel("남은 예산이 쓸 수 있는 돈보다 ${MoneyFormat.format(-a.amount)} 많아요", color = c.danger) }
+}
+
+/** 예산별로 나눠 보기 시트 내용. */
+@Composable
+private fun AvailableSplit(a: AvailableFundsCalculator.Result, data: com.looin.finance.data.FinanceData) {
+    val c = Looin.colors
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surfaceInput).padding(12.dp)) {
+            SmallLabel("생활비 계좌 잔고에서 예정 지출·예정 이체·저축 목표를 뺀 돈이 지금 쓸 수 있는 돈이에요. " +
+                "이 돈을 아직 안 쓴 예산별로 나눴고, 예산을 다 쓰고도 남는 돈이 홈의 '사용 가능 금액'이에요.", color = c.textSecondary)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("지금 쓸 수 있는 돈", style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = c.text, modifier = Modifier.weight(1f))
+            AmountText(a.withoutBudgetLeft, style = LooinType.monthTitle, color = if (a.withoutBudgetLeft < 0) c.danger else c.text)
+        }
+        AvailableSplitBar(a, data)
+        a.shares.forEach { sh ->
+            val st = sh.status
+            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(budgetColor(st, data)))
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("${com.looin.finance.ui.plan.budgetName(st.budget, data)} 남은 예산", style = LooinType.body, color = c.text)
+                    SmallLabel("예산 ${MoneyFormat.format(st.effective)} · 사용 ${MoneyFormat.format(st.spent)}" +
+                        (if (sh.planned > 0) " · 예정 ${MoneyFormat.format(sh.planned)}" else "") + if (st.isOver) " · 초과" else "",
+                        color = if (st.isOver) c.danger else c.textMuted)
+                }
+                AmountText(sh.left, style = LooinType.body.copy(fontWeight = FontWeight.SemiBold))
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(c.divider))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(c.income))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("예산을 다 써도 남는 돈", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.text)
+                SmallLabel("= 사용 가능 금액(예산을 다 쓴다면)")
+            }
+            AmountText(a.amount, style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = if (a.amount < 0) c.danger else c.income)
+        }
+        a.adjust?.let { adj ->
+            SmallLabel(if (adj.shortAfterAll == 0L) "예산 합계를 ${MoneyFormat.format(adj.suggestedTotal)} 이하로 줄이면 모자라지 않아요."
+                else "남은 예산을 모두 줄여도 ${MoneyFormat.format(adj.shortAfterAll)} 모자라요.", color = c.danger)
+        }
     }
 }

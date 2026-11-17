@@ -100,3 +100,48 @@ class BudgetAndAvailableTest {
         assertEquals(3_000_000, r.plannedIncomeNotCounted)
     }
 }
+
+/** 사용 가능 금액을 예산별로 나눠 보기와 "예산대로 다 쓰면 모자랄 때" 조정 안내. */
+class AvailableSplitTest {
+    private val d = kotlinx.datetime.LocalDate(2026, 11, 10)
+    private val period = com.looin.finance.core.period.PeriodCalculator.periodContaining(d, com.looin.finance.core.period.PeriodBasis.CALENDAR, 25)
+    private val acc = com.looin.finance.core.model.Account(id = 1, name = "주거래", type = com.looin.finance.core.model.AccountType.CHECKING,
+        openingBalance = 500_000, includeInAvailable = true)
+    private fun budget(id: Long, cat: Long, amount: Long) = com.looin.finance.core.model.Budget(id = id, basis = period.basis, periodStart = period.start,
+        periodEndExclusive = period.endExclusive, categoryId = cat, amount = amount)
+    private fun spend(id: Long, cat: Long, amount: Long, planned: Boolean = false) = com.looin.finance.core.model.Transaction(id = id,
+        type = com.looin.finance.core.model.TransactionType.EXPENSE,
+        status = if (planned) com.looin.finance.core.model.TransactionStatus.PLANNED else com.looin.finance.core.model.TransactionStatus.COMPLETED,
+        amount = amount, date = if (planned) kotlinx.datetime.LocalDate(2026, 11, 20) else d, fromAccountId = 1, categoryId = cat)
+
+    @org.junit.Test fun splitByBudget() {
+        // 잔고 500,000 − 지출 100,000 = 400,000 / 식비 300,000(사용 100,000, 예정 50,000), 교통 100,000
+        val txs = listOf(spend(1, 10, 100_000), spend(2, 10, 50_000, planned = true))
+        val r = AvailableFundsCalculator.calculate(listOf(acc), txs, listOf(budget(1, 10, 300_000), budget(2, 11, 100_000)), period)
+        org.junit.Assert.assertEquals(100_000L, r.amount) // 400,000 − 식비 확보 200,000 − 교통 100,000
+        org.junit.Assert.assertEquals(250_000L, r.budgetLeft) // 식비 150,000 + 교통 100,000
+        org.junit.Assert.assertEquals(350_000L, r.withoutBudgetLeft) // 예정 지출 50,000 만 뺀 금액
+        org.junit.Assert.assertEquals(listOf(150_000L, 100_000L), r.shares.map { it.left })
+        org.junit.Assert.assertNull(r.adjust)
+    }
+
+    @org.junit.Test fun adjustWhenShort() {
+        // 잔고 400,000(지출 100,000 뒤), 예산 남은 돈 식비 300,000 + 교통 200,000 = 500,000 → 100,000 부족
+        val txs = listOf(spend(1, 10, 100_000))
+        val r = AvailableFundsCalculator.calculate(listOf(acc), txs, listOf(budget(1, 10, 400_000), budget(2, 11, 200_000)), period)
+        org.junit.Assert.assertEquals(-100_000L, r.amount)
+        val a = r.adjust!!
+        org.junit.Assert.assertEquals(100_000L, a.deficit)
+        org.junit.Assert.assertEquals(0L, a.shortAfterAll)
+        org.junit.Assert.assertEquals(100_000L, a.cuts.sumOf { it.second })
+        org.junit.Assert.assertEquals(600_000L, a.currentTotal); org.junit.Assert.assertEquals(500_000L, a.suggestedTotal)
+        // 남은 예산 비율 3:2 → 60,000 / 40,000
+        org.junit.Assert.assertEquals(listOf(60_000L, 40_000L), a.cuts.map { it.second })
+        // 예산을 다 줄여도 모자라는 경우
+        val big = listOf(spend(1, 10, 100_000), spend(3, 12, 450_000, planned = true))
+        val r2 = AvailableFundsCalculator.calculate(listOf(acc), big, listOf(budget(1, 10, 150_000)), period)
+        val a2 = r2.adjust!!
+        org.junit.Assert.assertEquals(50_000L, a2.reducible)
+        org.junit.Assert.assertTrue(a2.shortAfterAll > 0)
+    }
+}
