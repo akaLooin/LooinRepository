@@ -68,6 +68,12 @@ export class UI {
       if (t.id === 'cname') this.draft.name = t.value;
     });
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.root.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const inp = document.getElementById('chatin') as HTMLInputElement | null;
+      const text = inp?.value.trim();
+      if (inp && text) { this.game.say(text); inp.value = ''; }
+    });
     addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.panel && this.panel !== 'afk') { this.panel = null; this.refresh(); }
     });
@@ -100,6 +106,11 @@ export class UI {
     box.appendChild(d);
     while (box.children.length > 5) box.firstChild!.remove();
     setTimeout(() => d.remove(), 2600);
+  }
+
+  /** 다른 사람의 채팅: 채팅 창이 닫혀 있으면 알림으로 */
+  onChat(l: { id?: string; from: string; text: string }) {
+    if (this.panel !== 'chat' && l.id !== this.game.liveId) this.toast(`${l.from}: ${l.text}`);
   }
 
   onEvent(e: WorldEvent) {
@@ -171,6 +182,13 @@ export class UI {
 
     this.show('modal', !!this.panel);
     if (this.panel) this.put('modal', this.panelHtml(c));
+    if (this.panel === 'chat' && document.getElementById('chatlog')) {
+      const log = g.chat.map((l) => `<div><b class="${l.id === g.liveId ? 'ui-accent' : ''}">${esc(l.from)}</b> ${esc(l.text)}</div>`).join('') || '<span class="ui-muted">아직 대화가 없습니다.</span>';
+      if (this.last.chatlog !== log) {
+        this.put('chatlog', log);
+        const el = document.getElementById('chatlog')!; el.scrollTop = el.scrollHeight;
+      }
+    }
   }
 
   private titleHtml(): string {
@@ -338,7 +356,11 @@ export class UI {
       }
 
       case 'chat':
-        return win('채팅', '<p class="ui-muted">채팅은 온라인 기능과 함께 열립니다.</p>');
+        // 입력칸은 그대로 두고 대화 목록만 따로 갱신한다(쓰는 중에 글이 지워지지 않도록)
+        if (g.netState !== 'online') return win('채팅', '<p class="ui-muted">채팅은 서버에 연결되어 있을 때 쓸 수 있습니다.</p>');
+        return win('채팅 <span class="ui-xs ui-muted">모든 맵</span>', `<div id="chatlog" class="chatlog" aria-live="polite"></div>
+          <form class="ui-row" data-chat style="margin-top:var(--sp-3)"><input id="chatin" class="ui-input ui-grow" maxlength="120" placeholder="할 말을 입력하세요" autocomplete="off" aria-label="채팅 입력">
+          <button class="ui-btn primary" type="submit">보내기</button></form>`);
 
       case 'menu':
         return win('메뉴', `<div class="stack">

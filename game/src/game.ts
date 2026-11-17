@@ -6,7 +6,7 @@ import { MAPS } from './core/data';
 import { Rng } from './core/rng';
 import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
-import { Net, SyncBody } from './net';
+import { ChatLine, Live, Net, RemoteInfo, SyncBody } from './net';
 
 export interface SaveBackend { load(): string | null; save(data: string): void }
 const store = (key: string): SaveBackend => ({
@@ -32,6 +32,12 @@ export class Game {
   onEvent: (e: WorldEvent) => void = () => {};
   onAfk: (r: AfkReport, c: Character) => void = () => {};
   onNet: (s: NetState, msg?: string) => void = () => {};
+  /** 같은 맵의 다른 플레이어(서버가 중계). 렌더러가 읽어 그린다 */
+  others = new Map<string, RemoteInfo & { seen: number }>();
+  chat: ChatLine[] = [];
+  onChat: (l: ChatLine) => void = () => {};
+  private live: Live | null = null;
+  private posT = 0; private lastPos = '';
   private rng = new Rng(Date.now());
   private saveT = 0; private syncT = 0; private retryT = 0;
   private net: Net | null = null;
@@ -53,10 +59,36 @@ export class Game {
       const { account } = await this.net.account();
       this.adopt(account);
       this.setNet('online');
+      this.openLive();
     } catch (e) {
       this.setNet('offline', (e as Error).message);
     }
   }
+  private openLive() {
+    if (this.live || !this.net) return;
+    const net = this.net;
+    const live = (this.live = new Live(() => net.liveUrl()));
+    const t = () => Date.now();
+    live.onState = (ps) => { this.others.clear(); for (const p of ps) this.others.set(p.id, { ...p, seen: t() }); };
+    live.onJoin = (p) => this.others.set(p.id, { ...p, seen: t() });
+    live.onPos = (p) => { const o = this.others.get(p.id); if (o) Object.assign(o, p, { seen: t() }); };
+    live.onLeft = (id) => this.others.delete(id);
+    live.onHistory = (ls) => { this.chat = ls.slice(-50); };
+    live.onChat = (l) => { this.chat.push(l); if (this.chat.length > 50) this.chat.shift(); this.onChat(l); };
+    live.onNotice = (m) => this.onEvent({ t: 'loot', text: m });
+    live.open();
+    if (this.char) this.joinLive();
+  }
+  private joinLive() {
+    const c = this.char;
+    if (!c || !this.live) return;
+    this.others.clear();
+    this.live.join({ map: c.mapId, name: c.name, look: c.look, cls: c.cls, level: c.level });
+  }
+  say(text: string) { this.live?.say(text); }
+  get liveId() { return this.live?.myId ?? ''; }
+  get liveOn() { return !!this.live?.connected; }
+
   private setNet(s: NetState, msg?: string) { this.netState = s; this.onNet(s, msg); }
   private get online() { return this.net && this.netState === 'online'; }
   /** 서버 상태를 받아들인다(서버가 기준) */
@@ -130,6 +162,7 @@ export class Game {
     }
     this.acc.active = -1;
     this.world = null;
+    this.others.clear();
     this.save();
     this.onWorld(null);
   }
@@ -137,6 +170,7 @@ export class Game {
   private enterWorld() {
     this.world = new World(this.acc, this.char!, this.rng);
     this.syncT = 0;
+    this.joinLive();
     this.onWorld(this.world);
   }
 
@@ -203,6 +237,15 @@ export class Game {
     if (this.saveT > 5) { this.saveT = 0; this.save(); }
     this.syncT += dt;
     if (this.syncT > SYNC_EVERY) { this.syncT = 0; this.pushSync(); }
+    // 내 위치를 초당 8번까지, 바뀌었을 때만
+    this.posT += dt;
+    if (this.live && this.posT > 0.125) {
+      this.posT = 0;
+      const p = w.player;
+      const msg = { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10, f: p.facing, m: Math.abs(p.vx) > 6, g: p.onGround, r: p.rope >= 0, s: p.swingId, k: p.swingKind };
+      const key = JSON.stringify(msg);
+      if (key !== this.lastPos) { this.lastPos = key; this.live.pos(msg); }
+    }
   }
 
   save() {

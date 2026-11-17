@@ -23,6 +23,7 @@ async function boot() {
     else if (st === 'offline') ui.toast(`오프라인으로 진행합니다${msg ? ` — ${msg}` : ''}`);
     ui.refresh(true);
   };
+  game.onChat = (l) => { if (l.id) scene.bubble(l.id === game.liveId ? 'me' : l.id, l.text); ui.onChat(l); };
   game.connect().then(() => ui.refresh(true));
 
   const dpr = () => Math.min(window.devicePixelRatio || 1, 3);

@@ -2,10 +2,10 @@
 import Phaser from 'phaser';
 import { MAPS } from '../core/data';
 import { Look } from '../core/state';
-import { HURT_TIME, Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core/world';
+import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
 import { HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
-import { currentQuest, questProgress } from '../core/state';
+import { Character, currentQuest, questProgress } from '../core/state';
 import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
@@ -21,6 +21,9 @@ function label(scene: Phaser.Scene, text: string, size = 7, color = '#ffffff') {
 }
 
 // ───────── 캐릭터 리그 ─────────
+/** 리그가 읽는 값(내 캐릭터는 World.player, 다른 플레이어는 네트워크로 받은 값) */
+type RigPlayer = Pick<Player, 'x' | 'y' | 'vx' | 'vy' | 'onGround' | 'facing' | 'swingT' | 'swingKind' | 'dead' | 'hurtT' | 'rope'>;
+type RigChar = Pick<Character, 'equipment' | 'cls'>;
 class CharRig {
   root: Phaser.GameObjects.Container;
   private body: Phaser.GameObjects.Container;
@@ -53,8 +56,8 @@ class CharRig {
     this.root = scene.add.container(0, 0, [this.shadow, this.body, this.name]).setDepth(50);
   }
 
-  update(dt: number, w: World) {
-    const p = w.player, c = w.char, P = this.pose;
+  update(dt: number, p: RigPlayer, c: RigChar) {
+    const P = this.pose;
     this.t += dt;
     const moving = Math.abs(p.vx) > 6 && p.onGround && p.swingT <= 0;
     const dead = p.dead > 0;
@@ -267,6 +270,9 @@ function ensureTextures(scene: Phaser.Scene) {
 export class GameScene extends Phaser.Scene {
   private world: World | null = null;
   private rig: CharRig | null = null;
+  /** 다른 플레이어: 받은 위치로 부드럽게 따라가며 같은 리그로 그린다 */
+  private remotes = new Map<string, { rig: CharRig; p: RigPlayer; cls: string; lastSwing: number; seen: number }>();
+  private bubbles = new Map<string, { text: Phaser.GameObjects.Text; t: number }>();
   private mobs: MobView[] = [];
   private nodeViews: NodeView[] = [];
   private dropViews = new Map<number, Img>();
@@ -289,7 +295,8 @@ export class GameScene extends Phaser.Scene {
   create() {
     buildAll();
     ensureTextures(this);
-    this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE') as Record<string, Phaser.Input.Keyboard.Key>;
+    // enableCapture=false: 입력칸(이름·채팅)에 W·A·S·D·스페이스를 칠 수 있도록 키를 가로채지 않는다
+    this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.scale.on('resize', () => this.fitCamera());
     document.getElementById('game')!.addEventListener('pointerdown', (e) => this.onTap(e));
     this.fitCamera();
@@ -308,6 +315,10 @@ export class GameScene extends Phaser.Scene {
     this.pending = undefined;
     this.world = w;
     this.rig?.destroy(); this.rig = null;
+    for (const r of this.remotes.values()) r.rig.destroy();
+    this.remotes.clear();
+    for (const b of this.bubbles.values()) b.text.destroy();
+    this.bubbles.clear();
     for (const o of this.statics) o.destroy();
     for (const v of this.mobs) v.root.destroy();
     for (const v of this.nodeViews) v.destroy();
@@ -487,13 +498,16 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(deltaMs / 1000, 0.05), g = this.game_, k = this.keys;
     this.time0 += dt;
     // 키보드 입력 합치기 (PC)
-    g.input.move = (k.LEFT.isDown || k.A.isDown ? -1 : 0) + (k.RIGHT.isDown || k.D.isDown ? 1 : 0);
-    g.input.climb = (k.UP.isDown || k.W.isDown ? -1 : 0) + (k.DOWN.isDown || k.S.isDown ? 1 : 0);
+    // 입력칸에 글을 쓰는 중이면 키보드로 움직이지 않는다
+    const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+    g.input.move = typing ? 0 : (k.LEFT.isDown || k.A.isDown ? -1 : 0) + (k.RIGHT.isDown || k.D.isDown ? 1 : 0);
+    g.input.climb = typing ? 0 : (k.UP.isDown || k.W.isDown ? -1 : 0) + (k.DOWN.isDown || k.S.isDown ? 1 : 0);
     g.tick(dt);
 
     const w = this.world;
     if (!w || w !== g.world) return;
-    this.rig?.update(dt, w);
+    this.rig?.update(dt, w.player, w.char);
+    this.updateOthers(dt, w);
     for (const v of this.mobs) v.update(dt);
     for (const v of this.nodeViews) v.update(dt);
     this.syncDrops(w);
@@ -540,6 +554,45 @@ export class GameScene extends Phaser.Scene {
       const x = (((c.x + this.time0 * c.sp - left * 0.08) % span) + span) % span;
       c.img.setPosition(left - 60 + x, c.y);
     }
+  }
+
+  private updateOthers(dt: number, w: World) {
+    const others = this.game_.others;
+    for (const [id, r] of this.remotes) if (!others.has(id)) { r.rig.destroy(); this.remotes.delete(id); }
+    for (const [id, o] of others) {
+      if (o.map !== w.map.id) continue;
+      let r = this.remotes.get(id);
+      if (!r) {
+        r = { rig: new CharRig(this, o.look, o.name), p: { x: o.x, y: o.y, vx: 0, vy: 0, onGround: true, facing: o.f, swingT: 0, swingKind: 'attack', dead: 0, hurtT: 0, rope: -1 }, cls: o.cls, lastSwing: o.s, seen: 0 };
+        r.rig.root.setAlpha(0.88).setDepth(45);
+        this.remotes.set(id, r);
+      }
+      const p = r.p;
+      // 받은 위치 쪽으로 부드럽게(네트워크 간격이 있어도 끊기지 않게)
+      const nx = p.x + (o.x - p.x) * (1 - Math.exp(-dt * 12)), ny = p.y + (o.y - p.y) * (1 - Math.exp(-dt * 12));
+      p.vx = o.m ? (nx - p.x) / Math.max(dt, 1e-3) || o.f * 60 : 0;
+      if (Math.abs(o.x - p.x) > 200) { p.x = o.x; p.y = o.y; } else { p.x = nx; p.y = ny; }
+      p.facing = o.f; p.onGround = o.g; p.rope = o.r ? 0 : -1; p.vy = o.g ? 0 : o.y < p.y ? -1 : 1;
+      if (o.s !== r.lastSwing) { r.lastSwing = o.s; p.swingT = SWING_TIME; p.swingKind = o.k as SwingKind; }
+      p.swingT = Math.max(0, p.swingT - dt);
+      r.rig.update(dt, p, { equipment: { weapon: o.cls === 'archer' ? 'bow_wood' : o.cls === 'mage' ? 'wand_wood' : 'sword_wood' }, cls: o.cls as Character['cls'] });
+    }
+    // 말풍선: 말한 사람 머리 위에 4초
+    for (const [id, b] of this.bubbles) {
+      b.t -= dt;
+      const at = id === 'me' ? w.player : this.remotes.get(id)?.p;
+      if (b.t <= 0 || !at) { b.text.destroy(); this.bubbles.delete(id); continue; }
+      b.text.setPosition(at.x, at.y - 40).setAlpha(Math.min(1, b.t * 2));
+    }
+  }
+
+  /** 채팅 말풍선 */
+  bubble(id: string | 'me', text: string) {
+    this.bubbles.get(id)?.text.destroy();
+    const t = this.add.text(0, 0, text.length > 24 ? text.slice(0, 23) + '…' : text, {
+      fontFamily: FONT, fontSize: `${11 * TS}px`, color: '#2b1d2e', backgroundColor: '#fff6e6', padding: { x: 3 * TS, y: 2 * TS },
+    }).setOrigin(0.5, 1).setScale(6 / (11 * TS)).setDepth(97);
+    this.bubbles.set(id, { text: t, t: 4 });
   }
 
   private syncShots(w: World) {

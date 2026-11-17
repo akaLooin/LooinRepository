@@ -9,7 +9,7 @@ export interface SyncBody { character: Character; coins: number; cards: Record<s
 export class NetError extends Error { constructor(msg: string, readonly status = 0) { super(msg); } }
 
 export class Net {
-  private token = '';
+  token = '';
   private queue: Promise<unknown> = Promise.resolve();
   constructor(readonly base: string) {}
 
@@ -53,4 +53,59 @@ export class Net {
     return this.send<ActionResult & { account?: Account; reason?: string }>('POST', `/characters/${i}/action`, { commandId: crypto.randomUUID(), action, sync });
   }
   remove() { return this.send<{ ok: boolean }>('DELETE', '/account'); }
+  /** 실시간 연결 주소(토큰은 주소에: 브라우저 WebSocket 은 헤더를 못 넣는다) */
+  liveUrl() { return `${this.base.replace(/^http/, 'ws')}/live?token=${encodeURIComponent(this.token)}`; }
+}
+
+// ───────── 실시간(같은 맵 플레이어·채팅) ─────────
+export interface RemoteInfo {
+  id: string; map: string; name: string; look: Look; cls: string; level: number;
+  x: number; y: number; f: 1 | -1; m: boolean; g: boolean; r: boolean; s: number; k: string;
+}
+export interface ChatLine { id?: string; from: string; text: string; at: number; map?: string }
+
+export class Live {
+  private ws: WebSocket | null = null;
+  private closed = false;
+  private retry = 1000;
+  private joinMsg: unknown = null;
+  myId = '';
+  onState: (players: RemoteInfo[]) => void = () => {};
+  onJoin: (p: RemoteInfo) => void = () => {};
+  onPos: (p: Partial<RemoteInfo> & { id: string }) => void = () => {};
+  onLeft: (id: string) => void = () => {};
+  onChat: (l: ChatLine) => void = () => {};
+  onHistory: (l: ChatLine[]) => void = () => {};
+  onNotice: (msg: string) => void = () => {};
+  constructor(private url: () => string) {}
+  open() {
+    this.closed = false;
+    let ws: WebSocket;
+    try { ws = new WebSocket(this.url()); } catch { return; }
+    this.ws = ws;
+    ws.onopen = () => { this.retry = 1000; if (this.joinMsg) ws.send(JSON.stringify(this.joinMsg)); };
+    ws.onmessage = (ev) => {
+      let m: Record<string, unknown>;
+      try { m = JSON.parse(String(ev.data)); } catch { return; }
+      if (m.t === 'hello') { this.myId = String(m.id); this.onHistory((m.history as ChatLine[]) ?? []); }
+      else if (m.t === 'state') this.onState(m.players as RemoteInfo[]);
+      else if (m.t === 'join') this.onJoin(m.player as RemoteInfo);
+      else if (m.t === 'pos') this.onPos(m as unknown as RemoteInfo);
+      else if (m.t === 'left') this.onLeft(String(m.id));
+      else if (m.t === 'chat') this.onChat(m as unknown as ChatLine);
+      else if (m.t === 'slow') this.onNotice('채팅은 조금 천천히 보내 주세요');
+      else if (m.t === 'full') this.onNotice('이 맵에 사람이 너무 많아 다른 플레이어가 보이지 않습니다');
+    };
+    ws.onclose = () => {
+      this.ws = null;
+      this.onState([]);
+      if (!this.closed) { setTimeout(() => !this.closed && this.open(), this.retry); this.retry = Math.min(30000, this.retry * 2); }
+    };
+  }
+  close() { this.closed = true; this.ws?.close(); this.ws = null; }
+  private send(m: unknown) { if (this.ws?.readyState === 1) this.ws.send(JSON.stringify(m)); }
+  join(info: { map: string; name: string; look: Look; cls: string; level: number }) { this.joinMsg = { t: 'join', ...info }; this.send(this.joinMsg); }
+  pos(p: { x: number; y: number; f: 1 | -1; m: boolean; g: boolean; r: boolean; s: number; k: string }) { this.send({ t: 'pos', ...p }); }
+  say(text: string) { this.send({ t: 'say', text }); }
+  get connected() { return this.ws?.readyState === 1; }
 }

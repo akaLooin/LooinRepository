@@ -1,6 +1,7 @@
 // HTTP API. 모든 게임 규칙은 game/src/core 를 그대로 가져다 쓴다(기기와 서버가 같은 코드).
 // 원칙: 보상이 생기는 순간(방치 보상, 접속 중 플레이 기록)은 서버 시계로 서버가 계산·검증한다.
 import cors from '@fastify/cors';
+import websocket from '@fastify/websocket';
 import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
 import { SignJWT, jwtVerify } from 'jose';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
@@ -11,6 +12,7 @@ import { HAIR_STYLES, MAX_CHARACTERS } from '../../game/src/core/data';
 import { Rng } from '../../game/src/core/rng';
 import { Account, Character, createCharacter, deserialize, newAccount, serialize } from '../../game/src/core/state';
 import { SyncAccount, acceptSync, checkSync } from '../../game/src/core/sync';
+import { registerLive } from './live';
 import { Store } from './store';
 
 export interface AppOptions {
@@ -82,6 +84,8 @@ export function buildApp(o: AppOptions) {
   const key = new TextEncoder().encode(o.secret);
   const app = Fastify({ logger: o.logger ?? false, bodyLimit: 256 * 1024 });
   app.register(cors, { origin: o.origins ?? true });
+  app.register(websocket);
+  app.register(async (inst) => registerLive(inst, key, now));
   const authLimit = new Limiter(10, 60_000), writeLimit = new Limiter(120, 10_000);
   // 같은 계정의 요청은 차례대로 처리(한 인스턴스 안). 여러 인스턴스 사이는 version 으로 막는다
   const locks = new Map<string, Promise<unknown>>();

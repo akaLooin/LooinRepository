@@ -98,3 +98,8 @@ html, body {
 .prodslot[aria-selected="true"] { border-color: var(--c-accent); box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
 .prodslot.locked { justify-content: center; opacity: .55; cursor: default; }
 .subtabs { display: flex; gap: var(--sp-2); }
+
+/* 채팅 */
+.chatlog { height: 40vh; overflow-y: auto; touch-action: pan-y; padding: var(--sp-3); background: var(--c-surface-inset); border-radius: var(--r-md);
+  box-shadow: var(--sh-inset); font-size: var(--fs-sm); display: flex; flex-direction: column; gap: var(--sp-1); user-select: text; -webkit-user-select: text; }
+#chatin { user-select: text; -webkit-user-select: text; }
