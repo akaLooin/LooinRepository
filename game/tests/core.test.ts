@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { computeAfk } from '../src/core/afk';
-import { MAPS, RECIPES } from '../src/core/data';
+import { MAPS, MONSTERS, RECIPES } from '../src/core/data';
 import { Rng } from '../src/core/rng';
 import {
   addItem, countItem, craft, createCharacter, derive, deserialize, equipItem, gainXp, newAccount, serialize,
-  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, learnTalent, questProgress,
+  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, dmgTaken, hitChance, setFood, learnTalent, questProgress,
 } from '../src/core/state';
 import { World } from '../src/core/world';
 
@@ -69,7 +69,7 @@ describe('월드 시뮬레이션', () => {
     for (const map of Object.values(MAPS)) {
       if (!map.spawns.length) continue;
       const { acc, c } = setup();
-      c.mapId = map.id; c.auto = true; c.level = 60; c.stats.str = 200;
+      c.mapId = map.id; c.auto = true; c.level = 60; c.stats.luk = 200; // 초보자는 행운이 공격력
       const w = new World(acc, c, new Rng(3));
       const seen = new Set<number>();
       for (let i = 0; i < 180 * 60; i++) {
@@ -279,5 +279,63 @@ describe('전직과 카드', () => {
     c.mapId = 'meadow'; c.auto = true;
     const r = computeAfk(acc, c, 12 * 3600_000, new Rng(1))!;
     expect(r.cards.length).toBeGreaterThan(0);
+  });
+});
+
+describe('전투 공식', () => {
+  it('명중률: 요구치의 절반 이하면 0%, 같으면 100%', () => {
+    expect(hitChance(5, 10)).toBe(0);
+    expect(hitChance(7.5, 10)).toBeCloseTo(0.5);
+    expect(hitChance(10, 10)).toBe(1);
+    expect(hitChance(30, 10)).toBe(1);
+  });
+  it('방어력이 기준치를 넘으면 받는 피해 0', () => {
+    const m = MONSTERS.pebbler;
+    expect(dmgTaken(m, 0)).toBe(m.atk);
+    expect(dmgTaken(m, m.defZero / 2)).toBe(Math.ceil(m.atk / 2));
+    expect(dmgTaken(m, m.defZero)).toBe(0);
+    expect(dmgTaken(m, m.defZero * 3)).toBe(0);
+  });
+  it('명중이 모자라면 빗나감이 나오고, 전혀 못 맞히면 처치하지 못한다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'forest'; c.auto = true; c.level = 1;
+    const w = new World(acc, c, new Rng(2));
+    let miss = 0, hit = 0;
+    for (let i = 0; i < 30 * 60; i++) {
+      w.step(1 / 60, { move: 0, climb: 0 });
+      for (const e of w.events) if (e.t === 'dmg' && !e.onPlayer) (e.miss ? miss++ : hit++);
+      w.events.length = 0;
+    }
+    expect(miss).toBeGreaterThan(0);
+    expect(hit).toBe(0);
+    const r = computeAfk(acc, c, c.lastActive + 3600_000, new Rng(1))!;
+    expect(r.kills).toBe(0);
+  });
+  it('스킬은 마나를 쓰고, 마나가 모자라면 쓰지 못한다', () => {
+    const { acc, c } = setup();
+    c.talents.smash = 1; c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(4));
+    for (const m of w.mobs) { m.x = w.player.x + 20; m.y = 0; m.spawnAge = 1; }
+    const mp = c.mp;
+    expect(w.useSkill('smash')).toBe(true);
+    expect(c.mp).toBe(mp - 4);
+    w.player.cd.smash = 0; c.mp = 3;
+    expect(w.useSkill('smash')).toBe(false);
+  });
+  it('음식 칸: 체력이 낮으면 자동으로 먹는다', () => {
+    const { acc, c } = setup();
+    addItem(c, 'berry', 5);
+    expect(setFood(c, 'berry')).toBeNull();
+    expect(countItem(c, 'berry')).toBe(0);
+    expect(c.food).toEqual({ id: 'berry', qty: 5 });
+    const w = new World(acc, c, new Rng(1));
+    c.hp = 5;
+    w.step(1 / 60, { move: 0, climb: 0 });
+    expect(c.hp).toBeGreaterThan(19);
+    expect(c.food!.qty).toBe(4);
+    expect(w.events.some((e) => e.t === 'heal')).toBe(true);
+    expect(setFood(c, null)).toBeNull();
+    expect(countItem(c, 'berry')).toBe(4);
+    expect(setFood(c, 'log')).toMatch(/음식/);
   });
 });

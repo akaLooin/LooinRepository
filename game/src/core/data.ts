@@ -14,7 +14,9 @@ export interface ItemStats {
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
-  kind: 'material' | 'equip';
+  kind: 'material' | 'equip' | 'food';
+  /** 음식: 먹으면 회복하는 체력 */
+  heal?: number;
   slot?: EquipSlot; stats?: ItemStats; reqLv?: number; wtype?: WeaponType;
   sell: number;
 }
@@ -22,6 +24,10 @@ export interface DropDef { item: string; chance: number; qty: [number, number] }
 export interface MonsterDef {
   id: string; name: string; hp: number; atk: number; xp: number;
   coins: [number, number]; speed: number; drops: DropDef[];
+  /** 명중 요구치: 내 명중이 이 값이면 100% 명중, 절반 이하면 전혀 맞지 않는다 */
+  acc: number;
+  /** 이 방어력 이상이면 받는 피해가 0 */
+  defZero: number;
   /** 렌더러가 쓰는 움직임 유형 */
   motion: 'hop' | 'waddle' | 'float';
   radius: number;
@@ -51,8 +57,8 @@ export interface RecipeDef { item: string; coins: number; mats: [string, number]
 
 export const STAT_NAMES: Record<StatKey, string> = { str: '힘', agi: '민첩', wis: '지혜', luk: '행운' };
 export const STAT_DESC: Record<StatKey, string> = {
-  str: '공격력과 최대 체력 증가', agi: '공격/이동 속도 증가',
-  wis: '경험치 획득량과 채집 효율 증가', luk: '치명타와 드롭률 증가',
+  str: '최대 체력. 전사 공격력, 궁수 명중', agi: '공격·이동 속도. 궁수 공격력, 마법사 명중',
+  wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
@@ -63,6 +69,8 @@ const items: ItemDef[] = [
   { id: 'moss', name: '이끼 덩이', desc: '촉촉하고 폭신하다.', kind: 'material', sell: 1 },
   { id: 'pebble', name: '조약돌', desc: '손에 쏙 들어오는 돌.', kind: 'material', sell: 3 },
   { id: 'leaf', name: '마른 잎', desc: '바스락거리는 잎.', kind: 'material', sell: 8 },
+  { id: 'berry', name: '산딸기', desc: '먹으면 체력 15 회복.', kind: 'food', heal: 15, sell: 1 },
+  { id: 'mushroom', name: '숲 버섯', desc: '먹으면 체력 45 회복.', kind: 'food', heal: 45, sell: 4 },
   { id: 'log', name: '참나무 통나무', desc: '튼튼한 목재.', kind: 'material', sell: 2 },
   { id: 'ore', name: '붉은돌 광석', desc: '붉은 빛이 도는 광석.', kind: 'material', sell: 4 },
   { id: 'silverlog', name: '은빛 통나무', desc: '은은하게 빛나는 목재.', kind: 'material', sell: 9 },
@@ -81,12 +89,12 @@ const items: ItemDef[] = [
 export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) => [i.id, i]));
 
 const monsters: MonsterDef[] = [
-  { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
-    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }] },
-  { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
-    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }] },
-  { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
-    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }] },
+  { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
+    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }] },
+  { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
+    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }] },
+  { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
+    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }] },
 ];
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries(monsters.map((m) => [m.id, m]));
 
@@ -133,23 +141,23 @@ export const RECIPES: RecipeDef[] = [
 ];
 
 export interface TalentDef {
-  id: string; name: string; max: number; active?: { cooldown: number };
+  id: string; name: string; max: number; active?: { cooldown: number; mana: number };
   /** 지정하면 해당 직업 전용 */
   cls?: ClassId;
   /** 레벨에 따른 설명 */
   desc: (lv: number) => string;
 }
 export const TALENTS: TalentDef[] = [
-  { id: 'smash', name: '강타', max: 10, active: { cooldown: 6 }, desc: (lv) => `주변의 모든 적에게 ${180 + lv * 20}% 피해` },
-  { id: 'heal', name: '응급 처치', max: 10, active: { cooldown: 20 }, desc: (lv) => `체력을 ${25 + lv * 5}% 회복` },
+  { id: 'smash', name: '강타', max: 10, active: { cooldown: 6, mana: 4 }, desc: (lv) => `주변의 모든 적에게 ${180 + lv * 20}% 피해` },
+  { id: 'heal', name: '응급 처치', max: 10, active: { cooldown: 20, mana: 6 }, desc: (lv) => `체력을 ${25 + lv * 5}% 회복` },
   { id: 'sharp', name: '예리함', max: 10, desc: (lv) => `공격력 +${lv * 3}%` },
   { id: 'tough', name: '단련', max: 10, desc: (lv) => `최대 체력 +${lv * 4}%` },
   { id: 'worker', name: '일꾼의 손', max: 10, desc: (lv) => `채집 효율 +${lv * 5}%` },
-  { id: 'cleave', name: '분쇄 일격', max: 10, cls: 'warrior', active: { cooldown: 8 }, desc: (lv) => `넓은 범위의 적에게 ${300 + lv * 30}% 피해` },
+  { id: 'cleave', name: '분쇄 일격', max: 10, cls: 'warrior', active: { cooldown: 8, mana: 8 }, desc: (lv) => `넓은 범위의 적에게 ${300 + lv * 30}% 피해` },
   { id: 'ironskin', name: '강철 피부', max: 10, cls: 'warrior', desc: (lv) => `방어력 +${(lv * 1.5).toFixed(1)}` },
-  { id: 'volley', name: '연속 사격', max: 10, cls: 'archer', active: { cooldown: 8 }, desc: (lv) => `가까운 적 최대 4마리에게 ${150 + lv * 15}% 피해` },
+  { id: 'volley', name: '연속 사격', max: 10, cls: 'archer', active: { cooldown: 8, mana: 6 }, desc: (lv) => `가까운 적 최대 4마리에게 ${150 + lv * 15}% 피해` },
   { id: 'swift', name: '날랜 손', max: 10, cls: 'archer', desc: (lv) => `공격 속도 +${lv * 2}%` },
-  { id: 'nova', name: '별빛 폭발', max: 10, cls: 'mage', active: { cooldown: 10 }, desc: (lv) => `대상 주변의 모든 적에게 ${220 + lv * 25}% 피해` },
+  { id: 'nova', name: '별빛 폭발', max: 10, cls: 'mage', active: { cooldown: 10, mana: 10 }, desc: (lv) => `대상 주변의 모든 적에게 ${220 + lv * 25}% 피해` },
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
@@ -159,12 +167,13 @@ export const SMASH_RANGE = 46;
 export const CLEAVE_RANGE = 60;
 export const NOVA_RADIUS = 52;
 
-export interface ClassDef { id: ClassId; name: string; desc: string; main: StatKey; range: number; weapon: WeaponType; starter?: string }
+/** main: 공격력 능력치, acc: 명중 능력치 */
+export interface ClassDef { id: ClassId; name: string; desc: string; main: StatKey; acc: StatKey; range: number; weapon: WeaponType; starter?: string }
 export const CLASSES: Record<ClassId, ClassDef> = {
-  beginner: { id: 'beginner', name: '초보자', desc: '', main: 'str', range: 26, weapon: 'sword' },
-  warrior: { id: 'warrior', name: '전사', desc: '근접 전투. 힘이 공격력이 되고 튼튼하다.', main: 'str', range: 28, weapon: 'sword' },
-  archer: { id: 'archer', name: '궁수', desc: '활로 멀리서 공격. 민첩이 공격력이 된다.', main: 'agi', range: 115, weapon: 'bow', starter: 'bow_wood' },
-  mage: { id: 'mage', name: '마법사', desc: '지팡이로 마법 공격. 지혜가 공격력이 된다.', main: 'wis', range: 95, weapon: 'wand', starter: 'wand_wood' },
+  beginner: { id: 'beginner', name: '초보자', desc: '', main: 'luk', acc: 'luk', range: 26, weapon: 'sword' },
+  warrior: { id: 'warrior', name: '전사', desc: '근접 전투. 힘이 공격력, 지혜가 명중이 된다. 튼튼하다.', main: 'str', acc: 'wis', range: 28, weapon: 'sword' },
+  archer: { id: 'archer', name: '궁수', desc: '활로 멀리서 공격. 민첩이 공격력, 힘이 명중이 된다.', main: 'agi', acc: 'str', range: 115, weapon: 'bow', starter: 'bow_wood' },
+  mage: { id: 'mage', name: '마법사', desc: '지팡이로 마법 공격. 지혜가 공격력, 민첩이 명중이 된다.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', starter: 'wand_wood' },
 };
 export const CLASS_LEVEL = 10;
 

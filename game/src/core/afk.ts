@@ -4,7 +4,7 @@ import {
   AFK_EFFICIENCY, AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARDS, CARD_CHANCE, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES, SkillKey,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
+import { Account, Character, addItem, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
 
 export interface AfkReport {
   seconds: number; mapName: string; mode: 'fight' | 'gather' | 'rest';
@@ -49,15 +49,17 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     let killTime = 0, dps = 0;
     for (const s of map.spawns) {
       const m = MONSTERS[s.monster], w = s.count / total;
-      killTime += w * (Math.ceil(m.hp / avgHit) * d.atkInterval + (d.ranged ? TRAVEL * 0.5 : TRAVEL));
-      dps += w * (mitigate(m.atk, d.def) / 1.2) * 0.5;
+      // 빗나가면 그만큼 휘두르는 횟수가 늘어난다. 전혀 못 맞히는 몬스터는 처치하지 못한다.
+      const hit = hitChance(d.acc, m.acc);
+      killTime += w * (hit > 0 ? Math.ceil(m.hp / avgHit) / hit * d.atkInterval + (d.ranged ? TRAVEL * 0.5 : TRAVEL) : Infinity);
+      dps += w * (dmgTaken(m, d.def) / 1.2) * 0.5;
     }
     let uptime = 1;
     if (dps > d.regen) {
       const alive = d.maxHp / (dps - d.regen);
       uptime = alive / (alive + RESPAWN + TRAVEL);
     }
-    const kills = Math.floor((time * uptime) / killTime);
+    const kills = Number.isFinite(killTime) ? Math.floor((time * uptime) / killTime) : 0;
     rep.kills = kills;
     let xp = 0, coins = 0;
     for (const s of map.spawns) {
@@ -90,5 +92,6 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     }
   }
   c.hp = derive(c, acc.cards).maxHp;
+  c.mp = derive(c, acc.cards).maxMp;
   return rep;
 }

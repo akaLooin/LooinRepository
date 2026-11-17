@@ -387,15 +387,19 @@ export class GameScene extends Phaser.Scene {
   /** 월드 이벤트 연출 */
   handle(e: WorldEvent) {
     if (!this.world) return;
-    if (e.t === 'dmg') {
-      const col = e.onPlayer ? '#ff6b6b' : e.crit ? '#ffd84a' : '#ffffff';
-      const t = label(this, `${e.amount}${e.crit ? '!' : ''}`, e.crit ? 11 : 8.5, col).setPosition(e.x + (Math.random() - 0.5) * 8, e.y).setDepth(90);
+    if (e.t === 'heal') {
+      this.floatText(`+${e.amount}`, e.x, e.y, 8.5, '#8fde5d');
+    } else if (e.t === 'dmg') {
+      // 빗나감 / 막음(피해 0) / 일반 / 치명타
+      const col = e.miss ? '#c9bcd6' : e.onPlayer ? (e.amount ? '#ff6b6b' : '#a5d8ff') : e.crit ? '#ffd84a' : '#ffffff';
+      const txt = e.miss ? '빗나감' : e.onPlayer && !e.amount ? '막음' : `${e.amount}${e.crit ? '!' : ''}`;
+      const t = label(this, txt, e.crit ? 11 : e.miss ? 7 : 8.5, col).setPosition(e.x + (Math.random() - 0.5) * 8, e.y).setDepth(90);
       const s0 = t.scale;
       t.setScale(s0 * 0.4);
       this.tweens.add({ targets: t, scale: s0, duration: 160, ease: 'Back.easeOut' });
       this.tweens.add({ targets: t, y: e.y - 20, duration: 750, ease: 'Cubic.easeOut' });
       this.tweens.add({ targets: t, alpha: 0, delay: 480, duration: 270, onComplete: () => t.destroy() });
-      if (!e.onPlayer) this.puff(e.x, e.y + 8, 0xfff3b0, 3);
+      if (!e.onPlayer && !e.miss) this.puff(e.x, e.y + 8, 0xfff3b0, 3);
     } else if (e.t === 'level' || e.t === 'skill') {
       const p = this.world.player;
       const txt = e.t === 'level' ? 'LEVEL UP!' : `${e.name} Lv.${e.level}`;
@@ -430,6 +434,12 @@ export class GameScene extends Phaser.Scene {
     } else if (e.t === 'yield') {
       this.puff(e.x, e.y + 10, 0xe8c08a, 5);
     }
+  }
+
+  private floatText(txt: string, x: number, y: number, size: number, col: string) {
+    const t = label(this, txt, size, col).setPosition(x, y).setDepth(90);
+    this.tweens.add({ targets: t, y: y - 18, duration: 800, ease: 'Cubic.easeOut' });
+    this.tweens.add({ targets: t, alpha: 0, delay: 520, duration: 280, onComplete: () => t.destroy() });
   }
 
   puff(x: number, y: number, tint: number, n: number) {

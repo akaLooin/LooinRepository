@@ -8,7 +8,7 @@ import {
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
-  learnTalent, questProgress, sellItem, skillXpToNext, spendStat, unequipItem, xpToNext,
+  dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { Game } from '../game';
@@ -50,7 +50,7 @@ export class UI {
       <div id="skills" class="hidden"></div>
       <div id="toasts" aria-live="polite"></div>
       <div id="modal" class="hidden"></div>
-      <div id="bottom" class="ui-bottom hidden"></div>
+      <div id="bottom" class="ui-bottom hidden"><div id="bsum" class="ui-summary"></div><div id="bgauge" class="ui-gauges"></div><nav id="bmenu" class="ui-menu" aria-label="메뉴"></nav></div>
       <div id="title"></div>`;
     this.root.addEventListener('click', (e) => this.onClick(e));
     // 스킬 버튼은 누르는 즉시 발동
@@ -128,25 +128,24 @@ export class UI {
       ['talents', '특성', 'open:char', c.statPoints > 0 || c.talentPoints > 0], ['codex', '도감', 'open:codex', !!questProgress(c)?.done],
       ['map', '지도', 'open:map'], ['chat', '채팅', 'open:chat'], ['menu', '메뉴', 'open:menu'],
     ];
-    this.put('bottom', `
-      <div class="ui-summary"><div class="face"><img class="px" src="${portraitUrl(c.look)}" alt=""></div>
-        <div class="who"><b>${esc(c.name)}</b><span class="ui-muted">${CLASSES[c.cls].name}</span><span class="ui-accent">Lv.${c.level}</span></div></div>
-      <div class="ui-gauges">
-        <label>HP</label>${bar('hp', c.hp, d.maxHp, `${Math.ceil(c.hp)} / ${d.maxHp}`)}
-        <label>XP</label>${bar('xp', c.xp, need, `${c.xp.toLocaleString()} / ${need.toLocaleString()}`)}
-      </div>
-      <nav class="ui-menu" aria-label="메뉴">${menu.map(([ic, label, act, dot]) => {
-        const on = act === 'auto' ? c.auto : this.panel === act.slice(5);
-        return `<button class="ui-menubtn ${on ? 'on' : ''}" data-act="${act}" aria-label="${label}${dot ? ' (새 항목)' : ''}" ${act === 'auto' ? `aria-pressed="${c.auto}"` : ''}>${pixelIcon(ic)}<span>${label}</span>${dot ? '<i class="dot"></i>' : ''}</button>`;
-      }).join('')}</nav>`);
+    // 요약·게이지·버튼을 따로 갱신한다: 체력·마나가 차오를 때 버튼이 다시 만들어져 터치가 씹히지 않도록
+    this.put('bsum', `<div class="face"><img class="px" src="${portraitUrl(c.look)}" alt=""></div>
+      <div class="who"><b>${esc(c.name)}</b><span class="ui-muted">${CLASSES[c.cls].name}</span><span class="ui-accent">Lv.${c.level}</span></div>`);
+    this.put('bgauge', `<label>HP</label>${bar('hp', c.hp, d.maxHp, `${Math.ceil(c.hp)} / ${d.maxHp}`)}
+      <label>MP</label>${bar('mp', c.mp, d.maxMp, `${Math.floor(c.mp)} / ${d.maxMp}`)}
+      <label>XP</label>${bar('xp', c.xp, need, `${c.xp.toLocaleString()} / ${need.toLocaleString()}`)}`);
+    this.put('bmenu', menu.map(([ic, label, act, dot]) => {
+      const on = act === 'auto' ? c.auto : this.panel === act.slice(5);
+      return `<button class="ui-menubtn ${on ? 'on' : ''}" data-act="${act}" aria-label="${label}${dot ? ' (새 항목)' : ''}" ${act === 'auto' ? `aria-pressed="${c.auto}"` : ''}>${pixelIcon(ic)}<span>${label}</span>${dot ? '<i class="dot"></i>' : ''}</button>`;
+    }).join(''));
 
     const act = c.activity.k === 'gather' ? `${NODES[c.activity.node].name} 채집` : w.map.spawns.length ? '사냥' : '휴식';
     this.put('where', `<div class="ui-sm">${w.map.name} <span class="ui-muted">· ${act}</span></div><div class="ui-accent">${icon('coin')} ${g.acc.coins.toLocaleString()}</div>`);
 
     // 공격 바: 배운 액티브 스킬(원형 칸)
     this.put('skills', TALENTS.filter((t) => t.active && c.talents[t.id] && (!t.cls || t.cls === c.cls)).map((t) => {
-      const cd = w.player.cd[t.id] ?? 0;
-      return `<button class="ui-slot round skill" data-skill="${t.id}" aria-label="${t.name}${cd > 0 ? ` (${Math.ceil(cd)}초)` : ''}"><span class="nm">${t.name}</span>${cd > 0 ? `<span class="cool">${Math.ceil(cd)}</span>` : ''}</button>`;
+      const cd = w.player.cd[t.id] ?? 0, low = c.mp < t.active!.mana;
+      return `<button class="ui-slot round skill ${low ? 'nomp' : ''}" data-skill="${t.id}" aria-label="${t.name}${cd > 0 ? ` (${Math.ceil(cd)}초)` : low ? ' (마나 부족)' : ''}"><span class="nm">${t.name}</span>${cd > 0 ? `<span class="cool">${Math.ceil(cd)}</span>` : ''}</button>`;
     }).join(''));
 
     const q = currentQuest(c), qp = questProgress(c);
@@ -224,6 +223,8 @@ export class UI {
           const id = c.equipment[s];
           return `<button class="ui-slot ${id ? '' : 'empty'}" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) : ''}<span class="lv">${SLOT_NAMES[s]}</span></button>`;
         }).join('');
+        const f = c.food;
+        const food = `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food" aria-selected="${this.sel === 'food'}" aria-label="음식 칸${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>` : ''}<span class="lv">음식</span></button>`;
         let cells = '';
         for (let i = 0; i < INVENTORY_SIZE; i++) {
           const s = c.inventory[i];
@@ -231,7 +232,11 @@ export class UI {
             : '<div class="ui-slot empty"></div>';
         }
         let detail = '<span class="ui-sm ui-muted">칸을 고르면 자세한 정보가 나옵니다.</span>';
-        if (this.sel?.startsWith('eq:')) {
+        if (this.sel === 'food') {
+          detail = f ? `<div class="ui-row"><span class="ui-slot">${icon(f.id)}</span><div><b>${ITEMS[f.id].name}</b><div class="ui-xs ui-muted">음식 칸 · ${f.qty}개</div></div></div>
+            <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다.</span>
+            <button class="ui-btn" data-act="food:">가방으로</button>` : '<span class="ui-sm ui-muted">음식을 넣어 두면 체력이 낮을 때 자동으로 먹습니다.</span>';
+        } else if (this.sel?.startsWith('eq:')) {
           const slot = this.sel.slice(3) as EquipSlot, id = c.equipment[slot];
           if (id) detail = `<div class="ui-row"><span class="ui-slot">${icon(id)}</span><div><b>${ITEMS[id].name}</b><div class="ui-xs ui-muted">${SLOT_NAMES[slot]} · 장착 중</div></div></div>
             <span class="ui-sm">${ITEMS[id].desc}</span><span class="ui-sm ui-good">${statLine(id)}</span>
@@ -242,12 +247,12 @@ export class UI {
             <span class="ui-sm">${it.desc}</span>
             ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
-            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success" data-act="equip:${it.id}">장착</button>` : ''}
+            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success" data-act="equip:${it.id}">장착</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success" data-act="food:${it.id}">음식 칸에 넣기</button>` : ''}
               <button class="ui-btn sm" data-act="sell:${it.id}:1">판매 ${it.sell}</button>
               ${n > 1 ? `<button class="ui-btn sm" data-act="sell:${it.id}:${n}">전부 판매 ${it.sell * n}</button>` : ''}</div>`;
         }
         return win(`아이템 <span class="ui-sm ui-muted">${c.inventory.length}/${INVENTORY_SIZE}</span>`, `
-          <div class="split"><div><h3>장비</h3><div class="ui-grid eq">${eq}</div><h3>가방</h3><div class="ui-grid bag">${cells}</div></div>
+          <div class="split"><div><h3>장비</h3><div class="ui-grid eq">${eq}${food}</div><h3>가방</h3><div class="ui-grid bag">${cells}</div></div>
           <div class="ui-detail">${detail}</div></div>`);
       }
 
@@ -261,7 +266,7 @@ export class UI {
         const list = act.map((t) => {
           const lv = c.talents[t.id] ?? 0;
           return `<div class="ui-detail"><div class="ui-row"><b class="ui-grow">${t.name}</b><span class="ui-sm ${lv ? 'ui-accent' : 'ui-muted'}">${lv ? `Lv.${lv}` : '미습득'}</span></div>
-            <span class="ui-sm">${t.desc(Math.max(1, lv))}</span><span class="ui-xs ui-muted">재사용 ${t.active!.cooldown}초</span></div>`;
+            <span class="ui-sm">${t.desc(Math.max(1, lv))}</span><span class="ui-xs ui-muted">마나 ${t.active!.mana} · 재사용 ${t.active!.cooldown}초</span></div>`;
         }).join('');
         return win('공격', `<p class="ui-sm ui-muted">배운 액티브 특성은 화면 오른쪽 아래 공격 칸에 놓입니다. 자동 모드에서는 알아서 사용합니다.</p><div class="stack">${list}</div>`);
       }
@@ -364,16 +369,29 @@ export class UI {
     return `<div class="split"><div><div class="ui-row"><span class="ui-grow">남은 포인트</span><b class="ui-accent ui-lg">${c.statPoints}</b></div>${stats}<h3>기술</h3>${skills}</div>
       <div class="ui-detail"><h3>세부 능력치</h3><div class="ui-kv">
         <span>공격력</span><span>${Math.round(d.dmg * 0.8)}~${Math.round(d.dmg * 1.2)}</span><span>최대 체력</span><span>${d.maxHp}</span>
+        <span>최대 마나</span><span>${d.maxMp}</span><span>명중</span><span>${d.acc}</span>
         <span>방어력</span><span>${d.def.toFixed(1)}</span><span>공격 속도</span><span>${(1 / d.atkInterval).toFixed(2)}/초</span>
         <span>치명타</span><span>${(d.crit * 100).toFixed(1)}%</span><span>이동 속도</span><span>${Math.round(d.speed)}</span>
-        <span>경험치 배율</span><span>×${d.xpMult.toFixed(2)}</span><span>드롭 배율</span><span>×${d.dropMult.toFixed(2)}</span></div></div></div>`;
+        <span>경험치 배율</span><span>×${d.xpMult.toFixed(2)}</span><span>드롭 배율</span><span>×${d.dropMult.toFixed(2)}</span></div>
+        ${this.vsHtml(c, d)}</div></div>`;
+  }
+
+  /** 현재 맵 몬스터 상대로 명중률과 받는 피해 */
+  private vsHtml(c: Character, d: ReturnType<typeof derive>): string {
+    const map = MAPS[c.mapId];
+    if (!map.spawns.length) return '';
+    const rows = [...new Set(map.spawns.map((s) => s.monster))].map((id) => {
+      const m = MONSTERS[id], hit = hitChance(d.acc, m.acc), taken = dmgTaken(m, d.def);
+      return `<span>${m.name}</span><span><span class="${hit >= 1 ? 'ui-good' : hit > 0 ? '' : 'ui-bad'}">명중 ${Math.round(hit * 100)}%</span> · <span class="${taken ? '' : 'ui-good'}">피해 ${taken}</span></span>`;
+    }).join('');
+    return `<h3>${map.name}</h3><div class="ui-kv">${rows}</div><p class="ui-xs ui-muted">명중이 몬스터 요구치의 절반 이하면 전혀 맞지 않습니다. 방어력이 충분하면 피해가 0이 됩니다.</p>`;
   }
 
   private talentsHtml(c: Character): string {
     const list = TALENTS.filter((t) => !t.cls || t.cls === c.cls).map((t) => {
       const lv = c.talents[t.id] ?? 0;
       return `<div class="ui-row line"><div class="ui-grow"><b>${t.name}</b> <span class="ui-xs ui-accent">Lv.${lv}/${t.max}</span>
-        ${t.cls ? `<span class="ui-xs ui-good">${CLASSES[t.cls].name} 전용</span>` : ''} <span class="ui-xs ui-muted">${t.active ? `액티브 · 재사용 ${t.active.cooldown}초` : '패시브'}</span>
+        ${t.cls ? `<span class="ui-xs ui-good">${CLASSES[t.cls].name} 전용</span>` : ''} <span class="ui-xs ui-muted">${t.active ? `액티브 · 마나 ${t.active.mana} · 재사용 ${t.active.cooldown}초` : '패시브'}</span>
         <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${t.desc(Math.max(1, lv))}</div>
         ${lv && lv < t.max ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}</div>
         <button class="ui-btn sm primary" data-act="talent:${t.id}" aria-label="${t.name} 올리기" ${c.talentPoints && lv < t.max ? '' : 'disabled'}>＋</button></div>`;
@@ -412,6 +430,7 @@ export class UI {
       case 'class': if (c) { const err = advanceClass(c, a as ClassId); fail(err); if (!err) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'char'; this.tab.char = 1; } } break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
       case 'equip': if (c) { fail(equipItem(c, a)); this.sel = null; } break;
+      case 'food': if (c) { fail(setFood(c, a || null)); this.sel = a ? 'food' : null; } break;
       case 'unequip': if (c) { fail(unequipItem(c, a as EquipSlot)); this.sel = null; } break;
       case 'sell': if (c) { const gain = sellItem(g.acc, c, a, +b); if (gain) this.toast(`+${gain} 코인`, 'coin'); } break;
       case 'stat': if (c) spendStat(c, a as StatKey); break;

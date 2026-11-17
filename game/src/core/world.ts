@@ -4,7 +4,7 @@ import {
   SKILL_NAMES, SMASH_RANGE, TALENT, TALENTS, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, derive, gainSkillXp, gainXp, mitigate, noteKill } from './state';
+import { Account, Character, Derived, addItem, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -42,7 +42,8 @@ export interface NodeInst { uid: number; def: NodeDef; x: number; y: number; pro
 export interface Shot { uid: number; kind: 'arrow' | 'orb'; x: number; y: number; target: Mob; mult: number; angle: number }
 
 export type WorldEvent =
-  | { t: 'dmg'; x: number; y: number; amount: number; crit: boolean; onPlayer: boolean }
+  | { t: 'dmg'; x: number; y: number; amount: number; crit: boolean; onPlayer: boolean; miss?: boolean }
+  | { t: 'heal'; x: number; y: number; amount: number; food?: string }
   | { t: 'kill'; uid: number; x: number; y: number }
   | { t: 'loot'; text: string; item?: string }
   | { t: 'level'; level: number }
@@ -170,8 +171,8 @@ export class World {
   /** 액티브 스킬 사용. 성공 여부 반환 */
   useSkill(id: string): boolean {
     const p = this.player, c = this.char, lv = c.talents[id] ?? 0, t = TALENT[id];
-    if (!t?.active || lv <= 0 || p.dead > 0 || (p.cd[id] ?? 0) > 0) return false;
     const d = this.d;
+    if (!t?.active || lv <= 0 || p.dead > 0 || (p.cd[id] ?? 0) > 0 || c.mp < t.active.mana) return false;
     const live = (r: number, cx = p.x, cy = p.y) => this.mobs.filter((m) => m.alive && m.spawnAge > 0.4 && Math.abs(m.x - cx) <= r && Math.abs(m.y - cy) < 22);
     const pose = (kind: SwingKind) => {
       p.swingKind = kind; p.swingT = SWING_TIME; p.swingId++; p.attackT = Math.max(p.attackT, d.atkInterval * 0.6);
@@ -199,11 +200,25 @@ export class World {
       for (const m of live(NOVA_RADIUS, tgt.x, tgt.y)) this.damageMob(m, d, 2.2 + lv * 0.25, m.x >= tgt.x ? 1 : -1);
     } else if (id === 'heal') {
       if (c.hp >= d.maxHp) return false;
+      const before = c.hp;
       c.hp = Math.min(d.maxHp, c.hp + d.maxHp * healPct(lv));
+      this.events.push({ t: 'heal', x: p.x, y: p.y - 34, amount: Math.round(c.hp - before) });
     }
+    c.mp -= t.active.mana;
     p.cd[id] = t.active.cooldown;
     this.events.push({ t: 'cast', id, x: fx, y: fy });
     return true;
+  }
+
+  private eatT = 0;
+  /** 음식 칸에서 하나 먹는다 */
+  private eat(d: Derived) {
+    const c = this.char, f = c.food!, it = ITEMS[f.id], p = this.player;
+    const before = c.hp;
+    c.hp = Math.min(d.maxHp, c.hp + (it.heal ?? 0));
+    if (--f.qty <= 0) c.food = null;
+    this.eatT = 1;
+    this.events.push({ t: 'heal', x: p.x, y: p.y - 34, amount: Math.round(c.hp - before), food: f.id });
   }
 
   private fire(target: Mob, mult: number) {
@@ -213,6 +228,10 @@ export class World {
 
   private damageMob(m: Mob, d: Derived, mult: number, push: number) {
     if (!m.alive) return;
+    if (!this.rng.chance(hitChance(d.acc, m.def.acc))) {
+      this.events.push({ t: 'dmg', x: m.x, y: m.y - 18, amount: 0, crit: false, onPlayer: false, miss: true });
+      return;
+    }
     const crit = this.rng.chance(d.crit);
     const amount = Math.max(1, Math.round(d.dmg * mult * this.rng.range(0.8, 1.2) * (crit ? d.critMult : 1)));
     m.hp -= amount; m.hitT = 0.22;
@@ -238,6 +257,9 @@ export class World {
       return;
     }
     c.hp = Math.min(d.maxHp, c.hp + d.regen * dt);
+    c.mp = Math.min(d.maxMp, c.mp + d.mpRegen * dt);
+    this.eatT = Math.max(0, this.eatT - dt);
+    if (c.food && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
     p.hurtT = Math.max(0, p.hurtT - dt);
     for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);
     if (c.auto) {
@@ -406,7 +428,8 @@ export class World {
       if (p.dead <= 0 && m.contactCd <= 0 && m.spawnAge > 0.8
         && Math.abs(m.x - p.x) < m.def.radius + 5 && Math.abs(m.y - p.y) < 14) {
         m.contactCd = 1.2;
-        const amount = mitigate(m.def.atk * this.rng.range(0.8, 1.2), d.def);
+        const amount = dmgTaken(m.def, d.def, this.rng.range(0.8, 1.2));
+        if (amount <= 0) { this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount: 0, crit: false, onPlayer: true }); continue; }
         c.hp -= amount; p.hurtT = HURT_TIME;
         this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount, crit: false, onPlayer: true });
         if (c.hp <= 0) { c.hp = 0; p.dead = 3; p.swingT = 0; p.vx = 0; this.events.push({ t: 'faint' }); }

@@ -31,6 +31,7 @@ html, body {
 @keyframes toast { 0% { opacity: 0; transform: translateX(-1em); } 8% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-0.6em); } }
 #skills { position: absolute; right: max(var(--sp-4), env(safe-area-inset-right)); bottom: calc(var(--bar-h) + var(--sp-3)); display: flex; gap: var(--sp-3); pointer-events: none; }
 #skills .skill { pointer-events: auto; width: calc(var(--slot) * 1.3); height: calc(var(--slot) * 1.3); background: var(--c-danger); color: var(--c-on-danger); }
+#skills .skill.nomp { filter: grayscale(.8) brightness(.7); }
 #skills .skill .nm { font-size: var(--fs-xs); line-height: 1.1; text-align: center; word-break: keep-all; padding: 0 var(--sp-1); }
 
 /* 창: 하단 바는 가리지 않는다(메뉴 버튼으로 바로 다른 창 전환) */
@@ -42,7 +43,7 @@ html, body {
 .ui-dialog .close { align-self: flex-start; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: scale(.88); opacity: 0; } }
-.ui-grid.eq { grid-template-columns: repeat(5, var(--slot)); }
+.ui-grid.eq { grid-template-columns: repeat(6, var(--slot)); }
 .ui-grid.bag { grid-template-columns: repeat(8, var(--slot)); }
 .ui-grid.c4 { grid-template-columns: repeat(4, var(--slot)); flex: none; }
 .ui-kv.mats img, .ui-detail .ui-kv img { height: 1.1em; vertical-align: -0.2em; }

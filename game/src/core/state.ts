@@ -13,6 +13,9 @@ export interface Character {
   level: number; xp: number; statPoints: number;
   stats: Record<StatKey, number>;
   hp: number;
+  mp: number;
+  /** 음식 칸: 체력이 낮아지면 자동으로 하나씩 먹는다 */
+  food: Stack | null;
   mapId: string; x: number;
   auto: boolean; activity: Activity;
   inventory: Stack[];
@@ -46,13 +49,13 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
     cls: 'beginner', level: 1, xp: 0, statPoints: 0,
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
-    hp: 1, mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
+    hp: 1, mp: 1, food: null, mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' },
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quest: { idx: 0, accepted: false, prog: 0 },
   };
-  c.hp = derive(c).maxHp;
+  c.hp = derive(c).maxHp; c.mp = derive(c).maxMp;
   acc.characters.push(c);
   return c;
 }
@@ -64,6 +67,9 @@ export const skillXpToNext = (lv: number) => Math.floor(14 * Math.pow(lv, 1.6) +
 export interface Derived {
   str: number; agi: number; wis: number; luk: number;
   maxHp: number; dmg: number; def: number;
+  maxMp: number; mpRegen: number;
+  /** 명중 */
+  acc: number;
   atkInterval: number; speed: number; crit: number; critMult: number;
   xpMult: number; dropMult: number; regen: number;
   mining: number; chopping: number;
@@ -91,11 +97,13 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
   const cb = { hp: 0, dmg: 0, drop: 0 };
   for (const cd of CARDS) cb[cd.bonus] += cardTier(cards[cd.monster] ?? 0) * cd.per;
-  const main = { str, agi, wis, luk }[cls.main];
+  const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
+  const maxMp = Math.floor(8 + wis * 1.5 + c.level);
   const work = 1 + tl('worker') * 0.05;
   const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
   return {
-    str, agi, wis, luk, maxHp,
+    str, agi, wis, luk, maxHp, maxMp, mpRegen: 0.5 + maxMp * 0.02,
+    acc: 2 + accStat + c.level,
     dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg),
     def: e.def + c.level * 0.3 + tl('ironskin') * 1.5,
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
@@ -110,7 +118,26 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
 }
 
 /** 몬스터 공격을 방어력으로 경감한 피해 */
-export const mitigate = (atk: number, def: number) => Math.max(1, Math.round(atk - def * 0.5));
+/** 받는 피해: 방어력이 몬스터의 기준치(defZero)에 가까울수록 줄고, 넘으면 0 */
+export const dmgTaken = (m: { atk: number; defZero: number }, def: number, roll = 1) =>
+  Math.max(0, Math.ceil(m.atk * roll * (1 - def / m.defZero)));
+/** 명중률: 명중/요구치 비율이 0.5 이하면 0%, 1 이상이면 100% */
+export const hitChance = (acc: number, need: number) => Math.max(0, Math.min(1, (acc / need - 0.5) * 2));
+/** 음식 칸 넣기/빼기 */
+export function setFood(c: Character, id: string | null): string | null {
+  if (id && ITEMS[id]?.kind !== 'food') return '음식이 아닙니다';
+  if (c.food) {
+    if (!addItem(c, c.food.id, c.food.qty)) return '가방이 가득 찼습니다';
+    c.food = null;
+  }
+  if (id) {
+    const n = countItem(c, id);
+    if (!n) return '가방에 없습니다';
+    removeItem(c, id, n);
+    c.food = { id, qty: n };
+  }
+  return null;
+}
 
 // ───────── 성장 ─────────
 /** 경험치 지급. 오른 레벨 수를 반환 */
@@ -121,7 +148,7 @@ export function gainXp(c: Character, amount: number): number {
     c.xp -= xpToNext(c.level);
     c.level++; c.statPoints += 3; c.talentPoints++; ups++;
   }
-  if (ups) c.hp = derive(c).maxHp;
+  if (ups) { c.hp = derive(c).maxHp; c.mp = derive(c).maxMp; }
   return ups;
 }
 export function gainSkillXp(c: Character, skill: SkillKey, amount: number): number {
@@ -268,6 +295,8 @@ export function deserialize(json: string | null): Account | null {
     a.cards ??= {};
     for (const c of a.characters) {
       c.cls ??= 'beginner';
+      c.food ??= null;
+      c.mp ??= derive(c, a.cards).maxMp;
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};

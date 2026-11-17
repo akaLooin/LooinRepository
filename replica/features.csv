@@ -9,17 +9,17 @@ feature,area,priority,original,clone,notes
 포탈·NPC·시설 터치로 이동 후 상호작용,조작,must,yes,yes,
 로프/사다리로 층 이동(자동 길 찾기),조작,must,yes,yes,
 AUTO(대상 자동 선택·스킬 자동 사용),조작,must,yes,yes,
-명중률(내 명중 대 몬스터 요구 명중),전투,must,yes,no,현재는 항상 명중
-방어력 임계값(충분하면 피해 0),전투,must,yes,partial,경감만 있고 임계값 표시 없음
+명중률(내 명중 대 몬스터 요구 명중),전투,must,yes,yes,"요구치 절반 이하 0%, 같으면 100%. 방치 계산에도 반영"
+방어력 임계값(충분하면 피해 0),전투,must,yes,yes,몬스터별 기준치 이상이면 피해 0. 능력치 창에 현재 맵 몬스터별 명중률·받는 피해 표시
 최소~최대 피해와 치명타,전투,must,yes,yes,
-마나와 스킬 비용,전투,should,yes,no,
+마나와 스킬 비용,전투,should,yes,yes,"최대 마나는 지혜·레벨. 스킬마다 마나 비용, 부족하면 버튼이 흐려짐"
 체력·쓰러짐·마을 부활,전투,must,yes,partial,현재는 맵 입구에서 부활
-음식 자동 섭취로 회복,전투,should,yes,no,
+음식 자동 섭취로 회복,전투,should,yes,partial,"음식 칸 1개, 체력 45% 아래에서 자동 섭취. 방치 중 음식 소모는 묶음 3"
 원거리·마법 발사체,전투,must,yes,yes,
 공격 바(스킬 슬롯 편집),전투,should,yes,partial,배운 액티브가 공격 칸에 자동 배치. 편집은 아직 없음(공격 창은 목록만)
 멀티킬,전투,could,yes,no,후반 시스템
 경험치·레벨·스탯 포인트,성장,must,yes,yes,
-STR/AGI/WIS/LUK와 직업별 주력·명중 능력치,성장,must,yes,partial,명중 능력치 없음
+STR/AGI/WIS/LUK와 직업별 주력·명중 능력치,성장,must,yes,yes,"전사 힘/지혜, 궁수 민첩/힘, 마법사 지혜/민첩, 초보자 행운/행운"
 초보자 → 1차 전직 3갈래,성장,must,yes,yes,현재는 레벨 조건(원작은 NPC 퀘스트)
 2차 전직(각 2갈래),성장,should,yes,no,
 엘리트·마스터 전직,성장,could,yes,no,
@@ -28,7 +28,7 @@ STR/AGI/WIS/LUK와 직업별 주력·명중 능력치,성장,must,yes,partial,�
 가족 보너스(직업별 최고 레벨 캐릭터가 계정 전체에 보너스),성장,should,yes,no,
 방치 보상(마지막 대상 기준),방치,must,yes,yes,
 AFK 획득률% 능력치(전투·채집 별도),방치,must,yes,partial,고정 60%
-생존력이 방치 효율에 반영,방치,must,yes,partial,간이 계산
+생존력이 방치 효율에 반영,방치,must,yes,partial,새 피해 공식 반영. 음식 소모·생존력 지표는 묶음 3
 AFK 정보 창(시간당 처치·명중·생존력),방치,must,yes,no,
 대상별 처치 상한,방치,should,yes,no,
 방치 보상 창(경과 시간·획득 목록),방치,must,yes,yes,
