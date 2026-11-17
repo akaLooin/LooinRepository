@@ -1,0 +1,500 @@
+{
+  ".claude/hooks/graphify-stop.sh": {
+    "mtime": 1794275478.44511,
+    "seen": 1794885259.717662,
+    "ast_hash": "673b496dfe672cdb8e78fedc230fadc3",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1794275478.44511,
+    "seen": 1794885259.7176695,
+    "ast_hash": "e4566ed31fd6e146ad998dc0bd467e51",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/sweep.py": {
+    "mtime": 1794275478.445638,
+    "seen": 1794885259.7176726,
+    "ast_hash": "6e72239d135e70b85f5eb029560645e7",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/contrast.py": {
+    "mtime": 1794275478.445971,
+    "seen": 1794885259.7176743,
+    "ast_hash": "be1cc9f80abcff530e3047e43cc7418b",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/imgdiff.py": {
+    "mtime": 1794275478.4461486,
+    "seen": 1794885259.7176754,
+    "ast_hash": "89423d275a22901d45d1dded2bbf0a89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/parity.py": {
+    "mtime": 1794275478.4461486,
+    "seen": 1794885259.7176769,
+    "ast_hash": "b038abcd7358f9267f243cf25e337f79",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/reviews.py": {
+    "mtime": 1794275478.4464605,
+    "seen": 1794885259.7176778,
+    "ast_hash": "30484811d165ea8e8f26ea27b468e258",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/themes.json": {
+    "mtime": 1794275478.4464605,
+    "seen": 1794885259.7176788,
+    "ast_hash": "2f131b47a08b6f829a3a7b9b310c0d89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.example.json": {
+    "mtime": 1794275478.4466937,
+    "seen": 1794885259.71768,
+    "ast_hash": "7f333f8243827641e47a0afaebf858dc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.py": {
+    "mtime": 1794275478.4466937,
+    "seen": 1794885259.717681,
+    "ast_hash": "af4d4a7b06701afb767de7ef763ddda8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/e2e.example.spec.ts": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794885259.717682,
+    "ast_hash": "1a6d12fef3cbe97dfa1b0dc42c3a8881",
+    "semantic_hash": ""
+  },
+  "game/android/app/build.gradle": {
+    "mtime": 1794885221.2619424,
+    "seen": 1794885259.7176833,
+    "ast_hash": "b265e10c24bb945ab44e93ce0a4ec252",
+    "semantic_hash": ""
+  },
+  "game/android/app/capacitor.build.gradle": {
+    "mtime": 1794885221.2874014,
+    "seen": 1794885259.7176843,
+    "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7176852,
+    "ast_hash": "fbaf7cc870c663eb52dcf218531c439d",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/java/com/looin/idle/MainActivity.java": {
+    "mtime": 1794885221.2619424,
+    "seen": 1794885259.7176862,
+    "ast_hash": "4ddb37758eff95cb60fc20d6cab2a3b1",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7176876,
+    "ast_hash": "e91b4501c14da821682fa5c26a16d616",
+    "semantic_hash": ""
+  },
+  "game/android/build.gradle": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7176886,
+    "ast_hash": "edcd663b51acb2986e22ef151e00036f",
+    "semantic_hash": ""
+  },
+  "game/android/capacitor.settings.gradle": {
+    "mtime": 1794885221.2874014,
+    "seen": 1794885259.7176895,
+    "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
+    "semantic_hash": ""
+  },
+  "game/android/gradlew": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7176905,
+    "ast_hash": "f092910dfa8e47c5a37a452c3f6baf8a",
+    "semantic_hash": ""
+  },
+  "game/android/settings.gradle": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7176914,
+    "ast_hash": "f6cd925b3f859e23c3d819fe2459e0e4",
+    "semantic_hash": ""
+  },
+  "game/android/variables.gradle": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7176924,
+    "ast_hash": "7f844007d51d16140dbd0903de821b18",
+    "semantic_hash": ""
+  },
+  "game/capacitor.config.json": {
+    "mtime": 1794885213.2215917,
+    "seen": 1794885259.7176933,
+    "ast_hash": "d22a72af7559d5296374477b1af0ac9e",
+    "semantic_hash": ""
+  },
+  "game/package.json": {
+    "mtime": 1794885225.0655923,
+    "seen": 1794885259.7176948,
+    "ast_hash": "c5e15a26f1fad08ca582724e322c75a2",
+    "semantic_hash": ""
+  },
+  "game/src/core/afk.ts": {
+    "mtime": 1794880520.2031353,
+    "seen": 1794885259.7176957,
+    "ast_hash": "ad644307b2c71f48974d3621d0438743",
+    "semantic_hash": ""
+  },
+  "game/src/core/data.ts": {
+    "mtime": 1794885057.1175823,
+    "seen": 1794885259.7176964,
+    "ast_hash": "da9fcb8a4d460faac56b5ad348f8c7fe",
+    "semantic_hash": ""
+  },
+  "game/src/core/rng.ts": {
+    "mtime": 1794880522.8751354,
+    "seen": 1794885259.7176976,
+    "ast_hash": "5f96c3b2b09c757365354966dd489512",
+    "semantic_hash": ""
+  },
+  "game/src/core/state.ts": {
+    "mtime": 1794880505.2551343,
+    "seen": 1794885259.7176988,
+    "ast_hash": "b77e5ea4a8e230770ba803938849341d",
+    "semantic_hash": ""
+  },
+  "game/src/core/world.ts": {
+    "mtime": 1794880573.9991384,
+    "seen": 1794885259.7176998,
+    "ast_hash": "229370b23d28e9393cf7bbcafc7dc64e",
+    "semantic_hash": ""
+  },
+  "game/src/game.ts": {
+    "mtime": 1794880777.0231504,
+    "seen": 1794885259.7177012,
+    "ast_hash": "0c653289fbd33ce61492c6c24813961c",
+    "semantic_hash": ""
+  },
+  "game/src/main.ts": {
+    "mtime": 1794881012.2145717,
+    "seen": 1794885259.7177022,
+    "ast_hash": "288eac8cd5e87d1de801c757e7f51fd6",
+    "semantic_hash": ""
+  },
+  "game/src/render/scene.ts": {
+    "mtime": 1794881012.2103128,
+    "seen": 1794885259.717703,
+    "ast_hash": "504ad7067580f7e1592b61db9ec2fe00",
+    "semantic_hash": ""
+  },
+  "game/src/render/sprites.ts": {
+    "mtime": 1794880777.0042474,
+    "seen": 1794885259.7177038,
+    "ast_hash": "adabfdcb43d24c11868442edf1d67120",
+    "semantic_hash": ""
+  },
+  "game/src/ui/ui.ts": {
+    "mtime": 1794881012.2098556,
+    "seen": 1794885259.717705,
+    "ast_hash": "88f34e0f519667ba1e675d076fa0d0ab",
+    "semantic_hash": ""
+  },
+  "game/tests/core.test.ts": {
+    "mtime": 1794880595.2391398,
+    "seen": 1794885259.717706,
+    "ast_hash": "afbc249d82f20a4665e4e43c3da40591",
+    "semantic_hash": ""
+  },
+  "game/tsconfig.json": {
+    "mtime": 1794880597.1381972,
+    "seen": 1794885259.717707,
+    "ast_hash": "dbcc72f191b7ab4fe179abd8642012ff",
+    "semantic_hash": ""
+  },
+  "game/vite.config.ts": {
+    "mtime": 1794881033.3249214,
+    "seen": 1794885259.717708,
+    "ast_hash": "9388cc2822c6a001f48847441e34171f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/SKILL.md": {
+    "mtime": 1794275478.4453719,
+    "seen": 1794885259.7177095,
+    "ast_hash": "68b9b40ecc837f79cd8a1f9f55bb69e9",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/architecture.md": {
+    "mtime": 1794275478.4454496,
+    "seen": 1794885259.7177103,
+    "ast_hash": "0da9e8d3bb2bcfaaca00da1d7652b3f8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-backend/SKILL.md": {
+    "mtime": 1794275478.4454496,
+    "seen": 1794885259.7177117,
+    "ast_hash": "6cf582652afdfa7a4d93be9c0b678acc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/SKILL.md": {
+    "mtime": 1794275478.4454496,
+    "seen": 1794885259.7177124,
+    "ast_hash": "52f8859b2bd72803f0f22f6504ceb5d2",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-build/SKILL.md": {
+    "mtime": 1794275478.445638,
+    "seen": 1794885259.7177134,
+    "ast_hash": "5ff1211352611a1b0ca4261bbf802914",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/SKILL.md": {
+    "mtime": 1794275478.445638,
+    "seen": 1794885259.7177145,
+    "ast_hash": "68ca163f75008916d771db003e9e9d2f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/preflight.md": {
+    "mtime": 1794275478.4458573,
+    "seen": 1794885259.7177155,
+    "ast_hash": "e08376a3e4b2137083d9cac67e5213d8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/SKILL.md": {
+    "mtime": 1794275478.4458573,
+    "seen": 1794885259.7177188,
+    "ast_hash": "6cb2089c8fef9f8ff7cfdb437beb4335",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/SKILL.md": {
+    "mtime": 1794275478.445971,
+    "seen": 1794885259.71772,
+    "ast_hash": "4388136945068abb2403b78f646f1ff4",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/SKILL.md": {
+    "mtime": 1794275478.4461486,
+    "seen": 1794885259.7177215,
+    "ast_hash": "f8991e2948128c6b7747c5a54984c763",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/SKILL.md": {
+    "mtime": 1794275478.4464605,
+    "seen": 1794885259.7177224,
+    "ast_hash": "45df2bb5bc5cea98a442026a8ff9f948",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/SKILL.md": {
+    "mtime": 1794275478.4466937,
+    "seen": 1794885259.7177236,
+    "ast_hash": "6d9392e82e61935f37ac1bb95ef909c5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/recon-map.md": {
+    "mtime": 1794275478.4469087,
+    "seen": 1794885259.7177246,
+    "ast_hash": "d23e672474a29ec1ea49ec43ddfff8b5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/SKILL.md": {
+    "mtime": 1794275478.4469087,
+    "seen": 1794885259.7177258,
+    "ast_hash": "c9a62a0d332c47e75f43f0b30a4a8af1",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/bug-report.md": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794885259.7177267,
+    "ast_hash": "96a2f82bee687b61cdcab4cae30f3b74",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/test-plan.md": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794885259.7177277,
+    "ast_hash": "63d7dea8bd03011a3cd8b62c78e0c762",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794885259.7177289,
+    "ast_hash": "0082dfb26d459e9bafa72031729e3693",
+    "semantic_hash": ""
+  },
+  "game/README.md": {
+    "mtime": 1794885239.261593,
+    "seen": 1794885259.7177298,
+    "ast_hash": "334a071cbf60149afc9993c2c27b02e8",
+    "semantic_hash": ""
+  },
+  "game/index.html": {
+    "mtime": 1794880894.9871576,
+    "seen": 1794885259.7177308,
+    "ast_hash": "9dba7153eacf0d4aae63ed8772c6da98",
+    "semantic_hash": ""
+  },
+  "Logo/LooinLogo.png": {
+    "mtime": 1794275478.4470665,
+    "seen": 1794885259.7177396,
+    "ast_hash": "cecee7e00251e27ba618aa679eaa3d56",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-land-hdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717741,
+    "ast_hash": "f7a80786dd355bd39014e58027aa6e19",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-land-mdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717742,
+    "ast_hash": "acc976d4a36479233371a53021525c0c",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-land-xhdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177432,
+    "ast_hash": "b8c72969bc1f78aab71a76035360d4af",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-land-xxhdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177444,
+    "ast_hash": "f87e988387b07d843905f38b084929fb",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-land-xxxhdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177458,
+    "ast_hash": "055a69553b16b0bf5f72094a2e459fc7",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-port-hdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177467,
+    "ast_hash": "5eb10d16c81338abe8bbc033d49638a8",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-port-mdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177474,
+    "ast_hash": "d855a76a5070c8e6fcfd83a27549bdce",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-port-xhdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177484,
+    "ast_hash": "df100b2a36bdb98b711cca58941728de",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-port-xxhdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177496,
+    "ast_hash": "2c1b668364e815256f67b71dcdfa4d6e",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable-port-xxxhdpi/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177503,
+    "ast_hash": "b5b1b22b59abe686c1df0d74a423d034",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/drawable/splash.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177513,
+    "ast_hash": "acc976d4a36479233371a53021525c0c",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717752,
+    "ast_hash": "1956941339dd5fe36d5c66601c89a08d",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177532,
+    "ast_hash": "73b1e06d769fa08a9c3b8328cc15fd75",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177541,
+    "ast_hash": "f43e5674865a00186dd76183cf1f2f8e",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717755,
+    "ast_hash": "7ed1b3739b83215d0c4a0b4a7f2dcab4",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177558,
+    "ast_hash": "5b77e8aec8b17eed320a97567c7cb8bf",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717757,
+    "ast_hash": "a49547a32c7d9b529af607b033811d81",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177582,
+    "ast_hash": "5689511ee4e41a367d0342f37ac48bdf",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177591,
+    "ast_hash": "15cdded29b9877ac98c5931024c5da5d",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.71776,
+    "ast_hash": "c890fa4af62a63486d5dea62441ce7ab",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717761,
+    "ast_hash": "a3285eeaedda8201f04e7737b9df8421",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.717762,
+    "ast_hash": "4e9584ecc16d1fc75afb798688ce576f",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177632,
+    "ast_hash": "14cde87848553e24d7106f56eb8ceb6f",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177644,
+    "ast_hash": "9e029293ab1ae8e3a6a7b7d0b7177e46",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177653,
+    "ast_hash": "ed3696b7c52d9747411a475dbe3fa34a",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png": {
+    "mtime": 1793204306.0,
+    "seen": 1794885259.7177663,
+    "ast_hash": "85addb4159ecd3f76f02fbacd5ec86de",
+    "semantic_hash": ""
+  },
+  "game/package-lock.json": {
+    "mtime": 1794885213.1855917,
+    "seen": 1794885259.7177675,
+    "ast_hash": "9ffa396d383215a4836af1f9fb5c5418",
+    "semantic_hash": ""
+  }
+}
