@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/AvailableFundsCalculator.kt": {
-    "mtime": 1794781758.0571554,
-    "seen": 1794866888.3445287,
-    "ast_hash": "d3761669e96751e72e3a387b11aa7bda",
+    "mtime": 1794877384.4156191,
+    "seen": 1794877857.9309034,
+    "ast_hash": "1d483637938a92a715dbba0e8288b946",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/BalanceCalculator.kt": {
@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   "core/src/jvmTest/kotlin/com/looin/finance/core/BudgetAndAvailableTest.kt": {
-    "mtime": 1794525969.1367037,
-    "seen": 1794866888.3445492,
-    "ast_hash": "37ddd4b751d9ecdf27b870c4e3e0a193",
+    "mtime": 1794877384.4156191,
+    "seen": 1794877857.930938,
+    "ast_hash": "c1b69ea787c09a1c7b867e44e178058f",
     "semantic_hash": ""
   },
   "core/src/jvmTest/kotlin/com/looin/finance/core/BudgetWarningTest.kt": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/home/HomeScreen.kt": {
-    "mtime": 1794869541.0487192,
-    "seen": 1794870007.1115928,
-    "ast_hash": "1c36d0ea408f881cec450fa30514a41e",
+    "mtime": 1794877452.318288,
+    "seen": 1794877857.9310088,
+    "ast_hash": "6aa30efbf8f4c09bc43a0fdcbbfc8ea2",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/plan/BudgetRows.kt": {
@@ -1134,9 +1134,9 @@
     "semantic_hash": ""
   },
   "docs/PHASE2_NOTES.md": {
-    "mtime": 1794875285.6156363,
-    "seen": 1794875291.6697361,
-    "ast_hash": "a1792cd3a64a2fba2ddee990ddc7d564",
+    "mtime": 1794877851.741923,
+    "seen": 1794877857.9310653,
+    "ast_hash": "6fee8ce543971189df94dc71c6b27230",
     "semantic_hash": ""
   },
   "docs/licenses/FONTS.md": {
@@ -1497,6 +1497,12 @@
     "mtime": 1794869199.0679433,
     "seen": 1794870007.111616,
     "ast_hash": "19dfc2956ed9bcca17edb17a29151fc8",
+    "semantic_hash": ""
+  },
+  "app/src/test/kotlin/com/looin/finance/ui/AvailableSplitUiTest.kt": {
+    "mtime": 1794877556.1780934,
+    "seen": 1794877857.9308841,
+    "ast_hash": "f0fc4d7c0c497920bd1fa002ee2eb009",
     "semantic_hash": ""
   }
 }
