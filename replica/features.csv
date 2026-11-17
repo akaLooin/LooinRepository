@@ -1,0 +1,77 @@
+feature,area,priority,original,clone,notes
+캐릭터 생성(이름·외형),캐릭터,must,yes,yes,
+시작 별자리 선택(작은 시작 보너스),캐릭터,could,yes,no,
+캐릭터 슬롯을 가족 레벨로 해금,캐릭터,should,yes,no,현재는 4칸 고정
+캐릭터 전환,캐릭터,must,yes,yes,
+바닥 터치로 이동,조작,must,yes,yes,
+몬스터 터치로 자동 접근·공격,조작,must,yes,yes,
+자원 터치로 자동 채집,조작,must,yes,yes,
+포탈·NPC·시설 터치로 이동 후 상호작용,조작,must,yes,yes,
+로프/사다리로 층 이동(자동 길 찾기),조작,must,yes,yes,
+AUTO(대상 자동 선택·스킬 자동 사용),조작,must,yes,yes,
+명중률(내 명중 대 몬스터 요구 명중),전투,must,yes,no,현재는 항상 명중
+방어력 임계값(충분하면 피해 0),전투,must,yes,partial,경감만 있고 임계값 표시 없음
+최소~최대 피해와 치명타,전투,must,yes,yes,
+마나와 스킬 비용,전투,should,yes,no,
+체력·쓰러짐·마을 부활,전투,must,yes,partial,현재는 맵 입구에서 부활
+음식 자동 섭취로 회복,전투,should,yes,no,
+원거리·마법 발사체,전투,must,yes,yes,
+공격 바(스킬 슬롯 편집),전투,should,yes,partial,배운 액티브가 자동 표시됨
+멀티킬,전투,could,yes,no,후반 시스템
+경험치·레벨·스탯 포인트,성장,must,yes,yes,
+STR/AGI/WIS/LUK와 직업별 주력·명중 능력치,성장,must,yes,partial,명중 능력치 없음
+초보자 → 1차 전직 3갈래,성장,must,yes,yes,현재는 레벨 조건(원작은 NPC 퀘스트)
+2차 전직(각 2갈래),성장,should,yes,no,
+엘리트·마스터 전직,성장,could,yes,no,
+직업별 특성 탭과 포인트,성장,must,yes,partial,탭 구분 없이 한 목록
+별 특성(공용 탭),성장,could,yes,no,
+가족 보너스(직업별 최고 레벨 캐릭터가 계정 전체에 보너스),성장,should,yes,no,
+방치 보상(마지막 대상 기준),방치,must,yes,yes,
+AFK 획득률% 능력치(전투·채집 별도),방치,must,yes,partial,고정 60%
+생존력이 방치 효율에 반영,방치,must,yes,partial,간이 계산
+AFK 정보 창(시간당 처치·명중·생존력),방치,must,yes,no,
+대상별 처치 상한,방치,should,yes,no,
+방치 보상 창(경과 시간·획득 목록),방치,must,yes,yes,
+채광,기술,must,yes,yes,
+벌목,기술,must,yes,yes,
+대장(모루 생산으로 경험치),기술,must,yes,no,
+낚시·채집(벌레) 등 추가 기술,기술,could,yes,no,
+도구 장비와 기술 효율,기술,must,yes,yes,
+가방 칸과 가방 확장 아이템,보관,must,yes,partial,24칸 고정
+종류별 소지 한도와 한도 주머니,보관,should,yes,no,
+계정 공용 창고,보관,must,yes,no,
+장비 칸(무기·방어구·도구·장신구),보관,must,yes,partial,5칸
+아이템 판매,보관,should,yes,yes,
+모루 제작: 단계 탭과 레시피 격자,제작,must,yes,partial,종류 탭 3개
+레시피 해금(작업판·드롭·퀘스트),제작,should,yes,no,전부 처음부터 공개
+창고 재료로 제작,제작,should,yes,no,
+길게 눌러 연속 제작,제작,could,yes,no,
+모루 확장으로 다음 탭 해금,제작,should,yes,no,
+모루 생산(슬롯·용량·속도·포인트),제작,must,yes,no,
+용광로(광석 → 주괴·연료),제작,should,yes,no,
+장비 강화석(업그레이드 칸),제작,could,yes,no,
+몬스터·자원 카드 드롭과 계정 공용 수집,카드,must,yes,partial,자원 카드 없음
+카드 등급(수량으로 상승),카드,must,yes,yes,3단계
+카드 장착 칸과 프리셋,카드,should,yes,no,현재는 보유만으로 적용
+카드 세트 보너스,카드,could,yes,no,
+마을 + 일렬 사냥터 + 처치 수 포탈,맵,must,yes,yes,
+월드 지도 화면,맵,should,yes,no,
+월드 보스와 다음 월드 관문,맵,must,yes,no,
+열쇠로 입장하는 보스방,맵,should,yes,no,
+여러 NPC의 퀘스트 연쇄,퀘스트,must,yes,partial,NPC 1명 6개
+퀘스트 목록 화면,퀘스트,should,yes,no,
+작업판(계정 과제 → 해금),퀘스트,should,yes,no,
+상점(일일 한정 품목),경제,should,yes,no,
+우표(코인·재료로 올리는 계정 영구 보너스),경제,should,yes,no,
+자동 저장,기반,must,yes,yes,로컬
+계정·클라우드 저장,기반,must,yes,no,
+서버 측 보상 검증,기반,must,yes,no,
+같은 맵의 다른 플레이어 표시·채팅,기반,should,yes,no,
+사운드·음악,기반,should,yes,no,
+몰입형 전체 화면(안드로이드),기반,must,yes,yes,기기 미검증
+원작 아트·이름·세계관,제외,skip,yes,no,원작 소유물
+원작 수치표 그대로 이식,제외,skip,yes,no,구조만 따르고 값은 자체 설정
+원작 코드·통신 규격,제외,skip,yes,no,
+유료 재화 상점 구성·가격,제외,skip,yes,no,
+길드·거래 등 원작 커뮤니티,제외,skip,yes,no,이용자 기반은 복제 불가
+2~7월드 고유 시스템,제외,skip,yes,no,별도 정찰 대상
