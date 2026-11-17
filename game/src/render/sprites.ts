@@ -422,6 +422,9 @@ function buildItems() {
   p = new Paint(12, 12);
   p.rect(2, 2, 8, 9, '#b9824f'); p.rect(4, 2, 4, 2, null); p.rect(2, 8, 8, 1, '#8a5a3c'); p.rect(2, 5, 8, 1, '#8a5a3c'); p.rect(5, 4, 1, 7, '#8a5a3c');
   p.outline().save('it_armor_log');
+  // 장신구
+  p = new Paint(12, 12); p.disc(5.5, 6.5, 4, 4, '#f6c945'); p.disc(5.5, 6.5, 2.4, 2.4, null); p.disc(5.5, 2.5, 2, 1.6, '#5fb859'); p.set(5, 2, '#b4f08a'); p.outline().save('it_ring');
+  p = new Paint(12, 12); p.line(2, 0, 5, 4, '#8a5a3c'); p.line(9, 0, 6, 4, '#8a5a3c'); p.disc(5.5, 7, 3.6, 3.6, '#9aa3ad'); p.disc(5, 6, 1.6, 1.6, '#c9d1d9'); p.outline().save('it_charm');
   // 음식
   p = new Paint(12, 12); p.disc(4, 7, 2.6, 2.6, '#d9574a'); p.disc(7.5, 7.5, 2.6, 2.6, '#e25d4e'); p.disc(5.8, 4.8, 2.4, 2.2, '#f06a5a');
   p.set(3, 6, '#ffb0a0'); p.set(7, 7, '#ffb0a0'); p.line(6, 2, 7, 0, '#3b8c4f'); p.set(5, 1, '#5fb859'); p.outline().save('it_berry');
@@ -446,6 +449,7 @@ export const ITEM_ICON: Record<string, string> = {
   sword_wood: 'wp_sword_wood', sword_stone: 'wp_sword_stone', sword_leaf: 'wp_sword_leaf',
   bow_wood: 'wp_bow_wood', bow_leaf: 'wp_bow_leaf', wand_wood: 'wp_wand_wood', wand_leaf: 'wp_wand_leaf',
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
+  moss_ring: 'it_ring', pebble_charm: 'it_charm', anvil_exp: 'obj_craft',
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
   twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',

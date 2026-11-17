@@ -6,7 +6,7 @@ import { HURT_TIME, Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core
 import { Game } from '../game';
 import { HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
 import { currentQuest, questProgress } from '../core/state';
-import { FACILITY_NAMES, ITEMS, NPC_LOOK, NPC_NAME, SMASH_RANGE } from '../core/data';
+import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
 const FONT = 'Galmuri11';
@@ -278,7 +278,7 @@ export class GameScene extends Phaser.Scene {
   private portals: { ring: Img; glow: Img; lock: Img; text: Phaser.GameObjects.Text; idx: number }[] = [];
   private flames: Img[] = [];
   private arrow: Img | null = null;
-  private npc: { img: Img; mark: Phaser.GameObjects.Text; x: number; y: number } | null = null;
+  private npcs: { id: string; img: Img; mark: Phaser.GameObjects.Text; x: number; y: number }[] = [];
   private bossRing: Phaser.GameObjects.Ellipse | null = null;
   private camX = 0; private camY = 0; private time0 = 0;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
@@ -316,7 +316,7 @@ export class GameScene extends Phaser.Scene {
     for (const d of this.shotViews.values()) d.destroy();
     this.shotViews.clear();
     this.statics = []; this.mobs = []; this.nodeViews = []; this.dropViews.clear();
-    this.hills = []; this.clouds = []; this.swayers = []; this.portals = []; this.flames = []; this.npc = null;
+    this.hills = []; this.clouds = []; this.swayers = []; this.portals = []; this.flames = []; this.npcs = [];
     const sky = document.getElementById('sky')!;
     if (!w) { sky.style.background = 'linear-gradient(#3b3355, #6a5a8a)'; return; }
 
@@ -376,12 +376,13 @@ export class GameScene extends Phaser.Scene {
     // 시설: 모루·창고·상점·NPC
     for (const f of map.facilities) {
       if (f.kind === 'npc') {
-        portraitUrl(NPC_LOOK);
+        const npc = NPCS[f.npc ?? 'elder'];
+        portraitUrl(npc.look);
         ensureTextures(this);
-        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(NPC_LOOK)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(true));
-        keep(label(this, NPC_NAME, 6.5, '#fff3d6').setOrigin(0.5, 0).setPosition(f.x, f.y + 3).setDepth(31));
-        const mark = keep(label(this, '!', 13, '#ffd84a').setDepth(31));
-        this.npc = { img, mark, x: f.x, y: f.y };
+        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(npc.look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(f.x > map.width / 2));
+        keep(label(this, npc.name, 6.5, '#fff3d6').setOrigin(0.5, 0).setPosition(f.x, f.y + 3).setDepth(31));
+        const mark = keep(label(this, '', 13, '#ffd84a').setDepth(31));
+        this.npcs.push({ id: npc.id, img, mark, x: f.x, y: f.y });
         continue;
       }
       const key = f.kind === 'anvil' ? 'obj_craft' : f.kind === 'storage' ? 'obj_storage' : 'obj_shop';
@@ -505,12 +506,14 @@ export class GameScene extends Phaser.Scene {
       this.arrow.setVisible(!!tgt);
       if (tgt) this.arrow.setPosition(tgt.x, tgt.y + Math.sin(this.time0 * 7) * 2.2);
     }
-    if (this.npc) {
-      const q = currentQuest(w.char), qp = questProgress(w.char);
-      const m = !q ? '' : !w.char.quest.accepted ? '!' : qp?.done ? '?' : '';
-      if (this.npc.mark.text !== m) this.npc.mark.setText(m);
-      this.npc.mark.setPosition(this.npc.x, this.npc.y - 34 + Math.sin(this.time0 * 4) * 1.5);
-      this.npc.img.setScale(1 - Math.sin(this.time0 * 2.2) * 0.012, 1 + Math.sin(this.time0 * 2.2) * 0.02);
+    // NPC 머리 위: 새 퀘스트 ! / 완료 가능 ? (전직 가능하면 촌장에게 ★)
+    for (const n of this.npcs) {
+      const c = w.char, q = currentQuest(c, n.id), qp = questProgress(c, n.id);
+      const promo = n.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL;
+      const m = promo ? '★' : !q ? '' : !c.quests[n.id]?.accepted ? '!' : qp?.done ? '?' : '';
+      if (n.mark.text !== m) n.mark.setText(m);
+      n.mark.setPosition(n.x, n.y - 34 + Math.sin(this.time0 * 4) * 1.5);
+      n.img.setScale(1 - Math.sin(this.time0 * 2.2) * 0.012, 1 + Math.sin(this.time0 * 2.2) * 0.02);
     }
     for (const pv of this.portals) {
       const q = w.map.portals[pv.idx], open = w.portalOpen(q);

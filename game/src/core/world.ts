@@ -56,7 +56,9 @@ export type WorldEvent =
   | { t: 'telegraph'; x: number; y: number; r: number; time: number }
   | { t: 'slam'; x: number; y: number; r: number }
   | { t: 'boss'; name: string }
-  | { t: 'faint' };
+  | { t: 'faint' }
+  /** 쓰러진 뒤 마을에서 부활: 게임이 마을로 옮긴다 */
+  | { t: 'respawn' };
 
 export const SWING_TIME = 0.32;
 export const GATHER_INTERVAL = 0.7;
@@ -289,7 +291,7 @@ export class World {
 
     if (p.dead > 0) {
       p.dead -= dt; this.command = null; p.rope = -1;
-      if (p.dead <= 0) { p.x = this.map.portals[0]?.x ?? 60; p.y = 0; p.vy = 0; p.onGround = true; c.hp = d.maxHp; }
+      if (p.dead <= 0) { c.hp = d.maxHp; c.mp = d.maxMp; this.events.push({ t: 'respawn' }); }
       return;
     }
     c.hp = Math.min(d.maxHp, c.hp + d.regen * dt);

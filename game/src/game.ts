@@ -85,6 +85,13 @@ export class Game {
       const evs = w.events.splice(0);
       for (const e of evs) {
         this.onEvent(e);
+        if (e.t === 'respawn') {
+          // 원작처럼 쓰러지면 마을에서 다시 시작한다
+          const c = this.char!;
+          c.mapId = 'town'; c.x = 120; c.y = 0;
+          this.enterWorld(); this.save();
+          return;
+        }
         if (e.t === 'arrive' && e.what === 'portal') {
           const q = w.map.portals[e.idx];
           if (w.portalOpen(q)) { this.travel(q); return; }

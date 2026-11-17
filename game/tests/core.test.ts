@@ -4,7 +4,7 @@ import { MAPS, MONSTERS, RECIPES } from '../src/core/data';
 import { Rng } from '../src/core/rng';
 import {
   addItem, countItem, craft, createCharacter, derive, deserialize, equipItem, gainXp, newAccount, serialize,
-  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, dmgTaken, hitChance, setFood, addItemSome, anvilTick, anvilPointsFree, buy, collectAnvil,
+  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, equipCard, equipItem as equip, recipeLock, anvilSlotsOpen, currentQuest, dmgTaken, hitChance, setFood, addItemSome, anvilTick, anvilPointsFree, buy, collectAnvil,
   deposit, depositAll, invSize, setProduct, shopLeft, spendAnvilPoint, stackCap, storageCount, useItem, withdraw, today, learnTalent, questProgress,
 } from '../src/core/state';
 import { World } from '../src/core/world';
@@ -168,11 +168,11 @@ describe('퀘스트와 특성', () => {
     const coins = acc.coins;
     expect(completeQuest(acc, c)).toBeNull();
     expect(acc.coins).toBe(coins + 30);
-    expect(c.quest).toEqual({ idx: 1, accepted: false, prog: 0 });
+    expect(c.quests.elder).toEqual({ idx: 1, accepted: false, prog: 0 });
   });
   it('납품 퀘스트: 아이템을 소모한다', () => {
     const { acc, c } = setup();
-    c.quest = { idx: 2, accepted: true, prog: 0 };
+    c.quests.elder = { idx: 2, accepted: true, prog: 0 };
     addItem(c, 'moss', 10);
     expect(completeQuest(acc, c)).toBeNull();
     expect(countItem(c, 'moss')).toBe(2);
@@ -200,10 +200,14 @@ describe('퀘스트와 특성', () => {
     const { acc, c } = setup();
     c.level = 4;
     const raw = JSON.parse(serialize(acc));
-    delete raw.characters[0].talents; delete raw.characters[0].talentPoints; delete raw.characters[0].quest;
+    delete raw.characters[0].talents; delete raw.characters[0].talentPoints; delete raw.characters[0].quests; raw.characters[0].quest = { idx: 3, accepted: true, prog: 2 };
+    raw.characters[0].anvil = { prod: 'twine', stored: 7, frac: 0, pts: { cap: 0, spd: 0, xp: 0 } }; delete raw.characters[0].cardSlots; raw.cards = { pebbler: 2 };
     const a = deserialize(JSON.stringify(raw))!;
     expect(a.characters[0].talentPoints).toBe(3);
-    expect(a.characters[0].quest.idx).toBe(0);
+    // 예전 형식(퀘스트 하나, 생산 칸 하나, 카드 장착 없음)을 새 형식으로 옮긴다
+    expect(a.characters[0].quests.elder).toEqual({ idx: 3, accepted: true, prog: 2 });
+    expect(a.characters[0].anvil.slots[0]).toEqual({ prod: 'twine', stored: 7, frac: 0 });
+    expect(a.characters[0].cardSlots).toEqual(['pebbler', null, null, null]);
   });
 });
 
@@ -278,7 +282,11 @@ describe('전직과 카드', () => {
     const { acc, c } = setup();
     const base = derive(c, acc.cards).maxHp;
     acc.cards.mossblob = 3;
+    // 장착해야 효과가 있다
+    expect(derive(c, acc.cards).maxHp).toBe(base);
+    expect(equipCard(acc, c, 'mossblob', 0)).toBeNull();
     expect(derive(c, acc.cards).maxHp).toBeGreaterThan(base);
+    expect(equipCard(acc, c, 'pebbler', 1)).toMatch(/없는/);
     c.mapId = 'meadow'; c.auto = true;
     const r = computeAfk(acc, c, 12 * 3600_000, new Rng(1))!;
     expect(r.cards.length).toBeGreaterThan(0);
@@ -398,10 +406,10 @@ describe('모루 생산', () => {
     expect(c.skills.smithing.lv).toBeGreaterThan(1);
     expect(anvilPointsFree(c)).toBe(c.skills.smithing.lv - 1);
     anvilTick(c, 99999);
-    expect(c.anvil.stored).toBe(60); // 기본 용량
+    expect(c.anvil.slots[0].stored).toBe(60); // 기본 용량
     expect(spendAnvilPoint(c, 'cap')).toBe(true);
     anvilTick(c, 99999);
-    expect(c.anvil.stored).toBe(90);
+    expect(c.anvil.slots[0].stored).toBe(90);
     expect(collectAnvil(acc, c, false)).toBe(25);
     expect(collectAnvil(acc, c, true)).toBe(65);
     expect(storageCount(acc, 'twine')).toBe(65);
@@ -410,7 +418,7 @@ describe('모루 생산', () => {
     const { acc, c } = setup();
     setProduct(c, 'twine');
     const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
-    expect(r.anvil!.made).toBe(60);
+    expect(r.anvil!.items[0].made).toBe(60);
   });
 });
 
@@ -455,7 +463,7 @@ describe('마을·언덕·보스', () => {
     for (let i = 0; i < 600; i++) w.step(1 / 60, { move: 1, climb: 0 });
     expect(w.player.y).toBe(0);
     expect(w.player.x).toBeLessThanOrEqual(390);
-    const npc = w.map.facilities.findIndex((f) => f.kind === 'npc');
+    const npc = w.map.facilities.findIndex((f) => f.npc === 'elder');
     const f = w.map.facilities[npc];
     expect(w.tap(f.x, f.y - 10)).toEqual({ k: 'fac', idx: npc });
     let arrived = false;
@@ -488,5 +496,52 @@ describe('마을·언덕·보스', () => {
     expect(acc.bosses.mossking).toBe(1);
     for (let i = 0; i < 600; i++) w.step(1 / 60, { move: 0, climb: 0 });
     expect(boss.alive).toBe(false);
+  });
+});
+
+describe('1월드 마무리', () => {
+  it('쓰러지면 마을에서 부활한다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'hills';
+    const w = new World(acc, c, new Rng(1));
+    c.hp = 1; w.player.dead = 0.01; c.hp = 0;
+    w.step(1 / 60, { move: 0, climb: 0 });
+    expect(w.events.some((e) => e.t === 'respawn')).toBe(true);
+    expect(c.hp).toBe(derive(c, acc.cards).maxHp);
+  });
+  it('장신구 칸', () => {
+    const { c } = setup();
+    c.level = 6; addItem(c, 'moss_ring');
+    expect(equip(c, 'moss_ring')).toBeNull();
+    expect(c.equipment.ring).toBe('moss_ring');
+  });
+  it('모루: 대장 Lv.5에 두 번째 생산 칸, 2단계 레시피는 모루 확장 후', () => {
+    const { acc, c } = setup();
+    expect(anvilSlotsOpen(c)).toBe(1);
+    expect(setProduct(c, 'twine', 1)).toMatch(/열리지/);
+    c.skills.smithing.lv = 5;
+    expect(setProduct(c, 'twine', 1)).toBeNull();
+    expect(c.anvil.slots.length).toBe(2);
+    setProduct(c, 'twine', 0);
+    const t = anvilTick(c, 1800);
+    expect(t.bySlot.length).toBe(2);
+    const leaf = RECIPES.findIndex((r) => r.item === 'sword_leaf'), exp = RECIPES.findIndex((r) => r.unlock === 2);
+    expect(recipeLock(acc, c, leaf)).toMatch(/2단계/);
+    acc.coins = 9999; addItem(c, 'plank', 15); addItem(c, 'nail', 25); addItem(c, 'ore', 20);
+    expect(craft(acc, c, exp)).toBeNull();
+    expect(acc.anvilTier).toBe(2);
+    expect(countItem(c, 'anvil_exp')).toBe(0);
+    expect(recipeLock(acc, c, leaf)).toBeNull();
+    expect(recipeLock(acc, c, exp)).toMatch(/이미/);
+  });
+  it('NPC마다 따로 퀘스트가 이어진다', () => {
+    const { acc, c } = setup();
+    expect(currentQuest(c, 'smith')!.name).toBe('첫 노끈');
+    expect(acceptQuest(c, 'smith')).toBe(true);
+    expect(c.quests.elder?.accepted ?? false).toBe(false);
+    addItem(c, 'twine', 20);
+    expect(completeQuest(acc, c, 'smith')).toBeNull();
+    expect(c.quests.smith.idx).toBe(1);
+    expect(currentQuest(c, 'elder')!.name).toBe('첫 걸음');
   });
 });

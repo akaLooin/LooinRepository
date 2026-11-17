@@ -9,7 +9,7 @@ export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
 export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop';
 export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type WeaponType = 'sword' | 'bow' | 'wand';
-export type EquipSlot = 'weapon' | 'hat' | 'body' | 'pickaxe' | 'axe';
+export type EquipSlot = 'weapon' | 'hat' | 'body' | 'ring' | 'pickaxe' | 'axe';
 
 export interface ItemStats {
   dmg?: number; def?: number; hp?: number;
@@ -18,7 +18,7 @@ export interface ItemStats {
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
-  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key';
+  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock';
   /** 가방 확장: 사용하면 이 캐릭터의 가방 칸 +n (종류마다 한 번) */
   bagSlots?: number;
   /** 소지 한도 주머니: 이 묶음의 한 칸 최대치를 cap 으로 */
@@ -53,7 +53,7 @@ export interface NodeDef {
 /** solid: 아래가 흙으로 꽉 찬 언덕. 지면에서는 옆으로 지나갈 수 없다(맵 가장자리에 붙여 쓴다) */
 export interface Platform { x: number; y: number; w: number; solid?: boolean }
 export interface PortalDef { x: number; y?: number; to: string; toX: number; toY?: number; reqKills?: number; key?: string; label?: string }
-export interface FacilityDef { kind: FacilityKind; x: number; y: number }
+export interface FacilityDef { kind: FacilityKind; x: number; y: number; /** NPC 시설이면 어느 NPC인지 */ npc?: string }
 export interface MapDef {
   id: string; name: string; width: number;
   theme: 'town' | 'meadow' | 'hills' | 'forest';
@@ -71,7 +71,8 @@ export interface MapDef {
   /** 맵에서 보이는 장식(모닥불 등) 위치 */
   campfireX?: number;
 }
-export interface RecipeDef { item: string; coins: number; mats: [string, number][] }
+/** tier: 모루 단계(2 이상은 모루 확장이 필요). unlock: 만들면 아이템 대신 모루 단계가 오른다 */
+export interface RecipeDef { item: string; coins: number; mats: [string, number][]; tier?: number; unlock?: number; smithLv?: number }
 
 export const STAT_NAMES: Record<StatKey, string> = { str: '힘', agi: '민첩', wis: '지혜', luk: '행운' };
 export const STAT_DESC: Record<StatKey, string> = {
@@ -81,7 +82,7 @@ export const STAT_DESC: Record<StatKey, string> = {
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
-  weapon: '무기', hat: '모자', body: '갑옷', pickaxe: '곡괭이', axe: '도끼',
+  weapon: '무기', hat: '모자', body: '갑옷', ring: '장신구', pickaxe: '곡괭이', axe: '도끼',
 };
 
 const items: ItemDef[] = [
@@ -99,6 +100,9 @@ const items: ItemDef[] = [
   { id: 'pouch_res', name: '자원 주머니', desc: '사용하면 통나무·광석 한 칸에 100개까지.', kind: 'pouch', pouch: { group: 'resource', cap: 100 }, sell: 20 },
   { id: 'pouch_food', name: '도시락 주머니', desc: '사용하면 음식 한 칸에 100개까지.', kind: 'pouch', pouch: { group: 'food', cap: 100 }, sell: 20 },
   { id: 'chest_small', name: '작은 보관함', desc: '사용하면 계정 창고 +8칸.', kind: 'chest', chestSlots: 8, sell: 50 },
+  { id: 'anvil_exp', name: '모루 확장 I', desc: '만들면 모루 2단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
+  { id: 'moss_ring', name: '이끼 반지', desc: '행운이 깃든 반지.', kind: 'equip', slot: 'ring', stats: { luk: 3, hp: 12 }, reqLv: 6, sell: 40 },
+  { id: 'pebble_charm', name: '돌 부적', desc: '단단한 돌을 깎아 만든 부적.', kind: 'equip', slot: 'ring', stats: { def: 3, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'forest_key', name: '숲의 열쇠', desc: '속삭임 숲 깊은 곳의 문을 연다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'log', name: '참나무 통나무', desc: '튼튼한 목재.', kind: 'material', sell: 2 },
   { id: 'ore', name: '붉은돌 광석', desc: '붉은 빛이 도는 광석.', kind: 'material', sell: 4 },
@@ -125,7 +129,7 @@ const monsters: MonsterDef[] = [
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
     drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
-    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }] },
+    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
     drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }] },
 ];
@@ -144,7 +148,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
-    facilities: [{ kind: 'storage', x: 50, y: 0 }, { kind: 'anvil', x: 150, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', x: 480, y: -48 }],
+    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
     portals: [{ x: 652, y: -48, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
@@ -183,9 +187,11 @@ export const RECIPES: RecipeDef[] = [
   { item: 'bag_leather', coins: 120, mats: [['moss', 25], ['twine', 15], ['leaf', 5]] },
   { item: 'pouch_mat', coins: 80, mats: [['twine', 20], ['moss', 15]] },
   { item: 'pouch_res', coins: 80, mats: [['twine', 20], ['log', 15]] },
-  { item: 'sword_leaf', coins: 250, mats: [['leaf', 15], ['ore', 10]] },
-  { item: 'bow_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8]] },
-  { item: 'wand_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8]] },
+  { item: 'moss_ring', coins: 150, mats: [['moss', 30], ['twine', 10], ['pebble', 5]] },
+  { item: 'anvil_exp', coins: 500, mats: [['plank', 15], ['nail', 25], ['ore', 20]], unlock: 2, smithLv: 5 },
+  { item: 'sword_leaf', coins: 250, mats: [['leaf', 15], ['ore', 10], ['plank', 4]], tier: 2 },
+  { item: 'bow_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8], ['twine', 10]], tier: 2 },
+  { item: 'wand_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8], ['nail', 6]], tier: 2 },
 ];
 
 export interface TalentDef {
@@ -246,9 +252,7 @@ export interface QuestDef {
   goal: { kill: string; n: number } | { item: string; n: number };
   reward: { coins?: number; xp?: number; item?: string };
 }
-export const NPC_NAME = '촌장 모루';
-export const NPC_LOOK = { hair: 2, hairColor: '#e9e4f0', skin: '#f2bd94', outfit: '#8a6fd1' };
-export const QUESTS: QuestDef[] = [
+const ELDER_QUESTS: QuestDef[] = [
   { name: '첫 걸음', text: '풀밭의 이끼방울이 너무 늘었어. 조금만 정리해 주겠나?', goal: { kill: 'mossblob', n: 5 }, reward: { coins: 30, xp: 20 } },
   { name: '장작 모으기', text: '모닥불이 꺼지려 해. 풀밭의 참나무를 베어 통나무를 가져다 주게.', goal: { item: 'log', n: 8 }, reward: { coins: 40, xp: 40 } },
   { name: '폭신한 모자', text: '이끼 덩이를 모아 오면 모자를 하나 만들어 주지.', goal: { item: 'moss', n: 8 }, reward: { item: 'hat_moss', xp: 40 } },
@@ -256,6 +260,25 @@ export const QUESTS: QuestDef[] = [
   { name: '붉은 광석', text: '붉은돌 광석이 필요해. 넉넉히 캐 오면 좋은 곡괭이를 주겠네.', goal: { item: 'ore', n: 15 }, reward: { item: 'pick_stone', xp: 200 } },
   { name: '숲의 속삭임', text: '숲에서 이상한 소리가 들려. 잎새깨비를 쫓아내 주게.', goal: { kill: 'leafling', n: 30 }, reward: { coins: 400, xp: 600, item: 'forest_key' } },
 ];
+
+const SMITH_QUESTS: QuestDef[] = [
+  { name: '첫 노끈', text: '모루를 처음 써 보는 겐가? 노끈부터 만들어 오게. 손에 익히는 게 먼저야.', goal: { item: 'twine', n: 20 }, reward: { coins: 60, xp: 40 } },
+  { name: '못질 연습', text: '쇠못을 좀 넉넉히 만들어 오게. 쓸 데가 많거든.', goal: { item: 'nail', n: 15 }, reward: { item: 'pouch_res', xp: 120 } },
+  { name: '판자 납품', text: '마을 다리를 고치려면 판자가 필요하다네.', goal: { item: 'plank', n: 10 }, reward: { item: 'bag_leather', xp: 300 } },
+  { name: '언덕의 광석', text: '좋은 쇠를 뽑으려면 붉은돌 광석이 더 필요해.', goal: { item: 'ore', n: 25 }, reward: { coins: 500, xp: 500 } },
+];
+
+export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
+export const NPCS: Record<string, NpcDef> = {
+  elder: { id: 'elder', name: '촌장 모루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#f2bd94', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
+  smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#c98a5e', outfit: '#d9574a' }, quests: SMITH_QUESTS },
+};
+/** 전직을 맡는 NPC */
+export const CLASS_NPC = 'elder';
+export const NPC_NAME = NPCS.elder.name;
+export const NPC_LOOK = NPCS.elder.look;
+/** 카드 장착 칸 수(캐릭터마다) */
+export const CARD_SLOTS = 4;
 
 export const HAIR_COLORS = ['#6b4a3a', '#2f2a3a', '#e8b24a', '#d9574a', '#5aa9e6', '#f2a0c8', '#8fde5d', '#e9e4f0'];
 export const SKIN_COLORS = ['#ffd9b8', '#f2bd94', '#c98a5e', '#8a5a3c'];
@@ -282,7 +305,8 @@ export const PRODUCTS: ProductDef[] = [
   { item: 'plank', lv: 6, perHour: 30, xp: 7 },
 ];
 /** 모루 포인트 한 개당 효과 */
-export const ANVIL = { capBase: 60, capPer: 30, spdPer: 0.12, xpPer: 0.15 };
+/** slotLv: 생산 칸이 열리는 대장 레벨 */
+export const ANVIL = { capBase: 60, capPer: 30, spdPer: 0.12, xpPer: 0.15, slotLv: [1, 5, 10] };
 
 /** 잡화점: 하루 수량 제한(현지 날짜 기준으로 다시 채워짐) */
 export interface ShopEntry { item: string; price: number; daily: number }

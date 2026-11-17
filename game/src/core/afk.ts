@@ -19,8 +19,8 @@ export interface AfkReport {
   lost: number;
   /** 먹은 음식 */
   food: number;
-  /** 모루에서 만든 것 */
-  anvil?: { item: string; made: number; levels: number };
+  /** 모루에서 만든 것(칸별) */
+  anvil?: { items: { item: string; made: number }[]; levels: number };
 }
 
 /** 시간당 기대값 */
@@ -167,10 +167,8 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     rep.skill = { key: r.skill.key, name: SKILL_NAMES[r.skill.key], xp: sxp, levels: gainSkillXp(c, r.skill.key, sxp) };
   }
   // 모루 생산은 방치 효율과 무관하게 흐른 시간 그대로
-  if (c.anvil.prod) {
-    const a = anvilTick(c, elapsed);
-    if (a.made) rep.anvil = { item: c.anvil.prod, made: a.made, levels: a.levels };
-  }
+  const a = anvilTick(c, elapsed);
+  if (a.made) rep.anvil = { items: a.bySlot, levels: a.levels };
   const d = derive(c, acc.cards);
   c.hp = d.maxHp; c.mp = d.maxMp;
   return rep;

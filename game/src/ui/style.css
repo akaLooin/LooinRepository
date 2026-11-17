@@ -54,7 +54,7 @@ html, body {
 .ui-dialog .close { align-self: flex-start; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: scale(.88); opacity: 0; } }
-.ui-grid.eq { grid-template-columns: repeat(6, var(--slot)); }
+.ui-grid.eq { grid-template-columns: repeat(7, var(--slot)); }
 .ui-grid.bag { grid-template-columns: repeat(8, var(--slot)); }
 .ui-grid.c4 { grid-template-columns: repeat(4, var(--slot)); flex: none; }
 .ui-kv.mats img, .ui-detail .ui-kv img { height: 1.1em; vertical-align: -0.2em; }
@@ -90,3 +90,11 @@ html, body {
   .ui-grid.bag { grid-template-columns: repeat(6, var(--slot)); }
   .ui-menubtn span { display: none; }
 }
+
+/* 모루 생산 칸 · 특성 하위 탭 */
+.prodslots { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.prodslot { flex: 1; display: flex; align-items: center; gap: var(--sp-3); min-height: calc(var(--slot) + var(--sp-3)); padding: var(--sp-1) var(--sp-3);
+  font: inherit; color: var(--c-text); background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border); border-radius: var(--r-md); cursor: pointer; }
+.prodslot[aria-selected="true"] { border-color: var(--c-accent); box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
+.prodslot.locked { justify-content: center; opacity: .55; cursor: default; }
+.subtabs { display: flex; gap: var(--sp-2); }
