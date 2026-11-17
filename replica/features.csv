@@ -14,7 +14,7 @@ AUTO(대상 자동 선택·스킬 자동 사용),조작,must,yes,yes,
 최소~최대 피해와 치명타,전투,must,yes,yes,
 마나와 스킬 비용,전투,should,yes,yes,"최대 마나는 지혜·레벨. 스킬마다 마나 비용, 부족하면 버튼이 흐려짐"
 체력·쓰러짐·마을 부활,전투,must,yes,partial,현재는 맵 입구에서 부활
-음식 자동 섭취로 회복,전투,should,yes,partial,"음식 칸 1개, 체력 45% 아래에서 자동 섭취. 방치 중 음식 소모는 묶음 3"
+음식 자동 섭취로 회복,전투,should,yes,yes,음식 칸 1개. 방치 중에도 소모
 원거리·마법 발사체,전투,must,yes,yes,
 공격 바(스킬 슬롯 편집),전투,should,yes,partial,배운 액티브가 공격 칸에 자동 배치. 편집은 아직 없음(공격 창은 목록만)
 멀티킬,전투,could,yes,no,후반 시스템
@@ -27,41 +27,41 @@ STR/AGI/WIS/LUK와 직업별 주력·명중 능력치,성장,must,yes,yes,"전�
 별 특성(공용 탭),성장,could,yes,no,
 가족 보너스(직업별 최고 레벨 캐릭터가 계정 전체에 보너스),성장,should,yes,no,
 방치 보상(마지막 대상 기준),방치,must,yes,yes,
-AFK 획득률% 능력치(전투·채집 별도),방치,must,yes,partial,고정 60%
-생존력이 방치 효율에 반영,방치,must,yes,partial,새 피해 공식 반영. 음식 소모·생존력 지표는 묶음 3
-AFK 정보 창(시간당 처치·명중·생존력),방치,must,yes,no,
-대상별 처치 상한,방치,should,yes,no,
+AFK 획득률% 능력치(전투·채집 별도),방치,must,yes,yes,기본 40% + 행운/지혜 + 방치 요령 특성 + 이끼왕 카드
+생존력이 방치 효율에 반영,방치,must,yes,yes,"받는 피해 대 회복, 음식으로 메움. 방치 정보 창에 표시"
+AFK 정보 창(시간당 처치·명중·생존력),방치,must,yes,yes,상단 오른쪽 지역명 또는 메뉴 > 방치 정보. 보상과 같은 계산
+대상별 처치 상한,방치,should,yes,yes,맵 몬스터 수와 재생성 시간으로 상한
 방치 보상 창(경과 시간·획득 목록),방치,must,yes,yes,
 채광,기술,must,yes,yes,
 벌목,기술,must,yes,yes,
-대장(모루 생산으로 경험치),기술,must,yes,no,
+대장(모루 생산으로 경험치),기술,must,yes,yes,
 낚시·채집(벌레) 등 추가 기술,기술,could,yes,no,
 도구 장비와 기술 효율,기술,must,yes,yes,
-가방 칸과 가방 확장 아이템,보관,must,yes,partial,24칸 고정
-종류별 소지 한도와 한도 주머니,보관,should,yes,no,
-계정 공용 창고,보관,must,yes,no,
+가방 칸과 가방 확장 아이템,보관,must,yes,yes,"기본 16칸, 가방 아이템 2종"
+종류별 소지 한도와 한도 주머니,보관,should,yes,yes,"기본 한 칸 25개, 주머니 3종으로 100"
+계정 공용 창고,보관,must,yes,yes,"기본 24칸, 보관함으로 확장. 한 칸 개수 무제한"
 장비 칸(무기·방어구·도구·장신구),보관,must,yes,partial,5칸
 아이템 판매,보관,should,yes,yes,
 모루 제작: 단계 탭과 레시피 격자,제작,must,yes,partial,분류 탭 3개 + 격자 + 상세. 단계(티어) 탭은 아님
 레시피 해금(작업판·드롭·퀘스트),제작,should,yes,no,전부 처음부터 공개
-창고 재료로 제작,제작,should,yes,no,
+창고 재료로 제작,제작,should,yes,yes,
 길게 눌러 연속 제작,제작,could,yes,no,
 모루 확장으로 다음 탭 해금,제작,should,yes,no,
-모루 생산(슬롯·용량·속도·포인트),제작,must,yes,no,
+모루 생산(슬롯·용량·속도·포인트),제작,must,yes,partial,생산 칸 1개(원작은 최대 3). 용량·속도·경험치 포인트
 용광로(광석 → 주괴·연료),제작,should,yes,no,
 장비 강화석(업그레이드 칸),제작,could,yes,no,
 몬스터·자원 카드 드롭과 계정 공용 수집,카드,must,yes,partial,자원 카드 없음
 카드 등급(수량으로 상승),카드,must,yes,yes,3단계
 카드 장착 칸과 프리셋,카드,should,yes,no,현재는 보유만으로 적용
 카드 세트 보너스,카드,could,yes,no,
-마을 + 일렬 사냥터 + 처치 수 포탈,맵,must,yes,yes,
-월드 지도 화면,맵,should,yes,partial,맵 목록과 처치 진행만. 지도 그림·순간이동 없음
-월드 보스와 다음 월드 관문,맵,must,yes,no,
-열쇠로 입장하는 보스방,맵,should,yes,no,
+마을 + 일렬 사냥터 + 처치 수 포탈,맵,must,yes,yes,마을은 언덕·로프가 있는 2층 구조
+월드 지도 화면,맵,should,yes,partial,맵 노드와 해금 상태. 지도에서 순간이동은 없음
+월드 보스와 다음 월드 관문,맵,must,yes,partial,"이끼왕(예고 후 내려찍기). 2월드는 지도에 ""준비 중""만"
+열쇠로 입장하는 보스방,맵,should,yes,yes,숲의 열쇠: 퀘스트 보상 + 드물게 드롭
 여러 NPC의 퀘스트 연쇄,퀘스트,must,yes,partial,NPC 1명 6개
 퀘스트 목록 화면,퀘스트,should,yes,yes,도감 > 퀘스트 탭
 작업판(계정 과제 → 해금),퀘스트,should,yes,no,
-상점(일일 한정 품목),경제,should,yes,no,
+상점(일일 한정 품목),경제,should,yes,yes,잡화점 5품목
 우표(코인·재료로 올리는 계정 영구 보너스),경제,should,yes,no,
 자동 저장,기반,must,yes,yes,로컬
 계정·클라우드 저장,기반,must,yes,no,

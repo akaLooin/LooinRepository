@@ -1,10 +1,10 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  CARDS, CARD_CHANCE, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  CARDS, CARD_BOSS_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, TALENTS, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
+import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -16,7 +16,7 @@ export type Command =
   | { k: 'mob'; uid: number }
   | { k: 'node'; uid: number }
   | { k: 'portal'; idx: number }
-  | { k: 'npc' } | { k: 'craft' };
+  | { k: 'fac'; idx: number };
 
 export interface Player {
   x: number; y: number; vx: number; vy: number;
@@ -33,6 +33,8 @@ export interface Mob {
   x: number; y: number; dir: 1 | -1; hp: number;
   alive: boolean; t: number; moving: boolean;
   hitT: number; contactCd: number; respawnT: number; spawnAge: number;
+  /** 보스: 다음 내려찍기까지, 내려찍기 예고 남은 시간 */
+  slamT: number; windup: number;
 }
 export interface Drop {
   uid: number; coin: boolean; id: string; qty: number;
@@ -50,7 +52,10 @@ export type WorldEvent =
   | { t: 'skill'; name: string; level: number }
   | { t: 'yield'; x: number; y: number; item: string }
   | { t: 'cast'; id: string; x: number; y: number }
-  | { t: 'arrive'; what: 'portal' | 'npc' | 'craft'; idx: number }
+  | { t: 'arrive'; what: 'portal' | 'fac'; idx: number }
+  | { t: 'telegraph'; x: number; y: number; r: number; time: number }
+  | { t: 'slam'; x: number; y: number; r: number }
+  | { t: 'boss'; name: string }
   | { t: 'faint' };
 
 export const SWING_TIME = 0.32;
@@ -92,8 +97,11 @@ export class World {
     char.mapId = this.map.id;
     this.platforms = [{ x: 0, y: 0, w: this.map.width }, ...this.map.platforms];
     this.d = derive(char, acc.cards);
+    const sx = clamp(char.x, 10, this.map.width - 10);
+    // 저장된 높이에 발판이 있으면 그 위에, 아니면 지면에 선다
+    const sy = this.platforms.some((q) => q.y === char.y && sx >= q.x && sx <= q.x + q.w) ? char.y! : 0;
     this.player = {
-      x: clamp(char.x, 10, this.map.width - 10), y: 0, vx: 0, vy: 0, onGround: true, facing: 1,
+      x: sy === 0 ? this.groundX(sx) : sx, y: sy, vx: 0, vy: 0, onGround: true, facing: 1,
       attackT: 0, swingT: 0, swingKind: 'attack', swingId: 0, dead: 0, hurtT: 0, rope: -1, cd: {},
     };
     for (const r of this.map.ropes) {
@@ -110,23 +118,43 @@ export class World {
         const def = MONSTERS[s.monster];
         const m: Mob = {
           uid: this.uid++, def, plat, x: 0, y: plat.y, dir: rng.chance(0.5) ? 1 : -1, hp: def.hp,
-          alive: true, t: rng.range(0, 3), moving: true, hitT: 0, contactCd: 0, respawnT: 0, spawnAge: 1,
+          alive: true, t: rng.range(0, 3), moving: true, hitT: 0, contactCd: 0, respawnT: 0, spawnAge: 1, slamT: 0, windup: 0,
         };
         this.placeMob(m);
         this.mobs.push(m);
       }
+    }
+    if (this.map.boss) {
+      const def = MONSTERS[this.map.boss], plat = this.platforms[0];
+      this.mobs.push({ uid: this.uid++, def, plat, x: this.map.width * 0.68, y: 0, dir: -1, hp: def.hp, alive: true, t: 0, moving: true,
+        hitT: 0, contactCd: 0, respawnT: 0, spawnAge: 1, slamT: def.boss!.slamEvery, windup: 0 });
     }
     for (const n of this.map.nodes) {
       this.nodes.push({ uid: this.uid++, def: NODES[n.node], x: n.x, y: 0, progress: 0, shakeT: 0 });
     }
   }
 
+  /** 언덕(solid) 아래의 지면 구간: 지나갈 수 없는 벽 */
+  private walls(y: number): [number, number][] {
+    return this.platforms.filter((q) => q.solid && q.y < y).map((q) => [q.x + 10, q.x + q.w - 10]);
+  }
+  /** 발판 위에서 실제로 걸을 수 있는 구간(벽 제외). 언덕은 맵 가장자리에 붙어 있다고 가정 */
+  walkRange(q: Platform): [number, number] {
+    let lo = q.x + 8, hi = q.x + q.w - 8;
+    for (const [a, b] of this.walls(q.y)) {
+      if (b < lo || a > hi) continue;
+      if (a > (lo + hi) / 2) hi = Math.min(hi, a - 2); else lo = Math.max(lo, b + 2);
+    }
+    return [lo, hi];
+  }
+  private groundX(x: number) { const [lo, hi] = this.walkRange(this.platforms[0]); return clamp(x, lo, hi); }
+
   private placeMob(m: Mob) {
-    const lo = m.plat.x + 12, hi = m.plat.x + m.plat.w - 12;
+    const [lo0, hi0] = this.walkRange(m.plat), lo = lo0 + 4, hi = hi0 - 4;
     for (let i = 0; i < 6; i++) {
       m.x = this.rng.range(lo, hi);
       // 포탈 근처와 플레이어 바로 위에는 스폰하지 않는다
-      const nearPortal = m.plat.y === 0 && this.map.portals.some((p) => Math.abs(p.x - m.x) < 50);
+      const nearPortal = this.map.portals.some((p) => (p.y ?? 0) === m.plat.y && Math.abs(p.x - m.x) < 50);
       if (!nearPortal && Math.abs(m.x - this.player.x) > 40) break;
     }
   }
@@ -139,16 +167,16 @@ export class World {
     const p = this.player, c = this.char, map = this.map;
     if (p.dead > 0) return null;
     this.engaged = -1;
-    const near = (tx: number, w: number, top: number) => Math.abs(tx - x) <= w && y >= top && y <= 8;
+    const near = (tx: number, w: number, top: number, base = 0) => Math.abs(tx - x) <= w && y >= base + top && y <= base + 8;
     let cmd: Command | null = null;
     const mob = this.mobs.filter((m) => m.alive && Math.abs(m.x - x) <= 15 && y >= m.y - 30 && y <= m.y + 8)
       .sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))[0];
     const node = this.nodes.find((n) => near(n.x, 18, -62));
-    const portal = map.portals.findIndex((q) => near(q.x, 16, -48));
+    const portal = map.portals.findIndex((q) => near(q.x, 16, -48, q.y ?? 0));
+    const fac = map.facilities.findIndex((f) => near(f.x, 18, -38, f.y));
     if (mob) { cmd = { k: 'mob', uid: mob.uid }; c.activity = { k: 'fight' }; }
     else if (portal >= 0) cmd = { k: 'portal', idx: portal };
-    else if (map.npcX !== undefined && near(map.npcX, 14, -36)) cmd = { k: 'npc' };
-    else if (map.craftX !== undefined && near(map.craftX, 20, -28)) cmd = { k: 'craft' };
+    else if (fac >= 0) cmd = { k: 'fac', idx: fac };
     else if (node) {
       if (!this.canUse(node)) { this.events.push({ t: 'loot', text: `${SKILL_NAMES[node.def.skill]} Lv.${node.def.reqLv} 필요` }); return null; }
       cmd = { k: 'node', uid: node.uid }; c.activity = { k: 'gather', node: node.def.id };
@@ -158,11 +186,16 @@ export class World {
       for (const q of this.platforms) {
         if (x < q.x || x > q.x + q.w) continue;
         const gap = y - q.y; // 양수면 윗면보다 아래를 누른 것
-        if (gap < -16 || gap > (q.y === 0 ? 1e9 : 14)) continue;
+        if (gap < -16 || gap > (q.y === 0 || q.solid ? 1e9 : 14)) continue;
+        // 언덕 속(벽 구간)의 낮은 바닥은 고를 수 없다
+        const [lo, hi] = this.walkRange(q);
+        if (x < lo - 8 || x > hi + 8) continue;
         if (Math.abs(gap) < best) { best = Math.abs(gap); py = q.y; }
       }
       if (py === null) return null;
-      cmd = { k: 'move', x: clamp(x, 10, map.width - 10), y: py };
+      const q = this.platforms.find((pl) => pl.y === py && x >= pl.x && x <= pl.x + pl.w)!;
+      const [lo, hi] = this.walkRange(q);
+      cmd = { k: 'move', x: clamp(x, lo, hi), y: py };
     }
     this.aiTarget = null;
     return (this.command = cmd);
@@ -244,7 +277,10 @@ export class World {
     dt = Math.min(dt, 0.05);
     const p = this.player, c = this.char;
     const d = (this.d = derive(c, this.acc.cards));
-    c.x = p.x;
+    c.x = p.x; c.y = p.onGround ? p.y : c.y;
+    // 모루 생산은 플레이 중에도 계속된다
+    const anvil = anvilTick(c, dt);
+    if (anvil.levels) this.events.push({ t: 'skill', name: SKILL_NAMES.smithing, level: c.skills.smithing.lv });
 
     for (const n of this.nodes) n.shakeT = Math.max(0, n.shakeT - dt);
     this.stepMobs(dt, d);
@@ -289,7 +325,12 @@ export class World {
       const want = p.swingT > 0 ? 0 : inp.move * d.speed;
       p.vx += clamp(want - p.vx, -ACCEL * dt, ACCEL * dt);
       if (inp.move && p.swingT <= 0) p.facing = inp.move > 0 ? 1 : -1;
-      p.x = clamp(p.x + p.vx * dt, 10, this.map.width - 10);
+      const nx = clamp(p.x + p.vx * dt, 10, this.map.width - 10);
+      // 언덕 아래로는 걸어 들어갈 수 없다
+      let bx = nx;
+      for (const [a, b] of this.walls(p.y - 1)) if (bx > a && bx < b) bx = p.x <= a ? a : p.x >= b ? b : bx;
+      if (bx !== nx) p.vx = 0;
+      p.x = bx;
       if (inp.climb && p.onGround) {
         const i = this.ropes.findIndex((r) => Math.abs(r.x - p.x) < 5 && p.y === (inp.climb < 0 ? r.bottom : r.top));
         if (i >= 0) { p.rope = i; p.onGround = false; p.x = this.ropes[i].x; p.vx = 0; p.vy = 0; }
@@ -386,7 +427,11 @@ export class World {
 
   private kill(m: Mob, d: Derived) {
     const c = this.char;
-    m.alive = false; m.respawnT = this.rng.range(3.5, 5.5);
+    m.alive = false; m.respawnT = m.def.boss ? Infinity : this.rng.range(3.5, 5.5);
+    if (m.def.boss) {
+      this.acc.bosses[m.def.id] = (this.acc.bosses[m.def.id] ?? 0) + 1;
+      this.events.push({ t: 'boss', name: m.def.name });
+    }
     c.kills[this.map.id] = (c.kills[this.map.id] ?? 0) + 1;
     noteKill(c, m.def.id);
     this.events.push({ t: 'kill', uid: m.uid, x: m.x, y: m.y });
@@ -395,7 +440,9 @@ export class World {
     for (const dr of m.def.drops) {
       if (this.rng.chance(dr.chance * d.dropMult)) this.spawnDrop(false, dr.item, this.rng.int(dr.qty[0], dr.qty[1]), m.x, m.y - 10, m.y);
     }
-    if (CARDS.some((cd) => cd.monster === m.def.id) && this.rng.chance(CARD_CHANCE * d.dropMult)) {
+    const owned = (this.acc.cards[m.def.id] ?? 0) > 0;
+    const cardP = m.def.boss ? CARD_BOSS_CHANCE : CARD_CHANCE * (owned ? 1 : CARD_UNOWNED_MULT) * d.dropMult;
+    if (CARDS.some((cd) => cd.monster === m.def.id) && this.rng.chance(cardP)) {
       this.acc.cards[m.def.id] = (this.acc.cards[m.def.id] ?? 0) + 1;
       this.events.push({ t: 'loot', text: `★ ${m.def.name} 카드 획득!` });
     }
@@ -420,9 +467,10 @@ export class World {
         m.moving = this.rng.chance(0.7); m.t = this.rng.range(1, 3.5);
         if (this.rng.chance(0.4)) m.dir = m.dir === 1 ? -1 : 1;
       }
-      if (m.moving && m.hitT <= 0) {
+      if (m.def.boss) this.stepBoss(m, dt, d);
+      if (m.moving && m.hitT <= 0 && m.windup <= 0) {
         m.x += m.dir * m.def.speed * dt;
-        const lo = m.plat.x + 8, hi = m.plat.x + m.plat.w - 8;
+        const [lo, hi] = this.walkRange(m.plat);
         if (m.x < lo) { m.x = lo; m.dir = 1; } else if (m.x > hi) { m.x = hi; m.dir = -1; }
       }
       if (p.dead <= 0 && m.contactCd <= 0 && m.spawnAge > 0.8
@@ -434,6 +482,33 @@ export class World {
         this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount, crit: false, onPlayer: true });
         if (c.hp <= 0) { c.hp = 0; p.dead = 3; p.swingT = 0; p.vx = 0; this.events.push({ t: 'faint' }); }
       }
+    }
+  }
+
+  /** 보스: 플레이어 쪽으로 천천히 다가가다가 주기적으로 예고 후 내려찍는다 */
+  private stepBoss(m: Mob, dt: number, d: Derived) {
+    const p = this.player, b = m.def.boss!, c = this.char;
+    m.moving = true; m.t = 1;
+    if (p.dead <= 0 && Math.abs(p.x - m.x) > 6) m.dir = p.x > m.x ? 1 : -1;
+    if (m.windup > 0) {
+      m.windup -= dt;
+      if (m.windup <= 0) {
+        this.events.push({ t: 'slam', x: m.x, y: m.y, r: b.slamRadius });
+        if (p.dead <= 0 && Math.abs(p.x - m.x) <= b.slamRadius && Math.abs(p.y - m.y) < 6) {
+          const amount = dmgTaken({ atk: b.slamDmg, defZero: m.def.defZero }, d.def, this.rng.range(0.9, 1.1));
+          if (amount > 0) {
+            c.hp -= amount; p.hurtT = HURT_TIME;
+            this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount, crit: false, onPlayer: true });
+            if (c.hp <= 0) { c.hp = 0; p.dead = 3; p.swingT = 0; p.vx = 0; this.events.push({ t: 'faint' }); }
+          }
+        }
+      }
+      return;
+    }
+    m.slamT -= dt;
+    if (m.slamT <= 0 && p.dead <= 0) {
+      m.slamT = b.slamEvery; m.windup = b.slamWindup;
+      this.events.push({ t: 'telegraph', x: m.x, y: m.y, r: b.slamRadius, time: b.slamWindup });
     }
   }
 
@@ -541,14 +616,15 @@ export class World {
         return this.navigate(n.x, n.y, 10);
       }
       default: {
-        const tx = cmd.k === 'portal' ? this.map.portals[cmd.idx].x : cmd.k === 'npc' ? this.map.npcX! : this.map.craftX!;
+        const at = cmd.k === 'portal' ? this.map.portals[cmd.idx] : this.map.facilities[cmd.idx];
+        const tx = at.x, ty = at.y ?? 0;
         const stop = INTERACT_STOP;
-        if (this.arrived(tx, 0, stop)) {
+        if (this.arrived(tx, ty, stop)) {
           this.command = null;
-          this.events.push({ t: 'arrive', what: cmd.k, idx: cmd.k === 'portal' ? cmd.idx : 0 });
+          this.events.push({ t: 'arrive', what: cmd.k, idx: cmd.idx });
           return IDLE;
         }
-        return this.navigate(tx, 0, stop);
+        return this.navigate(tx, ty, stop);
       }
     }
   }
@@ -596,7 +672,8 @@ export class World {
     if (!cmd || cmd.k === 'move') return null;
     if (cmd.k === 'mob') { const m = this.mobs.find((x) => x.uid === cmd.uid); return m ? { x: m.x, y: m.y - (m.def.motion === 'float' ? 38 : 28) } : null; }
     if (cmd.k === 'node') { const n = this.nodes.find((x) => x.uid === cmd.uid); return n ? { x: n.x, y: n.y - (n.def.skill === 'chopping' ? 74 : 44) } : null; }
-    if (cmd.k === 'portal') return { x: this.map.portals[cmd.idx].x, y: -60 };
-    return { x: cmd.k === 'npc' ? this.map.npcX! : this.map.craftX!, y: cmd.k === 'npc' ? -50 : -40 };
+    if (cmd.k === 'portal') { const q = this.map.portals[cmd.idx]; return { x: q.x, y: (q.y ?? 0) - 60 }; }
+    const f = this.map.facilities[cmd.idx];
+    return { x: f.x, y: f.y - (f.kind === 'npc' ? 50 : 44) };
   }
 }

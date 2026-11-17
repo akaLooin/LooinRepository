@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { computeAfk } from '../src/core/afk';
+import { afkRates, computeAfk } from '../src/core/afk';
 import { MAPS, MONSTERS, RECIPES } from '../src/core/data';
 import { Rng } from '../src/core/rng';
 import {
   addItem, countItem, craft, createCharacter, derive, deserialize, equipItem, gainXp, newAccount, serialize,
-  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, dmgTaken, hitChance, setFood, learnTalent, questProgress,
+  unequipItem, xpToNext, acceptQuest, advanceClass, completeQuest, dmgTaken, hitChance, setFood, addItemSome, anvilTick, anvilPointsFree, buy, collectAnvil,
+  deposit, depositAll, invSize, setProduct, shopLeft, spendAnvilPoint, stackCap, storageCount, useItem, withdraw, today, learnTalent, questProgress,
 } from '../src/core/state';
 import { World } from '../src/core/world';
 
@@ -40,7 +41,7 @@ describe('성장', () => {
   it('제작은 재료와 코인을 소모한다', () => {
     const { acc, c } = setup();
     expect(craft(acc, c, 0)).not.toBeNull();
-    acc.coins = 100; addItem(c, 'moss', 10);
+    acc.coins = 100; addItem(c, 'moss', 10); addItem(c, 'twine', 4);
     expect(craft(acc, c, 0)).toBeNull();
     expect(acc.coins).toBe(100 - RECIPES[0].coins);
     expect(countItem(c, 'moss')).toBe(2);
@@ -146,7 +147,9 @@ describe('방치 보상', () => {
     c.mapId = 'hills'; c.activity = { k: 'gather', node: 'redrock' };
     const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
     expect(r.mode).toBe('gather');
-    expect(countItem(c, 'ore')).toBeGreaterThan(50);
+    // 가방 한 칸은 기본 25개까지: 넘치는 만큼은 잃는다
+    expect(countItem(c, 'ore')).toBe(25);
+    expect(r.lost).toBeGreaterThan(0);
     expect(r.skill!.levels).toBeGreaterThan(0);
   });
 });
@@ -337,5 +340,153 @@ describe('전투 공식', () => {
     expect(setFood(c, null)).toBeNull();
     expect(countItem(c, 'berry')).toBe(4);
     expect(setFood(c, 'log')).toMatch(/음식/);
+  });
+});
+
+describe('가방·주머니·창고', () => {
+  it('가방은 16칸, 가방 아이템으로 늘어나고 같은 가방은 한 번만', () => {
+    const { acc, c } = setup();
+    expect(invSize(c)).toBe(16);
+    addItem(c, 'bag_small');
+    expect(useItem(acc, c, 'bag_small')).toBeNull();
+    expect(invSize(c)).toBe(20);
+    addItem(c, 'bag_small');
+    expect(useItem(acc, c, 'bag_small')).toMatch(/이미/);
+  });
+  it('한 칸 최대치: 기본 25, 주머니를 쓰면 그 묶음만 100', () => {
+    const { acc, c } = setup();
+    expect(addItemSome(c, 'moss', 40)).toBe(25);
+    expect(addItem(c, 'moss', 1)).toBe(false);
+    addItem(c, 'pouch_mat'); useItem(acc, c, 'pouch_mat');
+    expect(stackCap(c, 'moss')).toBe(100);
+    expect(stackCap(c, 'log')).toBe(25);
+    expect(addItemSome(c, 'moss', 200)).toBe(75);
+  });
+  it('창고: 넣고 빼기, 전부 넣기는 재료·음식만, 제작은 창고 재료도 쓴다', () => {
+    const { acc, c } = setup();
+    addItem(c, 'moss', 20); addItem(c, 'berry', 3); addItem(c, 'sword_stone');
+    expect(depositAll(acc, c)).toBe(2);
+    expect(countItem(c, 'sword_stone')).toBe(1);
+    expect(storageCount(acc, 'moss')).toBe(20);
+    expect(withdraw(acc, c, 'moss', 5)).toBe(5);
+    expect(storageCount(acc, 'moss')).toBe(15);
+    // 창고에는 한 칸 제한이 없다
+    deposit(acc, c, 'moss'); addItem(c, 'moss', 25); deposit(acc, c, 'moss'); addItem(c, 'moss', 5); deposit(acc, c, 'moss');
+    expect(storageCount(acc, 'moss')).toBe(50);
+    acc.coins = 50; addItem(c, 'twine', 4);
+    expect(craft(acc, c, 0)).toBeNull(); // 이끼 8개는 창고에서
+    expect(storageCount(acc, 'moss')).toBe(42);
+  });
+  it('잡화점: 하루 수량 제한, 날짜가 바뀌면 다시 채워진다', () => {
+    const { acc, c } = setup();
+    acc.coins = 5000;
+    const day1 = new Date(2026, 0, 1, 12).getTime(), day2 = new Date(2026, 0, 2, 12).getTime();
+    expect(buy(acc, c, 2, 1, day1)).toBeNull();
+    expect(buy(acc, c, 2, 1, day1)).toMatch(/다 팔렸/);
+    expect(shopLeft(acc, 2, day2)).toBe(1);
+    expect(acc.shop.day).toBe(today(day2));
+  });
+});
+
+describe('모루 생산', () => {
+  it('시간이 흐르면 만들어지고, 대장 경험치·포인트가 쌓이며, 용량에서 멈춘다', () => {
+    const { acc, c } = setup();
+    expect(setProduct(c, 'nail')).toMatch(/Lv/);
+    expect(setProduct(c, 'twine')).toBeNull();
+    const a = anvilTick(c, 1800);
+    expect(a.made).toBe(60);
+    expect(c.skills.smithing.lv).toBeGreaterThan(1);
+    expect(anvilPointsFree(c)).toBe(c.skills.smithing.lv - 1);
+    anvilTick(c, 99999);
+    expect(c.anvil.stored).toBe(60); // 기본 용량
+    expect(spendAnvilPoint(c, 'cap')).toBe(true);
+    anvilTick(c, 99999);
+    expect(c.anvil.stored).toBe(90);
+    expect(collectAnvil(acc, c, false)).toBe(25);
+    expect(collectAnvil(acc, c, true)).toBe(65);
+    expect(storageCount(acc, 'twine')).toBe(65);
+  });
+  it('방치 보상에도 모루 생산이 들어간다', () => {
+    const { acc, c } = setup();
+    setProduct(c, 'twine');
+    const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
+    expect(r.anvil!.made).toBe(60);
+  });
+});
+
+describe('방치 정보와 보상', () => {
+  it('방치 효율·처치 상한·명중·생존력을 계산하고, 보상은 그 수치를 따른다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const r = afkRates(acc, c);
+    expect(r.mode).toBe('fight');
+    expect(r.rate).toBeCloseTo(0.402, 3);
+    expect(r.killsPerHour).toBeLessThanOrEqual(r.killCap * r.rate + 1e-9);
+    expect(r.hit).toBe(1);
+    const rep = computeAfk(acc, c, 2 * 3600_000, new Rng(1))!;
+    expect(rep.kills).toBe(Math.floor(r.killsPerHour * 2));
+  });
+  it('피해가 회복보다 크면 음식을 먹어 버티고, 음식이 없으면 효율이 떨어진다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'hills'; c.level = 5; c.stats.luk = 8;
+    const hungry = afkRates(acc, c);
+    expect(hungry.survival).toBeLessThan(1);
+    c.food = { id: 'mushroom', qty: 500 };
+    const fed = afkRates(acc, c);
+    expect(fed.survival).toBe(1);
+    expect(fed.killsPerHour).toBeGreaterThan(hungry.killsPerHour);
+    const rep = computeAfk(acc, c, 3600_000, new Rng(1))!;
+    expect(rep.food).toBeGreaterThan(0);
+    expect(c.food!.qty).toBe(500 - rep.food);
+  });
+  it('카드는 드물게: 12시간 사냥해도 수십 장이 나오지 않는다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow'; c.level = 10; c.stats.luk = 10;
+    const rep = computeAfk(acc, c, 12 * 3600_000, new Rng(3))!;
+    const n = rep.cards.reduce((s, x) => s + x.qty, 0);
+    expect(n).toBeLessThan(15);
+  });
+});
+
+describe('마을·언덕·보스', () => {
+  it('언덕 아래로는 걸어 들어갈 수 없고, 로프로 올라 위의 촌장에게 간다', () => {
+    const { acc, c } = setup();
+    const w = new World(acc, c, new Rng(1));
+    for (let i = 0; i < 600; i++) w.step(1 / 60, { move: 1, climb: 0 });
+    expect(w.player.y).toBe(0);
+    expect(w.player.x).toBeLessThanOrEqual(390);
+    const npc = w.map.facilities.findIndex((f) => f.kind === 'npc');
+    const f = w.map.facilities[npc];
+    expect(w.tap(f.x, f.y - 10)).toEqual({ k: 'fac', idx: npc });
+    let arrived = false;
+    for (let i = 0; i < 60 * 40 && !arrived; i++) {
+      w.step(1 / 60, { move: 0, climb: 0 });
+      arrived = w.events.some((e) => e.t === 'arrive' && e.what === 'fac' && e.idx === npc);
+      w.events.length = 0;
+    }
+    expect(arrived).toBe(true);
+    expect(w.player.y).toBe(-48);
+    // 언덕 옆면을 누르면 언덕 위로 간다(언덕 속 지면은 고를 수 없다)
+    expect(w.tap(520, -5)).toEqual({ k: 'move', x: 520, y: -48 });
+  });
+  it('보스: 예고 후 내려찍고, 처치하면 기록이 남고 다시 살아나지 않는다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'lair'; c.level = 40; c.stats.luk = 120; c.x = 60;
+    const w = new World(acc, c, new Rng(5));
+    const boss = w.mobs.find((m) => m.def.boss)!;
+    expect(boss).toBeTruthy();
+    w.tap(boss.x, boss.y - 10);
+    let tele = false, slam = false;
+    for (let i = 0; i < 60 * 120 && boss.alive; i++) {
+      w.step(1 / 60, { move: 0, climb: 0 });
+      if (w.command === null && boss.alive) w.tap(boss.x, boss.y - 10);
+      for (const e of w.events) { if (e.t === 'telegraph') tele = true; if (e.t === 'slam') slam = true; }
+      w.events.length = 0;
+    }
+    expect(tele && slam).toBe(true);
+    expect(boss.alive).toBe(false);
+    expect(acc.bosses.mossking).toBe(1);
+    for (let i = 0; i < 600; i++) w.step(1 / 60, { move: 0, climb: 0 });
+    expect(boss.alive).toBe(false);
   });
 });

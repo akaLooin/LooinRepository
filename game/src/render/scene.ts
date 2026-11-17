@@ -6,7 +6,7 @@ import { HURT_TIME, Mob, NodeInst, SWING_TIME, World, WorldEvent } from '../core
 import { Game } from '../game';
 import { HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
 import { currentQuest, questProgress } from '../core/state';
-import { NPC_LOOK, NPC_NAME, SMASH_RANGE } from '../core/data';
+import { FACILITY_NAMES, ITEMS, NPC_LOOK, NPC_NAME, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
 const FONT = 'Galmuri11';
@@ -205,13 +205,16 @@ class MobView {
     }
     if (m.hitT > 0) { const k = m.hitT / 0.22; sx *= 1 + k * 0.22; sy *= 1 - k * 0.2; }
     if (m.hitT > 0.12) this.spr.setTintFill(0xffffff); else this.spr.clearTint();
-    this.spr.setPosition(0, y).setScale(sx * this.scale * this.flip, sy * this.scale).setRotation(rot * this.flip);
+    const k = m.def.scale ?? 1;
+    // 보스 내려찍기 예고: 몸을 움츠렸다가 내려찍는다
+    if (m.windup > 0) { const t = 1 - m.windup / m.def.boss!.slamWindup; sy *= 1 - Math.sin(t * Math.PI * 0.5) * 0.28; sx *= 1 + Math.sin(t * Math.PI * 0.5) * 0.18; }
+    this.spr.setPosition(0, y).setScale(sx * this.scale * this.flip * k, sy * this.scale * k).setRotation(rot * this.flip);
     this.shadow.setScale(1 + y * 0.03);
     this.root.setPosition(m.x, m.y);
     // 체력바
     this.hpShown = smooth(this.hpShown, m.hp / m.def.hp, dt, 14);
     this.bar.clear();
-    if (m.hp < m.def.hp) {
+    if (m.hp < m.def.hp && !m.def.boss) {
       const top = -24 + (m.def.motion === 'float' ? -9 : 0);
       this.bar.fillStyle(0x2b1d2e).fillRect(-9, top, 18, 4);
       this.bar.fillStyle(0xf6c945).fillRect(-8, top + 1, 16 * Math.max(0, this.hpShown), 2);
@@ -231,8 +234,10 @@ class NodeView {
       this.base = scene.add.image(n.x, n.y + 2, `node_${n.def.id}`).setOrigin(0.5, 1).setDepth(20);
     }
     this.bar = scene.add.graphics().setDepth(60).setPosition(n.x, n.y);
-    label(scene, n.def.name, 6, '#fff3d6').setPosition(n.x, n.y - (this.top ? 58 : 30)).setDepth(22).setAlpha(0.9);
+    this.name = label(scene, n.def.name, 6, '#fff3d6').setPosition(n.x, n.y - (this.top ? 58 : 30)).setDepth(22).setAlpha(0.9);
   }
+  private name: Phaser.GameObjects.Text;
+  destroy() { this.base.destroy(); this.top?.destroy(); this.bar.destroy(); this.name.destroy(); }
   update(dt: number) {
     const n = this.n;
     this.t += dt;
@@ -273,7 +278,8 @@ export class GameScene extends Phaser.Scene {
   private portals: { ring: Img; glow: Img; lock: Img; text: Phaser.GameObjects.Text; idx: number }[] = [];
   private flames: Img[] = [];
   private arrow: Img | null = null;
-  private npc: { img: Img; mark: Phaser.GameObjects.Text } | null = null;
+  private npc: { img: Img; mark: Phaser.GameObjects.Text; x: number; y: number } | null = null;
+  private bossRing: Phaser.GameObjects.Ellipse | null = null;
   private camX = 0; private camY = 0; private time0 = 0;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private pending: World | null | undefined;
@@ -304,6 +310,8 @@ export class GameScene extends Phaser.Scene {
     this.rig?.destroy(); this.rig = null;
     for (const o of this.statics) o.destroy();
     for (const v of this.mobs) v.root.destroy();
+    for (const v of this.nodeViews) v.destroy();
+    this.bossRing?.destroy(); this.bossRing = null;
     for (const d of this.dropViews.values()) d.destroy();
     for (const d of this.shotViews.values()) d.destroy();
     this.shotViews.clear();
@@ -331,6 +339,13 @@ export class GameScene extends Phaser.Scene {
     keep(this.add.tileSprite(-600, 0, map.width + 1200, 48, `tile_${map.theme}`).setOrigin(0, 0).setDepth(10));
     keep(this.add.rectangle(-600, 48, map.width + 1200, 400, Phaser.Display.Color.HexStringToColor(th.dirt[1]).color).setOrigin(0, 0).setDepth(10));
     for (const p of map.platforms) {
+      if (p.solid) {
+        // 아래가 흙으로 꽉 찬 언덕: 윗면은 풀, 옆면은 어두운 테두리
+        keep(this.add.tileSprite(p.x, p.y, p.w, -p.y + 2, `tile_${map.theme}`).setOrigin(0, 0).setDepth(11));
+        keep(this.add.rectangle(p.x, p.y + 3, 2, -p.y, 0x2b1d2e, 0.6).setOrigin(0, 0).setDepth(11));
+        keep(this.add.rectangle(p.x + p.w - 2, p.y + 3, 2, -p.y, 0x2b1d2e, 0.6).setOrigin(0, 0).setDepth(11));
+        continue;
+      }
       keep(this.add.image(p.x - 2, p.y, `plat_${map.theme}_l`).setOrigin(0, 0).setDepth(11));
       keep(this.add.tileSprite(p.x + 14, p.y, p.w - 28, 12, `plat_${map.theme}_m`).setOrigin(0, 0).setDepth(11));
       keep(this.add.image(p.x + p.w + 2, p.y, `plat_${map.theme}_r`).setOrigin(1, 0).setDepth(11));
@@ -352,29 +367,34 @@ export class GameScene extends Phaser.Scene {
       const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70));
       this.swayers.push({ img, ph: hash(i) * 6 });
     }
-    // 마을 오브젝트
-    if (map.craftX !== undefined) {
-      keep(this.add.image(map.craftX, 1, 'obj_craft').setOrigin(0.5, 1).setDepth(20));
-      keep(label(this, '제작대', 6.5, '#fff3d6').setPosition(map.craftX, -26).setDepth(22));
-      const fx = 62;
+    // 모닥불
+    if (map.campfireX !== undefined) {
+      const fx = map.campfireX;
       keep(this.add.image(fx, 1, 'obj_logs').setOrigin(0.5, 1).setDepth(20));
       for (let i = 0; i < 3; i++) this.flames.push(keep(this.add.image(fx + (i - 1) * 4, -4, 'fx_flame').setOrigin(0.5, 1).setDepth(21)));
     }
-    if (map.npcX !== undefined) {
-      const look = NPC_LOOK;
-      portraitUrl(look);
-      ensureTextures(this);
-      const img = keep(this.add.image(map.npcX, 1, `${buildLook(look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(true));
-      keep(label(this, NPC_NAME, 6.5, '#fff3d6').setOrigin(0.5, 0).setPosition(map.npcX, 3).setDepth(31));
-      const mark = keep(label(this, '!', 13, '#ffd84a').setDepth(31));
-      this.npc = { img, mark };
+    // 시설: 모루·창고·상점·NPC
+    for (const f of map.facilities) {
+      if (f.kind === 'npc') {
+        portraitUrl(NPC_LOOK);
+        ensureTextures(this);
+        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(NPC_LOOK)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(true));
+        keep(label(this, NPC_NAME, 6.5, '#fff3d6').setOrigin(0.5, 0).setPosition(f.x, f.y + 3).setDepth(31));
+        const mark = keep(label(this, '!', 13, '#ffd84a').setDepth(31));
+        this.npc = { img, mark, x: f.x, y: f.y };
+        continue;
+      }
+      const key = f.kind === 'anvil' ? 'obj_craft' : f.kind === 'storage' ? 'obj_storage' : 'obj_shop';
+      const img = keep(this.add.image(f.x, f.y + 1, key).setOrigin(0.5, 1).setDepth(20));
+      keep(label(this, FACILITY_NAMES[f.kind], 6.5, '#fff3d6').setPosition(f.x, f.y - img.height - 3).setDepth(22));
     }
     // 포탈
     map.portals.forEach((q, idx) => {
-      const glow = keep(this.add.image(q.x, -22, 'portal_glow').setDepth(18));
-      const ring = keep(this.add.image(q.x, -22, 'portal_ring').setDepth(19));
-      const lock = keep(this.add.image(q.x, -22, 'portal_locked').setDepth(19));
-      const text = keep(label(this, '', 6.5).setPosition(q.x, -47).setDepth(22));
+      const py = q.y ?? 0;
+      const glow = keep(this.add.image(q.x, py - 22, 'portal_glow').setDepth(18));
+      const ring = keep(this.add.image(q.x, py - 22, 'portal_ring').setDepth(19));
+      const lock = keep(this.add.image(q.x, py - 22, 'portal_locked').setDepth(19));
+      const text = keep(label(this, '', 6.5).setPosition(q.x, py - 47).setDepth(22));
       this.portals.push({ ring, glow, lock, text, idx });
     });
     this.nodeViews = w.nodes.map((n) => new NodeView(this, n));
@@ -411,6 +431,18 @@ export class GameScene extends Phaser.Scene {
         const s = this.add.image(p.x, p.y - 16, 'fx_px').setTint(e.t === 'level' ? 0xffe98a : 0xa5f0c0).setDepth(94).setScale(0.6);
         this.tweens.add({ targets: s, x: p.x + Math.cos(a) * 30, y: p.y - 16 + Math.sin(a) * 30, alpha: 0, angle: 180, duration: 700, ease: 'Cubic.easeOut', onComplete: () => s.destroy() });
       }
+    } else if (e.t === 'telegraph') {
+      // 내려찍기 범위를 바닥에 붉게 표시하고, 시간이 지날수록 진해진다
+      this.bossRing?.destroy();
+      const ring = (this.bossRing = this.add.ellipse(e.x, e.y + 1, e.r * 2, 10, 0xd9574a, 0.15).setStrokeStyle(1.5, 0xff8a7a, 0.9).setDepth(15));
+      this.tweens.add({ targets: ring, fillAlpha: 0.45, duration: e.time * 1000, ease: 'Quad.easeIn' });
+    } else if (e.t === 'slam') {
+      this.bossRing?.destroy(); this.bossRing = null;
+      for (let i = 0; i < 14; i++) this.puff(e.x + (i / 13 - 0.5) * e.r * 2, e.y - 2, 0xc9b28a, 1);
+    } else if (e.t === 'boss') {
+      const p = this.world.player;
+      const t = label(this, `${e.name} 처치!`, 14, '#ffe98a').setPosition(p.x, p.y - 50).setDepth(95);
+      this.tweens.add({ targets: t, y: p.y - 76, alpha: 0, delay: 1400, duration: 900, onComplete: () => t.destroy() });
     } else if (e.t === 'cast') {
       if (e.id === 'nova') {
         const ring = this.add.circle(e.x, e.y - 10, 6, 0xa5d8ff, 0.5).setStrokeStyle(2, 0xffffff).setDepth(86);
@@ -477,15 +509,15 @@ export class GameScene extends Phaser.Scene {
       const q = currentQuest(w.char), qp = questProgress(w.char);
       const m = !q ? '' : !w.char.quest.accepted ? '!' : qp?.done ? '?' : '';
       if (this.npc.mark.text !== m) this.npc.mark.setText(m);
-      this.npc.mark.setPosition(w.map.npcX!, -34 + Math.sin(this.time0 * 4) * 1.5);
+      this.npc.mark.setPosition(this.npc.x, this.npc.y - 34 + Math.sin(this.time0 * 4) * 1.5);
       this.npc.img.setScale(1 - Math.sin(this.time0 * 2.2) * 0.012, 1 + Math.sin(this.time0 * 2.2) * 0.02);
     }
     for (const pv of this.portals) {
       const q = w.map.portals[pv.idx], open = w.portalOpen(q);
       pv.ring.setVisible(open); pv.glow.setVisible(open); pv.lock.setVisible(!open);
       pv.glow.setScale(0.9 + Math.sin(this.time0 * 3 + pv.idx) * 0.1, 1).setAlpha(0.75 + Math.sin(this.time0 * 4) * 0.2);
-      pv.ring.setY(-22 + Math.sin(this.time0 * 2 + pv.idx) * 1);
-      const txt = open ? MAPS[q.to].name : `처치 ${w.char.kills[w.map.id] ?? 0}/${q.reqKills}`;
+      pv.ring.setY((q.y ?? 0) - 22 + Math.sin(this.time0 * 2 + pv.idx) * 1);
+      const txt = !open ? `처치 ${w.char.kills[w.map.id] ?? 0}/${q.reqKills}` : q.label ? `${q.label}${q.key ? ` (${ITEMS[q.key].name})` : ''}` : MAPS[q.to].name;
       if (pv.text.text !== txt) pv.text.setText(txt);
     }
 

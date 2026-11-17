@@ -187,6 +187,19 @@ function buildMonsters() {
   p.line(9, 5, 9, 2, '#3b8c4f'); p.disc(11, 2, 1.6, 1.2, '#b4f08a'); p.disc(7, 3, 1.2, 1, '#8fde5d');
   p.outline().save('mob_mossblob');
 
+  // 이끼왕: 큰 이끼방울 + 왕관 (렌더러가 배율로 키운다)
+  p = new Paint(28, 26);
+  p.disc(13.5, 17, 12, 8.4, '#4fa84a');
+  p.disc(13.5, 15, 10, 6.2, '#6fc457');
+  p.disc(8, 13, 3, 1.6, '#b4f08a');
+  p.rect(3, 22, 22, 3, '#2f7a3f');
+  for (const ex of [11, 17]) { p.rect(ex, 14, 2, 4, OUT); p.set(ex, 14, '#ffffff'); }
+  p.rect(10, 13, 3, 1, OUT); p.rect(16, 13, 3, 1, OUT);
+  p.rect(12, 20, 4, 1, '#2a5a30');
+  p.rect(8, 6, 12, 3, '#f6c945'); p.set(8, 5, '#f6c945'); p.set(11, 4, '#f6c945'); p.set(14, 3, '#f6c945'); p.set(17, 4, '#f6c945'); p.set(19, 5, '#f6c945');
+  p.set(11, 7, '#d9574a'); p.set(14, 7, '#7fc4ff'); p.set(17, 7, '#d9574a');
+  p.outline().save('mob_mossking');
+
   // 돌콩이: 발 달린 돌멩이
   p = new Paint(20, 18);
   p.disc(9.5, 8.5, 7.5, 6, '#9aa3ad');
@@ -327,6 +340,23 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 창고 상자
+  p = new Paint(24, 18);
+  p.rect(1, 5, 22, 12, '#a8744e'); p.rect(1, 1, 22, 5, '#c98a5e'); p.rect(1, 5, 22, 1, '#74492f');
+  p.rect(0, 1, 1, 16, '#74492f'); p.rect(23, 1, 1, 16, '#74492f');
+  p.rect(1, 10, 22, 1, '#8a5a3c'); p.rect(10, 4, 4, 5, '#f6c945'); p.set(11, 6, '#8a6a1e'); p.set(12, 6, '#8a6a1e');
+  p.rect(3, 2, 6, 1, '#e8b88a');
+  p.outline().save('obj_storage');
+
+  // 잡화점 노점: 줄무늬 차양 + 진열대
+  p = new Paint(40, 34);
+  for (let x = 0; x < 40; x++) p.rect(x, 0, 1, 7, Math.floor(x / 5) % 2 ? '#f2f0e6' : '#d9574a');
+  for (let x = 0; x < 40; x += 5) p.disc(x + 2.5, 7, 2.5, 1.5, Math.floor(x / 5) % 2 ? '#f2f0e6' : '#d9574a');
+  p.rect(3, 9, 2, 25, '#8a5a3c'); p.rect(35, 9, 2, 25, '#8a5a3c');
+  p.rect(2, 22, 36, 4, '#b9824f'); p.rect(2, 25, 36, 1, '#8a5a3c'); p.rect(4, 26, 32, 8, '#a8744e');
+  p.disc(10, 20, 2.5, 2, '#d9574a'); p.disc(16, 20, 2.5, 2, '#f6c945'); p.disc(24, 20, 3, 2, '#8fde5d'); p.disc(31, 20, 2.5, 2, '#7fc4ff');
+  p.outline().save('obj_shop');
+
   // 모닥불 장작
   p = new Paint(20, 8);
   p.line(2, 6, 17, 2, '#8a5a3c'); p.line(2, 2, 17, 6, '#6b4530'); p.line(2, 5, 17, 1, '#8a5a3c'); p.line(2, 3, 17, 7, '#6b4530');
@@ -392,6 +422,23 @@ function buildItems() {
   p = new Paint(12, 12);
   p.rect(2, 2, 8, 9, '#b9824f'); p.rect(4, 2, 4, 2, null); p.rect(2, 8, 8, 1, '#8a5a3c'); p.rect(2, 5, 8, 1, '#8a5a3c'); p.rect(5, 4, 1, 7, '#8a5a3c');
   p.outline().save('it_armor_log');
+  // 음식
+  p = new Paint(12, 12); p.disc(4, 7, 2.6, 2.6, '#d9574a'); p.disc(7.5, 7.5, 2.6, 2.6, '#e25d4e'); p.disc(5.8, 4.8, 2.4, 2.2, '#f06a5a');
+  p.set(3, 6, '#ffb0a0'); p.set(7, 7, '#ffb0a0'); p.line(6, 2, 7, 0, '#3b8c4f'); p.set(5, 1, '#5fb859'); p.outline().save('it_berry');
+  p = new Paint(12, 12); p.disc(5.5, 5, 5, 3.4, '#c9805a'); p.rect(4, 6, 3, 5, '#f2e6d0'); p.set(3, 3, '#f2e6d0'); p.set(7, 4, '#f2e6d0'); p.set(5, 2, '#f2e6d0');
+  p.outline().save('it_mushroom');
+  // 모루 생산품·가방·주머니·열쇠·왕관 아이콘
+  p = new Paint(12, 12); p.disc(5.5, 6, 4, 3.6, '#c9a26a'); p.line(2, 5, 9, 7, '#8a6a3c'); p.line(2, 8, 9, 4, '#8a6a3c'); p.outline().save('it_twine');
+  p = new Paint(12, 12); p.rect(2, 2, 7, 2, '#c9d1d9'); p.rect(5, 4, 2, 7, '#9aa3ad'); p.set(5, 10, '#6a7480'); p.outline().save('it_nail');
+  p = new Paint(13, 11); p.rect(1, 3, 11, 5, '#d9a066'); p.rect(1, 6, 11, 2, '#b07a4e'); p.set(4, 4, '#8a5a3c'); p.set(9, 5, '#8a5a3c'); p.outline().save('it_plank');
+  for (const [k, col] of [['it_bag', '#a8744e'], ['it_bag2', '#6b4a3a']] as const) {
+    p = new Paint(12, 12); p.rect(2, 4, 8, 7, col); p.line(4, 4, 4, 2, col); p.line(7, 4, 7, 2, col); p.line(4, 1, 7, 1, col); p.rect(5, 6, 2, 2, '#f6c945'); p.outline().save(k);
+  }
+  for (const [k, col] of [['it_pouch', '#8fde5d'], ['it_pouch2', '#c9a26a'], ['it_pouch3', '#f2a0c8']] as const) {
+    p = new Paint(12, 12); p.disc(5.5, 7, 4, 3.6, col); p.rect(4, 2, 3, 2, col); p.line(3, 4, 8, 4, '#6b4a3a'); p.outline().save(k);
+  }
+  p = new Paint(12, 12); p.disc(3.5, 4, 2.6, 2.6, '#f6c945'); p.set(3, 4, null); p.rect(5, 4, 6, 1, '#f6c945'); p.rect(9, 5, 1, 2, '#f6c945'); p.rect(7, 5, 1, 2, '#f6c945'); p.outline().save('it_key');
+  p = new Paint(12, 10); p.rect(1, 4, 10, 5, '#f6c945'); p.set(1, 2, '#f6c945'); p.set(1, 3, '#f6c945'); p.set(5, 1, '#f6c945'); p.rect(5, 2, 2, 2, '#f6c945'); p.set(10, 2, '#f6c945'); p.set(10, 3, '#f6c945'); p.set(3, 6, '#d9574a'); p.set(8, 6, '#7fc4ff'); p.rect(2, 5, 8, 1, '#5fb859'); p.outline().save('it_crown');
 }
 
 export const ITEM_ICON: Record<string, string> = {
@@ -399,7 +446,9 @@ export const ITEM_ICON: Record<string, string> = {
   sword_wood: 'wp_sword_wood', sword_stone: 'wp_sword_stone', sword_leaf: 'wp_sword_leaf',
   bow_wood: 'wp_bow_wood', bow_leaf: 'wp_bow_leaf', wand_wood: 'wp_wand_wood', wand_leaf: 'wp_wand_leaf',
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
-  coin: 'it_coin',
+  coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
+  twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
+  chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
 };
 
 let built = false;

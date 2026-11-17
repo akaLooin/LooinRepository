@@ -1,9 +1,9 @@
 // 게임 컨트롤러: 계정/월드 수명주기, 저장, 방치 보상. UI와 렌더러가 공유한다.
 // 멀티 전환 시 SaveBackend 구현만 서버 API로 바꾸면 된다.
 import { AfkReport, computeAfk } from './core/afk';
-import { MAPS, PortalDef } from './core/data';
+import { ITEMS, MAPS, PortalDef } from './core/data';
 import { Rng } from './core/rng';
-import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize } from './core/state';
+import { Account, Character, Look, countItem, createCharacter, deserialize, newAccount, removeItem, serialize } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
 
 export interface SaveBackend { load(): string | null; save(data: string): void }
@@ -67,7 +67,12 @@ export class Game {
   travel(p: PortalDef) {
     const c = this.char;
     if (!c || !this.world || !MAPS[p.to] || !this.world.portalOpen(p)) return;
-    c.mapId = p.to; c.x = p.toX;
+    // 열쇠가 필요한 문: 들어갈 때 열쇠가 사라진다
+    if (p.key) {
+      if (countItem(c, p.key) < 1) { this.onEvent({ t: 'loot', text: `${ITEMS[p.key].name}가 있어야 들어갈 수 있습니다` }); return; }
+      removeItem(c, p.key, 1);
+    }
+    c.mapId = p.to; c.x = p.toX; c.y = p.toY ?? 0;
     this.enterWorld();
     this.save();
   }

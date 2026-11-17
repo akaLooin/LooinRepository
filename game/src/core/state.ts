@@ -1,5 +1,5 @@
 import {
-  CARDS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, cardTier, ITEMS, ItemStats, MAX_CHARACTERS, QUESTS, RECIPES, SkillKey, StatKey, TALENT,
+  AFK_BASE, ANVIL, CARDS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, QUESTS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -17,6 +17,13 @@ export interface Character {
   /** 음식 칸: 체력이 낮아지면 자동으로 하나씩 먹는다 */
   food: Stack | null;
   mapId: string; x: number;
+  /** 서 있던 높이(발판). 없으면 지면 */
+  y?: number;
+  /** 사용한 가방·주머니 아이템(종류마다 한 번) */
+  bags: string[];
+  pouches: string[];
+  /** 모루 생산 */
+  anvil: { prod: string | null; stored: number; frac: number; pts: { cap: number; spd: number; xp: number } };
   auto: boolean; activity: Activity;
   inventory: Stack[];
   equipment: Partial<Record<EquipSlot, string>>;
@@ -34,13 +41,21 @@ export interface Account {
   coins: number;
   /** 몬스터 카드 보유 수(계정 공용) */
   cards: Record<string, number>;
+  /** 계정 공용 창고(한 칸에 개수 제한 없음) */
+  storage: Stack[];
+  /** 사용한 창고 확장 아이템 */
+  chests: string[];
+  /** 잡화점 오늘 구매 수(날짜가 바뀌면 초기화) */
+  shop: { day: string; bought: Record<string, number> };
+  /** 보스 처치 수 */
+  bosses: Record<string, number>;
   characters: Character[];
   active: number;
   nextId: number;
 }
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -50,8 +65,9 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     cls: 'beginner', level: 1, xp: 0, statPoints: 0,
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, food: null, mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
-    inventory: [], equipment: { weapon: 'sword_wood' },
-    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 } },
+    inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
+    anvil: { prod: null, stored: 0, frac: 0, pts: { cap: 0, spd: 0, xp: 0 } },
+    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quest: { idx: 0, accepted: false, prog: 0 },
   };
@@ -70,6 +86,8 @@ export interface Derived {
   maxMp: number; mpRegen: number;
   /** 명중 */
   acc: number;
+  /** 방치 효율(0~1): 전투, 채집 */
+  afkFight: number; afkSkill: number;
   atkInterval: number; speed: number; crit: number; critMult: number;
   xpMult: number; dropMult: number; regen: number;
   mining: number; chopping: number;
@@ -95,7 +113,7 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
   const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
-  const cb = { hp: 0, dmg: 0, drop: 0 };
+  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0 };
   for (const cd of CARDS) cb[cd.bonus] += cardTier(cards[cd.monster] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
   const maxMp = Math.floor(8 + wis * 1.5 + c.level);
@@ -104,6 +122,8 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
   return {
     str, agi, wis, luk, maxHp, maxMp, mpRegen: 0.5 + maxMp * 0.02,
     acc: 2 + accStat + c.level,
+    afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk),
+    afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk),
     dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg),
     def: e.def + c.level * 0.3 + tl('ironskin') * 1.5,
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
@@ -223,14 +243,39 @@ export function completeQuest(acc: Account, c: Character): string | null {
 }
 
 // ───────── 인벤토리 ─────────
+/** 가방 칸 수 */
+export const invSize = (c: Character) => INVENTORY_SIZE + c.bags.reduce((n, id) => n + (ITEMS[id]?.bagSlots ?? 0), 0);
+/** 가방 한 칸에 이 아이템을 몇 개까지 쌓을 수 있는가 */
+export function stackCap(c: Character, id: string): number {
+  const g: StackGroup = stackGroup(id);
+  let cap = STACK_BASE;
+  for (const p of c.pouches) { const d = ITEMS[p]?.pouch; if (d && d.group === g) cap = Math.max(cap, d.cap); }
+  return cap;
+}
 export const countItem = (c: Character, id: string) => c.inventory.find((s) => s.id === id)?.qty ?? 0;
 
+/** 들어가는 만큼 넣고 넣은 개수를 돌려준다 */
+export function addItemSome(c: Character, id: string, qty = 1): number {
+  if (qty <= 0) return 0;
+  const cap = stackCap(c, id);
+  let s = c.inventory.find((x) => x.id === id);
+  if (!s) {
+    if (c.inventory.length >= invSize(c)) return 0;
+    s = { id, qty: 0 };
+    c.inventory.push(s);
+  }
+  const n = Math.min(qty, cap - s.qty);
+  s.qty += Math.max(0, n);
+  if (s.qty === 0) c.inventory.splice(c.inventory.indexOf(s), 1);
+  return Math.max(0, n);
+}
+/** 전부 들어가면 true. 들어가지 않으면 아무것도 넣지 않는다 */
 export function addItem(c: Character, id: string, qty = 1): boolean {
   if (qty <= 0) return true;
   const s = c.inventory.find((x) => x.id === id);
-  if (s) { s.qty += qty; return true; }
-  if (c.inventory.length >= INVENTORY_SIZE) return false;
-  c.inventory.push({ id, qty });
+  const room = s ? stackCap(c, id) - s.qty : c.inventory.length < invSize(c) ? stackCap(c, id) : 0;
+  if (room < qty) return false;
+  addItemSome(c, id, qty);
   return true;
 }
 export function removeItem(c: Character, id: string, qty = 1): boolean {
@@ -239,6 +284,54 @@ export function removeItem(c: Character, id: string, qty = 1): boolean {
   c.inventory[i].qty -= qty;
   if (c.inventory[i].qty === 0) c.inventory.splice(i, 1);
   return true;
+}
+
+/** 가방·주머니·보관함 아이템 사용 */
+export function useItem(acc: Account, c: Character, id: string): string | null {
+  const it = ITEMS[id];
+  if (!it || countItem(c, id) < 1) return '가방에 없습니다';
+  if (it.kind === 'bag') { if (c.bags.includes(id)) return '이미 사용한 가방입니다'; c.bags.push(id); }
+  else if (it.kind === 'pouch') { if (c.pouches.includes(id)) return '이미 사용한 주머니입니다'; c.pouches.push(id); }
+  else if (it.kind === 'chest') { if (acc.chests.includes(id)) return '이미 사용한 보관함입니다'; acc.chests.push(id); }
+  else return '사용할 수 없는 아이템';
+  removeItem(c, id, 1);
+  return null;
+}
+
+// ───────── 계정 창고 ─────────
+export const storageSize = (acc: Account) => STORAGE_SIZE + acc.chests.reduce((n, id) => n + (ITEMS[id]?.chestSlots ?? 0), 0);
+export const storageCount = (acc: Account, id: string) => acc.storage.find((s) => s.id === id)?.qty ?? 0;
+/** 가방 → 창고. 넣은 개수 */
+export function deposit(acc: Account, c: Character, id: string, qty = Infinity): number {
+  qty = Math.min(qty, countItem(c, id));
+  if (qty <= 0) return 0;
+  let s = acc.storage.find((x) => x.id === id);
+  if (!s) {
+    if (acc.storage.length >= storageSize(acc)) return 0;
+    s = { id, qty: 0 };
+    acc.storage.push(s);
+  }
+  s.qty += qty;
+  removeItem(c, id, qty);
+  return qty;
+}
+/** 창고 → 가방(가방 한도까지). 꺼낸 개수 */
+export function withdraw(acc: Account, c: Character, id: string, qty = Infinity): number {
+  const s = acc.storage.find((x) => x.id === id);
+  if (!s) return 0;
+  const n = addItemSome(c, id, Math.min(qty, s.qty));
+  s.qty -= n;
+  if (s.qty <= 0) acc.storage.splice(acc.storage.indexOf(s), 1);
+  return n;
+}
+/** 재료·자원·음식을 전부 창고로. 넣은 종류 수 */
+export function depositAll(acc: Account, c: Character): number {
+  let kinds = 0;
+  for (const s of [...c.inventory]) {
+    const g = stackGroup(s.id);
+    if ((g === 'material' || g === 'resource' || g === 'food') && deposit(acc, c, s.id) > 0) kinds++;
+  }
+  return kinds;
 }
 
 export function equipItem(c: Character, id: string): string | null {
@@ -269,18 +362,99 @@ export function sellItem(acc: Account, c: Character, id: string, qty: number): n
   return gain;
 }
 
+/** 제작 재료는 가방과 계정 창고를 합쳐서 센다 */
+export const haveMat = (acc: Account, c: Character, id: string) => countItem(c, id) + storageCount(acc, id);
 export function canCraft(acc: Account, c: Character, idx: number): boolean {
   const r = RECIPES[idx];
-  return !!r && acc.coins >= r.coins && r.mats.every(([id, n]) => countItem(c, id) >= n);
+  return !!r && acc.coins >= r.coins && r.mats.every(([id, n]) => haveMat(acc, c, id) >= n);
 }
 export function craft(acc: Account, c: Character, idx: number): string | null {
   const r = RECIPES[idx];
   if (!canCraft(acc, c, idx)) return '재료가 부족합니다';
-  const freed = r.mats.some(([id, n]) => countItem(c, id) === n);
-  if (!freed && countItem(c, r.item) === 0 && c.inventory.length >= INVENTORY_SIZE) return '가방이 가득 찼습니다';
+  const freed = r.mats.some(([id, n]) => countItem(c, id) > 0 && countItem(c, id) <= n);
+  const s = c.inventory.find((x) => x.id === r.item);
+  if (s ? s.qty >= stackCap(c, r.item) : !freed && c.inventory.length >= invSize(c)) return '가방이 가득 찼습니다';
   acc.coins -= r.coins;
-  for (const [id, n] of r.mats) removeItem(c, id, n);
+  for (const [id, n] of r.mats) {
+    // 가방에서 먼저 쓰고 모자라면 창고에서
+    const fromBag = Math.min(n, countItem(c, id));
+    removeItem(c, id, fromBag);
+    if (n > fromBag) {
+      const st = acc.storage.find((x) => x.id === id)!;
+      st.qty -= n - fromBag;
+      if (st.qty <= 0) acc.storage.splice(acc.storage.indexOf(st), 1);
+    }
+  }
   addItem(c, r.item, 1);
+  return null;
+}
+
+// ───────── 모루 생산 ─────────
+/** 대장 레벨마다 1 포인트 */
+export const anvilPointsFree = (c: Character) => c.skills.smithing.lv - 1 - (c.anvil.pts.cap + c.anvil.pts.spd + c.anvil.pts.xp);
+export const anvilCap = (c: Character) => ANVIL.capBase + c.anvil.pts.cap * ANVIL.capPer;
+export const anvilRate = (c: Character) => {
+  const p = PRODUCTS.find((x) => x.item === c.anvil.prod);
+  return p ? p.perHour * (1 + c.anvil.pts.spd * ANVIL.spdPer) : 0;
+};
+export function setProduct(c: Character, item: string | null): string | null {
+  if (item) {
+    const p = PRODUCTS.find((x) => x.item === item);
+    if (!p) return '만들 수 없는 품목';
+    if (c.skills.smithing.lv < p.lv) return `대장 Lv.${p.lv} 필요`;
+  }
+  if (c.anvil.prod !== item && c.anvil.stored > 0) return '먼저 만든 것을 받아 가세요';
+  c.anvil.prod = item; c.anvil.frac = 0;
+  return null;
+}
+export function spendAnvilPoint(c: Character, k: 'cap' | 'spd' | 'xp'): boolean {
+  if (anvilPointsFree(c) <= 0) return false;
+  c.anvil.pts[k]++;
+  return true;
+}
+/** 시간이 흐른 만큼 생산. 만든 개수와 오른 대장 레벨 */
+export function anvilTick(c: Character, seconds: number): { made: number; levels: number } {
+  const p = PRODUCTS.find((x) => x.item === c.anvil.prod);
+  if (!p || seconds <= 0) return { made: 0, levels: 0 };
+  const room = anvilCap(c) - c.anvil.stored;
+  if (room <= 0) { c.anvil.frac = 0; return { made: 0, levels: 0 }; }
+  const exact = c.anvil.frac + (anvilRate(c) * seconds) / 3600;
+  const made = Math.min(room, Math.floor(exact));
+  c.anvil.frac = made === room ? 0 : exact - made;
+  c.anvil.stored += made;
+  const levels = made ? gainSkillXp(c, 'smithing', made * p.xp * (1 + c.anvil.pts.xp * ANVIL.xpPer)) : 0;
+  return { made, levels };
+}
+/** 만든 것 받기: toStorage면 창고로, 아니면 가방으로(들어가는 만큼) */
+export function collectAnvil(acc: Account, c: Character, toStorage: boolean): number {
+  const id = c.anvil.prod;
+  if (!id || c.anvil.stored <= 0) return 0;
+  let n: number;
+  if (toStorage) {
+    let s = acc.storage.find((x) => x.id === id);
+    if (!s) { if (acc.storage.length >= storageSize(acc)) return 0; s = { id, qty: 0 }; acc.storage.push(s); }
+    n = c.anvil.stored; s.qty += n;
+  } else n = addItemSome(c, id, c.anvil.stored);
+  c.anvil.stored -= n;
+  return n;
+}
+
+// ───────── 잡화점 ─────────
+export const today = (now: number) => { const d = new Date(now); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+export function shopLeft(acc: Account, idx: number, now: number): number {
+  if (acc.shop.day !== today(now)) acc.shop = { day: today(now), bought: {} };
+  const e = SHOP[idx];
+  return e ? e.daily - (acc.shop.bought[e.item] ?? 0) : 0;
+}
+export function buy(acc: Account, c: Character, idx: number, qty: number, now: number): string | null {
+  const e = SHOP[idx];
+  if (!e) return '없는 상품';
+  qty = Math.min(qty, shopLeft(acc, idx, now));
+  if (qty <= 0) return '오늘은 다 팔렸습니다';
+  if (acc.coins < e.price * qty) return '코인이 부족합니다';
+  if (!addItem(c, e.item, qty)) return '가방이 가득 찼습니다';
+  acc.coins -= e.price * qty;
+  acc.shop.bought[e.item] = (acc.shop.bought[e.item] ?? 0) + qty;
   return null;
 }
 
@@ -293,8 +467,13 @@ export function deserialize(json: string | null): Account | null {
     if (a?.version !== 1 || !Array.isArray(a.characters)) return null;
     // 이전 저장 데이터에 없는 필드 보충
     a.cards ??= {};
+    a.storage ??= []; a.chests ??= []; a.bosses ??= {};
+    a.shop ??= { day: '', bought: {} };
     for (const c of a.characters) {
       c.cls ??= 'beginner';
+      c.bags ??= []; c.pouches ??= [];
+      c.anvil ??= { prod: null, stored: 0, frac: 0, pts: { cap: 0, spd: 0, xp: 0 } };
+      c.skills.smithing ??= { lv: 1, xp: 0 };
       c.food ??= null;
       c.mp ??= derive(c, a.cards).maxMp;
       c.activity ??= { k: 'none' };
