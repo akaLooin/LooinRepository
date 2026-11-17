@@ -138,15 +138,15 @@
     "semantic_hash": ""
   },
   "game/src/core/afk.ts": {
-    "mtime": 1794926406.828369,
-    "seen": 1794926466.040085,
-    "ast_hash": "d831604d039fa2b1810738bac97546b3",
+    "mtime": 1794932610.269031,
+    "seen": 1794933366.5770175,
+    "ast_hash": "4a0d63681aa7a840499f8a2718a7a81f",
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1794926041.2544534,
-    "seen": 1794926466.0400867,
-    "ast_hash": "92d8cd921fc07eb941a5b41e77e5d38f",
+    "mtime": 1794932543.1455579,
+    "seen": 1794933366.5770197,
+    "ast_hash": "98cda348a3a5738e3fef73a195beddb3",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -156,51 +156,51 @@
     "semantic_hash": ""
   },
   "game/src/core/state.ts": {
-    "mtime": 1794925879.1001306,
-    "seen": 1794926466.0401094,
-    "ast_hash": "1f916222f71979131d559da2dea320c6",
+    "mtime": 1794932595.2990322,
+    "seen": 1794933366.5770478,
+    "ast_hash": "09339f301a4d3af54258b709fc13c509",
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1794925945.3772635,
-    "seen": 1794926466.0401106,
-    "ast_hash": "da2f0c9557f67e672a89a4f0caa04fae",
+    "mtime": 1794932610.2699268,
+    "seen": 1794933366.5770514,
+    "ast_hash": "f4a1b4903ee77df946b3f5d778173311",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
-    "mtime": 1794926247.7034624,
-    "seen": 1794926466.040112,
-    "ast_hash": "6a72ac4420848b6d7d63baf126deebea",
+    "mtime": 1794933183.1710725,
+    "seen": 1794933366.5770547,
+    "ast_hash": "88cc971eccf97863625935d3dee9fb9a",
     "semantic_hash": ""
   },
   "game/src/main.ts": {
-    "mtime": 1794916129.8803804,
-    "seen": 1794916442.6828432,
-    "ast_hash": "d3605bfcc998a125ae74a58717c99f69",
+    "mtime": 1794933222.460975,
+    "seen": 1794933366.5770574,
+    "ast_hash": "a85fac413cc1f7875645c9eec4c052b4",
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1794926338.955396,
-    "seen": 1794926466.040131,
-    "ast_hash": "825b4c60e441a101ca0a0028ad55ba4f",
+    "mtime": 1794932657.3392367,
+    "seen": 1794933366.577062,
+    "ast_hash": "e30be9921f9b7990fe154a3b80fa803a",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1794926406.8279555,
-    "seen": 1794926466.0401325,
-    "ast_hash": "f731b3ad538cc38f8da7abe2c443fe22",
+    "mtime": 1794932746.4164183,
+    "seen": 1794933366.5770643,
+    "ast_hash": "b9d762791dfce99baa289e6bb1b42696",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1794926338.955913,
-    "seen": 1794926466.0401762,
-    "ast_hash": "24370d93e9e6efda699142b657e8374a",
+    "mtime": 1794933209.9763174,
+    "seen": 1794933366.5771098,
+    "ast_hash": "656e8d45507970f5b0cd865bc6e8db7e",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
-    "mtime": 1794926041.2554305,
-    "seen": 1794926466.0401778,
-    "ast_hash": "0006abc7be26484bf875e7ed7198f059",
+    "mtime": 1794932635.7413936,
+    "seen": 1794933366.5771117,
+    "ast_hash": "c2b54af5746bf62bbc73191dc162bd64",
     "semantic_hash": ""
   },
   "game/tsconfig.json": {
@@ -540,9 +540,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1794926439.450861,
-    "seen": 1794926466.0406194,
-    "ast_hash": "d86c94dd840fb0678d5b89643f2dc256",
+    "mtime": 1794933359.7359033,
+    "seen": 1794933366.577673,
+    "ast_hash": "85d845b84a823aa7e236be4661d692db",
     "semantic_hash": ""
   },
   "replica/clone-screens/S01-pc.png": {
@@ -803,10 +803,130 @@
     "ast_hash": "cce0f8ba921ee2d982aed73fd269ed72",
     "semantic_hash": ""
   },
+  "game/src/core/actions.ts": {
+    "mtime": 1794932874.3029928,
+    "seen": 1794933366.577014,
+    "ast_hash": "410a10289cc918a862ac228cc261b2e8",
+    "semantic_hash": ""
+  },
+  "game/src/core/sync.ts": {
+    "mtime": 1794932905.7949946,
+    "seen": 1794933366.5770493,
+    "ast_hash": "3d0721ad9332fd21c9330190efa9479d",
+    "semantic_hash": ""
+  },
+  "game/src/net.ts": {
+    "mtime": 1794933183.169033,
+    "seen": 1794933366.5770593,
+    "ast_hash": "003908167d11d760ba10cf2c2d3f081b",
+    "semantic_hash": ""
+  },
+  "game/tests/server-rules.test.ts": {
+    "mtime": 1794932928.478996,
+    "seen": 1794933366.5771134,
+    "ast_hash": "ca7460109b74c6f9139c07c9af9c03f2",
+    "semantic_hash": ""
+  },
+  "server/package.json": {
+    "mtime": 1794933118.7550073,
+    "seen": 1794933366.5772202,
+    "ast_hash": "571ff282a9daa47afd249422f575e87e",
+    "semantic_hash": ""
+  },
+  "server/scripts/migrate.ts": {
+    "mtime": 1794933057.879003,
+    "seen": 1794933366.5772228,
+    "ast_hash": "b9315979a88987cf316f64069686dfb6",
+    "semantic_hash": ""
+  },
+  "server/src/app.ts": {
+    "mtime": 1794933118.835006,
+    "seen": 1794933366.577225,
+    "ast_hash": "4696d8f9ebf17ab7b777092415c9a530",
+    "semantic_hash": ""
+  },
+  "server/src/index.ts": {
+    "mtime": 1794933057.877394,
+    "seen": 1794933366.5772266,
+    "ast_hash": "a31b670b32db767d6cc839252660eed7",
+    "semantic_hash": ""
+  },
+  "server/src/store.ts": {
+    "mtime": 1794932990.9430034,
+    "seen": 1794933366.5772285,
+    "ast_hash": "b9b0551223af19da5a8db69a22265dc7",
+    "semantic_hash": ""
+  },
+  "server/tests/api.test.ts": {
+    "mtime": 1794933084.187516,
+    "seen": 1794933366.57723,
+    "ast_hash": "570c886f2abab8ffe209f2004c89c0c3",
+    "semantic_hash": ""
+  },
+  "server/tsconfig.json": {
+    "mtime": 1794933057.880567,
+    "seen": 1794933366.577232,
+    "ast_hash": "490988b662234a88688112fb2442056c",
+    "semantic_hash": ""
+  },
+  "replica/backend.md": {
+    "mtime": 1794933359.7129982,
+    "seen": 1794933366.5776706,
+    "ast_hash": "fb341c85f41e3cbd9dc36eae2aa49499",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S03-town2-phone.png": {
+    "mtime": 1794932756.8309858,
+    "seen": 1794933366.5788157,
+    "ast_hash": "0eb9514b257b290205c11a0bac661f2d",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S07-classtab-phone.png": {
+    "mtime": 1794932775.262987,
+    "seen": 1794933366.5790083,
+    "ast_hash": "498a88aefe02bd14daf0f94aaecab67f",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S08-equip-phone.png": {
+    "mtime": 1794932769.9509866,
+    "seen": 1794933366.5790102,
+    "ast_hash": "dcd0ef3e210142c207fe50654195e4e6",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S11-tier-phone.png": {
+    "mtime": 1794932763.6069863,
+    "seen": 1794933366.5792677,
+    "ast_hash": "428128fdc846dd5e8e5f832b97b981e4",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S12-slots-phone.png": {
+    "mtime": 1794932767.1389863,
+    "seen": 1794933366.5792909,
+    "ast_hash": "8a574e3a2980143cd22888e5360f7bae",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S16-smith-phone.png": {
+    "mtime": 1794932759.3529975,
+    "seen": 1794933366.5793884,
+    "ast_hash": "a45556c3837cb199feba6e697c79cdcd",
+    "semantic_hash": ""
+  },
+  "replica/clone-screens/S17-npcs-phone.png": {
+    "mtime": 1794932771.6789865,
+    "seen": 1794933366.5794113,
+    "ast_hash": "ccba57a5a138b52e29626f64c629fc03",
+    "semantic_hash": ""
+  },
   "game/package-lock.json": {
     "mtime": 1794885213.1855917,
     "seen": 1794885259.7177675,
     "ast_hash": "9ffa396d383215a4836af1f9fb5c5418",
+    "semantic_hash": ""
+  },
+  "server/package-lock.json": {
+    "mtime": 1794933118.7830074,
+    "seen": 1794933366.5795283,
+    "ast_hash": "321ee247c791c962373964e52601db41",
     "semantic_hash": ""
   }
 }
