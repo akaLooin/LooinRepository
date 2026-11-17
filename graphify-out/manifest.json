@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1794885529.4016104,
-    "seen": 1794885533.8495436,
+    "mtime": 1794888605.323172,
+    "seen": 1794888635.867286,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1794885529.4016104,
-    "seen": 1794885533.849555,
+    "mtime": 1794888605.323172,
+    "seen": 1794888635.8672934,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -138,15 +138,15 @@
     "semantic_hash": ""
   },
   "game/src/core/afk.ts": {
-    "mtime": 1794885402.576526,
-    "seen": 1794885533.849568,
-    "ast_hash": "b406d0b7f70af279c40670f85e3facee",
+    "mtime": 1794888238.9985814,
+    "seen": 1794888635.8673034,
+    "ast_hash": "b2a052aa1f0f38b2200fdb12976d56e5",
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1794885402.5757558,
-    "seen": 1794885533.84957,
-    "ast_hash": "5524343e31b67420fd37ff082cc0c521",
+    "mtime": 1794888238.997916,
+    "seen": 1794888635.8673048,
+    "ast_hash": "20c77e61c0303533178c38c5d516b9ff",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -156,51 +156,51 @@
     "semantic_hash": ""
   },
   "game/src/core/state.ts": {
-    "mtime": 1794885402.5762777,
-    "seen": 1794885533.8495743,
-    "ast_hash": "95155a504031f995c6e94497b1253dab",
+    "mtime": 1794888238.998337,
+    "seen": 1794888635.8673072,
+    "ast_hash": "c76d86f0bd88d1943155317a00bfacd2",
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1794885402.5768247,
-    "seen": 1794885533.8495765,
-    "ast_hash": "3f5e13793b826fe684a47ce22c4ddbc6",
+    "mtime": 1794888316.7351549,
+    "seen": 1794888635.8673086,
+    "ast_hash": "7b371837596498028e337c5f4474bfe3",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
-    "mtime": 1794880777.0231504,
-    "seen": 1794885259.7177012,
-    "ast_hash": "0c653289fbd33ce61492c6c24813961c",
+    "mtime": 1794888366.939425,
+    "seen": 1794888635.8673096,
+    "ast_hash": "cc70f82c64340fc2a8cd0ef35abd3b8e",
     "semantic_hash": ""
   },
   "game/src/main.ts": {
-    "mtime": 1794881012.2145717,
-    "seen": 1794885259.7177022,
-    "ast_hash": "288eac8cd5e87d1de801c757e7f51fd6",
+    "mtime": 1794888429.7644758,
+    "seen": 1794888635.8673105,
+    "ast_hash": "13cfbe2b6404ed685dacd049153a86c5",
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1794885446.3438163,
-    "seen": 1794885533.8495827,
-    "ast_hash": "27ff0909d5dc75a9544b1352136b08a7",
+    "mtime": 1794888543.2683487,
+    "seen": 1794888635.867312,
+    "ast_hash": "59b6e10025475217f51c2ef9d5af3d8f",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1794880777.0042474,
-    "seen": 1794885259.7177038,
-    "ast_hash": "adabfdcb43d24c11868442edf1d67120",
+    "mtime": 1794888366.9366546,
+    "seen": 1794888635.867313,
+    "ast_hash": "8ce55738c0a3e29d4bd36275e29e5bd6",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1794885446.3430736,
-    "seen": 1794885533.8495865,
-    "ast_hash": "061c7808c94b1354997a696cf69d6575",
+    "mtime": 1794888411.60674,
+    "seen": 1794888635.8673139,
+    "ast_hash": "aa5d01be14ba277069a6c8afd737baa5",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
-    "mtime": 1794885469.1283193,
-    "seen": 1794885533.8495884,
-    "ast_hash": "939bf279b20dcc5499785a9806ea9b24",
+    "mtime": 1794888411.6071117,
+    "seen": 1794888635.867315,
+    "ast_hash": "cea6cdeb11e5634797d523af9b6bcd35",
     "semantic_hash": ""
   },
   "game/tsconfig.json": {
@@ -318,9 +318,9 @@
     "semantic_hash": ""
   },
   "game/README.md": {
-    "mtime": 1794885521.8097692,
-    "seen": 1794885533.8496294,
-    "ast_hash": "3136952b03879887ef2b8c180220be7d",
+    "mtime": 1794888597.7398117,
+    "seen": 1794888635.867341,
+    "ast_hash": "7a1d5a0481ad08658d223eedacce7d00",
     "semantic_hash": ""
   },
   "game/index.html": {
