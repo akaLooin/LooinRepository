@@ -229,6 +229,12 @@ object ThemePrefs {
     var backupSnoozeUntil by mutableStateOf<Long?>(null)
         private set
 
+    /** 예산대로 다 쓰면 모자랄 때 "예산을 얼마나 줄일지" 제안을 보일지(기기별, 기본 켜짐). 끄면 모자란다는 경고만. */
+    var showBudgetCuts by mutableStateOf(true)
+        private set
+
+    fun chooseBudgetCuts(on: Boolean) { showBudgetCuts = on; store.put("budget.cuts", if (on) "on" else "off") }
+
     fun recordBackup(day: Long) { lastBackupDay = day; store.put("backup.last", day.toString()) }
     fun snoozeBackup(untilDay: Long) { backupSnoozeUntil = untilDay; store.put("backup.snooze", untilDay.toString()) }
 
@@ -247,6 +253,7 @@ object ThemePrefs {
     fun init(store: KeyValueStore) {
         this.store = store
         lastBackupDay = store.get("backup.last")?.toLongOrNull()
+        showBudgetCuts = store.get("budget.cuts") != "off"
         backupSnoozeUntil = store.get("backup.snooze")?.toLongOrNull()
         colorOverrides = store.get("colors").orEmpty().split(",").mapNotNull { e ->
             val (k, v) = e.split("=").takeIf { it.size == 2 } ?: return@mapNotNull null

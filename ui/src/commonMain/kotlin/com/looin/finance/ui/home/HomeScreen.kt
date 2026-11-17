@@ -1,6 +1,7 @@
 package com.looin.finance.ui.home
 
 import com.looin.finance.ui.components.LooinSheet
+import com.looin.finance.ui.components.AppIcons
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -217,7 +219,11 @@ fun HomeScreen(
                         Text("예산대로 다 쓰면 ${fmt(adj.deficit)} 모자라요", style = LooinType.sheetTitle, color = c.danger)
                     }
                     Spacer(Modifier.height(8.dp))
-                    if (adj.shortAfterAll == 0L) {
+                    if (!ThemePrefs.showBudgetCuts) {
+                        // 예산을 바꾸지 않는 사람을 위한 설정: 줄이기 제안 없이 원인과 대응만
+                        Text("남은 예산까지 쓰면 생활비 계좌 잔고보다 ${fmt(adj.deficit)} 많아요. 예정 지출·이체를 줄이거나 생활비 계좌에 돈을 더 넣어야 해요.",
+                            style = LooinType.body, color = c.text)
+                    } else if (adj.shortAfterAll == 0L) {
                         Text("예산 합계를 ${fmt(adj.currentTotal)}에서 ${fmt(adj.suggestedTotal)} 이하로 줄여야 해요.", style = LooinType.body, color = c.text)
                         Spacer(Modifier.height(6.dp))
                         adj.cuts.forEach { (st, cut) ->
@@ -230,13 +236,14 @@ fun HomeScreen(
                                 Text("−${fmt(cut)}", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.danger)
                             }
                         }
-                        SmallLabel("남은 예산에 비례해서 나눈 제안이에요. 줄일 곳은 직접 정해도 돼요.")
+                        SmallLabel("남은 예산에 비례해서 나눈 제안이에요. 줄일 곳은 직접 정해도 돼요." +
+                            if (adj.excluded.isNotEmpty()) " 고정 비용이 들어간 예산(${adj.excluded.joinToString { com.looin.finance.ui.plan.budgetName(it.budget, data) }})은 빼고 계산했어요." else "")
                     } else {
-                        Text("남은 예산(${fmt(adj.reducible)})을 모두 줄여도 ${fmt(adj.shortAfterAll)} 모자라요. 예정 지출·이체를 줄이거나 생활비 계좌에 돈을 더 넣어야 해요.",
-                            style = LooinType.body, color = c.text)
+                        Text((if (adj.reducible > 0) "고정 비용을 뺀 남은 예산(${fmt(adj.reducible)})을 모두 줄여도 ${fmt(adj.shortAfterAll)} 모자라요. " else "") +
+                            "예정 지출·이체를 줄이거나 생활비 계좌에 돈을 더 넣어야 해요.", style = LooinType.body, color = c.text)
                     }
                     Spacer(Modifier.height(10.dp))
-                    PrimaryButton("돈 관리에서 예산 조정", onOpenPlan)
+                    PrimaryButton(if (ThemePrefs.showBudgetCuts) "돈 관리에서 예산 조정" else "돈 관리에서 예정 거래 보기", onOpenPlan)
                 }
             }
         }
@@ -286,9 +293,9 @@ fun HomeScreen(
         // 2) 빠른 입력
         left += { Column {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickAdd("지출", c.expense, Modifier.weight(1f)) { onAddTx(null, TransactionType.EXPENSE, false) }
-                QuickAdd("수입", c.income, Modifier.weight(1f)) { onAddTx(null, TransactionType.INCOME, false) }
-                QuickAdd("저축 및 이체", c.transfer, Modifier.weight(1f)) { onAddTx(null, TransactionType.TRANSFER, false) }
+                QuickAdd("지출", AppIcons.Expense, c.expense, Modifier.weight(1f)) { onAddTx(null, TransactionType.EXPENSE, false) }
+                QuickAdd("수입", AppIcons.Income, c.income, Modifier.weight(1f)) { onAddTx(null, TransactionType.INCOME, false) }
+                QuickAdd("저축 및 이체", AppIcons.Transfer, c.transfer, Modifier.weight(1f)) { onAddTx(null, TransactionType.TRANSFER, false) }
             }
             // 자주 쓰는 거래: 누르면 같은 내용으로 오늘 날짜 새 거래(금액 등은 고칠 수 있음)
             val quick = QuickEntries.suggest(txs, state.today)
@@ -297,7 +304,7 @@ fun HomeScreen(
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
-                    if (canScan) ChipPill("영수증 스캔", false, onScanReceipt, dot = c.expense)
+                    if (canScan) ChipPill("영수증 스캔", false, onScanReceipt, dot = c.expense, icon = AppIcons.ReceiptScan)
                     if (quick.isNotEmpty()) SmallLabel("자주 쓰는")
                     quick.forEach { q ->
                         val t = q.sample
@@ -387,16 +394,19 @@ private fun MiniStat(label: String, amount: Long, color: Color, breakdown: Break
 
 /** 빠른 입력 버튼: 유형을 골라 둔 채 입력 화면을 연다. */
 @Composable
-private fun QuickAdd(label: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
+private fun QuickAdd(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
     val c = Looin.colors
     Row(
         modifier.height(46.dp).clip(RoundedCornerShape(12.dp)).background(c.card).border(1.dp, c.cardBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick).semantics(mergeDescendants = true) { contentDescription = "$label 추가" },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
     ) {
-        Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(color))
+        // 연한 색 원 안에 직접 그린 아이콘
+        Box(Modifier.size(26.dp).clip(RoundedCornerShape(50)).background(color.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(17.dp))
+        }
         Spacer(Modifier.width(6.dp))
-        Text("+ $label", style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.text, maxLines = 1)
+        Text(label, style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.text, maxLines = 1)
     }
 }
 
@@ -456,7 +466,7 @@ private fun AvailableSplit(a: AvailableFundsCalculator.Result, data: com.looin.f
             }
             AmountText(a.amount, style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = if (a.amount < 0) c.danger else c.income)
         }
-        a.adjust?.let { adj ->
+        a.adjust?.takeIf { ThemePrefs.showBudgetCuts }?.let { adj ->
             SmallLabel(if (adj.shortAfterAll == 0L) "예산 합계를 ${MoneyFormat.format(adj.suggestedTotal)} 이하로 줄이면 모자라지 않아요."
                 else "남은 예산을 모두 줄여도 ${MoneyFormat.format(adj.shortAfterAll)} 모자라요.", color = c.danger)
         }

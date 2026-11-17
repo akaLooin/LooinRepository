@@ -149,6 +149,13 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
                 if (reminders.permissionDenied) SmallLabel("알림 권한이 꺼져 있어요. 휴대폰 설정 → 앱 → $APP_NAME → 알림에서 허용해 주세요.", color = c.danger)
             }
 
+            Spacer(Modifier.height(8.dp))
+            Title("예산")
+            FieldGroup {
+                ToggleRow("예산 줄이기 제안", "예산대로 다 쓰면 돈이 모자랄 때 예산을 얼마나 줄일지 제안해요. 끄면 모자란다는 경고만 보여요",
+                    ThemePrefs.showBudgetCuts, { ThemePrefs.chooseBudgetCuts(it) })
+            }
+
             if (com.looin.finance.ui.platform.ExchangeRates.supported) {
                 val fxOn = com.looin.finance.ui.platform.ExchangeRates.enabled.collectAsState().value
                 Spacer(Modifier.height(8.dp))

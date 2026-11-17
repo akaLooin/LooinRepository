@@ -42,6 +42,18 @@ class RecurringTest {
             RecurrenceCalculator.occurrences(biweekly, LocalDate(2026, 11, 14), LocalDate(2026, 12, 10)))
     }
 
+    @Test fun `매일 규칙과 N일 간격`() {
+        val r = RecurringRule(name = "커피", type = TransactionType.EXPENSE, amount = 1, fromAccountId = 1, frequency = Frequency.DAILY,
+            startDate = LocalDate(2026, 11, 10), endDate = LocalDate(2026, 11, 14))
+        assertEquals((10..14).map { LocalDate(2026, 11, it) }, RecurrenceCalculator.occurrences(r, LocalDate(2026, 11, 1), LocalDate(2026, 11, 30)))
+        assertEquals("매일", r.scheduleLabel)
+        val every3 = r.copy(interval = 3, endDate = null)
+        assertEquals(listOf(LocalDate(2026, 11, 13), LocalDate(2026, 11, 16), LocalDate(2026, 11, 19)),
+            RecurrenceCalculator.occurrences(every3, LocalDate(2026, 11, 11), LocalDate(2026, 11, 20)))
+        assertEquals("3일마다", every3.scheduleLabel)
+        assertTrue(RecurrenceCalculator.validate(r).isEmpty())
+    }
+
     @Test fun `예정 거래는 오늘부터 기간까지만 만들고 과거는 채우지 않는다`() {
         val (txs, through) = RecurrenceCalculator.plan(monthly(25), today = LocalDate(2026, 11, 13), horizon = LocalDate(2027, 1, 31), now = 1)
         assertEquals(listOf(LocalDate(2026, 11, 25), LocalDate(2026, 12, 25), LocalDate(2027, 1, 25)), txs.map { it.date })

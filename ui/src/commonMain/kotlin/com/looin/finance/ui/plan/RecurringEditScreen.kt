@@ -137,14 +137,19 @@ fun RecurringEditScreen(state: UiState, vm: MainViewModel, ruleId: Long?, onClos
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SmallLabel("반복")
                 PillTabs(Frequency.entries, frequency, { it.label }, { frequency = it; interval = 1 })
-                val intervals = if (frequency == Frequency.MONTHLY) listOf(1 to "1개월", 2 to "2개월", 3 to "3개월", 6 to "6개월", 12 to "12개월(매년)")
-                else listOf(1 to "1주", 2 to "2주(격주)")
+                val intervals = when (frequency) {
+                    Frequency.MONTHLY -> listOf(1 to "1개월", 2 to "2개월", 3 to "3개월", 6 to "6개월", 12 to "12개월(매년)")
+                    Frequency.WEEKLY -> listOf(1 to "1주", 2 to "2주(격주)")
+                    Frequency.DAILY -> listOf(1 to "매일", 2 to "2일마다", 3 to "3일마다")
+                }
                 PillTabs(intervals.map { it.first }, interval, { v -> intervals.first { it.first == v }.second }, { interval = it })
             }
             if (frequency == Frequency.MONTHLY) {
                 UnderlineField(dayText, { v -> dayText = v.filter { it.isDigit() }.take(2) }, "반복일 (1~31)", keyboardType = KeyboardType.Number,
                     isError = dayText.toIntOrNull()?.let { it !in 1..31 } ?: true, suffix = "일")
                 SmallLabel("그 달에 없는 날짜(예: 31일)는 그 달 말일에 생겨요.")
+            } else if (frequency == Frequency.DAILY) {
+                SmallLabel("시작일부터 ${if (interval == 1) "매일" else "${interval}일마다"} 예정 거래가 생겨요(다음 기간 말까지 미리 만들어 둬요).")
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY)

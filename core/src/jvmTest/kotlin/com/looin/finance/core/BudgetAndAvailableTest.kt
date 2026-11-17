@@ -144,4 +144,19 @@ class AvailableSplitTest {
         org.junit.Assert.assertEquals(50_000L, a2.reducible)
         org.junit.Assert.assertTrue(a2.shortAfterAll > 0)
     }
+
+    /** 고정 비용이 들어간 카테고리 예산은 줄이기 제안에서 빠진다. */
+    @org.junit.Test fun fixedBudgetsNotCut() {
+        val rent = com.looin.finance.core.model.Transaction(id = 9, type = com.looin.finance.core.model.TransactionType.EXPENSE,
+            status = com.looin.finance.core.model.TransactionStatus.PLANNED, amount = 50_000, date = kotlinx.datetime.LocalDate(2026, 11, 25),
+            fromAccountId = 1, categoryId = 12, recurringId = 3)
+        // 잔고 400,000 / 식비 400,000(사용 100,000 → 남은 300,000), 주거 예산 200,000 + 고정 50,000(남은 200,000) → 150,000 부족
+        val txs = listOf(spend(1, 10, 100_000), rent)
+        val r = AvailableFundsCalculator.calculate(listOf(acc), txs, listOf(budget(1, 10, 400_000), budget(2, 12, 200_000)), period)
+        val a = r.adjust!!
+        org.junit.Assert.assertEquals(150_000L, a.deficit)
+        org.junit.Assert.assertEquals(listOf(10L), a.cuts.map { it.first.budget.categoryId })
+        org.junit.Assert.assertEquals(150_000L, a.cuts.single().second)
+        org.junit.Assert.assertEquals(listOf(12L), a.excluded.map { it.budget.categoryId })
+    }
 }

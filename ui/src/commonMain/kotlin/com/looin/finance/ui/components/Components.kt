@@ -249,7 +249,9 @@ fun Section(
 
 /** 칩: 선택되면 주 색 바탕, 아니면 테두리만. */
 @Composable
-fun ChipPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, dot: Color? = null, enabled: Boolean = true) {
+fun ChipPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, dot: Color? = null, enabled: Boolean = true,
+             /** 점 대신 아이콘([dot] 색으로 칠함). */
+             icon: ImageVector? = null) {
     val c = Looin.colors
     val shape = RoundedCornerShape(10.dp)
     Row(
@@ -260,7 +262,10 @@ fun ChipPill(text: String, selected: Boolean, onClick: () -> Unit, modifier: Mod
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (dot != null) {
+        if (icon != null) {
+            Icon(icon, null, tint = dot ?: c.text, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+        } else if (dot != null) {
             Box(Modifier.size(9.dp).clip(CircleShape).background(dot))
             Spacer(Modifier.width(6.dp))
         }

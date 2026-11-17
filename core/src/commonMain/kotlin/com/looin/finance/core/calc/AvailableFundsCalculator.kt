@@ -55,10 +55,12 @@ object AvailableFundsCalculator {
         val adjust: BudgetAdjust? get() {
             if (amount >= 0 || shares.isEmpty()) return null
             val deficit = -amount
-            val reducible = budgetLeft
+            // 고정 비용이 들어간 카테고리 예산(월세·통신비 등)은 줄이기 어려우므로 제안에서 뺀다
+            val (fixedShares, flexible) = shares.partition { it.status.budget.categoryId != null && it.status.fixed > 0 }
+            val reducible = flexible.sumOf { it.left }
             val target = minOf(deficit, reducible)
             // 남은 예산에 비례해서 나누고 1,000원 단위로 올림(각 예산의 남은 금액을 넘지 않게), 모자라면 남은 예산이 큰 순으로 채움
-            val open = shares.filter { it.left > 0 }.sortedByDescending { it.left }
+            val open = flexible.filter { it.left > 0 }.sortedByDescending { it.left }
             val cut = LongArray(open.size) { i ->
                 val raw = if (reducible == 0L) 0L else (target * open[i].left + reducible - 1) / reducible
                 ((raw + 999) / 1000 * 1000).coerceAtMost(open[i].left)
@@ -69,7 +71,8 @@ object AvailableFundsCalculator {
             for (i in open.indices) { if (rest <= 0) break; val d = minOf(rest, open[i].left - cut[i]); cut[i] += d; rest -= d }
             val cuts = open.indices.filter { cut[it] > 0 }.map { open[it].status to cut[it] }
             val total = shares.sumOf { it.status.effective }
-            return BudgetAdjust(deficit, reducible, total, total - cuts.sumOf { it.second }, cuts, maxOf(deficit - reducible, 0))
+            return BudgetAdjust(deficit, reducible, total, total - cuts.sumOf { it.second }, cuts, maxOf(deficit - reducible, 0),
+                excluded = fixedShares.filter { it.left > 0 }.map { it.status })
         }
     }
 
@@ -78,6 +81,7 @@ object AvailableFundsCalculator {
 
     /**
      * 예산 조정 안내. [suggestedTotal] 이하로 예산 합계를 줄이면 예산대로 다 써도 모자라지 않는다.
+ * 고정 비용이 들어간 카테고리 예산은 줄이지 않는다([excluded]).
      * [shortAfterAll] > 0 이면 남은 예산을 모두 줄여도 그만큼 모자란다(예정 지출·이체를 줄이거나 돈을 넣어야 함).
      */
     data class BudgetAdjust(
@@ -87,6 +91,8 @@ object AvailableFundsCalculator {
         val suggestedTotal: Long,
         val cuts: List<Pair<BudgetStatus, Long>>,
         val shortAfterAll: Long,
+        /** 고정 비용이 들어 있어 줄이기 제안에서 뺀 예산. */
+        val excluded: List<BudgetStatus> = emptyList(),
     )
 
     fun includedAccounts(accounts: List<Account>) = accounts.filter {

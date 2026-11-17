@@ -13,13 +13,14 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
-enum class Frequency(val label: String) { MONTHLY("매월"), WEEKLY("매주") }
+enum class Frequency(val label: String) { MONTHLY("매월"), WEEKLY("매주"), DAILY("매일") }
 
 /**
  * 반복 거래 규칙(월세·급여·통신비 등). 규칙 자체는 거래가 아니며, 발생일마다 "예정" 거래를 만든다.
  *
  * - 매월: [dayOfMonth] 일(1~31). 그 달에 없는 날짜면 말일 (급여 기준일과 같은 규칙)
  * - 매주: [dayOfWeek] 요일
+ * - 매일: 시작일부터 [interval] 일마다
  * - [interval]: N개월/N주마다 (기본 1). 시작일이 속한 달/주를 기준으로 센다.
  * - [generatedThrough]: 이 날짜까지는 이미 예정 거래를 만들었음. 사용자가 지운 발생분을 다시 만들지 않기 위한 기록.
  * - [autoComplete]: 자동이체. 켜면 발생일에 자동 완료([RecurrenceCalculator.dueForAutoComplete]).
@@ -54,6 +55,7 @@ data class RecurringRule(
         get() = when (frequency) {
             Frequency.MONTHLY -> (if (interval == 1) "매월" else "${interval}개월마다") + " ${dayOfMonth}일"
             Frequency.WEEKLY -> (if (interval == 1) "매주" else "${interval}주마다") + " ${dayOfWeek?.let { KOREAN_DAY[it] } ?: ""}요일"
+            Frequency.DAILY -> if (interval == 1) "매일" else "${interval}일마다"
         }
 
     companion object {
@@ -74,6 +76,7 @@ object RecurrenceCalculator {
         when (rule.frequency) {
             Frequency.MONTHLY -> if (rule.dayOfMonth == null || rule.dayOfMonth !in 1..31) add("매월 반복일은 1~31일이어야 합니다.")
             Frequency.WEEKLY -> if (rule.dayOfWeek == null) add("반복 요일을 선택하세요.")
+            Frequency.DAILY -> {}
         }
         if (rule.endDate != null && rule.endDate < rule.startDate) add("종료일은 시작일보다 앞설 수 없습니다.")
     }
@@ -111,6 +114,13 @@ object RecurrenceCalculator {
                     d = d.plus(DatePeriod(days = ((gap + step - 1) / step * step).toInt()))
                 }
                 while (d <= hi) { out += d; d = d.plus(DatePeriod(days = step)) }
+            }
+            Frequency.DAILY -> {
+                // 시작일부터 interval 일 간격
+                val step = rule.interval.toLong()
+                val gap = lo.toEpochDays() - rule.startDate.toEpochDays()
+                var e = rule.startDate.toEpochDays() + (gap + step - 1) / step * step
+                while (e <= hi.toEpochDays()) { out += LocalDate.fromEpochDays(e); e += step }
             }
         }
         return out

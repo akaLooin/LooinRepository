@@ -81,6 +81,30 @@ class AvailableSplitUiTest {
         has("예산을 다 써도 남는 돈")
     }
 
+    /** 설정에서 "예산 줄이기 제안"을 끄면 모자란다는 경고만 나오고 줄일 금액은 안 보인다. */
+    @Test fun hideCutSuggestions() {
+        com.looin.finance.ui.theme.ThemePrefs.init(com.looin.finance.ui.platform.InMemoryKeyValueStore())
+        com.looin.finance.ui.theme.ThemePrefs.chooseBudgetCuts(false)
+        try {
+            runBlocking {
+                repo.ensureInitialized()
+                val acc = repo.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 100_000, includeInAvailable = true))
+                val s = repo.snapshot()
+                val p = PeriodCalculator.periodContaining(today, s.settings.primaryBasis, s.settings.paydayDay)
+                repo.saveBudget(Budget(basis = p.basis, periodStart = p.start, periodEndExclusive = p.endExclusive, categoryId = null, amount = 300_000))
+            }
+            val vm = MainViewModel(repo)
+            rule.setContent {
+                val state by vm.state.collectAsState()
+                LooinTheme { HomeScreen(state, vm, PaddingValues(), {}, { _, _, _ -> }, {}, {}, {}) }
+            }
+            await { vm.state.value.data.loaded }
+            has("예산대로 다 쓰면 200,000원 모자라요")
+            org.junit.Assert.assertTrue(rule.onAllNodes(androidx.compose.ui.test.hasText("이하로 줄여야", substring = true), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+            has("돈 관리에서 예정 거래 보기")
+        } finally { com.looin.finance.ui.theme.ThemePrefs.chooseBudgetCuts(true) }
+    }
+
     private fun has(text: String) = org.junit.Assert.assertTrue("'$text' 없음",
         rule.onAllNodes(androidx.compose.ui.test.hasText(text), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
 
