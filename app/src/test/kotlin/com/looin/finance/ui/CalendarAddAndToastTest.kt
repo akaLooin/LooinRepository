@@ -48,6 +48,9 @@ class CalendarAddAndToastTest {
         rule.onNode(hasContentDescription(other.korean() + ",", substring = true)).performClick()
         rule.onNodeWithContentDescription("거래 추가").performClick()
         rule.waitUntilAtLeastOneExists(hasText(other.korean(true)), 10_000)
+        // 맨 위 제목에도 고른 날짜가 보인다
+        rule.waitUntilAtLeastOneExists(hasText(other.korean()), 5_000)
+        rule.onNodeWithText("거래 추가").assertExists()
 
         // 저장 → 알림이 뜨고, 옆으로 밀면 사라진다
         rule.onNode(androidx.compose.ui.test.hasSetTextAction() and hasContentDescription("금액")).performTextInput("3000")
