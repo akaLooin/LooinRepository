@@ -48,6 +48,12 @@ export function seed(): DB {
     ],
     diaries: [],
     reminders: [],
+    // 일정: a trip over a few days, and two timed events today (demo of the hour grid)
+    events: [
+      { id: "e0000000-0000-4000-8000-000000000001", title: "제주 여행", startDate: toDay(2026, 11, 24), endDate: toDay(2026, 11, 27), allDay: true, color: "#3DA5F4", memo: "", alarmMinutes: null },
+      { id: "e0000000-0000-4000-8000-000000000002", title: "팀 회의", startDate: today(), endDate: today(), allDay: false, startTime: "10:00", endTime: "11:00", color: "#FF6B81", memo: "회의실 3", alarmMinutes: 10 },
+      { id: "e0000000-0000-4000-8000-000000000003", title: "치과", startDate: addDays(today(), 2), endDate: addDays(today(), 2), allDay: false, startTime: "15:30", endTime: "16:30", color: "#00C896", memo: "", alarmMinutes: 60 },
+    ],
     ddays: [
       { id: "d0000000-0000-4000-8000-000000000001", title: "자격증 시험", type: "fixed", targetDate: toDay(2026, 11, 15), isPrivate: false, sortOrder: 1 },
       { id: "d0000000-0000-4000-8000-000000000002", title: "프로젝트 마감", type: "fixed", targetDate: toDay(2026, 11, 21), isPrivate: false, sortOrder: 2 },

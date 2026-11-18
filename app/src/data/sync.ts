@@ -22,8 +22,8 @@ export interface Remote {
 }
 
 export const emptyOutbox = (): Outbox => ({
-  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {} },
-  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {} },
+  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {}, events: {} },
+  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {}, events: {} },
   profile: 0,
 });
 
@@ -58,6 +58,9 @@ export const pendingCount = (o: Outbox) =>
 
 export type PushPlan = { profile: number; upsert: Record<Table, Record<string, number>>; remove: Record<Table, Record<string, number>> };
 
+/** Supabase's answer for a table that is not there ("relation ... does not exist", "Could not find the table ... in the schema cache"). */
+export const missingTable = (error: string) => /does not exist|schema cache/i.test(error) && !/column/i.test(error);
+
 /** Sends the outbox. Returns which ids went through (with the counter they had) and which the server refused. */
 export async function push(state: LocalState, remote: Remote, userId: string) {
   const sent: PushPlan = { profile: 0, upsert: emptyOutbox().upsert, remove: emptyOutbox().remove };
@@ -73,6 +76,8 @@ export async function push(state: LocalState, remote: Remote, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conv = (x: any) => (toRow[t] as (v: unknown, u: string) => Record<string, unknown>)(x, userId);
     const r = await remote.upsert(t, rows.map(conv));
+    // a table the server does not have yet (its SQL not run): keep the rows waiting instead of giving up on them
+    if (r.error && missingTable(r.error)) continue;
     if (!r.error) for (const x of rows) sent.upsert[t][x.id] = state.outbox.upsert[t][x.id];
     else
       for (const x of rows) {
@@ -88,6 +93,7 @@ export async function push(state: LocalState, remote: Remote, userId: string) {
     const ids = Object.keys(state.outbox.remove[t]);
     if (!ids.length) continue;
     const r = await remote.softDelete(t, ids);
+    if (r.error && missingTable(r.error)) continue;
     if (!r.error) for (const id of ids) sent.remove[t][id] = state.outbox.remove[t][id];
   }
   return { sent, rejected };

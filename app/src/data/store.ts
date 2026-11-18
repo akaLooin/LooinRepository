@@ -17,7 +17,8 @@ import { applyRemoteSettings, getPrefs, settingsDirty, settingsSent } from "./pr
 import { fromSettingsRow, toSettingsRow } from "./prefsRow";
 import { seed } from "./seed";
 import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, upgradeOutbox, type Outbox, type Remote } from "./sync";
-import type { Category, DB, DDay, Diary, Profile, Reminder, Routine, Todo, Visibility } from "./types";
+import type { CalEvent, Category, DB, DDay, Diary, Profile, Reminder, Routine, Todo, Visibility } from "./types";
+import { liftSpans, shiftStart } from "../lib/events";
 
 // ── session: demo (sample data, this device only) or cloud (signed in, synced) ──
 type Session = { mode: "demo" } | { mode: "cloud"; userId: string; remote: Remote };
@@ -53,7 +54,7 @@ function persistSoon() {
   }, 300);
 }
 
-const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [] });
+const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [], events: [] });
 
 /** Loads this device's copy for the session, then (cloud) syncs. */
 export async function startSession(next: Session) {
@@ -62,8 +63,9 @@ export async function startSession(next: Session) {
   const saved = await AsyncStorage.getItem(storageKey()).catch(() => null);
   const parsed = saved ? JSON.parse(saved) : null;
   db = parsed?.db ?? (next.mode === "demo" ? seed() : emptyDB(next.userId));
-  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [], reminders: db.reminders ?? [] }; // copies saved by older versions
+  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [], reminders: db.reminders ?? [], events: db.events ?? [] }; // copies saved by older versions
   outbox = upgradeOutbox(parsed?.outbox);
+  liftOldSpans();
   lastPulled = parsed?.lastPulled ?? null;
   notify();
   notificationsSoon();
@@ -129,6 +131,7 @@ export async function syncNow() {
     const pulled = await s.remote.pull(sinceFor(lastPulled));
     if (session !== s) return;
     db = applyPull(db, outbox, pulled);
+    liftOldSpans();
     const remoteSettings = (pulled.tables as Record<string, Record<string, unknown>[] | undefined>).user_settings?.[0];
     if (remoteSettings) applyRemoteSettings(fromSettingsRow(remoteSettings));
     lastPulled = pulled.serverTime;
@@ -367,12 +370,6 @@ export function moveTodo(id: string, date: Day) {
 }
 
 /** 여러 날 할 일 (user's feature): the last day of the to-do, or null to make it a one-day to-do again. */
-export function setTodoEnd(id: string, end: Day | null) {
-  id = materialize(id);
-  const t = db.todos.find((x) => x.id === id);
-  if (!t?.date) return;
-  updateTodo(id, { endDate: end && end > t.date ? end : null });
-}
 
 /** 내일 또 하기 / 다른 날 또 하기: a fresh, unchecked copy on another day. */
 export function copyTodo(id: string, date: Day) {
@@ -487,6 +484,46 @@ export function copyTodos(ids: string[], date: Day) {
 export function deleteTodos(ids: string[]) {
   smoothLayout();
   for (const id of ids) deleteTodo(materialize(id));
+}
+
+// ── 일정 (events) ──────────────────────────────────────────
+export const selectEvents = (d: DB) => d.events;
+
+/** 여러 날 할 일 from before 일정 (this phone, or pulled from the server) become events; see liftSpans. */
+function liftOldSpans() {
+  if (!db.todos.some((t) => t.endDate)) return;
+  const color = new Map(db.categories.map((x) => [x.id, x.color]));
+  const { events, lifted } = liftSpans(db.todos, (id) => color.get(id) ?? "#4A90E2");
+  if (!lifted.size) {
+    // ends set to "one day again" (null): just drop the field
+    db = { ...db, todos: db.todos.map((t) => (t.endDate === undefined ? t : (({ endDate: _, ...rest }) => rest)(t))) };
+    return;
+  }
+  const have = new Set(db.events.map((e) => e.id));
+  const next: DB = { ...db, todos: db.todos.filter((t) => !lifted.has(t.id)), events: [...db.events, ...events.filter((e) => !have.has(e.id))] };
+  if (session.mode === "cloud") outbox = track(db, next, outbox);
+  db = next;
+  persistSoon();
+  syncSoon();
+}
+
+export function saveEvent(input: Omit<CalEvent, "id"> & { id?: string }): string {
+  const clean = (e: CalEvent): CalEvent => (e.allDay ? { ...e, startTime: undefined, endTime: undefined } : e);
+  if (input.id && db.events.some((e) => e.id === input.id)) {
+    set({ ...db, events: db.events.map((e) => (e.id === input.id ? clean({ ...e, ...input, id: e.id }) : e)) });
+    return input.id;
+  }
+  const id = newId();
+  set({ ...db, events: [...db.events, clean({ ...input, id })] });
+  return id;
+}
+
+export function moveEvent(id: string, start: Day) {
+  set({ ...db, events: db.events.map((e) => (e.id === id ? { ...e, ...shiftStart(e, start) } : e)) });
+}
+
+export function deleteEvent(id: string) {
+  set({ ...db, events: db.events.filter((e) => e.id !== id) });
 }
 
 // ── d-days ─────────────────────────────────────────────────

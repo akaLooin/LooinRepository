@@ -45,7 +45,7 @@ t("empty day gets a nudge", () => {
   const now2 = new Date(2026, 10, 5, 6, 0);
   const db2 = {
     profile: { id: "u", nickname: "", bio: "" }, categories: [{ id: "c", title: "To Do", color: "#00ff7f", visibility: "public", sortOrder: 1 }],
-    todos: [], ddays: [], diaries: [], reminders: [],
+    todos: [], ddays: [], diaries: [], reminders: [], events: [],
     routines: [{ id: "r1", categoryId: "c", title: "운동하기", startDate: "2026-11-01", repeatType: "daily", timeOfDay: "07:55", memo: "", manualAdd: false, sortOrder: 1 }],
   } as never;
   const plan2 = planNotifications(db2, now2);

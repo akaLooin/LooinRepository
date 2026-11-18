@@ -47,7 +47,7 @@ t("crew home: others from the server, mine from this phone", () => {
   assert.equal(data.members.length, 2);
   const local = { profile: { id: "me", nickname: "나", bio: "" }, categories: [{ id: "cat-me", title: "물", color: "#00FF7F", visibility: "private" as const, sortOrder: 0 }],
     todos: [{ id: "tm", categoryId: "cat-me", title: "물 2L", date: "2026-11-09", sortOrder: 0, isDone: false, memo: "", memoIsPrivate: false, timerSeconds: 0, createdAt: "" }],
-    routines: [], ddays: [], diaries: [], reminders: [] };
+    routines: [], ddays: [], diaries: [], reminders: [], events: [] };
   const db = crewDB(data, local, "me");
   assert.deepEqual(todosForDay(db, "2026-11-09").map((t) => t.title).sort(), ["물 2L", "스쿼트"]);
   assert.equal(db.categories[0].title, "물");

@@ -10,7 +10,7 @@ const out = process.argv[2] || ".";
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.evaluate(() => localStorage.clear()); await p.reload({ waitUntil: "networkidle" });
   r.nov4Before = (await cell(4).innerText()).split("\n")[0]; // 6 left across both categories
-  await p.getByLabel("표시할 카테고리").click();
+  await p.getByLabel("캘린더 종류: 할 일 캘린더").click();
   await p.waitForTimeout(400);
   await p.screenshot({ path: `${out}/home-filter.png` });
   await p.getByRole("checkbox", { name: "Normal" }).click();

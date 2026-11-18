@@ -1,8 +1,8 @@
 // Local objects (camelCase) <-> Supabase rows (snake_case). Field lists follow supabase/migrations.
-import type { Category, DDay, Diary, Profile, Reminder, Routine, Todo } from "./types";
+import type { CalEvent, Category, DDay, Diary, Profile, Reminder, Routine, Todo } from "./types";
 
-export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries" | "reminders";
-export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries", "reminders"]; // push order (parents first)
+export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries" | "reminders" | "events";
+export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries", "reminders", "events"]; // push order (parents first)
 
 type Row = Record<string, unknown>;
 const n = (v: unknown) => (v === undefined ? null : v);
@@ -39,6 +39,11 @@ export const toRow = {
   ddays: (d: DDay, user_id: string): Row => ({ id: d.id, user_id, title: d.title, type: d.type, target_date: d.targetDate, repeat_unit: n(d.type === "repeat" ? d.repeatUnit ?? "yearly" : undefined), is_private: d.isPrivate, sort_order: d.sortOrder,
     // only once set: a server without the column (SQL 20261112000000 not run yet) still takes the D-day
     ...(d.includeToday !== undefined ? { include_today: d.includeToday } : {}) }),
+  // 일정 (SQL 20261118000000)
+  events: (e: CalEvent, user_id: string): Row => ({
+    id: e.id, user_id, title: e.title, start_date: e.startDate, end_date: e.endDate, all_day: e.allDay,
+    start_time: e.allDay ? null : n(e.startTime), end_time: e.allDay ? null : n(e.endTime), color: e.color, memo: e.memo, alarm_minutes: n(e.alarmMinutes),
+  }),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,4 +73,9 @@ export const fromRow = {
   }),
   ddays: (r: R): DDay => ({ id: r.id, title: r.title, type: r.type, targetDate: r.target_date, repeatUnit: u(r.repeat_unit), isPrivate: !!r.is_private, sortOrder: Number(r.sort_order),
     ...(typeof r.include_today === "boolean" ? { includeToday: r.include_today } : {}) }),
+  events: (r: R): CalEvent => ({
+    id: r.id, title: r.title, startDate: r.start_date, endDate: r.end_date ?? r.start_date, allDay: !!r.all_day,
+    startTime: r.start_time ? String(r.start_time).slice(0, 5) : undefined, endTime: r.end_time ? String(r.end_time).slice(0, 5) : undefined,
+    color: r.color ?? "#4A90E2", memo: r.memo ?? "", alarmMinutes: typeof r.alarm_minutes === "number" ? r.alarm_minutes : null,
+  }),
 };

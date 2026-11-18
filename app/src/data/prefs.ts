@@ -38,7 +38,7 @@ export type Prefs = {
   monthCalendarMax: number; weekCalendarMax: number;
   // 타이머 ⋯ → 스톱워치 / 뽀모도로 (user's feature); this phone only
   timerMode: "stopwatch" | "pomodoro"; pomodoroMinutes: number; pomodoro: PomodoroSession | null;
-  // 캘린더 종류 (home ▼, user's feature): clovers, or the 긴 할 일 calendar; this phone only
+  // 캘린더 종류 (home ▼, user's feature): "basic" = 할 일 캘린더, "span" = 일정 캘린더; this phone only
   calendarKind: "basic" | "span";
 };
 

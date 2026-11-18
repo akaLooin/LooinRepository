@@ -2,6 +2,7 @@
 import { isVirtual, todosForDay } from "../data/occurrences";
 import type { DB } from "../data/types";
 import { addDays, toDay } from "./dates";
+import { alarmAt, clock } from "./events";
 
 export type PlannedNotification = { key: string; at: Date; title: string; body: string };
 
@@ -39,6 +40,12 @@ export function planNotifications(db: DB, now: Date): PlannedNotification[] {
     const at = new Date(t.remindAt);
     if (at <= now) continue;
     out.push({ key: `todo:${t.id}`, at, title: "", body: t.title });
+  }
+  // 일정 alarms (n분 전): the title is the event, the body its time
+  for (const e of db.events ?? []) {
+    const at = alarmAt(e);
+    if (!at || at <= now) continue;
+    out.push({ key: `event:${e.id}`, at, title: e.title, body: e.allDay ? "오늘 종일 일정" : `${clock(e.startTime ?? "00:00", false)} 시작` });
   }
   return out.sort((a, b) => +a.at - +b.at).slice(0, MAX);
 }

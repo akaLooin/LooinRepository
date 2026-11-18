@@ -6,7 +6,7 @@ import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, Search, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, selectEvents, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
@@ -28,7 +28,7 @@ import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 import { takeHomeDay } from "../../lib/todoCalendar";
-import { isSpan, rowSegments, spanLabel, type SpanBar } from "../../lib/spans";
+import { eventBars, eventsOn, eventTimeLabel } from "../../lib/events";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
 import { CrewHome } from "../crew/CrewHome";
 import { useMyCrews } from "../../data/crews";
@@ -49,6 +49,10 @@ export function HomeScreen() {
   const db = useDB((d) => d);
   const prefs = usePrefs();
   const ddays = useDB(selectDDays);
+  const events = useDB(selectEvents);
+  // 캘린더 종류 (user's feature): the 할 일 캘린더 (clovers, events as thin lines) or the 일정 캘린더 (events as bars;
+  // a date opens its hour grid, and there are no to-dos below)
+  const eventMode = prefs.calendarKind === "span";
   const diaries = useDB((d) => d.diaries);
   const following = useFollowing();
   const shownFriend = useShownFriend();
@@ -226,8 +230,12 @@ export function HomeScreen() {
         month={ym.m}
         today={now}
         selected={selected}
-        onSelect={(d) => { if (calendarJustSwiped()) return; if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); keepEditing(); }}
-        state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId) && !isSpan(t)), calCats, prefs.calendarCategoryCount)}
+        onSelect={(d) => {
+          if (calendarJustSwiped()) return;
+          if (eventMode) { setSelected(d); router.push(`/events/${d}` as never); return; }
+          if (d !== selected) smoothLayout(160); setSelected(d); setAdding(null); keepEditing();
+        }}
+        state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
         spans={spanBars}
         kind={prefs.calendarKind}
         ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))}
@@ -241,13 +249,8 @@ export function HomeScreen() {
   };
 
   const diary = diaries.find((x) => x.date === selected);
-  // 여러 날 할 일 as bars on the calendar (not counted in the clovers)
-  const spanBars: SpanBar[] = useMemo(() => {
-    const ids = new Set(prefs.calendarCategoryIds ?? db.categories.map((x) => x.id));
-    const color = new Map(db.categories.map((x) => [x.id, x.color]));
-    return db.todos.filter((t) => isSpan(t) && !t.isSkipped && ids.has(t.categoryId))
-      .map((t) => ({ id: t.id, start: t.date!, end: t.endDate!, color: color.get(t.categoryId) ?? c.accent, done: t.isDone, title: t.title }));
-  }, [db, prefs.calendarCategoryIds, c.accent]);
+  // 일정 on the calendar: thin lines under the dates (할 일 캘린더) or labelled bars (일정 캘린더)
+  const spanBars = useMemo(() => eventBars(events), [events]);
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
   const calCats = categories.filter((x) => calIds.has(x.id));
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
@@ -270,8 +273,7 @@ export function HomeScreen() {
     if (!arrangeTodos(entries)) notice("종료한 카테고리로는 옮길 수 없어요");
   };
 
-  // 여러 날 할 일 stay put when the day's unfinished to-dos move on
-  const undoneIds = () => dayTodos.filter((t) => !t.isDone && !isSpan(t)).map((t) => t.id);
+  const undoneIds = () => dayTodos.filter((t) => !t.isDone).map((t) => t.id);
   const allIds = () => dayTodos.map((t) => t.id);
   const runListAction = (a: ListAction) => {
     setHomeSheet(null);
@@ -343,6 +345,24 @@ export function HomeScreen() {
           <CalendarPager key={`${mode}-${prefs.weekStartsSunday}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} gutter={G} />
         </View>
 
+        {eventMode ? (
+          <View style={{ paddingHorizontal: G, marginTop: 20, gap: 4 }}>
+            <AppText variant="helper" color="textMuted">{`${parseDay(selected).m}월 ${parseDay(selected).d}일 ${"일월화수목금토"[weekday(selected)]}요일 일정`}</AppText>
+            {eventsOn(events, selected).map((e) => (
+              <Pressable key={e.id} onPress={() => router.push(`/events/${selected}` as never)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, parseDay(now).y)}`}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}>
+                <View style={{ width: 4, alignSelf: "stretch", borderRadius: 2, backgroundColor: e.color }} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <AppText variant="bodyLg" numberOfLines={1}>{e.title}</AppText>
+                  <AppText variant="helper" color="textSecondary">{eventTimeLabel(e, prefs.use24h, parseDay(now).y)}</AppText>
+                </View>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => router.push(`/events/${selected}` as never)} accessibilityRole="button" style={{ paddingVertical: 14 }}>
+              <AppText variant="body" color="textMuted">{eventsOn(events, selected).length ? "날짜를 누르면 그날 시간표가 열려요" : "일정이 없어요. 날짜를 눌러 시간표에서 추가해 보세요"}</AppText>
+            </Pressable>
+          </View>
+        ) : (
         <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12 }} {...swipe}>
           {selected !== now ? (
             <AppText variant="helper" color="textMuted">{`${parseDay(selected).m}월 ${parseDay(selected).d}일 ${"일월화수목금토"[weekday(selected)]}요일`}</AppText>
@@ -412,7 +432,6 @@ export function HomeScreen() {
               ) : (
                 <TodoRow
                   title={t.title}
-                  period={isSpan(t) ? spanLabel(t, parseDay(now).y) : undefined}
                   alarm={t.remindAt ? formatTime(new Date(t.remindAt), prefs.use24h) : undefined}
                   memo={t.memo}
                   photo={t.photoUri}
@@ -448,6 +467,7 @@ export function HomeScreen() {
             <AppText variant="bodyLg">리스트 메뉴</AppText>
           </Pressable>
         </View>
+        )}
         </>}
       </DragScrollView>
 

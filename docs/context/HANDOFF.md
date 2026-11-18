@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-12 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-18 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -41,8 +41,8 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 2단계(친구·대화·크루) 완료 — 자세한 건 `replica/build-log.md`, `replica/backend.md` 9~18
 - 친구(검색·프로필·친구 홈·주간·일기·반응·알림), 대화(DM), 스티커 18개, 할 일 캘린더, 푸시(폰 확인 ✅), 친구 피드, 일기(스티커 기분+기분 온도·임시 저장), 크루 1·2차(대화방·⋯ 메뉴·크루 홈), 대화 키보드 가림 수정(B16, 폰 확인 필요)
-- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. **미확인/미실행**: 20261109000300_crews2, 20261112000000_my_features
-- 이용자 PC 할 일: 위 SQL 2개(20261112000000 = 당일 포함·신고·여러 날 할 일), push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
+- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. **미확인/미실행**: 20261109000300_crews2, 20261112000000_my_features, 20261118000000_events
+- 이용자 PC 할 일: 위 SQL 3개(20261112000000 = 당일 포함·신고, 20261118000000 = 일정), push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
 
 ## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지 — 모두 1차 완료, 폰 확인 필요)
 - 디데이 당일 포함·디데이 날 붉은 동그라미·루틴 종료 날짜 없음
@@ -51,9 +51,14 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 검색: 홈 맨 위 돋보기 → `/search`(할 일·메모·일기, 누르면 그 날짜) `lib/search.ts`
 - 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지 `data/notices.ts`) `components/TabPills.tsx`
 - 날짜로 끌어 옮기기: 할 일을 길게 눌러 캘린더 날짜에 놓기(`ReorderableList` `drop`, `Calendar` `cellRef`)
-- 여러 날 할 일: 메뉴 → 여러 날 하기(끝나는 날, 없음 = 하루로). 기간의 모든 날 목록에, 클로버에선 빠짐, 기본 캘린더엔 얇은 줄, ▼ = 캘린더 종류(기본/긴 할 일: 이름 막대) + 카테고리, 체크하면 회색, 옮기면 길이 유지 `lib/spans.ts`, `todos.end_date`
-- 테스트: 단위 73개, DB `my_features.test.sql`, e2e photo-view·pomodoro·search·alerts·drag-date·span
-- 남은 것: 친구 화면의 여러 날 할 일(서버 함수가 end_date 안 보냄), 폰 확인, 그다음 디자인 교체(이용자 계획)
+- ~~여러 날 할 일~~ → 2026-11-18 **일정**으로 바뀜(아래 4단계)
+- 테스트: DB `my_features.test.sql`, e2e photo-view·pomodoro·search·alerts·drag-date
+
+## 4단계 (2026-11-18 요청): 일정 · 캘린더 즉시 전환 · 디자인(별 모양)
+- 일정 = 할 일과 따로 `events` 표(`lib/events.ts`, `features/events/`): 시간/종일, 색, 알림(n분 전), 설명. 할 일 캘린더엔 얇은 줄, 일정 캘린더(▼)엔 이름 막대. 일정 캘린더에서 날짜 → `/events/[date]` 시간표(30분 칸 누르기 → 1시간 일정 → 제목 → 저장, 일정 누르면 보기·수정·삭제, 종일은 위 띠, 지금 선). 옛 여러 날 할 일은 같은 id 종일 일정으로(`liftSpans`, SQL도 같은 일)
+- 서버 표 없으면(SQL 미실행) 일정은 outbox에서 기다림(`missingTable`)
+- ▼ 캘린더 종류: 누르면 바로 바뀌고 닫힘
+- 다음: 디자인 시험판(별도 앱 버전, 사각별 + 여러 색 그라데이션) — 아래 결정 참고
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인
@@ -61,7 +66,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (73개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (81개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

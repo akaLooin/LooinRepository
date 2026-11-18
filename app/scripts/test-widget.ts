@@ -3,7 +3,7 @@ import { toggleQueued, widgetModel } from "../src/widget/model";
 import type { DB } from "../src/data/types";
 
 const db = {
-  profile: { id: "u", nickname: "", bio: "" }, ddays: [], diaries: [], reminders: [],
+  profile: { id: "u", nickname: "", bio: "" }, ddays: [], diaries: [], reminders: [], events: [],
   categories: [
     { id: "b", title: "Normal", color: "#FFFFFF", visibility: "private", sortOrder: 2 },
     { id: "a", title: "To Do", color: "#00FF7F", visibility: "public", sortOrder: 1 },

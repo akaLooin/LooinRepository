@@ -7,16 +7,19 @@ const USER = "11111111-1111-1111-1111-111111111111";
 let clock = Date.parse("2026-11-03T00:00:00Z");
 const now = () => new Date((clock += 1000)).toISOString();
 
-function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string, unknown>>> } {
-  const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map(), diaries: new Map(), reminders: new Map() };
+function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string, unknown>>>; noEventsTable: boolean } {
+  const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map(), diaries: new Map(), reminders: new Map(), events: new Map() };
+  let noEvents = false; // a server where SQL 20261118000000 has not been run
   return {
     rows,
+    set noEventsTable(v: boolean) { noEvents = v; },
     async pull(since) {
       const tables: Record<string, Record<string, unknown>[]> = {};
       for (const [t, m] of Object.entries(rows)) tables[t] = [...m.values()].filter((r) => !since || (r.updated_at as string) > since);
       return { serverTime: now(), tables };
     },
     async upsert(t, list) {
+      if (t === "events" && noEvents) return { error: "Could not find the table 'public.events' in the schema cache" };
       for (const r of list) {
         if (t === "todos") {
           const cat = rows.categories.get(r.category_id as string);
@@ -34,7 +37,7 @@ function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string
   };
 }
 
-const emptyDB = (): DB => ({ profile: { id: USER, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [] });
+const emptyDB = (): DB => ({ profile: { id: USER, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [], events: [] });
 const device = (): LocalState => ({ db: emptyDB(), outbox: emptyOutbox(), lastPulled: null });
 function edit(s: LocalState, f: (db: DB) => DB) { const next = f(s.db); s.outbox = track(s.db, next, s.outbox); s.db = next; }
 async function sync(s: LocalState, r: Remote) {
@@ -107,5 +110,17 @@ const t = async (name: string, fn: () => Promise<void>) => { await fn(); console
     const o = upgradeOutbox(old as never);
     assert.deepEqual(o.upsert.diaries, {});
     assert.equal(o.upsert.todos.x, 1);
+  });
+  await t("일정 wait on the phone until the server has the events table, then go through", async () => {
+    server.noEventsTable = true;
+    const e = { id: "e1", title: "회의", startDate: "2026-11-18", endDate: "2026-11-18", allDay: false, startTime: "09:00", endTime: "10:00", color: "#3DA5F4", memo: "", alarmMinutes: null };
+    edit(A, (d) => ({ ...d, events: [e] }));
+    assert.deepEqual(await sync(A, server), [], "not reported as refused");
+    assert.ok(A.outbox.upsert.events.e1, "still waiting");
+    server.noEventsTable = false;
+    await sync(A, server);
+    assert.equal(Object.keys(A.outbox.upsert.events).length, 0);
+    await sync(B, server);
+    assert.deepEqual(B.db.events, [e]);
   });
 })().catch((e) => { console.error(e); process.exit(1); });

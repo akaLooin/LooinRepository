@@ -16,7 +16,7 @@ function dayColor(wd: number): ColorName {
 /** [clover ▼]  2026년 11월  [주] [‹] [›]  (S03) */
 export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filterColors, onFilter, onTitle, kind = "basic" }: {
   title: string; mode: "month" | "week"; onToggleMode?: () => void; onPrev: () => void; onNext: () => void; filterColors: string[]; onFilter?: () => void;
-  /** 캘린더 종류: clovers, or the 긴 할 일 calendar (bars) */
+  /** 캘린더 종류: the 할 일 캘린더 (clovers) or the 일정 캘린더 (bars) */
   kind?: "basic" | "span";
   /** tapping the big month title goes back to today (original) */
   onTitle?: () => void;
@@ -24,7 +24,7 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
   const { c } = useTheme();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <PillButton onPress={onFilter} a11y={kind === "span" ? "캘린더 종류: 긴 할 일" : "캘린더 종류와 표시할 카테고리"} pad={9} gap={8}>
+      <PillButton onPress={onFilter} a11y={kind === "span" ? "캘린더 종류: 일정 캘린더" : "캘린더 종류: 할 일 캘린더"} pad={9} gap={8}>
         {kind === "span" ? <CalendarRange size={22} color={c.text} /> : (
           <View style={{ width: 22, height: 22 }}>
             {filterColors.slice(0, 2).map((col, i) => (
@@ -87,7 +87,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   dropHover?: Day | null;
   /** each date's view, so home can find which date is under the finger (keep it the same function between renders) */
   cellRef?: (d: Day, v: ViewType | null) => void;
-  /** 여러 날 할 일: thin lines under the dates (basic), or labelled bars on the 긴 할 일 calendar (kind "span") */
+  /** 일정: thin lines under the dates (할 일 캘린더), or labelled bars on the 일정 캘린더 (kind "span") */
   spans?: SpanBar[];
   kind?: "basic" | "span";
 }) {

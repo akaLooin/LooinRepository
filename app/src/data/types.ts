@@ -1,6 +1,9 @@
 // Mirrors replica/schema.sql (phase 1). Field names are camelCase versions of the columns.
 import type { Day } from "../lib/dates";
 import type { RepeatRule } from "../lib/routines";
+import type { CalEvent } from "../lib/events";
+
+export type { CalEvent };
 
 export type Visibility = "public" | "followers" | "partial" | "private";
 
@@ -27,7 +30,8 @@ export type Todo = {
   categoryId: string;
   title: string;
   date: Day | null; // null = 보관함 (no date yet)
-  endDate?: Day | null; // 여러 날 할 일 (user's feature): the last day, after `date`. null = made one-day again
+  /** 여러 날 할 일 (2026-11-12) became 일정 (2026-11-18): an old row with an end date is turned into an event on load */
+  endDate?: Day | null;
   sortOrder: number;
   isDone: boolean;
   doneAt?: string;
@@ -72,4 +76,4 @@ export type Diary = {
 
 export type Reminder = { id: string; timeOfDay: string }; // "HH:MM", every day
 
-export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[]; reminders: Reminder[] };
+export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[]; reminders: Reminder[]; events: CalEvent[] };

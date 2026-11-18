@@ -65,6 +65,7 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
 16. **크루 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000200_crews.sql` (crews, members and requests, crew notices, the public `crew-images` bucket). Safe to run again. For crew pushes, deploy the push function again (`npx.cmd supabase functions deploy push --no-verify-jwt --remote=<id>`).
 17. **크루 2차 (2026-11-09)**, once in the SQL Editor: run `supabase/migrations/20261109000300_crews2.sql` (모집 중단, 크루 수정, 크루 홈, 크루 대화방). Safe to run again. For crew chat pushes: deploy the push function again (`npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <id>`) and add a third Database Webhook like step 13.6: name `push-crew-messages`, table `crew_messages`, same `x-push-secret` header.
 18. **내 기능 (2026-11-12)**, once in the SQL Editor: run `supabase/migrations/20261112000000_my_features.sql` (디데이 `당일 포함`, photo reports `reports` + `report_content`, 여러 날 할 일 `todos.end_date`). Safe to run again. Until then 당일 포함 stays on the phone only, 신고하기 shows an error, and a to-do made multi-day cannot sync (it waits in the outbox until the SQL is run).
+19. **일정 (2026-11-18)**, once in the SQL Editor: run `supabase/migrations/20261118000000_events.sql` (table `events`, `pull_changes` and `purge_deleted` with events, old 여러 날 할 일 moved into events with the same id). Safe to run again. Until then new 일정 stay on the phone and wait in the outbox (they are not given up on), and they do not reach other devices.
 ## Checklist
 
 Auth

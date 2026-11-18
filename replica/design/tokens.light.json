@@ -33,6 +33,8 @@
     "search-hit": "#0f8a47",
     "drop-target": "#d6f0df",
     "span-done": "#b5b5b5",
+    "hour-line": "#e6e6e6",
+    "now-line": "#e0323f",
     "danger": "#c4303c",
     "toggle-on": "#555555",
     "toggle-off": "#cccccc",

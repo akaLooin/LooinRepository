@@ -72,6 +72,6 @@ export function crewDB(data: CrewHomeData, local: DB, meId: string): DB {
     categories,
     todos: [...others(data.todos).map((t) => fromRow.todos(t)), ...local.todos.filter((t) => t.categoryId === mineCat && t.date)],
     routines: [...others(data.routines).map((r) => fromRow.routines(r)), ...local.routines.filter((r) => r.categoryId === mineCat)],
-    ddays: [], diaries: [], reminders: [],
+    ddays: [], diaries: [], reminders: [], events: [],
   };
 }
