@@ -1,7 +1,8 @@
 import { useId } from "react";
 import { Pressable, View } from "react-native";
 import { usePrefs } from "../data/prefs";
-import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from "react-native-svg";
+import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
+import { DESIGN_TRIAL } from "../lib/variant";
 import { contrast, fontFamily, tokens, useTheme, visibleOn } from "../theme";
 import { AppText } from "./AppText";
 
@@ -24,7 +25,21 @@ export type CloverState =
 export const LOBE_R = 0.314;
 const LOBE_AT = [[LOBE_R, LOBE_R], [1 - LOBE_R, LOBE_R], [LOBE_R, 1 - LOBE_R], [1 - LOBE_R, 1 - LOBE_R]] as const; // TL, TR, BL, BR
 
+/**
+ * Design trial (2026-11-18, user's picture): a four-point star with curved sides instead of the clover. One colour
+ * fills it; several categories become a diagonal gradient in category order. `inset` keeps an outline inside the box.
+ */
+export const STAR_BLEED = 0.1; // the star's thin points reach 10% past the clover's box on each side, so its middle is as big
+export function starPath(size: number, inset = 0) {
+  inset -= size * STAR_BLEED;
+  const k1 = 0.12, k2 = 0.33, s = size - 2 * inset;
+  const p = (x: number, y: number) => `${inset + x * s} ${inset + y * s}`;
+  return `M${p(0.5, 0)} C${p(0.5 + k1, k2)} ${p(1 - k2, 0.5 - k1)} ${p(1, 0.5)} C${p(1 - k2, 0.5 + k1)} ${p(0.5 + k1, 1 - k2)} ${p(0.5, 1)} `
+    + `C${p(0.5 - k1, 1 - k2)} ${p(k2, 0.5 + k1)} ${p(0, 0.5)} C${p(k2, 0.5 - k1)} ${p(0.5 - k1, k2)} ${p(0.5, 0)}Z`;
+}
+
 function Lobes({ size, fill }: { size: number; fill: string }) {
+  if (DESIGN_TRIAL) return <Path d={starPath(size)} fill={fill} />;
   return (
     <G fill={fill}>
       {LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}
@@ -34,8 +49,20 @@ function Lobes({ size, fill }: { size: number; fill: string }) {
 
 /** Several categories: each circle takes a category colour in order (top pair first), and the overlaps show through. */
 export const lobeColors = (colors: string[]) => LOBE_AT.map((_, i) => colors[Math.floor((i * colors.length) / 4)]);
-function SplitLobes({ size, colors }: { size: number; colors: string[] }) {
+function SplitLobes({ size, colors, id }: { size: number; colors: string[]; id: string }) {
   if (new Set(colors).size <= 1) return <Lobes size={size} fill={colors[0]} />;
+  if (DESIGN_TRIAL) {
+    return (
+      <>
+        <Defs>
+          <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+            {colors.map((col, i) => <Stop key={i} offset={colors.length === 1 ? 0 : i / (colors.length - 1)} stopColor={col} />)}
+          </LinearGradient>
+        </Defs>
+        <Path d={starPath(size)} fill={`url(#${id})`} />
+      </>
+    );
+  }
   return (
     <G>
       {lobeColors(colors).map((col, i) => (
@@ -46,10 +73,12 @@ function SplitLobes({ size, colors }: { size: number; colors: string[] }) {
 }
 
 function Tick({ size, color }: { size: number; color: string }) {
-  const s = size / 24;
+  // the star's middle is smaller than the clover's: a smaller tick, still centred
+  const k = DESIGN_TRIAL ? 0.9 : 1;
+  const s = (size / 24) * k, o = (size * (1 - k)) / 2;
   return (
     <Path
-      d={`M${7 * s} ${12.5 * s} L${10.5 * s} ${16 * s} L${17 * s} ${8.5 * s}`}
+      d={`M${o + 7 * s} ${o + 12.5 * s} L${o + 10.5 * s} ${o + 16 * s} L${o + 17 * s} ${o + 8.5 * s}`}
       stroke={color}
       strokeWidth={2.6 * s}
       strokeLinecap="round"
@@ -85,6 +114,7 @@ export function Clover({
   const numberOn = (bg: string) => (contrast(num, bg) < 1.15 ? numOther : num);
 
   const clipId = "clip" + useId().replace(/[^a-zA-Z0-9]/g, "");
+  const bleed = DESIGN_TRIAL ? size * STAR_BLEED : 0;
   const empty = c.cloverEmpty;
   const fill = (col: string) => visibleOn(col, c.bg, c.text);
   let body: React.ReactNode;
@@ -103,7 +133,7 @@ export function Clover({
       const cols = state.colors.length ? state.colors.map(fill) : [fill(c.text)];
       body = (
         <>
-          <SplitLobes size={size} colors={cols} />
+          <SplitLobes size={size} colors={cols} id={`${clipId}g`} />
           {state.left === 0 ? <Tick size={size} color={tickOn(cols[0])} /> : null}
         </>
       );
@@ -117,7 +147,9 @@ export function Clover({
       body = <Lobes size={size} fill={fill(state.color)} />;
       break;
     case "todoOpen":
-      body = <Lobes size={size} fill={empty} />; // grey until done, as in the original
+      // grey until done, as in the original; the design trial draws an outline star (the user's picture)
+      body = DESIGN_TRIAL ? <Path d={starPath(size, size * 0.04)} fill="none" stroke={empty} strokeWidth={size * 0.08} strokeLinejoin="round" />
+        : <Lobes size={size} fill={empty} />;
       break;
     case "done":
     case "todoDone":
@@ -139,7 +171,7 @@ export function Clover({
         <>
           <Defs>
             <ClipPath id={clipId}>
-              <Rect x={0} y={0} width={size} height={h} />
+              <Rect x={-bleed} y={-bleed} width={size + 2 * bleed} height={h * (1 + 2 * STAR_BLEED * Number(DESIGN_TRIAL))} />
             </ClipPath>
           </Defs>
           <Lobes size={size} fill={empty} />
@@ -155,11 +187,11 @@ export function Clover({
 
   const shape = (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-      <Svg width={size} height={size} style={{ position: "absolute" }}>
-        {body}
+      <Svg width={size + 2 * bleed} height={size + 2 * bleed} style={{ position: "absolute", left: -bleed, top: -bleed }}>
+        <G x={bleed} y={bleed}>{body}</G>
       </Svg>
       {count !== null && (
-        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * 0.52, lineHeight: size }}>
+        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * (DESIGN_TRIAL ? 0.46 : 0.52), lineHeight: size }}>
           {count}
         </AppText>
       )}

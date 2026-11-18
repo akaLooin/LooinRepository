@@ -7,11 +7,19 @@
     "preview": {
       "distribution": "internal",
       "environment": "preview",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "environment": "production",
       "autoIncrement": true
+    },
+    "design": {
+      "extends": "preview",
+      "env": {
+        "APP_VARIANT": "design"
+      }
     }
   }
 }
