@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-19 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-20 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -56,7 +56,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 일정 = 할 일과 따로 `events` 표(`lib/events.ts`, `features/events/`): 시간/종일, 색, 알림(n분 전), 설명. 할 일 캘린더엔 얇은 줄, 일정 캘린더(▼)엔 이름 막대. 일정 캘린더에서 날짜 → `/events/[date]` 시간표(30분 칸 누르기 → 1시간 일정 → 제목 → 저장, 일정 누르면 보기·수정·삭제, 종일은 위 띠, 지금 선). 옛 여러 날 할 일은 같은 id 종일 일정으로(`liftSpans`, SQL도 같은 일)
 - 서버 표 없으면(SQL 미실행) 일정은 outbox에서 기다림(`missingTable`)
 - ▼ 캘린더 종류: 누르면 바로 바뀌고 닫힘
-- 11-19 피드백 반영: 시간표 3일 이어 그리기(스크롤로 전날·다음 날), 일정 선택·늘이기·꾹 눌러 옮기기(`lib/eventDrag.ts`), 1분 휠(`TimeGrid`), 할 일 메뉴 2열, 알약 탭=추가/길게=편집, 일정 캘린더 4개·아래 비움, 뒤로가기 한 단계(`BottomSheet onBack`), 별 ✕
+- 11-19 피드백 반영: 시간표 3일 이어 그리기(스크롤로 전날·다음 날), 일정 선택·늘이기·꾹 눌러 옮기기(`lib/eventDrag.ts`), 1분 휠(`TimeGrid`), 할 일 메뉴 2열, 알약 탭=추가/길게=편집, 일정 캘린더 4개·아래 비움, 뒤로가기 한 단계(`BottomSheet onBack`), 별 ✕. 11-20: 동그라미 가운데, 옮기기 15분, 두 손가락 확대(`timelineHourHeight`), 휠 숫자 직접 입력, 할 일 메뉴 루틴 등록하기(`/routines/new?from=`)
 - 디자인 시험판: `APP_VARIANT=design` → 별도 앱(`app.config.js`, eas 프로필 `design`, `lib/variant.ts` `DESIGN_TRIAL`). 클로버 → 사각별(`Clover.tsx` `starPath`), 여러 색은 그라데이션. 빌드 방법 backend.md 20. 화면 `replica/design/trial-star-*.png`. 이용자 폰 확인 대기
 
 ## 알려진 한계

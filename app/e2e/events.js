@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 411, height: 891 } });
   const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
-  const r = {};
+  const r = (global.R = {});
   const shot = (n) => p.screenshot({ path: `${process.env.SHOT_DIR || "."}/${n}.png` });
   const now = new Date();
   const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -38,6 +38,22 @@ const { chromium } = require("playwright");
   await p.getByRole("button", { name: /^종료 시간/ }).click();
   await p.waitForTimeout(500);
   await p.getByRole("radiogroup", { name: "분" }).getByRole("radio", { name: "37분" }).click();
+  await p.waitForTimeout(700);
+  // tapping the middle number lets you type it
+  await p.getByRole("radiogroup", { name: "시" }).getByRole("radio", { name: "15시" }).click();
+  await p.waitForTimeout(300);
+  await p.getByLabel("시 직접 입력").fill("16");
+  await p.getByLabel("시 직접 입력").press("Enter");
+  await p.waitForTimeout(700);
+  await p.getByRole("button", { name: "완료" }).click();
+  await p.waitForTimeout(300);
+  r.typedHour = await p.getByRole("button", { name: "종료 시간 16:37" }).count();
+  await p.getByRole("button", { name: /^종료 시간/ }).click();
+  await p.waitForTimeout(500);
+  await p.getByRole("radiogroup", { name: "시" }).getByRole("radio", { name: "16시" }).click();
+  await p.waitForTimeout(300);
+  await p.getByLabel("시 직접 입력").fill("15");
+  await p.getByLabel("시 직접 입력").press("Enter");
   await p.waitForTimeout(700);
   await shot("events-wheel");
   await p.getByRole("button", { name: "완료" }).click();
@@ -95,14 +111,28 @@ const { chromium } = require("playwright");
   await p.getByRole("button", { name: "삭제하기" }).click();
   await p.waitForTimeout(500);
   r.deleted = (await p.getByRole("button", { name: /^테스트, / }).count()) === 0;
+  // two fingers spread the hours (touch events through the browser's touch emulation)
+  const hourGap = async () => { const a = await p.getByRole("button", { name: `${dl(now)} 10:00에 일정 추가` }).boundingBox(); const b2 = await p.getByRole("button", { name: `${dl(now)} 11:00에 일정 추가` }).boundingBox(); return b2.y - a.y; };
+  const before = await hourGap();
+  const cdp = await p.context().newCDPSession(p);
+  const tp = (d) => [{ x: 200, y: 450 - d, id: 1 }, { x: 210, y: 450 + d, id: 2 }];
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: tp(40) });
+  for (let d = 50; d <= 120; d += 10) { await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: tp(d) }); await p.waitForTimeout(30); }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await p.waitForTimeout(500);
+  const after = await hourGap();
+  r.pinchWider = after > before * 1.5;
+  r.zoomKept = await p.evaluate(() => JSON.parse(localStorage.getItem("todomate:prefs") || "{}").timelineHourHeight > 52);
+  await shot("events-zoomed");
   // scrolling down runs on into tomorrow
   const t2 = new Date(now); t2.setDate(t2.getDate() + 1);
   await p.mouse.move(250, 500);
-  for (let i = 0; i < 12; i++) { await p.mouse.wheel(0, 300); await p.waitForTimeout(40); }
+  for (let i = 0; i < 60 && !(await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count()); i++) { await p.mouse.wheel(0, 200); await p.waitForTimeout(30); }
   await p.waitForTimeout(900);
   r.nextDayTitle = await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count();
   r.recentred = await p.getByRole("button", { name: `${dl(t2)} 14:00에 일정 추가` }).count();
   await shot("events-next-day");
+  r.stillNextAfterRest = await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count();
   await p.getByRole("button", { name: "뒤로 가기" }).click();
   await p.waitForTimeout(600);
   await p.getByRole("button", { name: "캘린더 종류: 일정 캘린더" }).click();
@@ -125,4 +155,4 @@ const { chromium } = require("playwright");
   r.errors = errs;
   console.log(JSON.stringify(r, null, 1));
   await b.close();
-})().catch((e) => { console.error(e.message.split("\n")[0]); process.exit(1); });
+})().catch((e) => { console.error(e.message.split("\n").slice(0, 3).join(" "), JSON.stringify(global.R)); process.exit(1); });

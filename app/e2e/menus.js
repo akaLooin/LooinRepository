@@ -3,7 +3,7 @@
 const { chromium } = require("playwright");
 const rowsOf = async (p) => (await p.getByRole("button").allInnerTexts()).map((s) => s.trim());
 const pick = (all, names) => names.filter((n) => all.includes(n));
-const NAMES = ["메모", "시간 알림", "타이머 열기", "사진 인증", "내일 하기", "오늘하기", "오늘 또 하기", "내일 또 하기", "다른 날 또 하기", "날짜 바꾸기", "보관함으로 이동", "정보 보기"];
+const NAMES = ["루틴 등록하기", "메모", "시간 알림", "타이머 열기", "사진 인증", "내일 하기", "오늘하기", "오늘 또 하기", "내일 또 하기", "다른 날 또 하기", "날짜 바꾸기", "보관함으로 이동", "정보 보기"];
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 411, height: 891 } });
@@ -43,6 +43,20 @@ const NAMES = ["메모", "시간 알림", "타이머 열기", "사진 인증", "
     pastOpen: ["메모", "타이머 열기", "오늘하기", "날짜 바꾸기", "보관함으로 이동", "정보 보기"],
     pastDone: ["메모", "타이머 열기", "사진 인증", "오늘 또 하기", "다른 날 또 하기", "날짜 바꾸기", "정보 보기"],
   };
+  // 루틴 등록하기: a routine made from the to-do (its name), the to-do counts as the first day (no second copy)
+  await close();
+  await p.getByRole("button", { name: /오늘로 이동$/ }).click(); await p.waitForTimeout(300);
+  await p.getByText("메뉴 확인", { exact: true }).first().click(); await p.waitForTimeout(500);
+  await p.getByRole("button", { name: "루틴 등록하기" }).click(); await p.waitForTimeout(800);
+  r.routineName = await p.getByLabel("루틴 이름").inputValue();
+  await p.getByRole("button", { name: "확인" }).click(); await p.waitForTimeout(800);
+  r.backHome = await p.getByText("리스트 메뉴").count();
+  r.onceToday = await p.getByText("메뉴 확인", { exact: true }).count();
+  const t = new Date(); t.setDate(t.getDate() + 1);
+  await p.getByLabel(`${t.getMonth() + 1}월 ${t.getDate()}일`, { exact: true }).first().click(); await p.waitForTimeout(400);
+  r.tomorrowToo = await p.getByText("메뉴 확인", { exact: true }).count();
+  r.routineRowShown = r.todayOpen.includes("루틴 등록하기");
+  for (const k of ["todayOpen", "todayDone", "pastOpen", "pastDone"]) r[k] = r[k].filter((n) => n !== "루틴 등록하기");
   r.match = Object.fromEntries(Object.entries(want).map(([k, v]) => [k, JSON.stringify(r[k]) === JSON.stringify(v)]));
   r.errs = errs;
   console.log(JSON.stringify(r, null, 1));

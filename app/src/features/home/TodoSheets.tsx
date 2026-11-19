@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import {
   AppText, Archive, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
-  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown,
+  TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown, CircleCheck,
 } from "../../components";
 import { ensurePermission } from "../../data/notifications";
 import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, moveTodos, setTodoAlarm, setTodoPhoto, updateTodo, useDB, type Todo } from "../../data/store";
@@ -87,6 +87,9 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
         {todo.photoUri ? <SheetMenuRow half title="사진 지우기" color="menuDelete" icon={icon(Trash2)} onPress={() => { setTodoPhoto(todo.id, null); close(); notice("사진을 지웠어요"); }} /> : null}
         {!past ? (
           <SheetMenuRow half title="시간 알림" sub={todo.remindAt ? alarmLabel(todo.remindAt) : undefined} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
+        ) : null}
+        {todo.date && !todo.routineId ? (
+          <SheetMenuRow half title="루틴 등록하기" color="menuMove" icon={icon(CircleCheck)} onPress={() => { close(); router.push(`/routines/new?category=${todo.categoryId}&from=${todo.id}` as never); }} />
         ) : null}
         <SheetMenuRow half title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
         <SheetMenuRow half title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />

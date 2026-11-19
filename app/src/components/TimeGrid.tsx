@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
-import { Platform, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
-import { tokens, useTheme } from "../theme";
+import { useEffect, useRef, useState } from "react";
+import { Platform, Pressable, ScrollView, TextInput, View, type ScrollViewInstance } from "react-native";
+import { fontFamily, tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -34,7 +34,20 @@ function Wheel({ values, value, onChange, label, unit }: { values: number[]; val
     shown.current = v;
     if (v !== value) onChange(v);
   };
-  const pick = (v: number) => { go(v, true); if (v !== value) onChange(v); };
+  // tapping the middle (picked) number lets you type it (user)
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState("");
+  const pick = (v: number) => {
+    if (v === value) { setTyped(String(v)); setTyping(true); return; }
+    go(v, true); onChange(v);
+  };
+  const doneTyping = () => {
+    setTyping(false);
+    const n = Number(typed);
+    if (typed.trim() === "" || !Number.isInteger(n) || !values.includes(n)) return; // nothing or out of range: keep the old value
+    go(n, true);
+    if (n !== value) onChange(n);
+  };
 
   return (
     <View style={{ flex: 1, height: ITEM * VISIBLE }} accessibilityRole="radiogroup" accessibilityLabel={label}>
@@ -62,13 +75,19 @@ function Wheel({ values, value, onChange, label, unit }: { values: number[]; val
           );
         })}
       </ScrollView>
+      {typing ? (
+        <TextInput value={typed} onChangeText={(t) => setTyped(t.replace(/[^0-9]/g, "").slice(0, 2))} autoFocus selectTextOnFocus keyboardType="number-pad" maxLength={2}
+          returnKeyType="done" onSubmitEditing={doneTyping} onBlur={doneTyping} accessibilityLabel={`${label} 직접 입력`}
+          style={{ position: "absolute", left: 0, right: 0, top: ITEM * 2, height: ITEM, borderRadius: tokens.radius.md, borderWidth: 2, borderColor: c.text,
+            backgroundColor: c.surfaceRow, color: c.text, textAlign: "center", fontFamily: fontFamily(700), fontSize: tokens.type.sheetTitle.size, padding: 0, outlineStyle: "none" as never }} />
+      ) : null}
     </View>
   );
 }
 
 /**
- * Hour and minute wheels, one minute apart (user, 2026-11-19: no more 5-minute buttons). Used for to-do alarms,
- * routines, reminders and 일정 times.
+ * Hour and minute wheels, one minute apart (user, 2026-11-19: no more 5-minute buttons); tapping the middle number
+ * lets you type it. Used for to-do alarms, routines, reminders and 일정 times.
  */
 export function TimeGrid({ hour, minute, onChange }: { hour: number; minute: number; onChange: (h: number, m: number) => void }) {
   return (

@@ -29,11 +29,11 @@ const LOBE_AT = [[LOBE_R, LOBE_R], [1 - LOBE_R, LOBE_R], [LOBE_R, 1 - LOBE_R], [
  * Design trial (2026-11-18, user's picture): a four-point star with curved sides instead of the clover. One colour
  * fills it; several categories become a diagonal gradient in category order. `inset` keeps an outline inside the box.
  */
-export const STAR_BLEED = 0.32; // drawn larger than the clover box on each side; turned, its points end inside the corners
+export const STAR_BLEED = 0.18; // drawn larger than the clover box on each side; turned, its points end inside the corners
 /** Turned 45°, an "x" rather than a "+" (user, 2026-11-19); the points go to the corners. */
 export function starPath(size: number, inset = 0) {
   inset -= size * STAR_BLEED;
-  const k1 = 0.04, k2 = 0.38, s = size - 2 * inset;
+  const k1 = 0.12, k2 = 0.33, s = size - 2 * inset; // the plumper curve the user liked better (2026-11-19)
   const c = size / 2, cos = Math.SQRT1_2;
   const p = (x: number, y: number) => {
     const dx = inset + x * s - c, dy = inset + y * s - c;

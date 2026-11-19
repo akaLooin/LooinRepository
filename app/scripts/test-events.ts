@@ -87,8 +87,10 @@ t("일정: old multi-day to-dos become events with the same id", () => {
 });
 
 import { moveBlock, resizeBlock } from "../src/lib/eventDrag";
-t("일정: dragging moves in 5-minute steps within the day; stretching keeps 15 minutes", () => {
+t("일정: a held event moves by quarter hours within the day; stretching in 5 minutes, at least 15", () => {
   assert.deepEqual(moveBlock(540, 600, 32), { top: 570, bottom: 630 });
+  assert.deepEqual(moveBlock(540, 600, 22), { top: 555, bottom: 615 });
+  assert.deepEqual(moveBlock(545, 600, 1), { top: 540, bottom: 595 }, "lands on a quarter hour");
   assert.deepEqual(moveBlock(540, 600, -900), { top: 0, bottom: 60 });
   assert.deepEqual(moveBlock(540, 600, 2000), { top: 1380, bottom: 1440 });
   assert.deepEqual(resizeBlock(540, 600, "bottom", 47), { top: 540, bottom: 645 });

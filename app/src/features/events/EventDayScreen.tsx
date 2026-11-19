@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
 import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Trash2, useToast } from "../../components";
-import { usePrefs } from "../../data/prefs";
+import { setPref, usePrefs } from "../../data/prefs";
 import { deleteEvent, saveEvent, useDB } from "../../data/store";
 import { addDays, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, DAY_MINUTES, eventsOn, eventTimeLabel, fromMinutes, inBand, slotAt, toMinutes, type Block, type CalEvent } from "../../lib/events";
@@ -11,14 +11,12 @@ import { goBack } from "../../lib/nav";
 import { onColor, tokens, useDesignScale, useInsets, useTheme } from "../../theme";
 import { dayLabel, EventDetail, EventEditor, newDraft, type EventDraft } from "./EventSheets";
 
-const H = tokens.layout.hourHeight;
 const LABEL_W = tokens.layout.hourLabelWidth;
 const HEAD = tokens.layout.dayHeadHeight;
-const SEC = HEAD + 24 * H; // one day: its date line, then 24 hours
+const H_MIN = 28, H_MAX = 200; // how far two fingers can squeeze or spread an hour
 const LONG_PRESS = 400;
 const isDay = (s: unknown): s is Day => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const minutesNow = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
-const px = (min: number) => (min / 60) * H;
 
 type Drag = { id: string; top: number; bottom: number } | null;
 
@@ -45,6 +43,43 @@ export function EventDayScreen() {
   const [drag, setDrag] = useState<Drag>(null);
   const [locked, setLocked] = useState(false); // no scrolling while an event is moved or stretched
   const [toast, notice] = useToast();
+  // two fingers spread or squeeze the hours (user); kept on this phone
+  const [H, setH] = useState(() => Math.min(H_MAX, Math.max(H_MIN, prefs.timelineHourHeight || tokens.layout.hourHeight)));
+  const SEC = HEAD + 24 * H; // one day: its date line, then 24 hours
+  const px = (min: number) => (min / 60) * H;
+  const viewH = useRef(600);
+  const pinch = useRef<{ d0: number; h0: number } | null>(null);
+  const zoomTo = (nh: number) => {
+    nh = Math.round(Math.min(H_MAX, Math.max(H_MIN, nh)));
+    if (nh === H) return;
+    // keep the time in the middle of the screen where it is
+    const mid = y.current + viewH.current / 2;
+    const k = Math.max(0, Math.min(2, Math.floor(mid / SEC)));
+    const minutes = Math.max(0, ((mid - k * SEC - HEAD) / H) * 60);
+    const ny = k * (HEAD + 24 * nh) + HEAD + (minutes / 60) * nh - viewH.current / 2;
+    setH(nh);
+    y.current = Math.max(0, ny);
+    requestAnimationFrame(() => scroll.current?.scrollTo({ y: y.current, animated: false }));
+  };
+  const touches = {
+    onTouchStart: (e: { nativeEvent: { touches: readonly { pageX: number; pageY: number }[] } }) => {
+      const t = e.nativeEvent.touches;
+      if (t.length === 2) { pinch.current = { d0: Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY), h0: H }; setLocked(true); }
+    },
+    onTouchMove: (e: { nativeEvent: { touches: readonly { pageX: number; pageY: number }[] } }) => {
+      const t = e.nativeEvent.touches;
+      if (t.length < 2) return;
+      const d = Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY);
+      if (!pinch.current) { pinch.current = { d0: d, h0: H }; setLocked(true); return; }
+      if (pinch.current.d0 > 0) zoomTo(pinch.current.h0 * (d / pinch.current.d0));
+    },
+    onTouchEnd: (e: { nativeEvent: { touches: readonly unknown[] } }) => {
+      if (!pinch.current || e.nativeEvent.touches.length >= 2) return;
+      pinch.current = null;
+      setLocked(false);
+      setPref("timelineHourHeight", H);
+    },
+  };
   const scroll = useRef<ScrollViewInstance>(null);
   const y = useRef(0);
   const shift = useRef(0);
@@ -142,7 +177,7 @@ export function EventDayScreen() {
               </View>
             ) : null}
             {blocks.map((b) => (
-              <EventBlock key={b.e.id} b={b} drag={drag?.id === b.e.id ? drag : null} selected={selected === b.e.id} scale={scale} use24h={prefs.use24h}
+              <EventBlock key={b.e.id} b={b} hour={H} drag={drag?.id === b.e.id ? drag : null} selected={selected === b.e.id} scale={scale} use24h={prefs.use24h}
                 onTap={() => setSelected((x) => (x === b.e.id ? null : b.e.id))}
                 onHold={() => { setSelected(b.e.id); setLocked(true); }}
                 onDrag={(top, bottom) => { setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
@@ -170,10 +205,13 @@ export function EventDayScreen() {
         <PillButton round onPress={() => { setSelected(null); setDay(addDays(shown, 1)); setShown(addDays(shown, 1)); }} a11y="다음 날"><ChevronRight size={20} color={c.text} /></PillButton>
       </View>
 
-      <ScrollView ref={scroll} scrollEnabled={!locked} scrollEventThrottle={16} onScroll={(e) => onScroll(e.nativeEvent.contentOffset.y)}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
-        {days.map(section)}
-      </ScrollView>
+      {/* pan-y: in a browser, two fingers zoom the hours here instead of the whole page */}
+      <View style={{ flex: 1, touchAction: "pan-y" } as never} {...touches} onTouchCancel={touches.onTouchEnd} onLayout={(e) => { viewH.current = e.nativeEvent.layout.height; }}>
+        <ScrollView ref={scroll} scrollEnabled={!locked} scrollEventThrottle={16} onScroll={(e) => onScroll(e.nativeEvent.contentOffset.y)}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}>
+          {days.map(section)}
+        </ScrollView>
+      </View>
 
       <Pressable onPress={() => { setSelected(null); addAt(shown, Math.min(shown === today() ? Math.ceil(minutesNow() / 60) * 60 : 9 * 60, DAY_MINUTES - 60)); }} accessibilityRole="button" accessibilityLabel="일정 추가"
         style={{ position: "absolute", right: tokens.layout.gutter, bottom: insets.bottom + 24, width: 56, height: 56, borderRadius: 18, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" }}>
@@ -189,10 +227,11 @@ export function EventDayScreen() {
 
 /**
  * One timed event in the grid. A tap selects it; holding it (0.4 s) lifts it to move up or down; when selected, the
- * round handles above and below stretch it. Times move in 5-minute steps while dragging.
+ * round handles in the middle of its top and bottom edges stretch it (5-minute steps); a held event moves by
+ * quarter hours.
  */
-function EventBlock({ b, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onDelete }: {
-  b: Block; drag: Drag; selected: boolean; scale: number; use24h: boolean;
+function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onDelete }: {
+  b: Block; hour: number; drag: Drag; selected: boolean; scale: number; use24h: boolean;
   onTap: () => void; onHold: () => void; onDrag: (top: number, bottom: number) => void; onDrop: (top: number, bottom: number) => void; onCancel: () => void;
   onEdit: () => void; onDelete: () => void;
 }) {
@@ -200,9 +239,10 @@ function EventBlock({ b, drag, selected, scale, use24h, onTap, onHold, onDrag, o
   const top = drag?.top ?? b.top, bottom = drag?.bottom ?? b.bottom;
   const start = toMinutes(b.e.startTime ?? "00:00"), end = toMinutes(b.e.endTime ?? "00:00");
   // the latest values for the gesture handlers, which are made once
-  const live = useRef({ b, start, end, scale, onTap, onHold, onDrag, onDrop, onCancel, selected });
-  live.current = { b, start, end, scale, onTap, onHold, onDrag, onDrop, onCancel, selected };
-  const minutesOf = (dy: number) => ((dy / live.current.scale) / H) * 60;
+  const live = useRef({ b, start, end, scale, H, onTap, onHold, onDrag, onDrop, onCancel, selected });
+  live.current = { b, start, end, scale, H, onTap, onHold, onDrag, onDrop, onCancel, selected };
+  const minutesOf = (dy: number) => ((dy / live.current.scale) / live.current.H) * 60;
+  const px = (min: number) => (min / 60) * H;
 
   const body = useRef((() => {
     let held = false, moved = false, last: { top: number; bottom: number } | null = null;
@@ -267,15 +307,15 @@ function EventBlock({ b, drag, selected, scale, use24h, onTap, onHold, onDrag, o
       {selected ? (
         <>
           <View {...topHandle.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel="시작 시간 끌어서 바꾸기"
-            style={{ position: "absolute", top: -KNOB / 2 - 6, left: 14, width: KNOB + 12, height: KNOB + 12, alignItems: "center", justifyContent: "center" }}>
+            style={{ position: "absolute", top: -KNOB / 2 - 6, left: "50%", marginLeft: -(KNOB + 12) / 2, width: KNOB + 12, height: KNOB + 12, alignItems: "center", justifyContent: "center" }}>
             <View style={{ width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: c.bg, borderWidth: 3, borderColor: b.e.color }} />
           </View>
           <View {...bottomHandle.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel="끝나는 시간 끌어서 바꾸기"
-            style={{ position: "absolute", bottom: -KNOB / 2 - 6, right: 16, width: KNOB + 12, height: KNOB + 12, alignItems: "center", justifyContent: "center" }}>
+            style={{ position: "absolute", bottom: -KNOB / 2 - 6, left: "50%", marginLeft: -(KNOB + 12) / 2, width: KNOB + 12, height: KNOB + 12, alignItems: "center", justifyContent: "center" }}>
             <View style={{ width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: c.bg, borderWidth: 3, borderColor: b.e.color }} />
           </View>
           {drag ? null : (
-            <View style={{ position: "absolute", right: 56, flexDirection: "row", gap: 6, ...(actionsBelow ? { top: height + 10 } : { top: -38 }) }}>
+            <View style={{ position: "absolute", right: 8, flexDirection: "row", gap: 6, ...(actionsBelow ? { top: height + 10 } : { top: -38 }) }}>
               <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel="일정 수정"
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised }}>
                 <Pencil size={14} color={c.menuEdit} /><AppText variant="small" weight={600}>수정</AppText>

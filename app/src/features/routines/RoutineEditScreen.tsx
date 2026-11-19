@@ -6,7 +6,7 @@ import { Modal, Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Button, FieldGroup, FieldRow, MemoInput, RadioList, ScreenHeader, TimeGrid, TitleInput, Toggle,
 } from "../../components";
-import { deleteRoutine, saveRoutine, useDB } from "../../data/store";
+import { deleteRoutine, saveRoutine, updateTodo, useDB } from "../../data/store";
 import { addDays, parseDay, today, weekday, type Day } from "../../lib/dates";
 import { ruleLabel, type RepeatRule, type RepeatType } from "../../lib/routines";
 import { fontFamily, ScaledRoot, tokens, useTheme, visibleOn } from "../../theme";
@@ -21,21 +21,27 @@ const fmt = (d: Day) => { const { y, m, d: dd } = parseDay(d); return `${y}. ${m
 
 type Sheet = null | "start" | "end" | "time" | "repeat" | "delete";
 
-/** S07b. `id` = "new" with ?category= to create. */
+const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+/**
+ * S07b. `id` = "new" with ?category= to create. ?from=<to-do id> (할 일 메뉴 → 루틴 등록하기, user): starts from that
+ * to-do (name, day, alarm time, memo), and the to-do becomes the routine's first day.
+ */
 export function RoutineEditScreen() {
-  const { id, category } = useLocalSearchParams<{ id: string; category?: string }>();
+  const { id, category, from } = useLocalSearchParams<{ id: string; category?: string; from?: string }>();
+  const source = useDB((d) => (from ? d.todos.find((t) => t.id === from) : undefined));
   const { c } = useTheme();
   const insets = useInsets();
   const existing = useDB((d) => d.routines.find((r) => r.id === id));
-  const categoryId = existing?.categoryId ?? category ?? "";
+  const categoryId = existing?.categoryId ?? category ?? source?.categoryId ?? "";
   const cat = useDB((d) => d.categories.find((x) => x.id === categoryId));
 
-  const [title, setTitle] = useState(existing?.title ?? "");
-  const [startDate, setStart] = useState<Day>(existing?.startDate ?? today());
+  const [title, setTitle] = useState(existing?.title ?? source?.title ?? "");
+  const [startDate, setStart] = useState<Day>(existing?.startDate ?? source?.date ?? today());
   const [endDate, setEnd] = useState<Day | undefined>(existing?.endDate);
   const [rule, setRule] = useState<RepeatRule>(existing ?? { repeatType: "daily" });
-  const [time, setTime] = useState<string | undefined>(existing?.timeOfDay);
-  const [memo, setMemo] = useState(existing?.memo ?? "");
+  const [time, setTime] = useState<string | undefined>(existing?.timeOfDay ?? (source?.remindAt ? hhmm(new Date(source.remindAt)) : undefined));
+  const [memo, setMemo] = useState(existing?.memo ?? source?.memo ?? "");
   const [manualAdd, setManual] = useState(existing?.manualAdd ?? false);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [error, setError] = useState<string>();
@@ -45,13 +51,15 @@ export function RoutineEditScreen() {
   const save = () => {
     if (!title.trim()) return setError("이름을 입력해 주세요");
     if (!cat) return setError("카테고리를 찾을 수 없어요");
-    saveRoutine({ id: existing?.id, categoryId, title: title.trim(), startDate, endDate, ...rule, timeOfDay: time, memo, manualAdd });
-    goBack("/routines");
+    const rid = saveRoutine({ id: existing?.id, categoryId, title: title.trim(), startDate, endDate, ...rule, timeOfDay: time, memo, manualAdd });
+    // the to-do it was made from stands for the routine on its own day (no second copy there)
+    if (source?.date && !existing) updateTodo(source.id, { routineId: rid, routineDate: source.date });
+    goBack(source ? "/" : "/routines");
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScreenHeader title="루틴" onBack={() => goBack("/routines")} right={{ label: "확인", onPress: save }} />
+      <ScreenHeader title="루틴" onBack={() => goBack(source ? "/" : "/routines")} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="루틴 이름" underline={color} error={error} autoFocus={!existing} />
         <View style={{ height: 0 }} />
