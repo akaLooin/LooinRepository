@@ -65,6 +65,6 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 작업 방법
 - 단위 테스트 `cd app && npm test` (81개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
-- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개 (Playwright, 411×891, 체험 모드 데이터)
+- 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`
