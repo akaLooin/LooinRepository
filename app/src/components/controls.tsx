@@ -26,7 +26,9 @@ export function Toggle({ value, onChange, disabled, label }: { value: boolean; o
       style={{ opacity: disabled ? 0.4 : 1 }}
     >
       <View style={{ width: w, height: h, borderRadius: h / 2, backgroundColor: value ? c.toggleOn : c.toggleOff, justifyContent: "center" }}>
-        <AppText variant="toggleLabel" color="onIcon" style={{ position: "absolute", left: value ? 9 : undefined, right: value ? undefined : 7 }}>
+        {/* the label is centred in the part of the track the knob leaves free, so it never touches the knob */}
+        <AppText variant="toggleLabel" color="onIcon" center numberOfLines={1}
+          style={{ position: "absolute", left: value ? 2 : knob + 2, right: value ? knob + 2 : 2 }}>
           {value ? "ON" : "OFF"}
         </AppText>
         <Animated.View

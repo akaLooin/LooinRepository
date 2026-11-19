@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Bell, Button, Calendar, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
-  PRESET_COLORS, TileButton, TimeGrid, Toggle, Trash2, X,
+  PRESET_COLORS, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
@@ -28,6 +28,7 @@ type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" 
  */
 export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | null; onClose: () => void; onSaved: (msg: string) => void }) {
   const { c } = useTheme();
+  const glow = useGlowColor();
   const prefs = usePrefs();
   const categories = useDB((d) => d.categories);
   const [e, setE] = useState<EventDraft | null>(draft);
@@ -158,7 +159,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
           {when("end")}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
-          <Sparkles size={22} color={e.important ? c.neon : c.textMuted} />
+          <Sparkles size={22} color={e.important ? glow : c.textMuted} />
           <AppText variant="bodyLg" style={{ flex: 1 }}>중요한 일정으로 강조</AppText>
           <Toggle value={!!e.important} label="중요한 일정으로 강조" onChange={(important) => put({ important })} />
         </View>
@@ -187,6 +188,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
 /** A month to pick a day from (inside the editor sheet). */
 function DayPicker({ initial, min, onPick }: { initial: Day; min?: Day; onPick: (d: Day) => void }) {
   const { c } = useTheme();
+  const glow = useGlowColor();
   const s = parseDay(initial);
   const [ym, setYm] = useState({ y: s.y, m: s.m });
   const shift = (n: number) => setYm(({ y, m }) => { const t = m + n; return { y: y + Math.floor((t - 1) / 12), m: ((t - 1 + 120) % 12) + 1 }; });
@@ -206,6 +208,7 @@ function DayPicker({ initial, min, onPick }: { initial: Day; min?: Day; onPick: 
 /** Tapping an event: what it is, with 수정하기 and 삭제하기. */
 export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null; onClose: () => void; onEdit: (e: CalEvent) => void; notice: (m: string) => void }) {
   const { c } = useTheme();
+  const glow = useGlowColor();
   const prefs = usePrefs();
   const e = useDB((d) => d.events.find((x) => x.id === id));
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
@@ -226,7 +229,7 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
       ) : null}
       <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
         <TileButton label="수정하기" icon={<Pencil size={28} color={c.menuEdit} />} onPress={() => onEdit(e)} />
-        <TileButton label={e.important ? "강조 해제" : "강조"} icon={<Sparkles size={28} color={c.neon} />} onPress={() => notice(toggleEventImportant(e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")} />
+        <TileButton label={e.important ? "강조 해제" : "강조"} icon={<Sparkles size={28} color={glow} />} onPress={() => notice(toggleEventImportant(e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")} />
         <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { deleteEvent(e.id); onClose(); notice("일정을 지웠어요"); }} />
       </View>
     </BottomSheet>

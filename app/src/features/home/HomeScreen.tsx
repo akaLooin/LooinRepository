@@ -252,8 +252,8 @@ export function HomeScreen() {
   const diary = diaries.find((x) => x.date === selected);
   // 일정 on the calendar: thin lines under the dates (할 일 캘린더) or labelled bars (일정 캘린더)
   const spanBars = useMemo(() => eventBars(events), [events]);
-  // 중요한 날: days with an important to-do or event, for this month and the ones beside it
-  const important = useMemo(() => importantDays(db.todos, events, addDays(`${monthKey}-01`, -45), addDays(`${monthKey}-01`, 75)), [db.todos, events, monthKey]);
+  // 중요한 날: days with an important to-do glow; an important event glows on its own line instead (user)
+  const important = useMemo(() => importantDays(db.todos, [], `${monthKey}-01`, `${monthKey}-01`), [db.todos, monthKey]);
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
   const calCats = categories.filter((x) => calIds.has(x.id));
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];

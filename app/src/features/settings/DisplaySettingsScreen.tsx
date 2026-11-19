@@ -1,14 +1,17 @@
 import { goBack } from "../../lib/nav";
 import { useInsets } from "../../theme";
 import { useState } from "react";
-import { ScrollView, useWindowDimensions, View } from "react-native";
-import { AppText, BottomSheet, Button, RadioList, ScreenHeader, ToggleRow, ValueRow, useToast } from "../../components";
+import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import { AppText, BottomSheet, Button, Check, ColorCodeInput, RadioList, ScreenHeader, ToggleRow, ValueRow, useToast } from "../../components";
 import { setPref, usePrefs, type Prefs } from "../../data/prefs";
 import { CALENDAR_MAX } from "../../data/prefsRow";
-import { DESIGN_WIDTH, FONT_LABEL, tokens, useDesignScale, useTheme, type FontFace } from "../../theme";
+import { DESIGN_WIDTH, FONT_LABEL, onColor, tokens, useDesignScale, useTheme, type FontFace } from "../../theme";
 
 const maxLabel = (n: number) => (n ? `${n}개` : "무제한");
 const MEMO_LINES: Record<number, string> = { 0: "무제한", 1: "1줄", 2: "2줄", 3: "3줄", 5: "5줄" };
+
+/** 강조 색 choices; any #RRGGBB can be typed too */
+const GLOW_PRESETS = ["#00FF7F", "#3DF5FF", "#FFE14D", "#FF5AF7", "#FF7A45", "#B388FF", "#FFFFFF"];
 
 const THEME: Record<Prefs["theme"], string> = { system: "시스템", dark: "다크", light: "라이트" };
 const SORT: Record<Prefs["todoSort"], string> = { done_last: "완료 여부 순", manual: "추가한 순" };
@@ -18,7 +21,10 @@ export function DisplaySettingsScreen() {
   const { c } = useTheme();
   const insets = useInsets();
   const p = usePrefs();
-  const [sheet, setSheet] = useState<null | "theme" | "sort" | "scale" | "font" | "lines" | "monthMax" | "weekMax">(null);
+  const [sheet, setSheet] = useState<null | "theme" | "sort" | "scale" | "font" | "lines" | "monthMax" | "weekMax" | "glow">(null);
+  const [draftGlow, setDraft] = useState(p.glowColor);
+  const [glowPick, setGlowPick] = useState(0); // a swatch or 기본값 refills the code field
+  const setDraftGlow = (col: string) => { setDraft(col); setGlowPick((n) => n + 1); };
   const [draftMax, setDraftMax] = useState("10");
   const [draftFont, setDraftFont] = useState<FontFace>(p.font);
   const [draftLines, setDraftLines] = useState("0");
@@ -53,9 +59,26 @@ export function DisplaySettingsScreen() {
         <ValueRow title="할 일 캘린더에서 표시할 카테고리" value={String(p.calendarCategoryCount)} onPress={() => setPref("calendarCategoryCount", (p.calendarCategoryCount % 4) + 1)} />
         {/* not in the original: added for this app */}
         <ValueRow title="체크 표시 색" value={p.checkColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("checkColor", p.checkColor === "black" ? "white" : "black")} />
+        <ValueRow title="강조 색" value={p.glowColor.toUpperCase()} onPress={() => { setDraftGlow(p.glowColor); setSheet("glow"); }} />
         <ValueRow title="캘린더 숫자 색" value={p.cloverNumberColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("cloverNumberColor", p.cloverNumberColor === "black" ? "white" : "black")} />
         <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} divider={false} />
       </ScrollView>
+      <BottomSheet visible={sheet === "glow"} onClose={() => setSheet(null)} title="강조 색">
+        <AppText variant="helper" color="textMuted" style={{ marginBottom: 14 }}>중요한 날과 강조한 일정이 이 색으로 빛나요.</AppText>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
+          {GLOW_PRESETS.map((col) => (
+            <Pressable key={col} onPress={() => setDraftGlow(col)} accessibilityRole="radio" accessibilityState={{ checked: draftGlow.toUpperCase() === col }} accessibilityLabel={`강조 색 ${col}`}
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: col, alignItems: "center", justifyContent: "center" }}>
+              {draftGlow.toUpperCase() === col ? <Check size={20} color={onColor(col)} strokeWidth={3} /> : null}
+            </Pressable>
+          ))}
+        </View>
+        <ColorCodeInput key={glowPick} value={draftGlow} onChange={setDraft} />
+        <View style={{ marginTop: 20, flexDirection: "row", gap: 10 }}>
+          <Button kind="sheetBlock" flex label="기본값" onPress={() => setDraftGlow("#00FF7F")} />
+          <Button kind="sheetBlock" flex label="확인" onPress={() => { setPref("glowColor", draftGlow.toUpperCase()); setSheet(null); }} />
+        </View>
+      </BottomSheet>
       <BottomSheet visible={sheet === "theme"} onClose={() => setSheet(null)} title="테마">
         <RadioList value={draftTheme} onChange={setDraftTheme} options={(Object.keys(THEME) as Prefs["theme"][]).map((v) => ({ value: v, label: THEME[v] }))} />
         <View style={{ marginTop: 20 }}><Button kind="sheetPrimary" label="확인" onPress={() => { setPref("theme", draftTheme); setSheet(null); }} /></View>

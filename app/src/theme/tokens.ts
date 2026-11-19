@@ -234,7 +234,7 @@ export const tokens = {
     "fieldHeight": 52,
     "timeCell": 50,
     "wheelItem": 44,
-    "toggleWidth": 54,
+    "toggleWidth": 60,
     "toggleHeight": 30,
     "navIcon": 26
   },

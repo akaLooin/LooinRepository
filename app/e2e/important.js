@@ -50,8 +50,22 @@ const { chromium } = require("playwright");
   await shot("important-event-calendar");
   await p.getByRole("button", { name: "캘린더 종류: 일정 캘린더" }).click(); await p.waitForTimeout(300);
   await p.getByRole("radio", { name: "할 일 캘린더" }).click(); await p.waitForTimeout(500);
-  r.eventDayGlows = await p.getByLabel(`${now.getMonth() + 1}월 ${now.getDate()}일, 중요한 날`, { exact: true }).count();
+  // on the 할 일 캘린더 an important event glows on its line, not on the day's clover (user)
+  r.eventLineGlows = await p.getByLabel("팀 회의, 강조", { exact: true }).count();
+  r.dayNotLit = (await p.getByLabel(`${now.getMonth() + 1}월 ${now.getDate()}일, 중요한 날`, { exact: true }).count()) === 0;
+  // lines sit under the date circles: the circle's bottom is above the line's top
+  const num = await p.getByLabel(`${now.getMonth() + 1}월 ${now.getDate()}일`, { exact: true }).first().getByText(String(now.getDate()), { exact: true }).boundingBox();
+  const line = await p.getByLabel("팀 회의, 강조", { exact: true }).boundingBox();
+  r.lineBelowCircle = !!num && !!line && line.y >= num.y + num.height + 4; // the circle reaches ~4 past the number
+  r.gap = num && line ? Math.round(line.y - (num.y + num.height)) : null;
   await shot("important-todo-calendar");
+  // 설정 → 화면 → 강조 색
+  await p.goto("http://localhost:8765/settings/display", { waitUntil: "networkidle" }); await p.waitForTimeout(500);
+  r.defaultColour = await p.getByRole("button", { name: /^강조 색, #00FF7F/ }).count();
+  await p.getByRole("button", { name: /^강조 색/ }).click(); await p.waitForTimeout(400);
+  await p.getByRole("radio", { name: "강조 색 #FFE14D" }).click();
+  await p.getByRole("button", { name: "확인" }).click(); await p.waitForTimeout(300);
+  r.colourSaved = await p.evaluate(() => JSON.parse(localStorage.getItem("todomate:prefs") || "{}").glowColor);
   r.errors = errs;
   console.log(JSON.stringify(r, null, 1));
   await b.close();

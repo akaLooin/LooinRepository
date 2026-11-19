@@ -93,34 +93,39 @@ function Tick({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** One slow pulse shared by every glowing day, so they breathe together (and one animation runs, not dozens). */
+/** One pulse shared by every glowing day, so they breathe together (and one animation runs, not dozens). */
 let pulse: Animated.Value | null = null;
 export function usePulse() {
   if (!pulse) {
     pulse = new Animated.Value(0);
     Animated.loop(Animated.sequence([
-      Animated.timing(pulse, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0, duration: 1000, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
     ])).start();
   }
   return pulse;
 }
 
+/** 강조 색 (설정 → 화면, user): #00FF7F unless changed. */
+export const useGlowColor = () => usePrefs().glowColor || "#00FF7F";
+
 /** 중요한 날: a neon outline around the clover or star that slowly brightens and fades (user's feature). */
 function Glow({ size, bleed }: { size: number; bleed: number }) {
-  const { c } = useTheme();
+  const neon = useGlowColor();
   const p = usePulse();
-  const m = size * 0.22 + bleed; // room for the soft outer line
+  const m = size * 0.3 + bleed; // room for the soft outer line and the swell
   const outline = (w: number, o: number) => (DESIGN_TRIAL
-    ? <Path d={starPath(size)} fill="none" stroke={c.neon} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
-    : <G fill="none" stroke={c.neon} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
+    ? <Path d={starPath(size)} fill="none" stroke={neon} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
+    : <G fill="none" stroke={neon} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
   return (
-    <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity: p.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) }}>
+    <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity: p.interpolate({ inputRange: [0, 1], outputRange: [0.1, 1] }),
+      // it also swells a little as it brightens, so it reads even on a clover of the same colour
+      transform: [{ scale: p.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1.12] }) }] }}>
       <Svg width={size + 2 * m} height={size + 2 * m}>
         <G x={m} y={m}>
-          {outline(size * 0.3, 0.18)}
-          {outline(size * 0.17, 0.4)}
-          {outline(size * 0.08, 1)}
+          {outline(size * 0.42, 0.18)}
+          {outline(size * 0.24, 0.45)}
+          {outline(size * 0.1, 1)}
         </G>
       </Svg>
     </Animated.View>

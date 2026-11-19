@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Animated, BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, usePulse, useToast } from "../../components";
+import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowColor, usePulse, useToast } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
 import { addDays, today, type Day } from "../../lib/dates";
@@ -31,6 +31,7 @@ type Drag = { id: string; top: number; bottom: number } | null;
 export function EventDayScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
   const { c } = useTheme();
+  const glow = useGlowColor();
   const insets = useInsets();
   const prefs = usePrefs();
   const scale = useDesignScale();
@@ -148,7 +149,7 @@ export function EventDayScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, alignItems: "center" }} accessibilityLabel={`${dayLabel(d)} 종일 일정`}>
             {band.map((e) => (
               <Pressable key={e.id} onPress={() => setOpen(e.id)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, 0)}`}
-                style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5, borderWidth: e.important ? 2 : 0, borderColor: c.neon }}>
+                style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5, borderWidth: e.important ? 2 : 0, borderColor: glow }}>
                 <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
               </Pressable>
             ))}
@@ -237,6 +238,7 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
   onEdit: () => void; onImportant: () => void; onDelete: () => void;
 }) {
   const { c } = useTheme();
+  const glow = useGlowColor();
   const pulse = usePulse();
   const top = drag?.top ?? b.top, bottom = drag?.bottom ?? b.bottom;
   const start = toMinutes(b.e.startTime ?? "00:00"), end = toMinutes(b.e.endTime ?? "00:00");
@@ -301,8 +303,8 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
       paddingRight: 2, zIndex: selected || drag ? 5 : 1 }}>
       {b.e.important ? (
         // 강조: the neon frame, breathing
-        <Animated.View pointerEvents="none" style={{ position: "absolute", top: -3, bottom: -3, left: -3, right: -1, borderRadius: tokens.radius.sm + 3, borderWidth: 2, borderColor: c.neon,
-          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) }} />
+        <Animated.View pointerEvents="none" style={{ position: "absolute", top: -3, bottom: -3, left: -3, right: -1, borderRadius: tokens.radius.sm + 3, borderWidth: 3, borderColor: glow,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.12, 1] }) }} />
       ) : null}
       <View {...body.panHandlers} accessible accessibilityRole="button" accessibilityLabel={b.e.important ? `${label}, 강조` : label} accessibilityState={{ selected }}
         accessibilityHint={selected ? "다시 누르면 선택 해제, 길게 눌러 옮기기" : "눌러서 선택, 길게 눌러 옮기기"}
@@ -329,8 +331,8 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
               </Pressable>
               <Pressable onPress={onImportant} accessibilityRole="button" accessibilityLabel={b.e.important ? "강조 해제" : "일정 강조"}
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised,
-                  borderWidth: b.e.important ? 1 : 0, borderColor: c.neon }}>
-                <Sparkles size={14} color={c.neon} /><AppText variant="small" weight={600}>{b.e.important ? "강조 해제" : "강조"}</AppText>
+                  borderWidth: b.e.important ? 1 : 0, borderColor: glow }}>
+                <Sparkles size={14} color={glow} /><AppText variant="small" weight={600}>{b.e.important ? "강조 해제" : "강조"}</AppText>
               </Pressable>
               <Pressable onPress={onDelete} accessibilityRole="button" accessibilityLabel="일정 삭제"
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised }}>

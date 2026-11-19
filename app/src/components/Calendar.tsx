@@ -5,12 +5,14 @@ import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/da
 import { rowSegments, type SpanBar } from "../lib/spans";
 import { onColor, tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
-import { Clover, usePulse, type CloverState } from "./Clover";
+import { Clover, useGlowColor, usePulse, type CloverState } from "./Clover";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 
 /** 일정 캘린더: up to four events a day, then "+n" (user) */
 const LONG_LANES = 4;
+/** 할 일 캘린더: one event line every 6 points under the dates */
+const LINE_STEP = 6;
 
 function dayColor(wd: number): ColorName {
   return wd === 0 ? "sunday" : wd === 6 ? "saturday" : "text";
@@ -100,6 +102,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
 }) {
   const { c } = useTheme();
   const pulse = usePulse();
+  const glow = useGlowColor();
   const long = kind === "span" && !picker;
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
   const labels = weekdayLabels(weekStartsSunday);
@@ -123,8 +126,11 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
       </View>
       {grid.map((row, i) => {
         const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2) : null;
+        // 할 일 캘린더: a row with event lines grows by their height, so the lines sit under the date circles
+        // instead of over them (user)
+        const lineRoom = !long && bars?.segments.length ? 3 + (Math.max(...bars.segments.map((x) => x.lane)) + 1) * LINE_STEP : 0;
         return (
-        <View key={i} style={{ flexDirection: "row", height: picker ? 52 : long ? tokens.layout.spanRowHeight : tokens.layout.calendarRowHeight, marginHorizontal: -bleed }}>
+        <View key={i} style={{ flexDirection: "row", height: picker ? 52 : long ? tokens.layout.spanRowHeight : tokens.layout.calendarRowHeight + lineRoom, marginHorizontal: -bleed }}>
           {row.map((day, j) => {
             if (!day) return <View key={j} style={{ flex: 1 }} />;
             const isToday = day === today;
@@ -148,9 +154,9 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                 return long ? (
                   <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}${b.important ? ", 강조" : ""}`}>
                     {b.important ? (
-                      // 강조: a neon frame around the bar, breathing like the glowing clovers
-                      <Animated.View style={{ position: "absolute", top: -2, bottom: -2, left: (b.opensLeft ? 0 : 4) - 2, right: (b.opensRight ? 0 : 4) - 2, borderRadius: 6, borderWidth: 2, borderColor: c.neon,
-                        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) }} />
+                      // 강조: a glowing frame around the bar, breathing like the glowing clovers
+                      <Animated.View style={{ position: "absolute", top: -3, bottom: -3, left: (b.opensLeft ? 0 : 4) - 3, right: (b.opensRight ? 0 : 4) - 3, borderRadius: 7, borderWidth: 3, borderColor: glow,
+                        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.12, 1] }) }} />
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill, justifyContent: "center", paddingHorizontal: 4 }}>
                       {!b.opensLeft || b.from === row.findIndex(Boolean) ? (
@@ -159,7 +165,12 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                     </View>
                   </View>
                 ) : (
-                  <View key={b.id} style={{ ...pos, bottom: 1 + b.lane * 5, height: 3 }}>
+                  <View key={b.id} style={{ ...pos, bottom: 2 + b.lane * LINE_STEP, height: 3 }} accessibilityLabel={b.important ? `${b.title}, 강조` : undefined}>
+                    {b.important ? (
+                      // 강조 on the 할 일 캘린더: the line itself glows (not the day's clover, user)
+                      <Animated.View style={{ position: "absolute", top: -3, bottom: -3, left: (b.opensLeft ? 0 : 4) - 2, right: (b.opensRight ? 0 : 4) - 2, borderRadius: 5, backgroundColor: glow,
+                        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.9] }) }} />
+                    ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill }} />
                   </View>
                 );
