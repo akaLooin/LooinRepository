@@ -8,7 +8,8 @@
 import { useEffect } from "react";
 import { Animated, AppState, Easing, View } from "react-native";
 import { usePrefs } from "../data/prefs";
-import { useTheme } from "../theme";
+import { useTheme, type ColorName } from "../theme";
+import { AppText } from "./AppText";
 
 /** 강조 색 (설정 → 화면): #00FF7F unless changed. */
 export const useGlowColor = () => usePrefs().glowColor || "#00FF7F";
@@ -151,6 +152,30 @@ export function GlowFrame({ radius, inset = 5, left = 0, right = 0, embers }: {
           <Embers count={embers.count} rise={embers.rise} size={embers.size} from={0.05} to={0.95} />
         </View>
       ) : null}
+    </View>
+  );
+}
+
+/**
+ * Text that glows like a red neon sign, breathing with the shared pulse; no flames (user: the D-day label on the day
+ * itself). A blurred copy behind the text brightens and fades; the text on top stays sharp.
+ */
+export function NeonText({ children, variant = "body", weight = 700, color = "dday" }: {
+  children: string; variant?: "body" | "bodyLg"; weight?: 400 | 500 | 600 | 700; color?: ColorName;
+}) {
+  const { c } = useTheme();
+  const col = c[color];
+  const opacity = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] });
+  const blur = (r: number) => ({ textShadowColor: col, textShadowRadius: r, textShadowOffset: { width: 0, height: 0 } });
+  return (
+    <View>
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, opacity }}>
+        <AppText variant={variant} weight={weight} raw={col} style={blur(14)}>{children}</AppText>
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, opacity }}>
+        <AppText variant={variant} weight={weight} raw={col} style={blur(6)}>{children}</AppText>
+      </Animated.View>
+      <AppText variant={variant} weight={weight} raw={col} style={blur(2)}>{children}</AppText>
     </View>
   );
 }

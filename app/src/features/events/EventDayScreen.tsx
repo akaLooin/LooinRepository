@@ -128,12 +128,18 @@ export function EventDayScreen() {
     setDraft(newDraft(d, s.startTime, s.endTime, lastColor));
   };
   const hourLabel = (h: number) => (prefs.use24h ? `${String(h).padStart(2, "0")}:00` : `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시`);
-  const commit = (e: CalEvent, top: number, bottom: number) => {
+  const commit = (b: Block, top: number, bottom: number) => {
     setDrag(null);
     setLocked(false);
-    if (top === toMinutes(e.startTime ?? "00:00") && bottom === toMinutes(e.endTime ?? "00:00")) return;
-    saveEvent({ ...e, startTime: fromMinutes(top), endTime: fromMinutes(bottom) });
-    notice(`${clock(fromMinutes(top), prefs.use24h)}~${clock(fromMinutes(bottom), prefs.use24h)}로 바꿨어요`);
+    if (top === b.top && bottom === b.bottom) return;
+    const e = b.e;
+    // an event over midnight: only the edge that is really on this day changes (its start on the first day, its end
+    // on the last); the day boundaries stay
+    const next = e.startDate === e.endDate
+      ? { ...e, startTime: fromMinutes(top), endTime: fromMinutes(bottom) }
+      : { ...e, ...(e.startDate === day ? { startTime: fromMinutes(top) } : {}), ...(e.endDate === day ? { endTime: fromMinutes(bottom) } : {}) };
+    saveEvent(next);
+    notice(`${eventTimeLabel(next, prefs.use24h, Number(day.slice(0, 4)))}로 바꿨어요`);
   };
 
   const band = eventsOn(events, day).filter(inBand);
@@ -195,11 +201,11 @@ export function EventDayScreen() {
                 </View>
               ) : null}
               {blocks.map((b) => (
-                <EventBlock key={b.e.id} b={b} hour={H} drag={drag?.id === b.e.id ? drag : null} selected={selected === b.e.id} scale={scale} use24h={prefs.use24h}
+                <EventBlock key={b.e.id} b={b} day={day} hour={H} drag={drag?.id === b.e.id ? drag : null} selected={selected === b.e.id} scale={scale} use24h={prefs.use24h}
                   onTap={() => setSelected((x) => (x === b.e.id ? null : b.e.id))}
                   onHold={() => { setSelected(b.e.id); setLocked(true); }}
                   onDrag={(top, bottom) => { setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
-                  onDrop={(top, bottom) => commit(b.e, top, bottom)}
+                  onDrop={(top, bottom) => commit(b, top, bottom)}
                   onCancel={() => { setDrag(null); setLocked(false); }}
                   onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
                   onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
@@ -227,18 +233,20 @@ export function EventDayScreen() {
  * round handles in the middle of its top and bottom edges stretch it (5-minute steps); a held event moves by
  * quarter hours.
  */
-function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onImportant, onDelete }: {
-  b: Block; hour: number; drag: Drag; selected: boolean; scale: number; use24h: boolean;
+function EventBlock({ b, day, hour: H, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onImportant, onDelete }: {
+  b: Block; day: Day; hour: number; drag: Drag; selected: boolean; scale: number; use24h: boolean;
   onTap: () => void; onHold: () => void; onDrag: (top: number, bottom: number) => void; onDrop: (top: number, bottom: number) => void; onCancel: () => void;
   onEdit: () => void; onImportant: () => void; onDelete: () => void;
 }) {
   const { c } = useTheme();
   const glow = useGlowColor();
   const top = drag?.top ?? b.top, bottom = drag?.bottom ?? b.bottom;
-  const start = toMinutes(b.e.startTime ?? "00:00"), end = toMinutes(b.e.endTime ?? "00:00");
-  // the latest values for the gesture handlers, which are made once
-  // an event over midnight shows only its part of this day: it is changed in the editor, not by dragging
+  // an event over midnight shows only its part of this day: its real start (first day) and end (last day) can be
+  // stretched with the handles; it is not moved by holding
   const partial = b.e.startDate !== b.e.endDate;
+  const canTop = !partial || b.e.startDate === day, canBottom = !partial || b.e.endDate === day;
+  const start = partial ? b.top : toMinutes(b.e.startTime ?? "00:00"), end = partial ? b.bottom : toMinutes(b.e.endTime ?? "00:00");
+  // the latest values for the gesture handlers, which are made once
   const live = useRef({ b, start, end, scale, H, onTap, onHold, onDrag, onDrop, onCancel, selected, partial });
   live.current = { b, start, end, scale, H, onTap, onHold, onDrag, onDrop, onCancel, selected, partial };
   const minutesOf = (dy: number) => ((dy / live.current.scale) / live.current.H) * 60;
@@ -291,11 +299,13 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
   const bottomHandle = useRef(handle("bottom")).current;
 
   const height = Math.max(18, px(bottom - top) - 2);
-  const label = `${b.e.title}, ${eventTimeLabel({ ...b.e, startTime: fromMinutes(top), endTime: fromMinutes(bottom) }, use24h, 0)}`;
+  // over midnight: only the edge on this day follows a drag; the other stays the event's own time
+  const shownTimes = { startTime: canTop ? fromMinutes(top) : b.e.startTime, endTime: canBottom ? fromMinutes(bottom) : b.e.endTime };
+  const label = `${b.e.title}, ${eventTimeLabel({ ...b.e, ...shownTimes }, use24h, 0)}`;
   const KNOB = 16;
   const actionsBelow = top < 60; // near midnight there is no room above
   return (
-    <View style={{ position: "absolute", top: px(top) + 1, height, left: selected || drag ? 0 : `${(b.col / b.cols) * 100}%`, width: selected || drag ? "100%" : `${100 / b.cols}%`,
+    <View style={{ position: "absolute", top: px(top) + 1, height, left: `${(b.col / b.cols) * 100}%`, width: `${100 / b.cols}%`, // same size when selected (user)
       paddingRight: 2, zIndex: selected || drag ? 5 : 1 }}>
       {b.e.important ? (
         // 강조: the glowing frame (and, in the design trial, embers)
@@ -311,18 +321,21 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
       </View>
       {selected ? (
         <>
-          {partial ? null : <>
+          {canTop ? (
           <View {...topHandle.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel="시작 시간 끌어서 바꾸기"
             style={{ position: "absolute", top: -KNOB / 2 - 6, left: "50%", marginLeft: -(KNOB + 12) / 2, width: KNOB + 12, height: KNOB + 12, alignItems: "center", justifyContent: "center" }}>
             <View style={{ width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: c.bg, borderWidth: 3, borderColor: b.e.color }} />
           </View>
+          ) : null}
+          {canBottom ? (
           <View {...bottomHandle.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel="끝나는 시간 끌어서 바꾸기"
             style={{ position: "absolute", bottom: -KNOB / 2 - 6, left: "50%", marginLeft: -(KNOB + 12) / 2, width: KNOB + 12, height: KNOB + 12, alignItems: "center", justifyContent: "center" }}>
             <View style={{ width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: c.bg, borderWidth: 3, borderColor: b.e.color }} />
           </View>
-          </>}
+          ) : null}
           {drag ? null : (
-            <View style={{ position: "absolute", right: 8, flexDirection: "row", gap: 6, ...(actionsBelow ? { top: height + 10 } : { top: -38 }) }}>
+            // the buttons hang from the block towards the middle of the screen, so a narrow block's do not run off it
+            <View style={{ position: "absolute", flexDirection: "row", gap: 6, ...(b.col + 0.5 < b.cols / 2 ? { left: 0 } : { right: 2 }), ...(actionsBelow ? { top: height + 10 } : { top: -38 }) }}>
               <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel="일정 수정"
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised }}>
                 <Pencil size={14} color={c.menuEdit} /><AppText variant="small" weight={600}>수정</AppText>

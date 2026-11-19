@@ -32,3 +32,6 @@ export function isDDayOn(d: Pick<DDay, "type" | "targetDate" | "repeatUnit">, da
   return day >= d.targetDate && nextOccurrence(d, day) === day;
 }
 
+
+/** The D-day is today (its date, or this year's / month's for a repeating one): the label glows red (user). */
+export const isDDayToday = (d: Pick<DDay, "type" | "targetDate" | "repeatUnit">, from: Day = today()) => nextOccurrence(d, from) === from;

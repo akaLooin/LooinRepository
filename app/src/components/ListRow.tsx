@@ -2,6 +2,7 @@ import { Pressable, View } from "react-native";
 import { tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 import { Radio, Toggle } from "./controls";
+import { NeonText } from "./Highlight";
 import { ChevronRight } from "./icons";
 import { useRipple } from "./press";
 
@@ -115,8 +116,10 @@ export function RoutineRow({ status, title, detail, onPress, onLongPress, delayL
 }
 
 /** Rounded row with a right-hand value: D-day list, category list (S21, S06). */
-export function PillRow({ title, right, rightColor = "text", left, onPress, titleColor, onLongPress, delayLongPress }: Base & {
+export function PillRow({ title, right, rightColor = "text", left, onPress, titleColor, onLongPress, delayLongPress, rightNeon }: Base & {
   right: string; rightColor?: ColorName; left?: React.ReactNode; titleColor?: string; onLongPress?: () => void; delayLongPress?: number;
+  /** the right text glows like neon (a D-day on its day) */
+  rightNeon?: boolean;
 }) {
   const { c } = useTheme();
   return (
@@ -124,7 +127,8 @@ export function PillRow({ title, right, rightColor = "text", left, onPress, titl
       style={({ pressed }) => ({ height: 48, borderRadius: tokens.radius.pill, backgroundColor: pressed ? c.surfaceRow : c.surfaceInput, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 10 })}>
       {left}
       <View style={{ flex: 1 }}><AppText variant="bodyLg" weight={titleColor ? 700 : 500} raw={titleColor} numberOfLines={1}>{title}</AppText></View>
-      <AppText variant="bodyLg" weight={rightColor === "dday" ? 700 : 400} color={rightColor}>{right}</AppText>
+      {rightNeon ? <NeonText variant="bodyLg" color={rightColor}>{right}</NeonText>
+        : <AppText variant="bodyLg" weight={rightColor === "dday" ? 700 : 400} color={rightColor}>{right}</AppText>}
     </Pressable>
   );
 }

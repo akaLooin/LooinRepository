@@ -146,6 +146,17 @@ const { chromium } = require("playwright");
   const nb = await p.getByRole("button", { name: /^야간 작업, / }).boundingBox();
   const two = await p.getByRole("button", { name: `${dl(t2)} 02:00에 일정 추가` }).boundingBox();
   r.overnightEndsAt2 = !!nb && !!two && Math.abs(nb.y + nb.height - two.y) < 6;
+  // selecting keeps its size; on its last day only the end can be stretched
+  await p.getByRole("button", { name: /^야간 작업, / }).click(); await p.waitForTimeout(400);
+  const nbSel = await p.getByRole("button", { name: /^야간 작업, / }).boundingBox();
+  r.sameSizeSelected = Math.abs(nbSel.width - nb.width) < 1 && Math.abs(nbSel.x - nb.x) < 1;
+  r.onlyEndHandle = (await p.getByLabel("끝나는 시간 끌어서 바꾸기").count()) === 1 && (await p.getByLabel("시작 시간 끌어서 바꾸기").count()) === 0;
+  const hh = await p.getByLabel("끝나는 시간 끌어서 바꾸기").boundingBox();
+  const hourPx = (await p.getByRole("button", { name: `${dl(t2)} 03:00에 일정 추가` }).boundingBox()).y - (await p.getByRole("button", { name: `${dl(t2)} 02:00에 일정 추가` }).boundingBox()).y;
+  await p.mouse.move(hh.x + hh.width / 2, hh.y + hh.height / 2); await p.mouse.down();
+  for (let i = 1; i <= 6; i++) await p.mouse.move(hh.x + hh.width / 2, hh.y + hh.height / 2 + (hourPx * i) / 6);
+  await p.mouse.up(); await p.waitForTimeout(600);
+  r.overnightStretched = await p.evaluate(() => JSON.parse(localStorage.getItem("todomate:demo")).db.events.find((e) => e.id === "e-night")?.endTime);
   await p.getByRole("button", { name: "뒤로 가기" }).click();
   await p.waitForTimeout(600);
   await p.getByRole("button", { name: "캘린더 종류: 일정 캘린더" }).click();

@@ -6,7 +6,7 @@ import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, Search, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, selectEvents, toggleImportant, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, isDDayToday, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, selectEvents, toggleImportant, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
@@ -326,7 +326,7 @@ export function HomeScreen() {
             name={profile.nickname}
             avatar={profile.avatarUri}
             bio={profile.bio}
-            dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now) } : undefined}
+            dday={firstDDay ? { title: firstDDay.title, label: ddayLabel(firstDDay, now), today: isDDayToday(firstDDay, now) } : undefined}
             onDday={() => router.push("/ddays" as never)}
             emoji={diary ? diary.emoji ?? "📔" : undefined}
             onEmoji={() => (diary ? setDiaryOpen(true) : router.push(`/diary/${selected}` as never))}

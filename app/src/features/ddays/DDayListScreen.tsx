@@ -3,7 +3,7 @@ import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { View } from "react-native";
 import { AddPill, AppText, Lock, PillRow, ReorderableList, ScreenHeader, DragScrollView } from "../../components";
-import { ddayLabel, reorderDDays, selectDDays, useDB } from "../../data/store";
+import { ddayLabel, isDDayToday, reorderDDays, selectDDays, useDB } from "../../data/store";
 import { tokens, useTheme } from "../../theme";
 
 /** S21. The first D-day others can see is the one shown on the home screen. Hold and drag to reorder. */
@@ -23,7 +23,7 @@ export function DDayListScreen() {
         {ddays.length === 0 ? <AppText variant="body" color="textMuted" style={{ paddingVertical: 20 }}>아직 디데이가 없어요. 시험, 기념일, 마감일을 추가해 보세요.</AppText> : null}
         <ReorderableList items={ddays} keyOf={(d) => d.id} labelOf={(d) => d.title} gap={12} onReorder={reorderDDays}
           renderItem={(d, drag) => (
-            <PillRow title={d.title} right={ddayLabel(d)} rightColor="dday" {...drag}
+            <PillRow title={d.title} right={ddayLabel(d)} rightColor="dday" rightNeon={isDDayToday(d)} {...drag}
               left={d.isPrivate ? <Lock size={16} color={c.textMuted} fill={c.textMuted} /> : undefined}
               onPress={() => router.push(`/ddays/${d.id}` as never)} />
           )} />
