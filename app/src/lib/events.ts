@@ -29,8 +29,9 @@ export const fromMinutes = (n: number) => `${String(Math.floor(n / 60)).padStart
 /** Does the event fall on this day? */
 export const eventOn = (e: Pick<CalEvent, "startDate" | "endDate">, day: Day) => e.startDate <= day && day <= e.endDate;
 
-/** Shown in the band at the top of the day (종일, or longer than one day), not as a block in the hour grid. */
-export const inBand = (e: CalEvent) => e.allDay || e.startDate !== e.endDate;
+/** Shown in the line above the hours (종일), not as a block in the hour grid. A timed event over midnight is a block
+ * on each of its days (user, 2026-11-20). */
+export const inBand = (e: CalEvent) => e.allDay;
 
 /** The day's events: band events first (longest first), then by start time. */
 export function eventsOn(events: CalEvent[], day: Day): CalEvent[] {
@@ -68,7 +69,12 @@ export type Block = { e: CalEvent; top: number; bottom: number; col: number; col
  */
 export function dayBlocks(events: CalEvent[], day: Day, minLength = 20): Block[] {
   const timed = events.filter((e) => eventOn(e, day) && !inBand(e) && e.startTime && e.endTime)
-    .map((e) => ({ e, top: toMinutes(e.startTime!), bottom: Math.max(toMinutes(e.endTime!), toMinutes(e.startTime!) + minLength) }))
+    .map((e) => {
+      // over midnight: from its start to the end of the first day, whole middle days, then up to its end
+      const top = e.startDate === day ? toMinutes(e.startTime!) : 0;
+      const end = e.endDate === day ? toMinutes(e.endTime!) : DAY_MINUTES;
+      return { e, top, bottom: Math.min(DAY_MINUTES, Math.max(end, top + minLength)) };
+    })
     .sort((a, b) => a.top - b.top || b.bottom - a.bottom);
   const out: Block[] = [];
   let cluster: Block[] = [];

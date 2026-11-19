@@ -1,50 +1,64 @@
 /**
- * 중요한 날 / 강조 (user's feature). Two looks, tried side by side (2026-11-20, user):
- * - usual app: a softer breathing glow (no swell), with a thin dark gap between the shape and the glow so a
- *   highlighted item still stands out when its colour is the glow colour (#00FF7F on #00FF7F)
- * - design trial: the first, brighter outline, plus embers rising from the item as if it were gently burning
+ * 중요한 날 / 강조 (user's feature). The look the user chose (2026-11-20, "2안"), in both apps: a bright breathing
+ * outline, a thin dark gap between the item and its glow (so a #00FF7F item highlighted in #00FF7F still shows),
+ * and the item gently burning: flame tongues licking up and sparks rising. Bars and blocks get a soft neon halo
+ * (several fading rings) rather than one hard line.
  * Every glowing item shares one pulse and one ember clock, so they move together and only two animations run.
  */
-import { Animated, Easing, View } from "react-native";
+import { useEffect } from "react";
+import { Animated, AppState, Easing, View } from "react-native";
 import { usePrefs } from "../data/prefs";
-import { DESIGN_TRIAL } from "../lib/variant";
 import { useTheme } from "../theme";
 
 /** 강조 색 (설정 → 화면): #00FF7F unless changed. */
 export const useGlowColor = () => usePrefs().glowColor || "#00FF7F";
 
 /** How strongly the outline breathes: [faint, bright] opacity. */
-export const GLOW_RANGE: [number, number] = DESIGN_TRIAL ? [0.35, 1] : [0.3, 0.75];
+export const GLOW_RANGE: [number, number] = [0.35, 1];
 
-let pulse: Animated.Value | null = null;
-export function usePulse() {
-  if (!pulse) {
-    pulse = new Animated.Value(0);
-    const half = DESIGN_TRIAL ? 1400 : 1300;
-    Animated.loop(Animated.sequence([
-      Animated.timing(pulse, { toValue: 1, duration: half, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 0, duration: half, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-    ])).start();
-  }
-  return pulse;
+/**
+ * A looping animation shared by everything on screen that uses it. It runs while at least one item uses it and
+ * is started again whenever a new item appears and when the app comes back to the front: a native-driven loop
+ * stops for good once the views it drove are gone (calendar pages swiped away), which is why the flames froze
+ * after a while (user, 2026-11-20).
+ */
+function sharedLoop(build: (v: Animated.Value) => Animated.CompositeAnimation) {
+  const v = new Animated.Value(0);
+  let users = 0;
+  let anim: Animated.CompositeAnimation | null = null;
+  let lastStart = 0;
+  const start = () => {
+    lastStart = Date.now();
+    anim?.stop();
+    anim = build(v);
+    anim.start();
+  };
+  AppState.addEventListener("change", (st) => { if (st === "active" && users > 0) start(); });
+  return function useLoop() {
+    useEffect(() => {
+      users++;
+      // a new item: make sure the loop is running (not more than once a second, so paging does not stutter it)
+      if (!anim || Date.now() - lastStart > 1000) start();
+      return () => { users--; if (users === 0) { anim?.stop(); anim = null; } };
+    }, []);
+    return v;
+  };
 }
+
+export const usePulse = sharedLoop((v) => Animated.loop(Animated.sequence([
+  Animated.timing(v, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+  Animated.timing(v, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+])));
 export const useGlowOpacity = () => usePulse().interpolate({ inputRange: [0, 1], outputRange: GLOW_RANGE });
 
-let clock: Animated.Value | null = null;
-function useEmberClock() {
-  if (!clock) {
-    clock = new Animated.Value(0);
-    Animated.loop(Animated.timing(clock, { toValue: 1, duration: 2400, easing: Easing.linear, useNativeDriver: true })).start();
-  }
-  return clock;
-}
+const useEmberClock = sharedLoop((v) => { v.setValue(0); return Animated.loop(Animated.timing(v, { toValue: 1, duration: 2400, easing: Easing.linear, useNativeDriver: true })); });
 
 // fixed "random" values per ember, so every glowing item burns the same way (and nothing changes between renders)
 const R = (i: number, k: number) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
 
 /**
  * Embers rising from the box it covers (position it over the item): small soft sparks in the glow colour, a few
- * whiter ones, drifting sideways and fading out above the item. Design trial only (returns nothing otherwise).
+ * whiter ones, drifting sideways and fading out above the item.
  */
 export function Embers({ count = 6, rise = 22, size = 4, from = 0.15, to = 0.85, strength = 1, start = 30, seed = 0 }: {
   count?: number; rise?: number; size?: number;
@@ -59,7 +73,6 @@ export function Embers({ count = 6, rise = 22, size = 4, from = 0.15, to = 0.85,
 }) {
   const color = useGlowColor();
   const t = useEmberClock();
-  if (!DESIGN_TRIAL) return null;
   return (
     <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
       {Array.from({ length: count }, (_, i) => {
@@ -91,9 +104,8 @@ export function Embers({ count = 6, rise = 22, size = 4, from = 0.15, to = 0.85,
   );
 }
 
-/** Design trial: soft flame tongues licking up from the item, with sparks flying higher. */
+/** Soft flame tongues licking up from the item, with sparks flying higher. */
 export function Fire({ size, count = 6, rise }: { size: number; count?: number; rise: number }) {
-  if (!DESIGN_TRIAL) return null;
   return (
     <>
       <Embers count={Math.max(3, Math.round(count * 0.7))} rise={rise * 0.45} size={size * 2.2} strength={0.35} start={45} seed={1} />
@@ -103,25 +115,39 @@ export function Fire({ size, count = 6, rise }: { size: number; count?: number; 
 }
 
 /**
- * A glowing frame around a bar or block (event bars, event lines, timeline blocks): a dark gap, then the breathing
- * outline, then (design trial) embers. `inset` is how far the frame reaches past the item.
+ * A glowing frame around a bar, chip or block (event bars, event lines, timeline blocks, 종일 chips): a dark gap,
+ * then a neon halo that fades outwards (as bright as the first outline at most, user), then flames and sparks.
+ * `inset` is how far the halo reaches past the item.
  */
-export function GlowFrame({ radius, inset = 3, width = 2, left = 0, right = 0, embers }: {
-  radius: number; inset?: number; width?: number; left?: number; right?: number;
-  /** design trial: how many embers and how high they rise */
+export function GlowFrame({ radius, inset = 5, left = 0, right = 0, embers }: {
+  radius: number; inset?: number; left?: number; right?: number;
+  /** how many sparks and how high they rise (flame tongues are added to match) */
   embers?: { count: number; rise: number; size?: number };
 }) {
   const { c } = useTheme();
   const color = useGlowColor();
   const opacity = useGlowOpacity();
+  // rings from the item's edge outwards, each wider and fainter: reads as a soft neon spread, not a line
+  const rings = [
+    { at: 1.5, w: 1.5, o: 1 },
+    { at: 3, w: 1.5, o: 0.5 },
+    { at: 4.5, w: 1.5, o: 0.25 },
+    { at: 6, w: 1.5, o: 0.1 },
+  ].filter((r) => r.at <= inset + 1.5);
+  const outer = Math.max(...rings.map((r) => r.at));
   return (
-    <View pointerEvents="none" style={{ position: "absolute", top: -inset, bottom: -inset, left: left - inset, right: right - inset }}>
+    <View pointerEvents="none" style={{ position: "absolute", top: -outer, bottom: -outer, left: left - outer, right: right - outer }}>
       {/* the gap keeps the item's own edge visible when it has the glow colour */}
-      <View style={{ position: "absolute", top: inset - 1.5, bottom: inset - 1.5, left: inset - 1.5, right: inset - 1.5, borderRadius: radius + 1.5, borderWidth: 1.5, borderColor: c.bg }} />
-      <Animated.View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, borderRadius: radius + inset, borderWidth: width, borderColor: color, opacity }} />
-      {embers && DESIGN_TRIAL ? (
-        <View style={{ position: "absolute", top: inset, bottom: inset, left: inset, right: inset }}>
-          <Embers count={Math.max(2, Math.round(embers.count * 0.6))} rise={embers.rise * 0.45} size={(embers.size ?? 3) * 2.2} strength={0.35} start={40} seed={1} from={0.05} to={0.95} />
+      <View style={{ position: "absolute", top: outer - 1.5, bottom: outer - 1.5, left: outer - 1.5, right: outer - 1.5, borderRadius: radius + 1.5, borderWidth: 1.5, borderColor: c.bg }} />
+      <Animated.View style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0, opacity }}>
+        {rings.map((r) => (
+          <View key={r.at} style={{ position: "absolute", top: outer - r.at - r.w / 2 + 0.75, bottom: outer - r.at - r.w / 2 + 0.75, left: outer - r.at - r.w / 2 + 0.75, right: outer - r.at - r.w / 2 + 0.75,
+            borderRadius: radius + r.at, borderWidth: r.w, borderColor: color, opacity: r.o }} />
+        ))}
+      </Animated.View>
+      {embers ? (
+        <View style={{ position: "absolute", top: outer, bottom: outer, left: outer, right: outer }}>
+          <Embers count={Math.max(2, Math.round(embers.count * 0.6))} rise={embers.rise * 0.45} size={(embers.size ?? 3) * 2.2} strength={0.4} start={40} seed={1} from={0.05} to={0.95} />
           <Embers count={embers.count} rise={embers.rise} size={embers.size} from={0.05} to={0.95} />
         </View>
       ) : null}

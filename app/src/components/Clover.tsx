@@ -103,8 +103,7 @@ function Glow({ size, bleed }: { size: number; bleed: number }) {
   const outline = (w: number, o: number, color = neon) => (DESIGN_TRIAL
     ? <Path d={starPath(size)} fill="none" stroke={color} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
     : <G fill="none" stroke={color} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
-  // usual app: softer, narrower; design trial: the first, brighter outline (plus embers)
-  const widths = DESIGN_TRIAL ? [0.3, 0.17, 0.08] : [0.26, 0.15, 0.07];
+  const widths = [0.3, 0.17, 0.08]; // the first, brighter outline (the user's choice, with the flames)
   return (
     <>
       <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity }}>
@@ -233,7 +232,7 @@ export function Clover({
       <Svg width={size + 2 * bleed} height={size + 2 * bleed} pointerEvents="none" style={{ position: "absolute", left: -bleed, top: -bleed }}>
         <G x={bleed} y={bleed}>{body}</G>
       </Svg>
-      {glow && DESIGN_TRIAL ? (
+      {glow ? (
         <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: size, height: size }}>
           <Fire size={size * 0.16} count={7} rise={size * 1.1} />
         </View>

@@ -154,7 +154,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                   <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}${b.important ? ", 강조" : ""}`}>
                     {b.important ? (
                       // 강조: a glowing frame around the bar (and, in the design trial, embers)
-                      <GlowFrame radius={4} inset={3} width={2} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 3 * (b.to - b.from + 1), rise: 14, size: 3 }} />
+                      <GlowFrame radius={4} inset={6} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 4 * (b.to - b.from + 1), rise: 20, size: 3.5 }} />
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill, justifyContent: "center", paddingHorizontal: 4 }}>
                       {!b.opensLeft || b.from === row.findIndex(Boolean) ? (
@@ -166,7 +166,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                   <View key={b.id} style={{ ...pos, bottom: 2 + b.lane * LINE_STEP, height: 3 }} accessibilityLabel={b.important ? `${b.title}, 강조` : undefined}>
                     {b.important ? (
                       // 강조 on the 할 일 캘린더: the line itself glows (not the day's clover, user)
-                      <GlowFrame radius={2} inset={3} width={1.5} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 2 * (b.to - b.from + 1), rise: 10, size: 2.5 }} />
+                      <GlowFrame radius={2} inset={4.5} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 3 * (b.to - b.from + 1), rise: 14, size: 3 }} />
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill }} />
                   </View>

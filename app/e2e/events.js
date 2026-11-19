@@ -124,15 +124,28 @@ const { chromium } = require("playwright");
   r.pinchWider = after > before * 1.5;
   r.zoomKept = await p.evaluate(() => JSON.parse(localStorage.getItem("todomate:prefs") || "{}").timelineHourHeight > 52);
   await shot("events-zoomed");
-  // scrolling down runs on into tomorrow
+  // swiping left goes to the next day (one day at a time)
   const t2 = new Date(now); t2.setDate(t2.getDate() + 1);
-  await p.mouse.move(250, 500);
-  for (let i = 0; i < 60 && !(await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count()); i++) { await p.mouse.wheel(0, 200); await p.waitForTimeout(30); }
-  await p.waitForTimeout(900);
-  r.nextDayTitle = await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count();
-  r.recentred = await p.getByRole("button", { name: `${dl(t2)} 14:00에 일정 추가` }).count();
+  await p.mouse.move(330, 500); await p.mouse.down();
+  for (let i = 1; i <= 8; i++) await p.mouse.move(330 - i * 30, 503);
+  await p.mouse.up();
+  await p.waitForTimeout(700);
+  r.swipedToNextDay = await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count();
   await shot("events-next-day");
-  r.stillNextAfterRest = await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count();
+  // an event over midnight is a block on both days, not a 종일 chip
+  await p.evaluate(({ a, b2 }) => {
+    const s = JSON.parse(localStorage.getItem("todomate:demo"));
+    s.db.events.push({ id: "e-night", title: "야간 작업", startDate: a, endDate: b2, allDay: false, startTime: "22:00", endTime: "02:00", color: "#7B61FF", memo: "", alarmMinutes: null });
+    localStorage.setItem("todomate:demo", JSON.stringify(s));
+  }, { a: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`, b2: `${t2.getFullYear()}-${String(t2.getMonth() + 1).padStart(2, "0")}-${String(t2.getDate()).padStart(2, "0")}` });
+  await p.reload({ waitUntil: "networkidle" }); await p.waitForTimeout(800);
+  r.overnightToday = await p.getByRole("button", { name: /^야간 작업, / }).count(); // the reload opens today again: 22:00–24:00
+  await p.getByRole("button", { name: "다음 날" }).click(); await p.waitForTimeout(700);
+  r.overnightBlock = await p.getByRole("button", { name: /^야간 작업, / }).count();
+  r.notInBand = (await p.getByLabel(`${dl(t2)} 종일 일정`).count()) === 0;
+  const nb = await p.getByRole("button", { name: /^야간 작업, / }).boundingBox();
+  const two = await p.getByRole("button", { name: `${dl(t2)} 02:00에 일정 추가` }).boundingBox();
+  r.overnightEndsAt2 = !!nb && !!two && Math.abs(nb.y + nb.height - two.y) < 6;
   await p.getByRole("button", { name: "뒤로 가기" }).click();
   await p.waitForTimeout(600);
   await p.getByRole("button", { name: "캘린더 종류: 일정 캘린더" }).click();

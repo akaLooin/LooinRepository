@@ -14,9 +14,11 @@ t("일정: which day, band or grid, order", () => {
   const early = ev("early", { startTime: "08:30", endTime: "09:30" });
   const night = ev("night", { startDate: "2026-11-18", endDate: "2026-11-19", startTime: "22:00", endTime: "02:00" });
   const list = eventsOn([late, trip, early, night, ev("other", { startDate: "2026-11-21", endDate: "2026-11-21" })], "2026-11-18");
-  assert.deepEqual(list.map((e) => e.id), ["trip", "night", "early", "late"]);
+  assert.deepEqual(list.map((e) => e.id), ["trip", "early", "late", "night"]);
   assert.equal(inBand(trip), true);
-  assert.equal(inBand(night), true, "an event over two days sits in the band");
+  assert.equal(inBand(night), false, "a timed event over midnight is a block, not in the band");
+  const nb = dayBlocks([night], "2026-11-18")[0], nb2 = dayBlocks([night], "2026-11-19")[0];
+  assert.deepEqual([nb.top, nb.bottom, nb2.top, nb2.bottom], [22 * 60, 24 * 60, 0, 2 * 60], "its part of each day");
   assert.equal(inBand(early), false);
 });
 
