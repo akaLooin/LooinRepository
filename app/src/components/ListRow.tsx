@@ -56,9 +56,23 @@ export function ToggleRow({ title, value, onChange, divider = true }: { title: s
 }
 
 /** Coloured circle icon + label, in the to-do sheet (S05). */
-export function SheetMenuRow({ title, icon, color, onPress }: Base & { icon: React.ReactNode; color: ColorName }) {
+export function SheetMenuRow({ title, icon, color, onPress, half, sub }: Base & { icon: React.ReactNode; color: ColorName;
+  /** two to a line (the to-do menu, user's screenshot 2026-11-19); `sub` is a small second line (the alarm time) */
+  half?: boolean; sub?: string }) {
   const { c } = useTheme();
   const d = 32;
+  if (half) {
+    return (
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={sub ? `${title} ${sub}` : title}
+        style={({ pressed }) => ({ width: "50%", height: 62, flexDirection: "row", alignItems: "center", gap: 12, paddingRight: 8, borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceButton : "transparent" })}>
+        <View style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: c[color], alignItems: "center", justifyContent: "center" }}>{icon}</View>
+        <View style={{ flex: 1 }}>
+          <AppText variant="bodyLg" numberOfLines={1}>{title}</AppText>
+          {sub ? <AppText variant="small" color="textMuted" numberOfLines={1}>{sub}</AppText> : null}
+        </View>
+      </Pressable>
+    );
+  }
   return (
     <Row onPress={onPress} height={59}>
       <View style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: c[color], alignItems: "center", justifyContent: "center" }}>{icon}</View>

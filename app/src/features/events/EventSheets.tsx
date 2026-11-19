@@ -16,7 +16,7 @@ export const dayLabel = (d: Day) => { const { m, d: dd } = parseDay(d); return `
 
 /** A new event's starting values: one hour from `startTime`, the last colour used. */
 export function newDraft(day: Day, startTime: string, endTime: string, color: string): EventDraft {
-  return { title: "", startDate: day, endDate: day, allDay: false, startTime, endTime, color, memo: "", alarmMinutes: 30 };
+  return { title: "", startDate: day, endDate: day, allDay: false, startTime, endTime, color, memo: "", alarmMinutes: null }; // 알림 없음 by default (user)
 }
 
 type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm";
@@ -102,7 +102,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     body = (
       <View style={{ gap: 14 }}>
         <AppText variant="bodyLg" weight={700}>{sub === "startTime" ? "시작 시간" : "종료 시간"}</AppText>
-        <TimeGrid hour={Math.floor(cur / 60) % 24} minute={cur % 60 - (cur % 5)} onChange={(h, m) => {
+        <TimeGrid hour={Math.floor(cur / 60) % 24} minute={cur % 60} onChange={(h, m) => {
           const hm = fromMinutes(h * 60 + m);
           if (sub === "startTime") setStartTime(hm); else put({ endTime: hm });
         }} />
@@ -170,7 +170,9 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   }
 
   return (
-    <BottomSheet visible={!!draft} onClose={onClose}>
+    // the phone's back button steps back: a date, time, colour or alarm page returns to the form (the keyboard closes
+    // on its own first), and only the form closes the sheet (user)
+    <BottomSheet visible={!!draft} onClose={onClose} onBack={sub === "form" ? onClose : back}>
       {header}
       {body}
     </BottomSheet>

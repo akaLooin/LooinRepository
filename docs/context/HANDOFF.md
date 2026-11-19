@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-18 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-19 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -31,7 +31,6 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 폰 확인 결과와 조치 (2026-11-07, 여섯 번째 피드백까지)
 - 확인됨 ✅: 동기화, 알림, 크기, 접기 ∨, 끌기(제자리), 캘린더 표시, 할 일 메뉴 4종, 체크 색 설정, 보관함 옆 화면 스와이프(동작)
-- 폰 확인 대기(2026-11-07 고침/추가): 옮긴 직후 탭(B14), 보관함 스와이프, 캘린더 밀어 달 넘기기, 수정 상태 유지, 메모 칸 키보드 위, 메모·알림 바로 편집
 - **폰 확인 방식(이용자 결정)**: 항상 실제 속도 모드 = `npm.cmd run phone` (`expo start --no-dev --minify`). **`--clear` 쓰지 않기**: 캐시를 지우면 첫 빌드가 60초 넘게 걸려 Expo Go가 기다리다 포기하고(파란 화면) 예전 버전을 띄움. 업데이트 안 보이던 원인이 이것
 - PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
 
@@ -52,12 +51,12 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지 `data/notices.ts`) `components/TabPills.tsx`
 - 날짜로 끌어 옮기기: 할 일을 길게 눌러 캘린더 날짜에 놓기(`ReorderableList` `drop`, `Calendar` `cellRef`)
 - ~~여러 날 할 일~~ → 2026-11-18 **일정**으로 바뀜(아래 4단계)
-- 테스트: DB `my_features.test.sql`, e2e photo-view·pomodoro·search·alerts·drag-date
 
 ## 4단계 (2026-11-18 요청): 일정 · 캘린더 즉시 전환 · 디자인(별 모양)
 - 일정 = 할 일과 따로 `events` 표(`lib/events.ts`, `features/events/`): 시간/종일, 색, 알림(n분 전), 설명. 할 일 캘린더엔 얇은 줄, 일정 캘린더(▼)엔 이름 막대. 일정 캘린더에서 날짜 → `/events/[date]` 시간표(30분 칸 누르기 → 1시간 일정 → 제목 → 저장, 일정 누르면 보기·수정·삭제, 종일은 위 띠, 지금 선). 옛 여러 날 할 일은 같은 id 종일 일정으로(`liftSpans`, SQL도 같은 일)
 - 서버 표 없으면(SQL 미실행) 일정은 outbox에서 기다림(`missingTable`)
 - ▼ 캘린더 종류: 누르면 바로 바뀌고 닫힘
+- 11-19 피드백 반영: 시간표 3일 이어 그리기(스크롤로 전날·다음 날), 일정 선택·늘이기·꾹 눌러 옮기기(`lib/eventDrag.ts`), 1분 휠(`TimeGrid`), 할 일 메뉴 2열, 알약 탭=추가/길게=편집, 일정 캘린더 4개·아래 비움, 뒤로가기 한 단계(`BottomSheet onBack`), 별 ✕
 - 디자인 시험판: `APP_VARIANT=design` → 별도 앱(`app.config.js`, eas 프로필 `design`, `lib/variant.ts` `DESIGN_TRIAL`). 클로버 → 사각별(`Clover.tsx` `starPath`), 여러 색은 그라데이션. 빌드 방법 backend.md 20. 화면 `replica/design/trial-star-*.png`. 이용자 폰 확인 대기
 
 ## 알려진 한계

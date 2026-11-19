@@ -85,3 +85,15 @@ t("일정: old multi-day to-dos become events with the same id", () => {
   assert.deepEqual([...lifted].sort(), ["a", "c"]);
   assert.deepEqual(events, [{ id: "a", title: "제주", startDate: "2026-11-03", endDate: "2026-11-07", allDay: true, color: "#FF6B81", memo: "", alarmMinutes: null }]);
 });
+
+import { moveBlock, resizeBlock } from "../src/lib/eventDrag";
+t("일정: dragging moves in 5-minute steps within the day; stretching keeps 15 minutes", () => {
+  assert.deepEqual(moveBlock(540, 600, 32), { top: 570, bottom: 630 });
+  assert.deepEqual(moveBlock(540, 600, -900), { top: 0, bottom: 60 });
+  assert.deepEqual(moveBlock(540, 600, 2000), { top: 1380, bottom: 1440 });
+  assert.deepEqual(resizeBlock(540, 600, "bottom", 47), { top: 540, bottom: 645 });
+  assert.deepEqual(resizeBlock(540, 600, "bottom", -59), { top: 540, bottom: 555 });
+  assert.deepEqual(resizeBlock(540, 600, "top", -61), { top: 480, bottom: 600 });
+  assert.deepEqual(resizeBlock(540, 600, "top", 100), { top: 585, bottom: 600 });
+  assert.deepEqual(resizeBlock(30, 600, "top", -100), { top: 0, bottom: 600 });
+});

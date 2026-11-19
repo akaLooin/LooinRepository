@@ -29,11 +29,16 @@ const LOBE_AT = [[LOBE_R, LOBE_R], [1 - LOBE_R, LOBE_R], [LOBE_R, 1 - LOBE_R], [
  * Design trial (2026-11-18, user's picture): a four-point star with curved sides instead of the clover. One colour
  * fills it; several categories become a diagonal gradient in category order. `inset` keeps an outline inside the box.
  */
-export const STAR_BLEED = 0.1; // the star's thin points reach 10% past the clover's box on each side, so its middle is as big
+export const STAR_BLEED = 0.32; // drawn larger than the clover box on each side; turned, its points end inside the corners
+/** Turned 45°, an "x" rather than a "+" (user, 2026-11-19); the points go to the corners. */
 export function starPath(size: number, inset = 0) {
   inset -= size * STAR_BLEED;
-  const k1 = 0.12, k2 = 0.33, s = size - 2 * inset;
-  const p = (x: number, y: number) => `${inset + x * s} ${inset + y * s}`;
+  const k1 = 0.04, k2 = 0.38, s = size - 2 * inset;
+  const c = size / 2, cos = Math.SQRT1_2;
+  const p = (x: number, y: number) => {
+    const dx = inset + x * s - c, dy = inset + y * s - c;
+    return `${c + (dx - dy) * cos} ${c + (dx + dy) * cos}`;
+  };
   return `M${p(0.5, 0)} C${p(0.5 + k1, k2)} ${p(1 - k2, 0.5 - k1)} ${p(1, 0.5)} C${p(1 - k2, 0.5 + k1)} ${p(0.5 + k1, 1 - k2)} ${p(0.5, 1)} `
     + `C${p(0.5 - k1, 1 - k2)} ${p(k2, 0.5 + k1)} ${p(0, 0.5)} C${p(k2, 0.5 - k1)} ${p(0.5 - k1, k2)} ${p(0.5, 0)}Z`;
 }
@@ -187,7 +192,7 @@ export function Clover({
 
   const shape = (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-      <Svg width={size + 2 * bleed} height={size + 2 * bleed} style={{ position: "absolute", left: -bleed, top: -bleed }}>
+      <Svg width={size + 2 * bleed} height={size + 2 * bleed} pointerEvents="none" style={{ position: "absolute", left: -bleed, top: -bleed }}>
         <G x={bleed} y={bleed}>{body}</G>
       </Svg>
       {count !== null && (

@@ -50,7 +50,7 @@ export function CategoryPill({ title, color, visibility, onAdd, onPress, onLongP
   const plus = 34;
   return (
     <View style={{ flexDirection: "row", alignSelf: "flex-start", maxWidth: "100%", alignItems: "center", height: h, borderRadius: R, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 4, gap: 8 }}>
-      <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }} accessibilityRole="button" accessibilityLabel={title}>
+      <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }} accessibilityRole="button" accessibilityLabel={title} accessibilityHint={onLongPress ? "길게 누르면 카테고리 편집" : undefined}>
         <VisibilityIcon value={visibility} color={c.textMuted} />
         <AppText variant="category" raw={readableOn(color, c.surface)} numberOfLines={1} style={{ flexShrink: 1 }}>{title}</AppText>
       </Pressable>

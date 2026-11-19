@@ -28,7 +28,7 @@ import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 import { takeHomeDay } from "../../lib/todoCalendar";
-import { eventBars, eventsOn, eventTimeLabel } from "../../lib/events";
+import { eventBars } from "../../lib/events";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
 import { CrewHome } from "../crew/CrewHome";
 import { useMyCrews } from "../../data/crews";
@@ -345,24 +345,7 @@ export function HomeScreen() {
           <CalendarPager key={`${mode}-${prefs.weekStartsSunday}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} gutter={G} />
         </View>
 
-        {eventMode ? (
-          <View style={{ paddingHorizontal: G, marginTop: 20, gap: 4 }}>
-            <AppText variant="helper" color="textMuted">{`${parseDay(selected).m}월 ${parseDay(selected).d}일 ${"일월화수목금토"[weekday(selected)]}요일 일정`}</AppText>
-            {eventsOn(events, selected).map((e) => (
-              <Pressable key={e.id} onPress={() => router.push(`/events/${selected}` as never)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, parseDay(now).y)}`}
-                style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}>
-                <View style={{ width: 4, alignSelf: "stretch", borderRadius: 2, backgroundColor: e.color }} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <AppText variant="bodyLg" numberOfLines={1}>{e.title}</AppText>
-                  <AppText variant="helper" color="textSecondary">{eventTimeLabel(e, prefs.use24h, parseDay(now).y)}</AppText>
-                </View>
-              </Pressable>
-            ))}
-            <Pressable onPress={() => router.push(`/events/${selected}` as never)} accessibilityRole="button" style={{ paddingVertical: 14 }}>
-              <AppText variant="body" color="textMuted">{eventsOn(events, selected).length ? "날짜를 누르면 그날 시간표가 열려요" : "일정이 없어요. 날짜를 눌러 시간표에서 추가해 보세요"}</AppText>
-            </Pressable>
-          </View>
-        ) : (
+        {eventMode ? null /* 일정 캘린더: nothing under the calendar (user) */ : (
         <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12 }} {...swipe}>
           {selected !== now ? (
             <AppText variant="helper" color="textMuted">{`${parseDay(selected).m}월 ${parseDay(selected).d}일 ${"일월화수목금토"[weekday(selected)]}요일`}</AppText>
@@ -396,7 +379,8 @@ export function HomeScreen() {
                           title={cat.title}
                           color={cat.color}
                           visibility={cat.visibility}
-                          onPress={() => router.push(`/categories/${cat.id}` as never)}
+                          // a tap adds a to-do, a long press edits the category (user, 2026-11-19)
+                          onPress={() => { smoothLayout(160); setEditing(null); setAdding(cat.id); }}
                           onLongPress={() => router.push(`/categories/${cat.id}` as never)}
                           onAdd={() => { smoothLayout(160); setEditing(null); setAdding(cat.id); }}
                         />

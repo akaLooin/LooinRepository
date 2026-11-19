@@ -9,8 +9,10 @@ import { useSheetDrag } from "./useSheetDrag";
  * Sheet that slides up over a dimmed screen (S05, S05a, S06c, S07d, S22b).
  * Closes on backdrop tap, Android back, or dragging the top (grabber/title) down.
  */
-export function BottomSheet({ visible, onClose, title, right, children, inline }: {
+export function BottomSheet({ visible, onClose, title, right, children, inline, onBack }: {
   visible: boolean; onClose: () => void; title?: string; right?: { label: string; onPress: () => void }; children: React.ReactNode; inline?: boolean;
+  /** the phone's back button, when it should step back inside the sheet instead of closing it (default: close) */
+  onBack?: () => void;
 }) {
   const { c } = useTheme();
   const insets = useInsets();
@@ -48,7 +50,7 @@ export function BottomSheet({ visible, onClose, title, right, children, inline }
   if (inline) return <View style={body}>{top}{children}</View>; // for the design gallery
   if (!mounted && !visible) return null;
   return (
-    <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+    <Modal visible transparent animationType="none" onRequestClose={onBack ?? onClose} statusBarTranslucent>
       <ScaledRoot>
         <View style={{ flex: 1, justifyContent: "flex-end" }}>
           <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: tokens.scrim, opacity: scrimOpacity }}>

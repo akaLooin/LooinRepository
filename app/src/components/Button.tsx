@@ -26,11 +26,13 @@ export function Button({ kind, label, onPress, disabled, loading, flex, height }
 }
 
 /** Big tile with icon over label: 수정하기 / 삭제하기 (S05). */
-export function TileButton({ label, icon, onPress }: { label: string; icon: React.ReactNode; onPress?: () => void }) {
+export function TileButton({ label, icon, onPress, inline }: { label: string; icon: React.ReactNode; onPress?: () => void;
+  /** icon beside the label in a lower tile (the to-do menu's bottom row) */
+  inline?: boolean }) {
   const { c } = useTheme();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      style={({ pressed }) => ({ flex: 1, height: 85, borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceStrong : c.surfaceButton, alignItems: "center", justifyContent: "center", gap: 10 })}>
+      style={({ pressed }) => ({ flex: 1, height: inline ? 60 : 85, flexDirection: inline ? "row" : "column", borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceStrong : c.surfaceButton, alignItems: "center", justifyContent: "center", gap: 10 })}>
       {icon}
       <AppText variant="bodyLg">{label}</AppText>
     </Pressable>

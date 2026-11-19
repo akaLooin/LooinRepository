@@ -9,6 +9,9 @@ import { Clover, type CloverState } from "./Clover";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 
+/** 일정 캘린더: up to four events a day, then "+n" (user) */
+const LONG_LANES = 4;
+
 function dayColor(wd: number): ColorName {
   return wd === 0 ? "sunday" : wd === 6 ? "saturday" : "text";
 }
@@ -114,7 +117,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
         ))}
       </View>
       {grid.map((row, i) => {
-        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? 3 : 2) : null;
+        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2) : null;
         return (
         <View key={i} style={{ flexDirection: "row", height: picker ? 52 : long ? tokens.layout.spanRowHeight : tokens.layout.calendarRowHeight, marginHorizontal: -bleed }}>
           {row.map((day, j) => {
@@ -152,7 +155,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                 );
               })}
               {long ? bars.more.map((n, col) => (n ? (
-                <AppText key={col} variant="spanLabel" color="textMuted" center style={{ position: "absolute", top: 34 + 3 * 17, left: `${(col / 7) * 100}%`, width: `${100 / 7}%` }}>{`+${n}`}</AppText>
+                <AppText key={col} variant="spanLabel" color="textMuted" center style={{ position: "absolute", top: 34 + LONG_LANES * 17, left: `${(col / 7) * 100}%`, width: `${100 / 7}%` }}>{`+${n}`}</AppText>
               ) : null)) : null}
             </View>
           ) : null}

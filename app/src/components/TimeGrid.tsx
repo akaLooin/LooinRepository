@@ -1,40 +1,81 @@
-import { Pressable, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Platform, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
+const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const ITEM = tokens.size.wheelItem;
+const VISIBLE = 5; // rows in sight; the middle one is the value
 
-function Cell({ label, selected, onPress, a11y }: { label: string; selected: boolean; onPress: () => void; a11y: string }) {
+/**
+ * One wheel: flick or drag it, it settles on a row; tapping a row picks it too. The value is the middle row.
+ * (Android and the web both: the web has no momentum events, so a short pause after scrolling settles it.)
+ */
+function Wheel({ values, value, onChange, label, unit }: { values: number[]; value: number; onChange: (v: number) => void; label: string; unit: string }) {
   const { c } = useTheme();
-  const d = tokens.size.timeCell;
-  return (
-    <Pressable onPress={onPress} accessibilityRole="radio" accessibilityState={{ checked: selected }} accessibilityLabel={a11y}
-      style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: selected ? c.selectedBg : c.surfaceRow, alignItems: "center", justifyContent: "center" }}>
-      <AppText variant="bodyLg" weight={600} color={selected ? "onSelected" : "text"}>{label}</AppText>
-    </Pressable>
-  );
-}
+  const ref = useRef<ScrollViewInstance>(null);
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quietUntil = useRef(0); // while the wheel is being turned by code, its scroll events are not the user's
+  const shown = useRef(value);
+  const go = (v: number, animated: boolean) => {
+    quietUntil.current = Date.now() + (animated ? 450 : 80);
+    shown.current = v;
+    ref.current?.scrollTo({ y: values.indexOf(v) * ITEM, animated });
+  };
+  // first draw, and a value changed from outside (an event's end follows its start)
+  useEffect(() => { if (value !== shown.current || !ref.current) go(value, false); }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const t = setTimeout(() => go(value, false), 0); return () => { clearTimeout(t); if (settle.current) clearTimeout(settle.current); }; }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-/** Always six columns, as in the reference. */
-function Grid({ children }: { children: React.ReactNode[] }) {
-  const rows: React.ReactNode[][] = [];
-  for (let i = 0; i < children.length; i += 6) rows.push(children.slice(i, i + 6));
+  const commit = (y: number) => {
+    const i = Math.max(0, Math.min(values.length - 1, Math.round(y / ITEM)));
+    const v = values[i];
+    if (Platform.OS === "web" && Math.abs(y - i * ITEM) > 1) go(v, true);
+    shown.current = v;
+    if (v !== value) onChange(v);
+  };
+  const pick = (v: number) => { go(v, true); if (v !== value) onChange(v); };
+
   return (
-    <View style={{ gap: 8 }}>
-      {rows.map((r, i) => <View key={i} style={{ flexDirection: "row", justifyContent: "space-between" }}>{r}</View>)}
+    <View style={{ flex: 1, height: ITEM * VISIBLE }} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: ITEM * 2, height: ITEM, borderRadius: tokens.radius.md, backgroundColor: c.surfaceRow }} />
+      <ScrollView ref={ref} showsVerticalScrollIndicator={false} snapToInterval={ITEM} decelerationRate="fast" nestedScrollEnabled
+        contentContainerStyle={{ paddingVertical: ITEM * 2 }} scrollEventThrottle={32}
+        onMomentumScrollEnd={(e) => commit(e.nativeEvent.contentOffset.y)}
+        onScrollEndDrag={(e) => { if (Platform.OS !== "web") { const y = e.nativeEvent.contentOffset.y; if (settle.current) clearTimeout(settle.current); settle.current = setTimeout(() => commit(y), 150); } }}
+        onScroll={(e) => {
+          if (Date.now() < quietUntil.current) return;
+          const y = e.nativeEvent.contentOffset.y;
+          if (settle.current) clearTimeout(settle.current);
+          // native: momentum end settles it (this is only the fallback); web: settle after a short pause
+          settle.current = setTimeout(() => commit(y), Platform.OS === "web" ? 140 : 400);
+        }}>
+        {values.map((v) => {
+          const on = v === value;
+          return (
+            <Pressable key={v} onPress={() => pick(v)} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${v}${unit}`}
+              style={{ height: ITEM, alignItems: "center", justifyContent: "center" }}>
+              <AppText variant={on ? "sheetTitle" : "bodyLg"} weight={on ? 700 : 400} color={on ? "text" : "textMuted"} style={{ fontVariant: ["tabular-nums"] }}>
+                {String(v).padStart(2, "0")}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
-/** Hour 0-23 and minute in 5-minute steps, as round buttons (S07d, S22b). */
+/**
+ * Hour and minute wheels, one minute apart (user, 2026-11-19: no more 5-minute buttons). Used for to-do alarms,
+ * routines, reminders and 일정 times.
+ */
 export function TimeGrid({ hour, minute, onChange }: { hour: number; minute: number; onChange: (h: number, m: number) => void }) {
   return (
-    <View style={{ gap: 12 }}>
-      <AppText variant="helper" weight={600}>시</AppText>
-      <Grid>{HOURS.map((h) => <Cell key={h} label={String(h)} selected={h === hour} onPress={() => onChange(h, minute)} a11y={`${h}시`} />)}</Grid>
-      <AppText variant="helper" weight={600} style={{ marginTop: 8 }}>분</AppText>
-      <Grid>{MINUTES.map((m) => <Cell key={m} label={String(m).padStart(2, "0")} selected={m === minute} onPress={() => onChange(hour, m)} a11y={`${m}분`} />)}</Grid>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <Wheel values={HOURS} value={hour} onChange={(h) => onChange(h, minute)} label="시" unit="시" />
+      <AppText variant="sheetTitle" color="textMuted">:</AppText>
+      <Wheel values={MINUTES} value={minute} onChange={(m) => onChange(hour, m)} label="분" unit="분" />
     </View>
   );
 }

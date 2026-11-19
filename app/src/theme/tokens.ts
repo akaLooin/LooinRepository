@@ -211,8 +211,9 @@ export const tokens = {
     "gutter": 21,
     "calendarColumns": 7,
     "calendarRowHeight": 64,
-    "spanRowHeight": 92,
+    "spanRowHeight": 116,
     "hourHeight": 52,
+    "dayHeadHeight": 48,
     "hourLabelWidth": 58,
     "headerHeight": 56,
     "bottomNavHeight": 64
@@ -230,6 +231,7 @@ export const tokens = {
     "listRowHeight": 52,
     "fieldHeight": 52,
     "timeCell": 50,
+    "wheelItem": 44,
     "toggleWidth": 54,
     "toggleHeight": 30,
     "navIcon": 26

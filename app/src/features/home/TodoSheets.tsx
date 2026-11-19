@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import {
   AppText, Archive, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
   TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown,
@@ -37,32 +37,44 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
   return (
     <>
       <BottomSheet visible={mode.kind === "menu"} onClose={close} title={todo.title}>
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
-          <TileButton label="수정하기" icon={<Pencil size={28} color={c.menuEdit} />} onPress={() => { close(); onEdit(todo.id); }} />
-          <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
-        </View>
-        <SheetMenuRow title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
-        {inbox && todo.memo ? (
-          <View style={{ backgroundColor: c.surfaceInput, borderRadius: tokens.radius.lg, padding: 18, marginBottom: 6 }}>
-            <AppText variant="bodyLg">{todo.memo}</AppText>
-          </View>
+        {/* As in the user's newer screenshot of the original: the memo on top, the actions two to a line, then
+            수정하기 / 삭제하기. Which actions show still depends on done / past (the original's four menus). */}
+        {todo.memo ? (
+          <Pressable onPress={() => setMode({ kind: "memo" })} accessibilityRole="button" accessibilityLabel={`메모: ${todo.memo}`} accessibilityHint="메모 편집"
+            style={{ backgroundColor: c.surfaceInput, borderRadius: tokens.radius.lg, padding: 18, marginBottom: 8, minHeight: 80 }}>
+            <AppText variant="bodyLg" numberOfLines={6}>{todo.memo}</AppText>
+          </Pressable>
         ) : null}
+        <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {inbox ? (
           <>
-            <SheetMenuRow title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, today()); close(); notice("오늘 할 일로 옮겼어요"); }} />
-            <SheetMenuRow title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
-            <SheetMenuRow title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
+            <SheetMenuRow half title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, today()); close(); notice("오늘 할 일로 옮겼어요"); }} />
+            <SheetMenuRow half title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
+            <SheetMenuRow half title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
+            <SheetMenuRow half title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
           </>
         ) : (
         <>
-        {/* Rows follow the original's four menus (user's screenshots): what shows depends on whether the to-do is
-            done and whether its day has passed. Moving (purple) is for unfinished ones, copying (orange) for done ones. */}
-        {!past ? (
-          <SheetMenuRow title={todo.remindAt ? `시간 알림 · ${alarmLabel(todo.remindAt)}` : "시간 알림"} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
+        {todo.isDone ? (
+          <>
+            {past ? (
+              <SheetMenuRow half title="오늘 또 하기" color="menuRepeat" icon={icon(ArrowDown)} onPress={() => { copyTodo(todo.id, now); close(); notice("오늘 할 일에 추가했어요"); }} />
+            ) : (
+              <SheetMenuRow half title="내일 또 하기" color="menuRepeat" icon={icon(ArrowRight)} onPress={() => { copyTodoTomorrow(todo.id); close(); notice("내일 할 일에 추가했어요"); }} />
+            )}
+            <SheetMenuRow half title="다른 날 또 하기" color="menuRepeat" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "copy" })} />
+          </>
+        ) : past ? (
+          <SheetMenuRow half title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, now); close(); notice("오늘 할 일로 옮겼어요"); }} />
+        ) : (
+          <SheetMenuRow half title="내일 하기" color="menuMove" icon={icon(ArrowRight)} onPress={() => { moveTodo(todo.id, addDays(day, 1)); close(); notice("내일로 옮겼어요"); }} />
+        )}
+        <SheetMenuRow half title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
+        {!todo.isDone ? (
+          <SheetMenuRow half title="보관함으로 이동" color="menuMove" icon={icon(Archive)} onPress={() => { moveTodos([todo.id], null); close(); notice("보관함으로 옮겼어요"); }} />
         ) : null}
-        <SheetMenuRow title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
         {todo.isDone || todo.photoUri ? (
-          <SheetMenuRow title={todo.photoUri ? "사진 바꾸기" : "사진 인증"} color="menuPhoto" icon={icon(Image)} onPress={async () => {
+          <SheetMenuRow half title={todo.photoUri ? "사진 바꾸기" : "사진 인증"} color="menuPhoto" icon={icon(Image)} onPress={async () => {
             close();
             try {
               const uri = await pickPhoto();
@@ -72,28 +84,20 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
             }
           }} />
         ) : null}
-        {todo.photoUri ? <SheetMenuRow title="사진 지우기" color="menuDelete" icon={icon(Trash2)} onPress={() => { setTodoPhoto(todo.id, null); close(); notice("사진을 지웠어요"); }} /> : null}
-        {todo.isDone ? (
-          <>
-            {past ? (
-              <SheetMenuRow title="오늘 또 하기" color="menuRepeat" icon={icon(ArrowDown)} onPress={() => { copyTodo(todo.id, now); close(); notice("오늘 할 일에 추가했어요"); }} />
-            ) : (
-              <SheetMenuRow title="내일 또 하기" color="menuRepeat" icon={icon(ArrowRight)} onPress={() => { copyTodoTomorrow(todo.id); close(); notice("내일 할 일에 추가했어요"); }} />
-            )}
-            <SheetMenuRow title="다른 날 또 하기" color="menuRepeat" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "copy" })} />
-          </>
-        ) : past ? (
-          <SheetMenuRow title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, now); close(); notice("오늘 할 일로 옮겼어요"); }} />
-        ) : (
-          <SheetMenuRow title="내일 하기" color="menuMove" icon={icon(ArrowRight)} onPress={() => { moveTodo(todo.id, addDays(day, 1)); close(); notice("내일로 옮겼어요"); }} />
-        )}
-        <SheetMenuRow title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
-        {!todo.isDone ? (
-          <SheetMenuRow title="보관함으로 이동" color="menuMove" icon={icon(Archive)} onPress={() => { moveTodos([todo.id], null); close(); notice("보관함으로 옮겼어요"); }} />
+        {todo.photoUri ? <SheetMenuRow half title="사진 지우기" color="menuDelete" icon={icon(Trash2)} onPress={() => { setTodoPhoto(todo.id, null); close(); notice("사진을 지웠어요"); }} /> : null}
+        {!past ? (
+          <SheetMenuRow half title="시간 알림" sub={todo.remindAt ? alarmLabel(todo.remindAt) : undefined} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
         ) : null}
-        <SheetMenuRow title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
+        <SheetMenuRow half title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
+        <SheetMenuRow half title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
+        <SheetMenuRow half title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
         </>
         )}
+        </View>
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
+          <TileButton inline label="수정하기" icon={<Pencil size={24} color={c.menuEdit} />} onPress={() => { close(); onEdit(todo.id); }} />
+          <TileButton inline label="삭제하기" icon={<Trash2 size={24} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
+        </View>
       </BottomSheet>
 
       {mode.kind === "memo" ? <MemoSheet todo={todo} onClose={close} /> : null}
@@ -124,7 +128,7 @@ function alarmLabel(iso: string) {
 /** S05 시간 알림: an alarm at a time on the to-do's own day (TimeGrid, as in S07d). */
 function AlarmSheet({ todo, onClose, notice }: { todo: Todo; onClose: () => void; notice: (m: string) => void }) {
   const start = todo.remindAt ? new Date(todo.remindAt) : null;
-  const [time, setTime] = useState({ h: start?.getHours() ?? 9, m: start ? start.getMinutes() - (start.getMinutes() % 5) : 0 });
+  const [time, setTime] = useState({ h: start?.getHours() ?? 9, m: start?.getMinutes() ?? 0 });
   const save = async () => {
     setTodoAlarm(todo.id, `${String(time.h).padStart(2, "0")}:${String(time.m).padStart(2, "0")}`);
     onClose();
