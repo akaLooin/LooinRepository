@@ -1,5 +1,6 @@
 import { useId } from "react";
-import { Animated, Easing, Pressable, View } from "react-native";
+import { Animated, Pressable, View } from "react-native";
+import { Fire, useGlowColor, useGlowOpacity } from "./Highlight";
 import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DESIGN_TRIAL } from "../lib/variant";
@@ -93,42 +94,33 @@ function Tick({ size, color }: { size: number; color: string }) {
   );
 }
 
-/** One pulse shared by every glowing day, so they breathe together (and one animation runs, not dozens). */
-let pulse: Animated.Value | null = null;
-export function usePulse() {
-  if (!pulse) {
-    pulse = new Animated.Value(0);
-    Animated.loop(Animated.sequence([
-      Animated.timing(pulse, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 0, duration: 1000, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-    ])).start();
-  }
-  return pulse;
-}
-
-/** 강조 색 (설정 → 화면, user): #00FF7F unless changed. */
-export const useGlowColor = () => usePrefs().glowColor || "#00FF7F";
-
-/** 중요한 날: a neon outline around the clover or star that slowly brightens and fades (user's feature). */
+/** 중요한 날: a glowing outline around the clover or star (see Highlight.tsx for the two looks being tried). */
 function Glow({ size, bleed }: { size: number; bleed: number }) {
+  const { c } = useTheme();
   const neon = useGlowColor();
-  const p = usePulse();
-  const m = size * 0.3 + bleed; // room for the soft outer line and the swell
-  const outline = (w: number, o: number) => (DESIGN_TRIAL
-    ? <Path d={starPath(size)} fill="none" stroke={neon} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
-    : <G fill="none" stroke={neon} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
+  const opacity = useGlowOpacity();
+  const m = size * 0.3 + bleed; // room for the soft outer line
+  const outline = (w: number, o: number, color = neon) => (DESIGN_TRIAL
+    ? <Path d={starPath(size)} fill="none" stroke={color} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
+    : <G fill="none" stroke={color} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
+  // usual app: softer, narrower; design trial: the first, brighter outline (plus embers)
+  const widths = DESIGN_TRIAL ? [0.3, 0.17, 0.08] : [0.26, 0.15, 0.07];
   return (
-    <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity: p.interpolate({ inputRange: [0, 1], outputRange: [0.1, 1] }),
-      // it also swells a little as it brightens, so it reads even on a clover of the same colour
-      transform: [{ scale: p.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1.12] }) }] }}>
-      <Svg width={size + 2 * m} height={size + 2 * m}>
-        <G x={m} y={m}>
-          {outline(size * 0.42, 0.18)}
-          {outline(size * 0.24, 0.45)}
-          {outline(size * 0.1, 1)}
-        </G>
+    <>
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity }}>
+        <Svg width={size + 2 * m} height={size + 2 * m}>
+          <G x={m} y={m}>
+            {outline(size * widths[0], 0.18)}
+            {outline(size * widths[1], 0.4)}
+            {outline(size * widths[2], 1)}
+          </G>
+        </Svg>
+      </Animated.View>
+      {/* a thin dark gap right round the shape, so a clover in the glow colour still shows its edge */}
+      <Svg pointerEvents="none" width={size + 2 * m} height={size + 2 * m} style={{ position: "absolute", left: -m, top: -m }}>
+        <G x={m} y={m}>{outline(size * 0.13, 1, c.bg)}</G>
       </Svg>
-    </Animated.View>
+    </>
   );
 }
 
@@ -241,6 +233,11 @@ export function Clover({
       <Svg width={size + 2 * bleed} height={size + 2 * bleed} pointerEvents="none" style={{ position: "absolute", left: -bleed, top: -bleed }}>
         <G x={bleed} y={bleed}>{body}</G>
       </Svg>
+      {glow && DESIGN_TRIAL ? (
+        <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: size, height: size }}>
+          <Fire size={size * 0.16} count={7} rise={size * 1.1} />
+        </View>
+      ) : null}
       {count !== null && (
         <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * (DESIGN_TRIAL ? 0.46 : 0.52), lineHeight: size }}>
           {count}

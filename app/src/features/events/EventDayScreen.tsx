@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Animated, BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowColor, usePulse, useToast } from "../../components";
+import { BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
+import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowColor, GlowFrame, useToast } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
 import { addDays, today, type Day } from "../../lib/dates";
@@ -239,7 +239,6 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
 }) {
   const { c } = useTheme();
   const glow = useGlowColor();
-  const pulse = usePulse();
   const top = drag?.top ?? b.top, bottom = drag?.bottom ?? b.bottom;
   const start = toMinutes(b.e.startTime ?? "00:00"), end = toMinutes(b.e.endTime ?? "00:00");
   // the latest values for the gesture handlers, which are made once
@@ -302,9 +301,8 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
     <View style={{ position: "absolute", top: px(top) + 1, height, left: selected || drag ? 0 : `${(b.col / b.cols) * 100}%`, width: selected || drag ? "100%" : `${100 / b.cols}%`,
       paddingRight: 2, zIndex: selected || drag ? 5 : 1 }}>
       {b.e.important ? (
-        // 강조: the neon frame, breathing
-        <Animated.View pointerEvents="none" style={{ position: "absolute", top: -3, bottom: -3, left: -3, right: -1, borderRadius: tokens.radius.sm + 3, borderWidth: 3, borderColor: glow,
-          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.12, 1] }) }} />
+        // 강조: the glowing frame (and, in the design trial, embers)
+        <GlowFrame radius={tokens.radius.sm} inset={3} width={2} right={2} embers={{ count: 8, rise: 26, size: 4 }} />
       ) : null}
       <View {...body.panHandlers} accessible accessibilityRole="button" accessibilityLabel={b.e.important ? `${label}, 강조` : label} accessibilityState={{ selected }}
         accessibilityHint={selected ? "다시 누르면 선택 해제, 길게 눌러 옮기기" : "눌러서 선택, 길게 눌러 옮기기"}

@@ -4,6 +4,7 @@ export * from "./BottomSheet";
 export * from "./Button";
 export * from "./Calendar";
 export * from "./Clover";
+export * from "./Highlight";
 export * from "./ColorCodeInput";
 export * from "./controls";
 export * from "./Form";

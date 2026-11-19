@@ -1,11 +1,12 @@
 import { memo, useCallback, useRef, useState } from "react";
 import type { ViewInstance as ViewType } from "react-native";
-import { Animated, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/dates";
 import { rowSegments, type SpanBar } from "../lib/spans";
 import { onColor, tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
-import { Clover, useGlowColor, usePulse, type CloverState } from "./Clover";
+import { Clover, type CloverState } from "./Clover";
+import { GlowFrame } from "./Highlight";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 
@@ -101,8 +102,6 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   importantOn?: (d: Day) => boolean;
 }) {
   const { c } = useTheme();
-  const pulse = usePulse();
-  const glow = useGlowColor();
   const long = kind === "span" && !picker;
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
   const labels = weekdayLabels(weekStartsSunday);
@@ -154,9 +153,8 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                 return long ? (
                   <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}${b.important ? ", 강조" : ""}`}>
                     {b.important ? (
-                      // 강조: a glowing frame around the bar, breathing like the glowing clovers
-                      <Animated.View style={{ position: "absolute", top: -3, bottom: -3, left: (b.opensLeft ? 0 : 4) - 3, right: (b.opensRight ? 0 : 4) - 3, borderRadius: 7, borderWidth: 3, borderColor: glow,
-                        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.12, 1] }) }} />
+                      // 강조: a glowing frame around the bar (and, in the design trial, embers)
+                      <GlowFrame radius={4} inset={3} width={2} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 3 * (b.to - b.from + 1), rise: 14, size: 3 }} />
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill, justifyContent: "center", paddingHorizontal: 4 }}>
                       {!b.opensLeft || b.from === row.findIndex(Boolean) ? (
@@ -168,8 +166,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                   <View key={b.id} style={{ ...pos, bottom: 2 + b.lane * LINE_STEP, height: 3 }} accessibilityLabel={b.important ? `${b.title}, 강조` : undefined}>
                     {b.important ? (
                       // 강조 on the 할 일 캘린더: the line itself glows (not the day's clover, user)
-                      <Animated.View style={{ position: "absolute", top: -3, bottom: -3, left: (b.opensLeft ? 0 : 4) - 2, right: (b.opensRight ? 0 : 4) - 2, borderRadius: 5, backgroundColor: glow,
-                        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.9] }) }} />
+                      <GlowFrame radius={2} inset={3} width={1.5} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 2 * (b.to - b.from + 1), rise: 10, size: 2.5 }} />
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill }} />
                   </View>
