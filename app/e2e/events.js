@@ -126,10 +126,10 @@ const { chromium } = require("playwright");
   await shot("events-zoomed");
   // swiping left goes to the next day (one day at a time)
   const t2 = new Date(now); t2.setDate(t2.getDate() + 1);
-  await p.mouse.move(330, 500); await p.mouse.down();
-  for (let i = 1; i <= 8; i++) await p.mouse.move(330 - i * 30, 503);
-  await p.mouse.up();
-  await p.waitForTimeout(700);
+  // (a browser scrolls a pager sideways with the wheel; the phone with the finger)
+  await p.mouse.move(250, 500);
+  for (let i = 0; i < 5; i++) { await p.mouse.wheel(120, 0); await p.waitForTimeout(30); }
+  await p.waitForTimeout(900);
   r.swipedToNextDay = await p.getByRole("button", { name: `${dl(t2)}, 오늘로 이동` }).count();
   await shot("events-next-day");
   // an event over midnight is a block on both days, not a 종일 chip

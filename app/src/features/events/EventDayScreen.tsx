@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Animated, BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { BackHandler, PanResponder, Platform, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
 import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowColor, GlowFrame, useToast } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
@@ -41,14 +41,11 @@ export function EventDayScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag>(null);
   const [locked, setLocked] = useState(false); // no scrolling or swiping while an event is moved or stretched
-  const lockedRef = useRef(false);
-  lockedRef.current = locked;
   const [toast, notice] = useToast();
   // two fingers spread or squeeze the hours (user); kept on this phone
   const [H, setH] = useState(() => Math.min(H_MAX, Math.max(H_MIN, prefs.timelineHourHeight || tokens.layout.hourHeight)));
   const px = (min: number) => (min / 60) * H;
   const viewH = useRef(600);
-  const viewW = useRef(400);
   const scroll = useRef<ScrollViewInstance>(null);
   const y = useRef(0);
   const pinch = useRef<{ d0: number; h0: number } | null>(null);
@@ -81,28 +78,39 @@ export function EventDayScreen() {
     },
   };
 
-  // swiping left or right: the day follows the finger, then the next or previous day slides in
-  const slide = useRef(new Animated.Value(0)).current;
-  const goDay = (dir: 1 | -1) => {
+  // swiping left or right: a native page scroll over three days (yesterday, the day, tomorrow), so the next day is
+  // already there under the finger and the phone's own scrolling decides between a swipe and an up/down scroll (the
+  // hand-made swipe sometimes lost to the up/down scroll and showed an empty side, user 2026-11-21). When it comes
+  // to rest on a side page, that day becomes the middle one and the pager jumps back to the middle without a sound.
+  const pager = useRef<ScrollViewInstance>(null);
+  const [pageW, setPageW] = useState(0);
+  const pagerX = useRef(0);
+  const recentring = useRef(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settle = (x: number) => {
+    if (!pageW || recentring.current) return;
+    const page = Math.round(x / pageW);
+    if (page === 1) return;
+    recentring.current = true;
     setSelected(null);
-    Animated.timing(slide, { toValue: -dir * viewW.current, duration: 140, useNativeDriver: true }).start(() => {
-      setDay((d) => addDays(d, dir));
-      slide.setValue(dir * viewW.current * 0.6);
-      Animated.timing(slide, { toValue: 0, duration: 160, useNativeDriver: true }).start();
-    });
+    setDay((d) => addDays(d, page === 0 ? -1 : 1));
   };
-  const swipe = useRef(PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, g) => !lockedRef.current && !pinch.current && Math.abs(g.dx) > 18 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderMove: (_, g) => slide.setValue(g.dx),
-    onPanResponderRelease: (_, g) => {
-      if (Math.abs(g.dx) > 70 || Math.abs(g.vx) > 0.5) goDayRef.current(g.dx < 0 ? 1 : -1);
-      else Animated.spring(slide, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start();
-    },
-    onPanResponderTerminate: () => Animated.spring(slide, { toValue: 0, useNativeDriver: true, bounciness: 0 }).start(),
-  })).current;
-  const goDayRef = useRef(goDay);
-  goDayRef.current = goDay;
+  // after the days moved over by one, show the middle page again (same picture as before the jump)
+  useLayoutEffect(() => {
+    if (!pageW) return;
+    pager.current?.scrollTo({ x: pageW, animated: false });
+    pagerX.current = pageW;
+    const t = setTimeout(() => { recentring.current = false; }, 50);
+    return () => clearTimeout(t);
+  }, [day, pageW]);
+  const goDay = (dir: 1 | -1) => {
+    if (!pageW) { setDay((d) => addDays(d, dir)); return; }
+    setSelected(null);
+    pager.current?.scrollTo({ x: pageW + dir * pageW, animated: true });
+    // the web has no momentum events; settle after the slide whichever way it ends
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => settle(pageW + dir * pageW), 380);
+  };
 
   const [, tick] = useState(0);
   useEffect(() => { const h = setInterval(() => tick((n) => n + 1), 60000); return () => clearInterval(h); }, []);
@@ -128,7 +136,7 @@ export function EventDayScreen() {
     setDraft(newDraft(d, s.startTime, s.endTime, lastColor));
   };
   const hourLabel = (h: number) => (prefs.use24h ? `${String(h).padStart(2, "0")}:00` : `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시`);
-  const commit = (b: Block, top: number, bottom: number) => {
+  const commit = (b: Block, top: number, bottom: number, day: Day) => {
     setDrag(null);
     setLocked(false);
     if (top === b.top && bottom === b.bottom) return;
@@ -142,10 +150,75 @@ export function EventDayScreen() {
     notice(`${eventTimeLabel(next, prefs.use24h, Number(day.slice(0, 4)))}로 바꿨어요`);
   };
 
-  const band = eventsOn(events, day).filter(inBand);
-  const blocks = dayBlocks(events, day);
   const isToday = day === today();
-  const pending = draft && !draft.id && !draft.allDay && draft.startDate === day && draft.startTime && draft.endTime ? draft : null;
+  const days = [addDays(day, -1), day, addDays(day, 1)];
+
+  // one day's page: its 종일 line and its hours (the middle one is the day in view)
+  const page = (d: Day) => {
+    const band = eventsOn(events, d).filter(inBand);
+    const blocks = dayBlocks(events, d);
+    const middle = d === day;
+    const pending = draft && !draft.id && !draft.allDay && draft.startDate === d && draft.startTime && draft.endTime ? draft : null;
+    return (
+      // the side pages are there to slide in; screen readers only get the day in view
+      <View key={d} style={{ width: pageW, flex: 1 }} importantForAccessibility={middle ? "auto" : "no-hide-descendants"} accessibilityElementsHidden={!middle} aria-hidden={!middle}>
+        {band.length ? (
+          // 종일: chips above the hours (room around them for the glow and sparks of a highlighted one)
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, paddingLeft: LABEL_W, paddingRight: tokens.layout.gutter, paddingTop: 14, paddingBottom: 10,
+            borderBottomWidth: 1, borderBottomColor: c.divider }} accessibilityLabel={`${dayLabel(d)} 종일 일정`}>
+            {band.map((e) => (
+              <Pressable key={e.id} onPress={() => setOpen(e.id)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, 0)}${e.important ? ", 강조" : ""}`}
+                style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
+                {e.important ? <GlowFrame radius={tokens.radius.sm} inset={6} embers={{ count: 7, rise: 20, size: 3.5 }} /> : null}
+                <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+        <ScrollView ref={middle ? scroll : undefined} scrollEnabled={!locked} scrollEventThrottle={16} nestedScrollEnabled
+          // a side page opens at the hour the middle one shows
+          contentOffset={{ x: 0, y: y.current }}
+          onScroll={middle ? (e) => { y.current = e.nativeEvent.contentOffset.y; } : undefined}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 40 }}>
+          <View style={{ height: 24 * H }}>
+            {Array.from({ length: 24 }, (_, h) => (
+              <View key={h} pointerEvents="none" style={{ position: "absolute", top: h * H, left: 0, right: 0, flexDirection: "row", alignItems: "flex-start" }}>
+                <AppText variant="small" color="textMuted" style={{ width: LABEL_W - 8, textAlign: "right", marginTop: -8 }}>{h ? hourLabel(h) : ""}</AppText>
+                <View style={{ flex: 1, height: 1, backgroundColor: c.hourLine, marginLeft: 8, marginRight: tokens.layout.gutter }} />
+              </View>
+            ))}
+            {Array.from({ length: 48 }, (_, i) => (
+              <Pressable key={i} onPress={() => addAt(d, i * 30)} accessibilityRole="button" accessibilityLabel={`${dayLabel(d)} ${fromMinutes(i * 30)}에 일정 추가`}
+                style={{ position: "absolute", top: (i * H) / 2, height: H / 2, left: LABEL_W, right: tokens.layout.gutter }} />
+            ))}
+            <View pointerEvents="box-none" style={{ position: "absolute", top: 0, bottom: 0, left: LABEL_W + 2, right: tokens.layout.gutter }}>
+              {pending ? (
+                <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: px(toMinutes(pending.startTime!)), height: px(toMinutes(pending.endTime!) - toMinutes(pending.startTime!)),
+                  borderWidth: 2, borderColor: pending.color, borderRadius: tokens.radius.sm }} accessibilityLabel="새 일정 자리" />
+              ) : null}
+              {d === today() ? (
+                <View pointerEvents="none" style={{ position: "absolute", top: px(minutesNow()) - 4, left: -6, right: 0, flexDirection: "row", alignItems: "center" }} accessibilityLabel="지금">
+                  <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.nowLine }} />
+                  <View style={{ flex: 1, height: 2, backgroundColor: c.nowLine }} />
+                </View>
+              ) : null}
+              {blocks.map((b) => (
+                <EventBlock key={b.e.id} b={b} day={d} hour={H} drag={middle && drag?.id === b.e.id ? drag : null} selected={middle && selected === b.e.id} scale={scale} use24h={prefs.use24h}
+                  onTap={() => setSelected((x) => (x === b.e.id ? null : b.e.id))}
+                  onHold={() => { setSelected(b.e.id); setLocked(true); }}
+                  onDrag={(top, bottom) => { setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
+                  onDrop={(top, bottom) => commit(b, top, bottom, d)}
+                  onCancel={() => { setDrag(null); setLocked(false); }}
+                  onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
+                  onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
+                  onDelete={() => { setSelected(null); deleteEvent(b.e.id); notice("일정을 지웠어요"); }} />
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
@@ -161,60 +234,23 @@ export function EventDayScreen() {
       </View>
 
       {/* pan-y: in a browser, two fingers zoom the hours here instead of the whole page */}
-      <Animated.View style={{ flex: 1, touchAction: "pan-y", transform: [{ translateX: slide }] } as never} {...swipe.panHandlers} {...touches} onTouchCancel={touches.onTouchEnd}
-        onLayout={(e) => { viewH.current = e.nativeEvent.layout.height; viewW.current = e.nativeEvent.layout.width; }}>
-        {band.length ? (
-          // 종일: chips above the hours (room around them for the glow and sparks of a highlighted one)
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, paddingLeft: LABEL_W, paddingRight: tokens.layout.gutter, paddingTop: 14, paddingBottom: 10,
-            borderBottomWidth: 1, borderBottomColor: c.divider }} accessibilityLabel={`${dayLabel(day)} 종일 일정`}>
-            {band.map((e) => (
-              <Pressable key={e.id} onPress={() => setOpen(e.id)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, 0)}${e.important ? ", 강조" : ""}`}
-                style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
-                {e.important ? <GlowFrame radius={tokens.radius.sm} inset={6} embers={{ count: 7, rise: 20, size: 3.5 }} /> : null}
-                <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
-              </Pressable>
-            ))}
-          </View>
+      <View style={{ flex: 1, touchAction: "pan-x pan-y" } as never} {...touches} onTouchCancel={touches.onTouchEnd}
+        onLayout={(e) => { viewH.current = e.nativeEvent.layout.height; const w = Math.round(e.nativeEvent.layout.width); if (w !== pageW) setPageW(w); }}>
+        {pageW ? (
+          <ScrollView ref={pager} horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEnabled={!locked} scrollEventThrottle={16}
+            contentOffset={{ x: pageW, y: 0 }} directionalLockEnabled
+            onMomentumScrollEnd={(e) => settle(e.nativeEvent.contentOffset.x)}
+            onScroll={(e) => {
+              pagerX.current = e.nativeEvent.contentOffset.x;
+              if (Platform.OS !== "web") return; // the phone settles on momentum end, never while the finger holds
+              if (settleTimer.current) clearTimeout(settleTimer.current);
+              const x = pagerX.current;
+              settleTimer.current = setTimeout(() => settle(x), 180); // the web has no momentum events
+            }}>
+            {days.map(page)}
+          </ScrollView>
         ) : null}
-        <ScrollView ref={scroll} scrollEnabled={!locked} scrollEventThrottle={16} onScroll={(e) => { y.current = e.nativeEvent.contentOffset.y; }}
-          contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 40 }}>
-          <View style={{ height: 24 * H }}>
-            {Array.from({ length: 24 }, (_, h) => (
-              <View key={h} pointerEvents="none" style={{ position: "absolute", top: h * H, left: 0, right: 0, flexDirection: "row", alignItems: "flex-start" }}>
-                <AppText variant="small" color="textMuted" style={{ width: LABEL_W - 8, textAlign: "right", marginTop: -8 }}>{h ? hourLabel(h) : ""}</AppText>
-                <View style={{ flex: 1, height: 1, backgroundColor: c.hourLine, marginLeft: 8, marginRight: tokens.layout.gutter }} />
-              </View>
-            ))}
-            {Array.from({ length: 48 }, (_, i) => (
-              <Pressable key={i} onPress={() => addAt(day, i * 30)} accessibilityRole="button" accessibilityLabel={`${dayLabel(day)} ${fromMinutes(i * 30)}에 일정 추가`}
-                style={{ position: "absolute", top: (i * H) / 2, height: H / 2, left: LABEL_W, right: tokens.layout.gutter }} />
-            ))}
-            <View pointerEvents="box-none" style={{ position: "absolute", top: 0, bottom: 0, left: LABEL_W + 2, right: tokens.layout.gutter }}>
-              {pending ? (
-                <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: px(toMinutes(pending.startTime!)), height: px(toMinutes(pending.endTime!) - toMinutes(pending.startTime!)),
-                  borderWidth: 2, borderColor: pending.color, borderRadius: tokens.radius.sm }} accessibilityLabel="새 일정 자리" />
-              ) : null}
-              {isToday ? (
-                <View pointerEvents="none" style={{ position: "absolute", top: px(minutesNow()) - 4, left: -6, right: 0, flexDirection: "row", alignItems: "center" }} accessibilityLabel="지금">
-                  <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.nowLine }} />
-                  <View style={{ flex: 1, height: 2, backgroundColor: c.nowLine }} />
-                </View>
-              ) : null}
-              {blocks.map((b) => (
-                <EventBlock key={b.e.id} b={b} day={day} hour={H} drag={drag?.id === b.e.id ? drag : null} selected={selected === b.e.id} scale={scale} use24h={prefs.use24h}
-                  onTap={() => setSelected((x) => (x === b.e.id ? null : b.e.id))}
-                  onHold={() => { setSelected(b.e.id); setLocked(true); }}
-                  onDrag={(top, bottom) => { setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
-                  onDrop={(top, bottom) => commit(b, top, bottom)}
-                  onCancel={() => { setDrag(null); setLocked(false); }}
-                  onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
-                  onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
-                  onDelete={() => { setSelected(null); deleteEvent(b.e.id); notice("일정을 지웠어요"); }} />
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-      </Animated.View>
+      </View>
 
       <Pressable onPress={() => { setSelected(null); addAt(day, Math.min(isToday ? Math.ceil(minutesNow() / 60) * 60 : 9 * 60, DAY_MINUTES - 60)); }} accessibilityRole="button" accessibilityLabel="일정 추가"
         style={{ position: "absolute", right: tokens.layout.gutter, bottom: insets.bottom + 24, width: 56, height: 56, borderRadius: 18, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" }}>
