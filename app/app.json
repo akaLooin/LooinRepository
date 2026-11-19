@@ -76,12 +76,17 @@
     ],
     "scheme": "todomateclone",
     "updates": {
-      "fallbackToCacheTimeout": 30000
+      "url": "https://u.expo.dev/20e21693-a78a-4088-8483-327b41fc12f2",
+      "fallbackToCacheTimeout": 10000,
+      "checkAutomatically": "ON_LOAD"
     },
     "extra": {
       "eas": {
         "projectId": "20e21693-a78a-4088-8483-327b41fc12f2"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

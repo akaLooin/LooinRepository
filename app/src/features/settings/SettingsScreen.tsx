@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import { router } from "expo-router";
 import { Pressable, ScrollView, View } from "react-native";
 import {
@@ -18,6 +19,9 @@ export function SettingsScreen() {
   const icon = (I: typeof User) => <I size={22} color={c.text} />;
   const go = (path: string) => () => router.push(path as never);
   const version = Constants.expoConfig?.version ?? "";
+  // which code is running: the one built into the APK, or an update received over the air (EAS Update)
+  const at = Updates.isEnabled && !Updates.isEmbeddedLaunch && Updates.createdAt ? Updates.createdAt : null;
+  const updated = at ? `${at.getMonth() + 1}월 ${at.getDate()}일 ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")} 업데이트` : "설치한 그대로";
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
@@ -38,7 +42,10 @@ export function SettingsScreen() {
 
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", height: 56, marginTop: 20 }}>
           <AppText variant="bodyLg">버전</AppText>
-          <AppText variant="bodyLg" color="textMuted">{version}</AppText>
+          <View style={{ alignItems: "flex-end" }}>
+            <AppText variant="bodyLg" color="textMuted">{version}</AppText>
+            <AppText variant="small" color="textMuted">{updated}</AppText>
+          </View>
         </View>
         {supabase ? (
           <Pressable onPress={async () => { await unregisterPush(); await supabase?.auth.signOut(); }} accessibilityRole="button" style={{ height: 56, justifyContent: "center" }}>

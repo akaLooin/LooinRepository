@@ -9,7 +9,8 @@
       "environment": "preview",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "environment": "production",
@@ -19,7 +20,8 @@
       "extends": "preview",
       "env": {
         "APP_VARIANT": "design"
-      }
+      },
+      "channel": "design"
     }
   }
 }

@@ -1,0 +1,53 @@
+# Sends the app's new code to the phones over the air (EAS Update) whenever the app changes on this branch,
+# so a new APK is needed only when native parts change (then app.json "version" goes up; see replica/backend.md 22).
+# Needs the repository secret EXPO_TOKEN (expo.dev → Account settings → Access tokens). Without it the job skips.
+name: app update
+on:
+  push:
+    branches: [claude/replica-skill-install-ll9jb4]
+    paths: ["app/**", ".github/workflows/eas-update.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: eas-update
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: No token yet
+        if: env.EXPO_TOKEN == ''
+        run: echo "EXPO_TOKEN is not set in the repository secrets; nothing sent."
+      - uses: actions/checkout@v4
+        if: env.EXPO_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.EXPO_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: expo/expo-github-action@v8
+        if: env.EXPO_TOKEN != ''
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install
+        if: env.EXPO_TOKEN != ''
+        run: npm ci
+      - name: Check (types and unit tests)
+        if: env.EXPO_TOKEN != ''
+        run: npx tsc --noEmit && npm test
+      - name: Send to the usual app (channel preview)
+        if: env.EXPO_TOKEN != ''
+        run: eas update --channel preview --environment preview --clear-cache --message "$(git log -1 --pretty=%s | cut -c1-200)" --non-interactive
+      - name: Send to the design trial (channel design)
+        if: env.EXPO_TOKEN != ''
+        env:
+          APP_VARIANT: design
+        run: eas update --channel design --environment preview --clear-cache --message "$(git log -1 --pretty=%s | cut -c1-200)" --non-interactive

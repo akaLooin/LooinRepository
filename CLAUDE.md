@@ -16,6 +16,8 @@ Personal Android app that rebuilds the to-do app "todo mate" (Expo + Supabase), 
 - **Public repository.** No keys, no Supabase project URL or keys, no personal data in commits. `.env.local` stays local (git-ignored).
 - **Branch:** work on `claude/replica-skill-install-ll9jb4`, commit per feature, push with `git push -u origin claude/replica-skill-install-ll9jb4`. No PR unless asked.
 - **Tokens only** in components (`replica/design/tokens*.json` → `npm run tokens` → `app/src/theme/tokens.ts`).
+- **Over-the-air updates:** pushes to `app/` reach the phones through EAS Update (`.github/workflows/eas-update.yml`). If a change needs a new APK (native package added/upgraded, plugins, permissions), raise `app/app.json` "version" in the same commit and tell the user to build new APKs (replica/backend.md 22).
+- **User steps:** always give full Windows paths (`C:\Users\User\LooinRepository\...`) and paste short SQL inline.
 - **Keep context durable:** after each feature, update `docs/context/HANDOFF.md` (keep it under ~8,000 characters) and add any new user decision to `DECISIONS.md`, in the same commit. `/context-handoff` does this.
 
 ## Layout
