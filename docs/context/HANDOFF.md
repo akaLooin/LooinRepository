@@ -42,14 +42,8 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. 20261118000000_events도 실행 ✅. **미실행/미확인**: 20261120000000_important, 20261109000300_crews2, 20261112000000_my_features
 - 이용자 PC 할 일: push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
 
-## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지 — 모두 1차 완료, 폰 확인 필요)
-- 디데이 당일 포함·디데이 날 붉은 동그라미·루틴 종료 날짜 없음
-- 사진 크게 보기 `components/PhotoViewer.tsx`(핀치 1~5배, 길게 → 저장 `lib/savePhoto.ts` / 남의 사진 신고 `data/report.ts`)
-- 뽀모도로: 타이머 ⋯ → 스톱워치/뽀모도로, 5분 단위, 할 일 타이머 위 카운트다운, 끝나면 로컬 알림 `lib/pomodoro.ts`
-- 검색: 홈 맨 위 돋보기 → `/search`(할 일·메모·일기, 누르면 그 날짜) `lib/search.ts`
-- 알림 탭 4개(친구의 할 일/친구의 일기/받은 관심/공지 `data/notices.ts`) `components/TabPills.tsx`
-- 날짜로 끌어 옮기기: 할 일을 길게 눌러 캘린더 날짜에 놓기(`ReorderableList` `drop`, `Calendar` `cellRef`)
-- ~~여러 날 할 일~~ → 2026-11-18 **일정**으로 바뀜(아래 4단계)
+## 3단계: 우리만의 기능 (2026-11-12, 9가지 완료, 폰 확인 필요)
+- 디데이 당일 포함·붉은 동그라미, 루틴 종료 없음, 사진 크게 보기(`PhotoViewer`), 뽀모도로(`lib/pomodoro.ts`), 검색(`/search`), 알림 탭 4개, 날짜로 끌어 옮기기, ~~여러 날 할 일~~ → 일정
 
 ## 4단계 (2026-11-18 요청): 일정 · 캘린더 즉시 전환 · 디자인(별 모양)
 - 일정 = 할 일과 따로 `events` 표(`lib/events.ts`, `features/events/`): 시간/종일, 색, 알림(n분 전), 설명. 할 일 캘린더엔 얇은 줄, 일정 캘린더(▼)엔 이름 막대. 일정 캘린더에서 날짜 → `/events/[date]` 시간표(30분 칸 누르기 → 1시간 일정 → 제목 → 저장, 일정 누르면 보기·수정·삭제, 종일은 위 띠, 지금 선). 옛 여러 날 할 일은 같은 id 종일 일정으로(`liftSpans`, SQL도 같은 일)
