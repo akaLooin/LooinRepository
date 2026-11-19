@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import {
-  AppText, BottomSheet, Bell, Button, Calendar, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton,
+  AppText, BottomSheet, Bell, Button, Calendar, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
   PRESET_COLORS, TileButton, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
-import { deleteEvent, saveEvent, useDB } from "../../data/store";
+import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
 import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, toMinutes, type CalEvent } from "../../lib/events";
 import { fontFamily, onColor, tokens, useTheme } from "../../theme";
@@ -157,6 +157,11 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
           {when("start")}
           {when("end")}
         </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
+          <Sparkles size={22} color={e.important ? c.neon : c.textMuted} />
+          <AppText variant="bodyLg" style={{ flex: 1 }}>중요한 일정으로 강조</AppText>
+          <Toggle value={!!e.important} label="중요한 일정으로 강조" onChange={(important) => put({ important })} />
+        </View>
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
         {row(icon(Bell), alarmLabel(e.alarmMinutes), () => setSub("alarm"), `알림 ${alarmLabel(e.alarmMinutes)}`)}
         {row(<View style={{ width: 22, alignItems: "center" }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: e.color }} /></View>, "색", () => setSub("color"), "색 고르기")}
@@ -221,6 +226,7 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
       ) : null}
       <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
         <TileButton label="수정하기" icon={<Pencil size={28} color={c.menuEdit} />} onPress={() => onEdit(e)} />
+        <TileButton label={e.important ? "강조 해제" : "강조"} icon={<Sparkles size={28} color={c.neon} />} onPress={() => notice(toggleEventImportant(e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")} />
         <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { deleteEvent(e.id); onClose(); notice("일정을 지웠어요"); }} />
       </View>
     </BottomSheet>

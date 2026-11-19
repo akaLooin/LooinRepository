@@ -61,6 +61,9 @@ export type PushPlan = { profile: number; upsert: Record<Table, Record<string, n
 /** Supabase's answer for a table that is not there ("relation ... does not exist", "Could not find the table ... in the schema cache"). */
 export const missingTable = (error: string) => /does not exist|schema cache/i.test(error) && !/column/i.test(error);
 
+/** Supabase's answer for a column the server does not have yet ("Could not find the 'x' column of 't' in the schema cache"). */
+export const missingColumn = (error: string) => /column/i.test(error) && /does not exist|schema cache/i.test(error);
+
 /** Sends the outbox. Returns which ids went through (with the counter they had) and which the server refused. */
 export async function push(state: LocalState, remote: Remote, userId: string) {
   const sent: PushPlan = { profile: 0, upsert: emptyOutbox().upsert, remove: emptyOutbox().remove };
@@ -83,6 +86,8 @@ export async function push(state: LocalState, remote: Remote, userId: string) {
       for (const x of rows) {
         // one bad row (for example a to-do in an ended category) must not block the rest
         const one = await remote.upsert(t, [conv(x)]);
+        // a newer column the server lacks (its SQL not run yet): the row waits on the phone and goes later
+        if (one.error && missingColumn(one.error)) continue;
         if (one.error) rejected.push({ table: t, id: x.id, error: one.error });
         sent.upsert[t][x.id] = state.outbox.upsert[t][x.id];
       }

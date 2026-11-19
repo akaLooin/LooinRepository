@@ -99,3 +99,18 @@ t("일정: a held event moves by quarter hours within the day; stretching in 5 m
   assert.deepEqual(resizeBlock(540, 600, "top", 100), { top: 585, bottom: 600 });
   assert.deepEqual(resizeBlock(30, 600, "top", -100), { top: 0, bottom: 600 });
 });
+
+import { importantDays } from "../src/lib/events";
+import { missingColumn } from "../src/data/sync";
+t("중요한 날: days of important to-dos and events; synced only once set; waits for a missing column", () => {
+  const days = importantDays(
+    [{ date: "2026-11-03", isImportant: true }, { date: "2026-11-04" }, { date: "2026-11-05", isImportant: true, isSkipped: true }, { date: null, isImportant: true }],
+    [ev("trip", { startDate: "2026-11-30", endDate: "2026-12-02", allDay: true, important: true }), ev("plain", { startDate: "2026-11-10" })],
+    "2026-11-01", "2026-12-01");
+  assert.deepEqual([...days].sort(), ["2026-11-03", "2026-11-30", "2026-12-01"]);
+  assert.equal("is_important" in toRow.todos({ id: "t", categoryId: "c", title: "x", date: "2026-11-03", sortOrder: 1, isDone: false, memo: "", memoIsPrivate: false, timerSeconds: 0, createdAt: "" }, "u"), false);
+  assert.equal(toRow.events(ev("x", { important: true }), "u").important, true);
+  assert.equal(fromRow.events({ ...toRow.events(ev("x", { important: true }), "u") }).important, true);
+  assert.equal(missingColumn("Could not find the 'is_important' column of 'todos' in the schema cache"), true);
+  assert.equal(missingColumn('relation "public.events" does not exist'), false);
+});

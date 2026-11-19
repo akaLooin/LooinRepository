@@ -21,7 +21,7 @@ function AlarmClock({ size = 14 }: { size?: number }) {
 }
 
 /** One to-do: clover checkbox, title, optional alarm time, memo and proof photo (S03). */
-export function TodoRow({ period, photoOthers, right, below, smallPhoto, onMemoPress, onAlarmPress, title, alarm, memo, done, color, photo, onToggle, onPress, onDoubleTap, small, smallMemo, onLongPress, delayLongPress, selected, largeMemo }: {
+export function TodoRow({ important, onImportant, period, photoOthers, right, below, smallPhoto, onMemoPress, onAlarmPress, title, alarm, memo, done, color, photo, onToggle, onPress, onDoubleTap, small, smallMemo, onLongPress, delayLongPress, selected, largeMemo }: {
   title: string; alarm?: string; memo?: string; done: boolean; color: string; photo?: string; onToggle: () => void; onPress?: () => void; onDoubleTap?: () => void;
   small?: boolean; smallMemo?: boolean; onLongPress?: () => void; delayLongPress?: number; selected?: boolean; largeMemo?: boolean;
   /** tapping the memo text opens the memo editor, tapping the alarm time opens the time sheet (user) */
@@ -34,6 +34,8 @@ export function TodoRow({ period, photoOthers, right, below, smallPhoto, onMemoP
   photoOthers?: boolean;
   /** 여러 날 할 일: "11.3 – 11.7", with a short bar in the category colour (grey once done) */
   period?: string;
+  /** 중요한 날: the check glows; a long press on the check turns it on and off */
+  important?: boolean; onImportant?: () => void;
 }) {
   const { c } = useTheme();
   // With double-tap editing on, a single tap waits a moment to see if a second one follows, so a double tap
@@ -52,7 +54,8 @@ export function TodoRow({ period, photoOthers, right, below, smallPhoto, onMemoP
   };
   return (
     <View style={{ flexDirection: "row", gap: 12, paddingVertical: 8, paddingHorizontal: selected === undefined ? 0 : 6, marginHorizontal: selected === undefined ? 0 : -6, borderRadius: tokens.radius.md, backgroundColor: selected ? c.surfaceButton : "transparent" }} accessibilityState={selected === undefined ? undefined : { selected }}>
-      <Clover size={tokens.size.cloverTodo} state={done ? { kind: "todoDone", color } : { kind: "todoOpen" }} onPress={onToggle} label={`${title}, ${done ? "완료됨" : "미완료"}`} />
+      <Clover size={tokens.size.cloverTodo} state={done ? { kind: "todoDone", color } : { kind: "todoOpen" }} onPress={onToggle} onLongPress={onImportant} glow={important}
+        label={`${title}, ${done ? "완료됨" : "미완료"}${important ? ", 중요" : ""}`} />
       <Pressable onPress={press} onLongPress={onLongPress} delayLongPress={delayLongPress} style={{ flex: 1, gap: 2 }} accessibilityRole="button" accessibilityHint="메뉴 열기">
         <AppText variant={small ? "body" : "bodyLg"}>{title}</AppText>
         {period ? (

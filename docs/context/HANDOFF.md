@@ -21,7 +21,6 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 로그인(이메일 + 비밀번호), 오프라인 우선 동기화(AsyncStorage + Supabase), 계정 삭제 함수
 - 화면 전체를 폰 폭에 맞춰 축소(411dp 기준 → 실제 폭), 설정 → 화면 → 화면 크기로 수동 조절
 - 설정 동기화: 화면 설정 10개가 계정(user_settings)을 따라감. 기기에만: 화면 크기, 접은 카테고리, 캘린더 거르기
-- 테스트: `replica/test-plan.md`, `replica/bugs.md`(6개 찾아 고침, 열린 S1/S2 없음), `app/e2e/edge.js`(엣지 13개 + axe)
 
 ## 이용자 환경 (확인된 것)
 - Windows PC, PowerShell → `npm.cmd`, `npx.cmd` 사용. 저장소 위치 `C:\Users\User\LooinRepository`
@@ -39,7 +38,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 2단계(친구·대화·크루) 완료 — 자세한 건 `replica/build-log.md`, `replica/backend.md` 9~18
 - 친구(검색·프로필·친구 홈·주간·일기·반응·알림), 대화(DM), 스티커 18개, 할 일 캘린더, 푸시(폰 확인 ✅), 친구 피드, 일기(스티커 기분+기분 온도·임시 저장), 크루 1·2차(대화방·⋯ 메뉴·크루 홈), 대화 키보드 가림 수정(B16, 폰 확인 필요)
-- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. 20261118000000_events도 실행 ✅(11-20 이용자). **미확인**: 20261109000300_crews2, 20261112000000_my_features
+- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. 20261118000000_events도 실행 ✅. **미실행/미확인**: 20261120000000_important, 20261109000300_crews2, 20261112000000_my_features
 - 이용자 PC 할 일: push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
 
 ## 3단계: 우리만의 기능 (2026-11-12 이용자 요청 9가지 — 모두 1차 완료, 폰 확인 필요)
@@ -56,6 +55,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 서버 표 없으면(SQL 미실행) 일정은 outbox에서 기다림(`missingTable`)
 - ▼ 캘린더 종류: 누르면 바로 바뀌고 닫힘
 - 11-19 피드백 반영: 시간표 3일 이어 그리기(스크롤로 전날·다음 날), 일정 선택·늘이기·꾹 눌러 옮기기(`lib/eventDrag.ts`), 1분 휠(`TimeGrid`), 할 일 메뉴 2열, 알약 탭=추가/길게=편집, 일정 캘린더 4개·아래 비움, 뒤로가기 한 단계(`BottomSheet onBack`), 별 ✕. 11-20: 동그라미 가운데, 옮기기 15분, 두 손가락 확대(`timelineHourHeight`), 휠 숫자 직접 입력, 할 일 메뉴 루틴 등록하기(`/routines/new?from=`)
+- 중요한 날(11-20): 할 일 체크 꾹 = 중요 켜기/끄기(`toggleImportant`), 일정 강조(선택 시 수정 오른쪽 버튼·편집 스위치·종일 시트). 할 일 캘린더 날짜 별/클로버에 네온 테두리 맥박(`Clover glow`, 공유 `usePulse`), 일정 캘린더는 막대 테두리. SQL 20261120000000(미실행이면 폰에서 대기, `missingColumn`)
 - 디자인 시험판: `APP_VARIANT=design` → 별도 앱(`app.config.js`, eas 프로필 `design`, `lib/variant.ts` `DESIGN_TRIAL`). 클로버 → 사각별(`Clover.tsx` `starPath`), 여러 색은 그라데이션. 빌드 방법 backend.md 20. 화면 `replica/design/trial-star-*.png`. 이용자 폰 확인 대기
 
 ## 알려진 한계

@@ -64,7 +64,7 @@ async function swipe(p, x, y, dx) {
   await p.waitForTimeout(300);
   const first = (await p.getByRole("checkbox").first().getAttribute("aria-label")).split(",")[0];
   await p.getByText(first, { exact: true }).first().click();
-  await p.waitForTimeout(200);
+  await p.waitForTimeout(450); // a single tap waits 0.26 s for a possible double tap
   r.selectedCount = await p.getByText("1개 선택됨").count();
   await p.screenshot({ path: `${out}/S03-select.png` });
   await p.getByRole("button", { name: "보관함" }).last().click();

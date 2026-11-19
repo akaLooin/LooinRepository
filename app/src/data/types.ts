@@ -44,6 +44,8 @@ export type Todo = {
   routineId?: string;
   routineDate?: Day;
   isSkipped?: boolean; // a routine occurrence the user deleted
+  /** 중요한 날 (user's feature): long-press the check; its day glows on the calendar */
+  isImportant?: boolean;
   createdAt: string;
 };
 

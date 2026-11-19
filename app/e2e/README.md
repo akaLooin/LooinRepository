@@ -42,6 +42,7 @@ node e2e/slice.js /tmp/shots                              # second argument: whe
 | alerts.js | 알림 tabs: 친구의 할 일 / 친구의 일기 (feed by kind), 받은 관심, 공지; the tab is remembered |
 | drag-date.js | hold a home to-do and drop it on a calendar date: the date lights up, the to-do moves there (after reload too). Tall window, so the to-do and the calendar are both on screen |
 | events.js | 일정: ▼ one-tap switch, nothing under the 일정 캘린더, hour grid, tap 14:00 → 알림 없음, minute wheel → 저장, tap selects (handles, 수정/삭제), stretch, hold-and-move, tap beside lets go, 수정 → 종일, reload, 삭제, scroll on into the next day, old 여러 날 할 일 → event |
+| important.js | 중요한 날: hold a to-do's check → its day glows (again: off; a tap still checks); 강조 sits right of 수정 on a selected event, the editor switch follows, the bar glows on the 일정 캘린더 and the day on the 할 일 캘린더 |
 | rm.js | reminders add/duplicate/delete, to-do alarm |
 
 Unit tests (no browser): `npm test`.

@@ -1,11 +1,11 @@
 import { memo, useCallback, useRef, useState } from "react";
 import type { ViewInstance as ViewType } from "react-native";
-import { Pressable, View } from "react-native";
+import { Animated, Pressable, View } from "react-native";
 import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/dates";
 import { rowSegments, type SpanBar } from "../lib/spans";
 import { onColor, tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
-import { Clover, type CloverState } from "./Clover";
+import { Clover, usePulse, type CloverState } from "./Clover";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 
@@ -51,13 +51,15 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * One date. Memoised: picking a day redraws only the old and the new picked cell, not every clover of the three
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
-const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick, dday, hover, cellRef }: {
+const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick, dday, hover, cellRef, important }: {
   day: Day; ring: boolean; todayDisc: boolean; picker: boolean; clover?: CloverState; cloverKey: string; ringSize: number; onPick: (d: Day) => void;
   /** a D-day falls on this date: a red circle around the number (user's feature) */
   dday?: boolean;
   /** a held to-do is over this date (drop to move it here) */
   hover?: boolean;
   cellRef?: (d: Day, v: ViewType | null) => void;
+  /** 중요한 날: the clover glows (user's feature) */
+  important?: boolean;
 }) {
   const { c } = useTheme();
   const label = String(parseDay(day).d);
@@ -65,8 +67,8 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   const numberColor = ring && wd !== 0 && wd !== 6 ? "onSelected" : dayColor(wd);
   return (
     <Pressable ref={cellRef ? (v) => cellRef(day, v) : undefined}
-      style={{ flex: 1, alignItems: "center", gap: 4, borderRadius: tokens.radius.md, backgroundColor: hover ? c.dropTarget : "transparent" }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일`} accessibilityState={{ selected: ring }}>
-      {clover ? <Clover state={clover} /> : null}
+      style={{ flex: 1, alignItems: "center", gap: 4, borderRadius: tokens.radius.md, backgroundColor: hover ? c.dropTarget : "transparent" }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일${important ? ", 중요한 날" : ""}`} accessibilityState={{ selected: ring }}>
+      {clover ? <Clover state={clover} glow={important} /> : null}
       <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
         borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker ? 4 : 0 }] }}
         accessibilityLabel={dday ? "디데이" : undefined}>
@@ -74,13 +76,13 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
       </View>
     </Pressable>
   );
-}, (a, b) => a.day === b.day && a.ring === b.ring && a.todayDisc === b.todayDisc && a.picker === b.picker && a.cloverKey === b.cloverKey && a.ringSize === b.ringSize && a.onPick === b.onPick && a.dday === b.dday && a.hover === b.hover && a.cellRef === b.cellRef);
+}, (a, b) => a.day === b.day && a.ring === b.ring && a.todayDisc === b.todayDisc && a.picker === b.picker && a.cloverKey === b.cloverKey && a.ringSize === b.ringSize && a.onPick === b.onPick && a.dday === b.dday && a.hover === b.hover && a.cellRef === b.cellRef && a.important === b.important);
 
 /**
  * Month or week grid. `state` gives each day's clover; pass `picker` for the plain date picker (S21b).
  * `rows` lets the week view pass just one row.
  */
-export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn, dropHover, cellRef, spans, kind = "basic" }: {
+export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn, dropHover, cellRef, spans, kind = "basic", importantOn }: {
   year: number; month: number; today: Day; selected?: Day; onSelect?: (d: Day) => void; state?: (d: Day) => CloverState; picker?: boolean; weekStartsSunday?: boolean; rows?: (Day | null)[][];
   /** known width (calendar pager): the dates are placed right away instead of after measuring */
   width?: number;
@@ -93,8 +95,11 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   /** 일정: thin lines under the dates (할 일 캘린더), or labelled bars on the 일정 캘린더 (kind "span") */
   spans?: SpanBar[];
   kind?: "basic" | "span";
+  /** 중요한 날: an important to-do or event on the date (the 할 일 캘린더's clover glows; on the 일정 캘린더 the bar does) */
+  importantOn?: (d: Day) => boolean;
 }) {
   const { c } = useTheme();
+  const pulse = usePulse();
   const long = kind === "span" && !picker;
   const grid = rows ?? monthGrid(year, month, weekStartsSunday);
   const labels = weekdayLabels(weekStartsSunday);
@@ -130,7 +135,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             const cs = !picker && !long && state ? state(day) : undefined;
             return (
               <DayCell key={j} day={day} ring={ring} todayDisc={todayDisc} picker={!!picker} clover={cs} cloverKey={cs ? JSON.stringify(cs) : ""}
-                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} />
+                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} important={!picker && !long && !!importantOn?.(day)} />
             );
           })}
           {bars ? (
@@ -141,7 +146,12 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                 const ends = { marginLeft: b.opensLeft ? 0 : 4, marginRight: b.opensRight ? 0 : 4 };
                 const round = { borderTopLeftRadius: b.opensLeft ? 0 : 4, borderBottomLeftRadius: b.opensLeft ? 0 : 4, borderTopRightRadius: b.opensRight ? 0 : 4, borderBottomRightRadius: b.opensRight ? 0 : 4 };
                 return long ? (
-                  <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}`}>
+                  <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}${b.important ? ", 강조" : ""}`}>
+                    {b.important ? (
+                      // 강조: a neon frame around the bar, breathing like the glowing clovers
+                      <Animated.View style={{ position: "absolute", top: -2, bottom: -2, left: (b.opensLeft ? 0 : 4) - 2, right: (b.opensRight ? 0 : 4) - 2, borderRadius: 6, borderWidth: 2, borderColor: c.neon,
+                        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) }} />
+                    ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill, justifyContent: "center", paddingHorizontal: 4 }}>
                       {!b.opensLeft || b.from === row.findIndex(Boolean) ? (
                         <AppText variant="spanLabel" raw={onColor(fill)} numberOfLines={1}>{b.title}</AppText>

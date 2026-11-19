@@ -51,3 +51,16 @@ do $$ begin
 end $$;
 \o
 \echo ok events: own rows, time rules, pulled by sync, multi-day to-dos moved over
+\o /dev/null
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000b1');
+do $$ begin
+  update events set important = true where id = '3e000000-0000-0000-0000-000000000001';
+  insert into todos (id, user_id, category_id, title, date, is_important) values
+    ('2f000000-0000-0000-0000-000000000009', auth.uid(), '1f000000-0000-0000-0000-000000000001', '발표', '2026-12-10', true);
+  assert (pull_changes('1970-01-01')->'events') @> '[{"important": true}]', 'an event''s 강조 is synced';
+  assert (pull_changes('1970-01-01')->'todos') @> '[{"is_important": true}]', 'a to-do''s 중요 is synced';
+end $$;
+reset role;
+\o
+\echo ok important: to-dos and events carry 중요 through sync

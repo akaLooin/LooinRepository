@@ -29,6 +29,8 @@ export const toRow = {
     timer_started_at: n(t.timerStartedAt), routine_id: n(t.routineId), routine_date: n(t.routineDate), is_skipped: t.isSkipped ?? false,
     // sent only once used, so syncing keeps working before 20261112000000 is run
     ...(t.endDate !== undefined ? { end_date: t.endDate } : {}),
+    // 중요한 날 (SQL 20261120000000): sent only once set
+    ...(t.isImportant !== undefined ? { is_important: t.isImportant } : {}),
   }),
   reminders: (r: Reminder, user_id: string): Row => ({ id: r.id, user_id, time_of_day: r.timeOfDay }),
   diaries: (d: Diary, user_id: string): Row => ({
@@ -43,6 +45,7 @@ export const toRow = {
   events: (e: CalEvent, user_id: string): Row => ({
     id: e.id, user_id, title: e.title, start_date: e.startDate, end_date: e.endDate, all_day: e.allDay,
     start_time: e.allDay ? null : n(e.startTime), end_time: e.allDay ? null : n(e.endTime), color: e.color, memo: e.memo, alarm_minutes: n(e.alarmMinutes),
+    ...(e.important !== undefined ? { important: e.important } : {}),
   }),
 };
 
@@ -65,6 +68,7 @@ export const fromRow = {
     memo: r.memo ?? "", memoIsPrivate: !!r.memo_is_private, remindAt: u(r.remind_at), photoUri: u(r.photo_path), timerSeconds: r.timer_seconds ?? 0,
     timerStartedAt: u(r.timer_started_at), routineId: u(r.routine_id), routineDate: u(r.routine_date), isSkipped: !!r.is_skipped, createdAt: r.created_at ?? "",
     ...(r.end_date ? { endDate: r.end_date } : {}),
+    ...(r.is_important ? { isImportant: true } : {}),
   }),
   reminders: (r: R): Reminder => ({ id: r.id, timeOfDay: String(r.time_of_day).slice(0, 5) }),
   diaries: (r: R): Diary => ({
@@ -77,5 +81,6 @@ export const fromRow = {
     id: r.id, title: r.title, startDate: r.start_date, endDate: r.end_date ?? r.start_date, allDay: !!r.all_day,
     startTime: r.start_time ? String(r.start_time).slice(0, 5) : undefined, endTime: r.end_time ? String(r.end_time).slice(0, 5) : undefined,
     color: r.color ?? "#4A90E2", memo: r.memo ?? "", alarmMinutes: typeof r.alarm_minutes === "number" ? r.alarm_minutes : null,
+    ...(r.important ? { important: true } : {}),
   }),
 };

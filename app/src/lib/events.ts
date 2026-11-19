@@ -17,6 +17,7 @@ export type CalEvent = {
   color: string; // #RRGGBB
   memo: string;
   alarmMinutes?: number | null; // minutes before the start (종일: before 9:00 of the first day); null = none
+  important?: boolean; // 중요한 날 (강조): its bar and days glow on the calendars
 };
 
 export const DAY_MINUTES = 24 * 60;
@@ -43,7 +44,21 @@ export function eventsOn(events: CalEvent[], day: Day): CalEvent[] {
 
 /** Bars for the month calendar (the same shape the 긴 할 일 bars had). Events have no check, so never "done". */
 export const eventBars = (events: CalEvent[]): SpanBar[] =>
-  events.map((e) => ({ id: e.id, start: e.startDate, end: e.endDate, color: e.color, done: false, title: e.title }));
+  events.map((e) => ({ id: e.id, start: e.startDate, end: e.endDate, color: e.color, done: false, title: e.title, important: !!e.important }));
+
+/**
+ * 중요한 날: the days with an important to-do (not deleted) or within an important event, for the 할 일 캘린더's glow.
+ * `from`..`to` limits the event days drawn out (a month and its neighbours).
+ */
+export function importantDays(todos: { date: Day | null; isImportant?: boolean; isSkipped?: boolean }[], events: CalEvent[], from: Day, to: Day): Set<Day> {
+  const out = new Set<Day>();
+  for (const t of todos) if (t.isImportant && t.date && !t.isSkipped) out.add(t.date);
+  for (const e of events) {
+    if (!e.important || e.endDate < from || e.startDate > to) continue;
+    for (let d = e.startDate < from ? from : e.startDate; d <= e.endDate && d <= to; d = addDays(d, 1)) out.add(d);
+  }
+  return out;
+}
 
 export type Block = { e: CalEvent; top: number; bottom: number; col: number; cols: number };
 

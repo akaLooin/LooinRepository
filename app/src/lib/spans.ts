@@ -25,7 +25,7 @@ export function spanLabel(t: Dated, thisYear: number) {
   return `${f(t.date)} – ${f(t.endDate)}`;
 }
 
-export type SpanBar = { id: string; start: Day; end: Day; color: string; done: boolean; title: string };
+export type SpanBar = { id: string; start: Day; end: Day; color: string; done: boolean; title: string; important?: boolean };
 export type RowSegment = SpanBar & { lane: number; from: number; to: number; opensLeft: boolean; opensRight: boolean };
 
 /**

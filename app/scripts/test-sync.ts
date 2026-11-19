@@ -7,12 +7,14 @@ const USER = "11111111-1111-1111-1111-111111111111";
 let clock = Date.parse("2026-11-03T00:00:00Z");
 const now = () => new Date((clock += 1000)).toISOString();
 
-function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string, unknown>>>; noEventsTable: boolean } {
+function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string, unknown>>>; noEventsTable: boolean; noImportantColumn: boolean } {
   const rows: Record<string, Map<string, Record<string, unknown>>> = { profiles: new Map(), categories: new Map(), routines: new Map(), todos: new Map(), ddays: new Map(), diaries: new Map(), reminders: new Map(), events: new Map() };
   let noEvents = false; // a server where SQL 20261118000000 has not been run
+  let noImportant = false; // ... or 20261120000000
   return {
     rows,
     set noEventsTable(v: boolean) { noEvents = v; },
+    set noImportantColumn(v: boolean) { noImportant = v; },
     async pull(since) {
       const tables: Record<string, Record<string, unknown>[]> = {};
       for (const [t, m] of Object.entries(rows)) tables[t] = [...m.values()].filter((r) => !since || (r.updated_at as string) > since);
@@ -20,6 +22,7 @@ function fakeServer(): Remote & { rows: Record<string, Map<string, Record<string
     },
     async upsert(t, list) {
       if (t === "events" && noEvents) return { error: "Could not find the table 'public.events' in the schema cache" };
+      if (t === "todos" && noImportant && list.some((r) => "is_important" in r)) return { error: "Could not find the 'is_important' column of 'todos' in the schema cache" };
       for (const r of list) {
         if (t === "todos") {
           const cat = rows.categories.get(r.category_id as string);
@@ -122,5 +125,18 @@ const t = async (name: string, fn: () => Promise<void>) => { await fn(); console
     assert.equal(Object.keys(A.outbox.upsert.events).length, 0);
     await sync(B, server);
     assert.deepEqual(B.db.events, [e]);
+  });
+  await t("a to-do marked 중요 waits until the server has the column, then goes", async () => {
+    edit(A, (d) => ({ ...d, categories: [...d.categories, { ...cat, id: "c9" }], todos: [...d.todos, { ...todo, id: "t9", categoryId: "c9" }] }));
+    await sync(A, server);
+    server.noImportantColumn = true;
+    edit(A, (d) => ({ ...d, todos: d.todos.map((x) => (x.id === "t9" ? { ...x, isImportant: true } : x)) }));
+    assert.deepEqual(await sync(A, server), [], "not reported as refused");
+    assert.ok(A.outbox.upsert.todos.t9, "the important one waits");
+    server.noImportantColumn = false;
+    await sync(A, server);
+    assert.equal(server.rows.todos.get("t9")?.is_important, true);
+    await sync(B, server);
+    assert.equal(B.db.todos.find((x) => x.id === "t9")?.isImportant, true);
   });
 })().catch((e) => { console.error(e); process.exit(1); });

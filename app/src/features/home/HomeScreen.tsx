@@ -6,7 +6,7 @@ import {
   AppText, Archive, BottomSheet, CollapseChevron, Button, Calendar, CalendarHeader, CategoryPill, Chip, ConfirmDialog, IconChip, MoodMark, ProfileHeader, ReorderableList, Search, TextAlignStart, TodoRow, useToast, Users, DragScrollView,
 } from "../../components";
 import {
-  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, selectEvents, todosForDay, toggleTodo,
+  addRoutineTodo, addTodo, arrangeTodos, deleteDiary, isDDayOn, copyTodos, ddayLabel, deleteTodos, EndedCategoryError, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, selectEvents, toggleImportant, todosForDay, toggleTodo,
   updateTodo, useDB,
 } from "../../data/store";
 import { arrangeByHeaders } from "../../lib/arrange";
@@ -28,7 +28,7 @@ import { setPref } from "../../data/prefs";
 import { smoothLayout } from "../../lib/motion";
 import { TodoSheets } from "./TodoSheets";
 import { takeHomeDay } from "../../lib/todoCalendar";
-import { eventBars } from "../../lib/events";
+import { eventBars, importantDays } from "../../lib/events";
 import { FriendHome, ReactionLine } from "../social/FriendHome";
 import { CrewHome } from "../crew/CrewHome";
 import { useMyCrews } from "../../data/crews";
@@ -238,6 +238,7 @@ export function HomeScreen() {
         state={(d) => dayState(todosOn(d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
         spans={spanBars}
         kind={prefs.calendarKind}
+        importantOn={(d) => important.has(d)}
         ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))}
         rows={rows}
         weekStartsSunday={prefs.weekStartsSunday}
@@ -251,6 +252,8 @@ export function HomeScreen() {
   const diary = diaries.find((x) => x.date === selected);
   // 일정 on the calendar: thin lines under the dates (할 일 캘린더) or labelled bars (일정 캘린더)
   const spanBars = useMemo(() => eventBars(events), [events]);
+  // 중요한 날: days with an important to-do or event, for this month and the ones beside it
+  const important = useMemo(() => importantDays(db.todos, events, addDays(`${monthKey}-01`, -45), addDays(`${monthKey}-01`, 75)), [db.todos, events, monthKey]);
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
   const calCats = categories.filter((x) => calIds.has(x.id));
   const firstDDay = ddays.find((d) => !d.isPrivate) ?? ddays[0];
@@ -422,6 +425,8 @@ export function HomeScreen() {
                   done={t.isDone}
                   color={cat.color}
                   onToggle={() => (selecting ? toggleSelect(t.id) : toggleTodo(t.id))}
+                  important={t.isImportant}
+                  onImportant={selecting ? undefined : () => notice(toggleImportant(t.id) ? "중요한 날로 표시했어요" : "중요한 날 표시를 풀었어요")}
                   onPress={() => { if (pager?.justSwiped()) return; if (selecting) toggleSelect(t.id); else openSheet(t.id); }}
                   onMemoPress={selecting ? undefined : () => openSheet(t.id, "memo")}
                   onAlarmPress={selecting ? undefined : () => openSheet(t.id, "alarm")}

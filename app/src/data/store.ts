@@ -378,7 +378,7 @@ export function copyTodo(id: string, date: Day) {
   const t = db.todos.find((x) => x.id === id);
   if (!t) return;
   const same = db.todos.filter((x) => x.categoryId === t.categoryId && x.date === date);
-  const copy: Todo = { ...t, id: newId(), ...moveSpan(t, date), isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined,
+  const copy: Todo = { ...t, id: newId(), ...moveSpan(t, date), isDone: false, doneAt: undefined, isImportant: undefined, timerSeconds: 0, timerStartedAt: undefined,
     photoUri: undefined, routineId: undefined, routineDate: undefined, sortOrder: nextOrder(same), createdAt: now() };
   set({ ...db, todos: [...db.todos, copy] });
 }
@@ -475,7 +475,7 @@ export function copyTodos(ids: string[], date: Day) {
   const real = ids.map((id) => materialize(id));
   let order = nextOrder(db.todos.filter((x) => x.date === date));
   const copies: Todo[] = db.todos.filter((t) => real.includes(t.id)).map((t) => ({
-    ...t, id: newId(), ...moveSpan(t, date), isDone: false, doneAt: undefined, timerSeconds: 0, timerStartedAt: undefined, photoUri: undefined,
+    ...t, id: newId(), ...moveSpan(t, date), isDone: false, doneAt: undefined, isImportant: undefined, timerSeconds: 0, timerStartedAt: undefined, photoUri: undefined,
     routineId: undefined, routineDate: undefined, isSkipped: undefined, sortOrder: order++, createdAt: now(),
   }));
   set({ ...db, todos: [...db.todos, ...copies] });
@@ -516,6 +516,23 @@ export function saveEvent(input: Omit<CalEvent, "id"> & { id?: string }): string
   const id = newId();
   set({ ...db, events: [...db.events, clean({ ...input, id })] });
   return id;
+}
+
+/** 중요한 날: long-pressing a to-do's check turns it on and off (a routine day becomes a real row first). */
+export function toggleImportant(id: string): boolean {
+  id = materialize(id);
+  const t = db.todos.find((x) => x.id === id);
+  if (!t) return false;
+  updateTodo(id, { isImportant: !t.isImportant });
+  return !t.isImportant;
+}
+
+/** 강조: an event's glow on and off. */
+export function toggleEventImportant(id: string): boolean {
+  const e = db.events.find((x) => x.id === id);
+  if (!e) return false;
+  set({ ...db, events: db.events.map((x) => (x.id === id ? { ...x, important: !x.important } : x)) });
+  return !e.important;
 }
 
 export function moveEvent(id: string, start: Day) {

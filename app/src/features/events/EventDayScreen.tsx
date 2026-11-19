@@ -1,9 +1,9 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Trash2, useToast } from "../../components";
+import { Animated, BackHandler, PanResponder, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
+import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, usePulse, useToast } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
-import { deleteEvent, saveEvent, useDB } from "../../data/store";
+import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
 import { addDays, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, DAY_MINUTES, eventsOn, eventTimeLabel, fromMinutes, inBand, slotAt, toMinutes, type Block, type CalEvent } from "../../lib/events";
 import { moveBlock, resizeBlock } from "../../lib/eventDrag";
@@ -148,7 +148,7 @@ export function EventDayScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, alignItems: "center" }} accessibilityLabel={`${dayLabel(d)} 종일 일정`}>
             {band.map((e) => (
               <Pressable key={e.id} onPress={() => setOpen(e.id)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, 0)}`}
-                style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
+                style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5, borderWidth: e.important ? 2 : 0, borderColor: c.neon }}>
                 <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
               </Pressable>
             ))}
@@ -184,6 +184,7 @@ export function EventDayScreen() {
                 onDrop={(top, bottom) => commit(b.e, top, bottom)}
                 onCancel={() => { setDrag(null); setLocked(false); }}
                 onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
+                onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
                 onDelete={() => { setSelected(null); deleteEvent(b.e.id); notice("일정을 지웠어요"); }} />
             ))}
           </View>
@@ -230,12 +231,13 @@ export function EventDayScreen() {
  * round handles in the middle of its top and bottom edges stretch it (5-minute steps); a held event moves by
  * quarter hours.
  */
-function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onDelete }: {
+function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onImportant, onDelete }: {
   b: Block; hour: number; drag: Drag; selected: boolean; scale: number; use24h: boolean;
   onTap: () => void; onHold: () => void; onDrag: (top: number, bottom: number) => void; onDrop: (top: number, bottom: number) => void; onCancel: () => void;
-  onEdit: () => void; onDelete: () => void;
+  onEdit: () => void; onImportant: () => void; onDelete: () => void;
 }) {
   const { c } = useTheme();
+  const pulse = usePulse();
   const top = drag?.top ?? b.top, bottom = drag?.bottom ?? b.bottom;
   const start = toMinutes(b.e.startTime ?? "00:00"), end = toMinutes(b.e.endTime ?? "00:00");
   // the latest values for the gesture handlers, which are made once
@@ -297,7 +299,12 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
   return (
     <View style={{ position: "absolute", top: px(top) + 1, height, left: selected || drag ? 0 : `${(b.col / b.cols) * 100}%`, width: selected || drag ? "100%" : `${100 / b.cols}%`,
       paddingRight: 2, zIndex: selected || drag ? 5 : 1 }}>
-      <View {...body.panHandlers} accessible accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }}
+      {b.e.important ? (
+        // 강조: the neon frame, breathing
+        <Animated.View pointerEvents="none" style={{ position: "absolute", top: -3, bottom: -3, left: -3, right: -1, borderRadius: tokens.radius.sm + 3, borderWidth: 2, borderColor: c.neon,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) }} />
+      ) : null}
+      <View {...body.panHandlers} accessible accessibilityRole="button" accessibilityLabel={b.e.important ? `${label}, 강조` : label} accessibilityState={{ selected }}
         accessibilityHint={selected ? "다시 누르면 선택 해제, 길게 눌러 옮기기" : "눌러서 선택, 길게 눌러 옮기기"}
         style={{ flex: 1, borderRadius: tokens.radius.sm, backgroundColor: b.e.color, paddingHorizontal: 6, paddingVertical: 3, overflow: "hidden",
           borderWidth: selected ? 2 : 0, borderColor: c.text, opacity: drag ? 0.85 : 1 }}>
@@ -319,6 +326,11 @@ function EventBlock({ b, hour: H, drag, selected, scale, use24h, onTap, onHold, 
               <Pressable onPress={onEdit} accessibilityRole="button" accessibilityLabel="일정 수정"
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised }}>
                 <Pencil size={14} color={c.menuEdit} /><AppText variant="small" weight={600}>수정</AppText>
+              </Pressable>
+              <Pressable onPress={onImportant} accessibilityRole="button" accessibilityLabel={b.e.important ? "강조 해제" : "일정 강조"}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised,
+                  borderWidth: b.e.important ? 1 : 0, borderColor: c.neon }}>
+                <Sparkles size={14} color={c.neon} /><AppText variant="small" weight={600}>{b.e.important ? "강조 해제" : "강조"}</AppText>
               </Pressable>
               <Pressable onPress={onDelete} accessibilityRole="button" accessibilityLabel="일정 삭제"
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceRaised }}>

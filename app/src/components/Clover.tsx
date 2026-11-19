@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Pressable, View } from "react-native";
+import { Animated, Easing, Pressable, View } from "react-native";
 import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DESIGN_TRIAL } from "../lib/variant";
@@ -93,16 +93,56 @@ function Tick({ size, color }: { size: number; color: string }) {
   );
 }
 
+/** One slow pulse shared by every glowing day, so they breathe together (and one animation runs, not dozens). */
+let pulse: Animated.Value | null = null;
+export function usePulse() {
+  if (!pulse) {
+    pulse = new Animated.Value(0);
+    Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ])).start();
+  }
+  return pulse;
+}
+
+/** 중요한 날: a neon outline around the clover or star that slowly brightens and fades (user's feature). */
+function Glow({ size, bleed }: { size: number; bleed: number }) {
+  const { c } = useTheme();
+  const p = usePulse();
+  const m = size * 0.22 + bleed; // room for the soft outer line
+  const outline = (w: number, o: number) => (DESIGN_TRIAL
+    ? <Path d={starPath(size)} fill="none" stroke={c.neon} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
+    : <G fill="none" stroke={c.neon} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
+  return (
+    <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity: p.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) }}>
+      <Svg width={size + 2 * m} height={size + 2 * m}>
+        <G x={m} y={m}>
+          {outline(size * 0.3, 0.18)}
+          {outline(size * 0.17, 0.4)}
+          {outline(size * 0.08, 1)}
+        </G>
+      </Svg>
+    </Animated.View>
+  );
+}
+
 export function Clover({
   state,
   size = tokens.size.cloverCalendar,
   onPress,
+  onLongPress,
   label,
+  glow,
 }: {
   state: CloverState;
   size?: number;
   onPress?: () => void;
+  /** to-do rows: a long press on the check marks the to-do as important (중요한 날) */
+  onLongPress?: () => void;
   label?: string;
+  /** 중요한 날: the neon outline */
+  glow?: boolean;
 }) {
   const { c } = useTheme();
   const { checkColor, cloverNumberColor } = usePrefs();
@@ -192,6 +232,7 @@ export function Clover({
 
   const shape = (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      {glow ? <Glow size={size} bleed={bleed} /> : null}
       <Svg width={size + 2 * bleed} height={size + 2 * bleed} pointerEvents="none" style={{ position: "absolute", left: -bleed, top: -bleed }}>
         <G x={bleed} y={bleed}>{body}</G>
       </Svg>
@@ -208,11 +249,14 @@ export function Clover({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={450}
       hitSlop={10}
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
       aria-checked={checked}
       accessibilityLabel={label}
+      accessibilityHint={onLongPress ? "길게 누르면 중요한 날 표시를 켜고 꺼요" : undefined}
       // no press effect at all: the original just flips (user's check, 2026-11-07)
     >
       {shape}
