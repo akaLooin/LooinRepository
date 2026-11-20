@@ -19,8 +19,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 보관함(날짜 없는 할 일): 왼쪽 위 버튼 또는 캘린더 아래에서 오른쪽으로 스와이프
 - 사진: 할 일 인증·프로필·일기(4장), 1600px로 줄여 Storage 업로드
 - 로그인(이메일 + 비밀번호), 오프라인 우선 동기화(AsyncStorage + Supabase), 계정 삭제 함수
-- 화면 폭 맞춤 축소 + 수동 크기 조절
-- 설정 동기화: 화면 설정 10개는 계정(user_settings), 나머지는 기기에만
+- 화면 폭 맞춤 축소, 설정 동기화(화면 설정 10개 계정, 나머지 기기)
 
 ## 이용자 환경 (확인된 것)
 - Windows PC, PowerShell → `npm.cmd`, `npx.cmd` 사용. 저장소 위치 `C:\Users\User\LooinRepository`
