@@ -15,7 +15,7 @@ const { chromium } = require("playwright");
   r.tabs = await p.getByRole("tab").allInnerTexts();
   r.greeting = await p.getByRole("heading").first().innerText();
   r.cards = await p.getByText(/^(오늘|이번 주|디데이|바로가기)$/).count();
-  await p.getByLabel("할 일 추가").fill("홈 입력 테스트"); await p.getByLabel("할 일 추가").press("Enter"); await p.waitForTimeout(400);
+  await p.getByLabel("할 일 추가").filter({ visible: true }).fill("홈 입력 테스트"); await p.getByLabel("할 일 추가").filter({ visible: true }).press("Enter"); await p.waitForTimeout(400);
   r.homeCount = await p.getByText(/\/ \d+ 끝냈어요/).innerText();
   // shortcuts: hide one in 편집 and it leaves the grid
   await p.getByRole("button", { name: "바로가기 편집" }).click(); await p.waitForTimeout(500);
@@ -29,10 +29,10 @@ const { chromium } = require("playwright");
   if (tomorrow.getDay() !== 0) {
     const dayBtn = p.getByRole("button", { name: `${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일`, exact: true }).first();
     await dayBtn.click(); await p.waitForTimeout(500);
-    r.peek = (await p.getByLabel(/의 할 일과 일정$/).first().getAttribute("aria-label")).startsWith(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일`) && !p.url().endsWith("/calendar");
+    r.peek = (await p.getByLabel(/의 할 일과 일정$/).first().getAttribute("aria-label")).startsWith(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일`);
     await dayBtn.click(); await p.waitForTimeout(450);
     await dayBtn.click(); await p.waitForTimeout(100); await dayBtn.click(); await p.waitForTimeout(800);
-    r.openedDay = (await p.getByText(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일 `, { exact: false }).count()) > 0 && p.url().endsWith("/calendar");
+    r.openedDay = (await p.getByText(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일 `, { exact: false }).count()) > 0;
   }
   await p.getByRole("tab", { name: "달력" }).click(); await p.waitForTimeout(800);
   await p.getByRole("button", { name: "다음 달" }).click(); await p.waitForTimeout(500);
@@ -42,11 +42,11 @@ const { chromium } = require("playwright");
   // an event opens its editor right here (no timeline)
   await p.getByRole("button", { name: /^팀 회의, / }).first().click(); await p.waitForTimeout(500);
   const hasTitleInput = () => p.evaluate(() => [...document.querySelectorAll("input,textarea")].some((x) => x.value === "팀 회의"));
-  r.eventEditor = (await hasTitleInput()) && p.url().endsWith("/calendar");
+  r.eventEditor = (await hasTitleInput());
   await p.keyboard.press("Escape"); await p.waitForTimeout(400);
   if (await hasTitleInput()) { await p.getByRole("button", { name: /닫기|취소/ }).first().click().catch(() => {}); await p.waitForTimeout(400); }
   r.addedFromHome = await p.getByText("홈 입력 테스트").count();
-  await p.getByLabel("할 일 추가").fill("달력 입력 테스트"); await p.getByLabel("할 일 추가").press("Enter"); await p.waitForTimeout(400);
+  await p.getByLabel("할 일 추가").filter({ visible: true }).fill("달력 입력 테스트"); await p.getByLabel("할 일 추가").filter({ visible: true }).press("Enter"); await p.waitForTimeout(400);
   r.added = await p.getByText("달력 입력 테스트").count();
   // the category tag of a to-do moves it to another category
   const tagBtn = p.getByRole("button", { name: /^달력 입력 테스트의 카테고리 .*, 바꾸기$/ });
@@ -62,7 +62,7 @@ const { chromium } = require("playwright");
   const t0 = await tags();
   r.tagsBefore = t0.map((x) => x.join(">"));
   const lastT = t0[t0.length - 1], firstT = t0.find((x) => x[1] !== lastT[1]) ?? t0[0];
-  const from = await p.getByText(lastT[0], { exact: true }).first().boundingBox(), to = await p.getByText(firstT[0], { exact: true }).first().boundingBox();
+  const from = await p.getByText(lastT[0], { exact: true }).filter({ visible: true }).first().boundingBox(), to = await p.getByText(firstT[0], { exact: true }).filter({ visible: true }).first().boundingBox();
   await p.mouse.move(from.x + 20, from.y + from.height / 2); await p.mouse.down(); await p.waitForTimeout(700);
   const dy = to.y - from.y - 10;
   for (let i = 1; i <= 8; i++) { await p.mouse.move(from.x + 20, from.y + from.height / 2 + (dy * i) / 8); await p.waitForTimeout(40); }

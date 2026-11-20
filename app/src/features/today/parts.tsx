@@ -5,6 +5,7 @@ import { setPref, usePrefs } from "../../data/prefs";
 import { addTodo, EndedCategoryError, selectActiveCategories, todosForDay, useDB } from "../../data/store";
 import { addDays, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { importantDays } from "../../lib/events";
+import { isHoliday } from "../../lib/holidays";
 import { fontFamily, tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { dayState } from "../home/dayState";
 
@@ -44,10 +45,11 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
         const sel = d === day, wd = weekday(d);
         const list = todosForDay(db, d);
         return (
-          <Pressable key={d} onPress={() => tap(d)} accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityHint={onDouble ? "두 번 누르면 달력에서 열기" : undefined} accessibilityLabel={`${parseDay(d).m}월 ${parseDay(d).d}일${lit.has(d) ? ", 중요한 날" : ""}`}
+          <Pressable key={d} onPress={() => tap(d)} accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityHint={onDouble ? "두 번 누르면 달력에서 열기" : undefined} accessibilityLabel={`${parseDay(d).m}월 ${parseDay(d).d}일${isHoliday(d) ? ", 공휴일" : ""}${lit.has(d) ? ", 중요한 날" : ""}`}
             style={{ flex: 1, alignItems: "center", gap: 6, paddingVertical: 8, borderRadius: 14, backgroundColor: sel ? c.surfaceStrong : "transparent" }}>
-            <AppText variant="small" weight={600} color={wd === 0 ? "sunday" : wd === 6 ? "saturday" : "textMuted"}>{WEEKDAY_LABELS[wd]}</AppText>
-            <AppText variant={big ? "bodyLg" : "body"} weight={700} color={d === now && !sel ? "accent" : "text"}>{String(parseDay(d).d)}</AppText>
+            <AppText variant="small" weight={600} color={wd === 0 || isHoliday(d) ? "sunday" : wd === 6 ? "saturday" : "textMuted"}>{WEEKDAY_LABELS[wd]}</AppText>
+            {/* today stays green even when picked; Sundays and 공휴일 red, Saturdays blue (user) */}
+            <AppText variant={big ? "bodyLg" : "body"} weight={700} color={d === now ? "accent" : wd === 0 || isHoliday(d) ? "sunday" : wd === 6 ? "saturday" : "text"}>{String(parseDay(d).d)}</AppText>
             <Clover size={big ? 30 : 16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} />
           </Pressable>
         );

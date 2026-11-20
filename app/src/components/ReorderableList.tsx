@@ -1,10 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, PanResponder, Platform, StyleSheet, View } from "react-native";
 import { tokens, useTheme } from "../theme";
+import { DESIGN_TRIAL } from "../lib/variant";
 import { useScrollLock } from "./DragScrollView";
 
-/** Measured on the original (screen recording, 30 fps): the row lifts after 0.5 s, neighbours slide in ~0.15 s. */
-const HOLD_MS = 500;
+/**
+ * Measured on the original (screen recording, 30 fps): the row lifts after 0.5 s, neighbours slide in ~0.15 s.
+ * The design app lifts sooner (0.3 s) and shows a soft white glow spreading from the finger instead of the grey band
+ * (user, 2026-11-21: "반응이 느리다", "누른 자리로부터 퍼지듯").
+ */
+const HOLD_MS = DESIGN_TRIAL ? 300 : 500;
+const RIPPLE = DESIGN_TRIAL;
+const RIPPLE_MS = 520;
 const SLIDE_MS = 150;
 const BAND_MS = 120;
 // On the phone every movement runs on the UI thread, so a busy JavaScript thread (saving, redrawing) cannot stall it.
@@ -22,6 +29,8 @@ type Props<T> = {
   renderItem: (item: T, drag: DragHandle, dragging: boolean) => React.ReactNode;
   /** `moved` is the row that was held (or stepped by a screen reader). */
   onReorder: (keys: string[], moved: string) => void;
+  /** While a row is held: the order it would make if let go now (`moved` = the held row); null when let go. */
+  onTargetChange?: (keys: string[], moved: string | null) => void;
   /** Tell the parent ScrollView to stop scrolling while a row is held. */
   onDragging?: (dragging: boolean) => void;
   gap?: number;
@@ -43,7 +52,7 @@ type Props<T> = {
  */
 const noDrag: DragHandle = { onLongPress: () => {}, delayLongPress: HOLD_MS };
 
-export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onDragging, gap = 0, fixed, drop }: Props<T>) {
+export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorder, onTargetChange, onDragging, gap = 0, fixed, drop }: Props<T>) {
   const { c } = useTheme();
   const lock = useScrollLock();
   const keys = items.map(keyOf);
@@ -61,12 +70,30 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
   const lastDy = useRef(0);
   const [target, setTarget] = useState(0);
   const band = useRef(new Animated.Value(0)).current; // the grey band under the held row fades in and out
+  const ripple = useRef(new Animated.Value(0)).current; // design app: 0 → 1 spreads and fades the glow
+  const touch = useRef<{ key: string; x: number; y: number } | null>(null); // where the finger went down, in the row
+  const [rippleAt, setRippleAt] = useState<{ key: string; x: number; y: number; w: number; h: number } | null>(null);
+  const widths = useRef<Record<string, number>>({});
+  const targetCb = useRef(onTargetChange);
+  targetCb.current = onTargetChange;
+  // the touch handler is made once, so it reads the parent's latest callbacks through these (it used to keep the
+  // first ones: a to-do added after the list appeared was then unknown to the drop, and its category did not change)
+  const latest = useRef({ onReorder, onDragging, lock });
+  latest.current = { onReorder, onDragging, lock };
+  const preview = (to: number) => {
+    const { active: a, from, keys: ks } = state.current;
+    if (a === null || !targetCb.current) return;
+    const next = ks.filter((k) => k !== a);
+    next.splice(to, 0, a);
+    targetCb.current(next, a);
+  };
   const state = useRef({ active: null as string | null, from: 0, target: 0, keys, over: null as string | null });
   state.current.keys = keys;
   const [overDrop, setOverDrop] = useState(false); // the held row is over a drop target: see-through, so the date shows
   const dropRef = useRef(drop);
   dropRef.current = drop;
 
+  const rowRefs = useRef<Record<string, RowRef | null>>({});
   const rowH = (k: string) => (heights.current[k] ?? 56) + gap;
   const clearAll = () => shifts.forEach((v) => v.setValue(0));
   /** Runs the pending glide: the dropped row starts where the finger left it and slides into its slot. */
@@ -84,9 +111,10 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
     if (a === null) return;
     state.current.active = null;
     state.current.over = null;
-    onDragging?.(false);
-    lock?.(false);
+    latest.current.onDragging?.(false);
+    latest.current.lock?.(false);
     setOverDrop(false);
+    targetCb.current?.([], null);
     if (over !== null && dropRef.current) {
       // dropped on a target outside the list: the row leaves this list (or glides home if the move is refused)
       dropRef.current.onHover(null);
@@ -111,7 +139,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
       next.splice(to, 0, a);
       glide.current = { key: a, from: lastDy.current - offset }; // where the row is now, measured from its new slot
       resetAfterRender.current = true;
-      onReorder(next, a);
+      latest.current.onReorder(next, a);
       // if the save did not change the order on screen (e.g. refused), glide back from where it is
       requestAnimationFrame(() => { if (glide.current?.key === a) runGlide(); });
     } else {
@@ -154,6 +182,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
           if (to !== state.current.target) {
             state.current.target = to;
             setTarget(to);
+            preview(to);
           }
         },
         onPanResponderRelease: finish,
@@ -172,7 +201,15 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
     band.setValue(0);
     setActive(key);
     setTarget(from);
-    slide(band, 1, undefined, BAND_MS);
+    preview(from);
+    if (RIPPLE) {
+      const t = touch.current?.key === key ? touch.current : null;
+      const w = widths.current[key] ?? 360, h = heights.current[key] ?? 56;
+      setRippleAt({ key, x: t?.x ?? w / 2, y: t?.y ?? h / 2, w, h });
+      ripple.setValue(0);
+      Animated.timing(ripple, { toValue: 1, duration: RIPPLE_MS, easing: Easing.out(Easing.cubic), useNativeDriver: native })
+        .start(() => setRippleAt((r) => (r?.key === key ? null : r)));
+    } else slide(band, 1, undefined, BAND_MS);
     onDragging?.(true);
     lock?.(true);
   };
@@ -221,7 +258,16 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
         return (
           <Animated.View
             key={k}
-            onLayout={(e) => { heights.current[k] = e.nativeEvent.layout.height; }}
+            onLayout={(e) => { heights.current[k] = e.nativeEvent.layout.height; widths.current[k] = e.nativeEvent.layout.width; }}
+            // where the finger lands inside the row (offsetX/Y on web), so the glow can start there
+            onTouchStart={RIPPLE ? (e) => {
+              const n = e.nativeEvent as unknown as { locationX?: number; locationY?: number; pageX: number; pageY: number };
+              touch.current = { key: k, x: n.locationX ?? 0, y: n.locationY ?? 0 };
+              rowRefs.current[k]?.measureInWindow?.((x: number, y: number) => {
+                if (touch.current?.key === k && typeof x === "number") touch.current = { key: k, x: n.pageX - x, y: n.pageY - y };
+              });
+            } : undefined}
+            ref={(r: unknown) => { rowRefs.current[k] = r as RowRef | null; }}
             accessibilityActions={still ? undefined : [{ name: "up", label: "위로 이동" }, { name: "down", label: "아래로 이동" }]}
             onAccessibilityAction={still ? undefined : (e) => step(k, e.nativeEvent.actionName === "up" ? -1 : 1)}
             accessibilityHint={still ? undefined : `${labelOf(item)}: 길게 눌러 끌면 순서를 바꿀 수 있어요`}
@@ -232,13 +278,43 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
               transform: [{ translateY: shiftOf(k) }],
             }}
           >
-            {banded ? (
+            {banded && !RIPPLE ? (
               <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: tokens.radius.sm, backgroundColor: c.surfaceRow, opacity: band }]} />
             ) : null}
+            {rippleAt?.key === k ? <Ripple at={rippleAt} progress={ripple} /> : null}
             {renderItem(item, still ? noDrag : { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}
           </Animated.View>
         );
       })}
+    </View>
+  );
+}
+
+type RowRef = { measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void };
+
+/**
+ * A soft white glow that spreads from the finger across the whole row, edge to edge of the screen, then fades
+ * (design app). A radial gradient grows from small to past the row's far corner while its opacity rises and falls.
+ */
+function Ripple({ at, progress }: { at: { x: number; y: number; w: number; h: number }; progress: Animated.Value }) {
+  const { c } = useTheme();
+  const G = tokens.layout.gutter;
+  // white on the dark theme; on the light theme the same glow in the text colour, or it would not show
+  const hex = c.text.replace("#", "");
+  const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(",");
+  // the glow reaches past the row's sides to the screen edges (user: "양쪽 끝에 닿지 않는다")
+  const x = at.x + G, w = at.w + G * 2;
+  const r = Math.max(Math.hypot(x, at.y), Math.hypot(w - x, at.y), Math.hypot(x, at.h - at.y), Math.hypot(w - x, at.h - at.y));
+  const size = r * 2;
+  return (
+    <View pointerEvents="none" style={{ position: "absolute", top: 0, bottom: 0, left: -G, right: -G, overflow: "hidden" }}>
+      <Animated.View style={{
+        position: "absolute", left: x - r, top: at.y - r, width: size, height: size, borderRadius: r,
+        backgroundImage: `radial-gradient(circle at center, rgba(${rgb},0.26) 0%, rgba(${rgb},0.12) 45%, rgba(${rgb},0) 72%)`,
+        // spreads fast and stays bright until it has reached both edges, then fades
+        opacity: progress.interpolate({ inputRange: [0, 0.12, 0.55, 1], outputRange: [0, 1, 0.85, 0] }),
+        transform: [{ scale: progress.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0.2, 1, 1.1] }) }],
+      } as never} />
     </View>
   );
 }

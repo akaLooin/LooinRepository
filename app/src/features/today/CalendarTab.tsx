@@ -45,6 +45,17 @@ export function CalendarTab() {
   const monthKey = `${view.y}-${String(view.m).padStart(2, "0")}`;
   const lit = useMemo(() => importantDays(db.todos, [], `${monthKey}-01`, `${monthKey}-31`), [db.todos, monthKey]);
 
+  // each day's star is worked out once per change of the data, not again on every tap or swipe (speed, user)
+  const calKey = calCats.map((x) => x.id + x.color).join();
+  const starOf = useMemo(() => {
+    const cache = new Map<Day, ReturnType<typeof dayState>>();
+    return (d: Day) => {
+      let v = cache.get(d);
+      if (!v) { v = dayState(todosForDay(db, d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount); cache.set(d, v); }
+      return v;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db, calKey, prefs.calendarCategoryCount]);
   const show = (d: Day) => { setSelected(d); setView({ y: parseDay(d).y, m: parseDay(d).m }); };
   // a day picked elsewhere (홈, search, 할 일 캘린더) opens here
   useFocusEffect(useCallback(() => { const d = takeHomeDay(); if (d) show(d); }, []));
@@ -91,7 +102,7 @@ export function CalendarTab() {
                 setSelected(d);
                 if (eventMode) router.push(`/events/${d}` as never);
               }}
-              state={(d) => dayState(todosForDay(db, d).filter((t) => calIds.has(t.categoryId)), calCats, prefs.calendarCategoryCount)}
+              state={starOf}
               spans={bars} kind={prefs.calendarKind} importantOn={(d) => lit.has(d)} ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))} />
           );
         }} />

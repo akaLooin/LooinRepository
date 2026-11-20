@@ -17,3 +17,10 @@ assert.equal(streakOf(days, "2026-11-21"), 3); // nothing yet today: counts up t
 assert.equal(streakOf(days, "2026-11-22"), 0);
 assert.equal(streakOf(new Set(), "2026-11-20"), 0);
 console.log("ok 연속 기록: days in a row ending today or yesterday");
+
+import { isHoliday } from "../src/lib/holidays";
+assert.ok(isHoliday("2026-01-01") && isHoliday("2026-12-25") && isHoliday("2027-10-09"), "fixed holidays every year");
+assert.ok(isHoliday("2026-02-17") && isHoliday("2026-09-25") && isHoliday("2026-05-24"), "설날 · 추석 · 부처님오신날 2026");
+assert.ok(isHoliday("2026-03-02") && isHoliday("2026-08-17"), "대체공휴일 2026");
+assert.ok(!isHoliday("2026-11-20") && !isHoliday("2026-02-19"), "ordinary days");
+console.log("ok 공휴일: fixed, lunar and substitute days");

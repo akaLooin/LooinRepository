@@ -38,6 +38,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
   const [editing, setEditing] = useState<EventDraft | null>(null);
   const [recat, setRecat] = useState<{ id: string; current: string } | null>(null);
+  const [preview, setPreview] = useState<{ id: string; categoryId: string } | null>(null);
   const catOf = useMemo(() => new Map(categories.map((x) => [x.id, x])), [categories]);
   const catOrder = useMemo(() => new Map(categories.map((x, i) => [x.id, i])), [categories]);
 
@@ -52,14 +53,16 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     ...dayBlocks(db.events, day).map((b) => ({ kind: "event" as const, at: b.top, e: b.e, from: b.top, to: b.bottom })),
     ...todos.filter((t) => timeOf(t) !== null).map((t) => ({ kind: "todo" as const, at: timeOf(t)!, t })),
   ].sort((a, b) => a.at - b.at);
+  // grouped by category first (user), done ones last inside their category; this order is what dragging works on
   const anytime = todos.filter((t) => timeOf(t) === null)
-    .sort((a, b) => (prefs.todoSort === "done_last" ? Number(a.isDone) - Number(b.isDone) : 0)
-      || (catOrder.get(a.categoryId) ?? 0) - (catOrder.get(b.categoryId) ?? 0) || a.sortOrder - b.sortOrder);
+    .sort((a, b) => (catOrder.get(a.categoryId) ?? 0) - (catOrder.get(b.categoryId) ?? 0)
+      || (prefs.todoSort === "done_last" ? Number(a.isDone) - Number(b.isDone) : 0) || a.sortOrder - b.sortOrder);
   const pending = categories.filter((x) => !x.endedAt).flatMap((cat) => manualRoutinesOn(db, day, cat.id).map((r) => ({ r, cat })));
   const parts: [string, (m: number) => boolean][] = [["오전", (m) => m < 12 * 60], ["오후", (m) => m >= 12 * 60 && m < 18 * 60], ["저녁", (m) => m >= 18 * 60]];
 
   const tag = (t: Todo) => {
-    const cat = catOf.get(t.categoryId);
+    // while a row is held, its tag already shows the category it will join where it is now
+    const cat = catOf.get(preview?.id === t.id ? preview.categoryId : t.categoryId);
     if (!cat) return null;
     const col = visibleOn(cat.color, c.bg, c.textMuted);
     return (
@@ -157,9 +160,19 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
       ) : null)}
       {/* hold to move; dropped under another category's to-do it joins that category (user) */}
       <ReorderableList items={anytime} keyOf={(t) => t.id} labelOf={(t) => t.title}
-        onReorder={(keys, moved) => {
+        onTargetChange={(keys, moved) => {
+          if (!moved) { setPreview(null); return; }
           const cat = new Map(anytime.map((t) => [t.id, t.categoryId]));
-          if (!arrangeTodos(arrangeByNeighbours(keys, moved, (k) => cat.get(k)!))) notice("종료한 카테고리로는 옮길 수 없어요");
+          const to = arrangeByNeighbours(keys, moved, (k) => cat.get(k)!).find((e) => e.id === moved)!.categoryId;
+          setPreview((p) => (p?.id === moved && p.categoryId === to ? p : { id: moved, categoryId: to }));
+        }}
+        onReorder={(keys, moved) => {
+          setPreview(null);
+          const cat = new Map(anytime.map((t) => [t.id, t.categoryId]));
+          const entries = arrangeByNeighbours(keys, moved, (k) => cat.get(k)!);
+          const joined = entries.find((e) => e.id === moved)!.categoryId;
+          if (!arrangeTodos(entries)) notice("종료한 카테고리로는 옮길 수 없어요");
+          else if (joined !== cat.get(moved)) notice(`'${catOf.get(joined)?.title ?? ""}'(으)로 옮겼어요`);
         }}
         renderItem={(t, drag) => row(t, false, drag)} />
       {pending.map(({ r, cat }) => <PendingRoutineRow key={r.id} title={`${r.title}`} onAdd={() => addRoutineTodo(r.id, day)} />)}

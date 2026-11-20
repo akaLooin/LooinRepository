@@ -7,6 +7,7 @@ import { ddayLabel, isDDayToday, selectActiveCategories, selectCategories, selec
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand } from "../../lib/events";
 import { peekHomeDay, requestHomeDay } from "../../lib/todoCalendar";
+import { goTab } from "../../lib/tabSwitch";
 import { useAppConfig } from "../../lib/appConfig";
 import { tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
@@ -36,9 +37,9 @@ export function HomeDash() {
   const [peek, setPeek] = useState<Day>(today()); // the day shown under 이번 주 (tap a day; a double tap opens 달력)
   const [toast, notice] = useToast();
   const now = today();
-  const openDay = (d: Day) => { requestHomeDay(d); router.replace("/calendar" as never); };
+  const openDay = (d: Day) => { requestHomeDay(d); goTab("calendar"); };
   // a day asked for elsewhere (search, 할 일 캘린더) is shown in 달력
-  useFocusEffect(useCallback(() => { if (peekHomeDay()) router.replace("/calendar" as never); }, []));
+  useFocusEffect(useCallback(() => { if (peekHomeDay()) goTab("calendar"); }, []));
 
   const todos = todosForDay(db, now);
   const done = todos.filter((t) => t.isDone).length;
