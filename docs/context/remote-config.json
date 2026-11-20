@@ -6,5 +6,19 @@
   {
     "key": "home_notice",
     "value": null
+  },
+  {
+    "key": "maintenance",
+    "value": {
+      "on": false,
+      "message": ""
+    }
+  },
+  {
+    "key": "texts",
+    "value": {
+      "agenda.todo": "할 일",
+      "agenda.diary": "일기 쓰기"
+    }
   }
 ]
