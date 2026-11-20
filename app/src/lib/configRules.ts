@@ -1,5 +1,5 @@
 /** The admin app's settings (table app_config) and how the app reads them. Pure, so it can be unit-tested. */
-import { COLOR_ROLES, FEATURES, NUMBERS, TEXTS, type ColorRole, type FeatureKey, type NumberKey, type TextKey } from "./remoteCatalog";
+import { COLOR_ROLES, FEATURES, HOME_CARDS, NUMBERS, TEXTS, type ColorRole, type FeatureKey, type HomeCard, type NumberKey, type TextKey } from "./remoteCatalog";
 
 export type AppConfig = {
   crews: boolean;
@@ -10,12 +10,22 @@ export type AppConfig = {
   numbers: Partial<Record<NumberKey, number>>;
   colors: { dark: Partial<Record<ColorRole, string>>; light: Partial<Record<ColorRole, string>> };
   maintenance: { on: boolean; message: string };
+  /** 홈 card order (every card once) */
+  homeOrder: HomeCard[];
 };
 
 /** Crews are hidden in the design app until turned on (user, 2026-11-21); the usual app keeps them. */
 export const configDefaults = (design: boolean): AppConfig => ({
   crews: !design, notice: null, texts: {}, features: {}, numbers: {}, colors: { dark: {}, light: {} }, maintenance: { on: false, message: "" },
+  homeOrder: Object.keys(HOME_CARDS) as HomeCard[],
 });
+
+/** A saved order → every known card once, in that order; unknown names dropped, missing ones added at the end. */
+export function cardOrder(saved: unknown): HomeCard[] {
+  const all = Object.keys(HOME_CARDS) as HomeCard[];
+  const picked = Array.isArray(saved) ? saved.filter((k, i): k is HomeCard => typeof k === "string" && k in HOME_CARDS && saved.indexOf(k) === i) : [];
+  return [...picked, ...all.filter((k) => !picked.includes(k))];
+}
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -50,6 +60,7 @@ export function parseConfig(rows: { key: string; value: unknown }[], design: boo
         for (const [k, hex] of Object.entries(set)) if (k in COLOR_ROLES && typeof hex === "string" && HEX.test(hex)) out.colors[scheme][k as ColorRole] = hex.toLowerCase();
       }
     }
+    if (r.key === "home_order") out.homeOrder = cardOrder(v);
     if (r.key === "maintenance" && isObj(v)) {
       out.maintenance = { on: v.on === true, message: typeof v.message === "string" ? v.message.slice(0, 300) : "" };
     }

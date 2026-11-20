@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
-import { AppText, Button, Minus, Plus, Search, Toggle } from "../../components";
+import { AppText, Button, ChevronDown, ChevronUp, Minus, Plus, Search, Toggle } from "../../components";
 import { refreshAppConfig } from "../../lib/appConfig";
 import { featureOn, numberOf, parseConfig, textOf, type AppConfig } from "../../lib/configRules";
-import { COLOR_ROLES, FEATURES, NUMBERS, TEXTS, type ColorRole, type FeatureKey, type NumberKey, type TextKey } from "../../lib/remoteCatalog";
+import { COLOR_ROLES, FEATURES, HOME_CARDS, NUMBERS, TEXTS, type ColorRole, type FeatureKey, type HomeCard, type NumberKey, type TextKey } from "../../lib/remoteCatalog";
 import { supabase } from "../../lib/supabase";
 import { fontFamily, tokens, useTheme } from "../../theme";
 
@@ -135,7 +135,33 @@ export function FeaturesEditor({ notice }: { notice: (m: string) => void }) {
         })}
       </Card>
 
-      <Button kind="plain" label="보이기·숫자 모두 기본값으로" onPress={async () => { await save("features", {}, "보이기를 기본값으로 돌렸어요"); await save("numbers", {}, "보이기·숫자를 기본값으로 돌렸어요"); }} />
+      <Card title="홈 카드 순서" sub="▲ ▼ 로 옮기면 바로 저장되고, 열려 있는 디자인 앱에도 곧 반영돼요.">
+        {cfg.homeOrder.map((k, i) => {
+          const move = (d: number) => {
+            const next = [...cfg.homeOrder];
+            [next[i], next[i + d]] = [next[i + d], next[i]];
+            save("home_order", next, `${HOME_CARDS[k]} 카드를 옮겼어요`);
+          };
+          const arrow = (d: number) => (
+            <Pressable onPress={() => move(d)} disabled={d < 0 ? i === 0 : i === cfg.homeOrder.length - 1} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${HOME_CARDS[k]} ${d < 0 ? "위로" : "아래로"}`}
+              style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: c.surfaceStrong, alignItems: "center", justifyContent: "center", opacity: (d < 0 ? i === 0 : i === cfg.homeOrder.length - 1) ? 0.3 : 1 }}>
+              {d < 0 ? <ChevronUp size={18} color={c.text} /> : <ChevronDown size={18} color={c.text} />}
+            </Pressable>
+          );
+          return (
+            <Line key={k} first={i === 0}>
+              <AppText variant="body" weight={700} color="textMuted" style={{ width: 20 }}>{i + 1}</AppText>
+              <AppText variant="body" style={{ flex: 1 }}>{HOME_CARDS[k as HomeCard]}</AppText>
+              {arrow(-1)}{arrow(1)}
+            </Line>
+          );
+        })}
+      </Card>
+
+      <History />
+
+      <Button kind="plain" label="보이기·숫자·순서 모두 기본값으로" onPress={async () => { await save("features", {}, "기본값으로 돌렸어요"); await save("numbers", {}, "기본값으로 돌렸어요"); await save("home_order", Object.keys(HOME_CARDS), "보이기·숫자·순서를 기본값으로 돌렸어요"); }} />
+      
     </>
   );
 }
@@ -244,5 +270,35 @@ export function ColorsEditor({ notice, base }: { notice: (m: string) => void; ba
       </Card>
       <Button kind="plain" label="색 모두 원래대로" onPress={() => save("colors", { dark: {}, light: {} }, "색을 원래대로 돌렸어요").then(() => setDraft(null))} />
     </>
+  );
+}
+
+const KEY_LABEL: Record<string, string> = {
+  texts: "문구", features: "보이기", numbers: "숫자", colors: "색", home_order: "홈 카드 순서", maintenance: "점검 모드", crews_enabled: "크루 기능", home_notice: "홈 공지",
+};
+
+/** 변경 기록 (SQL 20261122000000_admin_live): the last 20 saves, newest first. Also copied into the repository. */
+function History() {
+  const { c } = useTheme();
+  const [rows, setRows] = useState<{ id: number; key: string; changed_at: string }[] | null>(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    supabase!.from("app_config_history").select("id, key, changed_at").order("changed_at", { ascending: false }).limit(20)
+      .then(({ data, error: e }) => { if (e) setError(true); else setRows(data as never); });
+  }, []);
+  const when = (iso: string) => { const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+  return (
+    <Card title="변경 기록" sub="최근 저장 20개. 같은 기록이 저장소(docs/context/remote-config.md)에도 복사돼서 Claude도 볼 수 있어요.">
+      {error ? <AppText variant="small" color="textMuted">기록을 못 읽었어요. SQL 20261122000000_admin_live를 실행했는지 확인해 주세요.</AppText>
+        : !rows ? <AppText variant="small" color="textMuted">불러오는 중…</AppText>
+        : !rows.length ? <AppText variant="small" color="textMuted">아직 기록이 없어요</AppText>
+        : rows.map((r, i) => (
+          <Line key={r.id} first={i === 0}>
+            <AppText variant="small" color="textMuted" style={{ width: 80 }}>{when(r.changed_at)}</AppText>
+            <AppText variant="body" style={{ flex: 1 }}>{KEY_LABEL[r.key] ?? r.key}</AppText>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent }} />
+          </Line>
+        ))}
+    </Card>
   );
 }

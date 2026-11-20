@@ -65,6 +65,8 @@ export const NUMBERS = {
   comingCount: { label: "중요한 날: 보이는 개수", def: 5, min: 1, max: 10, step: 1, unit: "개" },
   weekPeekCount: { label: "이번 주 카드: 할 일 보이는 개수", def: 6, min: 2, max: 15, step: 1, unit: "개" },
   ddayCount: { label: "디데이 카드: 보이는 개수", def: 3, min: 1, max: 8, step: 1, unit: "개" },
+  textScale: { label: "글자 크기 (본문)", def: 100, min: 80, max: 140, step: 5, unit: "%" },
+  titleScale: { label: "글자 크기 (제목)", def: 100, min: 80, max: 140, step: 5, unit: "%" },
 } as const;
 export type NumberKey = keyof typeof NUMBERS;
 
@@ -84,3 +86,13 @@ export const COLOR_ROLES = {
   danger: "삭제 · 경고",
 } as const;
 export type ColorRole = keyof typeof COLOR_ROLES;
+
+/** 홈 cards, in their default order (the admin app can reorder them; a card left out goes last). */
+export const HOME_CARDS = {
+  today: "오늘",
+  week: "이번 주",
+  dday: "디데이",
+  coming: "다가오는 중요한 날",
+  shortcuts: "바로가기",
+} as const;
+export type HomeCard = keyof typeof HOME_CARDS;

@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { AppText, ChevronRight, NeonText, Search, TodoRow, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
@@ -10,7 +10,7 @@ import { peekHomeDay, requestHomeDay } from "../../lib/todoCalendar";
 import { goTab } from "../../lib/tabSwitch";
 import { useAppConfig } from "../../lib/appConfig";
 import { featureOn, numberOf, textOf } from "../../lib/configRules";
-import type { FeatureKey, NumberKey, TextKey } from "../../lib/remoteCatalog";
+import type { FeatureKey, HomeCard, NumberKey, TextKey } from "../../lib/remoteCatalog";
 import { tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { dayTitle, QuickAdd, WeekStrip } from "./parts";
@@ -98,25 +98,8 @@ export function HomeDash() {
     </View>
   );
 
-  return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
-          <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
-          <MenuButton onPress={() => setMenu(true)} />
-        </View>
-        <AppText variant="helper" color="textMuted">{dayTitle(now)}</AppText>
-        <AppText variant="monthTitle" weight={700} style={{ fontSize: 26, lineHeight: 34, marginTop: 2 }} accessibilityRole="header">
-          {`${t(greetingKey(new Date().getHours()))}${profile.nickname ? `, ${profile.nickname}` : ""}`}
-        </AppText>
-
-        {config.notice ? (
-          <View style={{ marginTop: 14, padding: 14, borderRadius: tokens.radius.lg, borderWidth: 1, borderColor: c.sectionLine }} accessibilityRole="alert">
-            <AppText variant="small" weight={700} color="textMuted">{t("home.notice")}</AppText>
-            <AppText variant="body" style={{ marginTop: 4 }}>{config.notice}</AppText>
-          </View>
-        ) : null}
-        {on("home.todayCard") ? card(<>
+  const cards: Record<HomeCard, () => React.ReactNode> = {
+    today: () => (on("home.todayCard") ? card(<>
           {cardTitle(t("home.today"), "할 일 보기")}
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
             <AppText variant="monthTitle" weight={700}>{`${done}`}</AppText>
@@ -127,9 +110,8 @@ export function HomeDash() {
           </View>
           {next ? <AppText variant="helper" color="textSecondary" style={{ marginTop: 10 }}>{`다음 · ${clock(fromMinutes(next.at), prefs.use24h)} ${next.title} (${next.kind})`}</AppText> : null}
           {allDay.length ? <AppText variant="helper" color="textSecondary" style={{ marginTop: 4 }} numberOfLines={1}>{`종일 · ${allDay.map((e) => e.title).join(", ")}`}</AppText> : null}
-        </>, () => openDay(now), "오늘 할 일 보기") : null}
-
-        {on("home.weekCard") ? card(<>
+        </>, () => openDay(now), "오늘 할 일 보기") : null),
+    week: () => (on("home.weekCard") ? card(<>
           {cardTitle(t("home.week"), `별 ${weekStars}개`)}
           <WeekStrip big day={peek} onPick={setPeek} onDouble={openDay} />
           <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: c.sectionLine }} accessibilityLabel={`${dayTitle(peek)}의 할 일과 일정`}>
@@ -153,9 +135,8 @@ export function HomeDash() {
             {peekTodos.length > peekMax ? <AppText variant="small" color="textMuted" style={{ paddingTop: 4 }}>{`할 일 ${peekTodos.length - peekMax}개 더`}</AppText> : null}
             {!peekTodos.length && !peekEvents.length ? <AppText variant="helper" color="textMuted" style={{ paddingVertical: 8 }}>할 일도 일정도 없어요</AppText> : null}
           </View>
-        </>) : null}
-
-        {ddays.length && on("home.ddayCard") ? card(<>
+        </>) : null),
+    dday: () => (ddays.length && on("home.ddayCard") ? card(<>
           {cardTitle(t("home.dday"), "모두 보기")}
           {ddays.slice(0, num("ddayCount")).map((d) => (
             <View key={d.id} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 5 }}>
@@ -163,9 +144,8 @@ export function HomeDash() {
               {isDDayToday(d, now) ? <NeonText variant="body">{ddayLabel(d, now)}</NeonText> : <AppText variant="body" weight={700} color="dday">{ddayLabel(d, now)}</AppText>}
             </View>
           ))}
-        </>, () => router.push("/ddays" as never), "디데이 모두 보기") : null}
-
-        {coming.length && on("home.comingCard") ? card(<>
+        </>, () => router.push("/ddays" as never), "디데이 모두 보기") : null),
+    coming: () => (coming.length && on("home.comingCard") ? card(<>
           {cardTitle(t("home.coming"))}
           {coming.map((x) => {
             const n = daysBetween(now, x.d), col = visibleOn(x.color, c.surface, c.text);
@@ -187,9 +167,8 @@ export function HomeDash() {
               </Pressable>
             );
           })}
-        </>) : null}
-
-        {on("home.shortcutsCard") ? card(<>
+        </>) : null),
+    shortcuts: () => (on("home.shortcutsCard") ? card(<>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
             <AppText variant="body" weight={700} style={{ flex: 1 }}>{t("home.shortcuts")}</AppText>
             <Pressable onPress={() => setEditShortcuts(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="바로가기 편집">
@@ -197,7 +176,29 @@ export function HomeDash() {
             </Pressable>
           </View>
           <ShortcutGrid />
-        </>) : null}
+        </>) : null),
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
+          <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
+          <MenuButton onPress={() => setMenu(true)} />
+        </View>
+        <AppText variant="helper" color="textMuted">{dayTitle(now)}</AppText>
+        <AppText variant="monthTitle" weight={700} style={{ fontSize: 26, lineHeight: 34, marginTop: 2 }} accessibilityRole="header">
+          {`${t(greetingKey(new Date().getHours()))}${profile.nickname ? `, ${profile.nickname}` : ""}`}
+        </AppText>
+
+        {config.notice ? (
+          <View style={{ marginTop: 14, padding: 14, borderRadius: tokens.radius.lg, borderWidth: 1, borderColor: c.sectionLine }} accessibilityRole="alert">
+            <AppText variant="small" weight={700} color="textMuted">{t("home.notice")}</AppText>
+            <AppText variant="body" style={{ marginTop: 4 }}>{config.notice}</AppText>
+          </View>
+        ) : null}
+        {/* cards in the order set in the admin app (home_order) */}
+        {config.homeOrder.map((k) => <Fragment key={k}>{cards[k]()}</Fragment>)}
       </ScrollView>
       {on("home.quickAdd") ? <QuickAdd day={now} cats={cats} lastId={prefs.quickAddCategory} notice={notice} /> : null}
       <HomeMenu open={menu} onClose={() => setMenu(false)} />

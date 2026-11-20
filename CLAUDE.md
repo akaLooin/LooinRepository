@@ -30,7 +30,7 @@ Personal Android app that rebuilds the to-do app "todo mate" (Expo + Supabase), 
 | `supabase/migrations/` | database (run once in the Supabase SQL editor) |
 | `supabase/functions/` | `delete-account`, `push` (webhooks), `admin-broadcast` (관리자 앱's push to all) |
 | `replica/` | recon map, architecture, design system, backend notes, build log, feature matrix (`features.csv`, `clone` column) |
-| `docs/context/` | HANDOFF, DECISIONS, compact-log (written by the PreCompact hook) |
+| `docs/context/` | HANDOFF, DECISIONS, compact-log (written by the PreCompact hook), remote-config.md/.json (관리자 앱 settings copied from the server by a workflow; to make a setting permanent, move it into `app/src/lib/remoteCatalog.ts` defaults) |
 
 ## Checks before a commit
 

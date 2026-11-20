@@ -53,3 +53,10 @@ assert.equal(textOf(u, "tab.home"), "홈");
 assert.deepEqual(u.colors, { dark: {}, light: {} });
 assert.equal(u.maintenance.on, false);
 console.log("ok 관리자 앱 편집: 문구·보이기·숫자·색·점검 모드 (bad values dropped, usual app untouched)");
+
+import { cardOrder } from "../src/lib/configRules";
+assert.deepEqual(cardOrder(["shortcuts", "today", "x", "today"]), ["shortcuts", "today", "week", "dday", "coming"], "order: unknown and repeated dropped, missing added");
+assert.deepEqual(cardOrder("nope"), ["today", "week", "dday", "coming", "shortcuts"]);
+assert.deepEqual(parseConfig([{ key: "home_order", value: ["coming", "week"] }], true).homeOrder, ["coming", "week", "today", "dday", "shortcuts"]);
+assert.equal(numberOf(parseConfig([{ key: "numbers", value: { textScale: 300 } }], true), "textScale"), 140, "글자 크기 clamped");
+console.log("ok 관리자 앱 편집: 카드 순서 · 글자 크기");

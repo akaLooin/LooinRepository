@@ -31,9 +31,21 @@ status = sh("git", "status", "--porcelain")
 log = sh("git", "log", "--oneline", "-5")
 unpushed = sh("git", "log", "--oneline", "@{u}..HEAD") if branch else ""
 
+# 관리자 앱 settings copied into the repo by .github/workflows/remote-config.yml (newest on the remote branch)
+if branch:
+    sh("git", "fetch", "--quiet", "origin", branch)
+remote_cfg = sh("git", "show", f"origin/{branch}:docs/context/remote-config.md") if branch else ""
+if not remote_cfg:
+    remote_cfg = read("docs/context/remote-config.md", 4000)
+changed = ""
+if "## 지금 기본값과 다른 것" in remote_cfg:
+    sec = remote_cfg.split("## 지금 기본값과 다른 것", 1)[1].split("\n## ", 1)[0].strip()
+    changed = "## 관리자 앱에서 바꾼 디자인 앱 설정 (docs/context/remote-config.md, 기록 포함)\n" + sec[:1200]
+
 parts = [
     f"[context-hook] 세션 시작 이유: {source}. 아래는 저장소에 보존된 프로젝트 상태다. 이어서 작업하기 전에 읽고, 필요하면 docs/context/ 의 원문을 열어 볼 것.",
     f"## git\n브랜치: {branch or '?'}\n커밋 안 된 변경: {len(status.splitlines()) if status else 0}개\n푸시 안 된 커밋: {len(unpushed.splitlines()) if unpushed else 0}개\n최근 커밋:\n{log}",
+    changed,
     read("docs/context/HANDOFF.md", 6500),
 ]
 if source in ("compact", "clear", "resume"):

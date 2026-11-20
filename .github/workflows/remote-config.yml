@@ -1,0 +1,49 @@
+# Copies the admin app's settings and change log from Supabase into docs/context/remote-config.md (+ .json), so the
+# repository (and Claude) always shows what was changed in the admin app. Read-only on Supabase: it uses the
+# publishable key, which only sees public rows. Needs the repository secrets SUPABASE_URL and SUPABASE_KEY;
+# without them the job skips. Runs on every push to the work branch, by hand (Actions → admin settings copy →
+# Run workflow), and hourly once this file is also on the default branch (GitHub runs schedules only from there).
+name: admin settings copy
+on:
+  push:
+    branches: [claude/replica-skill-install-ll9jb4]
+  workflow_dispatch:
+  schedule:
+    - cron: "23 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: remote-config
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+    steps:
+      - name: No secrets yet
+        if: env.SUPABASE_URL == '' || env.SUPABASE_KEY == ''
+        run: echo "SUPABASE_URL / SUPABASE_KEY are not set in the repository secrets; nothing copied."
+      - uses: actions/checkout@v4
+        if: env.SUPABASE_URL != '' && env.SUPABASE_KEY != ''
+        with:
+          ref: claude/replica-skill-install-ll9jb4
+      - uses: actions/setup-node@v4
+        if: env.SUPABASE_URL != '' && env.SUPABASE_KEY != ''
+        with:
+          node-version: 22
+      - name: Copy
+        if: env.SUPABASE_URL != '' && env.SUPABASE_KEY != ''
+        run: node --experimental-strip-types --no-warnings app/scripts/remote-config-snapshot.mjs
+      - name: Commit when something changed
+        if: env.SUPABASE_URL != '' && env.SUPABASE_KEY != ''
+        run: |
+          git add docs/context/remote-config.md docs/context/remote-config.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          keys=$(git diff --cached docs/context/remote-config.json | grep -o '"key": "[^"]*"' | sort -u | cut -d'"' -f4 | paste -sd, - | cut -c1-120)
+          git -c user.name="admin-settings-bot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "chore: 관리자 앱 설정 복사 (${keys:-기록})"
+          for i in 1 2 3; do git pull --rebase origin claude/replica-skill-install-ll9jb4 && git push origin HEAD:claude/replica-skill-install-ll9jb4 && break; sleep 5; done
