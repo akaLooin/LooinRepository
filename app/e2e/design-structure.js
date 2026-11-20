@@ -1,7 +1,7 @@
 // Design app (build with APP_VARIANT=design): 홈 · 달력 · 함께 · 나 tabs (2026-11-21).
 // 홈: greeting, today's count and what is next, this week, D-days, shortcuts, an input bar for today; a week day opens
 // 달력 on it. 달력: a month (picked day = white cell, today = grey cell), the day's agenda (timed events, To Do with
-// category tags) and an input bar for that day. 함께: friend row → their page.
+// category groups, 강조 marks, D-days on top) and an input bar for that day. 함께: friend row → their page.
 const { chromium } = require("playwright");
 (async () => {
   const b = await chromium.launch();
@@ -48,28 +48,38 @@ const { chromium } = require("playwright");
   r.addedFromHome = await p.getByText("홈 입력 테스트").count();
   await p.getByLabel("할 일 추가").filter({ visible: true }).fill("달력 입력 테스트"); await p.getByLabel("할 일 추가").filter({ visible: true }).press("Enter"); await p.waitForTimeout(400);
   r.added = await p.getByText("달력 입력 테스트").count();
-  // the category tag of a to-do moves it to another category
-  const tagBtn = p.getByRole("button", { name: /^달력 입력 테스트의 카테고리 .*, 바꾸기$/ });
-  const before = await tagBtn.getAttribute("aria-label");
-  await tagBtn.click(); await p.waitForTimeout(400);
-  await p.getByRole("radio", { checked: false }).first().click(); await p.waitForTimeout(400);
-  r.recategorised = before !== (await p.getByRole("button", { name: /^달력 입력 테스트의 카테고리 .*, 바꾸기$/ }).getAttribute("aria-label"));
-  await p.getByRole("button", { name: /^카테고리 [^의]*, 바꾸기$/ }).first().click(); await p.waitForTimeout(400);
+  // the input bar's category chip: add one to-do to the other category
+  await p.getByRole("button", { name: /^카테고리 .*, 바꾸기$/ }).filter({ visible: true }).first().click(); await p.waitForTimeout(400);
   r.categorySheet = await p.getByText("어느 카테고리에 넣을까요?").count();
-  await p.getByRole("radio").last().click(); await p.waitForTimeout(300);
-  // hold a To Do row and drop it at the top: it takes the category of the row it lands on (user)
-  const tags = async () => (await p.getByRole("button", { name: /의 카테고리 .*, 바꾸기$/ }).evaluateAll((xs) => xs.map((x) => x.getAttribute("aria-label").match(/^(.*)의 카테고리 (.*), 바꾸기$/).slice(1))));
-  const t0 = await tags();
-  r.tagsBefore = t0.map((x) => x.join(">"));
-  const lastT = t0[t0.length - 1], firstT = t0.find((x) => x[1] !== lastT[1]) ?? t0[0];
-  const from = await p.getByText(lastT[0], { exact: true }).filter({ visible: true }).first().boundingBox(), to = await p.getByText(firstT[0], { exact: true }).filter({ visible: true }).first().boundingBox();
-  await p.mouse.move(from.x + 20, from.y + from.height / 2); await p.mouse.down(); await p.waitForTimeout(700);
-  const dy = to.y - from.y - 10;
-  for (let i = 1; i <= 8; i++) { await p.mouse.move(from.x + 20, from.y + from.height / 2 + (dy * i) / 8); await p.waitForTimeout(40); }
-  await p.mouse.up(); await p.waitForTimeout(600);
-  const t1 = await tags();
-  r.tagsAfter = t1.map((x) => x.join(">"));
-  r.dragJoined = t1.find((x) => x[0] === lastT[0])?.[1] === firstT[1];
+  await p.getByRole("radio").filter({ visible: true }).last().click(); await p.waitForTimeout(300);
+  await p.getByLabel("할 일 추가").filter({ visible: true }).fill("다른 칸 테스트"); await p.getByLabel("할 일 추가").filter({ visible: true }).press("Enter"); await p.waitForTimeout(400);
+  // To Do is in category groups (no tags); hold a to-do and drop it inside another group: it joins that category
+  const groups = () => p.evaluate(() => {
+    const out = {}; let cur = "";
+    for (const el of document.querySelectorAll('[aria-label$=" 카테고리"], [role="checkbox"]')) {
+      if (!el.offsetParent) continue;
+      const l = el.getAttribute("aria-label");
+      if (l.endsWith(" 카테고리")) cur = l.replace(/ 카테고리$/, ""); else out[l.split(",")[0]] = cur;
+    }
+    return out;
+  });
+  const g0 = await groups();
+  r.groupsBefore = g0;
+  r.noTags = (await p.getByRole("button", { name: /의 카테고리 .*, 바꾸기$/ }).count()) === 0;
+  const heads = await p.locator('[aria-label$=" 카테고리"]').filter({ visible: true }).all();
+  r.groupHeads = heads.length;
+  // bring the group titles and the to-do into view first (the list scrolls under the input bar)
+  await p.locator('[aria-label$=" 카테고리"]').filter({ visible: true }).first().evaluate((el) => el.scrollIntoView({ block: "start" })); await p.waitForTimeout(400);
+  const from = await p.getByText("다른 칸 테스트", { exact: true }).filter({ visible: true }).first().boundingBox();
+  const to = await heads[0].boundingBox();
+  r.dragBoxes = { from: Math.round(from.y), to: Math.round(to.y) };
+  await p.mouse.move(from.x + 20, from.y + from.height / 2); await p.mouse.down(); await p.waitForTimeout(500);
+  const dy = to.y + to.height + 8 - (from.y + from.height / 2);
+  for (let i = 1; i <= 10; i++) { await p.mouse.move(from.x + 20, from.y + from.height / 2 + (dy * i) / 10); await p.waitForTimeout(40); }
+  await p.mouse.up(); await p.waitForTimeout(700);
+  const g1 = await groups();
+  r.groupsAfter = g1;
+  r.dragJoined = g0["다른 칸 테스트"] !== g1["다른 칸 테스트"] && g1["다른 칸 테스트"] === (await heads[0].getAttribute("aria-label")).replace(/ 카테고리$/, "");
   // the picked day is a white cell, today a grey one
   const d2 = new Date(now); d2.setDate(now.getDate() === 1 ? 2 : 1);
   await p.getByLabel(`${d2.getMonth() + 1}월 ${d2.getDate()}일`, { exact: true }).first().click(); await p.waitForTimeout(400);

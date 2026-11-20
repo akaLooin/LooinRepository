@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, Check, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, type DragHandle } from "../../components";
-import { arrangeByNeighbours } from "../../lib/arrange";
+import { AppText, BottomSheet, Button, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, type DragHandle } from "../../components";
+import { arrangeByHeaders } from "../../lib/arrange";
 import { EventEditor, type EventDraft } from "../events/EventSheets";
 import { formatTime, usePrefs } from "../../data/prefs";
 import {
-  addRoutineTodo, arrangeTodos, copyTodos, deleteTodos, manualRoutinesOn, materialize, moveTodos, selectCategories, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
+  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
 } from "../../data/store";
 import { addDays, parseDay, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand, type CalEvent } from "../../lib/events";
@@ -22,9 +22,9 @@ type Item = { kind: "event"; at: number; e: CalEvent; from: number; to: number }
 
 /**
  * One day as an agenda (design app, 2026-11-21, user's choice "오늘 중심"): 종일 events, then 오전 · 오후 · 저녁 with
- * timed events and to-dos with a time mixed in time order, then To Do (to-dos without a time; was 언제든), each with
- * its category as a small tag on the right (tap it to change the category). Events open their editor. Thin lines
- * part the blocks. The diary of the day closes the list.
+ * timed events and to-dos with a time mixed in time order, then To Do: the day's D-days on top, then to-dos in
+ * category groups (강조 ones first, marked on the right; hold and drop in another group to move them there). Events
+ * open their editor. Thin lines part the blocks. The diary of the day closes the list.
  */
 export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => void }) {
   const { c } = useTheme();
@@ -37,8 +37,8 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
   const [editing, setEditing] = useState<EventDraft | null>(null);
-  const [recat, setRecat] = useState<{ id: string; current: string } | null>(null);
-  const [preview, setPreview] = useState<{ id: string; categoryId: string } | null>(null);
+  const ddays = useDB(selectDDays);
+  const glow = useGlowColor();
   const catOf = useMemo(() => new Map(categories.map((x) => [x.id, x])), [categories]);
   const catOrder = useMemo(() => new Map(categories.map((x, i) => [x.id, i])), [categories]);
 
@@ -53,26 +53,42 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     ...dayBlocks(db.events, day).map((b) => ({ kind: "event" as const, at: b.top, e: b.e, from: b.top, to: b.bottom })),
     ...todos.filter((t) => timeOf(t) !== null).map((t) => ({ kind: "todo" as const, at: timeOf(t)!, t })),
   ].sort((a, b) => a.at - b.at);
-  // grouped by category first (user), done ones last inside their category; this order is what dragging works on
+  // grouped by category (user, 2026-11-21): inside a category 강조 to-dos first, done ones last, then the user's order
   const anytime = todos.filter((t) => timeOf(t) === null)
     .sort((a, b) => (catOrder.get(a.categoryId) ?? 0) - (catOrder.get(b.categoryId) ?? 0)
+      || Number(!!b.isImportant) - Number(!!a.isImportant)
       || (prefs.todoSort === "done_last" ? Number(a.isDone) - Number(b.isDone) : 0) || a.sortOrder - b.sortOrder);
+  const todayDDays = ddays.filter((x) => isDDayOn(x, day));
   const pending = categories.filter((x) => !x.endedAt).flatMap((cat) => manualRoutinesOn(db, day, cat.id).map((r) => ({ r, cat })));
-  const parts: [string, (m: number) => boolean][] = [["오전", (m) => m < 12 * 60], ["오후", (m) => m >= 12 * 60 && m < 18 * 60], ["저녁", (m) => m >= 18 * 60]];
-
-  const tag = (t: Todo) => {
-    // while a row is held, its tag already shows the category it will join where it is now
-    const cat = catOf.get(preview?.id === t.id ? preview.categoryId : t.categoryId);
-    if (!cat) return null;
-    const col = visibleOn(cat.color, c.bg, c.textMuted);
+  type Cat = (typeof categories)[number];
+  type GroupRow = { kind: "head" | "foot"; key: string; cat: Cat } | { kind: "todo"; key: string; cat: Cat; t: Todo };
+  const groupRows: GroupRow[] = categories
+    .filter((cat) => anytime.some((t) => t.categoryId === cat.id) || pending.some((x) => x.cat.id === cat.id))
+    .flatMap((cat) => [
+      { kind: "head" as const, key: `h:${cat.id}`, cat },
+      ...anytime.filter((t) => t.categoryId === cat.id).map((t) => ({ kind: "todo" as const, key: t.id, cat, t })),
+      { kind: "foot" as const, key: `f:${cat.id}`, cat },
+    ]);
+  // a group title of our own (not the original's pill): a short colour bar, the name in its colour, done/all on the right
+  const groupHead = (cat: Cat) => {
+    const col = visibleOn(cat.color, c.bg, c.text);
+    const list = anytime.filter((t) => t.categoryId === cat.id);
     return (
-      // tap the tag to move the to-do to another category (user)
-      <Pressable onPress={() => setRecat({ id: t.id, current: t.categoryId })} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${t.title}의 카테고리 ${cat.title}, 바꾸기`}
-        style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: col + "22", alignSelf: "flex-start", marginTop: 2 }}>
-        <AppText variant="small" weight={600} raw={col} numberOfLines={1}>{cat.title}</AppText>
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 34, marginTop: 6 }} accessibilityRole="header" accessibilityLabel={`${cat.title} 카테고리`}>
+        <View style={{ width: 3, height: 14, borderRadius: 2, backgroundColor: col }} />
+        <AppText variant="helper" weight={700} raw={col} numberOfLines={1} style={{ flex: 1 }}>{cat.title}</AppText>
+        {list.length ? <AppText variant="small" color="textMuted">{`${list.filter((t) => t.isDone).length}/${list.length}`}</AppText> : null}
+      </View>
     );
   };
+  const parts: [string, (m: number) => boolean][] = [["오전", (m) => m < 12 * 60], ["오후", (m) => m >= 12 * 60 && m < 18 * 60], ["저녁", (m) => m >= 18 * 60]];
+
+  // the right side of a to-do: 강조 when it is marked (no category tag any more; the groups show the category)
+  const mark = (t: Todo) => (t.isImportant ? (
+    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: glow, alignSelf: "flex-start", marginTop: 2 }} accessibilityLabel="강조">
+      <AppText variant="small" weight={700} raw={glow}>강조</AppText>
+    </View>
+  ) : null);
   const row = (t: Todo, withTime: boolean, drag?: DragHandle) => {
     const cat = catOf.get(t.categoryId);
     return (
@@ -91,7 +107,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         onAlarmPress={() => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
         onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title }); } : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
-        right={tag(t)} {...drag} />
+        right={mark(t)} {...drag} />
     );
   };
   const eventCard = (e: CalEvent, from: number, to: number) => (
@@ -158,24 +174,36 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
       {heading("To Do", todos.length ? (
         <Pressable onPress={() => setListMenu("menu")} hitSlop={10} accessibilityRole="button" accessibilityLabel="리스트 메뉴"><Ellipsis size={20} color={c.textMuted} /></Pressable>
       ) : null)}
-      {/* hold to move; dropped under another category's to-do it joins that category (user) */}
-      <ReorderableList items={anytime} keyOf={(t) => t.id} labelOf={(t) => t.title}
-        onTargetChange={(keys, moved) => {
-          if (!moved) { setPreview(null); return; }
-          const cat = new Map(anytime.map((t) => [t.id, t.categoryId]));
-          const to = arrangeByNeighbours(keys, moved, (k) => cat.get(k)!).find((e) => e.id === moved)!.categoryId;
-          setPreview((p) => (p?.id === moved && p.categoryId === to ? p : { id: moved, categoryId: to }));
-        }}
+      {/* D-days of this day sit above everything (user) */}
+      {todayDDays.map((x) => (
+        <Pressable key={x.id} onPress={() => router.push("/ddays" as never)} accessibilityRole="button" accessibilityLabel={`디데이 ${x.title}, ${ddayLabel(x, day)}`}
+          style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingVertical: 6 }}>
+          <View style={{ minWidth: 28, alignItems: "center" }}><AppText variant="small" weight={800} color="dday" numberOfLines={1}>{ddayLabel(x, day)}</AppText></View>
+          <AppText variant="bodyLg" weight={600} style={{ flex: 1 }} numberOfLines={1}>{x.title}</AppText>
+          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: c.dday + "26" }}>
+            <AppText variant="small" weight={700} color="dday">디데이</AppText>
+          </View>
+        </Pressable>
+      ))}
+      {/* to-dos in category groups; hold to move, dropped inside another group it joins that category (user) */}
+      <ReorderableList items={groupRows} keyOf={(r) => r.key} labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)} fixed={(r) => r.kind !== "todo"}
         onReorder={(keys, moved) => {
-          setPreview(null);
-          const cat = new Map(anytime.map((t) => [t.id, t.categoryId]));
-          const entries = arrangeByNeighbours(keys, moved, (k) => cat.get(k)!);
-          const joined = entries.find((e) => e.id === moved)!.categoryId;
+          const owner = (k: string) => (k.startsWith("h:") || k.startsWith("f:") ? k.slice(2) : null);
+          const before = anytime.find((t) => t.id === moved)?.categoryId;
+          const entries = arrangeByHeaders(keys, owner);
+          const joined = entries.find((e) => e.id === moved)?.categoryId;
           if (!arrangeTodos(entries)) notice("종료한 카테고리로는 옮길 수 없어요");
-          else if (joined !== cat.get(moved)) notice(`'${catOf.get(joined)?.title ?? ""}'(으)로 옮겼어요`);
+          else if (joined && joined !== before) notice(`'${catOf.get(joined)?.title ?? ""}'(으)로 옮겼어요`);
         }}
-        renderItem={(t, drag) => row(t, false, drag)} />
-      {pending.map(({ r, cat }) => <PendingRoutineRow key={r.id} title={`${r.title}`} onAdd={() => addRoutineTodo(r.id, day)} />)}
+        renderItem={(r, drag) => {
+          if (r.kind === "todo") return row(r.t, false, drag);
+          if (r.kind === "head") return groupHead(r.cat);
+          return (
+            <View style={{ paddingBottom: 6 }}>
+              {pending.filter((x) => x.cat.id === r.cat.id).map(({ r: rt }) => <PendingRoutineRow key={rt.id} title={rt.title} onAdd={() => addRoutineTodo(rt.id, day)} />)}
+            </View>
+          );
+        }} />
       {!todos.length && !pending.length ? (
         <AppText variant="body" color="textMuted" style={{ paddingVertical: 14 }}>{categories.length ? "아래 칸에 할 일을 적어 보세요" : "먼저 관리 메뉴에서 카테고리를 만들어 주세요"}</AppText>
       ) : null}
@@ -191,19 +219,6 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         {renaming ? <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일" /> : null}
       </BottomSheet>
       <EventEditor draft={editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); notice(m); }} />
-      <BottomSheet visible={!!recat} onClose={() => setRecat(null)} title="카테고리 바꾸기">
-        {categories.filter((x) => !x.endedAt).map((x) => (
-          <Pressable key={x.id} onPress={() => {
-            if (recat && x.id !== recat.current) { updateTodo(materialize(recat.id), { categoryId: x.id }); notice(`'${x.title}'(으)로 옮겼어요`); }
-            setRecat(null);
-          }} role="radio" aria-checked={x.id === recat?.current}
-            style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 52 }}>
-            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: visibleOn(x.color, c.bg, c.text) }} />
-            <AppText variant="bodyLg" style={{ flex: 1 }}>{x.title}</AppText>
-            {x.id === recat?.current ? <Check size={20} color={c.text} /> : null}
-          </Pressable>
-        ))}
-      </BottomSheet>
       <ListMenuSheet open={listMenu === "menu"} onClose={() => setListMenu(null)} onConfirm={runList} />
       {listMenu === "move" || listMenu === "copy" ? (
         <DatePickSheet title={listMenu === "move" ? "미완료 할 일 다른 날 하기" : "모든 할 일 복사"} initial={addDays(day, 1)} onClose={() => setListMenu(null)}
