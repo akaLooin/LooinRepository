@@ -73,7 +73,7 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   return (
     <Pressable ref={cellRef ? (v) => cellRef(day, v) : undefined}
       style={{ flex: 1, alignItems: "center", gap: 4, borderRadius: tokens.radius.md, marginHorizontal: boxed ? 2 : 0, paddingTop: boxed ? 5 : 0,
-        backgroundColor: hover ? c.dropTarget : boxed && ring ? c.selectedBg : boxed && todayDisc ? c.selectedDay : "transparent" }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일${important ? ", 중요한 날" : ""}`} accessibilityState={{ selected: ring }}>
+        backgroundColor: hover ? c.dropTarget : boxed && ring ? c.selectedBg : boxed && todayDisc ? c.todayCell : "transparent" }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일${important ? ", 중요한 날" : ""}`} accessibilityState={{ selected: ring }}>
       {clover ? <Clover state={clover} glow={important} /> : null}
       <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
         borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}

@@ -43,3 +43,18 @@
   - bfc9dfb feat: 여러 날 할 일 — to-dos over several days: thin lines on the calendar, a 긴 할 일 calendar with labelled bars, grey once done
   - 0f800b0 feat: drag a to-do onto a calendar date to move it there
   - 8d530a6 feat: 알림 in four tabs — 친구의 할 일, 친구의 일기, 받은 관심, 공지
+
+## 2026-11-20 07:18 UTC · auto
+- 브랜치: claude/replica-skill-install-ll9jb4 · HEAD a366521
+- 커밋 안 된 파일: 7개
+  - `pp/src/components/Calendar.tsx`
+  - `app/src/features/home/CalendarPager.tsx`
+  - `app/src/features/today/AgendaList.tsx`
+  - `app/src/features/today/CalendarTab.tsx`
+  - `app/src/theme/tokens.ts`
+  - `replica/design/tokens.json`
+  - `replica/design/tokens.light.json`
+- 최근 커밋:
+  - a366521 docs: handoff trim
+  - bc7c0cf feat: design app — 홈 becomes a summary with shortcuts; 달력 is the day agenda under a month; picked day as a white cell, today grey
+  - f338e6a docs: handoff trim

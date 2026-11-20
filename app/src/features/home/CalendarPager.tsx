@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, PanResponder, Platform, View } from "react-native";
+import { Animated, Easing, PanResponder, Platform, useWindowDimensions, View } from "react-native";
 import { useScrollLock } from "../../components";
+import { useDesignScale } from "../../theme";
 
 /**
  * The calendar as a sideways strip of pages (months, or weeks in week view), as in the original (user's recording):
@@ -29,8 +30,12 @@ export function CalendarPager({ index, onIndexChange, renderPage, gutter = 0 }: 
   renderPage: (index: number, width: number) => React.ReactNode;
 }) {
   const lock = useScrollLock();
-  const [w, setW] = useState(0);
-  const wRef = useRef(0);
+  // the strip is as wide as the screen's canvas: start from that, so the month is drawn on the first frame instead
+  // of after a measuring pass (the design app's 달력 tab opened blank for a moment, user)
+  const s = useDesignScale();
+  const guess = Math.round(useWindowDimensions().width / s);
+  const [w, setW] = useState(guess);
+  const wRef = useRef(guess);
   const x = useRef(new Animated.Value(0)).current;
   const indexRef = useRef(index);
   // positions are counted from the first page shown, so they stay small numbers
@@ -83,10 +88,12 @@ export function CalendarPager({ index, onIndexChange, renderPage, gutter = 0 }: 
   }, [x, base, lock]);
 
   const h = heights[index];
+  // until the page's height is known, the page in view sits in the normal flow and gives the strip its height
+  const flow = !h;
   return (
     <View
       {...responder.panHandlers}
-      style={{ overflow: "hidden", height: h ?? 0, minHeight: h ? undefined : 1, marginHorizontal: -gutter }}
+      style={{ overflow: "hidden", height: h, marginHorizontal: -gutter }}
       onLayout={(e) => {
         const W = e.nativeEvent.layout.width;
         if (W === wRef.current) return;
@@ -96,11 +103,11 @@ export function CalendarPager({ index, onIndexChange, renderPage, gutter = 0 }: 
       }}
     >
       {w ? (
-        <Animated.View style={{ position: "absolute", left: 0, top: 0, width: w, transform: [{ translateX: x }] }}>
+        <Animated.View style={{ position: flow ? "relative" : "absolute", left: 0, top: 0, width: w, transform: [{ translateX: x }] }}>
           {[index - 1, index, index + 1].map((i) => (
             <View
               key={i}
-              style={{ position: "absolute", left: (i - base) * w, top: 0, width: w, paddingHorizontal: gutter }}
+              style={{ position: flow && i === index ? "relative" : "absolute", left: (i - base) * w, top: 0, width: w, paddingHorizontal: gutter }}
               // the page out of view is hidden from screen readers
               aria-hidden={i !== index}
               importantForAccessibility={i === index ? "auto" : "no-hide-descendants"}

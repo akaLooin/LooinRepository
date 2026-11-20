@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, Ellipsis, MoodMark, TitleInput, TodoRow } from "../../components";
+import { AppText, BottomSheet, Button, Check, Ellipsis, MoodMark, TitleInput, TodoRow } from "../../components";
+import { EventEditor, type EventDraft } from "../events/EventSheets";
 import { formatTime, usePrefs } from "../../data/prefs";
 import {
   addRoutineTodo, copyTodos, deleteTodos, manualRoutinesOn, materialize, moveTodos, selectCategories, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
@@ -20,8 +21,9 @@ type Item = { kind: "event"; at: number; e: CalEvent; from: number; to: number }
 
 /**
  * One day as an agenda (design app, 2026-11-21, user's choice "오늘 중심"): 종일 events, then 오전 · 오후 · 저녁 with
- * timed events and to-dos with a time mixed in time order, then 언제든 (to-dos without a time), each with its category as
- * a small tag on the right instead of category headings. The diary of the day closes the list.
+ * timed events and to-dos with a time mixed in time order, then To Do (to-dos without a time; was 언제든), each with
+ * its category as a small tag on the right (tap it to change the category). Events open their editor. Thin lines
+ * part the blocks. The diary of the day closes the list.
  */
 export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => void }) {
   const { c } = useTheme();
@@ -33,6 +35,8 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
+  const [editing, setEditing] = useState<EventDraft | null>(null);
+  const [recat, setRecat] = useState<{ id: string; current: string } | null>(null);
   const catOf = useMemo(() => new Map(categories.map((x) => [x.id, x])), [categories]);
   const catOrder = useMemo(() => new Map(categories.map((x, i) => [x.id, i])), [categories]);
 
@@ -53,14 +57,16 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const pending = categories.filter((x) => !x.endedAt).flatMap((cat) => manualRoutinesOn(db, day, cat.id).map((r) => ({ r, cat })));
   const parts: [string, (m: number) => boolean][] = [["오전", (m) => m < 12 * 60], ["오후", (m) => m >= 12 * 60 && m < 18 * 60], ["저녁", (m) => m >= 18 * 60]];
 
-  const tag = (catId: string) => {
-    const cat = catOf.get(catId);
+  const tag = (t: Todo) => {
+    const cat = catOf.get(t.categoryId);
     if (!cat) return null;
     const col = visibleOn(cat.color, c.bg, c.textMuted);
     return (
-      <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: col + "22", alignSelf: "flex-start", marginTop: 2 }}>
+      // tap the tag to move the to-do to another category (user)
+      <Pressable onPress={() => setRecat({ id: t.id, current: t.categoryId })} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${t.title}의 카테고리 ${cat.title}, 바꾸기`}
+        style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: col + "22", alignSelf: "flex-start", marginTop: 2 }}>
         <AppText variant="small" weight={600} raw={col} numberOfLines={1}>{cat.title}</AppText>
-      </View>
+      </Pressable>
     );
   };
   const row = (t: Todo, withTime: boolean) => {
@@ -81,11 +87,11 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         onAlarmPress={() => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
         onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title }); } : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
-        right={tag(t.categoryId)} />
+        right={tag(t)} />
     );
   };
   const eventCard = (e: CalEvent, from: number, to: number) => (
-    <Pressable key={e.id} onPress={() => router.push(`/events/${day}` as never)} accessibilityRole="button"
+    <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정"
       accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, parseDay(day).y)}${e.important ? ", 강조" : ""}`}
       style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 12, borderRadius: tokens.radius.md, backgroundColor: e.color + "26", borderLeftWidth: 3, borderLeftColor: e.color, marginVertical: 4 }}>
       {e.important ? <GlowFrame radius={tokens.radius.md} inset={4} embers={{ count: 6, rise: 18, size: 3 }} /> : null}
@@ -94,7 +100,8 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     </Pressable>
   );
   const heading = (text: string, right?: React.ReactNode) => (
-    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 18, marginBottom: 2 }}>
+    // each part starts with a thin line, so 종일 · 오전 · 오후 · 저녁 · To Do read as separate blocks (user)
+    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 14, paddingTop: 12, marginBottom: 2, borderTopWidth: 1, borderTopColor: c.sectionLine }}>
       <AppText variant="helper" weight={700} color="textMuted" style={{ flex: 1 }}>{text}</AppText>
       {right}
     </View>
@@ -118,7 +125,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
           {heading("종일")}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, paddingTop: 6 }}>
             {band.map((e) => (
-              <Pressable key={e.id} onPress={() => router.push(`/events/${day}` as never)} accessibilityRole="button" accessibilityLabel={`${e.title}, 종일${e.important ? ", 강조" : ""}`}
+              <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정" accessibilityLabel={`${e.title}, 종일${e.important ? ", 강조" : ""}`}
                 style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
                 {e.important ? <GlowFrame radius={tokens.radius.sm} inset={5} embers={{ count: 6, rise: 16, size: 3 }} /> : null}
                 <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
@@ -144,7 +151,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         );
       })}
 
-      {heading("언제든", todos.length ? (
+      {heading("To Do", todos.length ? (
         <Pressable onPress={() => setListMenu("menu")} hitSlop={10} accessibilityRole="button" accessibilityLabel="리스트 메뉴"><Ellipsis size={20} color={c.textMuted} /></Pressable>
       ) : null)}
       {anytime.map((t) => row(t, false))}
@@ -162,6 +169,20 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
       <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setRenaming({ id, title: db.todos.find((x) => x.id === id)?.title ?? "" })} notice={notice} />
       <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: () => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); } } : undefined}>
         {renaming ? <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일" /> : null}
+      </BottomSheet>
+      <EventEditor draft={editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); notice(m); }} />
+      <BottomSheet visible={!!recat} onClose={() => setRecat(null)} title="카테고리 바꾸기">
+        {categories.filter((x) => !x.endedAt).map((x) => (
+          <Pressable key={x.id} onPress={() => {
+            if (recat && x.id !== recat.current) { updateTodo(materialize(recat.id), { categoryId: x.id }); notice(`'${x.title}'(으)로 옮겼어요`); }
+            setRecat(null);
+          }} role="radio" aria-checked={x.id === recat?.current}
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 52 }}>
+            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: visibleOn(x.color, c.bg, c.text) }} />
+            <AppText variant="bodyLg" style={{ flex: 1 }}>{x.title}</AppText>
+            {x.id === recat?.current ? <Check size={20} color={c.text} /> : null}
+          </Pressable>
+        ))}
       </BottomSheet>
       <ListMenuSheet open={listMenu === "menu"} onClose={() => setListMenu(null)} onConfirm={runList} />
       {listMenu === "move" || listMenu === "copy" ? (

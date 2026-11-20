@@ -1,6 +1,6 @@
 // Design app (build with APP_VARIANT=design): 홈 · 달력 · 함께 · 나 tabs (2026-11-21).
 // 홈: greeting, today's count and what is next, this week, D-days, shortcuts, an input bar for today; a week day opens
-// 달력 on it. 달력: a month (picked day = white cell, today = grey cell), the day's agenda (timed events, 언제든 with
+// 달력 on it. 달력: a month (picked day = white cell, today = grey cell), the day's agenda (timed events, To Do with
 // category tags) and an input bar for that day. 함께: friend row → their page.
 const { chromium } = require("playwright");
 (async () => {
@@ -28,11 +28,23 @@ const { chromium } = require("playwright");
   await p.getByRole("button", { name: "다음 달" }).click(); await p.waitForTimeout(500);
   await p.getByRole("button", { name: /오늘로 이동$/ }).first().click(); await p.waitForTimeout(500);
   r.timedEvent = await p.getByRole("button", { name: /^팀 회의, / }).count();
-  r.anytime = await p.getByText("언제든").count();
+  r.toDoHeading = await p.getByText("To Do", { exact: true }).count();
+  // an event opens its editor right here (no timeline)
+  await p.getByRole("button", { name: /^팀 회의, / }).first().click(); await p.waitForTimeout(500);
+  const hasTitleInput = () => p.evaluate(() => [...document.querySelectorAll("input,textarea")].some((x) => x.value === "팀 회의"));
+  r.eventEditor = (await hasTitleInput()) && p.url().endsWith("/calendar");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+  if (await hasTitleInput()) { await p.getByRole("button", { name: /닫기|취소/ }).first().click().catch(() => {}); await p.waitForTimeout(400); }
   r.addedFromHome = await p.getByText("홈 입력 테스트").count();
   await p.getByLabel("할 일 추가").fill("달력 입력 테스트"); await p.getByLabel("할 일 추가").press("Enter"); await p.waitForTimeout(400);
   r.added = await p.getByText("달력 입력 테스트").count();
-  await p.getByRole("button", { name: /^카테고리 .*, 바꾸기$/ }).click(); await p.waitForTimeout(400);
+  // the category tag of a to-do moves it to another category
+  const tagBtn = p.getByRole("button", { name: /^달력 입력 테스트의 카테고리 .*, 바꾸기$/ });
+  const before = await tagBtn.getAttribute("aria-label");
+  await tagBtn.click(); await p.waitForTimeout(400);
+  await p.getByRole("radio", { checked: false }).first().click(); await p.waitForTimeout(400);
+  r.recategorised = before !== (await p.getByRole("button", { name: /^달력 입력 테스트의 카테고리 .*, 바꾸기$/ }).getAttribute("aria-label"));
+  await p.getByRole("button", { name: /^카테고리 [^의]*, 바꾸기$/ }).first().click(); await p.waitForTimeout(400);
   r.categorySheet = await p.getByText("어느 카테고리에 넣을까요?").count();
   await p.getByRole("radio").last().click(); await p.waitForTimeout(300);
   // the picked day is a white cell, today a grey one

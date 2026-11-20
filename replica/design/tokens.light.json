@@ -34,6 +34,8 @@
     "drop-target": "#d6f0df",
     "span-done": "#b5b5b5",
     "hour-line": "#e6e6e6",
+    "today-cell": "#ececec",
+    "section-line": "#e8e8e8",
     "neon": "#00a3c4",
     "now-line": "#e0323f",
     "danger": "#c4303c",

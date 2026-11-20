@@ -12,6 +12,7 @@ import { tokens, useInsets, useTheme } from "../../theme";
 import { CalendarPager, calendarJustSwiped } from "../home/CalendarPager";
 import { CalendarFilterSheet } from "../home/HomeSheets";
 import { dayState } from "../home/dayState";
+import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { AgendaList } from "./AgendaList";
 import { dayTitle, QuickAdd } from "./parts";
 
@@ -35,6 +36,7 @@ export function CalendarTab() {
   const [selected, setSelected] = useState<Day>(now);
   const [view, setView] = useState(() => ({ y: parseDay(now).y, m: parseDay(now).m }));
   const [filter, setFilter] = useState(false);
+  const [menu, setMenu] = useState(false);
   const [toast, notice] = useToast();
   const eventMode = prefs.calendarKind === "span";
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
@@ -62,7 +64,12 @@ export function CalendarTab() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", height: 56, gap: 10 }}>
+        {/* the same top row as 홈 (search, menu), so the month has room above it */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
+          <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
+          <MenuButton onPress={() => setMenu(true)} />
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", height: 48, gap: 10, marginBottom: 6 }}>
           <Pressable onPress={() => show(now)} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`${view.y}년 ${view.m}월, 오늘로 이동`}>
             <AppText variant="monthTitle" weight={700} style={{ fontSize: 26, lineHeight: 34 }} accessibilityRole="header">{`${view.y}년 ${view.m}월`}</AppText>
           </Pressable>
@@ -88,15 +95,16 @@ export function CalendarTab() {
               spans={bars} kind={prefs.calendarKind} importantOn={(d) => lit.has(d)} ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))} />
           );
         }} />
-        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 20, gap: 14 }}>
+        <View style={{ height: 1, backgroundColor: c.sectionLine, marginTop: 14 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 14, gap: 14 }}>
           <AppText variant="bodyLg" weight={700} style={{ flex: 1 }}>{dayTitle(selected)}</AppText>
           {todos.length ? <AppText variant="helper" color="textMuted">{`할 일 ${doneCount}/${todos.length}`}</AppText> : null}
           {icon("이날 시간표", () => router.push(`/events/${selected}` as never), <Clock size={21} color={c.text} />)}
-          {icon("할 일과 일기 검색", () => router.push("/search" as never), <Search size={21} color={c.text} />)}
         </View>
         <AgendaList day={selected} notice={notice} />
       </ScrollView>
       <QuickAdd day={selected} cats={active} lastId={prefs.quickAddCategory} notice={notice} />
+      <HomeMenu open={menu} onClose={() => setMenu(false)} />
       {filter ? <CalendarFilterSheet open onClose={() => setFilter(false)} categories={categories} /> : null}
       {toast}
     </View>
