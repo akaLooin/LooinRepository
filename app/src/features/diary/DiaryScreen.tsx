@@ -17,6 +17,7 @@ import { contrast, fontFamily, tokens, useTheme } from "../../theme";
 import { VISIBILITY_LABEL } from "../categories/CategoryEditScreen";
 import { ReactionSheet } from "../social/ReactionSheet";
 import { DIARY_COLORS } from "./colors";
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 const ORDER: Visibility[] = ["public", "followers", "partial", "private"];
 const WD = "일월화수목금토";
@@ -82,10 +83,33 @@ export function DiaryScreen() {
   };
   const close = () => (changed ? setAsking(true) : goBack("/"));
 
+  const CHIP = { flexDirection: "row" as const, alignItems: "center" as const, gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 18, borderWidth: 1, borderColor: inkMuted };
   return (
     <View style={{ flex: 1, backgroundColor: background, paddingTop: insets.top }}>
       <ScreenHeader title="일기" close onBack={close} right={{ label: "완료", onPress: done }} ink={shownBg ? ink : undefined} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, gap: 18, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        {DESIGN_TRIAL ? (
+          // design app: the date as the title, then mood · 온도 · 공개 범위 as chips (not the original's dotted
+          // circle in the middle and the author line)
+          <View style={{ gap: 12 }}>
+            <AppText variant="bodyLg" weight={800} raw={ink} style={{ fontSize: 22, lineHeight: 30 }}>{`${m}월 ${d}일 ${WD[weekday(date)]}요일`}</AppText>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" accessibilityLabel={emoji ? "오늘의 기분 스티커 바꾸기" : "오늘의 기분 고르기"} style={CHIP}>
+                {emoji ? <MoodMark value={emoji} size={24} /> : <SmilePlus size={18} color={ink} />}
+                <AppText variant="helper" weight={600} raw={ink}>{emoji ? "기분" : "기분 고르기"}</AppText>
+              </Pressable>
+              <Pressable onPress={() => { setDraftTemp(temp ?? 50); setSheet("temp"); }} accessibilityRole="button" accessibilityLabel={typeof temp === "number" ? `기분 온도 ${temp}도, 바꾸기` : "기분 온도"} style={CHIP}>
+                <Thermometer size={16} color={tokens.sticker.heart} />
+                <AppText variant="helper" weight={600} raw={ink}>{typeof temp === "number" ? `${temp}°` : "온도"}</AppText>
+              </Pressable>
+              <Pressable onPress={() => setSheet("visibility")} accessibilityRole="button" accessibilityLabel={`공개 범위 ${VISIBILITY_LABEL[visibility]}, 바꾸기`} style={CHIP}>
+                <VisibilityIcon value={visibility} color={ink} size={15} />
+                <AppText variant="helper" weight={600} raw={ink}>{VISIBILITY_LABEL[visibility]}</AppText>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+        <>
         <View style={{ alignItems: "center", gap: 8, marginVertical: 8 }}>
           <Pressable onPress={() => setSheet("mood")} accessibilityRole="button" accessibilityLabel={emoji ? "오늘의 기분 스티커 바꾸기" : "오늘의 기분 고르기"}>
             {emoji ? <MoodMark value={emoji} size={72} /> : (
@@ -117,6 +141,8 @@ export function DiaryScreen() {
             </View>
           </View>
         </View>
+        </>
+        )}
         {images.map((u, i) => (
           <View key={u + i}>
             <ZoomPhoto uri={u} label={`일기 사진 ${i + 1}`} others={false}><StoredImage uri={u} label={`일기 사진 ${i + 1}`} style={{ width: "100%", aspectRatio: 1, borderRadius: tokens.radius.lg }} /></ZoomPhoto>
@@ -150,7 +176,9 @@ export function DiaryScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={{ flexDirection: "row", gap: 14, paddingHorizontal: tokens.layout.gutter, paddingTop: 10, paddingBottom: insets.bottom + 10, backgroundColor: c.surfaceButton }}>
+      <View style={DESIGN_TRIAL
+        ? { flexDirection: "row", gap: 14, alignSelf: "center", paddingHorizontal: 14, paddingVertical: 8, marginBottom: insets.bottom + 10, borderRadius: 28, backgroundColor: c.surfaceButton }
+        : { flexDirection: "row", gap: 14, paddingHorizontal: tokens.layout.gutter, paddingTop: 10, paddingBottom: insets.bottom + 10, backgroundColor: c.surfaceButton }}>
         <Pressable onPress={() => { setDraftBg(bg); setSheet("color"); }} accessibilityRole="button" accessibilityLabel="배경색" style={{ width: 40, height: 40, borderRadius: 20, overflow: "hidden", flexDirection: "row", flexWrap: "wrap" }}>
           {[DIARY_COLORS[1], DIARY_COLORS[20], DIARY_COLORS[33], DIARY_COLORS[39]].map((col) => <View key={col} style={{ width: "50%", height: "50%", backgroundColor: col ?? c.bg }} />)}
         </Pressable>

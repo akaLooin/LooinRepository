@@ -9,6 +9,8 @@ import { setPref, usePrefs } from "../../data/prefs";
 import { pauseTimer, resetTimer, startTimer, timerTotal, updateTodo, useDB } from "../../data/store";
 import { clampMinutes, countdownText, pomodoroLeft, POMODORO_MAX, POMODORO_MIN, POMODORO_STEP, startSession } from "../../lib/pomodoro";
 import { tokens, useTheme } from "../../theme";
+import { DESIGN_TRIAL } from "../../lib/variant";
+import Svg, { Circle } from "react-native-svg";
 
 const hms = (s: number) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, "0")).join(" : ");
 
@@ -17,6 +19,8 @@ const hms = (s: number) => [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s
  * ⋯ switches between 스톱워치 and 뽀모도로 (user's feature): a countdown from a chosen length that records the focused
  * time on the to-do and rings at the end, also with the app closed.
  */
+const RING = 270;
+
 export function TimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { c } = useTheme();
@@ -90,20 +94,46 @@ export function TimerScreen() {
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <View style={{ zIndex: 1 }}>
         <ScreenHeader title={pomo ? "뽀모도로" : "타이머"} close onBack={() => goBack("/")} />
+        {DESIGN_TRIAL ? null : (
         <Pressable onPress={() => setMenu(true)} hitSlop={12} accessibilityRole="button" accessibilityLabel="타이머 종류"
           style={{ position: "absolute", right: tokens.layout.gutter, top: 0, bottom: 0, justifyContent: "center" }}>
           <Ellipsis size={26} color={c.text} />
         </Pressable>
+        )}
       </View>
+      {/* design app: the kind is a two-way switch on the page instead of a ⋯ popup */}
+      {DESIGN_TRIAL ? (
+        <View style={{ flexDirection: "row", alignSelf: "center", marginTop: 8, padding: 3, borderRadius: 12, backgroundColor: c.surface }} role="tablist">
+          {([["stopwatch", "스톱워치"], ["pomodoro", "뽀모도로"]] as const).map(([k, label]) => {
+            const on = (k === "pomodoro") === pomo;
+            return (
+              <Pressable key={k} onPress={() => switchMode(k)} role="tab" aria-selected={on} accessibilityLabel={label}
+                style={{ height: 34, paddingHorizontal: 18, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: on ? c.surfaceStrong : "transparent" }}>
+                <AppText variant="helper" weight={on ? 700 : 500} color={on ? "text" : "textMuted"}>{label}</AppText>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: tokens.layout.gutter + 20, gap: 20, marginTop: -60 }}>
         <AppText variant="sheetTitle" center numberOfLines={2}>{todo.title}</AppText>
-        <View style={{ borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.surfaceStrong, paddingVertical: 10 }}>
+        <View style={DESIGN_TRIAL ? { alignSelf: "center", width: RING, height: RING, alignItems: "center", justifyContent: "center" } : { borderTopWidth: 1, borderBottomWidth: 1, borderColor: c.surfaceStrong, paddingVertical: 10 }}>
+          {DESIGN_TRIAL ? (
+            // design app: a ring round the time; it fills with the focus session, or turns once a minute on the stopwatch
+            <Svg width={RING} height={RING} style={{ position: "absolute" }}>
+              <Circle cx={RING / 2} cy={RING / 2} r={RING / 2 - 8} stroke={c.surface} strokeWidth={10} fill="none" />
+              <Circle cx={RING / 2} cy={RING / 2} r={RING / 2 - 8} stroke={running ? c.accent : c.surfaceStrong} strokeWidth={10} fill="none" strokeLinecap="round"
+                strokeDasharray={`${Math.PI * (RING - 16)}`}
+                strokeDashoffset={Math.PI * (RING - 16) * (1 - (pomo ? (session ? 1 - left / Math.max(1, prefs.pomodoroMinutes * 60) : 0) : (total % 60) / 60))}
+                transform={`rotate(-90 ${RING / 2} ${RING / 2})`} />
+            </Svg>
+          ) : null}
           {pomo ? (
-            <AppText variant="timer" color={session ? "text" : "timerIdle"} center style={{ fontVariant: ["tabular-nums"] }} accessibilityLabel={`남은 시간 ${countdownText(left).replace(/ /g, "")}`} accessibilityLiveRegion="none">
+            <AppText variant="timer" color={session ? "text" : "timerIdle"} center style={{ fontVariant: ["tabular-nums"], ...(DESIGN_TRIAL ? { fontSize: 34, lineHeight: 42, letterSpacing: -1 } : null) }} accessibilityLabel={`남은 시간 ${countdownText(left).replace(/ /g, "")}`} accessibilityLiveRegion="none">
               {countdownText(left)}
             </AppText>
           ) : (
-            <AppText variant="timer" color={running || total ? "text" : "timerIdle"} center style={{ fontVariant: ["tabular-nums"] }} accessibilityLabel={`기록한 시간 ${hms(total).replace(/ /g, "")}`} accessibilityLiveRegion="none">
+            <AppText variant="timer" color={running || total ? "text" : "timerIdle"} center style={{ fontVariant: ["tabular-nums"], ...(DESIGN_TRIAL ? { fontSize: 34, lineHeight: 42, letterSpacing: -1 } : null) }} accessibilityLabel={`기록한 시간 ${hms(total).replace(/ /g, "")}`} accessibilityLiveRegion="none">
               {hms(total)}
             </AppText>
           )}

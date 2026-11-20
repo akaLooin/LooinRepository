@@ -1,3 +1,4 @@
+import { DESIGN_TRIAL } from "../lib/variant";
 import { Pressable, View } from "react-native";
 import { readableOn, tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
@@ -48,6 +49,23 @@ export function CategoryPill({ title, color, visibility, onAdd, onPress, onLongP
   const { c } = useTheme();
   const h = tokens.size.categoryPillHeight;
   const plus = 34;
+  // design app: a full-width group title (colour bar, name in its colour, visibility, round +), not the original's pill
+  if (DESIGN_TRIAL) {
+    const col = readableOn(color, c.bg);
+    return (
+      <View style={{ flexDirection: "row", alignItems: "center", height: 40, gap: 10 }}>
+        <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10 }} accessibilityRole="button" accessibilityLabel={title} accessibilityHint={onLongPress ? "길게 누르면 카테고리 편집" : undefined}>
+          <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: col }} />
+          <AppText variant="bodyLg" weight={800} raw={col} numberOfLines={1} style={{ flexShrink: 1 }}>{title}</AppText>
+          <VisibilityIcon value={visibility} size={14} color={c.textMuted} />
+        </Pressable>
+        {onAdd ? <Pressable onPress={onAdd} hitSlop={8} accessibilityRole="button" accessibilityLabel={`${title}에 할 일 추가`}
+          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.surfaceStrong, alignItems: "center", justifyContent: "center" }}>
+          <Plus size={16} color={c.text} strokeWidth={2.6} />
+        </Pressable> : null}
+      </View>
+    );
+  }
   return (
     <View style={{ flexDirection: "row", alignSelf: "flex-start", maxWidth: "100%", alignItems: "center", height: h, borderRadius: R, backgroundColor: c.surface, paddingLeft: 14, paddingRight: 4, gap: 8 }}>
       <Pressable onPress={onPress} onLongPress={onLongPress} style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }} accessibilityRole="button" accessibilityLabel={title} accessibilityHint={onLongPress ? "길게 누르면 카테고리 편집" : undefined}>
@@ -79,6 +97,13 @@ export function PillButton({ label, onPress, children, round, a11y, pad = 16, ga
 /** "+ 추가하기" (S06, S21, S22). */
 export function AddPill({ label = "추가하기", onPress }: { label?: string; onPress?: () => void }) {
   const { c } = useTheme();
+  // design app: a round + button in the text colour instead of the original's grey "+ 추가하기" pill
+  if (DESIGN_TRIAL) return (
+    <Pressable onPress={onPress} hitSlop={6} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => ({ width: 36, height: 36, borderRadius: 18, backgroundColor: c.text, opacity: pressed ? 0.7 : 1, alignItems: "center", justifyContent: "center" })}>
+      <Plus size={20} color={c.bg} strokeWidth={2.6} />
+    </Pressable>
+  );
   return (
     <Pressable onPress={onPress} accessibilityRole="button"
       style={({ pressed }) => ({ height: 38, paddingHorizontal: 16, borderRadius: R, backgroundColor: pressed ? c.surfaceButton : c.surfaceStrong, flexDirection: "row", alignItems: "center", gap: 6 })}>

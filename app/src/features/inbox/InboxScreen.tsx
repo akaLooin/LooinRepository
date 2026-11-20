@@ -11,6 +11,7 @@ import { InlineTodoInput } from "../home/InlineTodoInput";
 import { TodoSheets } from "../home/TodoSheets";
 import { useSwipeRight } from "../home/useSwipeRight";
 import { usePager } from "../home/pagerContext";
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 /**
  * S23 보관함: to-dos without a date, by category, with their memos in full.
@@ -54,7 +55,8 @@ export function InboxScreen() {
     <View style={{ flex: 1, backgroundColor: c.bg }} {...back}>
       <DragScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={{ height: tokens.layout.headerHeight, justifyContent: "center" }}>
-          <AppText variant="screenTitle" center accessibilityRole="header">보관함</AppText>
+          {/* design app: the title on the left, larger (the original centres it) */}
+          <AppText variant="screenTitle" center={!DESIGN_TRIAL} accessibilityRole="header" style={DESIGN_TRIAL ? { fontSize: 22, lineHeight: 30, fontWeight: "800" } : undefined}>보관함</AppText>
         </View>
         <View style={{ paddingHorizontal: tokens.layout.gutter, gap: 12, marginTop: 8 }}>
           {todos.length === 0 ? (

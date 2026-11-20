@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Platform, TextInput, View, type TextInputInstance, type ViewInstance } from "react-native";
 import { Clover, useReveal } from "../../components";
 import { fontFamily, tokens, useTheme, visibleOn } from "../../theme";
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 /**
  * The row that turns into a text field when adding (+) or editing (double tap) a to-do (S04).
@@ -58,7 +59,11 @@ export function InlineTodoInput({ color, initial = "", editing = !!initial, focu
         placeholder="할 일 입력"
         placeholderTextColor={c.textPlaceholder}
         accessibilityLabel="할 일 입력"
-        style={{ flex: 1, minWidth: 0, outlineStyle: "none" as never, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 8,
+        // design app: a soft filled box with the category colour as a thin left edge (not the original's underline)
+        style={DESIGN_TRIAL
+          ? { flex: 1, minWidth: 0, outlineStyle: "none" as never, fontFamily: fontFamily(500), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 9, paddingHorizontal: 12,
+            borderRadius: 10, backgroundColor: c.surface, borderLeftWidth: 3, borderLeftColor: visibleOn(color, c.bg, c.text) }
+          : { flex: 1, minWidth: 0, outlineStyle: "none" as never, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 8,
           borderBottomWidth: 2, borderBottomColor: visibleOn(color, c.bg, c.text) }}
       />
     </View>

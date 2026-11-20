@@ -4,6 +4,8 @@ import { ScaledRoot, tokens, useDesignScale, useInsets, useTheme } from "../them
 import { AppText } from "./AppText";
 import { TextButton } from "./Button";
 import { useSheetDrag } from "./useSheetDrag";
+import { X } from "./icons";
+import { DESIGN_TRIAL } from "../lib/variant";
 
 /**
  * Sheet that slides up over a dimmed screen (S05, S05a, S06c, S07d, S22b).
@@ -46,8 +48,30 @@ export function BottomSheet({ visible, onClose, title, right, children, inline, 
       ) : null}
     </View>
   );
-  const body = { backgroundColor: c.surfaceRaised, borderTopLeftRadius: tokens.radius.sheet, borderTopRightRadius: tokens.radius.sheet, paddingTop: 12, paddingHorizontal: tokens.layout.gutter, paddingBottom: 24 + insets.bottom };
-  if (inline) return <View style={body}>{top}{children}</View>; // for the design gallery
+  // design app (not the original's edge-to-edge sheet with a grabber and centred title): a floating card with all
+  // corners round, the title on the left and a round close button (or the action as a pill) on the right
+  const designTop = (
+    <View {...(inline ? {} : handlers)} accessibilityHint={inline ? undefined : "아래로 끌어 닫기"}
+      style={{ flexDirection: "row", alignItems: "center", minHeight: title ? 52 : 20, marginBottom: title ? 6 : 0 }}>
+      <AppText variant="sheetTitle" accessibilityRole="header" numberOfLines={1} style={{ flex: 1, textAlign: "left", fontWeight: "800" }}>{title ?? ""}</AppText>
+      {right ? (
+        <Pressable onPress={right.onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={right.label}
+          style={{ height: 34, paddingHorizontal: 14, borderRadius: 17, backgroundColor: c.text, alignItems: "center", justifyContent: "center" }}>
+          <AppText variant="body" weight={700} raw={c.bg}>{right.label}</AppText>
+        </Pressable>
+      ) : title ? (
+        <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="닫기"
+          style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: c.surfaceStrong, alignItems: "center", justifyContent: "center" }}>
+          <X size={18} color={c.text} strokeWidth={2.6} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+  const body = DESIGN_TRIAL
+    ? { backgroundColor: c.surfaceRaised, borderRadius: 28, marginHorizontal: 8, marginBottom: 8 + insets.bottom, paddingTop: 14, paddingHorizontal: tokens.layout.gutter - 4, paddingBottom: 20 }
+    : { backgroundColor: c.surfaceRaised, borderTopLeftRadius: tokens.radius.sheet, borderTopRightRadius: tokens.radius.sheet, paddingTop: 12, paddingHorizontal: tokens.layout.gutter, paddingBottom: 24 + insets.bottom };
+  const head = DESIGN_TRIAL ? designTop : top;
+  if (inline) return <View style={body}>{head}{children}</View>; // for the design gallery
   if (!mounted && !visible) return null;
   return (
     <Modal visible transparent animationType="none" onRequestClose={onBack ?? onClose} statusBarTranslucent>
@@ -57,7 +81,7 @@ export function BottomSheet({ visible, onClose, title, right, children, inline, 
             <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="닫기" />
           </Animated.View>
           <Animated.View style={[body, { transform: [{ translateY: Animated.add(translateY, lift) }] }]}>
-            {top}
+            {head}
             {children}
           </Animated.View>
         </View>

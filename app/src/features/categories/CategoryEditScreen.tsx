@@ -8,6 +8,7 @@ import {
 } from "../../components";
 import { deleteCategory, endCategory, moveCategoryTodos, saveCategory, selectCategories, useDB } from "../../data/store";
 import { readableOn, tokens, useTheme, visibleOn } from "../../theme";
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 export const VISIBILITY_LABEL: Record<Visibility, string> = { public: "전체 공개", followers: "팔로워 공개", partial: "일부 공개", private: "나만 보기" };
 const ORDER: Visibility[] = ["public", "followers", "partial", "private"];
@@ -55,10 +56,23 @@ export function CategoryEditScreen() {
         {!isNew ? (
           <>
             <FieldGroup><FieldRow title="다른 카테고리로 이관하기" onPress={() => setSheet("move")} /></FieldGroup>
+            {DESIGN_TRIAL ? (
+              // design app: end and delete as rows of their own group (not the original's two buttons side by side)
+              <View style={{ marginTop: 16 }}>
+                <FieldGroup>
+                  <FieldRow title={existing?.endedAt ? "다시 사용하기" : "종료하기"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); goBack("/categories"); }} />
+                  <Pressable onPress={() => setSheet("delete")} accessibilityRole="button" accessibilityLabel="카테고리 삭제"
+                    style={{ height: tokens.size.fieldHeight, paddingHorizontal: 18, justifyContent: "center", backgroundColor: c.surfaceInput }}>
+                    <AppText variant="bodyLg" weight={600} color="danger">카테고리 삭제</AppText>
+                  </Pressable>
+                </FieldGroup>
+              </View>
+            ) : (
             <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
               <Button kind="plain" flex height={43} label={existing?.endedAt ? "다시 사용하기" : "종료하기"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); goBack("/categories"); }} />
               <Button kind="danger" flex height={43} label="삭제" onPress={() => setSheet("delete")} />
             </View>
+            )}
             <View style={{ gap: 6, marginTop: 14 }}>
               <AppText variant="helper" color="textSecondary">종료: 지금까지의 기록은 그대로 두고, 새 할 일만 더 넣을 수 없게 해요.</AppText>
               <AppText variant="helper" color="textSecondary">삭제: 카테고리와 그 안의 할 일을 모두 지워요. 되돌릴 수 없어요.</AppText>

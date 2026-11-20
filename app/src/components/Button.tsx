@@ -1,3 +1,4 @@
+import { DESIGN_TRIAL } from "../lib/variant";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
@@ -30,6 +31,14 @@ export function TileButton({ label, icon, onPress, inline }: { label: string; ic
   /** icon beside the label in a lower tile (the to-do menu's bottom row) */
   inline?: boolean }) {
   const { c } = useTheme();
+  // design app: a slim outlined button
+  if (DESIGN_TRIAL && inline) return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => ({ flex: 1, height: 46, flexDirection: "row", borderRadius: 23, borderWidth: 1, borderColor: c.surfaceStrong, backgroundColor: pressed ? c.surface : "transparent", alignItems: "center", justifyContent: "center", gap: 8 })}>
+      {icon}
+      <AppText variant="body" weight={600}>{label}</AppText>
+    </Pressable>
+  );
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       style={({ pressed }) => ({ flex: 1, height: inline ? 60 : 85, flexDirection: inline ? "row" : "column", borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceStrong : c.surfaceButton, alignItems: "center", justifyContent: "center", gap: 10 })}>
@@ -51,6 +60,15 @@ export function TextButton({ label, onPress, disabled, raw }: { label: string; o
 /** Timer start (S08). */
 export function PlayButton({ label = "시작하기", running, onPress }: { label?: string; running?: boolean; onPress?: () => void }) {
   const { c } = useTheme();
+  // design app: one big round button with the label under it (not the original's pill with ▶ and text)
+  if (DESIGN_TRIAL) return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={{ alignItems: "center", gap: 10, alignSelf: "center" }}>
+      <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: running ? c.surfaceStrong : c.text, alignItems: "center", justifyContent: "center" }}>
+        {running ? <Pause size={30} color={c.text} fill={c.text} /> : <Play size={30} color={c.bg} fill={c.bg} style={{ marginLeft: 4 }} />}
+      </View>
+      <AppText variant="body" weight={600} color="textSecondary">{label}</AppText>
+    </Pressable>
+  );
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       style={{ height: 64, borderRadius: tokens.radius.pill, backgroundColor: c.surfaceInput, flexDirection: "row", alignItems: "center", paddingLeft: 4, paddingRight: 32, gap: 20, alignSelf: "center" }}>

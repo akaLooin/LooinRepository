@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { DESIGN_TRIAL } from "../../lib/variant";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import {
@@ -32,7 +33,13 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
   const now = today();
   const day = todo.date ?? now;
   const past = day < now;
-  const icon = (I: typeof Pencil) => <I size={18} color={c.onIcon} strokeWidth={2.4} />;
+  const icon = (I: typeof Pencil) => <I size={DESIGN_TRIAL ? 20 : 18} color={c.onIcon} strokeWidth={2.4} />;
+  const editRow = (
+    <View style={{ flexDirection: "row", gap: 12, marginTop: DESIGN_TRIAL ? 0 : 12 }}>
+      <TileButton inline label={DESIGN_TRIAL ? "수정" : "수정하기"} icon={<Pencil size={DESIGN_TRIAL ? 18 : 24} color={c.menuEdit} />} onPress={() => { close(); onEdit(todo.id); }} />
+      <TileButton inline label={DESIGN_TRIAL ? "삭제" : "삭제하기"} icon={<Trash2 size={DESIGN_TRIAL ? 18 : 24} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
+    </View>
+  );
 
   return (
     <>
@@ -45,6 +52,8 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
             <AppText variant="bodyLg" numberOfLines={6}>{todo.memo}</AppText>
           </Pressable>
         ) : null}
+        {/* design app: 수정 · 삭제 first, then the actions as a grid of tiles */}
+        {DESIGN_TRIAL ? <View style={{ marginBottom: 6 }}>{editRow}</View> : null}
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {inbox ? (
           <>
@@ -97,10 +106,7 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
         </>
         )}
         </View>
-        <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
-          <TileButton inline label="수정하기" icon={<Pencil size={24} color={c.menuEdit} />} onPress={() => { close(); onEdit(todo.id); }} />
-          <TileButton inline label="삭제하기" icon={<Trash2 size={24} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
-        </View>
+        {DESIGN_TRIAL ? null : editRow}
       </BottomSheet>
 
       {mode.kind === "memo" ? <MemoSheet todo={todo} onClose={close} /> : null}

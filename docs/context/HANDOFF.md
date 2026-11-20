@@ -63,6 +63,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 끌기 버그 고침: `ReorderableList`가 처음 그려질 때의 콜백을 계속 써서 나중에 추가된 할 일의 카테고리가 안 바뀌던 문제(두 앱 공통). `onTargetChange`(끄는 중 미리 보기용 콜백)는 남아 있음
 - 이번 주 카드: 일·공휴일 빨강, 토 파랑, 오늘은 골라도 #00ff7f. 공휴일 표 `lib/holidays.ts`(2025~2029)
 - e2e `design-structure.js`(APP_VARIANT=design 빌드, 숨은 탭도 DOM에 있어 `filter({visible:true})` 필요; 변형 바꿀 땐 export `--clear`), DB 테스트 `admin.test.sql`
+- 원본 닮은 곳 차별화(11-21, 전부 `DESIGN_TRIAL` 분기, 기존 앱 그대로): 화면 제목줄(둥근 뒤로 + 왼쪽 큰 제목 + 채운 알약 버튼 `ScreenHeader`), 시트(떠 있는 둥근 카드·왼쪽 제목·X `BottomSheet`), 관리 메뉴(타일 시트 `HomeMenu` `ManageSheet`), 목록 줄(카드 `PillRow`·`RoutineRow`), 카테고리 제목(색 막대 줄 `CategoryPill`), + 버튼(둥근 `AddPill`), 이름 입력(채운 칸 + 왼쪽 색 막대 `TitleInput`·`InlineTodoInput`), 선택(오른쪽 체크 `RadioList`·`RadioCheck`), 설정 줄(타일 + 값 칩 `ValueRow`·`ToggleRow`, 스위치 글자 없음), 할 일 메뉴(수정·삭제 위 + 4열 타일), 할 일 정보(정보 카드), 타이머(고리 + 종류 전환 + 둥근 재생), 일기(날짜 제목 + 기분·온도·공개 칩, 떠 있는 도구 막대), 카테고리 편집(종료·삭제 줄), 보관함 제목 왼쪽
 - 다음 후보: 이용자 폰 확인, 테마(스킨) 기능, 앱 이름·아이콘(나중)
 
 ## 알려진 한계

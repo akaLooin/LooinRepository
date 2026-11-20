@@ -1,3 +1,4 @@
+import { DESIGN_TRIAL } from "../lib/variant";
 import { useEffect, useRef } from "react";
 import { Pressable, TextInput, View, type TextInputInstance } from "react-native";
 import { fontFamily, tokens, useTheme } from "../theme";
@@ -37,6 +38,18 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
 }) {
   const { c } = useTheme();
   const t = tokens.type["bodyLg"];
+  // design app: a filled box with a colour bar on its left instead of the original's coloured underline
+  if (DESIGN_TRIAL) return (
+    <View>
+      <View style={{ flexDirection: "row", alignItems: "center", borderRadius: tokens.radius.md, backgroundColor: c.surface, overflow: "hidden",
+        borderWidth: error ? 1 : 0, borderColor: c.danger }}>
+        <View style={{ width: 4, alignSelf: "stretch", backgroundColor: underline ?? c.textMuted }} />
+        <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={c.textPlaceholder} autoFocus={autoFocus} accessibilityLabel={placeholder}
+          style={{ flex: 1, outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 600), fontSize: bold ? 18 : t.size, color: textColor ?? c.text, paddingVertical: 14, paddingHorizontal: 14 }} />
+      </View>
+      {error ? <AppText variant="helper" color="danger" style={{ marginTop: 6 }}>{error}</AppText> : null}
+    </View>
+  );
   return (
     <View>
       <TextInput
