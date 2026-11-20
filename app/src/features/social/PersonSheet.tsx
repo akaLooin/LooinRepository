@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { DESIGN_TRIAL } from "../../lib/variant";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { AppText, BottomSheet, Ellipsis, House, Send, StoredImage, useToast, X } from "../../components";
@@ -80,7 +81,7 @@ export function PersonSheet({ person: initial, onClose, onChange }: { person: Pe
                 <AppText variant="profileName" numberOfLines={1}>{p.nickname}</AppText>
                 {p.handle ? <AppText variant="helper" color="textMuted">@{p.handle}</AppText> : null}
               </View>
-              <RoundButton label={`${p.nickname}의 홈`} onPress={() => { onClose(); showFriend(p.id); router.replace("/" as never); }}><House size={20} color={c.text} /></RoundButton>
+              <RoundButton label={`${p.nickname}의 홈`} onPress={() => { onClose(); if (DESIGN_TRIAL) router.push(`/friend/${p.id}` as never); else { showFriend(p.id); router.replace("/" as never); } }}><House size={20} color={c.text} /></RoundButton>
               <RoundButton label="대화" onPress={() => run(async () => {
                 const conv = await openConversation(p.id);
                 onClose();

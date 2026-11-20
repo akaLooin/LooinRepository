@@ -26,8 +26,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - Supabase: 서울 리전 새 프로젝트, 마이그레이션 0001·0003 실행 완료(표 8개 확인, 보관함용 date nullable), `app/.env.local` 작성, 앱에서 가입·로그인 성공
 - 폰: 삼성 안드로이드, Expo Go로 실행 (PC의 `npx.cmd expo start` 필요)
 
-## 폰 확인 결과와 조치 (2026-11-07, 여섯 번째 피드백까지)
-- 확인됨 ✅: 동기화, 알림, 크기, 접기 ∨, 끌기(제자리), 캘린더 표시, 할 일 메뉴 4종, 체크 색 설정, 보관함 옆 화면 스와이프(동작)
+## 폰 확인 (2026-11-07까지 ✅: 동기화·알림·크기·접기·끌기·캘린더·메뉴·보관함 스와이프)
 - **폰 확인 방식(이용자 결정)**: 항상 실제 속도 모드 = `npm.cmd run phone` (`expo start --no-dev --minify`). **`--clear` 쓰지 않기**: 캐시를 지우면 첫 빌드가 60초 넘게 걸려 Expo Go가 기다리다 포기하고(파란 화면) 예전 버전을 띄움. 업데이트 안 보이던 원인이 이것
 - PC: 실행은 `C:\Users\User\LooinRepository\app`에서. 예전 복사본은 `C:\Users\User\LooinRepository-old`
 
@@ -50,7 +49,12 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - ▼ 캘린더 종류: 누르면 바로 바뀌고 닫힘
 - 11-19 피드백 반영(11-21: 시간표는 하루만, 좌우는 1년치 FlatList 페이지, 자정 넘는 일정은 시간 블록·늘이기·옮기기 `shiftEvent`, 끄는 중 왼쪽 시각), 일정 선택·늘이기·꾹 눌러 옮기기(`lib/eventDrag.ts`), 1분 휠(`TimeGrid`), 할 일 메뉴 2열, 알약 탭=추가/길게=편집, 일정 캘린더 4개·아래 비움, 뒤로가기 한 단계(`BottomSheet onBack`), 별 ✕. 11-20: 동그라미 가운데, 옮기기 15분, 두 손가락 확대(`timelineHourHeight`), 휠 숫자 직접 입력, 할 일 메뉴 루틴 등록하기(`/routines/new?from=`)
 - 중요한 날(11-20): 할 일 체크 꾹 = 중요 켜기/끄기(`toggleImportant`), 일정 강조(선택 시 수정 오른쪽 버튼·편집 스위치·종일 시트). 할 일 캘린더 날짜 별/클로버에 네온 테두리 맥박(`Clover glow`, 공유 `usePulse`), 일정 캘린더는 막대 테두리. 11-20 후속: 강조 색 설정(`glowColor`, 기본 #00FF7F), `components/Highlight.tsx`(11-21 불꽃안으로 통일: `Fire`/`Embers`/`GlowFrame` 네온 겹 테두리, 어두운 틈, `sharedLoop`가 멈춘 애니메이션 재시작), 강조 일정은 할 일 캘린더에서 줄이 빛남, 일정 줄 있는 주는 칸이 늘어남, 스위치 OFF 가림 고침. SQL 20261120000000(미실행이면 폰에서 대기, `missingColumn`)
-- 디자인 시험판: `APP_VARIANT=design` → 별도 앱(`app.config.js`, eas 프로필 `design`, `lib/variant.ts` `DESIGN_TRIAL`). 클로버 → 사각별(`Clover.tsx` `starPath`), 여러 색은 그라데이션. 빌드 방법 backend.md 20. 화면 `replica/design/trial-star-*.png`. 이용자 폰 확인 대기
+- 디자인 앱: `APP_VARIANT=design` 별도 앱(`app.config.js`, eas `design`, `lib/variant.ts`), 빌드 backend.md 20
+
+## 5단계: 출시 리디자인 (2026-11-21~)
+- 기존 앱 = 디자인 앱 모습으로 확정(별, `Clover.tsx` `STAR = true`) 후 그대로 유지
+- 디자인 앱만 새 구조(`DESIGN_TRIAL`): `features/today/`(`TodayScreen` 오늘·`WeekStrip`·`QuickAdd`, `AgendaList` 하루 목록, `CalendarTab`, `TogetherScreen`), 라우트 `(tabs)/calendar`·`together`, `/friend/[id]`(친구·`crew:<id>` 홈), `BottomNav` `DESIGN_TABS`. e2e `design-structure.js`(APP_VARIANT=design 빌드)
+- 다음 후보: 나 탭 다듬기, 테마(스킨) 기능, 앱 이름·아이콘(나중), 오늘 화면의 끌어서 순서·날짜 옮기기(아직 없음)
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인

@@ -14,7 +14,7 @@ import { CrewCardView, CrewRow } from "../crew/parts";
  * ID or name, tapping one opens their profile (follow, their home). With the field empty: 친구 소식 (FeedList).
  * Crews are not built.
  */
-export function ExploreScreen() {
+export function ExploreScreen({ embedded }: { embedded?: boolean } = {}) {
   const { c } = useTheme();
   const insets = useInsets();
   const [q, setQ] = useState("");
@@ -39,7 +39,7 @@ export function ExploreScreen() {
   }, [q]);
   const G = tokens.layout.gutter;
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: embedded ? 0 : insets.top }}>
       <View style={{ paddingHorizontal: G, paddingTop: 10, paddingBottom: 12 }}>
         <View style={{ height: 44, borderRadius: 22, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 14, paddingRight: 10, gap: 8 }}>
           <Search size={18} color={c.textMuted} />
