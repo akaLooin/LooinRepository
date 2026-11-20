@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
   const p = await b.newPage({ viewport: { width: 411, height: 891 } });
   const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
   const r = (global.R = {});
-  const shot = (n) => p.screenshot({ path: `${process.env.SHOT_DIR || "."}/${n}.png` });
+  const shot = (n) => p.screenshot({ path: `${process.argv[2] || process.env.SHOT_DIR || require("os").tmpdir()}/${n}.png` });
   const now = new Date();
   await p.goto("http://localhost:8765/", { waitUntil: "networkidle" });
   await p.evaluate(() => localStorage.clear()); await p.reload({ waitUntil: "networkidle" }); await p.waitForTimeout(800);
