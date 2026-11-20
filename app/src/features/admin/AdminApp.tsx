@@ -19,11 +19,17 @@ export function AdminApp() {
   const { c } = useTheme();
   const insets = useInsets();
   const [admin, setAdmin] = useState<boolean | null>(null);
+  const [why, setWhy] = useState(""); // what the server said, shown on the "not an admin" screen
   const [tab, setTab] = useState<"config" | "notices" | "push">("config");
   const [toast, notice] = useToast();
   const check = useCallback(() => {
     setAdmin(null);
-    supabase?.rpc("is_admin").then(({ data, error }) => setAdmin(error ? false : data === true), () => setAdmin(false));
+    setWhy("");
+    supabase?.auth.getUser().then(({ data }) => setWhy((w) => w || `로그인한 계정: ${data.user?.email ?? "?"}`));
+    supabase?.rpc("is_admin").then(({ data, error }) => {
+      if (error) setWhy(`서버 응답: ${error.message}${/is_admin|function/i.test(error.message) ? " (SQL 20261121000000_admin을 아직 실행하지 않은 것 같아요)" : ""}`);
+      setAdmin(error ? false : data === true);
+    }, (e) => { setWhy(`연결 오류: ${e instanceof Error ? e.message : String(e)}`); setAdmin(false); });
   }, []);
   useEffect(() => { check(); }, [check]);
   const signOut = async () => { await unregisterPush(); await supabase?.auth.signOut(); };
@@ -33,6 +39,7 @@ export function AdminApp() {
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 40, paddingHorizontal: G, gap: 16 }}>
       <AppText variant="bodyLg" weight={800} style={{ fontSize: 22, lineHeight: 30 }}>관리자가 아니에요</AppText>
       <AppText variant="body" color="textSecondary">이 계정은 관리자로 지정되지 않았어요. Supabase SQL Editor에서 20261121000000_admin.sql 맨 아래 줄로 내 이메일을 관리자로 지정한 뒤 다시 확인해 주세요. (SQL을 아직 실행하지 않았어도 이 화면이 보여요.)</AppText>
+      {why ? <AppText variant="small" color="textMuted" selectable>{why}</AppText> : null}
       <Button kind="sheetPrimary" label="다시 확인" onPress={check} />
       <Button kind="plain" label="로그아웃" onPress={signOut} />
     </View>
