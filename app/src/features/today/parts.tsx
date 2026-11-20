@@ -12,8 +12,11 @@ const G = tokens.layout.gutter;
 /** "11월 20일 금요일" */
 export const dayTitle = (d: Day) => { const { m, d: dd } = parseDay(d); return `${m}월 ${dd}일 ${WEEKDAY_LABELS[weekday(d)]}요일`; };
 
-/** Seven days with their stars; swipe left/right for another week, tap a day to show it. */
-export function WeekStrip({ day, onPick }: { day: Day; onPick: (d: Day) => void }) {
+/**
+ * Seven days with their stars; swipe left/right for another week, tap a day to show it. `onDouble` (홈): a second tap
+ * within 0.3 s opens the day elsewhere. `big` (홈 card): larger stars so the numbers read easily (user).
+ */
+export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d: Day) => void; onDouble?: (d: Day) => void; big?: boolean }) {
   const { c } = useTheme();
   const prefs = usePrefs();
   const db = useDB((d) => d);
@@ -24,6 +27,13 @@ export function WeekStrip({ day, onPick }: { day: Day; onPick: (d: Day) => void 
   const now = today();
   const latest = useRef({ day, onPick });
   latest.current = { day, onPick };
+  const lastTap = useRef<{ d: Day; at: number } | null>(null);
+  const tap = (d: Day) => {
+    const t = Date.now(), prev = lastTap.current;
+    lastTap.current = { d, at: t };
+    if (onDouble && prev && prev.d === d && t - prev.at < 300) { lastTap.current = null; onDouble(d); return; }
+    onPick(d);
+  };
   const swipe = useRef(PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 16 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
     onPanResponderRelease: (_, g) => { if (Math.abs(g.dx) > 40) latest.current.onPick(addDays(latest.current.day, g.dx < 0 ? 7 : -7)); },
@@ -34,11 +44,11 @@ export function WeekStrip({ day, onPick }: { day: Day; onPick: (d: Day) => void 
         const sel = d === day, wd = weekday(d);
         const list = todosForDay(db, d);
         return (
-          <Pressable key={d} onPress={() => onPick(d)} accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityLabel={`${parseDay(d).m}월 ${parseDay(d).d}일${lit.has(d) ? ", 중요한 날" : ""}`}
+          <Pressable key={d} onPress={() => tap(d)} accessibilityRole="button" accessibilityState={{ selected: sel }} accessibilityHint={onDouble ? "두 번 누르면 달력에서 열기" : undefined} accessibilityLabel={`${parseDay(d).m}월 ${parseDay(d).d}일${lit.has(d) ? ", 중요한 날" : ""}`}
             style={{ flex: 1, alignItems: "center", gap: 6, paddingVertical: 8, borderRadius: 14, backgroundColor: sel ? c.surfaceStrong : "transparent" }}>
             <AppText variant="small" weight={600} color={wd === 0 ? "sunday" : wd === 6 ? "saturday" : "textMuted"}>{WEEKDAY_LABELS[wd]}</AppText>
-            <AppText variant="body" weight={700} color={d === now && !sel ? "accent" : "text"}>{String(parseDay(d).d)}</AppText>
-            <Clover size={16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} />
+            <AppText variant={big ? "bodyLg" : "body"} weight={700} color={d === now && !sel ? "accent" : "text"}>{String(parseDay(d).d)}</AppText>
+            <Clover size={big ? 30 : 16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} />
           </Pressable>
         );
       })}

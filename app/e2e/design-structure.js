@@ -17,11 +17,21 @@ const { chromium } = require("playwright");
   r.cards = await p.getByText(/^(오늘|이번 주|디데이|바로가기)$/).count();
   await p.getByLabel("할 일 추가").fill("홈 입력 테스트"); await p.getByLabel("할 일 추가").press("Enter"); await p.waitForTimeout(400);
   r.homeCount = await p.getByText(/\/ \d+ 끝냈어요/).innerText();
+  // shortcuts: hide one in 편집 and it leaves the grid
+  await p.getByRole("button", { name: "바로가기 편집" }).click(); await p.waitForTimeout(500);
+  await p.getByRole("checkbox", { name: "친구" }).click(); await p.waitForTimeout(200);
+  await p.getByRole("checkbox", { name: "검색" }).click(); await p.waitForTimeout(200);
+  await p.getByRole("button", { name: "완료" }).last().click(); await p.waitForTimeout(500);
+  r.shortcuts = await p.evaluate(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find((k) => localStorage.getItem(k).includes("homeShortcuts")) ?? "") ?? "{}").homeShortcuts ?? null).catch(() => "?");
   await shot("design-home");
-  // a day in this week's strip opens 달력 on that day
+  // a day in this week's strip shows it in the card; a double tap opens 달력 on that day
   const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
   if (tomorrow.getDay() !== 0) {
-    await p.getByRole("button", { name: `${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일`, exact: true }).first().click(); await p.waitForTimeout(800);
+    const dayBtn = p.getByRole("button", { name: `${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일`, exact: true }).first();
+    await dayBtn.click(); await p.waitForTimeout(500);
+    r.peek = (await p.getByLabel(/의 할 일과 일정$/).first().getAttribute("aria-label")).startsWith(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일`) && !p.url().endsWith("/calendar");
+    await dayBtn.click(); await p.waitForTimeout(450);
+    await dayBtn.click(); await p.waitForTimeout(100); await dayBtn.click(); await p.waitForTimeout(800);
     r.openedDay = (await p.getByText(`${tomorrow.getMonth() + 1}월 ${tomorrow.getDate()}일 `, { exact: false }).count()) > 0 && p.url().endsWith("/calendar");
   }
   await p.getByRole("tab", { name: "달력" }).click(); await p.waitForTimeout(800);

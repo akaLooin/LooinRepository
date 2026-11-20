@@ -46,6 +46,8 @@ export type Prefs = {
   glowColor: string;
   // 오늘 (design app): the category the input bar adds to; this phone only
   quickAddCategory: string | null;
+  // 홈 바로가기 (design app): ids in order, null = the default set; this phone only
+  homeShortcuts: string[] | null;
 };
 
 export type Audience = "all" | "followers" | "none";
@@ -57,7 +59,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", quickAddCategory: null,
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", quickAddCategory: null, homeShortcuts: null,
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 
