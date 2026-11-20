@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { Animated, Pressable, View } from "react-native";
-import { Fire, useGlowColor, useGlowOpacity } from "./Highlight";
+import { Fire, useGlowColor, usePulse } from "./Highlight";
 import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { DESIGN_TRIAL } from "../lib/variant";
@@ -98,19 +98,20 @@ function Tick({ size, color }: { size: number; color: string }) {
 function Glow({ size, bleed }: { size: number; bleed: number }) {
   const { c } = useTheme();
   const neon = useGlowColor();
-  const opacity = useGlowOpacity();
+  // to-dos glow a little brighter than events' bars (user)
+  const opacity = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] });
   const m = size * 0.3 + bleed; // room for the soft outer line
   const outline = (w: number, o: number, color = neon) => (DESIGN_TRIAL
     ? <Path d={starPath(size)} fill="none" stroke={color} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
     : <G fill="none" stroke={color} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
-  const widths = [0.3, 0.17, 0.08]; // the first, brighter outline (the user's choice, with the flames)
+  const widths = [0.36, 0.2, 0.1]; // the first, brighter outline, a touch wider for to-dos (user)
   return (
     <>
       <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: size + 2 * m, height: size + 2 * m, opacity }}>
         <Svg width={size + 2 * m} height={size + 2 * m}>
           <G x={m} y={m}>
-            {outline(size * widths[0], 0.18)}
-            {outline(size * widths[1], 0.4)}
+            {outline(size * widths[0], 0.24)}
+            {outline(size * widths[1], 0.5)}
             {outline(size * widths[2], 1)}
           </G>
         </Svg>

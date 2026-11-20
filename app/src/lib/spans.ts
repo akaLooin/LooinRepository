@@ -32,7 +32,7 @@ export type RowSegment = SpanBar & { lane: number; from: number; to: number; ope
  * The bars in one calendar row (7 cells; null = a blank cell outside the month). Longer, earlier spans take the top
  * lanes; what does not fit in `lanes` is counted per cell in `more`.
  */
-export function rowSegments(row: (Day | null)[], bars: SpanBar[], lanes: number): { segments: RowSegment[]; more: number[] } {
+export function rowSegments(row: (Day | null)[], bars: SpanBar[], lanes: number, importantFirst = false): { segments: RowSegment[]; more: number[] } {
   const cols = row.map((d, i) => (d ? i : -1)).filter((i) => i >= 0);
   const more = row.map(() => 0);
   if (!cols.length) return { segments: [], more };
@@ -40,7 +40,8 @@ export function rowSegments(row: (Day | null)[], bars: SpanBar[], lanes: number)
   const colOf = (d: Day) => row.indexOf(d);
   const inRow = bars
     .filter((b) => b.start <= last && b.end >= first)
-    .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || daysBetween(b.start, b.end) - daysBetween(a.start, a.end) || (a.id < b.id ? -1 : 1));
+    // 할 일 캘린더 (two lines a day): highlighted events take the lines first (user)
+    .sort((a, b) => (importantFirst ? Number(!!b.important) - Number(!!a.important) : 0) || (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || daysBetween(b.start, b.end) - daysBetween(a.start, a.end) || (a.id < b.id ? -1 : 1));
   const taken: boolean[][] = [];
   const segments: RowSegment[] = [];
   for (const b of inRow) {

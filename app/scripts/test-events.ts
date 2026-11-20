@@ -116,3 +116,23 @@ t("중요한 날: days of important to-dos and events; synced only once set; wai
   assert.equal(missingColumn("Could not find the 'is_important' column of 'todos' in the schema cache"), true);
   assert.equal(missingColumn('relation "public.events" does not exist'), false);
 });
+
+import { moveSpanBlock, shiftEvent } from "../src/lib/eventDrag";
+import { rowSegments } from "../src/lib/spans";
+t("일정: an event over midnight moves whole; highlighted events take the 할 일 캘린더 lines first", () => {
+  const night = ev("n", { startDate: "2026-11-19", endDate: "2026-11-20", startTime: "22:00", endTime: "02:00" });
+  assert.deepEqual(moveSpanBlock(0, 120, 37), { top: 30, bottom: 150, delta: 30 });
+  assert.deepEqual(moveSpanBlock(1320, 1440, 50), { top: 1365, bottom: 1440, delta: 45 });
+  const later = shiftEvent(night, 150);
+  assert.deepEqual([later.startDate, later.startTime, later.endDate, later.endTime], ["2026-11-20", "00:30", "2026-11-20", "04:30"]);
+  const earlier = shiftEvent(night, -120);
+  assert.deepEqual([earlier.startDate, earlier.startTime, earlier.endDate, earlier.endTime], ["2026-11-19", "20:00", "2026-11-19", "24:00"]);
+  const row = ["2026-11-15", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21"];
+  const bars = [
+    { id: "a", start: "2026-11-15", end: "2026-11-21", color: "", done: false, title: "a" },
+    { id: "b", start: "2026-11-16", end: "2026-11-20", color: "", done: false, title: "b" },
+    { id: "c", start: "2026-11-17", end: "2026-11-17", color: "", done: false, title: "c", important: true },
+  ];
+  assert.deepEqual(rowSegments(row, bars, 2, true).segments.map((x) => x.id), ["c", "a"]);
+  assert.deepEqual(rowSegments(row, bars, 2).segments.map((x) => x.id), ["a", "b"]);
+});

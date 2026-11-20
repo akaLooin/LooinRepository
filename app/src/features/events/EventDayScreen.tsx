@@ -1,12 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { BackHandler, PanResponder, Platform, Pressable, ScrollView, View, type ScrollViewInstance } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { BackHandler, FlatList, PanResponder, Platform, Pressable, ScrollView, View, type FlatListInstance, type ScrollViewInstance } from "react-native";
 import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowColor, GlowFrame, useToast } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
-import { addDays, today, type Day } from "../../lib/dates";
+import { addDays, daysBetween, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, DAY_MINUTES, eventsOn, eventTimeLabel, fromMinutes, inBand, slotAt, toMinutes, type Block, type CalEvent } from "../../lib/events";
-import { moveBlock, resizeBlock } from "../../lib/eventDrag";
+import { moveBlock, moveSpanBlock, resizeBlock, shiftEvent } from "../../lib/eventDrag";
 import { goBack } from "../../lib/nav";
 import { onColor, tokens, useDesignScale, useInsets, useTheme } from "../../theme";
 import { dayLabel, EventDetail, EventEditor, newDraft, type EventDraft } from "./EventSheets";
@@ -14,6 +14,8 @@ import { dayLabel, EventDetail, EventEditor, newDraft, type EventDraft } from ".
 const LABEL_W = tokens.layout.hourLabelWidth;
 const H_MIN = 28, H_MAX = 200; // how far two fingers can squeeze or spread an hour
 const LONG_PRESS = 400;
+const SPAN = 365; // days reachable by swiping, either way from the day opened
+const DAY_INDEXES = Array.from({ length: SPAN * 2 + 1 }, (_, i) => i);
 const isDay = (s: unknown): s is Day => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const minutesNow = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
 
@@ -78,38 +80,42 @@ export function EventDayScreen() {
     },
   };
 
-  // swiping left or right: a native page scroll over three days (yesterday, the day, tomorrow), so the next day is
-  // already there under the finger and the phone's own scrolling decides between a swipe and an up/down scroll (the
-  // hand-made swipe sometimes lost to the up/down scroll and showed an empty side, user 2026-11-21). When it comes
-  // to rest on a side page, that day becomes the middle one and the pager jumps back to the middle without a sound.
-  const pager = useRef<ScrollViewInstance>(null);
+  // swiping left or right: a native paging list of days (a year either way), so the phone's own scrolling decides
+  // between a swipe and an up/down scroll and the next day is already drawn under the finger. Nothing is moved
+  // around when a swipe ends (the three re-centred pages made the events flicker, user 2026-11-21).
+  const base = useRef(day).current;
+  const dayAt = (i: number) => addDays(base, i - SPAN);
+  const indexOf = (d: Day) => daysBetween(base, d) + SPAN;
+  const list = useRef<FlatListInstance>(null);
   const [pageW, setPageW] = useState(0);
-  const pagerX = useRef(0);
-  const recentring = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const settle = (x: number) => {
-    if (!pageW || recentring.current) return;
-    const page = Math.round(x / pageW);
-    if (page === 1) return;
-    recentring.current = true;
-    setSelected(null);
-    setDay((d) => addDays(d, page === 0 ? -1 : 1));
+  const pageScrolls = useRef(new Map<Day, ScrollViewInstance>()).current;
+  const offsets = useRef(new Map<Day, { x: number; y: number }>()).current;
+  const startOffset = (d: Day) => {
+    let o = offsets.get(d);
+    if (!o) { o = { x: 0, y: y.current }; offsets.set(d, o); }
+    return o;
   };
-  // after the days moved over by one, show the middle page again (same picture as before the jump)
-  useLayoutEffect(() => {
+  const settle = (x: number) => {
     if (!pageW) return;
-    pager.current?.scrollTo({ x: pageW, animated: false });
-    pagerX.current = pageW;
-    const t = setTimeout(() => { recentring.current = false; }, 50);
-    return () => clearTimeout(t);
-  }, [day, pageW]);
+    const d = dayAt(Math.round(x / pageW));
+    setDay((cur) => (cur === d ? cur : d));
+  };
   const goDay = (dir: 1 | -1) => {
-    if (!pageW) { setDay((d) => addDays(d, dir)); return; }
+    const next = addDays(day, dir);
     setSelected(null);
-    pager.current?.scrollTo({ x: pageW + dir * pageW, animated: true });
-    // the web has no momentum events; settle after the slide whichever way it ends
-    if (settleTimer.current) clearTimeout(settleTimer.current);
-    settleTimer.current = setTimeout(() => settle(pageW + dir * pageW), 380);
+    syncNeighbours();
+    list.current?.scrollToIndex({ index: indexOf(next), animated: true });
+    setDay(next);
+  };
+  const goToday = () => {
+    setSelected(null);
+    list.current?.scrollToIndex({ index: indexOf(today()), animated: false });
+    setDay(today());
+  };
+  // the days beside show the same hours as the one in view when they slide in
+  const syncNeighbours = () => {
+    for (const d of [addDays(day, -1), addDays(day, 1)]) pageScrolls.get(d)?.scrollTo({ y: y.current, animated: false });
   };
 
   const [, tick] = useState(0);
@@ -136,11 +142,19 @@ export function EventDayScreen() {
     setDraft(newDraft(d, s.startTime, s.endTime, lastColor));
   };
   const hourLabel = (h: number) => (prefs.use24h ? `${String(h).padStart(2, "0")}:00` : `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시`);
-  const commit = (b: Block, top: number, bottom: number, day: Day) => {
+  const commit = (b: Block, top: number, bottom: number, day: Day, moved?: number) => {
     setDrag(null);
     setLocked(false);
-    if (top === b.top && bottom === b.bottom) return;
+    if (top === b.top && bottom === b.bottom && !moved) return;
     const e = b.e;
+    // an event over midnight held and moved: the whole event moves (across midnight if need be)
+    if (moved !== undefined && e.startDate !== e.endDate) {
+      if (!moved) return;
+      const shifted = shiftEvent(e, moved);
+      saveEvent(shifted);
+      notice(`${eventTimeLabel(shifted, prefs.use24h, Number(day.slice(0, 4)))}로 옮겼어요`);
+      return;
+    }
     // an event over midnight: only the edge that is really on this day changes (its start on the first day, its end
     // on the last); the day boundaries stay
     const next = e.startDate === e.endDate
@@ -151,7 +165,8 @@ export function EventDayScreen() {
   };
 
   const isToday = day === today();
-  const days = [addDays(day, -1), day, addDays(day, 1)];
+  // what the pages draw from (the list redraws its pages when this changes)
+  const pageState = { events, draft, selected, drag, H, locked, day, use24h: prefs.use24h };
 
   // one day's page: its 종일 line and its hours (the middle one is the day in view)
   const page = (d: Day) => {
@@ -175,9 +190,13 @@ export function EventDayScreen() {
             ))}
           </View>
         ) : null}
-        <ScrollView ref={middle ? scroll : undefined} scrollEnabled={!locked} scrollEventThrottle={16} nestedScrollEnabled
-          // a side page opens at the hour the middle one shows
-          contentOffset={{ x: 0, y: y.current }}
+        <ScrollView ref={(v) => { if (v) pageScrolls.set(d, v); else pageScrolls.delete(d); if (middle) (scroll as { current: ScrollViewInstance | null }).current = v; }}
+          scrollEnabled={!locked} scrollEventThrottle={16} nestedScrollEnabled
+          // a touch right after a scroll goes to the event or hour under it, not to stopping the scroll (user)
+          disableScrollViewPanResponder
+          // a side page opens at the hour the middle one shows. The same object every time: a new one made the page
+          // jump back on every redraw (flicker while swiping, and a held event let go in a browser)
+          contentOffset={startOffset(d)}
           onScroll={middle ? (e) => { y.current = e.nativeEvent.contentOffset.y; } : undefined}
           contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 40 }}>
           <View style={{ height: 24 * H }}>
@@ -196,6 +215,18 @@ export function EventDayScreen() {
                 <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: px(toMinutes(pending.startTime!)), height: px(toMinutes(pending.endTime!) - toMinutes(pending.startTime!)),
                   borderWidth: 2, borderColor: pending.color, borderRadius: tokens.radius.sm }} accessibilityLabel="새 일정 자리" />
               ) : null}
+              {middle && drag ? (
+                // while stretching or moving: the times at its edges, in the hour column on the left (user)
+                ([["시작", drag.top], ["끝", drag.bottom]] as const).filter(([, m]) => m > 0 && m < DAY_MINUTES).map(([edge, m]) => (
+                  <View key={edge} pointerEvents="none" style={{ position: "absolute", top: px(m) - 10, left: -LABEL_W, width: LABEL_W - 4, height: 20, borderRadius: 10,
+                    backgroundColor: c.text, alignItems: "center", justifyContent: "center", zIndex: 6 }} accessibilityLabel={`${edge} ${fromMinutes(m)}`}>
+                    <AppText variant="small" weight={700} raw={c.bg}>{clock(fromMinutes(m), prefs.use24h)}</AppText>
+                  </View>
+                ))
+              ) : null}
+              {middle && drag ? [drag.top, drag.bottom].filter((m) => m > 0 && m < DAY_MINUTES).map((m, i) => (
+                <View key={`g${i}`} pointerEvents="none" style={{ position: "absolute", top: px(m), left: -4, right: 0, height: 1, backgroundColor: c.textMuted, opacity: 0.6 }} />
+              )) : null}
               {d === today() ? (
                 <View pointerEvents="none" style={{ position: "absolute", top: px(minutesNow()) - 4, left: -6, right: 0, flexDirection: "row", alignItems: "center" }} accessibilityLabel="지금">
                   <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.nowLine }} />
@@ -207,7 +238,7 @@ export function EventDayScreen() {
                   onTap={() => setSelected((x) => (x === b.e.id ? null : b.e.id))}
                   onHold={() => { setSelected(b.e.id); setLocked(true); }}
                   onDrag={(top, bottom) => { setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
-                  onDrop={(top, bottom) => commit(b, top, bottom, d)}
+                  onDrop={(top, bottom, moved) => commit(b, top, bottom, d, moved)}
                   onCancel={() => { setDrag(null); setLocked(false); }}
                   onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
                   onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
@@ -226,7 +257,7 @@ export function EventDayScreen() {
         <Pressable onPress={() => goBack("/")} hitSlop={12} accessibilityRole="button" accessibilityLabel="뒤로 가기" style={{ padding: 4 }}>
           <ChevronLeft size={28} color={c.text} strokeWidth={2.2} />
         </Pressable>
-        <Pressable onPress={() => { setSelected(null); setDay(today()); }} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`${dayLabel(day)}, 오늘로 이동`}>
+        <Pressable onPress={goToday} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`${dayLabel(day)}, 오늘로 이동`}>
           <AppText variant="sheetTitle" accessibilityRole="header">{dayLabel(day)}</AppText>
         </Pressable>
         <PillButton round onPress={() => goDay(-1)} a11y="전날"><ChevronLeft size={20} color={c.text} /></PillButton>
@@ -234,21 +265,22 @@ export function EventDayScreen() {
       </View>
 
       {/* pan-y: in a browser, two fingers zoom the hours here instead of the whole page */}
-      <View style={{ flex: 1, touchAction: "pan-x pan-y" } as never} {...touches} onTouchCancel={touches.onTouchEnd}
+      {/* (browser) no text selection: dragging selected text starts the browser's own drag and lets go of the event */}
+      <View style={{ flex: 1, touchAction: "pan-x pan-y", userSelect: "none" } as never} {...touches} onTouchCancel={touches.onTouchEnd}
         onLayout={(e) => { viewH.current = e.nativeEvent.layout.height; const w = Math.round(e.nativeEvent.layout.width); if (w !== pageW) setPageW(w); }}>
         {pageW ? (
-          <ScrollView ref={pager} horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEnabled={!locked} scrollEventThrottle={16}
-            contentOffset={{ x: pageW, y: 0 }} directionalLockEnabled
+          <FlatList ref={list} horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEnabled={!locked} disableScrollViewPanResponder
+            data={DAY_INDEXES} keyExtractor={(i) => String(i)} renderItem={({ item }) => page(dayAt(item))}
+            extraData={pageState} initialScrollIndex={indexOf(day)} getItemLayout={(_, i) => ({ length: pageW, offset: pageW * i, index: i })}
+            windowSize={3} initialNumToRender={1} maxToRenderPerBatch={2} directionalLockEnabled scrollEventThrottle={16}
+            onScrollBeginDrag={() => { setSelected(null); syncNeighbours(); }}
             onMomentumScrollEnd={(e) => settle(e.nativeEvent.contentOffset.x)}
             onScroll={(e) => {
-              pagerX.current = e.nativeEvent.contentOffset.x;
               if (Platform.OS !== "web") return; // the phone settles on momentum end, never while the finger holds
               if (settleTimer.current) clearTimeout(settleTimer.current);
-              const x = pagerX.current;
+              const x = e.nativeEvent.contentOffset.x;
               settleTimer.current = setTimeout(() => settle(x), 180); // the web has no momentum events
-            }}>
-            {days.map(page)}
-          </ScrollView>
+            }} />
         ) : null}
       </View>
 
@@ -267,11 +299,11 @@ export function EventDayScreen() {
 /**
  * One timed event in the grid. A tap selects it; holding it (0.4 s) lifts it to move up or down; when selected, the
  * round handles in the middle of its top and bottom edges stretch it (5-minute steps); a held event moves by
- * quarter hours.
+ * quarter hours (an event over midnight moves whole, dates included).
  */
 function EventBlock({ b, day, hour: H, drag, selected, scale, use24h, onTap, onHold, onDrag, onDrop, onCancel, onEdit, onImportant, onDelete }: {
   b: Block; day: Day; hour: number; drag: Drag; selected: boolean; scale: number; use24h: boolean;
-  onTap: () => void; onHold: () => void; onDrag: (top: number, bottom: number) => void; onDrop: (top: number, bottom: number) => void; onCancel: () => void;
+  onTap: () => void; onHold: () => void; onDrag: (top: number, bottom: number) => void; onDrop: (top: number, bottom: number, moved?: number) => void; onCancel: () => void;
   onEdit: () => void; onImportant: () => void; onDelete: () => void;
 }) {
   const { c } = useTheme();
@@ -289,7 +321,7 @@ function EventBlock({ b, day, hour: H, drag, selected, scale, use24h, onTap, onH
   const px = (min: number) => (min / 60) * H;
 
   const body = useRef((() => {
-    let held = false, moved = false, last: { top: number; bottom: number } | null = null;
+    let held = false, moved = false, last: { top: number; bottom: number; delta?: number } | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const clear = () => { if (timer) clearTimeout(timer); timer = null; };
     return PanResponder.create({
@@ -298,17 +330,18 @@ function EventBlock({ b, day, hour: H, drag, selected, scale, use24h, onTap, onH
       onPanResponderTerminationRequest: () => !held,
       onPanResponderGrant: () => {
         held = false; moved = false; last = null;
-        if (!live.current.partial) timer = setTimeout(() => { held = true; live.current.onHold(); }, LONG_PRESS);
+        timer = setTimeout(() => { held = true; live.current.onHold(); }, LONG_PRESS);
       },
       onPanResponderMove: (_, g) => {
         if (!held) { if (Math.abs(g.dy) > 8 || Math.abs(g.dx) > 8) { moved = true; clear(); } return; }
         const { start, end } = live.current;
-        last = moveBlock(start, end, minutesOf(g.dy));
+        // an event over midnight: its part of this day slides, and the whole event moves on letting go
+        last = live.current.partial ? moveSpanBlock(start, end, minutesOf(g.dy)) : moveBlock(start, end, minutesOf(g.dy));
         live.current.onDrag(last.top, last.bottom);
       },
       onPanResponderRelease: () => {
         clear();
-        if (held) { const { start, end } = live.current; live.current.onDrop(last?.top ?? start, last?.bottom ?? end); }
+        if (held) { const { start, end } = live.current; live.current.onDrop(last?.top ?? start, last?.bottom ?? end, live.current.partial ? last?.delta ?? 0 : undefined); }
         else if (!moved) live.current.onTap();
         held = false; last = null;
       },

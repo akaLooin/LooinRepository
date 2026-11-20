@@ -124,7 +124,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
         ))}
       </View>
       {grid.map((row, i) => {
-        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2) : null;
+        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2, !long) : null;
         // 할 일 캘린더: a row with event lines grows by their height, so the lines sit under the date circles
         // instead of over them (user)
         const lineRoom = !long && bars?.segments.length ? 3 + (Math.max(...bars.segments.map((x) => x.lane)) + 1) * LINE_STEP : 0;

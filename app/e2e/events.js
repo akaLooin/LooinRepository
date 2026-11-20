@@ -157,6 +157,15 @@ const { chromium } = require("playwright");
   for (let i = 1; i <= 6; i++) await p.mouse.move(hh.x + hh.width / 2, hh.y + hh.height / 2 + (hourPx * i) / 6);
   await p.mouse.up(); await p.waitForTimeout(600);
   r.overnightStretched = await p.evaluate(() => JSON.parse(localStorage.getItem("todomate:demo")).db.events.find((e) => e.id === "e-night")?.endTime);
+  // hold the overnight event and move it up an hour: the whole event moves; the time shows on the left meanwhile
+  await p.getByRole("button", { name: /^야간 작업, / }).scrollIntoViewIfNeeded();
+  const ob = await p.getByRole("button", { name: /^야간 작업, / }).boundingBox();
+  await p.mouse.move(ob.x + 40, ob.y + ob.height / 2); await p.mouse.down(); await p.waitForTimeout(600);
+  for (let i = 1; i <= 6; i++) await p.mouse.move(ob.x + 40, ob.y + ob.height / 2 - (hourPx * i) / 6);
+  r.timeLabelWhileMoving = await p.getByLabel(/^끝 02:00$/).count();
+  await shot("events-drag-label");
+  await p.mouse.up(); await p.waitForTimeout(600);
+  r.overnightMoved = await p.evaluate(() => { const e = JSON.parse(localStorage.getItem("todomate:demo")).db.events.find((x) => x.id === "e-night"); return `${e.startDate} ${e.startTime}–${e.endDate} ${e.endTime}`; });
   await p.getByRole("button", { name: "뒤로 가기" }).click();
   await p.waitForTimeout(600);
   await p.getByRole("button", { name: "캘린더 종류: 일정 캘린더" }).click();
