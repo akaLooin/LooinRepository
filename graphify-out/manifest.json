@@ -138,9 +138,9 @@
     "semantic_hash": ""
   },
   "app/src/main/kotlin/com/looin/finance/widget/LooinWidget.kt": {
-    "mtime": 1794671430.1717694,
-    "seen": 1794866888.3445039,
-    "ast_hash": "0a681ed7600aafe292e92d0a150c7a95",
+    "mtime": 1795181663.3405108,
+    "seen": 1795182136.959024,
+    "ast_hash": "fbc1e8cb7e959aa856d2ba62947a0291",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/backup/AutoBackupTest.kt": {
@@ -204,9 +204,9 @@
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/AppFlowTest.kt": {
-    "mtime": 1794866405.81929,
-    "seen": 1794866888.3445117,
-    "ast_hash": "ef177db1de9352b2979b1ef76b98be75",
+    "mtime": 1795181551.0689394,
+    "seen": 1795182136.959042,
+    "ast_hash": "197986b6b50062cf652a5a4f39756fc7",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/AppLockFlowTest.kt": {
@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/CalendarAddAndToastTest.kt": {
-    "mtime": 1795134538.5755117,
-    "seen": 1795135097.7879622,
-    "ast_hash": "5394bea4fcb311f7a00f433775663b48",
+    "mtime": 1795181551.0691223,
+    "seen": 1795182136.9590485,
+    "ast_hash": "9283ead9485cd569b08d1c7ce1a59e7a",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/CalendarGroupingTest.kt": {
@@ -264,21 +264,21 @@
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/ShortcutTest.kt": {
-    "mtime": 1794866324.2804081,
-    "seen": 1794866888.3445234,
-    "ast_hash": "2be8820b6c167e201cd3c1b1f5429efd",
+    "mtime": 1795181551.069261,
+    "seen": 1795182136.9590588,
+    "ast_hash": "db74517976cdcaa082ffdd4ca992f30e",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/StoreScreenshotTest.kt": {
-    "mtime": 1794782063.8846931,
-    "seen": 1794866888.3445244,
-    "ast_hash": "72d644ee3371ce8f9511a5c4334c2754",
+    "mtime": 1795181551.0693986,
+    "seen": 1795182136.9590595,
+    "ast_hash": "42b8911b5472fdb2ebf74d342d29c3df",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/TabNavigationTest.kt": {
-    "mtime": 1794826248.5516849,
-    "seen": 1794866888.344525,
-    "ast_hash": "974d1145cb91a28b22f9942bd5fe10ca",
+    "mtime": 1795181699.3524425,
+    "seen": 1795182136.9590604,
+    "ast_hash": "e11bbc5c44caf12502f175c9e53853e9",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/widget/WidgetTest.kt": {
@@ -300,9 +300,9 @@
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/AvailableFundsCalculator.kt": {
-    "mtime": 1794879393.1549838,
-    "seen": 1794879922.441127,
-    "ast_hash": "e5dfa51e4a88bceb1d9bfe3330c2927a",
+    "mtime": 1795181989.7374346,
+    "seen": 1795182136.9590652,
+    "ast_hash": "8b5a4e0de4918622d4d70ed8a0e2267e",
     "semantic_hash": ""
   },
   "core/src/commonMain/kotlin/com/looin/finance/core/calc/BalanceCalculator.kt": {
@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   "core/src/jvmTest/kotlin/com/looin/finance/core/BudgetAndAvailableTest.kt": {
-    "mtime": 1794879564.061296,
-    "seen": 1794879922.4411595,
-    "ast_hash": "5a921a250b661f0694129b762ad07d2c",
+    "mtime": 1795181417.991582,
+    "seen": 1795182136.959096,
+    "ast_hash": "dad4e1585540d6994137dd13c0704112",
     "semantic_hash": ""
   },
   "core/src/jvmTest/kotlin/com/looin/finance/core/BudgetWarningTest.kt": {
@@ -570,9 +570,9 @@
     "semantic_hash": ""
   },
   "desktopApp/src/test/kotlin/com/looin/finance/desktop/DesktopWideLayoutTest.kt": {
-    "mtime": 1794782063.8841517,
-    "seen": 1794866888.3445635,
-    "ast_hash": "4935c0db3bbe823eaf47025c0143f932",
+    "mtime": 1795181551.0697422,
+    "seen": 1795182136.9591172,
+    "ast_hash": "6b014ad029118db75451e6c6c2d08f2a",
     "semantic_hash": ""
   },
   "gradlew": {
@@ -834,9 +834,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/home/HomeScreen.kt": {
-    "mtime": 1794879518.6023545,
-    "seen": 1794879922.4412324,
-    "ast_hash": "a24fac8d81972990069a3feeecc38e7d",
+    "mtime": 1795181518.556622,
+    "seen": 1795182136.959166,
+    "ast_hash": "ea054252c3afff9775e96c539fa4c660",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/plan/BudgetRows.kt": {
@@ -846,9 +846,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/plan/PlanScreen.kt": {
-    "mtime": 1794872402.2038329,
-    "seen": 1794872921.9499273,
-    "ast_hash": "980575e813f8e46f081ee2333a5985cc",
+    "mtime": 1795181451.3049712,
+    "seen": 1795182136.9591682,
+    "ast_hash": "5be0ddc530930530c7f6be6e508c2655",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/plan/RecurringEditScreen.kt": {
@@ -1134,9 +1134,9 @@
     "semantic_hash": ""
   },
   "docs/PHASE2_NOTES.md": {
-    "mtime": 1795135082.7549174,
-    "seen": 1795135097.7881575,
-    "ast_hash": "c787ccfed6d92984c468db0f6e3aedc0",
+    "mtime": 1795182125.5286438,
+    "seen": 1795182136.9592168,
+    "ast_hash": "52d289688254842aa1caf21c1e9693b6",
     "semantic_hash": ""
   },
   "docs/licenses/FONTS.md": {
