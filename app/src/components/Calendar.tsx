@@ -54,7 +54,7 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * One date. Memoised: picking a day redraws only the old and the new picked cell, not every clover of the three
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
-const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick, dday, hover, cellRef, important }: {
+const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick, dday, hover, cellRef, important, boxed }: {
   day: Day; ring: boolean; todayDisc: boolean; picker: boolean; clover?: CloverState; cloverKey: string; ringSize: number; onPick: (d: Day) => void;
   /** a D-day falls on this date: a red circle around the number (user's feature) */
   dday?: boolean;
@@ -63,6 +63,8 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   cellRef?: (d: Day, v: ViewType | null) => void;
   /** 중요한 날: the clover glows (user's feature) */
   important?: boolean;
+  /** design app's 달력: the whole cell shows the choice (today grey, the picked day white), no circle (user) */
+  boxed?: boolean;
 }) {
   const { c } = useTheme();
   const label = String(parseDay(day).d);
@@ -70,22 +72,23 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   const numberColor = ring && wd !== 0 && wd !== 6 ? "onSelected" : dayColor(wd);
   return (
     <Pressable ref={cellRef ? (v) => cellRef(day, v) : undefined}
-      style={{ flex: 1, alignItems: "center", gap: 4, borderRadius: tokens.radius.md, backgroundColor: hover ? c.dropTarget : "transparent" }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일${important ? ", 중요한 날" : ""}`} accessibilityState={{ selected: ring }}>
+      style={{ flex: 1, alignItems: "center", gap: 4, borderRadius: tokens.radius.md, marginHorizontal: boxed ? 2 : 0, paddingTop: boxed ? 5 : 0,
+        backgroundColor: hover ? c.dropTarget : boxed && ring ? c.selectedBg : boxed && todayDisc ? c.selectedDay : "transparent" }} onPress={() => onPick(day)} accessibilityRole="button" accessibilityLabel={`${parseDay(day).m}월 ${label}일${important ? ", 중요한 날" : ""}`} accessibilityState={{ selected: ring }}>
       {clover ? <Clover state={clover} glow={important} /> : null}
-      <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: ring ? c.selectedBg : todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
-        borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker ? 4 : 0 }] }}
+      <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
+        borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}
         accessibilityLabel={dday ? "디데이" : undefined}>
         <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>
       </View>
     </Pressable>
   );
-}, (a, b) => a.day === b.day && a.ring === b.ring && a.todayDisc === b.todayDisc && a.picker === b.picker && a.cloverKey === b.cloverKey && a.ringSize === b.ringSize && a.onPick === b.onPick && a.dday === b.dday && a.hover === b.hover && a.cellRef === b.cellRef && a.important === b.important);
+}, (a, b) => a.day === b.day && a.ring === b.ring && a.todayDisc === b.todayDisc && a.picker === b.picker && a.cloverKey === b.cloverKey && a.ringSize === b.ringSize && a.onPick === b.onPick && a.dday === b.dday && a.hover === b.hover && a.cellRef === b.cellRef && a.important === b.important && a.boxed === b.boxed);
 
 /**
  * Month or week grid. `state` gives each day's clover; pass `picker` for the plain date picker (S21b).
  * `rows` lets the week view pass just one row.
  */
-export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn, dropHover, cellRef, spans, kind = "basic", importantOn }: {
+export function Calendar({ year, month, today, selected, onSelect, state, picker, weekStartsSunday = true, rows, width, ddayOn, dropHover, cellRef, spans, kind = "basic", importantOn, boxed }: {
   year: number; month: number; today: Day; selected?: Day; onSelect?: (d: Day) => void; state?: (d: Day) => CloverState; picker?: boolean; weekStartsSunday?: boolean; rows?: (Day | null)[][];
   /** known width (calendar pager): the dates are placed right away instead of after measuring */
   width?: number;
@@ -100,6 +103,8 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   kind?: "basic" | "span";
   /** 중요한 날: an important to-do or event on the date (the 할 일 캘린더's clover glows; on the 일정 캘린더 the bar does) */
   importantOn?: (d: Day) => boolean;
+  /** the picked day and today shown as a filled cell, not a circle (design app's 달력) */
+  boxed?: boolean;
 }) {
   const { c } = useTheme();
   const long = kind === "span" && !picker;
@@ -140,7 +145,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             const cs = !picker && !long && state ? state(day) : undefined;
             return (
               <DayCell key={j} day={day} ring={ring} todayDisc={todayDisc} picker={!!picker} clover={cs} cloverKey={cs ? JSON.stringify(cs) : ""}
-                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} important={!picker && !long && !!importantOn?.(day)} />
+                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} important={!picker && !long && !!importantOn?.(day)} boxed={boxed && !picker} />
             );
           })}
           {bars ? (

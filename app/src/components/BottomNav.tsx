@@ -1,13 +1,13 @@
 import { Pressable, View } from "react-native";
 import { tokens, useTheme } from "../theme";
 import { AppText } from "./AppText";
-import { Bell, CalendarCheck, CalendarDays, Compass, House, Send, User, Users } from "./icons";
+import { Bell, CalendarDays, Compass, House, Send, User, Users } from "./icons";
 
 export type Tab = "home" | "explore" | "alerts" | "send" | "me" | "calendar" | "together";
 type Item = { key: Tab; label: string; Icon: typeof House; filled?: boolean };
-/** The design app's tabs (2026-11-21): 오늘 · 달력 · 함께 · 나, with their names under the icons. */
+/** The design app's tabs (2026-11-21): 홈 · 달력 · 함께 · 나, with their names under the icons. */
 export const DESIGN_TABS: Item[] = [
-  { key: "home", label: "오늘", Icon: CalendarCheck },
+  { key: "home", label: "홈", Icon: House },
   { key: "calendar", label: "달력", Icon: CalendarDays },
   { key: "together", label: "함께", Icon: Users },
   { key: "me", label: "나", Icon: User },

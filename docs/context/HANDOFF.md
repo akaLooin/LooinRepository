@@ -53,7 +53,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 5단계: 출시 리디자인 (2026-11-21~)
 - 기존 앱 = 디자인 앱 모습으로 확정(별, `Clover.tsx` `STAR = true`) 후 그대로 유지
-- 디자인 앱만 새 구조(`DESIGN_TRIAL`): `features/today/`(`TodayScreen` 오늘·`WeekStrip`·`QuickAdd`, `AgendaList` 하루 목록, `CalendarTab`, `TogetherScreen`), 라우트 `(tabs)/calendar`·`together`, `/friend/[id]`(친구·`crew:<id>` 홈), `BottomNav` `DESIGN_TABS`. e2e `design-structure.js`(APP_VARIANT=design 빌드)
+- 디자인 앱만 새 구조(`DESIGN_TRIAL`), 탭 홈·달력·함께·나: `features/today/`(`HomeDash` 홈 요약·바로가기, `CalendarTab` 한 달 달력(`Calendar boxed`: 오늘 회색 칸·고른 날 흰 칸)+`AgendaList` 하루 목록, `parts.tsx` `WeekStrip`·`QuickAdd` 입력줄, `TogetherScreen`), 라우트 `(tabs)/calendar`·`together`, `/friend/[id]`, `BottomNav` `DESIGN_TABS`. 다른 화면이 고른 날은 `requestHomeDay` → 달력 탭. e2e `design-structure.js`(APP_VARIANT=design 빌드)
 - 다음 후보: 나 탭 다듬기, 테마(스킨) 기능, 앱 이름·아이콘(나중), 오늘 화면의 끌어서 순서·날짜 옮기기(아직 없음)
 
 ## 알려진 한계

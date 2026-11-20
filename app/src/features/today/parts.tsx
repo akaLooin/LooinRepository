@@ -1,74 +1,16 @@
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { PanResponder, Pressable, ScrollView, TextInput, View } from "react-native";
-import { AppText, Archive, BottomSheet, Check, Clock, Clover, KeyboardSpacer, NeonText, Search, useToast } from "../../components";
+import { useMemo, useRef, useState } from "react";
+import { PanResponder, Pressable, TextInput, View } from "react-native";
+import { AppText, BottomSheet, Check, Clover, KeyboardSpacer } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
-import { addTodo, ddayLabel, EndedCategoryError, isDDayToday, selectActiveCategories, selectDDays, todosForDay, useDB } from "../../data/store";
+import { addTodo, EndedCategoryError, selectActiveCategories, todosForDay, useDB } from "../../data/store";
 import { addDays, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { importantDays } from "../../lib/events";
-import { takeHomeDay } from "../../lib/todoCalendar";
 import { fontFamily, tokens, useInsets, useTheme, visibleOn } from "../../theme";
-import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { dayState } from "../home/dayState";
-import { AgendaList } from "./AgendaList";
 
 const G = tokens.layout.gutter;
+/** "11월 20일 금요일" */
 export const dayTitle = (d: Day) => { const { m, d: dd } = parseDay(d); return `${m}월 ${dd}일 ${WEEKDAY_LABELS[weekday(d)]}요일`; };
-
-/**
- * 오늘 (design app's home, 2026-11-21, user's choice "오늘 중심"): the day as an agenda. On top the date, the D-day and
- * how many to-dos are done; a week strip (swipe for the next or previous week); then the agenda; an input bar at the
- * bottom adds a to-do to the shown day in the chosen category.
- */
-export function TodayScreen() {
-  const { c } = useTheme();
-  const insets = useInsets();
-  const prefs = usePrefs();
-  const db = useDB((d) => d);
-  const ddays = useDB(selectDDays);
-  const cats = useDB(selectActiveCategories);
-  const now = today();
-  const [day, setDay] = useState<Day>(now);
-  const [menu, setMenu] = useState(false);
-  const [toast, notice] = useToast();
-  // a day picked elsewhere (search result, 달력) opens here
-  useFocusEffect(useCallback(() => { const d = takeHomeDay(); if (d) setDay(d); }, []));
-
-  const todos = todosForDay(db, day);
-  const doneCount = todos.filter((t) => t.isDone).length;
-  const dday = ddays.find((d) => !d.isPrivate) ?? ddays[0];
-
-  return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
-          <Pressable onPress={() => router.push(`/events/${day}` as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="이날 시간표"><Clock size={23} color={c.text} /></Pressable>
-          <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
-          <Pressable onPress={() => router.push("/inbox" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="보관함"><Archive size={23} color={c.text} /></Pressable>
-          <MenuButton onPress={() => setMenu(true)} />
-        </View>
-        <Pressable onPress={() => setDay(now)} accessibilityRole="button" accessibilityLabel={`${dayTitle(day)}${day === now ? "" : ", 오늘로 이동"}`}>
-          <AppText variant="monthTitle" weight={700} style={{ fontSize: 26, lineHeight: 34 }} accessibilityRole="header">{dayTitle(day)}</AppText>
-        </Pressable>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 }}>
-          {dday ? (
-            <Pressable onPress={() => router.push("/ddays" as never)} accessibilityRole="button" accessibilityLabel={`${dday.title} ${ddayLabel(dday, now)}`}
-              style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: c.dday + "22" }}>
-              <AppText variant="small" weight={600}>{dday.title}</AppText>
-              {isDDayToday(dday, now) ? <NeonText variant="body">{ddayLabel(dday, now)}</NeonText> : <AppText variant="small" weight={700} color="dday">{ddayLabel(dday, now)}</AppText>}
-            </Pressable>
-          ) : null}
-          {todos.length ? <AppText variant="helper" color="textMuted">{`할 일 ${doneCount}/${todos.length}`}</AppText> : null}
-        </View>
-        <WeekStrip day={day} onPick={setDay} />
-        <AgendaList day={day} notice={notice} />
-      </ScrollView>
-      <QuickAdd day={day} cats={cats} lastId={prefs.quickAddCategory} notice={notice} />
-      <HomeMenu open={menu} onClose={() => setMenu(false)} />
-      {toast}
-    </View>
-  );
-}
 
 /** Seven days with their stars; swipe left/right for another week, tap a day to show it. */
 export function WeekStrip({ day, onPick }: { day: Day; onPick: (d: Day) => void }) {
@@ -105,7 +47,7 @@ export function WeekStrip({ day, onPick }: { day: Day; onPick: (d: Day) => void 
 }
 
 /** The bar at the bottom: type a to-do, it goes to the shown day in the chosen category (tap the chip to change it). */
-function QuickAdd({ day, cats, lastId, notice }: { day: Day; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
+export function QuickAdd({ day, cats, lastId, notice }: { day: Day; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
   const { c } = useTheme();
   const insets = useInsets();
   const [text, setText] = useState("");
