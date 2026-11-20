@@ -61,14 +61,13 @@ export function AlertsScreen() {
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40 }}>
         {shownTab === "todos" || shownTab === "diaries" ? <FeedList key={shownTab} only={shownTab === "todos" ? "todo" : "diary"} heading={false} onPerson={setOpen} />
-          : shownTab === "notices" ? notices.map((n, i) => (
+          : shownTab === "notices" ? (notices.length ? notices.map((n, i) => (
             <View key={i} style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: c.surfaceRow, gap: 8 }}>
               {n.title ? <AppText variant="body" weight={700}>{n.title}</AppText> : null}
-              {n.title ? <AppText variant="body" weight={700}>{n.title}</AppText> : null}
-          <AppText variant="body">{n.text}</AppText>
+              <AppText variant="body">{n.text}</AppText>
               <AppText variant="helper" color="textMuted">{n.date}</AppText>
             </View>
-          ))
+          )) : <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>공지사항이 없어요</AppText>)
           : error ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>{error}</AppText>
           : list === null ? <ActivityIndicator style={{ marginTop: 40 }} color={c.textMuted} />
           : list.length === 0 ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>아직 받은 관심이 없어요</AppText>

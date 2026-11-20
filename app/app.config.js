@@ -18,19 +18,32 @@ module.exports = ({ config }) => {
   const local = path.join(__dirname, "google-services.json");
   const file = process.env.GOOGLE_SERVICES_JSON || (fs.existsSync(local) ? "./google-services.json" : undefined);
   const android = { ...config.android, ...(file && !design && !admin ? { googleServicesFile: file } : {}) };
+  // 립마크 (Lib Mark, user 2026-11-21): the main app's name and icon (assets/libmark, drawn by us); the admin app
+  // has the same icon with an orange ribbon. Package names stay, so installed apps update in place.
+  const libmarkIcons = (pre) => ({
+    icon: `./assets/libmark/${pre}icon.png`,
+    adaptiveIcon: {
+      backgroundColor: "#0e1311",
+      foregroundImage: `./assets/libmark/${pre}adaptive-foreground.png`,
+      backgroundImage: "./assets/libmark/adaptive-background.png",
+      monochromeImage: "./assets/libmark/adaptive-monochrome.png",
+    },
+  });
   if (admin) return {
     ...config,
-    name: "todomate 관리자",
+    name: "립마크 관리자",
+    icon: libmarkIcons("admin-").icon,
     scheme: "todomateclone-admin",
-    android: { ...android, package: "com.looin.todomateclone.admin" },
+    android: { ...android, adaptiveIcon: libmarkIcons("admin-").adaptiveIcon, package: "com.looin.todomateclone.admin" },
     extra: { ...config.extra, variant: "admin" },
   };
   if (!design) return { ...config, android, extra: { ...config.extra, variant: "main" } };
   return {
     ...config,
-    name: "todomate 디자인",
+    name: "립마크",
+    icon: libmarkIcons("").icon,
     scheme: "todomateclone-design",
-    android: { ...android, package: "com.looin.todomateclone.design" },
+    android: { ...android, adaptiveIcon: libmarkIcons("").adaptiveIcon, package: "com.looin.todomateclone.design" },
     extra: { ...config.extra, variant: "design" },
   };
 };

@@ -160,6 +160,7 @@ export function NoticesScreen() {
           <AppText variant="helper" color="textMuted">{n.date}</AppText>
         </View>
       ))}
+      {!notices.length ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>공지사항이 없어요</AppText> : null}
     </Page>
   );
 }

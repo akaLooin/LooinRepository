@@ -4,6 +4,14 @@ Personal Android app that rebuilds the to-do app "todo mate" (Expo + Supabase), 
 
 **Read first:** `docs/context/HANDOFF.md` (current state and next steps), then `docs/context/DECISIONS.md` (what the user decided and why). A SessionStart hook (`.claude/hooks/session-start.sh`) injects HANDOFF at every start, plus DECISIONS after resume, `/clear` and compaction; its message starts with `[context-hook]`. If no such message is in context, the hook did not run: read both files yourself.
 
+## Names (user, 2026-11-21)
+
+- **메인 앱** = **립마크 (Lib Mark)**, "a librarian's marking note": the `APP_VARIANT=design` build (code flag `DESIGN_TRIAL`). The product going forward.
+- **복사 앱** = the usual build (no variant), kept as it is.
+- **관리자 앱** = `APP_VARIANT=admin` ("립마크 관리자").
+- **원본 앱** = todo mate.
+- Icons: `app/assets/libmark/` (our own drawing, `icon.svg`; `node assets/libmark/render.js` makes the PNGs).
+
 ## Working with the user
 
 - **Reply in Korean**, in plain language. The user is not a developer by trade: say what to click or type, one step at a time.

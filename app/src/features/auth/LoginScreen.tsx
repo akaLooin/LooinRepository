@@ -1,10 +1,11 @@
 import { useInsets } from "../../theme";
 import * as Linking from "expo-linking";
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
 import { AppText, Button, Clover } from "../../components";
 import { supabase } from "../../lib/supabase";
 import { fontFamily, tokens, useTheme } from "../../theme";
+import { ADMIN_APP, DESIGN_TRIAL } from "../../lib/variant";
 
 const MIN_PASSWORD = 6; // Supabase Auth default minimum
 
@@ -101,7 +102,16 @@ export function LoginScreen({ linkMessage }: { linkMessage?: string }) {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flex: 1, paddingTop: insets.top + 80, paddingHorizontal: tokens.layout.gutter, gap: 14 }}>
-        <Clover size={48} state={{ kind: "done", color: tokens.colors.dark.accent }} />
+        {DESIGN_TRIAL ? (
+          // 립마크 (main and admin apps): the app's own icon and name
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Image source={ADMIN_APP ? require("../../../assets/libmark/admin-icon.png") : require("../../../assets/libmark/icon.png")} style={{ width: 52, height: 52, borderRadius: 14 }} accessibilityIgnoresInvertColors />
+            <View>
+              <AppText variant="bodyLg" weight={800} style={{ fontSize: 22, lineHeight: 28 }}>{ADMIN_APP ? "립마크 관리자" : "립마크"}</AppText>
+              <AppText variant="small" color="textMuted">Lib Mark</AppText>
+            </View>
+          </View>
+        ) : <Clover size={48} state={{ kind: "done", color: tokens.colors.dark.accent }} />}
         <AppText variant="monthTitle" style={{ marginTop: 12 }} accessibilityRole="header">{reset ? "비밀번호 찾기" : signUp ? "계정 만들기" : "오늘 할 일을 시작해요"}</AppText>
         <AppText variant="body" color="textMuted" style={{ marginBottom: 20 }}>
           {reset ? "가입한 이메일로 비밀번호 재설정 링크를 보내 드려요." : signUp ? "이메일과 비밀번호를 정해 주세요." : "이메일과 비밀번호로 로그인해요."}

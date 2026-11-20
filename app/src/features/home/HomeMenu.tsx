@@ -1,7 +1,7 @@
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
 import { Modal, Pressable, View } from "react-native";
-import { AppText, Bell, BottomSheet, CalendarRange, List, Palette, PopupMenu, Sparkles } from "../../components";
+import { AppText, Bell, BottomSheet, List, Palette, PopupMenu, Sparkles } from "../../components";
 import { DESIGN_TRIAL } from "../../lib/variant";
 import { ScaledRoot, tokens, useTheme } from "../../theme";
 
@@ -53,7 +53,6 @@ function ManageSheet({ open, onClose, go }: { open: boolean; onClose: () => void
     ["루틴", "반복하는 할 일", List, "/routines"],
     ["디데이", "다가오는 날 세기", Sparkles, "/ddays"],
     ["리마인더", "매일 알림 시간", Bell, "/reminders"],
-    ["할 일 캘린더", "한 달 할 일 한눈에", CalendarRange, "/todo-calendar"],
   ];
   return (
     <BottomSheet visible={open} onClose={onClose} title="관리">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { DESIGN_TRIAL } from "../lib/variant";
 
 // 공지사항 (설정 → 공지사항 and the 공지 tab in 알림): this app's own update notes, newest first.
 // Notices written in the admin panel (table app_notices) come first; these built-in ones follow.
@@ -30,5 +31,7 @@ export function useAppNotices(): AppNotice[] {
       }, () => {});
     return () => { live = false; };
   }, []);
-  return [...list, ...APP_NOTICES];
+  // 메인 앱 (립마크, user 2026-11-21): the copy app's built-in update notes are not shown; only notices written
+  // in the admin app
+  return DESIGN_TRIAL ? list : [...list, ...APP_NOTICES];
 }
