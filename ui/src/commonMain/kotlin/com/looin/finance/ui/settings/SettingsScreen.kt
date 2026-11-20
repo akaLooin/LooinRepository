@@ -1,5 +1,6 @@
 package com.looin.finance.ui.settings
 
+import com.looin.finance.ui.components.PillTabs
 import com.looin.finance.ui.APP_NAME
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -154,6 +155,20 @@ fun SettingsScreen(state: UiState, vm: MainViewModel, onBack: () -> Unit, onOpen
             FieldGroup {
                 ToggleRow("예산 줄이기 제안", "예산대로 다 쓰면 돈이 모자랄 때 예산을 얼마나 줄일지 제안해요. 끄면 모자란다는 경고만 보여요",
                     ThemePrefs.showBudgetCuts, { ThemePrefs.chooseBudgetCuts(it) })
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Title("다음 월급 전까지 예상")
+            FieldGroup {
+                ToggleRow("하루 평균 생활비 포함", "홈의 '다음 월급 전까지 예상'에 평소 생활비(고정 비용 제외 지출의 하루 평균 × 남은 날)를 넣어요. 끄면 예정 거래만 반영해요",
+                    ThemePrefs.includeDailyEstimate, { ThemePrefs.chooseIncludeDaily(it) })
+            }
+            if (ThemePrefs.includeDailyEstimate) {
+                Spacer(Modifier.height(8.dp))
+                SmallLabel("하루 평균을 낼 기간")
+                Spacer(Modifier.height(6.dp))
+                PillTabs(com.looin.finance.core.calc.AvailableFundsCalculator.DailyBasis.entries, ThemePrefs.dailyBasis, { it.label },
+                    { ThemePrefs.chooseDailyBasis(it) })
             }
 
             if (com.looin.finance.ui.platform.ExchangeRates.supported) {

@@ -21,6 +21,7 @@ import com.looin.finance.ui.home.HomeScreen
 import com.looin.finance.ui.theme.LooinTheme
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -114,5 +115,33 @@ class AvailableSplitUiTest {
         val bmp = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         rule.runOnUiThread { view.draw(android.graphics.Canvas(bmp)) }
         File(dir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    /** 월급날 3일 전부터 한 번 물어본다: "다른 날"로 답하면 그날로 예상하고, 다시 묻지 않는다. */
+    @Test fun paydayQuestion() {
+        com.looin.finance.ui.theme.ThemePrefs.init(com.looin.finance.ui.platform.InMemoryKeyValueStore())
+        val near = LocalDate(2026, 11, 23)
+        val r2 = FinanceRepository(db, now = { 1 }, today = { near })
+        runBlocking {
+            r2.ensureInitialized()
+            r2.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 100_000, includeInAvailable = true))
+        }
+        val payDay = r2.let { runBlocking { it.snapshot().settings.paydayDay } }
+        val regular = com.looin.finance.core.calc.AvailableFundsCalculator.nextRegularPayday(near, payDay)
+        org.junit.Assume.assumeTrue(regular.toEpochDays() - near.toEpochDays() in 0..3)
+        val vm = MainViewModel(r2)
+        rule.setContent {
+            val state by vm.state.collectAsState()
+            LooinTheme { HomeScreen(state, vm, PaddingValues(), {}, { _, _, _ -> }, {}, {}, {}) }
+        }
+        await { vm.state.value.data.loaded }
+        has("월급날 확인")
+        rule.onNodeWithText("다른 날이에요").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("이 날로 계산하기").performClick()
+        rule.waitForIdle()
+        org.junit.Assert.assertTrue(rule.onAllNodes(androidx.compose.ui.test.hasText("월급날 확인"), useUnmergedTree = true).fetchSemanticsNodes().isEmpty())
+        val early = LocalDate.fromEpochDays(regular.toEpochDays() - 1)
+        has("다음 월급(${early.month.number}월 ${early.day}일) 전까지 예상")
     }
 }

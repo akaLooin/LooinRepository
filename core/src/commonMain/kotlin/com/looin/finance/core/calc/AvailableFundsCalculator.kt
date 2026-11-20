@@ -13,6 +13,7 @@ import com.looin.finance.core.money.krwAmount
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
+import kotlinx.datetime.minus
 
 /**
  * 생활비로 사용 가능한 금액(여유 금액).
@@ -207,19 +208,41 @@ object AvailableFundsCalculator {
         return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown, savingsReserved, shares, currentBreakdown)
     }
 
+    /** 평소 생활비 하루 평균을 어느 기간으로 낼지. */
+    enum class DailyBasis(val label: String) { LAST_PAY_PERIOD("지난 월급 기간 전체"), RECENT_30("최근 30일") }
+
     /**
      * 다음 월급 전날까지 예상: 지금 잔고에서 월급날 전까지의 예정 지출·예정 이체·저축 목표 배정을 빼고,
-     * 평소 생활비(최근 30일 동안 고정 비용이 아닌 지출의 하루 평균 × 남은 날 수)도 뺀 금액.
+     * (켜져 있으면) 평소 생활비(고정 비용이 아닌 지출의 하루 평균 × 남은 날 수)도 뺀 금액.
      * 예정 수입은 들어오기 전까지 넣지 않는다(참고로만). 하루 평균은 추정치다.
      */
     data class PaydayForecast(
+        /** 이번에 쓰는 월급날(사용자가 다른 날이라고 답했으면 그날). */
         val nextPayday: LocalDate,
+        /** 설정의 급여일로 계산한 월급날(물어보기·답 저장의 기준). */
+        val regularPayday: LocalDate,
         val days: Int,
         val amount: Long,
         val dailyAverage: Long,
         val estimatedSpending: Long,
+        val includeDaily: Boolean,
+        /** 하루 평균을 낸 기간 설명(예: "지난 월급 기간 10.25~11.24"). */
+        val basisLabel: String,
         val breakdown: Breakdown,
     )
+
+    /** 설정 급여일 기준 다음 월급날(오늘보다 뒤). */
+    fun nextRegularPayday(today: LocalDate, paydayDay: Int): LocalDate {
+        val thisMonth = com.looin.finance.core.period.PeriodCalculator.paydayIn(today.year, today.month.number, paydayDay)
+        if (thisMonth > today) return thisMonth
+        val n = today.plus(kotlinx.datetime.DatePeriod(months = 1))
+        return com.looin.finance.core.period.PeriodCalculator.paydayIn(n.year, n.month.number, paydayDay)
+    }
+
+    private fun paydayMonthsBefore(payday: LocalDate, months: Int, paydayDay: Int): LocalDate {
+        val m = payday.minus(kotlinx.datetime.DatePeriod(months = months))
+        return com.looin.finance.core.period.PeriodCalculator.paydayIn(m.year, m.month.number, paydayDay)
+    }
 
     fun untilPayday(
         accounts: List<Account>,
@@ -227,12 +250,13 @@ object AvailableFundsCalculator {
         today: LocalDate,
         paydayDay: Int,
         goals: List<GoalStatus> = emptyList(),
+        basis: DailyBasis = DailyBasis.LAST_PAY_PERIOD,
+        includeDaily: Boolean = true,
+        /** 이번 월급이 다른 날 들어온다고 답했으면 그날(오늘 이후일 때만 씀). */
+        paydayOverride: LocalDate? = null,
     ): PaydayForecast {
-        val thisMonth = com.looin.finance.core.period.PeriodCalculator.paydayIn(today.year, today.month.number, paydayDay)
-        val nextPayday = if (thisMonth > today) thisMonth else {
-            val n = today.plus(kotlinx.datetime.DatePeriod(months = 1))
-            com.looin.finance.core.period.PeriodCalculator.paydayIn(n.year, n.month.number, paydayDay)
-        }
+        val regular = nextRegularPayday(today, paydayDay)
+        val nextPayday = paydayOverride?.takeIf { it > today } ?: regular
         val days = (nextPayday.toEpochDays() - today.toEpochDays()).toInt()
         val included = includedAccounts(accounts)
         val ids = included.map { it.id }.toSet()
@@ -248,14 +272,28 @@ object AvailableFundsCalculator {
         }.sumOf { it.amount }
         val reservedGoals = SavingsCalculator.reserveForAvailable(goals, included)
         val savings = reservedGoals.sumOf { it.allocated }
-        // 평소 생활비: 최근 30일(오늘 포함) 고정 비용이 아닌 완료 지출의 하루 평균(외화는 기록 환율로)
-        val from = LocalDate.fromEpochDays(today.toEpochDays() - 29)
-        val recent = transactions.filter {
-            it.isCompleted && it.type == TransactionType.EXPENSE && it.recurringId == null && it.effectiveDate in from..today
+
+        // 평소 생활비: 고정 비용이 아닌 완료 지출(외화는 기록 환율로)의 하루 평균
+        fun spentIn(from: LocalDate, toInclusive: LocalDate) = transactions.filter {
+            it.isCompleted && it.type == TransactionType.EXPENSE && it.recurringId == null && it.effectiveDate in from..toInclusive
         }.sumOf { it.krwAmount() ?: 0 }
+        fun short(d: LocalDate) = "${d.month.number}.${d.day}"
+        val recent30From = LocalDate.fromEpochDays(today.toEpochDays() - 29)
+        var (spent, spanDays, basisLabel) = Triple(spentIn(recent30From, today), 30, "최근 30일")
+        if (basis == DailyBasis.LAST_PAY_PERIOD) {
+            // 지난 월급 기간 전체: 지난 월급날의 한 달 전 월급날 ~ 지난 월급날 전날
+            val lastPayday = paydayMonthsBefore(regular, 1, paydayDay)
+            val before = paydayMonthsBefore(regular, 2, paydayDay)
+            val end = LocalDate.fromEpochDays(lastPayday.toEpochDays() - 1)
+            val hasData = transactions.any { it.effectiveDate <= end }
+            if (hasData) {
+                spent = spentIn(before, end); spanDays = (lastPayday.toEpochDays() - before.toEpochDays()).toInt()
+                basisLabel = "지난 월급 기간 ${short(before)}~${short(end)}"
+            } else basisLabel = "지난 월급 기간 기록이 없어 최근 30일"
+        }
         // 하루 평균은 10원 단위, 예상 생활비는 100원 단위로 올림(넉넉하게)
-        val daily = (recent + 299) / 300 * 10
-        val estimated = (recent * days + 2_999) / 3_000 * 100
+        val daily = (spent + spanDays * 10L - 1) / (spanDays * 10L) * 10
+        val estimated = if (!includeDaily) 0L else (spent * days + spanDays * 100L - 1) / (spanDays * 100L) * 100
         val amount = cash - plannedExpense - plannedTransfers - savings - estimated
         val label = "${nextPayday.month.number}월 ${nextPayday.day}일"
         val breakdown = Breakdown(
@@ -266,13 +304,18 @@ object AvailableFundsCalculator {
                 add(BreakdownLine("월급 전까지 예정 지출", plannedExpense, -1, "$label 전날까지·밀린 예정 지출 포함(고정 비용 포함)"))
                 add(BreakdownLine("월급 전까지 예정 이체", plannedTransfers, -1, "저축·카드 대금 등"))
                 if (savings > 0) add(BreakdownLine("저축 목표 배정", savings, -1, reservedGoals.joinToString { it.goal.name }))
-                add(BreakdownLine("예상 생활비 (${days}일)", estimated, -1,
-                    "최근 30일 하루 평균 ${MoneyFormat.format(daily)} × ${days}일 (고정 비용 제외, 추정)"))
+                if (includeDaily) add(BreakdownLine("예상 생활비 (${days}일)", estimated, -1,
+                    "$basisLabel 하루 평균 ${MoneyFormat.format(daily)} × ${days}일 (고정 비용 제외, 추정)"))
                 add(BreakdownLine("참고: 월급 전 예정 수입(미반영)", plannedIncome, 0, "입금 전까지 반영하지 않음"))
             },
-            formula = "월급 전까지 예상 = 잔고 − 월급 전 예정 지출 − 예정 이체 − 저축 목표 − 하루 평균 생활비 × 남은 날",
-            notes = listOf("급여일: 매월 ${paydayDay}일(짧은 달은 말일) · 설정에서 바꿀 수 있어요", "남은 날: 오늘부터 월급 전날까지 ${days}일"),
+            formula = if (includeDaily) "월급 전까지 예상 = 잔고 − 월급 전 예정 지출 − 예정 이체 − 저축 목표 − 하루 평균 생활비 × 남은 날"
+                else "월급 전까지 예상 = 잔고 − 월급 전 예정 지출 − 예정 이체 − 저축 목표 (하루 평균 생활비는 넣지 않음 · 설정에서 바꿀 수 있어요)",
+            notes = listOfNotNull(
+                if (nextPayday != regular) "이번 월급날: $label (설정 급여일 ${regular.month.number}월 ${regular.day}일 대신 직접 알려 준 날)"
+                else "급여일: 매월 ${paydayDay}일(짧은 달은 말일) · 설정에서 바꿀 수 있어요",
+                "남은 날: 오늘부터 월급 전날까지 ${days}일",
+            ),
         )
-        return PaydayForecast(nextPayday, days, amount, daily, estimated, breakdown)
+        return PaydayForecast(nextPayday, regular, days, amount, daily, estimated, includeDaily, basisLabel, breakdown)
     }
 }

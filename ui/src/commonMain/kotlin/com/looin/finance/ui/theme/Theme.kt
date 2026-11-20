@@ -233,6 +233,25 @@ object ThemePrefs {
     var showBudgetCuts by mutableStateOf(true)
         private set
 
+    /** 다음 월급 전까지 예상: 하루 평균 생활비를 낼 기간(기본: 지난 월급 기간 전체). */
+    var dailyBasis by mutableStateOf(com.looin.finance.core.calc.AvailableFundsCalculator.DailyBasis.LAST_PAY_PERIOD)
+        private set
+    /** 다음 월급 전까지 예상에 하루 평균 생활비를 넣을지(기본 켜짐). */
+    var includeDailyEstimate by mutableStateOf(true)
+        private set
+    /** 월급날 확인 답: 설정 급여일로 계산한 월급날(epoch day) → 실제로 들어오는 날(epoch day). */
+    var paydayAnswers by mutableStateOf<Map<Long, Long>>(emptyMap())
+        private set
+
+    fun chooseDailyBasis(b: com.looin.finance.core.calc.AvailableFundsCalculator.DailyBasis) { dailyBasis = b; store.put("payday.basis", b.name) }
+    fun chooseIncludeDaily(on: Boolean) { includeDailyEstimate = on; store.put("payday.daily", if (on) "on" else "off") }
+
+    /** 이번 월급날 답 저장(이번 월급에만 쓰고 급여일 설정은 바꾸지 않음). 오래된 답은 버린다. */
+    fun answerPayday(regularDay: Long, actualDay: Long) {
+        paydayAnswers = (paydayAnswers + (regularDay to actualDay)).filterKeys { it >= regularDay - 120 }
+        store.put("payday.answers", paydayAnswers.entries.joinToString(",") { "${it.key}=${it.value}" })
+    }
+
     fun chooseBudgetCuts(on: Boolean) { showBudgetCuts = on; store.put("budget.cuts", if (on) "on" else "off") }
 
     fun recordBackup(day: Long) { lastBackupDay = day; store.put("backup.last", day.toString()) }
@@ -254,6 +273,12 @@ object ThemePrefs {
         this.store = store
         lastBackupDay = store.get("backup.last")?.toLongOrNull()
         showBudgetCuts = store.get("budget.cuts") != "off"
+        dailyBasis = com.looin.finance.core.calc.AvailableFundsCalculator.DailyBasis.entries.firstOrNull { it.name == store.get("payday.basis") }
+            ?: com.looin.finance.core.calc.AvailableFundsCalculator.DailyBasis.LAST_PAY_PERIOD
+        includeDailyEstimate = store.get("payday.daily") != "off"
+        paydayAnswers = store.get("payday.answers").orEmpty().split(",").mapNotNull { e ->
+            val p = e.split("="); if (p.size != 2) null else p[0].toLongOrNull()?.let { k -> p[1].toLongOrNull()?.let { k to it } }
+        }.toMap()
         backupSnoozeUntil = store.get("backup.snooze")?.toLongOrNull()
         colorOverrides = store.get("colors").orEmpty().split(",").mapNotNull { e ->
             val (k, v) = e.split("=").takeIf { it.size == 2 } ?: return@mapNotNull null

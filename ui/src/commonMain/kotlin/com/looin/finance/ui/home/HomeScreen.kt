@@ -156,7 +156,10 @@ fun HomeScreen(
     var showSplit by remember { mutableStateOf(false) }
     var showCurrent by remember { mutableStateOf(false) }
     var showPayday by remember { mutableStateOf(false) }
-    val payday = AvailableFundsCalculator.untilPayday(data.accounts, txs, state.today, state.settings.paydayDay, data.goalStatuses)
+    val regularPayday = AvailableFundsCalculator.nextRegularPayday(state.today, state.settings.paydayDay)
+    val paydayAnswer = ThemePrefs.paydayAnswers[regularPayday.toEpochDays().toLong()]?.let { LocalDate.fromEpochDays(it) }
+    val payday = AvailableFundsCalculator.untilPayday(data.accounts, txs, state.today, state.settings.paydayDay, data.goalStatuses,
+        basis = ThemePrefs.dailyBasis, includeDaily = ThemePrefs.includeDailyEstimate, paydayOverride = paydayAnswer)
 
     // 넓은 화면(PC)에서는 왼쪽: 요약·입력·거래, 오른쪽: 예산·잔고. 휴대폰에서는 이 순서대로 한 줄.
     val left = mutableListOf<@Composable () -> Unit>()
@@ -188,7 +191,8 @@ fun HomeScreen(
                         Spacer(Modifier.height(6.dp))
                     }
                     ScenarioRow("다음 월급(${payday.nextPayday.month.number}월 ${payday.nextPayday.day}일) 전까지 예상", payday.amount,
-                        "하루 평균 ${fmt(payday.dailyAverage)} × ${payday.days}일 포함 ⓘ") { showPayday = true }
+                        if (payday.includeDaily) "하루 평균 ${fmt(payday.dailyAverage)} × ${payday.days}일 포함 · ${payday.basisLabel} ⓘ"
+                        else "예정 거래만 반영 · 하루 평균 생활비 제외 ⓘ") { showPayday = true }
                 }
                 if (AvailableFundsCalculator.includedAccounts(data.accounts).isEmpty()) {
                     SmallLabel("생활비 계산 대상 계좌가 없어요. 자산 탭에서 계좌를 '생활비 계산 대상'으로 켜 주세요.", color = c.danger)
@@ -210,6 +214,9 @@ fun HomeScreen(
                 }
             }
         }
+        // 월급날이 3일 안으로 다가오면 한 번 물어본다: 그날 들어오는지(주말·휴일 앞당김 등)
+        val daysToPayday = regularPayday.toEpochDays() - state.today.toEpochDays()
+        if (daysToPayday in 0..3 && paydayAnswer == null) left += { PaydayQuestion(regularPayday, state.today) }
         // 예산대로 다 쓰면 모자랄 때: 예산 합계를 얼마나 줄여야 하는지
         available.adjust?.let { adj ->
             left += {
@@ -487,5 +494,34 @@ private fun ScenarioRow(label: String, amount: Long, hint: String, onClick: () -
             Text(MoneyFormat.format(amount), style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = if (amount < 0) c.danger else c.text)
         }
         SmallLabel(hint)
+    }
+}
+
+/** 월급날 확인 카드: 설정 급여일 그대로 들어오는지, 다른 날인지(이번 월급에만 적용). */
+@Composable
+private fun PaydayQuestion(regular: LocalDate, today: LocalDate) {
+    val c = Looin.colors
+    var other by remember { mutableStateOf(false) }
+    var picked by remember(regular) { mutableStateOf(maxOf(today.plus(kotlinx.datetime.DatePeriod(days = 1)), LocalDate.fromEpochDays(regular.toEpochDays() - 1))) }
+    Card {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(4.dp, 16.dp).clip(RoundedCornerShape(50)).background(c.accent))
+            Spacer(Modifier.width(10.dp))
+            Text("월급날 확인", style = LooinType.sheetTitle, color = c.text)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("이번 월급이 ${regular.korean()}에 들어오나요?", style = LooinType.body, color = c.text)
+        SmallLabel("주말·휴일이라 앞당겨 들어오면 '다른 날'을 골라 주세요. 이번 월급에만 쓰고 급여일 설정은 그대로예요.")
+        Spacer(Modifier.height(10.dp))
+        if (!other) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PrimaryButton("네, 그날이에요", { ThemePrefs.answerPayday(regular.toEpochDays().toLong(), regular.toEpochDays().toLong()) }, Modifier.weight(1f), strong = true)
+            PrimaryButton("다른 날이에요", { other = true }, Modifier.weight(1f))
+        } else {
+            FieldGroup { DateField("이번 월급이 들어오는 날", picked, { picked = it }) }
+            Spacer(Modifier.height(8.dp))
+            val ok = picked > today
+            if (!ok) SmallLabel("오늘 이후 날짜를 골라 주세요.", color = c.danger)
+            PrimaryButton("이 날로 계산하기", { ThemePrefs.answerPayday(regular.toEpochDays().toLong(), picked.toEpochDays().toLong()) }, enabled = ok, strong = true)
+        }
     }
 }

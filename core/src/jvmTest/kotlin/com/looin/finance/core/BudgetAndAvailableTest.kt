@@ -169,7 +169,7 @@ class AvailableSplitTest {
             fromAccountId = 1, recurringId = 5) // 고정 비용은 하루 평균에서 뺀다
         val bill = spend(300, 11, 50_000, planned = true).copy(date = kotlinx.datetime.LocalDate(2026, 11, 20))
         val late = spend(301, 11, 70_000, planned = true).copy(date = kotlinx.datetime.LocalDate(2026, 11, 28)) // 월급 뒤
-        val f = AvailableFundsCalculator.untilPayday(listOf(acc), coffee + rent + bill + late, d, 25)
+        val f = AvailableFundsCalculator.untilPayday(listOf(acc), coffee + rent + bill + late, d, 25, basis = AvailableFundsCalculator.DailyBasis.RECENT_30)
         org.junit.Assert.assertEquals(kotlinx.datetime.LocalDate(2026, 11, 25), f.nextPayday)
         org.junit.Assert.assertEquals(15, f.days)
         org.junit.Assert.assertEquals(1_000L, f.dailyAverage)
@@ -177,5 +177,28 @@ class AvailableSplitTest {
         org.junit.Assert.assertEquals(105_000L, f.amount)
         // 오늘이 급여일이면 다음 달 급여일
         org.junit.Assert.assertEquals(kotlinx.datetime.LocalDate(2026, 12, 25), AvailableFundsCalculator.untilPayday(listOf(acc), emptyList(), kotlinx.datetime.LocalDate(2026, 11, 25), 25).nextPayday)
+    }
+
+    /** 하루 평균을 지난 월급 기간 전체로(기본), 하루 평균 빼기, 이번 월급날을 다른 날로 답한 경우. */
+    @org.junit.Test fun untilPaydayOptions() {
+        // 오늘 11/10, 급여일 25 → 지난 월급 기간 9/25~10/24 (30일)
+        val old = spend(400, 10, 60_000).copy(date = kotlinx.datetime.LocalDate(2026, 10, 1)) // 그 기간 하루 2,000
+        val thisCycle = spend(401, 10, 30_000).copy(date = kotlinx.datetime.LocalDate(2026, 11, 5)) // 이번 기간은 평균에 안 씀
+        val txs = listOf(old, thisCycle)
+        val f = AvailableFundsCalculator.untilPayday(listOf(acc), txs, d, 25)
+        org.junit.Assert.assertEquals(2_000L, f.dailyAverage)
+        org.junit.Assert.assertEquals(30_000L, f.estimatedSpending) // × 15일
+        org.junit.Assert.assertTrue(f.basisLabel, f.basisLabel.startsWith("지난 월급 기간 9.25~10.24"))
+        // 잔고 500,000 − 90,000 = 410,000 − 30,000
+        org.junit.Assert.assertEquals(380_000L, f.amount)
+        val noDaily = AvailableFundsCalculator.untilPayday(listOf(acc), txs, d, 25, includeDaily = false)
+        org.junit.Assert.assertEquals(410_000L, noDaily.amount)
+        // 이번 월급이 11/24(월요일 앞당김 등)에 들어온다고 답함 → 남은 날 14일
+        val early = AvailableFundsCalculator.untilPayday(listOf(acc), txs, d, 25, paydayOverride = kotlinx.datetime.LocalDate(2026, 11, 24))
+        org.junit.Assert.assertEquals(14, early.days)
+        org.junit.Assert.assertEquals(kotlinx.datetime.LocalDate(2026, 11, 25), early.regularPayday)
+        // 지난 기간 기록이 없으면 최근 30일
+        val fresh = AvailableFundsCalculator.untilPayday(listOf(acc), listOf(thisCycle), d, 25)
+        org.junit.Assert.assertTrue(fresh.basisLabel.contains("최근 30일"))
     }
 }
