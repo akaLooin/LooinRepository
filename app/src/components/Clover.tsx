@@ -3,7 +3,11 @@ import { Animated, Pressable, View } from "react-native";
 import { Fire, useGlowColor, usePulse } from "./Highlight";
 import { usePrefs } from "../data/prefs";
 import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
-import { DESIGN_TRIAL } from "../lib/variant";
+/**
+ * The four-point star (the design trial's look) is the shape in both apps since 2026-11-21 (user: "디자인 앱으로 정식
+ * 픽스"). The clover drawing below stays only as a fallback for STAR = false.
+ */
+const STAR = true;
 import { contrast, fontFamily, tokens, useTheme, visibleOn } from "../theme";
 import { AppText } from "./AppText";
 
@@ -45,7 +49,7 @@ export function starPath(size: number, inset = 0) {
 }
 
 function Lobes({ size, fill }: { size: number; fill: string }) {
-  if (DESIGN_TRIAL) return <Path d={starPath(size)} fill={fill} />;
+  if (STAR) return <Path d={starPath(size)} fill={fill} />;
   return (
     <G fill={fill}>
       {LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}
@@ -57,7 +61,7 @@ function Lobes({ size, fill }: { size: number; fill: string }) {
 export const lobeColors = (colors: string[]) => LOBE_AT.map((_, i) => colors[Math.floor((i * colors.length) / 4)]);
 function SplitLobes({ size, colors, id }: { size: number; colors: string[]; id: string }) {
   if (new Set(colors).size <= 1) return <Lobes size={size} fill={colors[0]} />;
-  if (DESIGN_TRIAL) {
+  if (STAR) {
     return (
       <>
         <Defs>
@@ -80,7 +84,7 @@ function SplitLobes({ size, colors, id }: { size: number; colors: string[]; id: 
 
 function Tick({ size, color }: { size: number; color: string }) {
   // the star's middle is smaller than the clover's: a smaller tick, still centred
-  const k = DESIGN_TRIAL ? 0.9 : 1;
+  const k = STAR ? 0.9 : 1;
   const s = (size / 24) * k, o = (size * (1 - k)) / 2;
   return (
     <Path
@@ -101,7 +105,7 @@ function Glow({ size, bleed }: { size: number; bleed: number }) {
   // to-dos glow a little brighter than events' bars (user)
   const opacity = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] });
   const m = size * 0.3 + bleed; // room for the soft outer line
-  const outline = (w: number, o: number, color = neon) => (DESIGN_TRIAL
+  const outline = (w: number, o: number, color = neon) => (STAR
     ? <Path d={starPath(size)} fill="none" stroke={color} strokeWidth={w} strokeOpacity={o} strokeLinejoin="round" />
     : <G fill="none" stroke={color} strokeWidth={w} strokeOpacity={o}>{LOBE_AT.map(([x, y], i) => <Circle key={i} cx={x * size} cy={y * size} r={LOBE_R * size} />)}</G>);
   const widths = [0.36, 0.2, 0.1]; // the first, brighter outline, a touch wider for to-dos (user)
@@ -156,7 +160,7 @@ export function Clover({
   const numberOn = (bg: string) => (contrast(num, bg) < 1.15 ? numOther : num);
 
   const clipId = "clip" + useId().replace(/[^a-zA-Z0-9]/g, "");
-  const bleed = DESIGN_TRIAL ? size * STAR_BLEED : 0;
+  const bleed = STAR ? size * STAR_BLEED : 0;
   const empty = c.cloverEmpty;
   const fill = (col: string) => visibleOn(col, c.bg, c.text);
   let body: React.ReactNode;
@@ -190,7 +194,7 @@ export function Clover({
       break;
     case "todoOpen":
       // grey until done, as in the original; the design trial draws an outline star (the user's picture)
-      body = DESIGN_TRIAL ? <Path d={starPath(size, size * 0.04)} fill="none" stroke={empty} strokeWidth={size * 0.08} strokeLinejoin="round" />
+      body = STAR ? <Path d={starPath(size, size * 0.04)} fill="none" stroke={empty} strokeWidth={size * 0.08} strokeLinejoin="round" />
         : <Lobes size={size} fill={empty} />;
       break;
     case "done":
@@ -213,7 +217,7 @@ export function Clover({
         <>
           <Defs>
             <ClipPath id={clipId}>
-              <Rect x={-bleed} y={-bleed} width={size + 2 * bleed} height={h * (1 + 2 * STAR_BLEED * Number(DESIGN_TRIAL))} />
+              <Rect x={-bleed} y={-bleed} width={size + 2 * bleed} height={h * (1 + 2 * STAR_BLEED * Number(STAR))} />
             </ClipPath>
           </Defs>
           <Lobes size={size} fill={empty} />
@@ -239,7 +243,7 @@ export function Clover({
         </View>
       ) : null}
       {count !== null && (
-        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * (DESIGN_TRIAL ? 0.46 : 0.52), lineHeight: size }}>
+        <AppText variant="date" raw={countColor} style={{ fontFamily: fontFamily(600), fontSize: size * (STAR ? 0.46 : 0.52), lineHeight: size }}>
           {count}
         </AppText>
       )}
