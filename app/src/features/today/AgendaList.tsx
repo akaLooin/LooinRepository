@@ -1,11 +1,12 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, Check, Ellipsis, MoodMark, TitleInput, TodoRow } from "../../components";
+import { AppText, BottomSheet, Button, Check, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, type DragHandle } from "../../components";
+import { arrangeByNeighbours } from "../../lib/arrange";
 import { EventEditor, type EventDraft } from "../events/EventSheets";
 import { formatTime, usePrefs } from "../../data/prefs";
 import {
-  addRoutineTodo, copyTodos, deleteTodos, manualRoutinesOn, materialize, moveTodos, selectCategories, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
+  addRoutineTodo, arrangeTodos, copyTodos, deleteTodos, manualRoutinesOn, materialize, moveTodos, selectCategories, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
 } from "../../data/store";
 import { addDays, parseDay, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand, type CalEvent } from "../../lib/events";
@@ -69,7 +70,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
       </Pressable>
     );
   };
-  const row = (t: Todo, withTime: boolean) => {
+  const row = (t: Todo, withTime: boolean, drag?: DragHandle) => {
     const cat = catOf.get(t.categoryId);
     return (
       <TodoRow key={t.id}
@@ -87,7 +88,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         onAlarmPress={() => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
         onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title }); } : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
-        right={tag(t)} />
+        right={tag(t)} {...drag} />
     );
   };
   const eventCard = (e: CalEvent, from: number, to: number) => (
@@ -154,7 +155,13 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
       {heading("To Do", todos.length ? (
         <Pressable onPress={() => setListMenu("menu")} hitSlop={10} accessibilityRole="button" accessibilityLabel="리스트 메뉴"><Ellipsis size={20} color={c.textMuted} /></Pressable>
       ) : null)}
-      {anytime.map((t) => row(t, false))}
+      {/* hold to move; dropped under another category's to-do it joins that category (user) */}
+      <ReorderableList items={anytime} keyOf={(t) => t.id} labelOf={(t) => t.title}
+        onReorder={(keys, moved) => {
+          const cat = new Map(anytime.map((t) => [t.id, t.categoryId]));
+          if (!arrangeTodos(arrangeByNeighbours(keys, moved, (k) => cat.get(k)!))) notice("종료한 카테고리로는 옮길 수 없어요");
+        }}
+        renderItem={(t, drag) => row(t, false, drag)} />
       {pending.map(({ r, cat }) => <PendingRoutineRow key={r.id} title={`${r.title}`} onAdd={() => addRoutineTodo(r.id, day)} />)}
       {!todos.length && !pending.length ? (
         <AppText variant="body" color="textMuted" style={{ paddingVertical: 14 }}>{categories.length ? "아래 칸에 할 일을 적어 보세요" : "먼저 관리 메뉴에서 카테고리를 만들어 주세요"}</AppText>

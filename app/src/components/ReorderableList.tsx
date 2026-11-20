@@ -20,7 +20,8 @@ type Props<T> = {
   labelOf: (item: T) => string;
   /** Spread `drag` into the row's own Pressable (onLongPress) so holding the row starts the drag. */
   renderItem: (item: T, drag: DragHandle, dragging: boolean) => React.ReactNode;
-  onReorder: (keys: string[]) => void;
+  /** `moved` is the row that was held (or stepped by a screen reader). */
+  onReorder: (keys: string[], moved: string) => void;
   /** Tell the parent ScrollView to stop scrolling while a row is held. */
   onDragging?: (dragging: boolean) => void;
   gap?: number;
@@ -110,7 +111,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
       next.splice(to, 0, a);
       glide.current = { key: a, from: lastDy.current - offset }; // where the row is now, measured from its new slot
       resetAfterRender.current = true;
-      onReorder(next);
+      onReorder(next, a);
       // if the save did not change the order on screen (e.g. refused), glide back from where it is
       requestAnimationFrame(() => { if (glide.current?.key === a) runGlide(); });
     } else {
@@ -181,7 +182,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
     if (j < 0 || j >= keys.length) return;
     const next = [...keys];
     [next[i], next[j]] = [next[j], next[i]];
-    onReorder(next);
+    onReorder(next, key);
   };
 
   const from = active ? keys.indexOf(active) : -1;

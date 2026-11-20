@@ -18,3 +18,16 @@ export function arrangeByHeaders(keys: string[], ownerOf: (key: string) => strin
   }
   return out;
 }
+
+/**
+ * A list without category titles (design app 달력 To Do, user): the held row `moved` was dropped where it is in
+ * `keys`. It takes the category of the row now above it (or below it, at the top); the rest keep theirs. Returns the
+ * to-dos in their new order with their categories, ready for arrangeTodos.
+ */
+export function arrangeByNeighbours(keys: string[], moved: string, catOf: (key: string) => string): { id: string; categoryId: string }[] {
+  return keys.map((k, i) => {
+    if (k !== moved) return { id: k, categoryId: catOf(k) };
+    const near = i > 0 ? keys[i - 1] : keys[i + 1];
+    return { id: k, categoryId: catOf(near ?? k) };
+  });
+}

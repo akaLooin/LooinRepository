@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
-import { AppText, Calendar, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock, Clover, Search, useToast } from "../../components";
+import { Pressable, View } from "react-native";
+import { AppText, Calendar, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock, Clover, DragScrollView, Search, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { isDDayOn, selectActiveCategories, selectCategories, selectDDays, selectEvents, todosForDay, useDB } from "../../data/store";
 import { fromMonthIndex, monthIndex, parseDay, pickAfterPaging, today, type Day } from "../../lib/dates";
@@ -63,7 +63,7 @@ export function CalendarTab() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
+      <DragScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
         {/* the same top row as 홈 (search, menu), so the month has room above it */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
           <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
@@ -102,7 +102,7 @@ export function CalendarTab() {
           {icon("이날 시간표", () => router.push(`/events/${selected}` as never), <Clock size={21} color={c.text} />)}
         </View>
         <AgendaList day={selected} notice={notice} />
-      </ScrollView>
+      </DragScrollView>
       <QuickAdd day={selected} cats={active} lastId={prefs.quickAddCategory} notice={notice} />
       <HomeMenu open={menu} onClose={() => setMenu(false)} />
       {filter ? <CalendarFilterSheet open onClose={() => setFilter(false)} categories={categories} /> : null}
