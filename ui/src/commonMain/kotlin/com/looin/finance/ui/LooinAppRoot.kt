@@ -174,7 +174,8 @@ fun LooinAppRoot(
         }
     }
     val addTx: () -> Unit = {
-        val day = if (tab == Tab.CALENDAR) calendarDay?.let { LocalDate.fromEpochDays(it) } else null
+        // 캘린더에서는 고른 날(아직 고르지 않았으면 캘린더가 보여 주는 오늘)로 추가
+        val day = if (tab == Tab.CALENDAR) LocalDate.fromEpochDays(calendarDay ?: state.today.toEpochDays()) else null
         nav.navigate(txRoute(date = day))
     }
     // 단축키(PC): Ctrl/⌘+N 새 거래, Ctrl/⌘+F 검색, Ctrl/⌘+, 설정, Esc 뒤로, Ctrl/⌘+1~5 탭

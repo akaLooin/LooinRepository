@@ -266,9 +266,9 @@ fun TransactionEditScreen(
             }
         }
 
-        // 캘린더에서 날짜를 골라 추가할 때는 제목에 그 날짜(날짜 칸을 바꾸면 함께 바뀜)
-        ScreenHeader(if (existing == null) "거래 추가" else "거래 수정", onClose,
-            subtitle = if (existing == null && initialDate != null) date.korean(withYear = date.year != state.today.year) else null) {
+        // 캘린더에서 추가할 때는 제목에 날짜: "거래 추가: 11월 20일 (금)"(날짜 칸을 바꾸면 함께 바뀜)
+        ScreenHeader(if (existing != null) "거래 수정"
+            else if (initialDate != null) "거래 추가: ${date.korean(withYear = date.year != state.today.year)}" else "거래 추가", onClose) {
             if (existing != null) TextAction("삭제", { confirmDelete = true }, color = c.danger)
         }
         Column(

@@ -36,6 +36,17 @@ import com.looin.finance.ui.components.korean
 class CalendarAddAndToastTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
+    /** 캘린더에 처음 들어가 날짜를 고르지 않았으면 오늘로 추가하고, 제목에도 오늘 날짜가 보인다. */
+    @Test fun plusButtonWithoutSelectionUsesToday() {
+        val app = rule.activity.application as LooinApp
+        runBlocking { app.repository.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 10_000, includeInAvailable = true)) }
+        rule.waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+        rule.onAllNodesWithText("캘린더").onFirst().performClick()
+        rule.waitUntilAtLeastOneExists(hasText("금액 보기"), 10_000)
+        rule.onNodeWithContentDescription("거래 추가").performClick()
+        rule.waitUntilAtLeastOneExists(hasText("거래 추가: ${app.repository.today().korean()}"), 10_000)
+    }
+
     @Test fun plusButtonUsesSelectedCalendarDay() {
         val app = rule.activity.application as LooinApp
         runBlocking { app.repository.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 10_000, includeInAvailable = true)) }
@@ -49,8 +60,7 @@ class CalendarAddAndToastTest {
         rule.onNodeWithContentDescription("거래 추가").performClick()
         rule.waitUntilAtLeastOneExists(hasText(other.korean(true)), 10_000)
         // 맨 위 제목에도 고른 날짜가 보인다
-        rule.waitUntilAtLeastOneExists(hasText(other.korean()), 5_000)
-        rule.onNodeWithText("거래 추가").assertExists()
+        rule.waitUntilAtLeastOneExists(hasText("거래 추가: ${other.korean()}"), 5_000)
 
         // 저장 → 알림이 뜨고, 옆으로 밀면 사라진다
         rule.onNode(androidx.compose.ui.test.hasSetTextAction() and hasContentDescription("금액")).performTextInput("3000")

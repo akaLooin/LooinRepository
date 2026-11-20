@@ -575,6 +575,7 @@ UI 흐름 테스트는 실제 화면에서 다음을 확인합니다.
 - `RecurringTest`: 매일·N일 간격, `AvailableSplitTest.fixedBudgetsNotCut`, `AvailableSplitUiTest.hideCutSuggestions`
 
 ## 캘린더에서 거래 추가: 제목에 날짜 (2026-11-18)
-- 캘린더에서 날짜를 골라 "거래 추가"를 열면 맨 위 제목 위에 그 날짜("11월 21일 (토)", 다른 해면 연도 포함)를 강조 색으로 표시
+- 캘린더에서 "거래 추가"를 열면 제목이 **"거래 추가: 11월 21일 (토)"**(다른 해면 연도 포함, 2026-11-20 사용자 요청으로 한 줄 형식)
+- 캘린더에 처음 들어가 날짜를 고르지 않았으면 **오늘**로 추가하고 제목에도 오늘 날짜
 - 날짜 칸을 바꾸면 제목의 날짜도 함께 바뀜. 홈·바로가기에서 연 추가 화면과 수정 화면은 그대로
-- `ScreenHeader(subtitle = …)` 추가, `CalendarAddAndToastTest` 에 확인 추가
+- 긴 제목은 뒤로 버튼과 겹치지 않게 한 줄로 줄임(360dp 화면에서 확인), `CalendarAddAndToastTest`(고른 날·고르지 않은 날)

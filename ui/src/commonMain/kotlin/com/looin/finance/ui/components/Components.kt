@@ -541,18 +541,15 @@ fun TextAction(text: String, onClick: () -> Unit, color: Color = Color.Unspecifi
 
 /** 화면 머리: 높이 56, ‹ + 가운데 제목 + 오른쪽 동작. */
 @Composable
-fun ScreenHeader(title: String, onBack: () -> Unit, subtitle: String? = null, actions: @Composable RowScope.() -> Unit = {}) {
+fun ScreenHeader(title: String, onBack: () -> Unit, actions: @Composable RowScope.() -> Unit = {}) {
     val c = Looin.colors
-    Box(Modifier.fillMaxWidth().height(if (subtitle == null) 56.dp else 60.dp).padding(horizontal = 4.dp)) {
+    Box(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp)) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로", tint = c.text)
         }
-        if (subtitle == null) Text(title, style = LooinType.screenTitle, color = c.text, modifier = Modifier.align(Alignment.Center))
-        else Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            // 제목 위에 날짜 등 맥락(예: 캘린더에서 고른 날)
-            Text(subtitle, style = LooinType.body.copy(fontWeight = FontWeight.SemiBold), color = c.accent)
-            Text(title, style = LooinType.screenTitle, color = c.text)
-        }
+        // 긴 제목(예: "거래 추가: 11월 20일 (금)")도 뒤로·오른쪽 버튼과 겹치지 않게
+        Text(title, style = LooinType.screenTitle, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.align(Alignment.Center).padding(horizontal = 52.dp))
         Row(Modifier.align(Alignment.CenterEnd), verticalAlignment = Alignment.CenterVertically, content = actions)
     }
 }
