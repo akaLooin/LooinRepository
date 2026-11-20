@@ -52,3 +52,8 @@ jobs:
         env:
           APP_VARIANT: design
         run: eas update --channel design --environment preview --clear-cache --message "$(git log -1 --pretty=%s | cut -c1-200)" --non-interactive
+      - name: Send to the admin app (channel admin)
+        if: env.EXPO_TOKEN != ''
+        env:
+          APP_VARIANT: admin
+        run: eas update --channel admin --environment preview --clear-cache --message "$(git log -1 --pretty=%s | cut -c1-200)" --non-interactive

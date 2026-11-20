@@ -12,6 +12,8 @@ import { loadPrefs, usePrefs } from "../data/prefs";
 import { KeyboardRoot } from "../components/KeyboardSpacer";
 import { PhotoViewerHost } from "../components/PhotoViewer";
 import { AuthGate } from "../features/auth/AuthGate";
+import { AdminApp } from "../features/admin/AdminApp";
+import { ADMIN_APP } from "../lib/variant";
 import { extraFontFiles, fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
 
 function Shell() {
@@ -39,10 +41,13 @@ function Shell() {
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <ScaledRoot>
         <AuthGate>
+          {/* the admin app (APP_VARIANT=admin) is only the admin screens */}
+          {ADMIN_APP ? <AdminApp /> : (
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
             {/* 할 일 정보 보기 is a sheet over the current screen, as in the original */}
             <Stack.Screen name="todo/[id]" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
           </Stack>
+          )}
         </AuthGate>
       </ScaledRoot>
       <PhotoViewerHost />

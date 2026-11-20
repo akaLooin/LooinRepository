@@ -58,7 +58,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
   - `CalendarTab` 달력: 위 검색·메뉴, 한 달(`Calendar boxed` 오늘 회색 칸 `todayCell`·고른 날 흰 칸) + `AgendaList`(구간 구분선 `sectionLine`, 종일/오전/오후/저녁, **To Do**(그날 디데이가 맨 위, 그 아래 카테고리 묶음: 색 막대 + 이름 + 완료/전체(원본 알약과 다르게), 카테고리 왼쪽에 공개 범위 아이콘, 묶음 안 강조 먼저·오른쪽 '중요' 표시, 꾹 끌어 다른 묶음 안에 놓으면 그 카테고리 `arrangeByHeaders`; 카테고리 태그는 없앰), 일정 탭 = `EventEditor` 바로)
   - `TogetherScreen` 커뮤니티: 친구 목록 먼저, 친구 소식/친구 찾기 전환, 크루는 `app_config` 켜질 때만(`lib/appConfig.ts`, 규칙 `configRules.ts`)
   - `ProfileTab` 프로필: 가운데 카드 + 기록 3칸(연속 기록 `streakOf`) + 설정 묶음 카드(`SettingsGroups`, 디자인 앱 설정 화면도 같음)
-- **관리자 패널** `admin/`(Vite 웹, PC에서 `npm.cmd run dev`): 크루 스위치·홈 공지·공지사항·전체 알림. SQL `20261121000000_admin`(미실행) + 함수 `admin-broadcast`(미배포), backend.md 23
+- **관리자 앱**(웹 패널 대신, 이용자 요청): 세 번째 안드로이드 앱 `APP_VARIANT=admin`(`com.looin.todomateclone.admin`, eas 프로필·채널 `admin`, `lib/variant.ts` `ADMIN_APP`, 루트 `_layout`이 `features/admin/AdminApp.tsx`만 보여 줌). 앱 설정(크루 스위치·홈 공지)·공지사항·알림 보내기. SQL `20261121000000_admin`(미실행) + 함수 `admin-broadcast`(미배포) + APK 한 번 빌드, backend.md 23
 - 속도(11-21): 디자인 앱 탭 4개는 `(tabs)/_layout.tsx` `DesignTabs`가 React `Activity`로 계속 살려 둠, 탭 바꾸기는 라우터 대신 `lib/tabSwitch.ts` `goTab`(라우트를 바꾸면 탭 레이아웃 전체가 다시 만들어지던 게 느림의 원인). 달력 별 계산 캐시. 꾹 누르기 0.3초 + 회색 띠가 화면 양끝까지(`ReorderableList` `WIDE_BAND`, 디자인 앱만; 퍼지는 빛은 해 보고 되돌림)
 - 끌기 버그 고침: `ReorderableList`가 처음 그려질 때의 콜백을 계속 써서 나중에 추가된 할 일의 카테고리가 안 바뀌던 문제(두 앱 공통). `onTargetChange`(끄는 중 미리 보기용 콜백)는 남아 있음
 - 이번 주 카드: 일·공휴일 빨강, 토 파랑, 오늘은 골라도 #00ff7f. 공휴일 표 `lib/holidays.ts`(2025~2029)
