@@ -6,6 +6,7 @@ import { myConversations, type Conversation } from "../../data/chat";
 import { previewText } from "../../lib/chat";
 import { timeAgo } from "../../lib/friend";
 import { tokens, useInsets, useTheme } from "../../theme";
+import { useAppConfig } from "../../lib/appConfig";
 
 /**
  * 보내기 tab = 대화 (S17, user's recording): the title 대화 and one row per person you talk with. New conversations
@@ -13,6 +14,7 @@ import { tokens, useInsets, useTheme } from "../../theme";
  */
 export function ConversationsScreen() {
   const { c } = useTheme();
+  const crewsOn = useAppConfig().crews; // crews hidden until the admin panel turns them on
   const insets = useInsets();
   const [list, setList] = useState<Conversation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function ConversationsScreen() {
               <AppText variant="body" color="textMuted" center>친구 프로필의 종이비행기를 눌러 대화를 시작해요</AppText>
             </View>
           )
-          : list.map((cv) => (
+          : list.filter((cv) => crewsOn || !cv.crew).map((cv) => (
             <RipplePressable key={cv.id} onPress={() => router.push(`/chat/${cv.id}` as never)} accessibilityRole="button"
               accessibilityLabel={`${cv.other.nickname}${cv.crew ? " 크루 대화방" : "와의 대화"}${cv.unread ? `, 안 읽은 메시지 ${cv.unread}개` : ""}`}
               style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: G, paddingVertical: 10 }}>

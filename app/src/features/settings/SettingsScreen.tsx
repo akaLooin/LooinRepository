@@ -10,6 +10,8 @@ import { goBack } from "../../lib/nav";
 import { supabase } from "../../lib/supabase";
 import { tokens, useInsets, useTheme } from "../../theme";
 import { unregisterPush } from "../../lib/push";
+import { DESIGN_TRIAL } from "../../lib/variant";
+import { SettingsGroups } from "../today/ProfileTab";
 
 /** S12, laid out as the original's list (user's recording, 2026-11-07). Premium is left out on purpose (no payments). */
 export function SettingsScreen() {
@@ -23,6 +25,13 @@ export function SettingsScreen() {
   const at = Updates.isEnabled && !Updates.isEmbeddedLaunch && Updates.createdAt ? Updates.createdAt : null;
   const updated = at ? `${at.getMonth() + 1}월 ${at.getDate()}일 ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")} 업데이트` : "설치한 그대로";
 
+  // design app: the same grouped cards as under 프로필
+  if (DESIGN_TRIAL) return (
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
+      <ScreenHeader title="설정" onBack={() => goBack("/me")} />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}><SettingsGroups /></ScrollView>
+    </View>
+  );
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="설정" onBack={() => goBack("/")} />

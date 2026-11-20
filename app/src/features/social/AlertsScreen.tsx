@@ -9,6 +9,7 @@ import { tokens, useInsets, useTheme } from "../../theme";
 import { PersonRow } from "./PersonRow";
 import { noticeText, timeAgo } from "../../lib/friend";
 import { PersonSheet } from "./PersonSheet";
+import { useAppConfig } from "../../lib/appConfig";
 
 type Tab = "todos" | "diaries" | "interest" | "notices";
 const TABS = [["todos", "친구의 할 일"], ["diaries", "친구의 일기"], ["interest", "받은 관심"], ["notices", "공지"]] as const;
@@ -21,6 +22,7 @@ let lastTab: Tab | null = null; // the tab last looked at, while the app runs
  */
 export function AlertsScreen() {
   const { c } = useTheme();
+  const crewsOn = useAppConfig().crews; // crews hidden until the admin panel turns them on
   const insets = useInsets();
   const [list, setList] = useState<Notice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,7 @@ export function AlertsScreen() {
           : error ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>{error}</AppText>
           : list === null ? <ActivityIndicator style={{ marginTop: 40 }} color={c.textMuted} />
           : list.length === 0 ? <AppText variant="body" color="textMuted" center style={{ paddingVertical: 40 }}>아직 받은 관심이 없어요</AppText>
-          : list.map((n) => (
+          : list.filter((n) => crewsOn || !n.crewId).map((n) => (
             <View key={n.id} style={{ opacity: n.readAt ? 0.75 : 1 }}>
               <PersonRow p={n.actor} onPress={() => (n.crewId ? router.push(`/crew/${n.crewId}` as never) : setOpen(n.actor))} sub={`${noticeText(n)} · ${timeAgo(n.createdAt)}`}
                 action={n.type === "follow_request" ? [{ label: "수락", strong: true, onPress: () => answer(n, true) }, { label: "거절", onPress: () => answer(n, false) }] : undefined} />

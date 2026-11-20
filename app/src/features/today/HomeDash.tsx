@@ -7,6 +7,7 @@ import { ddayLabel, isDDayToday, selectActiveCategories, selectCategories, selec
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand } from "../../lib/events";
 import { peekHomeDay, requestHomeDay } from "../../lib/todoCalendar";
+import { useAppConfig } from "../../lib/appConfig";
 import { tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { dayTitle, QuickAdd, WeekStrip } from "./parts";
@@ -29,6 +30,7 @@ export function HomeDash() {
   const ddays = useDB(selectDDays);
   const profile = useDB((d) => d.profile);
   const all = useDB(selectCategories);
+  const config = useAppConfig(); // a notice the admin panel put on 홈
   const [menu, setMenu] = useState(false);
   const [editShortcuts, setEditShortcuts] = useState(false);
   const [peek, setPeek] = useState<Day>(today()); // the day shown under 이번 주 (tap a day; a double tap opens 달력)
@@ -97,6 +99,12 @@ export function HomeDash() {
           {`${greeting(new Date().getHours())}${profile.nickname ? `, ${profile.nickname}` : ""}`}
         </AppText>
 
+        {config.notice ? (
+          <View style={{ marginTop: 14, padding: 14, borderRadius: tokens.radius.lg, borderWidth: 1, borderColor: c.sectionLine }} accessibilityRole="alert">
+            <AppText variant="small" weight={700} color="textMuted">공지</AppText>
+            <AppText variant="body" style={{ marginTop: 4 }}>{config.notice}</AppText>
+          </View>
+        ) : null}
         {card(<>
           {cardTitle("오늘", "할 일 보기")}
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>

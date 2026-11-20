@@ -9,8 +9,8 @@ type Item = { key: Tab; label: string; Icon: typeof House; filled?: boolean };
 export const DESIGN_TABS: Item[] = [
   { key: "home", label: "홈", Icon: House },
   { key: "calendar", label: "달력", Icon: CalendarDays },
-  { key: "together", label: "함께", Icon: Users },
-  { key: "me", label: "나", Icon: User },
+  { key: "together", label: "커뮤니티", Icon: Users },
+  { key: "me", label: "프로필", Icon: User },
 ];
 const TABS: Item[] = [
   { key: "home", label: "홈", Icon: House, filled: true },

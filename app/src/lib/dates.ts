@@ -69,3 +69,10 @@ export function weekStart(day: Day, weekStartsSunday = true): Day {
 export function pickAfterPaging(y: number, m: number, dir: 1 | -1): Day {
   return toDay(y, m, dir === 1 ? 1 : daysInMonth(y, m));
 }
+
+/** Days in a row, ending today (or yesterday when today has nothing yet), that are in `days` (프로필 연속 기록). */
+export function streakOf(days: Set<string>, now: Day): number {
+  let d = days.has(now) ? now : addDays(now, -1), n = 0;
+  while (days.has(d)) { n++; d = addDays(d, -1); }
+  return n;
+}

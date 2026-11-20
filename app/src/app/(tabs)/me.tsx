@@ -7,12 +7,14 @@ import { followList, getPerson } from "../../data/social";
 import { today } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { tokens, useInsets, useTheme } from "../../theme";
+import { DESIGN_TRIAL } from "../../lib/variant";
+import { ProfileTab } from "../../features/today/ProfileTab";
 
 /**
  * S18, laid out as the original's 마이 (user's recording): gear to settings, photo, name, e-mail, following counts
  * (tap → 친구 lists), and 나의 기록. Premium and the sticker shop are left out on purpose.
  */
-export default function Me() {
+function Me() {
   const { c } = useTheme();
   const insets = useInsets();
   const profile = useDB((d) => d.profile);
@@ -74,3 +76,5 @@ export default function Me() {
     </View>
   );
 }
+
+export default DESIGN_TRIAL ? ProfileTab : Me;
