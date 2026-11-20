@@ -222,9 +222,9 @@
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/CalendarAddAndToastTest.kt": {
-    "mtime": 1795010709.4933517,
-    "seen": 1795011091.1564753,
-    "ast_hash": "5c81731d91542845f1ad0af5e599f05b",
+    "mtime": 1795134538.5755117,
+    "seen": 1795135097.7879622,
+    "ast_hash": "5394bea4fcb311f7a00f433775663b48",
     "semantic_hash": ""
   },
   "app/src/test/kotlin/com/looin/finance/ui/CalendarGroupingTest.kt": {
@@ -780,9 +780,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/LooinAppRoot.kt": {
-    "mtime": 1794869488.348287,
-    "seen": 1794870007.1115847,
-    "ast_hash": "6cddec0a2f00cb6481ae8e1a47470361",
+    "mtime": 1795134538.2925751,
+    "seen": 1795135097.788082,
+    "ast_hash": "3901d7faa0e80b3eae65985f716ab752",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/MainViewModel.kt": {
@@ -816,9 +816,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/components/Components.kt": {
-    "mtime": 1795010540.8607087,
-    "seen": 1795011091.1567256,
-    "ast_hash": "3eb1ea58e879eca0b26db2f90c4b2c1e",
+    "mtime": 1795134538.5749254,
+    "seen": 1795135097.7880914,
+    "ast_hash": "9519dc571d22f0a50b2b3231af736cc2",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/components/Picker.kt": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/tx/TransactionEditScreen.kt": {
-    "mtime": 1795010540.8624673,
-    "seen": 1795011091.156762,
-    "ast_hash": "26378989d8c17fad56a77879e86b3a33",
+    "mtime": 1795134538.5734863,
+    "seen": 1795135097.7881138,
+    "ast_hash": "4332235676192970005a0efaa02c7f41",
     "semantic_hash": ""
   },
   "ui/src/commonMain/kotlin/com/looin/finance/ui/tx/TransactionSheet.kt": {
@@ -1134,9 +1134,9 @@
     "semantic_hash": ""
   },
   "docs/PHASE2_NOTES.md": {
-    "mtime": 1795011076.106043,
-    "seen": 1795011091.1568282,
-    "ast_hash": "9f4c59ad149acedfc41c2fc37a25d07b",
+    "mtime": 1795135082.7549174,
+    "seen": 1795135097.7881575,
+    "ast_hash": "c787ccfed6d92984c468db0f6e3aedc0",
     "semantic_hash": ""
   },
   "docs/licenses/FONTS.md": {
