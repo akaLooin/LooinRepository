@@ -170,7 +170,8 @@ fun PlanScreen(
             Section("요약", dot = c.accent) {
                 if (isCurrent) {
                     val avail = AvailableFundsCalculator.calculate(data.accounts, txs, data.budgets, period, data.goalStatuses)
-                    MetricRow("생활비로 사용 가능한 금액", avail.amount, avail.breakdown)
+                    MetricRow("생활비로 지금 쓸 수 있는 금액", avail.withoutBudgetLeft, avail.currentBreakdown)
+                    if (avail.shares.isNotEmpty()) MetricRow("예산을 다 쓴다면", avail.amount, avail.breakdown, color = if (avail.amount < 0) c.danger else Color.Unspecified)
                 }
                 val cashAccounts = data.accounts.filter { !it.archived && it.currency == KRW && it.type in BalanceCalculator.CASH_LIKE }
                 val proj = BalanceCalculator.projectedBreakdown(cashAccounts, txs, period.lastDay, "기간 말 예상 잔고")

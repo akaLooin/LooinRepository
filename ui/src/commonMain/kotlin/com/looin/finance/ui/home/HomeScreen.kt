@@ -1,5 +1,6 @@
 package com.looin.finance.ui.home
 
+import kotlinx.datetime.number
 import com.looin.finance.ui.components.LooinSheet
 import com.looin.finance.ui.components.AppIcons
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -153,6 +154,9 @@ fun HomeScreen(
     var completing by remember { mutableStateOf<Transaction?>(null) }
     var showAvailable by remember { mutableStateOf(false) }
     var showSplit by remember { mutableStateOf(false) }
+    var showCurrent by remember { mutableStateOf(false) }
+    var showPayday by remember { mutableStateOf(false) }
+    val payday = AvailableFundsCalculator.untilPayday(data.accounts, txs, state.today, state.settings.paydayDay, data.goalStatuses)
 
     // 넓은 화면(PC)에서는 왼쪽: 요약·입력·거래, 오른쪽: 예산·잔고. 휴대폰에서는 이 순서대로 한 줄.
     val left = mutableListOf<@Composable () -> Unit>()
@@ -168,26 +172,23 @@ fun HomeScreen(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { showAvailable = true }
-                    .semantics(mergeDescendants = true) { contentDescription = "생활비로 사용 가능한 금액 ${fmt(available.amount)}, 계산 근거 보기" }) {
-                    SmallLabel(if (available.shares.isEmpty()) "생활비로 사용 가능한 금액 ⓘ" else "생활비로 사용 가능한 금액 · 예산을 다 쓴다면 ⓘ")
-                    AmountText(available.amount, style = LooinType.bigAmount, color = if (available.amount < 0) c.danger else c.text)
+                // 메인: 지금 상황(잔고 − 예정 지출·이체·저축 목표). 남은 예산은 떼어 두지 않는다
+                val current = available.withoutBudgetLeft
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { showCurrent = true }
+                    .semantics(mergeDescendants = true) { contentDescription = "생활비로 지금 쓸 수 있는 금액 ${fmt(current)}, 계산 근거 보기" }) {
+                    SmallLabel("생활비로 지금 쓸 수 있는 금액 ⓘ")
+                    AmountText(current, style = LooinType.bigAmount, color = if (current < 0) c.danger else c.text)
                 }
-                // 예산이 있으면: 지금까지 쓴 예산만 반영한 금액과, 그 돈이 예산별로 어떻게 나뉘는지
-                if (available.shares.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { showSplit = true }.padding(vertical = 4.dp)
-                        .semantics(mergeDescendants = true) { contentDescription = "지금까지 쓴 예산만 반영하면 ${fmt(available.withoutBudgetLeft)}, 예산별로 나눠 보기" }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SmallLabel("지금까지 쓴 예산만 반영하면 ", color = c.textSecondary)
-                            Text(fmt(available.withoutBudgetLeft), style = LooinType.body.copy(fontWeight = FontWeight.Bold),
-                                color = if (available.withoutBudgetLeft < 0) c.danger else c.text)
-                            Spacer(Modifier.weight(1f))
-                            SmallLabel("예산별 보기 ›")
-                        }
-                        Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
+                // 따로: 예산을 다 쓴다면(예산별 나눔 막대) · 다음 월급 전까지 예상
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surfaceInput).padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    if (available.shares.isNotEmpty()) {
+                        ScenarioRow("예산을 다 쓴다면", available.amount, "예산별 보기 ›") { showSplit = true }
                         AvailableSplitBar(available, data)
+                        Spacer(Modifier.height(6.dp))
                     }
+                    ScenarioRow("다음 월급(${payday.nextPayday.month.number}월 ${payday.nextPayday.day}일) 전까지 예상", payday.amount,
+                        "하루 평균 ${fmt(payday.dailyAverage)} × ${payday.days}일 포함 ⓘ") { showPayday = true }
                 }
                 if (AvailableFundsCalculator.includedAccounts(data.accounts).isEmpty()) {
                     SmallLabel("생활비 계산 대상 계좌가 없어요. 자산 탭에서 계좌를 '생활비 계산 대상'으로 켜 주세요.", color = c.danger)
@@ -353,6 +354,8 @@ fun HomeScreen(
         AdaptiveColumns(left, right, mobilePadding = PaddingValues(start = 16.dp, end = 16.dp, top = padding.calculateTopPadding() + 4.dp, bottom = padding.calculateBottomPadding() + 96.dp))
 
     if (showAvailable) BreakdownSheet(available.breakdown) { showAvailable = false }
+    if (showCurrent) available.currentBreakdown?.let { BreakdownSheet(it) { showCurrent = false } }
+    if (showPayday) BreakdownSheet(payday.breakdown) { showPayday = false }
     if (showSplit) LooinSheet({ showSplit = false }, "예산별로 나눠 보기") { AvailableSplit(available, data) }
     completing?.let { tx ->
         CompleteSheet(tx, state.today, { completing = null }) { d, a, r -> completing = null; vm.completeTransaction(tx.id, d, a, r) }
@@ -435,7 +438,7 @@ private fun AvailableSplit(a: AvailableFundsCalculator.Result, data: com.looin.f
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.surfaceInput).padding(12.dp)) {
             SmallLabel("생활비 계좌 잔고에서 예정 지출·예정 이체·저축 목표를 뺀 돈이 지금 쓸 수 있는 돈이에요. " +
-                "이 돈을 아직 안 쓴 예산별로 나눴고, 예산을 다 쓰고도 남는 돈이 홈의 '사용 가능 금액'이에요.", color = c.textSecondary)
+                "이 돈을 아직 안 쓴 예산별로 나눴고, 예산을 다 쓰고도 남는 돈이 '예산을 다 쓴다면' 금액이에요.", color = c.textSecondary)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("지금 쓸 수 있는 돈", style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = c.text, modifier = Modifier.weight(1f))
@@ -462,7 +465,7 @@ private fun AvailableSplit(a: AvailableFundsCalculator.Result, data: com.looin.f
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text("예산을 다 써도 남는 돈", style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = c.text)
-                SmallLabel("= 사용 가능 금액(예산을 다 쓴다면)")
+                SmallLabel("= 홈의 '예산을 다 쓴다면' 금액")
             }
             AmountText(a.amount, style = LooinType.body.copy(fontWeight = FontWeight.Bold), color = if (a.amount < 0) c.danger else c.income)
         }
@@ -470,5 +473,19 @@ private fun AvailableSplit(a: AvailableFundsCalculator.Result, data: com.looin.f
             SmallLabel(if (adj.shortAfterAll == 0L) "예산 합계를 ${MoneyFormat.format(adj.suggestedTotal)} 이하로 줄이면 모자라지 않아요."
                 else "남은 예산을 모두 줄여도 ${MoneyFormat.format(adj.shortAfterAll)} 모자라요.", color = c.danger)
         }
+    }
+}
+
+/** 홈 요약의 "경우" 한 줄: 이름 · 금액(모자라면 빨강) · 작은 안내. 누르면 근거. */
+@Composable
+private fun ScenarioRow(label: String, amount: Long, hint: String, onClick: () -> Unit) {
+    val c = Looin.colors
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 6.dp)
+        .semantics(mergeDescendants = true) { contentDescription = "$label ${MoneyFormat.format(amount)}" }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = LooinType.body, color = c.textSecondary, modifier = Modifier.weight(1f))
+            Text(MoneyFormat.format(amount), style = LooinType.bodyLg.copy(fontWeight = FontWeight.Bold), color = if (amount < 0) c.danger else c.text)
+        }
+        SmallLabel(hint)
     }
 }

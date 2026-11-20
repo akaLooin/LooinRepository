@@ -40,7 +40,7 @@ class CalendarAddAndToastTest {
     @Test fun plusButtonWithoutSelectionUsesToday() {
         val app = rule.activity.application as LooinApp
         runBlocking { app.repository.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 10_000, includeInAvailable = true)) }
-        rule.waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+        rule.waitUntilAtLeastOneExists(hasText("생활비로 지금 쓸 수 있는 금액", substring = true), 10_000)
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         rule.waitUntilAtLeastOneExists(hasText("금액 보기"), 10_000)
         rule.onNodeWithContentDescription("거래 추가").performClick()
@@ -50,7 +50,7 @@ class CalendarAddAndToastTest {
     @Test fun plusButtonUsesSelectedCalendarDay() {
         val app = rule.activity.application as LooinApp
         runBlocking { app.repository.saveAccount(Account(name = "주거래", type = AccountType.CHECKING, openingBalance = 10_000, includeInAvailable = true)) }
-        rule.waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+        rule.waitUntilAtLeastOneExists(hasText("생활비로 지금 쓸 수 있는 금액", substring = true), 10_000)
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         val today = app.repository.today()
         // 같은 달 안의 다른 날(오늘이 말일 근처면 앞쪽 날)

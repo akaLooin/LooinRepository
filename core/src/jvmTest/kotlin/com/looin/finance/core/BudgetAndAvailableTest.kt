@@ -159,4 +159,23 @@ class AvailableSplitTest {
         org.junit.Assert.assertEquals(150_000L, a.cuts.single().second)
         org.junit.Assert.assertEquals(listOf(12L), a.excluded.map { it.budget.categoryId })
     }
+
+    /** 다음 월급 전까지: 월급 전 예정 지출 + 최근 30일 하루 평균(고정 비용 제외) × 남은 날. */
+    @org.junit.Test fun untilPayday() {
+        // 오늘 11/10, 급여일 25 → 11/25, 남은 날 15일
+        val coffee = (1..10).map { spend(100L + it, 10, 3_000).copy(date = kotlinx.datetime.LocalDate(2026, 11, it)) } // 30,000 → 하루 1,000
+        val rent = com.looin.finance.core.model.Transaction(id = 200, type = com.looin.finance.core.model.TransactionType.EXPENSE,
+            status = com.looin.finance.core.model.TransactionStatus.COMPLETED, amount = 300_000, date = kotlinx.datetime.LocalDate(2026, 11, 1),
+            fromAccountId = 1, recurringId = 5) // 고정 비용은 하루 평균에서 뺀다
+        val bill = spend(300, 11, 50_000, planned = true).copy(date = kotlinx.datetime.LocalDate(2026, 11, 20))
+        val late = spend(301, 11, 70_000, planned = true).copy(date = kotlinx.datetime.LocalDate(2026, 11, 28)) // 월급 뒤
+        val f = AvailableFundsCalculator.untilPayday(listOf(acc), coffee + rent + bill + late, d, 25)
+        org.junit.Assert.assertEquals(kotlinx.datetime.LocalDate(2026, 11, 25), f.nextPayday)
+        org.junit.Assert.assertEquals(15, f.days)
+        org.junit.Assert.assertEquals(1_000L, f.dailyAverage)
+        // 잔고 500,000 − 30,000 − 300,000 = 170,000 − 예정 50,000 − 15,000 = 105,000
+        org.junit.Assert.assertEquals(105_000L, f.amount)
+        // 오늘이 급여일이면 다음 달 급여일
+        org.junit.Assert.assertEquals(kotlinx.datetime.LocalDate(2026, 12, 25), AvailableFundsCalculator.untilPayday(listOf(acc), emptyList(), kotlinx.datetime.LocalDate(2026, 11, 25), 25).nextPayday)
+    }
 }

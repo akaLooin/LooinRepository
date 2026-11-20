@@ -103,7 +103,7 @@ class DesktopWideLayoutTest {
         seed()
         val commands = MutableSharedFlow<AppCommand>(extraBufferCapacity = 8)
         show(MainViewModel(repo), commands)
-        waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+        waitUntilAtLeastOneExists(hasText("생활비로 지금 쓸 수 있는 금액", substring = true), 10_000)
         // 사이드바: 단축키 표시, 하단 탭(아이콘 아래 '홈' 글자 탭 줄)은 없음
         waitUntilAtLeastOneExists(hasText("Ctrl+N"), 5_000)
         // 두 칸: 왼쪽 최근 거래와 오른쪽 잔고가 한 화면에 함께 보인다
@@ -142,7 +142,7 @@ class DesktopWideLayoutTest {
     @Test fun narrowWindowKeepsPhoneLayout() = runDesktopComposeUiTest(width = 420, height = 860) {
         seed()
         show(MainViewModel(repo), MutableSharedFlow())
-        waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+        waitUntilAtLeastOneExists(hasText("생활비로 지금 쓸 수 있는 금액", substring = true), 10_000)
         // 하단 탭과 + 버튼, 사이드바 단축키 표시는 없음
         onAllNodesWithText("캘린더").onFirst().assertExists()
         onAllNodes(hasContentDescription("거래 추가")).onFirst().assertExists()

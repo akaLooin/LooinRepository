@@ -58,7 +58,8 @@ object WidgetData {
         val period = PeriodCalculator.periodContaining(today, d.settings.primaryBasis, d.settings.paydayDay)
         // 앱 잠금을 켰으면 홈 화면에 금액을 보이지 않는다(누구나 볼 수 있으므로)
         val locked = AndroidKeyValueStore(context).get("lock.hash").orEmpty().isNotEmpty()
-        val available = AvailableFundsCalculator.calculate(d.accounts, d.transactions, d.budgets, period, d.goalStatuses).amount
+        // 앱 홈과 같은 메인 숫자: 지금 쓸 수 있는 금액(남은 예산은 떼어 두지 않음)
+        val available = AvailableFundsCalculator.calculate(d.accounts, d.transactions, d.budgets, period, d.goalStatuses).withoutBudgetLeft
         val spent = StatisticsCalculator.stats(period, d.transactions).expense
         return WidgetSummary(
             available = if (locked) null else available, spent = if (locked) null else spent,
@@ -69,7 +70,7 @@ object WidgetData {
 }
 
 /**
- * 홈 화면 위젯(4×2 기본, 크기 조절 가능): 생활비로 사용 가능한 금액, 이번 기간 소비, D-day,
+ * 홈 화면 위젯(4×2 기본, 크기 조절 가능): 생활비로 지금 쓸 수 있는 금액, 이번 기간 소비, D-day,
  * [+ 지출] [+ 수입] 버튼(앱 바로가기와 같은 명령). 나머지 영역을 누르면 앱을 연다.
  */
 class LooinWidget : GlanceAppWidget() {
@@ -97,7 +98,7 @@ internal fun WidgetContent(context: Context, s: WidgetSummary) {
             Text("D-${s.daysLeft}", style = TextStyle(color = expense, fontSize = 12.sp, fontWeight = FontWeight.Bold))
         }
         Spacer(GlanceModifier.height(6.dp))
-        Text(if (s.locked) "잠금 중" else "생활비로 사용 가능", style = TextStyle(color = muted, fontSize = 12.sp))
+        Text(if (s.locked) "잠금 중" else "생활비로 지금 쓸 수 있는 돈", style = TextStyle(color = muted, fontSize = 12.sp))
         Text(
             when {
                 !s.hasAccounts -> "계좌를 등록하세요"

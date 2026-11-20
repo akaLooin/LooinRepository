@@ -40,7 +40,7 @@ class ShortcutTest {
             assertEquals(setOf("expense", "income", "receipt", "calendar"), ShortcutManagerCompat.getDynamicShortcuts(app).map { it.id }.toSet())
             rule.onNode(hasSetTextAction() and hasContentDescription("금액")).performTextInput("50000")
             rule.onNodeWithText("저장").performClick()
-            rule.waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+            rule.waitUntilAtLeastOneExists(hasText("생활비로 지금 쓸 수 있는 금액", substring = true), 10_000)
             val tx = runBlocking { app.repository.snapshot().transactions.single() }
             assertEquals(TransactionType.INCOME, tx.type)
             assertEquals(50_000L, tx.amount)

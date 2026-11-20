@@ -91,7 +91,7 @@ class StoreScreenshotTest {
     @Test fun captureStoreScreenshots() {
         rule.waitUntilAtLeastOneExists(hasText("첫 계좌 등록"), 10_000)
         seed()
-        rule.waitUntilAtLeastOneExists(hasText("생활비로 사용 가능한 금액", substring = true), 10_000)
+        rule.waitUntilAtLeastOneExists(hasText("생활비로 지금 쓸 수 있는 금액", substring = true), 10_000)
         shot("1_home")
         rule.onAllNodesWithText("캘린더").onFirst().performClick()
         rule.waitUntilAtLeastOneExists(hasText("오늘"), 10_000)

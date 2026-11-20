@@ -9,6 +9,10 @@ import com.looin.finance.core.money.MoneyFormat
 import com.looin.finance.core.savings.GoalStatus
 import com.looin.finance.core.savings.SavingsCalculator
 import com.looin.finance.core.period.Period
+import com.looin.finance.core.money.krwAmount
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
+import kotlinx.datetime.plus
 
 /**
  * 생활비로 사용 가능한 금액(여유 금액).
@@ -41,6 +45,8 @@ object AvailableFundsCalculator {
         val savingsReserved: Long = 0,
         /** 예산별 확보액 나눔(전체 생활비 예산이 있으면 그것 하나, 없으면 카테고리 예산들). */
         val shares: List<BudgetShare> = emptyList(),
+        /** 지금 쓸 수 있는 금액([withoutBudgetLeft])의 계산 근거. */
+        val currentBreakdown: Breakdown? = null,
     ) {
         /** 아직 쓰지 않은(예정 지출도 아닌) 예산의 합. */
         val budgetLeft: Long get() = shares.sumOf { it.left }
@@ -183,6 +189,90 @@ object AvailableFundsCalculator {
             val planned = minOf(st.planned, st.reserve)
             BudgetShare(st, st.reserve - planned, planned)
         }
-        return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown, savingsReserved, shares)
+        val budgetPlanned = shares.sumOf { it.planned }
+        val current = cash - budgetPlanned - unbudgetedPlanned - plannedTransfersOut - savingsReserved
+        val currentBreakdown = Breakdown(
+            title = "지금 쓸 수 있는 금액",
+            total = current,
+            lines = buildList {
+                add(BreakdownLine("대상 계좌 실제 잔고", cash, 1))
+                add(BreakdownLine("예정 지출(기간 끝까지)", budgetPlanned + unbudgetedPlanned, -1, "아직 처리하지 않은 예정 지출·밀린 예정 지출"))
+                add(BreakdownLine("예정 이체(대상 밖 계좌로)", plannedTransfersOut, -1, "저축·카드 대금 등"))
+                if (savingsReserved > 0) add(BreakdownLine("저축 목표 배정", savingsReserved, -1, reservedGoals.joinToString { it.goal.name }))
+                add(BreakdownLine("참고: 예정 수입(미반영)", plannedIncome, 0, "입금 전까지 반영하지 않음"))
+            },
+            formula = "지금 쓸 수 있는 금액 = 대상 계좌 잔고 − 예정 지출 − 예정 이체 − 저축 목표 배정 (남은 예산은 떼어 두지 않음)",
+            notes = listOf("대상 계좌: " + included.joinToString { it.name }.ifEmpty { "없음 (자산 화면에서 지정)" }, "기준 기간: ${period.label}"),
+        )
+        return Result(amount, cash, budgetReserve, unbudgetedPlanned, plannedTransfersOut, plannedIncome, breakdown, savingsReserved, shares, currentBreakdown)
+    }
+
+    /**
+     * 다음 월급 전날까지 예상: 지금 잔고에서 월급날 전까지의 예정 지출·예정 이체·저축 목표 배정을 빼고,
+     * 평소 생활비(최근 30일 동안 고정 비용이 아닌 지출의 하루 평균 × 남은 날 수)도 뺀 금액.
+     * 예정 수입은 들어오기 전까지 넣지 않는다(참고로만). 하루 평균은 추정치다.
+     */
+    data class PaydayForecast(
+        val nextPayday: LocalDate,
+        val days: Int,
+        val amount: Long,
+        val dailyAverage: Long,
+        val estimatedSpending: Long,
+        val breakdown: Breakdown,
+    )
+
+    fun untilPayday(
+        accounts: List<Account>,
+        transactions: List<Transaction>,
+        today: LocalDate,
+        paydayDay: Int,
+        goals: List<GoalStatus> = emptyList(),
+    ): PaydayForecast {
+        val thisMonth = com.looin.finance.core.period.PeriodCalculator.paydayIn(today.year, today.month.number, paydayDay)
+        val nextPayday = if (thisMonth > today) thisMonth else {
+            val n = today.plus(kotlinx.datetime.DatePeriod(months = 1))
+            com.looin.finance.core.period.PeriodCalculator.paydayIn(n.year, n.month.number, paydayDay)
+        }
+        val days = (nextPayday.toEpochDays() - today.toEpochDays()).toInt()
+        val included = includedAccounts(accounts)
+        val ids = included.map { it.id }.toSet()
+        val cash = included.sumOf { BalanceCalculator.actualBalance(it, transactions) }
+        val plannedExpense = transactions.filter {
+            it.isPlanned && it.type == TransactionType.EXPENSE && it.fromAccountId in ids && it.date < nextPayday
+        }.sumOf { it.amount }
+        val plannedTransfers = transactions.filter {
+            it.isPlanned && it.type == TransactionType.TRANSFER && it.date < nextPayday && it.fromAccountId in ids && it.toAccountId !in ids
+        }.sumOf { it.amount }
+        val plannedIncome = transactions.filter {
+            it.isPlanned && it.type == TransactionType.INCOME && it.toAccountId in ids && it.date < nextPayday
+        }.sumOf { it.amount }
+        val reservedGoals = SavingsCalculator.reserveForAvailable(goals, included)
+        val savings = reservedGoals.sumOf { it.allocated }
+        // 평소 생활비: 최근 30일(오늘 포함) 고정 비용이 아닌 완료 지출의 하루 평균(외화는 기록 환율로)
+        val from = LocalDate.fromEpochDays(today.toEpochDays() - 29)
+        val recent = transactions.filter {
+            it.isCompleted && it.type == TransactionType.EXPENSE && it.recurringId == null && it.effectiveDate in from..today
+        }.sumOf { it.krwAmount() ?: 0 }
+        // 하루 평균은 10원 단위, 예상 생활비는 100원 단위로 올림(넉넉하게)
+        val daily = (recent + 299) / 300 * 10
+        val estimated = (recent * days + 2_999) / 3_000 * 100
+        val amount = cash - plannedExpense - plannedTransfers - savings - estimated
+        val label = "${nextPayday.month.number}월 ${nextPayday.day}일"
+        val breakdown = Breakdown(
+            title = "다음 월급($label) 전까지 예상",
+            total = amount,
+            lines = buildList {
+                add(BreakdownLine("대상 계좌 실제 잔고", cash, 1))
+                add(BreakdownLine("월급 전까지 예정 지출", plannedExpense, -1, "$label 전날까지·밀린 예정 지출 포함(고정 비용 포함)"))
+                add(BreakdownLine("월급 전까지 예정 이체", plannedTransfers, -1, "저축·카드 대금 등"))
+                if (savings > 0) add(BreakdownLine("저축 목표 배정", savings, -1, reservedGoals.joinToString { it.goal.name }))
+                add(BreakdownLine("예상 생활비 (${days}일)", estimated, -1,
+                    "최근 30일 하루 평균 ${MoneyFormat.format(daily)} × ${days}일 (고정 비용 제외, 추정)"))
+                add(BreakdownLine("참고: 월급 전 예정 수입(미반영)", plannedIncome, 0, "입금 전까지 반영하지 않음"))
+            },
+            formula = "월급 전까지 예상 = 잔고 − 월급 전 예정 지출 − 예정 이체 − 저축 목표 − 하루 평균 생활비 × 남은 날",
+            notes = listOf("급여일: 매월 ${paydayDay}일(짧은 달은 말일) · 설정에서 바꿀 수 있어요", "남은 날: 오늘부터 월급 전날까지 ${days}일"),
+        )
+        return PaydayForecast(nextPayday, days, amount, daily, estimated, breakdown)
     }
 }

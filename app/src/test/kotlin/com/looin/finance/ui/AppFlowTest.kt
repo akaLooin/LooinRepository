@@ -79,7 +79,7 @@ open class AppFlowTest {
         shot("02_account_edit")
         rule.onNodeWithText("저장").performClick()
 
-        waitText("생활비로 사용 가능한 금액")
+        waitText("생활비로 지금 쓸 수 있는 금액")
         rule.onAllNodesWithText("1,500,000원").onFirst().assertExists()
 
         // 빠른 지출 입력

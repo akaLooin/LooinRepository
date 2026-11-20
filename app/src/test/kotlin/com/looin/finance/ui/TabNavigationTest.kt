@@ -37,8 +37,10 @@ import org.robolectric.annotation.Config
 class TabNavigationTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
-    // 홈에만 있는 것: 빠른 입력 "지출 추가"(돈 관리 화면에도 "생활비로 사용 가능한 금액" 글자가 있어 그것으로는 구분 안 됨)
-    private fun homeShown() = rule.waitUntilAtLeastOneExists(hasContentDescription("지출 추가"), 5_000)
+    // 홈에만 있는 것(스크롤 위치와 상관없이 하나는 보임): 맨 위 "다음 월급 … 전까지 예상", 빠른 입력 "지출 추가", 남은 예산의 "예산 관리"
+    // (돈 관리 화면에도 "생활비로 지금 쓸 수 있는 금액" 글자가 있어 그것으로는 구분 안 됨)
+    private fun homeShown() = rule.waitUntilAtLeastOneExists(
+        hasText("전까지 예상", substring = true) or hasContentDescription("지출 추가") or hasContentDescription("예산 관리"), 5_000)
     private fun tab(label: String) = rule.onNode(hasContentDescription(label) and androidx.compose.ui.test.hasClickAction()).performClick()
 
     @Test fun homeTabAlwaysReturnsHome() {
