@@ -7,6 +7,8 @@ import { HomeDash } from "../../features/today/HomeDash";
 import { ProfileTab } from "../../features/today/ProfileTab";
 import { TogetherScreen } from "../../features/today/TogetherScreen";
 import { onTabSwitch } from "../../lib/tabSwitch";
+import { useFeature, useT } from "../../lib/appConfig";
+import type { TextKey } from "../../lib/remoteCatalog";
 import { BottomNav, DESIGN_TABS, type Tab } from "../../components";
 import { DESIGN_TRIAL } from "../../lib/variant";
 import { useTheme } from "../../theme";
@@ -36,6 +38,10 @@ function DesignTabs() {
   const open = (t: Hosted) => setOpened((o) => (o.has(t) ? o : new Set(o).add(t)));
   useEffect(() => { if (shown) open(shown); }, [shown]);
   const active = shown ?? (["/explore", "/alerts", "/send"].includes(path) ? "together" : "home");
+  // names and the 커뮤니티 tab come from the admin app (texts, features)
+  const t = useT();
+  const showTogether = useFeature("tab.together");
+  const tabItems = DESIGN_TABS.filter((x) => showTogether || x.key !== "together").map((x) => ({ ...x, label: t(`tab.${x.key}` as TextKey) }));
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flex: 1 }}>
@@ -52,7 +58,7 @@ function DesignTabs() {
         {shown ? null : <Slot />}
       </View>
       <View style={{ paddingBottom: insets.bottom, backgroundColor: c.bg }}>
-        <BottomNav items={DESIGN_TABS} active={active} dots={{ together: unread > 0 }}
+        <BottomNav items={tabItems} active={active} dots={{ together: unread > 0 }}
           onChange={(t) => {
             // between the four tabs only the shown one changes; from a screen under them (대화, 알림 …) the route goes back
             if (fromPath && t in HOSTED) setShown(t as Hosted);

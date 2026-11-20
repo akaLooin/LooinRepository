@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import { router, Stack } from "expo-router";
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { Platform, Pressable } from "react-native";
 import { pushTarget } from "../lib/push";
 import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
@@ -13,7 +13,9 @@ import { KeyboardRoot } from "../components/KeyboardSpacer";
 import { PhotoViewerHost } from "../components/PhotoViewer";
 import { AuthGate } from "../features/auth/AuthGate";
 import { AdminApp } from "../features/admin/AdminApp";
-import { ADMIN_APP } from "../lib/variant";
+import { ADMIN_APP, DESIGN_TRIAL } from "../lib/variant";
+import { refreshAppConfig, useAppConfig } from "../lib/appConfig";
+import { AppText } from "../components/AppText";
 import { extraFontFiles, fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
 
 function Shell() {
@@ -36,13 +38,15 @@ function Shell() {
     return () => sub.remove();
   }, []);
   useEffect(() => { setOverride(theme === "system" ? null : theme); }, [theme, setOverride]);
+  // 점검 모드 from the admin app (design app only)
+  const { maintenance } = useAppConfig();
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <ScaledRoot>
         <AuthGate>
           {/* the admin app (APP_VARIANT=admin) is only the admin screens */}
-          {ADMIN_APP ? <AdminApp /> : (
+          {ADMIN_APP ? <AdminApp /> : maintenance.on && DESIGN_TRIAL ? <Maintenance message={maintenance.message} /> : (
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
             {/* 할 일 정보 보기 is a sheet over the current screen, as in the original */}
             <Stack.Screen name="todo/[id]" options={{ presentation: "transparentModal", animation: "none", contentStyle: { backgroundColor: "transparent" } }} />
@@ -51,6 +55,20 @@ function Shell() {
         </AuthGate>
       </ScaledRoot>
       <PhotoViewerHost />
+    </View>
+  );
+}
+
+/** 점검 중 화면: the admin app's message, and a button to check again. */
+function Maintenance({ message }: { message: string }) {
+  const { c } = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: c.bg, alignItems: "center", justifyContent: "center", padding: 32, gap: 14 }}>
+      <AppText variant="bodyLg" weight={800} style={{ fontSize: 22, lineHeight: 30 }} center accessibilityRole="header">잠시 점검 중이에요</AppText>
+      <AppText variant="body" color="textSecondary" center>{message || "더 나은 앱을 위해 손보고 있어요. 조금 뒤에 다시 열어 주세요."}</AppText>
+      <Pressable onPress={() => refreshAppConfig()} accessibilityRole="button" style={{ marginTop: 8, height: 44, paddingHorizontal: 20, borderRadius: 22, backgroundColor: c.surfaceStrong, justifyContent: "center" }}>
+        <AppText variant="body" weight={700}>다시 확인</AppText>
+      </Pressable>
     </View>
   );
 }

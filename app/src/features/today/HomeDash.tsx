@@ -9,6 +9,8 @@ import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand } from 
 import { peekHomeDay, requestHomeDay } from "../../lib/todoCalendar";
 import { goTab } from "../../lib/tabSwitch";
 import { useAppConfig } from "../../lib/appConfig";
+import { featureOn, numberOf, textOf } from "../../lib/configRules";
+import type { FeatureKey, NumberKey, TextKey } from "../../lib/remoteCatalog";
 import { tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { dayTitle, QuickAdd, WeekStrip } from "./parts";
@@ -16,7 +18,7 @@ import { ShortcutEditSheet, ShortcutGrid } from "./Shortcuts";
 import { agendaSort } from "./AgendaList";
 
 const G = tokens.layout.gutter;
-const greeting = (h: number) => (h < 5 ? "늦은 밤이에요" : h < 12 ? "좋은 아침이에요" : h < 18 ? "좋은 오후예요" : "좋은 저녁이에요");
+const greetingKey = (h: number): TextKey => (h < 5 ? "home.greeting.night" : h < 12 ? "home.greeting.morning" : h < 18 ? "home.greeting.afternoon" : "home.greeting.evening");
 
 /**
  * 홈 (design app, 2026-11-21 second pass, user: "요약이나 각종 편의 기능"): a greeting, today at a glance (done count,
@@ -33,6 +35,11 @@ export function HomeDash() {
   const profile = useDB((d) => d.profile);
   const all = useDB(selectCategories);
   const config = useAppConfig(); // a notice the admin panel put on 홈
+  // wording, shown cards and counts from the admin app
+  const t = (key: TextKey) => textOf(config, key);
+  const on = (key: FeatureKey) => featureOn(config, key);
+  const num = (key: NumberKey) => numberOf(config, key);
+  const comingDays = num("comingDays"), comingCount = num("comingCount"), peekMax = num("weekPeekCount");
   const [menu, setMenu] = useState(false);
   const [editShortcuts, setEditShortcuts] = useState(false);
   const [peek, setPeek] = useState<Day>(today()); // the day shown under 이번 주 (tap a day; a double tap opens 달력)
@@ -58,7 +65,7 @@ export function HomeDash() {
   const weekStars = db.todos.filter((t) => t.isDone && t.date && t.date >= ws && t.date <= addDays(ws, 6)).length;
   // 중요한 날 coming in the next 30 days (to-dos and highlighted events)
   const coming = useMemo(() => {
-    const end = addDays(now, 30);
+    const end = addDays(now, comingDays);
     const list = [
       ...db.todos.filter((t) => t.isImportant && t.date && t.date >= now && t.date <= end && !t.isSkipped).map((t) => {
         const cat = all.find((x) => x.id === t.categoryId);
@@ -68,8 +75,8 @@ export function HomeDash() {
         d: e.startDate < now ? now : e.startDate, title: e.title, id: e.id, color: e.color, sub: `일정 · ${eventTimeLabel(e, prefs.use24h, parseDay(now).y)}`,
       })),
     ];
-    return list.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0)).slice(0, 5);
-  }, [db.todos, db.events, now, all, c.accent, prefs.use24h]);
+    return list.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0)).slice(0, comingCount);
+  }, [db.todos, db.events, now, all, c.accent, prefs.use24h, comingDays, comingCount]);
   // the picked day of the week card, shown right in the card
   // the same order as 달력's To Do, with 강조 to-dos above all others (user)
   const catOrder = new Map(all.map((x, i) => [x.id, i]));
@@ -100,17 +107,17 @@ export function HomeDash() {
         </View>
         <AppText variant="helper" color="textMuted">{dayTitle(now)}</AppText>
         <AppText variant="monthTitle" weight={700} style={{ fontSize: 26, lineHeight: 34, marginTop: 2 }} accessibilityRole="header">
-          {`${greeting(new Date().getHours())}${profile.nickname ? `, ${profile.nickname}` : ""}`}
+          {`${t(greetingKey(new Date().getHours()))}${profile.nickname ? `, ${profile.nickname}` : ""}`}
         </AppText>
 
         {config.notice ? (
           <View style={{ marginTop: 14, padding: 14, borderRadius: tokens.radius.lg, borderWidth: 1, borderColor: c.sectionLine }} accessibilityRole="alert">
-            <AppText variant="small" weight={700} color="textMuted">공지</AppText>
+            <AppText variant="small" weight={700} color="textMuted">{t("home.notice")}</AppText>
             <AppText variant="body" style={{ marginTop: 4 }}>{config.notice}</AppText>
           </View>
         ) : null}
-        {card(<>
-          {cardTitle("오늘", "할 일 보기")}
+        {on("home.todayCard") ? card(<>
+          {cardTitle(t("home.today"), "할 일 보기")}
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
             <AppText variant="monthTitle" weight={700}>{`${done}`}</AppText>
             <AppText variant="body" color="textMuted">{`/ ${todos.length} 끝냈어요`}</AppText>
@@ -120,10 +127,10 @@ export function HomeDash() {
           </View>
           {next ? <AppText variant="helper" color="textSecondary" style={{ marginTop: 10 }}>{`다음 · ${clock(fromMinutes(next.at), prefs.use24h)} ${next.title} (${next.kind})`}</AppText> : null}
           {allDay.length ? <AppText variant="helper" color="textSecondary" style={{ marginTop: 4 }} numberOfLines={1}>{`종일 · ${allDay.map((e) => e.title).join(", ")}`}</AppText> : null}
-        </>, () => openDay(now), "오늘 할 일 보기")}
+        </>, () => openDay(now), "오늘 할 일 보기") : null}
 
-        {card(<>
-          {cardTitle("이번 주", `별 ${weekStars}개`)}
+        {on("home.weekCard") ? card(<>
+          {cardTitle(t("home.week"), `별 ${weekStars}개`)}
           <WeekStrip big day={peek} onPick={setPeek} onDouble={openDay} />
           <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: c.sectionLine }} accessibilityLabel={`${dayTitle(peek)}의 할 일과 일정`}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
@@ -139,18 +146,18 @@ export function HomeDash() {
                 <AppText variant="small" color="textMuted">{inBand(e) ? "종일" : clock(e.startTime ?? "00:00", prefs.use24h)}</AppText>
               </View>
             ))}
-            {peekTodos.slice(0, 6).map((t) => (
+            {peekTodos.slice(0, peekMax).map((t) => (
               <TodoRow key={t.id} title={t.title} done={t.isDone} important={t.isImportant} small
                 color={all.find((x) => x.id === t.categoryId)?.color ?? c.accent} onToggle={() => toggleTodo(t.id)} onPress={() => openDay(peek)} />
             ))}
-            {peekTodos.length > 6 ? <AppText variant="small" color="textMuted" style={{ paddingTop: 4 }}>{`할 일 ${peekTodos.length - 6}개 더`}</AppText> : null}
+            {peekTodos.length > peekMax ? <AppText variant="small" color="textMuted" style={{ paddingTop: 4 }}>{`할 일 ${peekTodos.length - peekMax}개 더`}</AppText> : null}
             {!peekTodos.length && !peekEvents.length ? <AppText variant="helper" color="textMuted" style={{ paddingVertical: 8 }}>할 일도 일정도 없어요</AppText> : null}
           </View>
-        </>)}
+        </>) : null}
 
-        {ddays.length ? card(<>
-          {cardTitle("디데이", "모두 보기")}
-          {ddays.slice(0, 3).map((d) => (
+        {ddays.length && on("home.ddayCard") ? card(<>
+          {cardTitle(t("home.dday"), "모두 보기")}
+          {ddays.slice(0, num("ddayCount")).map((d) => (
             <View key={d.id} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 5 }}>
               <AppText variant="body" style={{ flex: 1 }} numberOfLines={1}>{d.title}</AppText>
               {isDDayToday(d, now) ? <NeonText variant="body">{ddayLabel(d, now)}</NeonText> : <AppText variant="body" weight={700} color="dday">{ddayLabel(d, now)}</AppText>}
@@ -158,8 +165,8 @@ export function HomeDash() {
           ))}
         </>, () => router.push("/ddays" as never), "디데이 모두 보기") : null}
 
-        {coming.length ? card(<>
-          {cardTitle("다가오는 중요한 날")}
+        {coming.length && on("home.comingCard") ? card(<>
+          {cardTitle(t("home.coming"))}
           {coming.map((x) => {
             const n = daysBetween(now, x.d), col = visibleOn(x.color, c.surface, c.text);
             return (
@@ -182,17 +189,17 @@ export function HomeDash() {
           })}
         </>) : null}
 
-        {card(<>
+        {on("home.shortcutsCard") ? card(<>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-            <AppText variant="body" weight={700} style={{ flex: 1 }}>바로가기</AppText>
+            <AppText variant="body" weight={700} style={{ flex: 1 }}>{t("home.shortcuts")}</AppText>
             <Pressable onPress={() => setEditShortcuts(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="바로가기 편집">
               <AppText variant="small" color="textMuted">편집</AppText>
             </Pressable>
           </View>
           <ShortcutGrid />
-        </>)}
+        </>) : null}
       </ScrollView>
-      <QuickAdd day={now} cats={cats} lastId={prefs.quickAddCategory} notice={notice} />
+      {on("home.quickAdd") ? <QuickAdd day={now} cats={cats} lastId={prefs.quickAddCategory} notice={notice} /> : null}
       <HomeMenu open={menu} onClose={() => setMenu(false)} />
       <ShortcutEditSheet open={editShortcuts} onClose={() => setEditShortcuts(false)} />
       {toast}

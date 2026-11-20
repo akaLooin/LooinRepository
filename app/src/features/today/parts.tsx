@@ -6,6 +6,7 @@ import { addTodo, EndedCategoryError, selectActiveCategories, todosForDay, useDB
 import { addDays, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { importantDays } from "../../lib/events";
 import { isHoliday } from "../../lib/holidays";
+import { useNumber, useT } from "../../lib/appConfig";
 import { fontFamily, tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { dayState } from "../home/dayState";
 
@@ -26,6 +27,7 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const lit = useMemo(() => importantDays(db.todos, [], start, addDays(start, 6)), [db.todos, start]);
   const now = today();
+  const starBig = useNumber("weekStarSize"); // 홈 card's star size, from the admin app
   const latest = useRef({ day, onPick });
   latest.current = { day, onPick };
   const lastTap = useRef<{ d: Day; at: number } | null>(null);
@@ -50,7 +52,7 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
             <AppText variant="small" weight={600} color={wd === 0 || isHoliday(d) ? "sunday" : wd === 6 ? "saturday" : "textMuted"}>{WEEKDAY_LABELS[wd]}</AppText>
             {/* today stays green even when picked; Sundays and 공휴일 red, Saturdays blue (user) */}
             <AppText variant={big ? "bodyLg" : "body"} weight={700} color={d === now ? "accent" : wd === 0 || isHoliday(d) ? "sunday" : wd === 6 ? "saturday" : "text"}>{String(parseDay(d).d)}</AppText>
-            <Clover size={big ? 30 : 16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} />
+            <Clover size={big ? starBig : 16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} />
           </Pressable>
         );
       })}
@@ -60,6 +62,7 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
 
 /** The bar at the bottom: type a to-do, it goes to the shown day in the chosen category (tap the chip to change it). */
 export function QuickAdd({ day, cats, lastId, notice }: { day: Day; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
+  const t = useT();
   const { c } = useTheme();
   const insets = useInsets();
   const [text, setText] = useState("");
@@ -82,7 +85,7 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day; cats: Return
     <View style={{ paddingHorizontal: G, paddingTop: 8, paddingBottom: 10, backgroundColor: c.bg }}>
       <View style={{ height: 48, borderRadius: 24, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, gap: 8 }}>
         <TextInput ref={input} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
-          placeholder={`${parseDay(day).m}월 ${parseDay(day).d}일에 할 일 추가`} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
+          placeholder={t("quickadd.placeholder", { date: `${parseDay(day).m}월 ${parseDay(day).d}일` })} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
           style={{ flex: 1, minWidth: 0, color: c.text, fontSize: tokens.type.bodyLg.size, fontFamily: fontFamily(400), paddingVertical: 0, outlineStyle: "none" as never }} />
         <Pressable onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={`카테고리 ${cat.title}, 바꾸기`}
           style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: col + "22" }}>

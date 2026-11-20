@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, PanResponder, Platform, StyleSheet, View } from "react-native";
 import { tokens, useTheme } from "../theme";
 import { DESIGN_TRIAL } from "../lib/variant";
+import { appConfigNow } from "../lib/appConfig";
+import { numberOf } from "../lib/configRules";
 import { useScrollLock } from "./DragScrollView";
 
 /**
@@ -10,6 +12,8 @@ import { useScrollLock } from "./DragScrollView";
  * band did not reach the sides; a spreading glow was tried and dropped as too plain).
  */
 const HOLD_MS = DESIGN_TRIAL ? 300 : 500;
+// the design app's hold time can be changed in the admin app (numbers.holdMs)
+const holdMs = () => (DESIGN_TRIAL ? numberOf(appConfigNow(), "holdMs") : HOLD_MS);
 const WIDE_BAND = DESIGN_TRIAL;
 const SLIDE_MS = 150;
 const BAND_MS = 120;
@@ -261,7 +265,7 @@ export function ReorderableList<T>({ items, keyOf, labelOf, renderItem, onReorde
                 ? { left: -tokens.layout.gutter, right: -tokens.layout.gutter, backgroundColor: c.surfaceRow, opacity: band }
                 : { borderRadius: tokens.radius.sm, backgroundColor: c.surfaceRow, opacity: band }]} />
             ) : null}
-            {renderItem(item, still ? noDrag : { onLongPress: () => start(k), delayLongPress: HOLD_MS }, isActive)}
+            {renderItem(item, still ? noDrag : { onLongPress: () => start(k), delayLongPress: holdMs() }, isActive)}
           </Animated.View>
         );
       })}

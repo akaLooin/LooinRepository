@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from "react-native";
-import { AppText, Bell, Button, ConfirmDialog, Megaphone, Settings, Toggle, useToast } from "../../components";
+import { AppText, Bell, Button, ConfirmDialog, Megaphone, Palette, Settings, Toggle, useToast } from "../../components";
+import { Type } from "lucide-react-native";
+import { ColorsEditor, FeaturesEditor, TextsEditor } from "./AdminEditors";
 import { supabase } from "../../lib/supabase";
 import { fontFamily, tokens, useInsets, useTheme } from "../../theme";
 import { unregisterPush } from "../../lib/push";
@@ -12,16 +14,17 @@ const when = (iso: string) => { const d = new Date(iso); return `${d.getMonth() 
 
 /**
  * 관리자 앱 (APP_VARIANT=admin, a third Android app beside the usual and design ones; user, 2026-11-21: an app, not a
- * web page). Sign in with the app account listed in `admins` (SQL 20261121000000_admin). Three tabs: 앱 설정 (switches
- * the apps read), 공지사항, 알림 보내기 (push to every phone). The server checks again (RLS, admin-broadcast function).
+ * web page). Sign in with the app account listed in `admins` (SQL 20261121000000_admin). Tabs: 기능 (점검 모드, crews,
+ * home notice, shown parts, numbers), 문구, 색 (the design app's words and colours; AdminEditors), 공지, 알림 (push to
+ * every phone). The server checks again (RLS, admin-broadcast function).
  */
 export function AdminApp() {
   const { c } = useTheme();
   const insets = useInsets();
   const [admin, setAdmin] = useState<boolean | null>(null);
   const [why, setWhy] = useState(""); // what the server said, shown on the "not an admin" screen
-  const [tab, setTab] = useState<"config" | "notices" | "push">("config");
-  const [toast, notice] = useToast();
+  const [tab, setTab] = useState<"config" | "texts" | "colors" | "notices" | "push">("config");
+  const [toast, notice] = useToast(insets.bottom + 84); // above the tab bar
   const check = useCallback(() => {
     setAdmin(null);
     setWhy("");
@@ -45,7 +48,7 @@ export function AdminApp() {
     </View>
   );
 
-  const tabs = [["config", "앱 설정", Settings], ["notices", "공지사항", Megaphone], ["push", "알림 보내기", Bell]] as const;
+  const tabs = [["config", "기능", Settings], ["texts", "문구", Type], ["colors", "색", Palette], ["notices", "공지", Megaphone], ["push", "알림", Bell]] as const;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <View style={{ flexDirection: "row", alignItems: "center", height: 56, paddingHorizontal: G }}>
@@ -53,7 +56,10 @@ export function AdminApp() {
         <Pressable onPress={signOut} hitSlop={8} accessibilityRole="button"><AppText variant="helper" color="textMuted">로그아웃</AppText></Pressable>
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40, gap: 12 }}>
-        {tab === "config" ? <Config notice={notice} /> : tab === "notices" ? <Notices notice={notice} /> : <Push notice={notice} />}
+        {tab === "config" ? <FeaturesEditor notice={notice} />
+          : tab === "texts" ? <TextsEditor notice={notice} />
+          : tab === "colors" ? <ColorsEditor notice={notice} base={tokens.colors as unknown as Record<"dark" | "light", Record<string, string>>} />
+          : tab === "notices" ? <Notices notice={notice} /> : <Push notice={notice} />}
       </ScrollView>
       <View style={{ flexDirection: "row", paddingBottom: insets.bottom + 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: c.sectionLine, backgroundColor: c.bg }} role="tablist">
         {tabs.map(([k, label, Icon]) => (
@@ -80,46 +86,6 @@ function Field({ value, onChange, placeholder, lines = 1, max }: { value: string
       accessibilityLabel={placeholder}
       style={{ minHeight: lines > 1 ? 22 * lines + 24 : 48, borderRadius: tokens.radius.md, backgroundColor: c.surfaceInput, color: c.text, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: fontFamily(500), fontSize: tokens.type.bodyLg.size, textAlignVertical: lines > 1 ? "top" : "center", outlineStyle: "none" as never }} />
-  );
-}
-
-function Config({ notice }: { notice: (m: string) => void }) {
-  const [crews, setCrews] = useState<boolean | null>(null);
-  const [home, setHome] = useState("");
-  const load = useCallback(async () => {
-    const { data, error } = await supabase!.from("app_config").select("key, value");
-    if (error) { notice(`불러오지 못했어요: ${error.message}`); return; }
-    const get = (k: string) => data.find((r) => r.key === k)?.value;
-    setCrews(get("crews_enabled") === true);
-    setHome(typeof get("home_notice") === "string" ? (get("home_notice") as string) : "");
-  }, [notice]);
-  useEffect(() => { load(); }, [load]);
-  const save = async (key: string, value: unknown, done: string) => {
-    const { error } = await supabase!.from("app_config").upsert({ key, value, updated_at: new Date().toISOString() });
-    notice(error ? `저장하지 못했어요: ${error.message}` : done);
-    load();
-  };
-  return (
-    <>
-      <Card>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <AppText variant="bodyLg" weight={700}>크루 기능</AppText>
-            <AppText variant="small" color="textMuted">켜면 디자인 앱 커뮤니티에 크루가 보여요. 앱을 다시 열면 반영돼요. (기존 앱은 항상 보임)</AppText>
-          </View>
-          <Toggle value={!!crews} disabled={crews === null} label="크루 기능" onChange={(v) => save("crews_enabled", v, v ? "크루를 켰어요" : "크루를 껐어요")} />
-        </View>
-      </Card>
-      <Card>
-        <AppText variant="bodyLg" weight={700}>홈 공지</AppText>
-        <AppText variant="small" color="textMuted">디자인 앱 홈 맨 위에 보이는 안내. 비우면 안 보여요.</AppText>
-        <Field value={home} onChange={setHome} placeholder="예: 오늘 밤 12시에 잠깐 점검해요" lines={3} max={300} />
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <Button kind="plain" flex label="내리기" onPress={() => { setHome(""); save("home_notice", null, "홈 공지를 내렸어요"); }} />
-          <Button kind="sheetPrimary" flex height={46} label="저장" onPress={() => save("home_notice", home.trim() || null, "홈 공지를 저장했어요")} />
-        </View>
-      </Card>
-    </>
   );
 }
 

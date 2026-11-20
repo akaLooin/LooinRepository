@@ -5,7 +5,7 @@ import { AppText, Bell, ChevronRight, Plus, Search, Send, StoredImage, X } from 
 import { useUnreadConversations } from "../../data/chat";
 import { useMyCrews } from "../../data/crews";
 import { searchPeople, useFollowing, type Person } from "../../data/social";
-import { useAppConfig } from "../../lib/appConfig";
+import { useAppConfig, useT } from "../../lib/appConfig";
 import { fontFamily, tokens, useInsets, useTheme } from "../../theme";
 import { FeedList } from "../social/FeedList";
 import { PersonRow } from "../social/PersonRow";
@@ -27,6 +27,7 @@ export function TogetherScreen() {
   const crews = useMyCrews();
   const unread = useUnreadConversations();
   const [mode, setMode] = useState<"feed" | "find">("feed");
+  const tx = useT(); // wording from the admin app
   const [open, setOpen] = useState<Person | null>(null);
   const a = 44;
   const avatar = (uri: string | undefined, square?: boolean) => (uri
@@ -46,7 +47,7 @@ export function TogetherScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 20, paddingHorizontal: G, height: 56 }}>
-        <AppText variant="monthTitle" weight={700} style={{ flex: 1 }} accessibilityRole="header">커뮤니티</AppText>
+        <AppText variant="monthTitle" weight={700} style={{ flex: 1 }} accessibilityRole="header">{tx("community.title")}</AppText>
         <Pressable onPress={() => router.push("/alerts" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="알림"><Bell size={23} color={c.text} /></Pressable>
         <Pressable onPress={() => router.push("/send" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel={unread ? "대화, 새 메시지" : "대화"}>
           <Send size={23} color={c.text} />
@@ -60,7 +61,7 @@ export function TogetherScreen() {
             <AppText variant="body" weight={700} style={{ flex: 1 }} accessibilityRole="header">{`친구 ${following.length}`}</AppText>
             <Pressable onPress={() => router.push("/people" as never)} hitSlop={8} accessibilityRole="button" accessibilityLabel="친구 추가"
               style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: c.surfaceStrong }}>
-              <Plus size={14} color={c.text} /><AppText variant="small" weight={600}>친구 추가</AppText>
+              <Plus size={14} color={c.text} /><AppText variant="small" weight={600}>{tx("community.addFriend")}</AppText>
             </Pressable>
           </View>
           {following.length ? following.slice(0, SHOWN).map((p) => (
@@ -100,7 +101,7 @@ export function TogetherScreen() {
 
         {/* 소식 | 찾기 */}
         <View style={{ flexDirection: "row", marginTop: 22, marginBottom: 6, borderRadius: 12, backgroundColor: c.surface, padding: 3 }} role="tablist">
-          {([["feed", "친구 소식"], ["find", "친구 찾기"]] as const).map(([k, label]) => (
+          {([["feed", tx("community.feed")], ["find", tx("community.find")]] as const).map(([k, label]) => (
             <Pressable key={k} onPress={() => setMode(k)} role="tab" aria-selected={mode === k} accessibilityLabel={label}
               style={{ flex: 1, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: mode === k ? c.surfaceStrong : "transparent" }}>
               <AppText variant="helper" weight={mode === k ? 700 : 500} color={mode === k ? "text" : "textMuted"}>{label}</AppText>

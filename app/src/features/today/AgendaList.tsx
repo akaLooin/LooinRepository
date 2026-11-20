@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { AppText, BottomSheet, Button, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, VisibilityIcon, type DragHandle } from "../../components";
 import { arrangeByHeaders } from "../../lib/arrange";
+import { useFeature, useT } from "../../lib/appConfig";
 import { EventEditor, type EventDraft } from "../events/EventSheets";
 import { formatTime, usePrefs } from "../../data/prefs";
 import {
@@ -45,6 +46,9 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
   const [editing, setEditing] = useState<EventDraft | null>(null);
   const ddays = useDB(selectDDays);
+  // wording and shown parts from the admin app
+  const tx = useT();
+  const showDDays = useFeature("agenda.ddays"), showDiary = useFeature("agenda.diaryCard"), showCount = useFeature("agenda.groupCount");
   const glow = useGlowColor();
   const catOf = useMemo(() => new Map(categories.map((x) => [x.id, x])), [categories]);
   const catOrder = useMemo(() => new Map(categories.map((x, i) => [x.id, i])), [categories]);
@@ -83,16 +87,16 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         <AppText variant="helper" weight={700} raw={col} numberOfLines={1} style={{ flex: 1 }}>{cat.title}</AppText>
         {/* who can see this category, just left of the count (user) */}
         <VisibilityIcon value={cat.visibility} size={13} color={c.textMuted} />
-        {list.length ? <AppText variant="small" color="textMuted">{`${list.filter((t) => t.isDone).length}/${list.length}`}</AppText> : null}
+        {list.length && showCount ? <AppText variant="small" color="textMuted">{`${list.filter((t) => t.isDone).length}/${list.length}`}</AppText> : null}
       </View>
     );
   };
-  const parts: [string, (m: number) => boolean][] = [["오전", (m) => m < 12 * 60], ["오후", (m) => m >= 12 * 60 && m < 18 * 60], ["저녁", (m) => m >= 18 * 60]];
+  const parts: [string, (m: number) => boolean][] = [[tx("agenda.morning"), (m) => m < 12 * 60], [tx("agenda.afternoon"), (m) => m >= 12 * 60 && m < 18 * 60], [tx("agenda.evening"), (m) => m >= 18 * 60]];
 
   // the right side of a to-do: 중요 when it is marked (user: named 중요 here) (no category tag any more; the groups show the category)
   const mark = (t: Todo) => (t.isImportant ? (
-    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: glow, alignSelf: "flex-start", marginTop: 2 }} accessibilityLabel="중요">
-      <AppText variant="small" weight={700} raw={glow}>중요</AppText>
+    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: glow, alignSelf: "flex-start", marginTop: 2 }} accessibilityLabel={tx("agenda.important")}>
+      <AppText variant="small" weight={700} raw={glow}>{tx("agenda.important")}</AppText>
     </View>
   ) : null);
   const row = (t: Todo, withTime: boolean, drag?: DragHandle) => {
@@ -148,7 +152,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     <View>
       {band.length ? (
         <>
-          {heading("종일")}
+          {heading(tx("agenda.allday"))}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, paddingTop: 6 }}>
             {band.map((e) => (
               <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정" accessibilityLabel={`${e.title}, 종일${e.important ? ", 강조" : ""}`}
@@ -177,17 +181,17 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         );
       })}
 
-      {heading("To Do", todos.length ? (
+      {heading(tx("agenda.todo"), todos.length ? (
         <Pressable onPress={() => setListMenu("menu")} hitSlop={10} accessibilityRole="button" accessibilityLabel="리스트 메뉴"><Ellipsis size={20} color={c.textMuted} /></Pressable>
       ) : null)}
       {/* D-days of this day sit above everything (user) */}
-      {todayDDays.map((x) => (
+      {(showDDays ? todayDDays : []).map((x) => (
         <Pressable key={x.id} onPress={() => router.push("/ddays" as never)} accessibilityRole="button" accessibilityLabel={`디데이 ${x.title}, ${ddayLabel(x, day)}`}
           style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingVertical: 6 }}>
           <View style={{ minWidth: 28, alignItems: "center" }}><AppText variant="small" weight={800} color="dday" numberOfLines={1}>{ddayLabel(x, day)}</AppText></View>
           <AppText variant="bodyLg" weight={600} style={{ flex: 1 }} numberOfLines={1}>{x.title}</AppText>
           <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: c.dday + "26" }}>
-            <AppText variant="small" weight={700} color="dday">디데이</AppText>
+            <AppText variant="small" weight={700} color="dday">{tx("agenda.ddayMark")}</AppText>
           </View>
         </Pressable>
       ))}
@@ -211,14 +215,14 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
           );
         }} />
       {!todos.length && !pending.length ? (
-        <AppText variant="body" color="textMuted" style={{ paddingVertical: 14 }}>{categories.length ? "아래 칸에 할 일을 적어 보세요" : "먼저 관리 메뉴에서 카테고리를 만들어 주세요"}</AppText>
+        <AppText variant="body" color="textMuted" style={{ paddingVertical: 14 }}>{categories.length ? tx("agenda.empty") : "먼저 관리 메뉴에서 카테고리를 만들어 주세요"}</AppText>
       ) : null}
 
-      <Pressable onPress={() => router.push(`/diary/${day}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
+      {showDiary ? <Pressable onPress={() => router.push(`/diary/${day}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
         style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 22, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
         {diary?.emoji ? <MoodMark value={diary.emoji} size={26} /> : <AppText variant="bodyLg">📔</AppText>}
-        <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : "이날의 일기 쓰기"}</AppText>
-      </Pressable>
+        <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : tx("agenda.diary")}</AppText>
+      </Pressable> : null}
 
       <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setRenaming({ id, title: db.todos.find((x) => x.id === id)?.title ?? "" })} notice={notice} />
       <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: () => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); } } : undefined}>

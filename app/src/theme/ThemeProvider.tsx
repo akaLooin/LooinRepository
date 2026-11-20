@@ -2,6 +2,9 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import { useColorScheme } from "react-native";
 import { setFontFace, type FontFace } from "./fonts";
 import { tokens, type Palette } from "./tokens";
+import { useAppConfig } from "../lib/appConfig";
+import { ADMIN_APP } from "../lib/variant";
+const NONE = {};
 
 export type Scheme = "light" | "dark";
 type ThemeValue = {
@@ -21,7 +24,10 @@ export function ThemeProvider({ children, initial = null }: { children: ReactNod
   const scheme: Scheme = override ?? (system === "light" ? "light" : "dark");
   const [font, setFontState] = useState<FontFace>("pretendard");
   setFontFace(font); // before the children draw with it
-  const value = useMemo(() => ({ scheme, c: tokens.colors[scheme] as Palette, setOverride, font, setFont: setFontState }), [scheme, font]);
+  // colours the admin app changed (design app only; parseConfig keeps the usual app's empty)
+  const remoteAll = useAppConfig().colors[scheme];
+  const remote = ADMIN_APP ? NONE : remoteAll; // the admin app keeps its own colours, so a bad pick never hides the editor
+  const value = useMemo(() => ({ scheme, c: { ...(tokens.colors[scheme] as Palette), ...remote } as Palette, setOverride, font, setFont: setFontState }), [scheme, font, remote]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

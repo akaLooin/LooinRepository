@@ -9,6 +9,7 @@ import {
 import { followList, getPerson } from "../../data/social";
 import { sessionUserId, useDB } from "../../data/store";
 import { streakOf, today } from "../../lib/dates";
+import { useFeature, useT } from "../../lib/appConfig";
 import { unregisterPush } from "../../lib/push";
 import { supabase } from "../../lib/supabase";
 import { tokens, useInsets, useTheme } from "../../theme";
@@ -68,6 +69,8 @@ export function ProfileTab() {
   const profile = useDB((d) => d.profile);
   const todos = useDB((d) => d.todos);
   const [email, setEmail] = useState("");
+  const tx = useT(); // wording and the record tiles from the admin app
+  const showStats = useFeature("profile.stats");
   const [counts, setCounts] = useState({ following: 0, followers: 0 });
   useEffect(() => { supabase?.auth.getSession().then(({ data }) => setEmail(data.session?.user.email ?? "")); }, []);
   useFocusEffect(useCallback(() => {
@@ -90,7 +93,7 @@ export function ProfileTab() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: G, height: 56 }}>
-        <AppText variant="monthTitle" weight={700} style={{ flex: 1 }} accessibilityRole="header">프로필</AppText>
+        <AppText variant="monthTitle" weight={700} style={{ flex: 1 }} accessibilityRole="header">{tx("profile.title")}</AppText>
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40 }}>
         <View style={{ alignItems: "center", paddingVertical: 22, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
@@ -111,11 +114,13 @@ export function ProfileTab() {
             <AppText variant="small" color="textMuted">{`· 나를 추가 ${counts.followers}`}</AppText>
           </Pressable>
         </View>
+        {showStats ? (
         <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
-          {tile(String(done.length), "완료한 할 일")}
-          {tile(String(thisMonth), "이번 달")}
-          {tile(`${streak}일`, "연속 기록")}
+          {tile(String(done.length), tx("profile.done"))}
+          {tile(String(thisMonth), tx("profile.month"))}
+          {tile(`${streak}일`, tx("profile.streak"))}
         </View>
+        ) : null}
         <SettingsGroups />
       </ScrollView>
     </View>
