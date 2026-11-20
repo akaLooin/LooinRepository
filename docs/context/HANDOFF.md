@@ -47,7 +47,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 일정 = 할 일과 따로 `events` 표(`lib/events.ts`, `features/events/`): 시간/종일, 색, 알림(n분 전), 설명. 할 일 캘린더엔 얇은 줄, 일정 캘린더(▼)엔 이름 막대. 일정 캘린더에서 날짜 → `/events/[date]` 시간표(30분 칸 누르기 → 1시간 일정 → 제목 → 저장, 일정 누르면 보기·수정·삭제, 종일은 위 띠, 지금 선). 옛 여러 날 할 일은 같은 id 종일 일정으로(`liftSpans`, SQL도 같은 일)
 - 서버 표 없으면(SQL 미실행) 일정은 outbox에서 기다림(`missingTable`)
 - ▼ 캘린더 종류: 누르면 바로 바뀌고 닫힘
-- 11-19 피드백 반영(11-21: 시간표는 하루만, 좌우는 1년치 FlatList 페이지, 자정 넘는 일정은 시간 블록·늘이기·옮기기 `shiftEvent`, 끄는 중 왼쪽 시각), 일정 선택·늘이기·꾹 눌러 옮기기(`lib/eventDrag.ts`), 1분 휠(`TimeGrid`), 할 일 메뉴 2열, 알약 탭=추가/길게=편집, 일정 캘린더 4개·아래 비움, 뒤로가기 한 단계(`BottomSheet onBack`), 별 ✕. 11-20: 동그라미 가운데, 옮기기 15분, 두 손가락 확대(`timelineHourHeight`), 휠 숫자 직접 입력, 할 일 메뉴 루틴 등록하기(`/routines/new?from=`)
+- 시간표: 하루씩, 좌우 1년치 FlatList, 선택·늘이기·꾹 옮기기(`lib/eventDrag.ts`, 자정 넘으면 `shiftEvent`), 두 손가락 확대, 끄는 중 왼쪽 시각. 1분 휠(`TimeGrid`), 할 일 메뉴 2열·루틴 등록하기, 알약 탭=추가/길게=편집, 뒤로가기 한 단계(`BottomSheet onBack`)
 - 중요한 날(11-20): 할 일 체크 꾹 = 중요 켜기/끄기(`toggleImportant`), 일정 강조(선택 시 수정 오른쪽 버튼·편집 스위치·종일 시트). 할 일 캘린더 날짜 별/클로버에 네온 테두리 맥박(`Clover glow`, 공유 `usePulse`), 일정 캘린더는 막대 테두리. 11-20 후속: 강조 색 설정(`glowColor`, 기본 #00FF7F), `components/Highlight.tsx`(11-21 불꽃안으로 통일: `Fire`/`Embers`/`GlowFrame` 네온 겹 테두리, 어두운 틈, `sharedLoop`가 멈춘 애니메이션 재시작), 강조 일정은 할 일 캘린더에서 줄이 빛남, 일정 줄 있는 주는 칸이 늘어남, 스위치 OFF 가림 고침. SQL 20261120000000(미실행이면 폰에서 대기, `missingColumn`)
 - 디자인 앱: `APP_VARIANT=design` 별도 앱(`app.config.js`, eas `design`, `lib/variant.ts`), 빌드 backend.md 20
 
