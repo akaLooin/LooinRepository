@@ -17,6 +17,13 @@ import { DatePickSheet, TodoSheets } from "../home/TodoSheets";
 import { GlowFrame } from "../../components";
 
 const TIME_W = 50;
+
+/** The To Do order of 달력 (also used by 홈's week card): category order, 강조 first, done last (if set), then the user's order. */
+export const agendaSort = (catOrder: Map<string, number>, doneLast: boolean) => (a: AgendaTodo, b: AgendaTodo) =>
+  (catOrder.get(a.categoryId) ?? 0) - (catOrder.get(b.categoryId) ?? 0)
+  || Number(!!b.isImportant) - Number(!!a.isImportant)
+  || (doneLast ? Number(a.isDone) - Number(b.isDone) : 0) || a.sortOrder - b.sortOrder;
+type AgendaTodo = { categoryId: string; isImportant?: boolean; isDone: boolean; sortOrder: number };
 type Todo = ReturnType<typeof todosForDay>[number];
 type Item = { kind: "event"; at: number; e: CalEvent; from: number; to: number } | { kind: "todo"; at: number; t: Todo };
 
@@ -54,10 +61,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     ...todos.filter((t) => timeOf(t) !== null).map((t) => ({ kind: "todo" as const, at: timeOf(t)!, t })),
   ].sort((a, b) => a.at - b.at);
   // grouped by category (user, 2026-11-21): inside a category 강조 to-dos first, done ones last, then the user's order
-  const anytime = todos.filter((t) => timeOf(t) === null)
-    .sort((a, b) => (catOrder.get(a.categoryId) ?? 0) - (catOrder.get(b.categoryId) ?? 0)
-      || Number(!!b.isImportant) - Number(!!a.isImportant)
-      || (prefs.todoSort === "done_last" ? Number(a.isDone) - Number(b.isDone) : 0) || a.sortOrder - b.sortOrder);
+  const anytime = todos.filter((t) => timeOf(t) === null).sort(agendaSort(catOrder, prefs.todoSort === "done_last"));
   const todayDDays = ddays.filter((x) => isDDayOn(x, day));
   const pending = categories.filter((x) => !x.endedAt).flatMap((cat) => manualRoutinesOn(db, day, cat.id).map((r) => ({ r, cat })));
   type Cat = (typeof categories)[number];
@@ -75,10 +79,10 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     const list = anytime.filter((t) => t.categoryId === cat.id);
     return (
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 34, marginTop: 6 }} accessibilityRole="header" accessibilityLabel={`${cat.title} 카테고리`}>
-        {/* who can see this category (user) */}
-        <VisibilityIcon value={cat.visibility} size={13} color={c.textMuted} />
         <View style={{ width: 3, height: 14, borderRadius: 2, backgroundColor: col }} />
         <AppText variant="helper" weight={700} raw={col} numberOfLines={1} style={{ flex: 1 }}>{cat.title}</AppText>
+        {/* who can see this category, just left of the count (user) */}
+        <VisibilityIcon value={cat.visibility} size={13} color={c.textMuted} />
         {list.length ? <AppText variant="small" color="textMuted">{`${list.filter((t) => t.isDone).length}/${list.length}`}</AppText> : null}
       </View>
     );

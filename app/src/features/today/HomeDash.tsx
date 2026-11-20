@@ -13,6 +13,7 @@ import { tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { dayTitle, QuickAdd, WeekStrip } from "./parts";
 import { ShortcutEditSheet, ShortcutGrid } from "./Shortcuts";
+import { agendaSort } from "./AgendaList";
 
 const G = tokens.layout.gutter;
 const greeting = (h: number) => (h < 5 ? "늦은 밤이에요" : h < 12 ? "좋은 아침이에요" : h < 18 ? "좋은 오후예요" : "좋은 저녁이에요");
@@ -70,7 +71,9 @@ export function HomeDash() {
     return list.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0)).slice(0, 5);
   }, [db.todos, db.events, now, all, c.accent, prefs.use24h]);
   // the picked day of the week card, shown right in the card
-  const peekTodos = todosForDay(db, peek);
+  // the same order as 달력's To Do, with 강조 to-dos above all others (user)
+  const catOrder = new Map(all.map((x, i) => [x.id, i]));
+  const peekTodos = todosForDay(db, peek).sort((a, b) => Number(!!b.isImportant) - Number(!!a.isImportant) || agendaSort(catOrder, prefs.todoSort === "done_last")(a, b));
   const peekEvents = eventsOn(db.events, peek);
 
   const card = (children: React.ReactNode, onPress?: () => void, label?: string) => {
