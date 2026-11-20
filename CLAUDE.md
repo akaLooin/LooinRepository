@@ -27,8 +27,9 @@ Personal Android app that rebuilds the to-do app "todo mate" (Expo + Supabase), 
 | `app/` | Expo SDK 58 app (expo-router, `src/app` routes, `src/features/*` screens, `src/components`, `src/data` store + sync, `src/theme`) |
 | `app/scripts/test-*.ts` | unit tests (`npm test`) |
 | `app/e2e/*.js` | browser checks (Playwright against the web export; see `app/e2e/README.md`) |
+| `admin/` | 관리자 패널: separate Vite + React web page (switches, notices, push to all); `npm run dev` on the PC (replica/backend.md 23) |
 | `supabase/migrations/` | database (run once in the Supabase SQL editor) |
-| `supabase/functions/delete-account/` | account deletion Edge Function |
+| `supabase/functions/` | `delete-account`, `push` (webhooks), `admin-broadcast` (panel's push to all) |
 | `replica/` | recon map, architecture, design system, backend notes, build log, feature matrix (`features.csv`, `clone` column) |
 | `docs/context/` | HANDOFF, DECISIONS, compact-log (written by the PreCompact hook) |
 

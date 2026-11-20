@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { AppState } from "react-native";
 import { DESIGN_TRIAL } from "./variant";
 import { supabase } from "./supabase";
 import { configDefaults, parseConfig, type AppConfig } from "./configRules";
@@ -27,5 +28,13 @@ export function refreshAppConfig(): Promise<void> {
 }
 
 export function useAppConfig(): AppConfig {
-  return useSyncExternalStore((l) => { listeners.add(l); if (listeners.size === 1) refreshAppConfig(); return () => listeners.delete(l); }, () => current, () => current);
+  return useSyncExternalStore((l) => { listeners.add(l); if (listeners.size === 1) { refreshAppConfig(); watch(); } return () => listeners.delete(l); }, () => current, () => current);
+}
+
+// coming back to the app reads the switches again (a change in the panel shows without a restart)
+let watching = false;
+function watch() {
+  if (watching) return;
+  watching = true;
+  AppState.addEventListener("change", (s) => { if (s === "active") refreshAppConfig(); });
 }

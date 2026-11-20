@@ -2,7 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import { AppText, TabPills, useToast } from "../../components";
-import { APP_NOTICES } from "../../data/notices";
+import { useAppNotices } from "../../data/notices";
 import { FeedList } from "./FeedList";
 import { markNoticesRead, myNotices, refreshFollowing, respondFollow, type Notice, type Person } from "../../data/social";
 import { tokens, useInsets, useTheme } from "../../theme";
@@ -22,6 +22,7 @@ let lastTab: Tab | null = null; // the tab last looked at, while the app runs
  */
 export function AlertsScreen() {
   const { c } = useTheme();
+  const notices = useAppNotices();
   const crewsOn = useAppConfig().crews; // crews hidden until the admin panel turns them on
   const insets = useInsets();
   const [list, setList] = useState<Notice[] | null>(null);
@@ -60,9 +61,11 @@ export function AlertsScreen() {
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40 }}>
         {shownTab === "todos" || shownTab === "diaries" ? <FeedList key={shownTab} only={shownTab === "todos" ? "todo" : "diary"} heading={false} onPerson={setOpen} />
-          : shownTab === "notices" ? APP_NOTICES.map((n, i) => (
+          : shownTab === "notices" ? notices.map((n, i) => (
             <View key={i} style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: c.surfaceRow, gap: 8 }}>
-              <AppText variant="body">{n.text}</AppText>
+              {n.title ? <AppText variant="body" weight={700}>{n.title}</AppText> : null}
+              {n.title ? <AppText variant="body" weight={700}>{n.title}</AppText> : null}
+          <AppText variant="body">{n.text}</AppText>
               <AppText variant="helper" color="textMuted">{n.date}</AppText>
             </View>
           ))

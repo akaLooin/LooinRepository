@@ -1,4 +1,4 @@
-import { APP_NOTICES } from "../../data/notices";
+import { useAppNotices } from "../../data/notices";
 import * as Notifications from "expo-notifications";
 import { useCallback, useEffect, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
@@ -150,10 +150,12 @@ export function NotificationSettingsScreen() {
 
 export function NoticesScreen() {
   const { c } = useTheme();
+  const notices = useAppNotices();
   return (
     <Page title="공지사항">
-      {APP_NOTICES.map((n, i) => (
+      {notices.map((n, i) => (
         <View key={i} style={{ paddingVertical: 16, borderBottomWidth: 1, borderColor: c.surfaceRow, gap: 8 }}>
+          {n.title ? <AppText variant="body" weight={700}>{n.title}</AppText> : null}
           <AppText variant="body">{n.text}</AppText>
           <AppText variant="helper" color="textMuted">{n.date}</AppText>
         </View>

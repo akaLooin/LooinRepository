@@ -73,6 +73,11 @@ Change from `architecture.md`: the device copy is a JSON snapshot in AsyncStorag
     2. github.com → the repository → **Settings** → **Secrets and variables** → **Actions** → **New repository secret** → Name `EXPO_TOKEN`, Secret = the token → **Add secret**.
     3. Build each app once more (step 7.5 and step 20); from then on, reopening the app (twice at most) brings the new code. 설정 → 버전 shows "n월 n일 hh:mm 업데이트" when an update is running.
     - **Native rule**: when a change adds or upgrades a native package, or changes native settings in `app.json`/`app.config.js` (plugins, permissions, package), raise `app.json` "version" (1.0.0 → 1.0.1 …) in the same commit and tell the user a new APK is needed; old APKs then ignore the update instead of breaking.
+23. **관리자 패널 (2026-11-21)**: a separate web page in `admin/` (not in the app) for app switches, notices and a push to every phone. One-time:
+    1. SQL Editor: run `supabase/migrations/20261121000000_admin.sql` (tables `admins`, `app_config`, `app_notices`, `admin_broadcasts`). Then run its last line with your own e-mail, without `--`, to make yourself the admin. Safe to run again.
+    2. Push to everyone: `npx.cmd supabase functions deploy admin-broadcast --project-ref <id>` (from `C:\Users\User\LooinRepository`). Reaches phones of the usual app (the design app has no server push, step 20).
+    3. Open: `cd C:\Users\User\LooinRepository\admin` → `npm.cmd install` (once) → `npm.cmd run dev` → the browser opens → sign in with the app account. It uses `app\.env.local`, so nothing new to fill in. Only admins can change anything (RLS and the function check again on the server).
+    - The apps read `app_config` at start and when reopened: `crews_enabled` (design app shows crews only when on; the usual app always does), `home_notice` (a line on the design app's 홈). Notices from `app_notices` come first in 설정 → 공지사항 and 알림 → 공지. Until the SQL is run, the apps keep their defaults (crews hidden in the design app, built-in notices).
 ## Checklist
 
 Auth

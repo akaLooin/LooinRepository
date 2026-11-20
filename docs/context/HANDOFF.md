@@ -1,6 +1,6 @@
 # HANDOFF — 지금 어디까지 왔나
 
-마지막 갱신: 2026-11-20 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
+마지막 갱신: 2026-11-21 · 브랜치 `claude/replica-skill-install-ll9jb4` (main보다 앞섬, PR 없음)
 
 ## 한 줄 요약
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
@@ -37,7 +37,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 
 ## 2단계(친구·대화·크루) 완료 — 자세한 건 `replica/build-log.md`, `replica/backend.md` 9~18
 - 친구·대화·스티커·할 일 캘린더·푸시✅·피드·일기(기분 온도·임시 저장)·크루 1·2차
-- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. 20261118000000_events도 실행 ✅. **미실행/미확인**: 20261120000000_important, 20261109000300_crews2, 20261112000000_my_features
+- SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. 20261118000000_events도 실행 ✅. **미실행/미확인**: 20261121000000_admin, 20261120000000_important, 20261109000300_crews2, 20261112000000_my_features
 - 이용자 PC 할 일: push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
 
 ## 3단계: 우리만의 기능 (2026-11-12, 9가지 완료, 폰 확인 필요)
@@ -52,9 +52,15 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 디자인 앱: `APP_VARIANT=design` 별도 앱(`app.config.js`, eas `design`, `lib/variant.ts`), 빌드 backend.md 20
 
 ## 5단계: 출시 리디자인 (2026-11-21~)
-- 기존 앱 = 디자인 앱 모습으로 확정(별, `Clover.tsx` `STAR = true`) 후 그대로 유지
-- 디자인 앱만 새 구조(`DESIGN_TRIAL`), 탭 홈·달력·함께·나: `features/today/`(`HomeDash` 홈 요약·바로가기, `CalendarTab` 한 달 달력(`Calendar boxed`: 오늘 회색 칸·고른 날 흰 칸)+`AgendaList` 하루 목록, `parts.tsx` `WeekStrip`·`QuickAdd` 입력줄, `TogetherScreen`), 라우트 `(tabs)/calendar`·`together`, `/friend/[id]`, `BottomNav` `DESIGN_TABS`. 다른 화면이 고른 날은 `requestHomeDay` → 달력 탭. e2e `design-structure.js`(APP_VARIANT=design 빌드)
-- 다음 후보: 나 탭 다듬기, 테마(스킨) 기능, 앱 이름·아이콘(나중), 오늘 화면의 끌어서 순서·날짜 옮기기(아직 없음)
+- 기존 앱 = 별 모양으로 확정(`Clover.tsx` `STAR = true`) 후 그대로 유지. 디자인 앱만 새 구조(`DESIGN_TRIAL`)
+- 탭 홈·달력·커뮤니티·프로필(`BottomNav` `DESIGN_TABS`), 화면은 `features/today/`:
+  - `HomeDash` 홈: 관리자 공지 줄, 오늘 카드, 이번 주(큰 별 30, 날짜 탭 = 카드 안에 그날 할 일·일정, 두 번 탭 = 달력), 디데이, 중요한 날(색 막대·D-n), 바로가기(`Shortcuts.tsx`, 편집 시트에서 보이기·순서, pref `homeShortcuts`)
+  - `CalendarTab` 달력: 위 검색·메뉴, 한 달(`Calendar boxed` 오늘 회색 칸 `todayCell`·고른 날 흰 칸) + `AgendaList`(구간 구분선 `sectionLine`, 종일/오전/오후/저녁, **To Do**(꾹 끌기, 다른 카테고리 할 일 아래로 놓으면 그 카테고리: `arrangeByNeighbours`), 태그 탭 = 카테고리 바꾸기, 일정 탭 = `EventEditor` 바로)
+  - `TogetherScreen` 커뮤니티: 친구 목록 먼저, 친구 소식/친구 찾기 전환, 크루는 `app_config` 켜질 때만(`lib/appConfig.ts`, 규칙 `configRules.ts`)
+  - `ProfileTab` 프로필: 가운데 카드 + 기록 3칸(연속 기록 `streakOf`) + 설정 묶음 카드(`SettingsGroups`, 디자인 앱 설정 화면도 같음)
+- **관리자 패널** `admin/`(Vite 웹, PC에서 `npm.cmd run dev`): 크루 스위치·홈 공지·공지사항·전체 알림. SQL `20261121000000_admin`(미실행) + 함수 `admin-broadcast`(미배포), backend.md 23
+- e2e `design-structure.js`(APP_VARIANT=design 빌드), DB 테스트 `admin.test.sql`
+- 다음 후보: 이용자 폰 확인, 테마(스킨) 기능, 앱 이름·아이콘(나중)
 
 ## 알려진 한계
 - 실제 Supabase 대상 동기화는 폰 로그인까지만 확인, 두 기기 동시 사용은 가짜 서버 테스트로만 확인
@@ -62,7 +68,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 비밀번호 재설정: 앱 쪽 완료(로그인 → 비밀번호를 잊으셨나요?, 설정 → 비밀번호 바꾸기). Supabase 대시보드에 Redirect URL `todomateclone://**` 추가 필요(backend.md 8번), APK에서만 링크 동작
 
 ## 작업 방법
-- 단위 테스트 `cd app && npm test` (81개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
+- 단위 테스트 `cd app && npm test` (88개), DB 규칙 `supabase/tests/run.sh`, 원본 비교 결과 `replica/parity.md`, 타입 `npx tsc --noEmit`
 - 화면 확인: 웹으로 내보낸 뒤 `app/e2e/*.js` 26개
 - 컨텍스트: 기능 하나 끝날 때마다, 또는 컨텍스트가 70%쯤 차면 `/context-handoff`로 이 파일과 DECISIONS.md 갱신 후 푸시
 - 훅: SessionStart(시작·재개·압축 후 이 파일 주입), PreCompact(압축 직전 `docs/context/compact-log.md`에 상태 기록). 둘 다 `.claude/hooks/`

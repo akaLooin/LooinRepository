@@ -1,5 +1,10 @@
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+
 // 공지사항 (설정 → 공지사항 and the 공지 tab in 알림): this app's own update notes, newest first.
-export const APP_NOTICES: { date: string; text: string }[] = [
+// Notices written in the admin panel (table app_notices) come first; these built-in ones follow.
+export type AppNotice = { date: string; text: string; title?: string };
+export const APP_NOTICES: AppNotice[] = [
   { date: "2026. 11. 12.", text: "사진을 누르면 크게 볼 수 있어요. 두 손가락으로 확대하고, 길게 누르면 저장해요. 타이머 ⋯에서 뽀모도로를 고를 수 있고, 홈 맨 위 돋보기로 지난 할 일과 일기를 찾을 수 있어요." },
   { date: "2026. 11. 12.", text: "디데이에 '당일 포함'이 생겼고, 디데이 날은 캘린더에 붉은 동그라미로 보여요. 루틴은 '종료 날짜 없음'으로 계속 반복할 수 있어요. 알림은 친구의 할 일 · 친구의 일기 · 받은 관심 · 공지로 나뉘었어요." },
   { date: "2026. 11. 7.", text: "폰에 직접 설치하는 앱(APK)이 나왔어요. 이제 PC 없이 쓸 수 있어요. 설정 화면을 새로 꾸미고, 비밀번호 찾기와 바꾸기를 넣었어요." },
@@ -8,3 +13,22 @@ export const APP_NOTICES: { date: string; text: string }[] = [
   { date: "2026. 11. 5.", text: "할 일을 길게 눌러 다른 카테고리로 옮길 수 있어요. 보관함은 홈 왼쪽 옆 화면이에요." },
   { date: "2026. 11. 4.", text: "보관함, 사진 인증, 리스트 메뉴, 바텀 시트 끌어 닫기가 생겼어요." },
 ];
+
+const dot = (iso: string) => { const d = new Date(iso); return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`; };
+let cached: AppNotice[] = [];
+
+/** Server notices (published only, by RLS) then the built-in ones. Offline or before the SQL: built-in only. */
+export function useAppNotices(): AppNotice[] {
+  const [list, setList] = useState<AppNotice[]>(cached);
+  useEffect(() => {
+    let live = true;
+    supabase?.from("app_notices").select("title, body, created_at").order("created_at", { ascending: false }).limit(50)
+      .then(({ data, error }) => {
+        if (error || !data || !live) return;
+        cached = data.map((n) => ({ date: dot(n.created_at as string), title: n.title as string, text: n.body as string }));
+        setList(cached);
+      }, () => {});
+    return () => { live = false; };
+  }, []);
+  return [...list, ...APP_NOTICES];
+}
