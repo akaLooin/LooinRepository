@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, type DragHandle } from "../../components";
+import { AppText, BottomSheet, Button, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, VisibilityIcon, type DragHandle } from "../../components";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { EventEditor, type EventDraft } from "../events/EventSheets";
 import { formatTime, usePrefs } from "../../data/prefs";
@@ -75,6 +75,8 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     const list = anytime.filter((t) => t.categoryId === cat.id);
     return (
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 34, marginTop: 6 }} accessibilityRole="header" accessibilityLabel={`${cat.title} 카테고리`}>
+        {/* who can see this category (user) */}
+        <VisibilityIcon value={cat.visibility} size={13} color={c.textMuted} />
         <View style={{ width: 3, height: 14, borderRadius: 2, backgroundColor: col }} />
         <AppText variant="helper" weight={700} raw={col} numberOfLines={1} style={{ flex: 1 }}>{cat.title}</AppText>
         {list.length ? <AppText variant="small" color="textMuted">{`${list.filter((t) => t.isDone).length}/${list.length}`}</AppText> : null}
@@ -83,10 +85,10 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   };
   const parts: [string, (m: number) => boolean][] = [["오전", (m) => m < 12 * 60], ["오후", (m) => m >= 12 * 60 && m < 18 * 60], ["저녁", (m) => m >= 18 * 60]];
 
-  // the right side of a to-do: 강조 when it is marked (no category tag any more; the groups show the category)
+  // the right side of a to-do: 중요 when it is marked (user: named 중요 here) (no category tag any more; the groups show the category)
   const mark = (t: Todo) => (t.isImportant ? (
-    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: glow, alignSelf: "flex-start", marginTop: 2 }} accessibilityLabel="강조">
-      <AppText variant="small" weight={700} raw={glow}>강조</AppText>
+    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: glow, alignSelf: "flex-start", marginTop: 2 }} accessibilityLabel="중요">
+      <AppText variant="small" weight={700} raw={glow}>중요</AppText>
     </View>
   ) : null);
   const row = (t: Todo, withTime: boolean, drag?: DragHandle) => {
