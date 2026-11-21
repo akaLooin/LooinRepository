@@ -481,7 +481,7 @@ export class World {
         const amount = dmgTaken(m.def, d.def, this.rng.range(0.8, 1.2));
         if (amount <= 0) { this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount: 0, crit: false, onPlayer: true }); continue; }
         c.hp -= amount; p.hurtT = HURT_TIME;
-        this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount, crit: false, onPlayer: true });
+        this.events.push({ t: 'dmg', x: p.x, y: p.y - 40, amount, crit: false, onPlayer: true });
         if (c.hp <= 0) { c.hp = 0; p.dead = 3; p.swingT = 0; p.vx = 0; this.events.push({ t: 'faint' }); }
       }
     }
@@ -500,7 +500,7 @@ export class World {
           const amount = dmgTaken({ atk: b.slamDmg, defZero: m.def.defZero }, d.def, this.rng.range(0.9, 1.1));
           if (amount > 0) {
             c.hp -= amount; p.hurtT = HURT_TIME;
-            this.events.push({ t: 'dmg', x: p.x, y: p.y - 34, amount, crit: false, onPlayer: true });
+            this.events.push({ t: 'dmg', x: p.x, y: p.y - 40, amount, crit: false, onPlayer: true });
             if (c.hp <= 0) { c.hp = 0; p.dead = 3; p.swingT = 0; p.vx = 0; this.events.push({ t: 'faint' }); }
           }
         }

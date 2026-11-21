@@ -4,7 +4,7 @@ import { MAPS } from '../core/data';
 import { Look } from '../core/state';
 import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
-import { HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
+import { ART, HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
 import { Character, currentQuest, questProgress } from '../core/state';
 import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
@@ -34,14 +34,16 @@ class CharRig {
   private t = Math.random() * 10; private walkPh = 0;
   private flip = 1; private squash = 0; private wasGround = true;
   private blinkT = 2;
+  private hairB: Img;
   private pose = { legF: 0, legB: 0, armF: 0, armB: 0, wpn: 0.5, by: 0, lean: 0, hy: 0, hr: 0 };
   private lie = 0;
 
   constructor(private scene: Phaser.Scene, look: Look, name: string) {
     const k = (this.key = buildLook(look));
     ensureTextures(scene);
-    const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy);
-    this.shadow = add('shadow', 0.5, 0.5).setAlpha(0.22);
+    const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy).setScale(ART);
+    this.shadow = scene.add.image(0, 0, 'shadow').setOrigin(0.5, 0.5).setAlpha(0.22);
+    this.hairB = add(`${k}_hairb`, HEAD_ORIGIN[0], 33 / 40);
     this.legB = add(`${k}_leg`, 0.4, 0.05);
     this.legF = add(`${k}_leg`, 0.4, 0.05);
     this.armB = add(`${k}_arm`, 0.5, 0.1);
@@ -49,9 +51,9 @@ class CharRig {
     this.head = add(`${k}_head`, HEAD_ORIGIN[0], HEAD_ORIGIN[1]);
     this.weapon = add('wp_sword_wood', 0.5, 0.82);
     const arm = add(`${k}_arm`, 0.5, 0.1);
-    this.weapon.setPosition(0, 6.5);
+    this.weapon.setPosition(0, 8);
     this.armF = scene.add.container(0, 0, [this.weapon, arm]);
-    this.body = scene.add.container(0, 0, [this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
+    this.body = scene.add.container(0, 0, [this.hairB, this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
     this.root = scene.add.container(0, 0, [this.shadow, this.body, this.name]).setDepth(50);
   }
@@ -139,14 +141,16 @@ class CharRig {
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
     // 다리는 골반, 팔은 몸통 양옆 어깨, 머리는 목에 붙는다
-    this.legB.setPosition(-2, -7.5).setRotation(P.legB);
-    this.legF.setPosition(2, -7.5).setRotation(P.legF);
-    this.torso.setPosition(0, -6 + P.by).setRotation(P.lean);
+    this.legB.setPosition(-2.2, -9.6).setRotation(P.legB);
+    this.legF.setPosition(2.2, -9.6).setRotation(P.legF);
+    this.torso.setPosition(0, -8.6 + P.by).setRotation(P.lean);
     const sx = P.lean * 8;
-    this.armB.setPosition(-4.5 + sx, -13.5 + P.by).setRotation(P.armB);
-    this.armF.setPosition(4.5 + sx, -13.5 + P.by).setRotation(P.armF);
+    this.armB.setPosition(-5.6 + sx, -17.6 + P.by).setRotation(P.armB);
+    this.armF.setPosition(5.6 + sx, -17.6 + P.by).setRotation(P.armF);
     this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, tool?.includes('bow') ? 0.5 : 0.82);
-    this.head.setPosition(sx * 1.2, -13 + P.by + P.hy).setRotation(P.lean * 0.4 + P.hr);
+    this.head.setPosition(sx * 1.2, -17.4 + P.by + P.hy).setRotation(P.lean * 0.4 + P.hr);
+    // 뒷머리는 머리를 따라가되 조금 늦게 흔들린다
+    this.hairB.setPosition(sx * 1.1 - P.lean * 2, -17.4 + P.by + P.hy * 0.6).setRotation(P.lean * 0.25 + P.hr * 0.5 - P.lean * 0.3);
     // 피격 표현: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
     const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
     for (const o of [this.torso, this.head, this.legF, this.legB, this.armB]) o.setTint(tint);
@@ -170,7 +174,7 @@ class MobView {
     this.spr = scene.add.image(0, 0, `mob_${m.def.id}`).setOrigin(0.5, 1);
     const parts: Phaser.GameObjects.GameObject[] = [this.shadow];
     if (m.def.motion === 'float') {
-      this.wings = [scene.add.image(-4, -12, 'mob_leafling_wing').setOrigin(1, 0.5), scene.add.image(4, -12, 'mob_leafling_wing').setOrigin(1, 0.5).setFlipX(true).setOrigin(0, 0.5)];
+      this.wings = [scene.add.image(-4, -12, 'mob_leafling_wing').setOrigin(1, 0.5).setScale(ART), scene.add.image(4, -12, 'mob_leafling_wing').setOrigin(1, 0.5).setFlipX(true).setOrigin(0, 0.5).setScale(ART)];
       parts.push(...this.wings);
     }
     this.bar = scene.add.graphics();
@@ -208,7 +212,7 @@ class MobView {
     }
     if (m.hitT > 0) { const k = m.hitT / 0.22; sx *= 1 + k * 0.22; sy *= 1 - k * 0.2; }
     if (m.hitT > 0.12) this.spr.setTintFill(0xffffff); else this.spr.clearTint();
-    const k = m.def.scale ?? 1;
+    const k = (m.def.scale ?? 1) * ART;
     // 보스 내려찍기 예고: 몸을 움츠렸다가 내려찍는다
     if (m.windup > 0) { const t = 1 - m.windup / m.def.boss!.slamWindup; sy *= 1 - Math.sin(t * Math.PI * 0.5) * 0.28; sx *= 1 + Math.sin(t * Math.PI * 0.5) * 0.18; }
     this.spr.setPosition(0, y).setScale(sx * this.scale * this.flip * k, sy * this.scale * k).setRotation(rot * this.flip);
@@ -231,10 +235,10 @@ class NodeView {
   private bar: Phaser.GameObjects.Graphics; private t = Math.random() * 5; private shown = 0;
   constructor(scene: Phaser.Scene, readonly n: NodeInst) {
     if (n.def.skill === 'chopping') {
-      this.base = scene.add.image(n.x, n.y + 1, `node_${n.def.id}_trunk`).setOrigin(0.5, 1).setDepth(20);
-      this.top = scene.add.image(n.x, n.y - 22, `node_${n.def.id}_top`).setOrigin(0.5, 0.85).setDepth(21);
+      this.base = scene.add.image(n.x, n.y + 1, `node_${n.def.id}_trunk`).setOrigin(0.5, 1).setDepth(20).setScale(ART);
+      this.top = scene.add.image(n.x, n.y - 22, `node_${n.def.id}_top`).setOrigin(0.5, 0.85).setDepth(21).setScale(ART);
     } else {
-      this.base = scene.add.image(n.x, n.y + 2, `node_${n.def.id}`).setOrigin(0.5, 1).setDepth(20);
+      this.base = scene.add.image(n.x, n.y + 2, `node_${n.def.id}`).setOrigin(0.5, 1).setDepth(20).setScale(ART);
     }
     this.bar = scene.add.graphics().setDepth(60).setPosition(n.x, n.y);
     this.name = label(scene, n.def.name, 6, '#fff3d6').setPosition(n.x, n.y - (this.top ? 58 : 30)).setDepth(22).setAlpha(0.9);
@@ -246,10 +250,10 @@ class NodeView {
     this.t += dt;
     const k = n.shakeT / 0.3, shake = Math.sin(n.shakeT * 45) * k;
     if (this.top) {
-      this.top.setRotation(Math.sin(this.t * 1.3) * 0.025 + shake * 0.09).setScale(1 + k * 0.04, 1 - k * 0.05);
+      this.top.setRotation(Math.sin(this.t * 1.3) * 0.025 + shake * 0.09).setScale((1 + k * 0.04) * ART, (1 - k * 0.05) * ART);
       this.base.setRotation(shake * 0.02);
     } else {
-      this.base.setX(n.x + shake * 1.5).setScale(1 + k * 0.06, 1 - k * 0.08);
+      this.base.setX(n.x + shake * 1.5).setScale((1 + k * 0.06) * ART, (1 - k * 0.08) * ART);
     }
     this.shown = smooth(this.shown, n.progress / n.def.hp, dt, 16);
     this.bar.clear();
@@ -306,7 +310,7 @@ export class GameScene extends Phaser.Scene {
 
   private fitCamera() {
     const { width, height } = this.scale;
-    this.cameras.main.setZoom(Math.min(height / 205, width / 250));
+    this.cameras.main.setZoom(Math.min(height / 175, width / 215));
   }
 
   /** 맵 전환/캐릭터 전환 시 화면을 새로 구성 */
@@ -347,24 +351,24 @@ export class GameScene extends Phaser.Scene {
       this.clouds.push({ img, x: hash(i + 11) * 700, y: -95 - hash(i + 20) * 90, sp: 3 + hash(i + 40) * 5 });
     }
     // 지면과 발판
-    keep(this.add.tileSprite(-600, 0, map.width + 1200, 48, `tile_${map.theme}`).setOrigin(0, 0).setDepth(10));
+    keep(this.add.tileSprite(-600, 0, map.width + 1200, 48, `tile_${map.theme}`).setOrigin(0, 0).setDepth(10).setTileScale(ART));
     keep(this.add.rectangle(-600, 48, map.width + 1200, 400, Phaser.Display.Color.HexStringToColor(th.dirt[1]).color).setOrigin(0, 0).setDepth(10));
     for (const p of map.platforms) {
       if (p.solid) {
         // 아래가 흙으로 꽉 찬 언덕: 윗면은 풀, 옆면은 어두운 테두리
-        keep(this.add.tileSprite(p.x, p.y, p.w, -p.y + 2, `tile_${map.theme}`).setOrigin(0, 0).setDepth(11));
+        keep(this.add.tileSprite(p.x, p.y, p.w, -p.y + 2, `tile_${map.theme}`).setOrigin(0, 0).setDepth(11).setTileScale(ART));
         keep(this.add.rectangle(p.x, p.y + 3, 2, -p.y, 0x2b1d2e, 0.6).setOrigin(0, 0).setDepth(11));
         keep(this.add.rectangle(p.x + p.w - 2, p.y + 3, 2, -p.y, 0x2b1d2e, 0.6).setOrigin(0, 0).setDepth(11));
         continue;
       }
-      keep(this.add.image(p.x - 2, p.y, `plat_${map.theme}_l`).setOrigin(0, 0).setDepth(11));
-      keep(this.add.tileSprite(p.x + 14, p.y, p.w - 28, 12, `plat_${map.theme}_m`).setOrigin(0, 0).setDepth(11));
-      keep(this.add.image(p.x + p.w + 2, p.y, `plat_${map.theme}_r`).setOrigin(1, 0).setDepth(11));
+      keep(this.add.image(p.x - 2, p.y, `plat_${map.theme}_l`).setOrigin(0, 0).setDepth(11).setScale(ART));
+      keep(this.add.tileSprite(p.x + 14, p.y, p.w - 28, 12, `plat_${map.theme}_m`).setOrigin(0, 0).setDepth(11).setTileScale(ART));
+      keep(this.add.image(p.x + p.w + 2, p.y, `plat_${map.theme}_r`).setOrigin(1, 0).setDepth(11).setScale(ART));
     }
     // 로프
     for (const r of map.ropes) {
-      keep(this.add.tileSprite(r.x, r.top - 3, 5, r.bottom - r.top + 1, 'rope').setOrigin(0.5, 0).setDepth(13));
-      keep(this.add.image(r.x, r.top + 1, 'rope_knot').setDepth(14));
+      keep(this.add.tileSprite(r.x, r.top - 3, 5, r.bottom - r.top + 1, 'rope').setOrigin(0.5, 0).setDepth(13).setTileScale(ART));
+      keep(this.add.image(r.x, r.top + 1, 'rope_knot').setDepth(14).setScale(ART));
     }
     this.arrow = keep(this.add.image(0, 0, 'ui_arrow').setDepth(96).setVisible(false));
     // 풀/꽃 장식
@@ -375,13 +379,13 @@ export class GameScene extends Phaser.Scene {
       const x = s.x + 6 + hash(seed + i * 7) * (s.w - 12);
       const flower = hash(seed + i * 5) > 0.72;
       const key = flower ? `deco_flower${Math.floor(hash(seed + i) * 3)}` : 'deco_grass';
-      const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70));
+      const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70).setScale(ART));
       this.swayers.push({ img, ph: hash(i) * 6 });
     }
     // 모닥불
     if (map.campfireX !== undefined) {
       const fx = map.campfireX;
-      keep(this.add.image(fx, 1, 'obj_logs').setOrigin(0.5, 1).setDepth(20));
+      keep(this.add.image(fx, 1, 'obj_logs').setOrigin(0.5, 1).setDepth(20).setScale(ART));
       for (let i = 0; i < 3; i++) this.flames.push(keep(this.add.image(fx + (i - 1) * 4, -4, 'fx_flame').setOrigin(0.5, 1).setDepth(21)));
     }
     // 시설: 모루·창고·상점·NPC
@@ -390,7 +394,7 @@ export class GameScene extends Phaser.Scene {
         const npc = NPCS[f.npc ?? 'elder'];
         portraitUrl(npc.look);
         ensureTextures(this);
-        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(npc.look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(f.x > map.width / 2));
+        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(npc.look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(f.x > map.width / 2).setScale(ART));
         // NPC 이름은 머리 위(플레이어 이름은 발밑이라 겹치지 않게)
         keep(label(this, npc.name, 6.5, '#fff3d6').setPosition(f.x, f.y - 31).setDepth(31));
         const mark = keep(label(this, '', 13, '#ffd84a').setDepth(31));
@@ -398,15 +402,15 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
       const key = f.kind === 'anvil' ? 'obj_craft' : f.kind === 'storage' ? 'obj_storage' : 'obj_shop';
-      const img = keep(this.add.image(f.x, f.y + 1, key).setOrigin(0.5, 1).setDepth(20));
-      keep(label(this, FACILITY_NAMES[f.kind], 6.5, '#fff3d6').setPosition(f.x, f.y - img.height - 3).setDepth(22));
+      const img = keep(this.add.image(f.x, f.y + 1, key).setOrigin(0.5, 1).setDepth(20).setScale(ART));
+      keep(label(this, FACILITY_NAMES[f.kind], 6.5, '#fff3d6').setPosition(f.x, f.y - img.displayHeight - 3).setDepth(22));
     }
     // 포탈
     map.portals.forEach((q, idx) => {
       const py = q.y ?? 0;
-      const glow = keep(this.add.image(q.x, py - 22, 'portal_glow').setDepth(18));
-      const ring = keep(this.add.image(q.x, py - 22, 'portal_ring').setDepth(19));
-      const lock = keep(this.add.image(q.x, py - 22, 'portal_locked').setDepth(19));
+      const glow = keep(this.add.image(q.x, py - 22, 'portal_glow').setDepth(18).setScale(ART));
+      const ring = keep(this.add.image(q.x, py - 22, 'portal_ring').setDepth(19).setScale(ART));
+      const lock = keep(this.add.image(q.x, py - 22, 'portal_locked').setDepth(19).setScale(ART));
       const text = keep(label(this, '', 6.5).setPosition(q.x, py - 47).setDepth(22));
       this.portals.push({ ring, glow, lock, text, idx });
     });
@@ -436,7 +440,7 @@ export class GameScene extends Phaser.Scene {
     } else if (e.t === 'level' || e.t === 'skill') {
       const p = this.world.player;
       const txt = e.t === 'level' ? 'LEVEL UP!' : `${e.name} Lv.${e.level}`;
-      const t = label(this, txt, 11, e.t === 'level' ? '#ffe98a' : '#a5f0c0').setPosition(p.x, p.y - 44).setDepth(95);
+      const t = label(this, txt, 11, e.t === 'level' ? '#ffe98a' : '#a5f0c0').setPosition(p.x, p.y - 48).setDepth(95);
       this.tweens.add({ targets: t, y: p.y - 66, duration: 1400, ease: 'Cubic.easeOut' });
       this.tweens.add({ targets: t, alpha: 0, delay: 1000, duration: 400, onComplete: () => t.destroy() });
       for (let i = 0; i < 14; i++) {
@@ -528,12 +532,12 @@ export class GameScene extends Phaser.Scene {
       const m = promo ? '★' : !q ? '' : !c.quests[n.id]?.accepted ? '!' : qp?.done ? '?' : '';
       if (n.mark.text !== m) n.mark.setText(m);
       n.mark.setPosition(n.x, n.y - 41 + Math.sin(this.time0 * 4) * 1.5);
-      n.img.setScale(1 - Math.sin(this.time0 * 2.2) * 0.012, 1 + Math.sin(this.time0 * 2.2) * 0.02);
+      n.img.setScale((1 - Math.sin(this.time0 * 2.2) * 0.012) * ART, (1 + Math.sin(this.time0 * 2.2) * 0.02) * ART);
     }
     for (const pv of this.portals) {
       const q = w.map.portals[pv.idx], open = w.portalOpen(q);
       pv.ring.setVisible(open); pv.glow.setVisible(open); pv.lock.setVisible(!open);
-      pv.glow.setScale(0.9 + Math.sin(this.time0 * 3 + pv.idx) * 0.1, 1).setAlpha(0.75 + Math.sin(this.time0 * 4) * 0.2);
+      pv.glow.setScale((0.9 + Math.sin(this.time0 * 3 + pv.idx) * 0.1) * ART, ART).setAlpha(0.75 + Math.sin(this.time0 * 4) * 0.2);
       pv.ring.setY((q.y ?? 0) - 22 + Math.sin(this.time0 * 2 + pv.idx) * 1);
       const txt = !open ? `처치 ${w.char.kills[w.map.id] ?? 0}/${q.reqKills}` : q.label ? `${q.label}${q.key ? ` (${ITEMS[q.key].name})` : ''}` : MAPS[q.to].name;
       if (pv.text.text !== txt) pv.text.setText(txt);

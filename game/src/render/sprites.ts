@@ -67,6 +67,34 @@ class Paint {
     }
     return this;
   }
+  /** 부피 음영(새 화풍): 위·왼쪽 가장자리 밝게, 아래·오른쪽 두 단계 그림자. 색상을 튼다 */
+  volume(keep: string[] = []) {
+    const src = this.px.slice();
+    const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < this.w && y < this.h ? src[y * this.w + x] : null);
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+      const c = src[y * this.w + x];
+      if (!c || keep.includes(c)) continue;
+      const i = y * this.w + x;
+      if (!at(x - 1, y) || !at(x, y - 1)) this.px[i] = ramp(c, 2);
+      else if (!at(x - 2, y) || !at(x, y - 2)) this.px[i] = ramp(c, 1);
+      else if (!at(x + 1, y) || !at(x, y + 1)) this.px[i] = ramp(c, -2);
+      else if (!at(x + 2, y) || !at(x, y + 2) || !at(x + 3, y + 1)) this.px[i] = ramp(c, -1);
+    }
+    return this;
+  }
+  /** 짙은 색 외곽선: 빈 칸 중 옆에 색이 있으면 그 색의 가장 어두운 단계로 */
+  selout() {
+    const src = this.px.slice();
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) {
+      if (src[y * this.w + x]) continue;
+      for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        const n = nx >= 0 && ny >= 0 && nx < this.w && ny < this.h ? src[ny * this.w + nx] : null;
+        if (n) { this.px[y * this.w + x] = lineOf(n); break; }
+      }
+    }
+    return this;
+  }
   outline(c = OUT, shaded = true) {
     if (shaded) this.shadeAll();
     const src = this.px.slice();
@@ -86,6 +114,41 @@ class Paint {
   }
 }
 
+// ───────── 색 도구 ─────────
+const toRgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const toHex = (r: number, g: number, b: number) => `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`;
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+  if (mx === mn) return [0, 0, l];
+  const d = mx - mn, s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) / 6 : mx === g ? ((b - r) / d + 2) / 6 : ((r - g) / d + 4) / 6;
+  return [h, s, l];
+}
+function hslToHex(h: number, s: number, l: number): string {
+  const f = (n: number) => { const k = (n + h * 12) % 12, a = s * Math.min(l, 1 - l); return 255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))); };
+  return toHex(f(0), f(8), f(4));
+}
+/** 음영 단계: step<0 은 그림자(색상을 붉은·보라 쪽으로, 채도↑), step>0 은 밝은 쪽(노란 쪽으로) */
+export function ramp(hex: string, step: number): string {
+  const [r, g, b] = toRgb(hex);
+  let [h, sa, l] = rgbToHsl(r, g, b);
+  if (step < 0) {
+    h = (h + (h > 0.12 && h < 0.75 ? 0.035 : -0.025) * -step + 1) % 1; // 노랑~파랑은 보라 쪽, 빨강 근처는 더 붉게
+    sa = Math.min(1, sa + 0.06 * -step); l = Math.max(0.03, l * Math.pow(0.78, -step));
+  } else if (step > 0) {
+    h = (h + (h > 0.17 && h < 0.66 ? -0.02 : 0.015) * step + 1) % 1; // 노란 쪽으로
+    sa = Math.max(0, sa - 0.03 * step); l = Math.min(0.97, l + (1 - l) * 0.22 * step);
+  }
+  return hslToHex(h, sa, l);
+}
+/** 짙은 색 외곽선: 이웃 색을 아주 어둡고 붉게 */
+export const lineOf = (hex: string) => mixHex(ramp(hex, -2), '#22121c', 0.62);
+function mixHex(a: string, b: string, t: number) {
+  const A = toRgb(a), B = toRgb(b);
+  return toHex(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t);
+}
+
 // 간단한 결정적 난수(텍스처 무늬용)
 const hash = (n: number) => { const s = Math.sin(n * 127.1) * 43758.5453; return s - Math.floor(s); };
 const shade = (hex: string, f: number) => {
@@ -96,141 +159,313 @@ const shade = (hex: string, f: number) => {
 
 // ───────── 캐릭터 파츠 ─────────
 // 둥글둥글한 체형: 동그란 머리, 모서리를 굴린 몸통, 끝이 둥근 팔다리. 도형으로 그리고 외곽선을 자동으로 두른다.
-const SWORD = [
-  '..o..', '.oBo.', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo', '.oBqo',
-  'ooooooo', 'onnnnno', 'ooooooo', '..ouo..', '..ouo..', '..ooo..',
-];
-const PICK = [
-  '..ooooooo..', '.oAAAAAAAo.', 'oAAoonooAAo', 'oAo.oNo.oao', '.o..oNo..o.', '....oNo....',
-  '....oNo....', '....oNo....', '....oNo....', '....oNo....', '....oNo....', '....ooo....',
-];
-const AXE = [
-  '..oooo...', '.oAAaoo..', 'oAAAaoNo.', 'oAAAaoNo.', 'oAAAaoNo.', '.oAAaoNo.', '..ooooNo.',
-  '.....oNo.', '.....oNo.', '.....oNo.', '.....oNo.', '.....oNo.', '.....ooo.',
-];
-
 export const lookKey = (l: Look) => `${l.hair}_${l.hairColor}_${l.skin}_${l.outfit}`.replace(/#/g, '');
 /** 머리 텍스처에서 목(회전축)의 위치 비율 */
-export const HEAD_ORIGIN: [number, number] = [0.5, 0.92];
+export const HEAD_ORIGIN: [number, number] = [0.5, 33 / 36];
+/** 고해상도 그림의 표시 배율: 그림 2픽셀이 월드 1칸 */
+export const ART = 0.5;
+/** 고해상도(2배)로 만든 그림 목록. 화면에서는 ART 배율로 줄여 쓴다 */
+export const HI = new Set<string>();
+const EYES = ['#3f78d8', '#3a9a62', '#b0602a', '#8a4fc8'];
 
-/** 외형별 캐릭터 파츠 텍스처 생성(이미 있으면 재사용). 반환값은 텍스처 key 접두사
- *  체형: 머리가 키의 절반 가까이 되는 큰 둥근 머리, 작은 몸통, 가는 팔다리. 얼굴은 점 눈 두 개만. */
-export function buildLook(l: Look): string {
-  const k = `v3_${lookKey(l)}`;
-  if (canvases.has(`${k}_head`)) return k;
-  const hair = l.hairColor, hairD = shade(hair, 0.72);
-  const skin = l.skin;
-  const cloth = l.outfit, clothD = shade(cloth, 0.75);
-  const style = l.hair % HAIR_STYLES;
-  for (const blink of [false, true]) {
-    const p = new Paint(20, 19);
-    if (style === 1) { p.disc(4, 12, 2.4, 5, hair); p.disc(15.5, 12, 2.2, 4, hairD); } // 긴 머리
-    p.disc(9.5, 9.5, 8, 7.6, skin);                         // 큰 둥근 얼굴
-    // 머리카락: 정수리를 덮는 모자 모양
-    for (let y = 0; y < 19; y++) for (let x = 0; x < 20; x++) {
-      const inHead = ((x - 9.5) / 8) ** 2 + ((y - 9.5) / 7.6) ** 2 <= 1;
-      if (inHead && (y < 6 || (y < 8 && (x < 5 || x > 14)) || (y < 11 && x < 3))) p.set(x, y, hair);
+/** 두 색 섞기 */
+export const mix = mixHex;
+/** 피부 그림자: 채도를 크게 올리지 않고 분홍-갈색 쪽으로 살짝 */
+const skinShade = (s: string, k = 1) => mix(s, '#b4606a', 0.22 * k);
+
+/** 머리카락 다발: 뿌리(x0,y0) → 끝(x1,y1), 뿌리 두께 w, 휨 bend */
+type Clump = [number, number, number, number, number, number];
+interface HairStyle { hairline: number; cap: [number, number, number, number]; back: Clump[]; front: Clump[]; backHair: (p: Paint, c: string) => void }
+const STYLES: HairStyle[] = [
+  { // 0: 짧고 삐죽한 머리
+    hairline: 15, cap: [17, 16, 14.5, 13],
+    back: [[11, 11, 2, 4, 7, -1.5], [15, 9, 8, 0, 7, -1], [19, 8, 17, 0, 7, 0.5], [23, 9, 27, 1, 6, 1.5], [26, 12, 33, 5, 5, 1], [9, 16, 0, 13, 7, 0.5], [9, 22, 1, 23, 6, 1]],
+    front: [[13, 8, 11, 27, 5, -1.2], [16, 7, 14, 19, 7, -0.6], [20, 6, 19, 18, 7, 0.8], [24, 6, 24, 17, 7, 1.2], [27, 7, 29, 18, 6, 1.2], [30, 9, 33, 20, 5, 1]],
+    backHair: () => {},
+  },
+  { // 1: 긴 생머리(일자 앞머리)
+    hairline: 15, cap: [17, 16, 15, 13.5],
+    back: [[9, 14, 3, 24, 7, 1], [10, 20, 5, 30, 6, 1]],
+    front: [[13, 7, 11, 31, 6, -0.8], [16, 6, 15, 18, 7, -0.3], [20, 5, 19, 18, 7, 0.3], [24, 5, 24, 18, 7, 0.6], [28, 6, 29, 18, 6, 0.8], [31, 8, 33, 27, 5, 0.6]],
+    backHair: (p, c) => {
+      p.disc(17, 18, 14, 15, c);
+      for (let i = 0; i < 6; i++) p.disc(6 + i * 4.6, 32 + (i % 2) * 2, 2.8, 5.5, c);
+    },
+  },
+  { // 2: 부스스한 머리 + 뒤로 묶은 꽁지
+    hairline: 15, cap: [17, 16, 15, 13.5],
+    back: [[12, 10, 4, 3, 7, -1], [17, 8, 13, 0, 7, -0.5], [22, 8, 24, 0, 7, 1], [26, 11, 33, 5, 6, 1.5], [9, 14, 0, 9, 6, -1], [8, 20, 0, 19, 6, 0.5]],
+    front: [[13, 8, 11, 26, 5, -1], [17, 6, 14, 18, 7, -1], [21, 5, 21, 18, 7, 1], [25, 6, 27, 17, 7, 1.5], [29, 8, 32, 19, 6, 1.2]],
+    backHair: (p, c) => { p.disc(5, 20, 4, 3.5, c); for (let i = 0; i < 8; i++) p.disc(3 - i * 0.2, 23 + i * 1.6, 3.2 - i * 0.3, 2, c); },
+  },
+];
+
+/** 다발을 그리고 칸마다 다발 번호를 기록 */
+function drawClumps(p: Paint, ids: Int16Array, clumps: Clump[], first: number, color: string) {
+  clumps.forEach(([x0, y0, x1, y1, w, bend], i) => {
+    const id = first + i, dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    const cx = (x0 + x1) / 2 - (dy / L) * bend, cy = (y0 + y1) / 2 + (dx / L) * bend;
+    for (let t = 0; t <= 1; t += 0.25 / L) {
+      const x = (1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * x1, y = (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * y1;
+      const r = Math.max(0.45, (w / 2) * Math.pow(1 - t, 0.85));
+      for (let py = Math.floor(y - r); py <= Math.ceil(y + r); py++) for (let px = Math.floor(x - r); px <= Math.ceil(x + r); px++) {
+        if ((px - x) ** 2 + (py - y) ** 2 > r * r || px < 0 || py < 0 || px >= p.w || py >= p.h) continue;
+        p.px[py * p.w + px] = color; ids[py * p.w + px] = id;
+      }
     }
-    if (style === 2) for (const [x, y] of [[4, 1], [8, 0], [12, 0], [15, 2]]) { p.rect(x, y, 2, 2, hair); }
-    // 눈: 세로 점 두 개(깜빡이면 가로 선)
-    for (const ex of [11, 15]) { if (blink) p.rect(ex, 10, 2, 1, OUT); else p.rect(ex, 9, 2, 3, OUT); }
-    p.outline().save(`${k}_head${blink ? '_b' : ''}`);
+  });
+}
+
+/** 애니풍 머리 음영: 다발 경계 그늘, 오른쪽 가장자리 그림자, 머리를 두르는 광택 띠 */
+function shadeHair(p: Paint, ids: Int16Array, hair: string, ring: [number, number, number]) {
+  const lite = mix(hair, '#fff6e0', 0.22), top = mix(hair, '#fffaf0', 0.5), dark = mix(hair, '#3a1c3c', 0.28), deep = mix(hair, '#2a1430', 0.5);
+  const id = (x: number, y: number) => (x >= 0 && y >= 0 && x < p.w && y < p.h ? ids[y * p.w + x] : 0);
+  const out = p.px.slice();
+  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
+    const i = id(x, y);
+    if (!i) continue;
+    const nb = [id(x + 1, y), id(x, y + 1), id(x - 1, y), id(x, y - 1)];
+    let c = hair;
+    if (nb[2] > i || nb[3] > i) c = deep; // 위에 겹친 다발이 오른쪽 아래로 드리우는 그늘(갈래 선)
+    else if (nb[0] !== i || nb[1] !== i) c = dark; // 다발 오른쪽·아래 가장자리
+    else {
+      const d = Math.hypot((x - ring[0]) * 0.9, y - ring[1]);
+      if (d > ring[2] - 0.8 && d < ring[2] + 1.1 && y < ring[1]) c = d < ring[2] + 0.2 && (x + y) % 3 ? top : lite; // 광택 띠
+      else if (nb[2] !== i) c = lite;
+    }
+    out[y * p.w + x] = c;
   }
-  let p = new Paint(10, 9);
-  p.rect(1, 0, 8, 7, cloth); p.rect(0, 1, 10, 5, cloth);
-  p.rect(1, 6, 8, 1, clothD); p.rect(4, 6, 2, 1, '#e8c060');   // 허리띠
-  p.rect(1, 7, 8, 2, '#3e4a6e');
-  p.outline().save(`${k}_torso`);
-  p = new Paint(4, 9);
-  p.rect(1, 0, 2, 6, cloth); p.disc(1.5, 7, 1.2, 1.2, skin);
-  p.outline().save(`${k}_arm`);
-  p = new Paint(5, 8);
-  p.rect(1, 0, 2, 5, '#3e4a6e'); p.rect(1, 5, 3, 2, '#5a3f30');
-  p.outline().save(`${k}_leg`);
+  p.px = out;
+}
+
+/** 큰 눈 템플릿(오른쪽을 본다). L 속눈썹, D 홍채 위(진함), I 홍채, H 홍채 아래(밝음), W 하이라이트, w 흰자, l 아래 눈꺼풀 */
+const EYE_NEAR = ['LLLLLLL', 'LLDDDDL', 'wWWDDDD', 'wWWIIID', 'wIIIIII', 'wIHHWII', '.llll..'];
+const EYE_FAR = ['LLLLL', 'LDDDL', 'WWDDD', 'WWIID', 'IIIII', 'IHHWI', '.lll.'];
+const EYE_SHUT = ['.......', '.......', '.......', 'LL...LL', '.LLLLL.', '.......', '.......'];
+
+export function buildLook(l: Look): string {
+  const k = `v5_${lookKey(l)}`;
+  if (canvases.has(`${k}_head`)) return k;
+  const hair = l.hairColor, skin = l.skin, cloth = l.outfit;
+  const S = STYLES[l.hair % HAIR_STYLES];
+  const eye = EYES[(parseInt(hair.slice(1, 3), 16) + l.hair) % EYES.length];
+  const T = skinShade(skin), T2 = skinShade(skin, 1.8), U = mix(skin, '#fff4e8', 0.25);
+  const lash = '#2a1620', blush = mix(skin, '#ff6f86', 0.38);
+  const EYEC: Record<string, string> = { L: lash, D: mix(eye, '#1a1030', 0.45), I: eye, H: mix(eye, '#ffffff', 0.35), W: '#ffffff', w: '#fbf6f0', l: mix(skin, lash, 0.45) };
+  const hi = (key: string) => { HI.add(key); return key; };
+  const ring: [number, number, number] = [18, 17, 10];
+
+  // 뒷머리(몸 뒤)
+  {
+    const p = new Paint(38, 40), ids = new Int16Array(38 * 40);
+    S.backHair(p, hair);
+    p.px.forEach((c, i) => { if (c) ids[i] = 1; });
+    shadeHair(p, ids, hair, ring);
+    p.selout().save(hi(`${k}_hairb`));
+  }
+  for (const blink of [false, true]) {
+    const p = new Paint(38, 36), ids = new Int16Array(38 * 36);
+    // 1) 뒤통수 덩어리 + 바깥으로 뻗친 다발
+    const [cx, cy, rx, ry] = S.cap;
+    p.disc(cx, cy, rx, ry, hair); p.px.forEach((c, i) => { if (c) ids[i] = 1; });
+    drawClumps(p, ids, S.back, 2, hair);
+    // 2) 얼굴(3/4, 오른쪽을 본다): 볼이 둥글고 턱이 갸름
+    const rows: [number, number, number][] = [[11, 12, 30], [12, 11, 31], [24, 11, 32], [25, 11, 31], [26, 12, 31], [27, 12, 30], [28, 13, 29], [29, 14, 28], [30, 15, 27], [31, 17, 25], [32, 19, 23]];
+    for (let y = 13; y <= 23; y++) rows.push([y, 10, 32]);
+    for (const [y, a, b] of rows) for (let x = a; x <= b; x++) { p.px[y * 38 + x] = skin; ids[y * 38 + x] = 0; }
+    // 이마 위 머리선
+    for (let y = 0; y < S.hairline; y++) for (let x = 0; x < 38; x++) if (p.px[y * 38 + x] === skin) { p.px[y * 38 + x] = hair; ids[y * 38 + x] = 1; }
+    // 귀
+    for (const [x, y] of [[9, 20], [8, 21], [9, 21], [8, 22], [9, 22], [8, 23], [9, 23], [9, 24], [10, 20], [10, 21], [10, 22], [10, 23], [10, 24], [10, 25]]) { p.px[y * 38 + x] = skin; ids[y * 38 + x] = 0; }
+    // 3) 앞머리·옆머리
+    const first = 2 + S.back.length;
+    drawClumps(p, ids, S.front, first, hair);
+    shadeHair(p, ids, hair, ring);
+    // 4) 피부 음영: 앞머리 아래 그늘, 턱 아래, 귀 안쪽, 볼 하이라이트
+    const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < 38 && y < 36 ? p.px[y * 38 + x] : null);
+    const isHair = (x: number, y: number) => x >= 0 && y >= 0 && x < 38 && y < 36 && ids[y * 38 + x] > 0;
+    const sk = p.px.slice();
+    for (let y = 0; y < 36; y++) for (let x = 0; x < 38; x++) {
+      if (sk[y * 38 + x] !== skin) continue;
+      let c = skin;
+      if (isHair(x, y - 1)) c = T;
+      else if (isHair(x, y - 2) && isHair(x - 1, y - 1)) c = T;
+      else if (!at(x, y + 1) || (!at(x + 1, y + 1) && y > 26)) c = T;
+      else if (x <= 11 && y >= 22) c = T;
+      p.px[y * 38 + x] = c;
+    }
+    for (const [x, y] of [[9, 22], [9, 23], [10, 22]]) p.px[y * 38 + x] = T2;
+    for (const [x, y] of [[13, 25], [14, 26], [28, 14], [27, 15]]) if (p.px[y * 38 + x] === skin) p.px[y * 38 + x] = U;
+    // 5) 눈·눈썹·볼터치·코·입
+    const stamp = (tpl: string[], ox: number, oy: number) => tpl.forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') p.px[(oy + j) * 38 + ox + i] = EYEC[ch]; }));
+    if (blink) { stamp(EYE_SHUT, 14, 18); stamp(EYE_SHUT.map((r) => r.slice(1, 6)), 25, 18); }
+    else { stamp(EYE_NEAR, 14, 18); stamp(EYE_FAR, 25, 18); }
+    for (const [x, y] of [[14, 25], [15, 25], [16, 25], [29, 25], [30, 25]]) p.px[y * 38 + x] = blush;
+    p.px[25 * 38 + 25] = T2; // 코
+    p.px[28 * 38 + 22] = '#b0505a'; p.px[28 * 38 + 23] = '#c8646c'; // 입
+    p.selout().save(hi(`${k}_head${blink ? '_b' : ''}`));
+  }
+  // 몸통: 짧은 상의(옷깃·단추·밑단) + 허리띠
+  {
+    const p = new Paint(24, 20);
+    p.rect(4, 0, 16, 2, cloth); p.rect(3, 2, 18, 13, cloth); p.rect(2, 13, 20, 4, cloth);
+    p.volume();
+    p.rect(9, 0, 6, 2, mix(skin, '#000000', 0.05)); p.rect(10, 2, 4, 1, T); // 목
+    p.rect(7, 0, 2, 3, mix(cloth, '#ffffff', 0.55)); p.rect(15, 0, 2, 3, mix(cloth, '#ffffff', 0.55)); p.rect(9, 2, 1, 2, mix(cloth, '#ffffff', 0.55)); p.rect(14, 2, 1, 2, mix(cloth, '#ffffff', 0.55)); // 옷깃
+    p.rect(12, 3, 1, 9, ramp(cloth, -2)); for (const y of [5, 8]) p.set(13, y, '#f4e6b0'); // 여밈·단추
+    p.rect(3, 11, 18, 2, '#4a2e22'); p.rect(3, 11, 18, 1, '#6e4630'); p.rect(11, 11, 3, 2, '#e8b84a'); // 허리띠
+    p.rect(2, 16, 20, 1, ramp(cloth, -2));
+    p.selout().save(hi(`${k}_torso`));
+  }
+  // 팔: 소매 + 둥근 손(피부는 부드러운 2단 음영)
+  {
+    const p = new Paint(9, 19);
+    p.disc(4, 3.5, 3.8, 3.4, cloth); p.rect(1, 4, 6, 8, cloth);
+    p.volume();
+    p.rect(1, 11, 6, 2, mix(cloth, '#ffffff', 0.5)); p.rect(1, 12, 6, 1, mix(cloth, '#ffffff', 0.25)); // 소매 끝
+    p.disc(4, 15.4, 2.7, 2.6, skin);
+    for (const [x, y] of [[5, 17], [6, 16], [6, 15], [4, 18], [5, 18], [3, 18]]) p.set(x, y, T);
+    p.set(2, 14, U); p.set(3, 14, U);
+    p.selout().save(hi(`${k}_arm`));
+  }
+  // 다리: 바지 + 신발(앞코 둥글게, 밑창)
+  {
+    const p = new Paint(11, 20), pants = '#3c4560', shoe = mix(cloth, '#3a2418', 0.55);
+    p.rect(2, 0, 6, 13, pants);
+    p.volume();
+    p.rect(2, 13, 6, 4, shoe); p.disc(7, 15.6, 2.6, 1.8, shoe); p.rect(2, 13, 6, 1, ramp(shoe, 1));
+    p.set(3, 14, ramp(shoe, 2)); p.set(8, 14, ramp(shoe, 1));
+    p.rect(2, 17, 8, 1, '#e8e2d6'); p.rect(2, 18, 8, 1, '#2a1c18'); // 밑창
+    p.selout().save(hi(`${k}_leg`));
+  }
   return k;
 }
 
 function buildWeapons() {
-  grid('wp_sword_wood', SWORD, { B: '#c9925a', q: '#a06f42' });
-  grid('wp_sword_stone', SWORD, { B: '#c9d1d9', q: '#8d97a3' });
-  grid('wp_sword_leaf', SWORD, { B: '#a8ee6a', q: '#5fb859', n: '#f6c945' });
-  // 활(세로로 쥔다)과 지팡이, 발사체
-  for (const [id, a, b] of [['bow_wood', '#c9925a', '#8a5a3c'], ['bow_leaf', '#a8ee6a', '#5fb859']] as const) {
-    const p = new Paint(9, 19);
-    for (let y = 1; y < 18; y++) { const x = 2 + Math.round(Math.sin(((y - 1) / 16) * Math.PI) * 4); p.set(x, y, a); p.set(x - 1, y, b); }
-    p.line(2, 1, 2, 17, '#e9e4f0');
-    p.outline().save(`wp_${id}`);
+  const hi = (key: string) => { HI.add(key); return key; };
+  // 검(2배 해상도): 날 가운데 빛줄, 가드, 감은 손잡이, 둥근 폼멜. 손잡이가 높이의 82% 지점
+  const sword = (id: string, blade: string, guard: string) => {
+    const p = new Paint(14, 34);
+    for (let y = 2; y < 23; y++) p.rect(5, y, 4, 1, blade);
+    p.set(6, 1, blade); p.set(7, 1, blade); p.set(6, 0, blade);
+    p.volume();
+    p.rect(6, 3, 1, 19, mix(blade, '#ffffff', 0.55)); p.set(6, 1, mix(blade, '#ffffff', 0.7));
+    p.rect(1, 22, 12, 3, guard); p.rect(1, 22, 12, 1, mix(guard, '#ffffff', 0.35)); p.rect(1, 24, 12, 1, mix(guard, '#2a1430', 0.35));
+    p.rect(6, 22, 2, 3, '#e84a5a'); // 보석
+    for (let y = 25; y < 31; y++) p.rect(5, y, 4, 1, y % 2 ? '#6e4630' : '#8a5a3c');
+    p.disc(6.5, 32, 2, 1.6, guard); p.set(6, 31, mix(guard, '#ffffff', 0.4));
+    p.selout().save(hi(`wp_${id}`));
+  };
+  sword('sword_wood', '#c9925a', '#8a5a3c');
+  sword('sword_stone', '#c9d1d9', '#b9824f');
+  sword('sword_leaf', '#8fde5d', '#f6c945');
+  // 활(세로로 쥔다)
+  for (const [id, a] of [['bow_wood', '#b9824f'], ['bow_leaf', '#7ccf52']] as const) {
+    const p = new Paint(16, 36);
+    for (let y = 2; y < 34; y++) {
+      const x = 4 + Math.round(Math.sin(((y - 2) / 31) * Math.PI) * 8);
+      p.rect(x - 1, y, 3, 1, a);
+    }
+    p.volume();
+    p.rect(8, 16, 4, 4, '#6e4630'); p.rect(8, 16, 4, 1, '#8a5a3c'); // 손잡이
+    p.line(3, 2, 3, 33, '#ece6f4');
+    p.selout().save(hi(`wp_${id}`));
   }
-  for (const [id, a, b] of [['wand_wood', '#a5d8ff', '#5aa9e6'], ['wand_leaf', '#b4f08a', '#5fb859']] as const) {
-    const p = new Paint(7, 17);
-    p.rect(3, 5, 1, 12, '#8a5a3c'); p.disc(3, 3, 2.3, 2.3, b); p.set(2, 2, a); p.set(3, 2, a); p.set(2, 3, a);
-    p.outline().save(`wp_${id}`);
+  // 지팡이: 위에 보석 구슬과 받침
+  for (const [id, gem] of [['wand_wood', '#5aa9e6'], ['wand_leaf', '#7ccf52']] as const) {
+    const p = new Paint(12, 32);
+    p.rect(5, 9, 2, 22, '#8a5a3c'); p.disc(5.5, 5, 4, 4, gem);
+    p.volume();
+    p.rect(3, 9, 6, 2, '#e8b84a'); p.rect(3, 9, 6, 1, '#ffe08a'); p.rect(5, 13, 2, 1, '#6e4630'); p.rect(5, 20, 2, 1, '#6e4630');
+    p.set(4, 3, '#ffffff'); p.set(3, 4, mix(gem, '#ffffff', 0.6)); p.set(4, 4, mix(gem, '#ffffff', 0.6));
+    p.selout().save(hi(`wp_${id}`));
   }
+  // 곡괭이·도끼
+  const tool = (key: string, metal: string, axe: boolean) => {
+    const p = new Paint(22, 28);
+    p.rect(10, 4, 3, 24, '#a0703f');
+    if (axe) { p.disc(15, 7, 6, 6, metal); p.rect(9, 3, 5, 8, metal); }
+    else { for (let x = 1; x < 21; x++) { const y = 3 + Math.round(((x - 10.5) / 10) ** 2 * 5); p.rect(x, y, 1, 3, metal); } p.rect(8, 2, 7, 5, metal); }
+    p.volume();
+    p.rect(10, 18, 3, 1, '#6e4630'); p.rect(10, 22, 3, 1, '#6e4630');
+    if (axe) p.rect(19, 3, 1, 9, mix(metal, '#ffffff', 0.6)); else { p.set(1, 9, mix(metal, '#ffffff', 0.6)); p.set(20, 9, mix(metal, '#ffffff', 0.6)); }
+    p.selout().save(hi(key));
+  };
+  tool('wp_pick', '#a9b2bd', false); tool('wp_axe', '#a9b2bd', true);
+  tool('wp_pick_stone', '#e0d2b8', false); tool('wp_axe_stone', '#e0d2b8', true);
+  // 발사체
   let p = new Paint(11, 5);
   p.rect(1, 2, 8, 1, '#b9824f'); p.set(9, 2, '#c9d1d9'); p.set(8, 1, '#c9d1d9'); p.set(8, 3, '#c9d1d9'); p.set(1, 1, '#e9e4f0'); p.set(1, 3, '#e9e4f0');
   p.outline().save('shot_arrow');
   p = new Paint(9, 9);
   p.disc(4, 4, 3.2, 3.2, '#5aa9e6'); p.disc(3.6, 3.6, 2, 2, '#a5d8ff'); p.set(3, 3, '#ffffff');
   p.outline('#3a5a9a').save('shot_orb');
-  grid('wp_pick', PICK);
-  grid('wp_axe', AXE);
-  grid('wp_pick_stone', PICK, { A: '#e8dcc8', a: '#b5a78e' });
-  grid('wp_axe_stone', AXE, { A: '#e8dcc8', a: '#b5a78e' });
 }
 
 // ───────── 몬스터 ─────────
-function eyes(p: Paint, x: number, y: number, gap: number) {
-  for (const ex of [x, x + gap]) { p.rect(ex, y, 2, 3, OUT); p.set(ex, y, '#ffffff'); }
+/** 큰 눈(흰자 + 동공 + 하이라이트) */
+function bigEye(p: Paint, x: number, y: number, w = 5, h = 6.5, pupil = '#1e1420') {
+  // 귀여운 몬스터 눈: 진한 타원 + 위 큰 하이라이트 + 아래 반사광
+  p.disc(x, y, w / 2, h / 2, pupil);
+  p.rect(Math.round(x - w / 4), Math.round(y - h / 4), 2, 2, '#ffffff');
+  p.set(x + w / 4, y + h / 4, mix(pupil, '#9fd8ff', 0.6));
 }
 function buildMonsters() {
-  // 이끼방울: 새싹 달린 둥근 방울
-  let p = new Paint(20, 18);
-  p.disc(9.5, 11, 8, 5.6, '#5fb859');
-  p.disc(9.5, 9.5, 6.5, 4, '#7fd063');
-  p.disc(6, 8, 2, 1, '#b4f08a');
-  p.rect(2, 14, 16, 3, '#3b8c4f'); p.rect(1, 16, 18, 1, null); p.rect(3, 16, 14, 1, '#3b8c4f');
-  eyes(p, 10, 9, 4);
-  p.rect(12, 13, 2, 1, '#2f6e3e');
-  p.line(9, 5, 9, 2, '#3b8c4f'); p.disc(11, 2, 1.6, 1.2, '#b4f08a'); p.disc(7, 3, 1.2, 1, '#8fde5d');
-  p.outline().save('mob_mossblob');
+  const hi = (key: string) => { HI.add(key); return key; };
+  // 이끼방울: 반질반질한 젤리 몸 + 이끼 덮개 + 새싹
+  let p = new Paint(40, 34);
+  p.disc(19.5, 22, 17, 11.5, '#58b552');
+  p.rect(3, 26, 34, 6, '#58b552');
+  p.volume();
+  p.disc(13, 15, 5, 2.4, '#c8f59a'); p.disc(11, 14, 2, 1, '#ffffff');
+  for (const [x, y, r] of [[8, 13, 4], [15, 11, 5], [24, 11, 5], [31, 14, 4]] as const) p.disc(x, y, r, r * 0.6, '#3f8c3f');
+  for (const [x, y] of [[9, 11], [16, 9], [25, 9], [31, 12]] as const) p.set(x, y, '#7fd06a');
+  p.line(20, 10, 20, 4, '#3f8c3f'); p.disc(23, 3, 3, 2, '#9be36f'); p.disc(17, 4, 2.4, 1.6, '#7fd06a');
+  bigEye(p, 23, 21); bigEye(p, 31, 21);
+  p.rect(26, 27, 4, 1, '#2a5a30'); p.set(25, 26, '#2a5a30'); p.set(30, 26, '#2a5a30');
+  p.set(21, 25, '#f29a9a'); p.set(34, 25, '#f29a9a');
+  p.selout().save(hi('mob_mossblob'));
 
-  // 이끼왕: 큰 이끼방울 + 왕관 (렌더러가 배율로 키운다)
-  p = new Paint(28, 26);
-  p.disc(13.5, 17, 12, 8.4, '#4fa84a');
-  p.disc(13.5, 15, 10, 6.2, '#6fc457');
-  p.disc(8, 13, 3, 1.6, '#b4f08a');
-  p.rect(3, 22, 22, 3, '#2f7a3f');
-  for (const ex of [11, 17]) { p.rect(ex, 14, 2, 4, OUT); p.set(ex, 14, '#ffffff'); }
-  p.rect(10, 13, 3, 1, OUT); p.rect(16, 13, 3, 1, OUT);
-  p.rect(12, 20, 4, 1, '#2a5a30');
-  p.rect(8, 6, 12, 3, '#f6c945'); p.set(8, 5, '#f6c945'); p.set(11, 4, '#f6c945'); p.set(14, 3, '#f6c945'); p.set(17, 4, '#f6c945'); p.set(19, 5, '#f6c945');
-  p.set(11, 7, '#d9574a'); p.set(14, 7, '#7fc4ff'); p.set(17, 7, '#d9574a');
-  p.outline().save('mob_mossking');
+  // 이끼왕: 더 크고 진한 이끼, 보석 왕관, 수염 같은 이끼
+  p = new Paint(56, 50);
+  p.disc(27.5, 33, 25, 16.5, '#4aa246'); p.rect(4, 38, 48, 10, '#4aa246');
+  p.volume();
+  p.disc(19, 24, 7, 3, '#bdf090'); p.disc(16, 23, 2.5, 1.2, '#ffffff');
+  for (let i = 0; i < 7; i++) p.disc(8 + i * 6.5, 20 + (i % 2) * 2, 4.5, 2.6, '#2f7a35');
+  for (let i = 0; i < 6; i++) p.rect(16 + i * 4, 41, 2, 4 + (i % 3), '#2f7a35');
+  const gold = '#f2c14e';
+  p.rect(14, 10, 26, 6, gold); for (const x of [14, 20, 26, 32, 38]) p.disc(x + 1, 8, 1.6, 3, gold);
+  p.volume([]);
+  p.disc(21, 13, 1.6, 1.6, '#d94a3e'); p.disc(27.5, 13, 2, 2, '#4a9ae0'); p.disc(34, 13, 1.6, 1.6, '#d94a3e');
+  bigEye(p, 31, 30, 6, 7); bigEye(p, 42, 30, 5.5, 7);
+  p.rect(33, 37, 7, 1, '#1f4a26'); p.rect(34, 38, 5, 1, '#c84a4a');
+  p.selout().save(hi('mob_mossking'));
 
-  // 돌콩이: 발 달린 돌멩이
-  p = new Paint(20, 18);
-  p.disc(9.5, 8.5, 7.5, 6, '#9aa3ad');
-  p.disc(8, 6.5, 5, 3.2, '#b7c0c9');
-  p.rect(4, 3, 3, 1, '#dfe6ec');
-  p.rect(13, 10, 3, 2, '#6a7480'); p.rect(5, 12, 2, 1, '#6a7480');
-  eyes(p, 9, 7, 4);
-  p.rect(10, 11, 3, 1, OUT);
-  p.rect(4, 15, 4, 2, '#6a7480'); p.rect(11, 15, 4, 2, '#6a7480');
-  p.outline().save('mob_pebbler');
+  // 돌콩이: 금 간 바위 몸, 이끼 얹은 머리, 짧은 발
+  p = new Paint(40, 34);
+  p.disc(19, 17, 15, 12, '#9aa3ad'); p.disc(14, 13, 8, 6, '#aeb7c0');
+  p.rect(7, 27, 8, 5, '#6f7884'); p.rect(23, 27, 8, 5, '#6f7884');
+  p.volume();
+  p.disc(12, 7, 6, 2.4, '#5fae58'); p.disc(10, 6, 2, 1, '#9be36f');
+  p.line(25, 9, 22, 14, '#5e6772'); p.line(22, 14, 24, 18, '#5e6772'); p.line(9, 20, 13, 23, '#5e6772');
+  bigEye(p, 21, 16); bigEye(p, 29, 16);
+  p.rect(23, 23, 5, 1, '#2a2430');
+  p.selout().save(hi('mob_pebbler'));
 
-  // 잎새깨비: 떠다니는 잎사귀 정령 (날개는 별도 텍스처)
-  p = new Paint(20, 20);
-  p.disc(9.5, 10, 6.5, 6, '#e8a23c');
-  p.disc(8.5, 8.5, 4.5, 3.5, '#f6c95a');
-  p.line(9, 3, 12, 0, '#8a5a3c');
-  p.disc(9.5, 15.5, 3, 1.5, '#c77f2a');
-  eyes(p, 9, 8, 4);
-  p.set(11, 12, '#9c4a2a'); p.set(12, 12, '#9c4a2a');
-  p.set(6, 11, '#f4a3a0'); p.set(15, 11, '#f4a3a0');
-  p.outline().save('mob_leafling');
-  p = new Paint(10, 8);
-  p.disc(4.5, 3.5, 4, 2.6, '#8fde5d'); p.line(1, 4, 8, 3, '#5fb859');
-  p.outline().save('mob_leafling_wing');
+  // 잎새깨비: 잎맥이 보이는 단풍 몸, 꼭지, 볼
+  p = new Paint(40, 40);
+  p.disc(19.5, 20, 13, 12, '#e8a03a');
+  for (const [x, y] of [[9, 10], [30, 10], [7, 24], [32, 24], [19.5, 33]] as const) p.disc(x, y, 4, 4, '#e8a03a');
+  p.volume();
+  p.line(19, 8, 19, 32, '#c06a22'); for (const s2 of [-1, 1]) { p.line(19, 14, 19 + s2 * 9, 9, '#c06a22'); p.line(19, 22, 19 + s2 * 10, 22, '#c06a22'); }
+  p.line(19, 7, 24, 1, '#7a4a2a'); p.line(20, 7, 25, 1, '#7a4a2a');
+  bigEye(p, 23, 18); bigEye(p, 30, 18);
+  p.rect(25, 25, 3, 1, '#8a3a22');
+  p.set(20, 23, '#f29a9a'); p.set(33, 23, '#f29a9a');
+  p.selout().save(hi('mob_leafling'));
+  p = new Paint(20, 16);
+  p.disc(9.5, 7.5, 8.5, 5.5, '#8fde5d'); p.line(2, 9, 17, 6, '#4f9a3c'); p.line(8, 8, 11, 4, '#4f9a3c');
+  p.volume(); p.selout().save(hi('mob_leafling_wing'));
 }
 
 // ───────── 배경/지형/오브젝트 ─────────
@@ -244,24 +479,34 @@ export type ThemeKey = keyof typeof THEMES;
 
 function buildTheme(name: ThemeKey) {
   const t = THEMES[name];
-  // 지면 타일 32x48: 위쪽 풀, 아래 흙
-  let p = new Paint(32, 48);
-  p.rect(0, 0, 32, 48, t.dirt[1]);
-  for (let i = 0; i < 46; i++) {
-    const x = Math.floor(hash(i + 1) * 32), y = 8 + Math.floor(hash(i + 77) * 40);
-    p.rect(x, y, hash(i + 5) > 0.6 ? 2 : 1, 1, hash(i + 9) > 0.5 ? t.dirt[0] : t.dirt[2]);
+  // 지면 타일 96x48: 위쪽 풀(들쭉날쭉한 끝), 아래 흙(깊을수록 어둡게), 돌은 무작위로 흩어 반복이 덜 보이게
+  const TW = 96;
+  let p = new Paint(TW, 48);
+  for (let y = 0; y < 48; y++) p.rect(0, y, TW, 1, y < 26 ? t.dirt[1] : mix(t.dirt[1], t.dirt[2], Math.min(1, (y - 26) / 30)));
+  for (let i = 0; i < 150; i++) {
+    const x = Math.floor(hash(i + 1) * TW), y = 9 + Math.floor(hash(i + 77) * 39);
+    p.rect(x, y, hash(i + 5) > 0.6 ? 2 : 1, 1, hash(i + 9) > 0.55 ? mix(t.dirt[1], t.dirt[0], 0.6) : t.dirt[2]);
   }
-  p.rect(0, 0, 32, 5, t.grass[1]);
-  p.rect(0, 0, 32, 2, t.grass[0]);
-  for (let x = 0; x < 32; x++) {
-    const d = hash(x + 31) > 0.55 ? 2 : hash(x + 3) > 0.5 ? 1 : 0;
-    p.rect(x, 5, 1, d, t.grass[2]);
-    if (hash(x + 200) > 0.8) p.set(x, 1, t.grass[2]);
+  // 돌: 겹치지 않게 무작위 배치(좌우는 이어지도록 가장자리 피함)
+  const stones: [number, number, number][] = [];
+  for (let i = 0; stones.length < 9 && i < 200; i++) {
+    const r = 1.6 + hash(i * 3 + 400) * 2.6, x = 4 + hash(i * 7 + 300) * (TW - 8), y = 14 + hash(i * 11 + 500) * 30;
+    if (stones.every(([sx, sy, sr]) => Math.hypot(sx - x, (sy - y) * 1.4) > sr + r + 5)) stones.push([x, y, r]);
   }
-  p.rect(0, 5 + 2, 32, 1, t.dirt[2]);
-  // 흙 속 돌덩이: 밝은 윗면과 어두운 아랫면, 검은 테두리
-  for (const [x, y, r] of [[7, 20, 3], [22, 31, 4], [12, 41, 2.5], [28, 15, 2]] as const) {
-    p.disc(x, y, r + 1, r * 0.8 + 1, OUT); p.disc(x, y, r, r * 0.8, t.dirt[0]); p.disc(x - 0.6, y - 0.8, r * 0.55, r * 0.35, shade(t.dirt[0], 1.25)); p.rect(x - r + 1, y + r * 0.5, r * 2 - 1, 1, t.dirt[2]);
+  for (const [x, y, r] of stones) {
+    const rock = mix(t.dirt[0], '#b8b0a4', 0.35);
+    p.disc(x, y, r + 1, r * 0.75 + 1, mix(t.dirt[2], OUT, 0.5)); p.disc(x, y, r, r * 0.75, rock);
+    p.disc(x - r * 0.3, y - r * 0.3, r * 0.5, r * 0.3, mix(rock, '#ffffff', 0.3));
+    p.rect(Math.round(x - r + 1), Math.round(y + r * 0.45), Math.max(1, Math.round(r * 2 - 1)), 1, mix(rock, t.dirt[2], 0.6));
+  }
+  // 풀: 윗단 + 아래로 늘어진 들쭉날쭉한 끝
+  p.rect(0, 0, TW, 6, t.grass[1]);
+  p.rect(0, 0, TW, 2, t.grass[0]);
+  for (let x = 0; x < TW; x++) {
+    const d = Math.floor(hash(x + 31) * 3) + (hash(Math.floor(x / 5) + 90) > 0.6 ? 2 : 0);
+    p.rect(x, 6, 1, d, t.grass[1]); p.set(x, 6 + d, t.grass[2]); p.set(x, 7 + d, mix(t.dirt[2], OUT, 0.3));
+    if (hash(x + 200) > 0.8) p.set(x, 2, t.grass[2]);
+    if (hash(x + 260) > 0.85) p.set(x, 3, mix(t.grass[0], '#ffffff', 0.3));
   }
   p.save(`tile_${name}`);
 
@@ -529,12 +774,61 @@ function buildIcons() {
   icon('tl_insight', (p) => { p.disc(7.5, 8, 7, 4.5, C.white); p.disc(7.5, 8, 3.5, 3.5, C.blue); p.disc(7.5, 8, 1.5, 1.5, '#1a2a4a'); p.set(6, 6, C.white); });
 }
 
+/** 기존 그림을 2배 해상도로: Scale2x(대각선을 매끄럽게) 후 검정 외곽선을 짙은 색 외곽선으로 */
+function upscale(key: string, wrap = false) {
+  const src = canvases.get(key);
+  if (!src || HI.has(key)) return;
+  const w = src.width, h = src.height, sd = src.getContext('2d')!.getImageData(0, 0, w, h).data;
+  const P = (x: number, y: number) => {
+    if (wrap) { x = (x + w) % w; y = (y + h) % h; } else { x = Math.max(0, Math.min(w - 1, x)); y = Math.max(0, Math.min(h - 1, y)); }
+    const i = (y * w + x) * 4;
+    return ((sd[i] << 24) | (sd[i + 1] << 16) | (sd[i + 2] << 8) | sd[i + 3]) >>> 0;
+  };
+  const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+  const ctx = c.getContext('2d')!, od = ctx.createImageData(w * 2, h * 2), o = od.data;
+  const put = (x: number, y: number, v: number) => { const i = (y * w * 2 + x) * 4; o[i] = v >>> 24; o[i + 1] = (v >>> 16) & 255; o[i + 2] = (v >>> 8) & 255; o[i + 3] = v & 255; };
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const E = P(x, y), B = P(x, y - 1), D = P(x - 1, y), F = P(x + 1, y), H = P(x, y + 1);
+    put(x * 2, y * 2, D === B && B !== F && D !== H ? D : E);
+    put(x * 2 + 1, y * 2, B === F && B !== D && F !== H ? F : E);
+    put(x * 2, y * 2 + 1, D === H && D !== B && H !== F ? D : E);
+    put(x * 2 + 1, y * 2 + 1, H === F && D !== H && B !== F ? F : E);
+  }
+  // 검정에 가까운 외곽선 → 이웃 색의 가장 어두운 단계
+  const [or, og, ob] = toRgb(OUT), W2 = w * 2, H2 = h * 2;
+  const isOut = (i: number) => o[i + 3] > 0 && Math.abs(o[i] - or) < 6 && Math.abs(o[i + 1] - og) < 6 && Math.abs(o[i + 2] - ob) < 6;
+  const copy = new Uint8ClampedArray(o);
+  for (let y = 0; y < H2; y++) for (let x = 0; x < W2; x++) {
+    const i = (y * W2 + x) * 4;
+    if (!isOut(i)) continue;
+    let found: string | null = null;
+    for (let r = 1; r <= 3 && !found; r++) for (const [dx, dy] of [[0, -r], [r, 0], [-r, 0], [0, r]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W2 || ny >= H2) continue;
+      const j = (ny * W2 + nx) * 4;
+      if (copy[j + 3] > 0 && !(Math.abs(copy[j] - or) < 6 && Math.abs(copy[j + 1] - og) < 6 && Math.abs(copy[j + 2] - ob) < 6)) { found = lineOf(toHex(copy[j], copy[j + 1], copy[j + 2])); break; }
+    }
+    if (found) { const [r2, g2, b2] = toRgb(found); o[i] = r2; o[i + 1] = g2; o[i + 2] = b2; }
+  }
+  ctx.putImageData(od, 0, 0);
+  canvases.set(key, c);
+  HI.add(key);
+}
+/** 화면 속 물건·지형을 새 해상도로(아이콘 칸에 쓰는 작은 아이템 그림은 그대로) */
+function upscaleWorld() {
+  for (const key of [...canvases.keys()]) {
+    if (/^(wp_|node_|obj_|portal_|deco_|plat_)/.test(key) || key === 'rope' || key === 'rope_knot') upscale(key);
+    else if (key.startsWith('tile_')) upscale(key, true);
+  }
+}
+
 let built = false;
 export function buildAll() {
   if (built) return;
   built = true;
   buildWeapons(); buildMonsters(); buildObjects(); buildItems(); buildIcons();
   (Object.keys(THEMES) as ThemeKey[]).forEach(buildTheme);
+  upscaleWorld();
 }
 
 /** DOM UI용 아이콘 URL */
@@ -549,9 +843,10 @@ export function iconUrl(key: string): string {
 export function portraitUrl(l: Look): string {
   const k = buildLook(l), key = `${k}_portrait`;
   if (!canvases.has(key)) {
-    const ctx = mk(key, 22, 34);
+    const ctx = mk(key, 44, 72);
     const d = (part: string, x: number, y: number) => ctx.drawImage(canvases.get(`${k}_${part}`)!, x, y);
-    d('leg', 6, 25); d('leg', 11, 25); d('arm', 3, 18); d('arm', 15, 18); d('torso', 6, 17); d('head', 1, 0);
+    d('hairb', 3, 0); d('arm', 8, 35); d('leg', 13, 52); d('leg', 20, 52); d('torso', 10, 34); d('arm', 27, 35); d('head', 3, 0);
+    HI.add(key);
   }
   return iconUrl(key);
 }
