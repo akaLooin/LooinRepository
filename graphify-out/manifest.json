@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1794944232.4078035,
-    "seen": 1794944281.953044,
+    "mtime": 1795267997.3293989,
+    "seen": 1795268045.629624,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1794944232.4078035,
-    "seen": 1794944281.9532287,
+    "mtime": 1795267997.3293989,
+    "seen": 1795268045.6297646,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1794943331.3282409,
-    "seen": 1794944281.9534557,
-    "ast_hash": "fcfe65f5b7010e6c08757fe3bec16786",
+    "mtime": 1795010965.531513,
+    "seen": 1795268045.6300063,
+    "ast_hash": "da209c191d4182e3388c9ed4c0e7794c",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
@@ -180,15 +180,15 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1794944208.7833292,
-    "seen": 1794944281.9535134,
-    "ast_hash": "37c0bffda5bf4f74413a131c457d8dd4",
+    "mtime": 1795267889.7423155,
+    "seen": 1795268045.6300726,
+    "ast_hash": "56bdb6403bac0d7af093632376aaec0d",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1794944148.4105566,
-    "seen": 1794944281.953516,
-    "ast_hash": "5de8cb9acb33c72a88d2f63169f42ad4",
+    "mtime": 1795267938.6420171,
+    "seen": 1795268045.630074,
+    "ast_hash": "e41487c4be693093b425d80ecdff7f48",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
@@ -540,9 +540,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1794944221.8999424,
-    "seen": 1794944281.954849,
-    "ast_hash": "96419303ed4a9e0e6479696b263be16d",
+    "mtime": 1795267985.5783396,
+    "seen": 1795268045.6308925,
+    "ast_hash": "d01a6d260298276733b21737f1d9d0dd",
     "semantic_hash": ""
   },
   "replica/clone-screens/S01-pc.png": {
@@ -999,6 +999,12 @@
     "mtime": 1794944155.7557988,
     "seen": 1794944281.9562259,
     "ast_hash": "3a443893bfb806362f6943623c082b84",
+    "semantic_hash": ""
+  },
+  "replica/design/art-spec.md": {
+    "mtime": 1795267985.582655,
+    "seen": 1795268045.6308947,
+    "ast_hash": "0abd2ee0eb43ae2541cb7bc0543c7a5a",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
