@@ -4,7 +4,9 @@
 // 장비(무기·모자 등)는 붙임 지점에 붙이고, 피부색은 흰 기본색에 연한 색을 섞어 바꾼다.
 
 /** 프레임 크기(그림 픽셀, 화면에는 ART 배율) 와 발 기준점 */
-export const FW = 64, FH = 72, ROOT_X = 32, ROOT_Y = 68;
+export const FW = 44, FH = 44, ROOT_X = 22, ROOT_Y = 41;
+/** 화면 배율: 마네킹은 1배 해상도(그림 1픽셀 = 월드 1칸)로 굵직한 2D 픽셀 느낌 */
+export const MQ_SCALE = 1;
 
 /** 각도: 0 = 아래로 곧게, +는 앞으로(바라보는 쪽) 돌아간다. 팔꿈치·무릎은 앞 마디에 더하는 값 */
 export interface Pose {
@@ -18,15 +20,15 @@ export interface Pose {
 type Key = Partial<Pose> & { t: number; ease?: 'in' | 'out' | 'inout' | 'lin' };
 interface ClipDef { frames: number; loop: boolean; keys: Key[] }
 
-const BASE: Pose = { bx: 0, by: 0, lean: 0, head: 0, armF: [0.3, 0.35], armB: [-0.25, 0.3], legF: [0.08, -0.06], legB: [-0.08, -0.04], wpn: 0.55 };
+const BASE: Pose = { bx: 0, by: 0, lean: 0, head: 0, armF: [0.12, 0.12], armB: [-0.12, -0.12], legF: [0.08, -0.06], legB: [-0.08, -0.04], wpn: 0.55 };
 
 // ───────── 동작 ─────────
 // 원작의 "통통 튀는 작은 몸" 느낌은 살리되, 자세·타이밍은 새로 설계했다(구체관절 인형의 또렷한 관절 동작).
 export const CLIPS: Record<string, ClipDef> = {
   idle: { frames: 12, loop: true, keys: [
-    { t: 0, by: 0, armF: [0.3, 0.35], armB: [-0.25, 0.3], head: 0, ease: 'inout' },
-    { t: 0.5, by: 1, armF: [0.38, 0.5], armB: [-0.18, 0.42], head: 0.05, lean: 0.02, ease: 'inout' },
-    { t: 1, by: 0, armF: [0.3, 0.35], armB: [-0.25, 0.3], head: 0 },
+    { t: 0, by: 0, armF: [0.12, 0.12], armB: [-0.12, -0.12], head: 0, ease: 'inout' },
+    { t: 0.5, by: 1, armF: [0.2, 0.2], armB: [-0.2, -0.2], head: 0.04, ease: 'inout' },
+    { t: 1, by: 0, armF: [0.12, 0.12], armB: [-0.12, -0.12], head: 0 },
   ] },
   walk: { frames: 12, loop: true, keys: [
     { t: 0, legF: [0.55, -0.12], legB: [-0.5, -0.3], armF: [-0.4, 0.45], armB: [0.45, 0.55], by: 0.5, lean: 0.08, head: -0.03, ease: 'out' },
@@ -117,8 +119,9 @@ export function samplePose(clip: ClipDef, t: number): Pose {
 }
 
 // ───────── 뼈대 치수(px) ─────────
-const PELVIS_Y = -13, TORSO = 13, HEAD_R: [number, number] = [13.5, 12.5], HEAD_UP = 11;
-const UPPER_ARM = 5.2, FORE_ARM = 4.6, THIGH = 4.8, SHIN = 5;
+// 비율: 키 약 30, 머리는 키의 1/3 정도인 세로로 긴 타원, 가는 팔다리
+const PELVIS_Y = -11.5, TORSO = 8.5, HEAD_R: [number, number] = [4.6, 5.2], HEAD_UP = 5.2;
+const UPPER_ARM = 4.2, FORE_ARM = 3.6, THIGH = 5, SHIN = 4.8;
 
 type V = [number, number];
 const dir = (a: number): V => [Math.sin(a), Math.cos(a)]; // 0 = 아래
@@ -146,19 +149,19 @@ function layout(p: Pose): { parts: { g: Group; s: Shape }[]; anchors: Anchors } 
     const j = add(root, dir(a0), l0), e = add(j, dir(a0 + a1), l1);
     parts.push({ g, s: { k: 'cap', a: root, b: j, r0: r[0], r1: r[1] } });
     parts.push({ g, s: { k: 'cap', a: j, b: e, r0: r[1], r1: r[2] } });
-    if (end === 'hand') { const h = add(e, dir(a0 + a1), 1.2); parts.push({ g, s: { k: 'ell', c: h, rx: 3.7, ry: 3.7, rot: 0 } }); return h; }
-    const f: V = [e[0] + 1.8, e[1] + 1.3];
-    parts.push({ g, s: { k: 'ell', c: f, rx: 5.2, ry: 3.2, rot: 0 } });
+    if (end === 'hand') { const h = add(e, dir(a0 + a1), 0.6); parts.push({ g, s: { k: 'ell', c: h, rx: 1.75, ry: 1.75, rot: 0 } }); return h; }
+    const f: V = [e[0] + 0.8, e[1] + 0.6];
+    parts.push({ g, s: { k: 'ell', c: f, rx: 2.4, ry: 1.4, rot: 0 } });
     return f;
   };
-  const shoulder = add(neck, up, -3);
-  const handB = limb('armB', [shoulder[0] - 2.2, shoulder[1]], p.lean + p.armB[0], p.armB[1], UPPER_ARM, FORE_ARM, [3.3, 3.0, 2.8], 'hand');
-  limb('legB', [pelvis[0] - 1.6, pelvis[1]], p.legB[0], p.legB[1], THIGH, SHIN, [3.8, 3.4, 3.1], 'foot');
-  limb('legF', [pelvis[0] + 1.6, pelvis[1]], p.legF[0], p.legF[1], THIGH, SHIN, [3.8, 3.4, 3.1], 'foot');
+  const shoulder = add(neck, up, -1.6);
+  const handB = limb('armB', [shoulder[0] - 3.4, shoulder[1] + 0.5], p.lean + p.armB[0], p.armB[1], UPPER_ARM, FORE_ARM, [1.4, 1.3, 1.2], 'hand');
+  limb('legB', [pelvis[0] - 1.3, pelvis[1]], p.legB[0], p.legB[1], THIGH, SHIN, [1.75, 1.55, 1.4], 'foot');
+  limb('legF', [pelvis[0] + 1.3, pelvis[1]], p.legF[0], p.legF[1], THIGH, SHIN, [1.75, 1.55, 1.4], 'foot');
   // 몸통: 아래가 조금 넓은 둥근 콩 모양
-  parts.push({ g: 'torso', s: { k: 'cap', a: add(pelvis, up, 5), b: add(neck, up, -3.5), r0: 7.8, r1: 7.4 } });
+  parts.push({ g: 'torso', s: { k: 'cap', a: add(pelvis, up, 2.2), b: add(neck, up, -2.2), r0: 3.4, r1: 3.6 } });
   parts.push({ g: 'head', s: { k: 'ell', c: headC, rx: HEAD_R[0], ry: HEAD_R[1], rot: p.lean + p.head } });
-  const hand = limb('armF', [shoulder[0] + 2.4, shoulder[1]], p.lean + p.armF[0], p.armF[1], UPPER_ARM, FORE_ARM, [3.3, 3.0, 2.8], 'hand');
+  const hand = limb('armF', [shoulder[0] + 3.4, shoulder[1] + 0.5], p.lean + p.armF[0], p.armF[1], UPPER_ARM, FORE_ARM, [1.4, 1.3, 1.2], 'hand');
   return { parts, anchors: { hand, handB, wpn: p.wpn, head: headC, headRot: p.lean + p.head, chest: add(pelvis, up, 9), lean: p.lean } };
 }
 
@@ -190,9 +193,9 @@ export const MANNEQUIN_WHITE = '#f4f2ee';
 
 /** 톤: 0 하이라이트, 1 기본, 2 중간, 3 그늘, 4 안쪽 선, 5 외곽선 */
 export function tones(skin: string): string[] {
-  return [mixC(skin, '#ffffff', 0.6), skin, mixC(skin, '#9a9cc0', 0.26), mixC(skin, '#6e6f9a', 0.48), mixC(skin, '#4a4868', 0.62), mixC(skin, '#26243a', 0.8)];
+  // 평면 2D: 기본색 한 가지 + 가장자리 그늘 + 뒤쪽 팔다리용 어두운 그늘 + 짙은 선
+  return [skin, skin, mixC(skin, '#a4b4c8', 0.42), mixC(skin, '#7c8aa4', 0.55), '#231c2a', '#1c1622'];
 }
-const LIGHT = (() => { const v = [-0.62, -0.58, 0.42], n = Math.hypot(...v); return v.map((x) => x / n); })();
 
 /** 한 포즈를 두 층(몸, 앞팔)으로 굽는다. 결과는 톤 번호 배열(-1 = 빈 칸) */
 function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } {
@@ -203,9 +206,10 @@ function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } 
     for (let py = 0; py < FH; py++) for (let px = 0; px < FW; px++) {
       const n = hit(s, px + 0.5 - ROOT_X, py + 0.5 - ROOT_Y);
       if (!n) continue;
-      const lum = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
-      let t = lum > 0.9 ? 0 : lum > 0.6 ? 1 : lum > 0.28 ? 2 : 3;
-      if (back) t = Math.min(3, t + 1);
+      // 평면 칠: 오른쪽(바라보는 쪽 반대편이 아닌 빛 반대편) 가장자리 한 줄만 그늘
+      const rim = !hit(s, px + 1.5 - ROOT_X, py + 0.5 - ROOT_Y) || (s.k === 'ell' && !hit(s, px + 0.5 - ROOT_X, py + 1.5 - ROOT_Y) && n[1] > 0.6);
+      let t = rim ? 2 : 1;
+      if (back) t = rim ? 3 : 2;
       const i = py * FW + px;
       tone[i] = t; grp[i] = gi;
     }
@@ -216,7 +220,7 @@ function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } 
     const i = y * FW + x;
     if (tone[i] < 0) continue;
     const nb = [i - 1, i + 1, i - FW, i + FW].filter((j) => grp[j] === grp[i]).map((j) => tone[j]);
-    if (nb.length >= 3 && nb.every((v) => v !== tone[i])) {
+    if (nb.length === 4 && nb.every((v) => v !== tone[i])) {
       const cnt = new Map<number, number>(); nb.forEach((v) => cnt.set(v, (cnt.get(v) ?? 0) + 1));
       t2[i] = [...cnt.entries()].sort((a, b) => b[1] - a[1])[0][0];
     }

@@ -175,7 +175,7 @@ export function buildLook(l: Look): string {
   if (canvases.has(`${k}_idle`)) return k;
   for (const clip of Object.keys(CLIPS)) {
     const key = `${k}_${clip}`, cv = paintClip(clip, skin), n = CLIPS[clip].frames;
-    canvases.set(key, cv); HI.add(key);
+    canvases.set(key, cv);
     const defs: [string, number, number, number, number][] = [];
     for (let f = 0; f < n; f++) { defs.push([`b${f}`, f * FW, 0, FW, FH]); defs.push([`f${f}`, f * FW, FH, FW, FH]); }
     frameDefs.set(key, defs);
@@ -686,11 +686,10 @@ export function portraitUrl(l: Look): string {
   const k = buildLook(l), key = `${k}_portrait`;
   if (!canvases.has(key)) {
     // 대기 첫 프레임(몸 + 앞팔)을 잘라 붙인다. 발이 아래 끝에 오도록
-    const src = canvases.get(`${k}_idle`)!, W = 44, H = 62, sx = ROOT_X - W / 2, sy = ROOT_Y + 2 - H;
+    const src = canvases.get(`${k}_idle`)!, W = 22, H = 34, sx = ROOT_X - W / 2, sy = ROOT_Y + 2 - H;
     const ctx = mk(key, W, H);
     ctx.drawImage(src, sx, sy, W, H, 0, 0, W, H);
     ctx.drawImage(src, sx, FH + sy, W, H, 0, 0, W, H);
-    HI.add(key);
   }
   return iconUrl(key);
 }

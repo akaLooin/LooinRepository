@@ -5,7 +5,7 @@ import { Look } from '../core/state';
 import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
 import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
-import { CLIPS, FH, ROOT_Y, bakeClip } from './mannequin';
+import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
 import { Character, currentQuest, questProgress } from '../core/state';
 import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
@@ -40,9 +40,9 @@ class CharRig {
     ensureTextures(scene);
     const oy = ROOT_Y / FH;
     this.shadow = scene.add.image(0, 0, 'shadow').setOrigin(0.5, 0.5).setAlpha(0.22);
-    this.back = scene.add.image(0, 0, `${k}_idle`, 'b0').setOrigin(0.5, oy).setScale(ART);
+    this.back = scene.add.image(0, 0, `${k}_idle`, 'b0').setOrigin(0.5, oy).setScale(MQ_SCALE);
     this.weapon = scene.add.image(0, 0, 'wp_sword_wood').setOrigin(0.5, 0.82).setScale(ART);
-    this.front = scene.add.image(0, 0, `${k}_idle`, 'f0').setOrigin(0.5, oy).setScale(ART);
+    this.front = scene.add.image(0, 0, `${k}_idle`, 'f0').setOrigin(0.5, oy).setScale(MQ_SCALE);
     // 몸 → 무기 → 앞팔 순서: 손이 무기 손잡이를 감싼다
     this.body = scene.add.container(0, 0, [this.back, this.weapon, this.front]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
@@ -87,7 +87,7 @@ class CharRig {
     if (tool && this.weapon.texture.key !== tool) this.weapon.setTexture(tool);
     if (tool) {
       this.weapon.setOrigin(0.5, tool.includes('bow') ? 0.5 : 0.82);
-      this.weapon.setPosition(an.hand[0] * ART, an.hand[1] * ART).setRotation(an.wpn);
+      this.weapon.setPosition(an.hand[0] * MQ_SCALE, an.hand[1] * MQ_SCALE).setRotation(an.wpn);
     }
 
     // 착지 스쿼시, 방향 전환, 쓰러짐
@@ -348,9 +348,9 @@ export class GameScene extends Phaser.Scene {
         const npc = NPCS[f.npc ?? 'elder'];
         portraitUrl(npc.look);
         ensureTextures(this);
-        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(npc.look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(f.x > map.width / 2).setScale(ART));
+        const img = keep(this.add.image(f.x, f.y + 1, `${buildLook(npc.look)}_portrait`).setOrigin(0.5, 1).setDepth(30).setFlipX(f.x > map.width / 2).setScale(MQ_SCALE));
         // NPC 이름은 머리 위(플레이어 이름은 발밑이라 겹치지 않게)
-        keep(label(this, npc.name, 6.5, '#fff3d6').setPosition(f.x, f.y - 31).setDepth(31));
+        keep(label(this, npc.name, 6.5, '#fff3d6').setPosition(f.x, f.y - 35).setDepth(31));
         const mark = keep(label(this, '', 13, '#ffd84a').setDepth(31));
         this.npcs.push({ id: npc.id, img, mark, x: f.x, y: f.y });
         continue;
@@ -485,8 +485,8 @@ export class GameScene extends Phaser.Scene {
       const promo = n.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL;
       const m = promo ? '★' : !q ? '' : !c.quests[n.id]?.accepted ? '!' : qp?.done ? '?' : '';
       if (n.mark.text !== m) n.mark.setText(m);
-      n.mark.setPosition(n.x, n.y - 41 + Math.sin(this.time0 * 4) * 1.5);
-      n.img.setScale((1 - Math.sin(this.time0 * 2.2) * 0.012) * ART, (1 + Math.sin(this.time0 * 2.2) * 0.02) * ART);
+      n.mark.setPosition(n.x, n.y - 45 + Math.sin(this.time0 * 4) * 1.5);
+      n.img.setScale((1 - Math.sin(this.time0 * 2.2) * 0.012) * MQ_SCALE, (1 + Math.sin(this.time0 * 2.2) * 0.02) * MQ_SCALE);
     }
     for (const pv of this.portals) {
       const q = w.map.portals[pv.idx], open = w.portalOpen(q);
