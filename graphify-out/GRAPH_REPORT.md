@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-21)
 
 ## Corpus Check
-- 82 files · ~75,963 words
+- 82 files · ~76,086 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
 ## Summary
-- 989 nodes · 2219 edges · 65 communities (45 shown, 20 thin omitted)
+- 989 nodes · 2220 edges · 65 communities (45 shown, 20 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 101 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `65f82c3c`
+- Built from commit: `4af805d4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -128,7 +128,7 @@ Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngErro
 
 ### Community 6 - "scene.ts"
 Cohesion: 0.10
-Nodes (17): FACILITY_NAMES, MonsterDef, SMASH_RANGE, HURT_TIME, Mob, Player, SWING_TIME, SwingKind (+9 more)
+Nodes (18): FACILITY_NAMES, MonsterDef, SMASH_RANGE, HURT_TIME, Mob, Player, SWING_TIME, SwingKind (+10 more)
 
 ### Community 7 - "state.ts"
 Cohesion: 0.12
@@ -252,7 +252,7 @@ Nodes (11): Action, ActionResult, Look, Input, WorldEvent, localBackend, NetStat
 
 ### Community 57 - "mannequin.ts"
 Cohesion: 0.09
-Nodes (31): add(), Anchors, bake(), bakeClip(), BakedClip, BASE, cache, ClipDef (+23 more)
+Nodes (30): add(), Anchors, bake(), bakeClip(), BakedClip, BASE, cache, ClipDef (+22 more)
 
 ### Community 58 - "main.ts"
 Cohesion: 0.06

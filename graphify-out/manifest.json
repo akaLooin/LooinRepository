@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1795277164.0186718,
-    "seen": 1795277208.6441412,
+    "mtime": 1795304230.9609993,
+    "seen": 1795304369.228689,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1795277164.0186718,
-    "seen": 1795277208.6444063,
+    "mtime": 1795304230.9604964,
+    "seen": 1795304369.2290354,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -180,15 +180,15 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1795277022.7950578,
-    "seen": 1795277208.6449275,
-    "ast_hash": "130cb593bea8fa9225fa3cb729692b4d",
+    "mtime": 1795304185.135557,
+    "seen": 1795304369.229628,
+    "ast_hash": "e8bbd096c45fa401d7963ac9a6444189",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1795277043.330686,
-    "seen": 1795277208.6449306,
-    "ast_hash": "0cfb10e50a0a216fc70a856b49471562",
+    "mtime": 1795304074.0462317,
+    "seen": 1795304369.229631,
+    "ast_hash": "50b43d71e740638b92eb6270441684e4",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
@@ -540,9 +540,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1795277152.2525527,
-    "seen": 1795277208.6462252,
-    "ast_hash": "fca02ae65f21bbd5aee38e067cb0fcd2",
+    "mtime": 1795304219.8071556,
+    "seen": 1795304369.2310398,
+    "ast_hash": "b9ea3c0227d2ff660443683f2b5e2a96",
     "semantic_hash": ""
   },
   "replica/clone-screens/S01-pc.png": {
@@ -1002,15 +1002,15 @@
     "semantic_hash": ""
   },
   "replica/design/art-spec.md": {
-    "mtime": 1795277152.251776,
-    "seen": 1795277208.6462276,
-    "ast_hash": "deb6bad90c84b1a5a7ed135545cdf55a",
+    "mtime": 1795304360.1261065,
+    "seen": 1795304369.231043,
+    "ast_hash": "e220c27b4818e4efaa961e4bb0622fa7",
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795277043.3376775,
-    "seen": 1795277208.6449242,
-    "ast_hash": "a4b42d0768e4b08c67b6e68585dec82e",
+    "mtime": 1795304319.1499567,
+    "seen": 1795304369.2296245,
+    "ast_hash": "3f7776faf01c26e7544aa5d4f15683b4",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {
