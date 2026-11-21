@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1795267997.3293989,
-    "seen": 1795268045.629624,
+    "mtime": 1795269944.8641837,
+    "seen": 1795269962.2095482,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1795267997.3293989,
-    "seen": 1795268045.6297646,
+    "mtime": 1795269944.8641837,
+    "seen": 1795269962.2097175,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -180,15 +180,15 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1795267889.7423155,
-    "seen": 1795268045.6300726,
-    "ast_hash": "56bdb6403bac0d7af093632376aaec0d",
+    "mtime": 1795269839.137694,
+    "seen": 1795269962.210169,
+    "ast_hash": "096e4adfde7d21911b31651057a024de",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1795267938.6420171,
-    "seen": 1795268045.630074,
-    "ast_hash": "e41487c4be693093b425d80ecdff7f48",
+    "mtime": 1795269845.8973358,
+    "seen": 1795269962.2101715,
+    "ast_hash": "c3cce0e1e011f9de60f07bc91bf4e27c",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
@@ -540,9 +540,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1795267985.5783396,
-    "seen": 1795268045.6308925,
-    "ast_hash": "d01a6d260298276733b21737f1d9d0dd",
+    "mtime": 1795269922.7825184,
+    "seen": 1795269962.2112145,
+    "ast_hash": "e23b9ecacfd0e0ffd378f7c427d90295",
     "semantic_hash": ""
   },
   "replica/clone-screens/S01-pc.png": {
@@ -1002,9 +1002,15 @@
     "semantic_hash": ""
   },
   "replica/design/art-spec.md": {
-    "mtime": 1795267985.582655,
-    "seen": 1795268045.6308947,
-    "ast_hash": "0abd2ee0eb43ae2541cb7bc0543c7a5a",
+    "mtime": 1795269922.781877,
+    "seen": 1795269962.2112164,
+    "ast_hash": "b7a0d2d183799b8cfa68ee75b8db6159",
+    "semantic_hash": ""
+  },
+  "game/src/render/charart.ts": {
+    "mtime": 1795269887.5476472,
+    "seen": 1795269962.2101665,
+    "ast_hash": "37871ae33f119426b81dd0ec6e2b750d",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
