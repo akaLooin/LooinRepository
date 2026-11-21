@@ -4,7 +4,8 @@ import { MAPS } from '../core/data';
 import { Look } from '../core/state';
 import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
-import { ART, HEAD_ORIGIN, ITEM_ICON, THEMES, buildAll, buildLook, canvases, portraitUrl } from './sprites';
+import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
+import { CLIPS, FH, ROOT_Y, bakeClip } from './mannequin';
 import { Character, currentQuest, questProgress } from '../core/state';
 import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
@@ -27,133 +28,82 @@ type RigChar = Pick<Character, 'equipment' | 'cls'>;
 class CharRig {
   root: Phaser.GameObjects.Container;
   private body: Phaser.GameObjects.Container;
-  private legF: Img; private legB: Img; private armB: Img; private torso: Img; private head: Img;
-  private armF: Phaser.GameObjects.Container; private weapon: Img;
+  private back: Img; private front: Img; private weapon: Img;
   private shadow: Img; private name: Phaser.GameObjects.Text;
   private key: string;
-  private t = Math.random() * 10; private walkPh = 0;
-  private flip = 1; private squash = 0; private wasGround = true;
-  private blinkT = 2;
-  private hairB: Img;
-  private pose = { legF: 0, legB: 0, armF: 0, armB: 0, wpn: 0.5, by: 0, lean: 0, hy: 0, hr: 0 };
-  private lie = 0;
+  private t = Math.random() * 10; private walkPh = 0; private idlePh = Math.random(); private airT = 0;
+  private flip = 1; private squash = 0; private wasGround = true; private lie = 0;
+  private clip = ''; private frame = -1;
 
   constructor(private scene: Phaser.Scene, look: Look, name: string) {
     const k = (this.key = buildLook(look));
     ensureTextures(scene);
-    const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy).setScale(ART);
+    const oy = ROOT_Y / FH;
     this.shadow = scene.add.image(0, 0, 'shadow').setOrigin(0.5, 0.5).setAlpha(0.22);
-    this.hairB = add(`${k}_hairb`, HEAD_ORIGIN[0], 33 / 56);
-    this.legB = add(`${k}_leg`, 0.4, 0.05);
-    this.legF = add(`${k}_leg`, 0.4, 0.05);
-    this.armB = add(`${k}_arm`, 0.5, 0.1);
-    this.torso = add(`${k}_torso`, 0.5, 1);
-    this.head = add(`${k}_head`, HEAD_ORIGIN[0], HEAD_ORIGIN[1]);
-    this.weapon = add('wp_sword_wood', 0.5, 0.82);
-    const arm = add(`${k}_arm`, 0.5, 0.1);
-    this.weapon.setPosition(0, 4.2);
-    this.armF = scene.add.container(0, 0, [this.weapon, arm]);
-    this.body = scene.add.container(0, 0, [this.hairB, this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
+    this.back = scene.add.image(0, 0, `${k}_idle`, 'b0').setOrigin(0.5, oy).setScale(ART);
+    this.weapon = scene.add.image(0, 0, 'wp_sword_wood').setOrigin(0.5, 0.82).setScale(ART);
+    this.front = scene.add.image(0, 0, `${k}_idle`, 'f0').setOrigin(0.5, oy).setScale(ART);
+    // 몸 → 무기 → 앞팔 순서: 손이 무기 손잡이를 감싼다
+    this.body = scene.add.container(0, 0, [this.back, this.weapon, this.front]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
     this.root = scene.add.container(0, 0, [this.shadow, this.body, this.name]).setDepth(50);
   }
 
+  /** 지금 상태에 맞는 동작과 프레임 */
+  private pick(dt: number, p: RigPlayer): [string, number] {
+    const n = (c: string) => CLIPS[c].frames;
+    const at = (c: string, u: number) => [c, Math.max(0, Math.min(n(c) - 1, Math.floor(u * n(c))))] as [string, number];
+    const loop = (c: string, ph: number) => [c, ((Math.floor(ph * n(c)) % n(c)) + n(c)) % n(c)] as [string, number];
+    if (p.dead > 0) return ['dead', 0];
+    if (p.hurtT > HURT_TIME - 0.24 && p.swingT <= 0) return at('hurt', 1 - (p.hurtT - (HURT_TIME - 0.24)) / 0.24);
+    if (p.rope >= 0) { this.walkPh += dt * Math.abs(p.vy) / 28; return loop('climb', this.walkPh); }
+    if (p.swingT > 0) {
+      const c = ({ attack: 'swing', shoot: 'shoot', cast: 'cast', mining: 'mine', chopping: 'chop' } as Record<SwingKind, string>)[p.swingKind];
+      return at(c, 1 - p.swingT / SWING_TIME);
+    }
+    if (!p.onGround) { this.airT += dt; return at(p.vy < 0 ? 'jump' : 'fall', this.airT * 8); }
+    this.airT = 0;
+    if (Math.abs(p.vx) > 6) { this.walkPh += (dt * Math.abs(p.vx)) / 34; return loop('walk', this.walkPh); }
+    this.idlePh += dt / 1.7;
+    return loop('idle', this.idlePh);
+  }
+
   update(dt: number, p: RigPlayer, c: RigChar) {
-    const P = this.pose;
     this.t += dt;
-    const moving = Math.abs(p.vx) > 6 && p.onGround && p.swingT <= 0;
     const dead = p.dead > 0;
-    // 목표 포즈
-    let legF = 0, legB = 0, armF = -0.25 + Math.sin(this.t * 2.2) * 0.05, armB = 0.1 - Math.sin(this.t * 2.2) * 0.05;
-    let direct = false;
-    let wpn = c.cls === 'archer' ? 0.25 : 0.55, by = Math.sin(this.t * 2.2) * 0.5, lean = 0, hy = Math.sin(this.t * 2.2 - 0.6) * 0.4, hr = 0;
-    if (moving) {
-      this.walkPh += dt * (p.vx ? Math.abs(p.vx) : 80) * 0.14;
-      const s = Math.sin(this.walkPh);
-      legF = s * 0.7; legB = -s * 0.7; armB = s * 0.6; armF = -0.4 - s * 0.3;
-      by = -Math.abs(Math.cos(this.walkPh)) * 1.3; lean = 0.07; hy = by * 0.3; hr = 0.03;
-    } else if (!p.onGround) {
-      const up = p.vy < 0;
-      legF = up ? -0.7 : -0.25; legB = up ? 0.5 : 0.35; armB = up ? 1.0 : 2.0; armF = up ? -1.2 : -2.2;
-      lean = up ? -0.06 : 0.08; wpn = 0.2; by = 0; hy = up ? 0.6 : -0.6;
+    const [clip, f] = this.pick(dt, p);
+    if (clip !== this.clip || f !== this.frame) {
+      this.clip = clip; this.frame = f;
+      this.back.setTexture(`${this.key}_${clip}`, `b${f}`);
+      this.front.setTexture(`${this.key}_${clip}`, `f${f}`);
     }
-    const ranged = p.swingKind === 'shoot' || p.swingKind === 'cast';
-    if (p.swingT > 0 && ranged) {
-      // 활/지팡이: 앞으로 겨눴다가 살짝 반동
-      const s = 1 - p.swingT / SWING_TIME, kick = s > 0.45 ? Math.exp(-(s - 0.45) * 9) * 0.35 : 0;
-      armF = (p.swingKind === 'shoot' ? -1.5 : -2.0) + kick;
-      wpn = p.swingKind === 'shoot' ? 0 : armF + Math.PI - 0.2;
-      armB = p.swingKind === 'shoot' ? -1.2 + s * 0.5 : 0.3;
-      lean = -kick * 0.2; direct = true;
-    } else if (p.swingT > 0) {
-      // 휘두르기: 뒤로 젖혔다가(와인드업) 빠르게 내려친다
-      const s = 1 - p.swingT / SWING_TIME;
-      const wind = Math.min(1, s / 0.3), strike = Phaser.Math.Clamp((s - 0.3) / 0.4, 0, 1);
-      const e = 1 - (1 - strike) ** 3;
-      armF = Phaser.Math.Linear(-0.3, -3.0, wind) + e * 2.45;
-      wpn = armF + Math.PI + 0.25 - e * 0.5;
-      lean = -0.1 + e * 0.28; hr = lean * 0.4;
-      legF = -0.25 * e; legB = 0.3 * e;
-      direct = s > 0.25;
-    }
-    if (p.rope >= 0) {
-      // 로프: 두 팔을 번갈아 위로 뻗고 다리도 번갈아 움직인다
-      this.walkPh += dt * Math.abs(p.vy) * 0.16;
-      const s = Math.sin(this.walkPh);
-      armF = -2.75 + s * 0.35; armB = 2.75 + s * 0.35; legF = s * 0.45; legB = -s * 0.45;
-      by = Math.abs(s) * 0.6; lean = 0; hy = 0; hr = 0; direct = false;
-    }
-    // 피격: 뒤로 움찔했다가 돌아온다
-    const hurtK = p.hurtT > 0 ? Math.max(0, (p.hurtT - (HURT_TIME - 0.22)) / 0.22) : 0;
-    if (hurtK > 0) { lean = -0.3 * hurtK; hr = -0.25 * hurtK; armF -= 0.5 * hurtK; armB += 0.5 * hurtK; }
-    if (dead) { legF = 0.2; legB = -0.2; armF = -0.6; armB = 0.6; wpn = 1.4; by = 0; lean = 0; hy = 0; }
+    const an = bakeClip(clip).anchors[f];
 
-    const r = direct ? 60 : 16;
-    P.legF = smooth(P.legF, legF, dt, 22); P.legB = smooth(P.legB, legB, dt, 22);
-    P.armF = smooth(P.armF, armF, dt, r); P.armB = smooth(P.armB, armB, dt, 16);
-    P.wpn = smooth(P.wpn, wpn, dt, r); P.by = smooth(P.by, by, dt, 20);
-    P.lean = smooth(P.lean, lean, dt, 14); P.hy = smooth(P.hy, hy, dt, 14); P.hr = smooth(P.hr, hr, dt, 12);
-
-    // 착지 스쿼시
-    if (p.onGround && !this.wasGround) this.squash = 1;
-    this.wasGround = p.onGround;
-    this.squash = smooth(this.squash, 0, dt, 9);
-    this.flip = smooth(this.flip, p.facing, dt, 22);
-    this.lie = smooth(this.lie, dead ? 1 : 0, dt, 8);
-
-    // 무기 텍스처
+    // 무기: 손 위치에 붙이고 프레임에 기록된 각도로 돌린다
     const tool = p.rope >= 0 ? null : p.swingT > 0 && (p.swingKind === 'mining' || p.swingKind === 'chopping')
       ? (p.swingKind === 'mining' ? (c.equipment.pickaxe ? 'wp_pick_stone' : 'wp_pick') : (c.equipment.axe ? 'wp_axe_stone' : 'wp_axe'))
       : c.equipment.weapon ? `wp_${c.equipment.weapon}` : null;
     this.weapon.setVisible(!!tool);
     if (tool && this.weapon.texture.key !== tool) this.weapon.setTexture(tool);
+    if (tool) {
+      this.weapon.setOrigin(0.5, tool.includes('bow') ? 0.5 : 0.82);
+      this.weapon.setPosition(an.hand[0] * ART, an.hand[1] * ART).setRotation(an.wpn);
+    }
 
-    // 눈 깜빡임
-    this.blinkT -= dt;
-    if (this.blinkT < -0.12) this.blinkT = 2 + Math.random() * 3;
-    const closed = dead || this.blinkT < 0 || p.hurtT > 0;
-    const hk = `${this.key}_head${closed ? '_b' : ''}`;
-    if (this.head.texture.key !== hk) this.head.setTexture(hk);
-
-    // 적용
+    // 착지 스쿼시, 방향 전환, 쓰러짐
+    if (p.onGround && !this.wasGround) this.squash = 1;
+    this.wasGround = p.onGround;
+    this.squash = smooth(this.squash, 0, dt, 9);
+    this.flip = smooth(this.flip, p.facing, dt, 22);
+    this.lie = smooth(this.lie, dead ? 1 : 0, dt, 8);
     const b = this.body;
-    b.setScale(this.flip * (1 + this.squash * 0.12), 1 - this.squash * 0.16);
+    b.setScale(this.flip * (1 + this.squash * 0.1), 1 - this.squash * 0.12);
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
-    // 다리는 골반, 팔은 몸통 양옆 어깨, 머리는 목에 붙는다
-    this.legB.setPosition(-2.2, -5.7).setRotation(P.legB);
-    this.legF.setPosition(2.2, -5.7).setRotation(P.legF);
-    this.torso.setPosition(0, -4.5 + P.by).setRotation(P.lean);
-    const sx = P.lean * 8;
-    this.armB.setPosition(-5.4 + sx, -10.8 + P.by).setRotation(P.armB);
-    this.armF.setPosition(5.4 + sx, -10.8 + P.by).setRotation(P.armF);
-    this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, tool?.includes('bow') ? 0.5 : 0.82);
-    this.head.setPosition(sx * 1.2, -10.8 + P.by + P.hy).setRotation(P.lean * 0.4 + P.hr);
-    // 뒷머리는 머리를 따라가되 조금 늦게 흔들린다
-    this.hairB.setPosition(sx * 1.1 - P.lean * 2, -10.8 + P.by + P.hy * 0.6).setRotation(P.lean * 0.25 + P.hr * 0.5 - P.lean * 0.3);
-    // 피격 표현: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
+    // 피격: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
+    const hurtK = p.hurtT > 0 ? Math.max(0, (p.hurtT - (HURT_TIME - 0.22)) / 0.22) : 0;
     const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
-    for (const o of [this.torso, this.head, this.legF, this.legB, this.armB]) o.setTint(tint);
+    this.back.setTint(tint); this.front.setTint(tint);
     b.setAlpha(p.hurtT > 0 && !dead && Math.sin(this.t * 38) > 0 ? 0.35 : 1);
     b.x = -p.facing * hurtK * 2.5;
 
@@ -267,7 +217,11 @@ class NodeView {
 
 let texturesReady = false;
 function ensureTextures(scene: Phaser.Scene) {
-  for (const [key, cv] of canvases) if (!scene.textures.exists(key)) scene.textures.addCanvas(key, cv);
+  for (const [key, cv] of canvases) {
+    if (scene.textures.exists(key)) continue;
+    const tex = scene.textures.addCanvas(key, cv);
+    for (const [name, x, y, w, h] of frameDefs.get(key) ?? []) tex?.add(name, 0, x, y, w, h);
+  }
   texturesReady = true;
 }
 

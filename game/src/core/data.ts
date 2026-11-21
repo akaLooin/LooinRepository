@@ -278,8 +278,8 @@ const SMITH_QUESTS: QuestDef[] = [
 
 export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
 export const NPCS: Record<string, NpcDef> = {
-  elder: { id: 'elder', name: '촌장 모루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#f2bd94', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
-  smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#c98a5e', outfit: '#d9574a' }, quests: SMITH_QUESTS },
+  elder: { id: 'elder', name: '촌장 모루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
+  smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#d9c3ad', outfit: '#d9574a' }, quests: SMITH_QUESTS },
 };
 /** 전직을 맡는 NPC */
 export const CLASS_NPC = 'elder';
@@ -289,7 +289,8 @@ export const NPC_LOOK = NPCS.elder.look;
 export const CARD_SLOTS = 4;
 
 export const HAIR_COLORS = ['#6b4a3a', '#2f2a3a', '#e8b24a', '#d9574a', '#5aa9e6', '#f2a0c8', '#8fde5d', '#e9e4f0'];
-export const SKIN_COLORS = ['#ffd9b8', '#f2bd94', '#c98a5e', '#8a5a3c'];
+/** 기본 캐릭터(흰 마네킹)에 입히는 연한 피부색. 첫 칸이 기본 흰색 */
+export const SKIN_COLORS = ['#f4f2ee', '#f6e6d6', '#f3dcc6', '#e9eef6', '#eef3e6', '#f6e4ec', '#efe6f6', '#d9c3ad'];
 export const OUTFIT_COLORS = ['#e25d4e', '#4e8de2', '#5fb859', '#f6c945', '#8a6fd1', '#e9e4f0'];
 export const HAIR_STYLES = 3;
 

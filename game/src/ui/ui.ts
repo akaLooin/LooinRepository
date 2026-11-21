@@ -221,8 +221,8 @@ export class UI {
           <div class="opts">
             <label class="ui-sm ui-muted" for="cname">이름</label>
             <input id="cname" class="ui-input" maxlength="10" placeholder="최대 10자" autocomplete="off">
-            <div class="sw"><span class="ui-sm ui-muted">머리</span><button class="ui-btn sm" data-act="hair:-1" aria-label="이전 머리">◀</button><b>${l.hair + 1} / ${HAIR_STYLES}</b><button class="ui-btn sm" data-act="hair:1" aria-label="다음 머리">▶</button></div>
-            ${sw('머리색', 'hairColor', HAIR_COLORS)}${sw('피부', 'skin', SKIN_COLORS)}${sw('옷', 'outfit', OUTFIT_COLORS)}
+            ${sw('몸 색', 'skin', SKIN_COLORS)}
+            <p class="ui-xs ui-muted">겉모습은 장비로 꾸며집니다.</p>
             <div class="ui-row">${acc.characters.length ? '<button class="ui-btn" data-act="cancelCreate">취소</button>' : ''}
               <span class="ui-grow"></span><button class="ui-btn primary" data-act="create">모험 시작!</button></div>
           </div></div></div>`;

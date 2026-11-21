@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Mannequin frames</title>
+<style>body{background:#8fb08a;margin:8px;font:12px sans-serif} .row{display:flex;align-items:center;gap:6px;margin:2px 0} canvas{image-rendering:pixelated} b{width:48px}</style></head>
+<body><div id="out"></div>
+<script type="module">
+import { CLIPS, paintClip, FW, FH } from '/src/render/mannequin.ts';
+const q = new URLSearchParams(location.search), z = +(q.get('z') ?? 3), skin = q.get('skin') ?? '#f4f2ee';
+const only = q.get('c');
+for (const name of Object.keys(CLIPS)) {
+  if (only && only !== name) continue;
+  const src = paintClip(name, skin), n = src.width / FW;
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = `<b>${name}</b>`;
+  const cv = document.createElement('canvas'); cv.width = src.width * z; cv.height = FH * z;
+  const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(src, 0, 0, src.width, FH, 0, 0, src.width * z, FH * z);
+  ctx.drawImage(src, 0, FH, src.width, FH, 0, 0, src.width * z, FH * z);
+  row.appendChild(cv); document.getElementById('out').appendChild(row);
+}
+</script></body></html>
