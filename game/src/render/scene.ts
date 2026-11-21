@@ -43,7 +43,7 @@ class CharRig {
     ensureTextures(scene);
     const add = (key: string, ox: number, oy: number) => scene.add.image(0, 0, key).setOrigin(ox, oy).setScale(ART);
     this.shadow = scene.add.image(0, 0, 'shadow').setOrigin(0.5, 0.5).setAlpha(0.22);
-    this.hairB = add(`${k}_hairb`, HEAD_ORIGIN[0], 33 / 40);
+    this.hairB = add(`${k}_hairb`, HEAD_ORIGIN[0], 33 / 56);
     this.legB = add(`${k}_leg`, 0.4, 0.05);
     this.legF = add(`${k}_leg`, 0.4, 0.05);
     this.armB = add(`${k}_arm`, 0.5, 0.1);
@@ -51,7 +51,7 @@ class CharRig {
     this.head = add(`${k}_head`, HEAD_ORIGIN[0], HEAD_ORIGIN[1]);
     this.weapon = add('wp_sword_wood', 0.5, 0.82);
     const arm = add(`${k}_arm`, 0.5, 0.1);
-    this.weapon.setPosition(0, 8);
+    this.weapon.setPosition(0, 4.2);
     this.armF = scene.add.container(0, 0, [this.weapon, arm]);
     this.body = scene.add.container(0, 0, [this.hairB, this.armB, this.legB, this.legF, this.torso, this.head, this.armF]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
@@ -141,16 +141,16 @@ class CharRig {
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
     // 다리는 골반, 팔은 몸통 양옆 어깨, 머리는 목에 붙는다
-    this.legB.setPosition(-2.2, -9.6).setRotation(P.legB);
-    this.legF.setPosition(2.2, -9.6).setRotation(P.legF);
-    this.torso.setPosition(0, -8.6 + P.by).setRotation(P.lean);
+    this.legB.setPosition(-2.2, -5.7).setRotation(P.legB);
+    this.legF.setPosition(2.2, -5.7).setRotation(P.legF);
+    this.torso.setPosition(0, -4.5 + P.by).setRotation(P.lean);
     const sx = P.lean * 8;
-    this.armB.setPosition(-5.6 + sx, -17.6 + P.by).setRotation(P.armB);
-    this.armF.setPosition(5.6 + sx, -17.6 + P.by).setRotation(P.armF);
+    this.armB.setPosition(-5.4 + sx, -10.8 + P.by).setRotation(P.armB);
+    this.armF.setPosition(5.4 + sx, -10.8 + P.by).setRotation(P.armF);
     this.weapon.setRotation(P.wpn - P.armF).setOrigin(0.5, tool?.includes('bow') ? 0.5 : 0.82);
-    this.head.setPosition(sx * 1.2, -17.4 + P.by + P.hy).setRotation(P.lean * 0.4 + P.hr);
+    this.head.setPosition(sx * 1.2, -10.8 + P.by + P.hy).setRotation(P.lean * 0.4 + P.hr);
     // 뒷머리는 머리를 따라가되 조금 늦게 흔들린다
-    this.hairB.setPosition(sx * 1.1 - P.lean * 2, -17.4 + P.by + P.hy * 0.6).setRotation(P.lean * 0.25 + P.hr * 0.5 - P.lean * 0.3);
+    this.hairB.setPosition(sx * 1.1 - P.lean * 2, -10.8 + P.by + P.hy * 0.6).setRotation(P.lean * 0.25 + P.hr * 0.5 - P.lean * 0.3);
     // 피격 표현: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
     const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
     for (const o of [this.torso, this.head, this.legF, this.legB, this.armB]) o.setTint(tint);

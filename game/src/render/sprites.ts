@@ -2,6 +2,7 @@
 // 1 아트픽셀 = 1 월드 단위. 나중에 실제 스프라이트 시트로 교체할 때는 같은 key로 텍스처만 바꾸면 된다.
 import { HAIR_STYLES } from '../core/data';
 import { Look } from '../core/state';
+import { ARM, BACK1_HALF, BACK2_HALF, FACE_HALF, HAIR0, HAIR1_HALF, HAIR2_HALF, LEG, TORSO_HALF } from './charart';
 
 const OUT = '#2b1d2e';
 const PAL: Record<string, string> = {
@@ -170,174 +171,67 @@ const EYES = ['#3f78d8', '#3a9a62', '#b0602a', '#8a4fc8'];
 
 /** 두 색 섞기 */
 export const mix = mixHex;
-/** 피부 그림자: 채도를 크게 올리지 않고 분홍-갈색 쪽으로 살짝 */
-const skinShade = (s: string, k = 1) => mix(s, '#b4606a', 0.22 * k);
 
-/** 머리카락 다발: 뿌리(x0,y0) → 끝(x1,y1), 뿌리 두께 w, 휨 bend */
-type Clump = [number, number, number, number, number, number];
-interface HairStyle { hairline: number; cap: [number, number, number, number]; back: Clump[]; front: Clump[]; backHair: (p: Paint, c: string) => void }
-const STYLES: HairStyle[] = [
-  { // 0: 짧고 삐죽한 머리
-    hairline: 15, cap: [17, 16, 14.5, 13],
-    back: [[11, 11, 2, 4, 7, -1.5], [15, 9, 8, 0, 7, -1], [19, 8, 17, 0, 7, 0.5], [23, 9, 27, 1, 6, 1.5], [26, 12, 33, 5, 5, 1], [9, 16, 0, 13, 7, 0.5], [9, 22, 1, 23, 6, 1]],
-    front: [[13, 8, 11, 27, 5, -1.2], [16, 7, 14, 19, 7, -0.6], [20, 6, 19, 18, 7, 0.8], [24, 6, 24, 17, 7, 1.2], [27, 7, 29, 18, 6, 1.2], [30, 9, 33, 20, 5, 1]],
-    backHair: () => {},
-  },
-  { // 1: 긴 생머리(일자 앞머리)
-    hairline: 15, cap: [17, 16, 15, 13.5],
-    back: [[9, 14, 3, 24, 7, 1], [10, 20, 5, 30, 6, 1]],
-    front: [[13, 7, 11, 31, 6, -0.8], [16, 6, 15, 18, 7, -0.3], [20, 5, 19, 18, 7, 0.3], [24, 5, 24, 18, 7, 0.6], [28, 6, 29, 18, 6, 0.8], [31, 8, 33, 27, 5, 0.6]],
-    backHair: (p, c) => {
-      p.disc(17, 18, 14, 15, c);
-      for (let i = 0; i < 6; i++) p.disc(6 + i * 4.6, 32 + (i % 2) * 2, 2.8, 5.5, c);
-    },
-  },
-  { // 2: 부스스한 머리 + 뒤로 묶은 꽁지
-    hairline: 15, cap: [17, 16, 15, 13.5],
-    back: [[12, 10, 4, 3, 7, -1], [17, 8, 13, 0, 7, -0.5], [22, 8, 24, 0, 7, 1], [26, 11, 33, 5, 6, 1.5], [9, 14, 0, 9, 6, -1], [8, 20, 0, 19, 6, 0.5]],
-    front: [[13, 8, 11, 26, 5, -1], [17, 6, 14, 18, 7, -1], [21, 5, 21, 18, 7, 1], [25, 6, 27, 17, 7, 1.5], [29, 8, 32, 19, 6, 1.2]],
-    backHair: (p, c) => { p.disc(5, 20, 4, 3.5, c); for (let i = 0; i < 8; i++) p.disc(3 - i * 0.2, 23 + i * 1.6, 3.2 - i * 0.3, 2, c); },
-  },
-];
-
-/** 다발을 그리고 칸마다 다발 번호를 기록 */
-function drawClumps(p: Paint, ids: Int16Array, clumps: Clump[], first: number, color: string) {
-  clumps.forEach(([x0, y0, x1, y1, w, bend], i) => {
-    const id = first + i, dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
-    const cx = (x0 + x1) / 2 - (dy / L) * bend, cy = (y0 + y1) / 2 + (dx / L) * bend;
-    for (let t = 0; t <= 1; t += 0.25 / L) {
-      const x = (1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * x1, y = (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * y1;
-      const r = Math.max(0.45, (w / 2) * Math.pow(1 - t, 0.85));
-      for (let py = Math.floor(y - r); py <= Math.ceil(y + r); py++) for (let px = Math.floor(x - r); px <= Math.ceil(x + r); px++) {
-        if ((px - x) ** 2 + (py - y) ** 2 > r * r || px < 0 || py < 0 || px >= p.w || py >= p.h) continue;
-        p.px[py * p.w + px] = color; ids[py * p.w + px] = id;
-      }
+type Pal = Record<string, string>;
+/** 격자를 칠한다. half=true 면 왼쪽 절반을 좌우 대칭으로 복사(오른쪽은 swap 규칙으로 글자를 바꿀 수 있다) */
+function paintGrid(p: Paint, rows: string[], pal: Pal, half = false, swap: Record<string, string> = {}, ox = 0, oy = 0) {
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x];
+      if (ch === '.') continue;
+      if (pal[ch]) p.set(ox + x, oy + y, pal[ch]);
+      if (half) { const m = swap[ch] ?? ch; if (pal[m]) p.set(ox + p.w - 1 - x, oy + y, pal[m]); }
     }
   });
 }
 
-/** 애니풍 머리 음영: 다발 경계 그늘, 오른쪽 가장자리 그림자, 머리를 두르는 광택 띠 */
-function shadeHair(p: Paint, ids: Int16Array, hair: string, ring: [number, number, number]) {
-  const lite = mix(hair, '#fff6e0', 0.22), top = mix(hair, '#fffaf0', 0.5), dark = mix(hair, '#3a1c3c', 0.28), deep = mix(hair, '#2a1430', 0.5);
-  const id = (x: number, y: number) => (x >= 0 && y >= 0 && x < p.w && y < p.h ? ids[y * p.w + x] : 0);
-  const out = p.px.slice();
-  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
-    const i = id(x, y);
-    if (!i) continue;
-    const nb = [id(x + 1, y), id(x, y + 1), id(x - 1, y), id(x, y - 1)];
-    let c = hair;
-    if (nb[2] > i || nb[3] > i) c = deep; // 위에 겹친 다발이 오른쪽 아래로 드리우는 그늘(갈래 선)
-    else if (nb[0] !== i || nb[1] !== i) c = dark; // 다발 오른쪽·아래 가장자리
-    else {
-      const d = Math.hypot((x - ring[0]) * 0.9, y - ring[1]);
-      if (d > ring[2] - 0.8 && d < ring[2] + 1.1 && y < ring[1]) c = d < ring[2] + 0.2 && (x + y) % 3 ? top : lite; // 광택 띠
-      else if (nb[2] !== i) c = lite;
-    }
-    out[y * p.w + x] = c;
-  }
-  p.px = out;
-}
-
-/** 큰 눈 템플릿(오른쪽을 본다). L 속눈썹, D 홍채 위(진함), I 홍채, H 홍채 아래(밝음), W 하이라이트, w 흰자, l 아래 눈꺼풀 */
-const EYE_NEAR = ['LLLLLLL', 'LLDDDDL', 'wWWDDDD', 'wWWIIID', 'wIIIIII', 'wIHHWII', '.llll..'];
-const EYE_FAR = ['LLLLL', 'LDDDL', 'WWDDD', 'WWIID', 'IIIII', 'IHHWI', '.lll.'];
-const EYE_SHUT = ['.......', '.......', '.......', 'LL...LL', '.LLLLL.', '.......', '.......'];
-
+const EYE_CHARS = /[LEefWw]/g;
 export function buildLook(l: Look): string {
-  const k = `v5_${lookKey(l)}`;
+  const k = `v6_${lookKey(l)}`;
   if (canvases.has(`${k}_head`)) return k;
-  const hair = l.hairColor, skin = l.skin, cloth = l.outfit;
-  const S = STYLES[l.hair % HAIR_STYLES];
-  const eye = EYES[(parseInt(hair.slice(1, 3), 16) + l.hair) % EYES.length];
-  const T = skinShade(skin), T2 = skinShade(skin, 1.8), U = mix(skin, '#fff4e8', 0.25);
-  const lash = '#2a1620', blush = mix(skin, '#ff6f86', 0.38);
-  const EYEC: Record<string, string> = { L: lash, D: mix(eye, '#1a1030', 0.45), I: eye, H: mix(eye, '#ffffff', 0.35), W: '#ffffff', w: '#fbf6f0', l: mix(skin, lash, 0.45) };
+  const h = l.hairColor, skin = l.skin, cloth = l.outfit;
+  const style = l.hair % HAIR_STYLES;
+  const eye = EYES[(parseInt(h.slice(1, 3), 16) + l.hair) % EYES.length];
+  const ink = '#24161c';
+  const pal: Pal = {
+    K: mix(h, '#140a10', 0.72), 1: mix(h, '#fffaf0', 0.55), 2: mix(h, '#fff4e0', 0.28), 3: h, 4: mix(h, '#2a1430', 0.38),
+    s: skin, t: mix(skin, '#c4646a', 0.2), o: mix(skin, '#3a1418', 0.62), a: mix(skin, '#ffffff', 0.3),
+    L: '#1e1418', E: mix(eye, '#100810', 0.55), e: eye, f: mix(eye, '#ffffff', 0.35), W: '#ffffff', w: '#f6f0ea',
+    B: mix(h, '#2a1430', 0.3), b: mix(skin, '#ff7a8a', 0.4), l: mix(skin, '#c4646a', 0.12), m: '#d0707a',
+    c: cloth, h: mix(cloth, '#ffffff', 0.3), d: mix(cloth, '#2a1430', 0.3), C: '#f2ece0', z: '#d8d0c8',
+    P: '#3c4560', Q: '#56618a', p: '#2c3248', S: mix(cloth, '#3a2418', 0.6), Y: '#e8b84a',
+  };
+  const palT: Pal = { ...pal, K: ink, b: '#3a2620' }; // 몸: 외곽선은 짙은 잉크색, b 는 허리띠
   const hi = (key: string) => { HI.add(key); return key; };
-  const ring: [number, number, number] = [18, 17, 10];
+  const front = [HAIR0, HAIR1_HALF, HAIR2_HALF][style];
 
-  // 뒷머리(몸 뒤)
+  // 뒷머리(몸 뒤): 38x56, 머리와 같은 좌표(목 = 33)
   {
-    const p = new Paint(38, 40), ids = new Int16Array(38 * 40);
-    S.backHair(p, hair);
-    p.px.forEach((c, i) => { if (c) ids[i] = 1; });
-    shadeHair(p, ids, hair, ring);
-    p.selout().save(hi(`${k}_hairb`));
+    const p = new Paint(38, 56);
+    if (style === 1) paintGrid(p, BACK1_HALF, pal, true);
+    else if (style === 2) paintGrid(p, BACK2_HALF, pal, true);
+    p.save(hi(`${k}_hairb`));
   }
   for (const blink of [false, true]) {
-    const p = new Paint(38, 36), ids = new Int16Array(38 * 36);
-    // 1) 뒤통수 덩어리 + 바깥으로 뻗친 다발
-    const [cx, cy, rx, ry] = S.cap;
-    p.disc(cx, cy, rx, ry, hair); p.px.forEach((c, i) => { if (c) ids[i] = 1; });
-    drawClumps(p, ids, S.back, 2, hair);
-    // 2) 얼굴(3/4, 오른쪽을 본다): 볼이 둥글고 턱이 갸름
-    const rows: [number, number, number][] = [[11, 12, 30], [12, 11, 31], [24, 11, 32], [25, 11, 31], [26, 12, 31], [27, 12, 30], [28, 13, 29], [29, 14, 28], [30, 15, 27], [31, 17, 25], [32, 19, 23]];
-    for (let y = 13; y <= 23; y++) rows.push([y, 10, 32]);
-    for (const [y, a, b] of rows) for (let x = a; x <= b; x++) { p.px[y * 38 + x] = skin; ids[y * 38 + x] = 0; }
-    // 이마 위 머리선
-    for (let y = 0; y < S.hairline; y++) for (let x = 0; x < 38; x++) if (p.px[y * 38 + x] === skin) { p.px[y * 38 + x] = hair; ids[y * 38 + x] = 1; }
-    // 귀
-    for (const [x, y] of [[9, 20], [8, 21], [9, 21], [8, 22], [9, 22], [8, 23], [9, 23], [9, 24], [10, 20], [10, 21], [10, 22], [10, 23], [10, 24], [10, 25]]) { p.px[y * 38 + x] = skin; ids[y * 38 + x] = 0; }
-    // 3) 앞머리·옆머리
-    const first = 2 + S.back.length;
-    drawClumps(p, ids, S.front, first, hair);
-    shadeHair(p, ids, hair, ring);
-    // 4) 피부 음영: 앞머리 아래 그늘, 턱 아래, 귀 안쪽, 볼 하이라이트
-    const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < 38 && y < 36 ? p.px[y * 38 + x] : null);
-    const isHair = (x: number, y: number) => x >= 0 && y >= 0 && x < 38 && y < 36 && ids[y * 38 + x] > 0;
-    const sk = p.px.slice();
-    for (let y = 0; y < 36; y++) for (let x = 0; x < 38; x++) {
-      if (sk[y * 38 + x] !== skin) continue;
-      let c = skin;
-      if (isHair(x, y - 1)) c = T;
-      else if (isHair(x, y - 2) && isHair(x - 1, y - 1)) c = T;
-      else if (!at(x, y + 1) || (!at(x + 1, y + 1) && y > 26)) c = T;
-      else if (x <= 11 && y >= 22) c = T;
-      p.px[y * 38 + x] = c;
+    const p = new Paint(38, 36);
+    let face = FACE_HALF;
+    if (blink) {
+      face = FACE_HALF.map((r, y) => (y >= 19 && y <= 24 ? r.replace(EYE_CHARS, 's') : r));
+      face[22] = face[22].slice(0, 8) + 'LL' + face[22].slice(10);
+      face[23] = face[23].slice(0, 10) + 'LLLLL' + face[23].slice(15);
     }
-    for (const [x, y] of [[9, 22], [9, 23], [10, 22]]) p.px[y * 38 + x] = T2;
-    for (const [x, y] of [[13, 25], [14, 26], [28, 14], [27, 15]]) if (p.px[y * 38 + x] === skin) p.px[y * 38 + x] = U;
-    // 5) 눈·눈썹·볼터치·코·입
-    const stamp = (tpl: string[], ox: number, oy: number) => tpl.forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') p.px[(oy + j) * 38 + ox + i] = EYEC[ch]; }));
-    if (blink) { stamp(EYE_SHUT, 14, 18); stamp(EYE_SHUT.map((r) => r.slice(1, 6)), 25, 18); }
-    else { stamp(EYE_NEAR, 14, 18); stamp(EYE_FAR, 25, 18); }
-    for (const [x, y] of [[14, 25], [15, 25], [16, 25], [29, 25], [30, 25]]) p.px[y * 38 + x] = blush;
-    p.px[25 * 38 + 25] = T2; // 코
-    p.px[28 * 38 + 22] = '#b0505a'; p.px[28 * 38 + 23] = '#c8646c'; // 입
-    p.selout().save(hi(`${k}_head${blink ? '_b' : ''}`));
+    paintGrid(p, face, pal, true);
+    paintGrid(p, front, pal, style !== 0);
+    // 앞머리 바로 아래 피부는 살짝 그늘
+    const src = p.px.slice(), hairCols = new Set([pal.K, pal[1], pal[2], pal[3], pal[4]]);
+    for (let y = 1; y < 36; y++) for (let x = 0; x < 38; x++) {
+      if (src[y * 38 + x] === skin && hairCols.has(src[(y - 1) * 38 + x] ?? '')) p.px[y * 38 + x] = pal.t;
+    }
+    p.save(hi(`${k}_head${blink ? '_b' : ''}`));
   }
-  // 몸통: 짧은 상의(옷깃·단추·밑단) + 허리띠
-  {
-    const p = new Paint(24, 20);
-    p.rect(4, 0, 16, 2, cloth); p.rect(3, 2, 18, 13, cloth); p.rect(2, 13, 20, 4, cloth);
-    p.volume();
-    p.rect(9, 0, 6, 2, mix(skin, '#000000', 0.05)); p.rect(10, 2, 4, 1, T); // 목
-    p.rect(7, 0, 2, 3, mix(cloth, '#ffffff', 0.55)); p.rect(15, 0, 2, 3, mix(cloth, '#ffffff', 0.55)); p.rect(9, 2, 1, 2, mix(cloth, '#ffffff', 0.55)); p.rect(14, 2, 1, 2, mix(cloth, '#ffffff', 0.55)); // 옷깃
-    p.rect(12, 3, 1, 9, ramp(cloth, -2)); for (const y of [5, 8]) p.set(13, y, '#f4e6b0'); // 여밈·단추
-    p.rect(3, 11, 18, 2, '#4a2e22'); p.rect(3, 11, 18, 1, '#6e4630'); p.rect(11, 11, 3, 2, '#e8b84a'); // 허리띠
-    p.rect(2, 16, 20, 1, ramp(cloth, -2));
-    p.selout().save(hi(`${k}_torso`));
-  }
-  // 팔: 소매 + 둥근 손(피부는 부드러운 2단 음영)
-  {
-    const p = new Paint(9, 19);
-    p.disc(4, 3.5, 3.8, 3.4, cloth); p.rect(1, 4, 6, 8, cloth);
-    p.volume();
-    p.rect(1, 11, 6, 2, mix(cloth, '#ffffff', 0.5)); p.rect(1, 12, 6, 1, mix(cloth, '#ffffff', 0.25)); // 소매 끝
-    p.disc(4, 15.4, 2.7, 2.6, skin);
-    for (const [x, y] of [[5, 17], [6, 16], [6, 15], [4, 18], [5, 18], [3, 18]]) p.set(x, y, T);
-    p.set(2, 14, U); p.set(3, 14, U);
-    p.selout().save(hi(`${k}_arm`));
-  }
-  // 다리: 바지 + 신발(앞코 둥글게, 밑창)
-  {
-    const p = new Paint(11, 20), pants = '#3c4560', shoe = mix(cloth, '#3a2418', 0.55);
-    p.rect(2, 0, 6, 13, pants);
-    p.volume();
-    p.rect(2, 13, 6, 4, shoe); p.disc(7, 15.6, 2.6, 1.8, shoe); p.rect(2, 13, 6, 1, ramp(shoe, 1));
-    p.set(3, 14, ramp(shoe, 2)); p.set(8, 14, ramp(shoe, 1));
-    p.rect(2, 17, 8, 1, '#e8e2d6'); p.rect(2, 18, 8, 1, '#2a1c18'); // 밑창
-    p.selout().save(hi(`${k}_leg`));
-  }
+  { const p = new Paint(24, 14); paintGrid(p, TORSO_HALF, palT, true, { h: 'd' }); p.save(hi(`${k}_torso`)); }
+  { const p = new Paint(9, 14); paintGrid(p, ARM, palT); p.save(hi(`${k}_arm`)); }
+  { const p = new Paint(11, 12); paintGrid(p, LEG, palT); p.save(hi(`${k}_leg`)); }
   return k;
 }
 
@@ -843,9 +737,9 @@ export function iconUrl(key: string): string {
 export function portraitUrl(l: Look): string {
   const k = buildLook(l), key = `${k}_portrait`;
   if (!canvases.has(key)) {
-    const ctx = mk(key, 44, 72);
+    const ctx = mk(key, 44, 56);
     const d = (part: string, x: number, y: number) => ctx.drawImage(canvases.get(`${k}_${part}`)!, x, y);
-    d('hairb', 3, 0); d('arm', 8, 35); d('leg', 13, 52); d('leg', 20, 52); d('torso', 10, 34); d('arm', 27, 35); d('head', 3, 0);
+    d('hairb', 3, 0); d('arm', 7, 32); d('leg', 13, 43); d('leg', 22, 43); d('torso', 10, 32); d('arm', 28, 32); d('head', 3, 0);
     HI.add(key);
   }
   return iconUrl(key);
