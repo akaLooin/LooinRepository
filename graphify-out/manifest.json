@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1795304230.9609993,
-    "seen": 1795304369.228689,
+    "mtime": 1795304383.7050083,
+    "seen": 1795304705.9606454,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1795304230.9604964,
-    "seen": 1795304369.2290354,
+    "mtime": 1795304383.702917,
+    "seen": 1795304705.960772,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
@@ -1002,15 +1002,15 @@
     "semantic_hash": ""
   },
   "replica/design/art-spec.md": {
-    "mtime": 1795304360.1261065,
-    "seen": 1795304369.231043,
-    "ast_hash": "e220c27b4818e4efaa961e4bb0622fa7",
+    "mtime": 1795304696.4107823,
+    "seen": 1795304705.9620583,
+    "ast_hash": "a1e6742695bf7532ebdf5ca0a03d48f1",
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795304319.1499567,
-    "seen": 1795304369.2296245,
-    "ast_hash": "3f7776faf01c26e7544aa5d4f15683b4",
+    "mtime": 1795304649.7856426,
+    "seen": 1795304705.9611316,
+    "ast_hash": "c0ed198a0cd5b3a575b25a126aee703c",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {
