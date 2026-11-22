@@ -120,78 +120,117 @@ export function samplePose(clip: ClipDef, t: number): Pose {
 }
 
 // ───────── 기본 몸(손으로 찍은 픽셀) ─────────
-// 사용자가 준 치비 픽셀 뼈대를 흰 피부·얼굴 없음·날씬한 비율로 다시 찍은 그림.
-// 머리와 몸통은 이 픽셀을 그대로 쓰고, 팔다리는 같은 굵기(속 2칸)·색·테두리 규칙으로 관절을 따라 매 프레임 그린다.
-// 글자: 3 짙은 선, 4 밝은 선, 5 그늘, 6 기본, 7 밝은 면
-// a = 반투명 테두리: 대각선 계단 바깥 모서리에 넣어 머리가 더 둥글게 보이게 한다
-const HEAD_PX = [
-  '..a3333a..',
-  '.33776633.',
-  'a37766663a',
-  '3776666663',
-  '3666666653',
-  '3666666553',
-  '3666665553',
-  'a36665553a',
-  '.33555533.',
-  '..a3333a..',
+// 사용자가 준 치비 픽셀 뼈대를 흰 피부·얼굴 없음·날씬한 비율로 다시 찍은 확정 시안(replica/design/mannequin-base.txt).
+// 이 그림을 그대로 쓴다: 대기 자세는 시안과 똑같고, 다른 동작은 시안에서 잘라낸 팔·다리 조각을
+// 어깨·엉덩이를 축으로 돌려 붙인다(조각 자체는 다시 그리지 않는다).
+// 글자: 3 테두리, 4 밝은 선, 5 그늘, 6 기본, 7 밝은 면, a 반투명 테두리(머리 모서리를 둥글게)
+const BASE_PX = [
+  '.......a3333a........',
+  '......33776633.......',
+  '.....a37766663a......',
+  '.....3776666663......',
+  '.....3666666653......',
+  '.....3666666553......',
+  '.....3666665553......',
+  '.....a36665553a......',
+  '......33555533.......',
+  '.......a3333a........',
+  '......33777733.......',
+  '.....3737763753......',
+  '.....3737763753......',
+  '....375777637653.....',
+  '....365777753763.....',
+  '...36637777537763....',
+  '...36537777637763....',
+  '....353777763553.....',
+  '....333777763333.....',
+  '......37777653.......',
+  '......37747653.......',
+  '......37637653.......',
+  '......36636653.......',
+  '......35533553.......',
+  '......35533553.......',
+  '......35533553.......',
+  '.......33..33........',
 ];
-const TORSO_PX = [
-  '33777733',
-  '37777763',
-  '37777763',
-  '37777763',
-  '37777763',
-  '37777763',
-  '37777763',
-  '37777763',
-  '37777763',
-  '37777653',
-  '37747653',
-];
-// 그림 칸(열 c, 줄 r) ↔ 발 기준 좌표: x = c - 9.5, y = r - 25.5 (전체 그림 21×27칸, 몸 중심 9.5열, 발밑 26줄)
-const HEAD_AT: V = [5, 0], TORSO_AT: V = [6, 10];
-const SHOULDER_Y = -14.6, SHOULDER_X = 3.0, HIP_Y = -5.3, HIP_X = 2.0;
-const UPPER_ARM = 2.9, FORE_ARM = 2.2, THIGH = 2.5, SHIN = 2.3;
 const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5, a: 6 };
 
 type V = [number, number];
-const dir = (a: number): V => [Math.sin(a), Math.cos(a)]; // 0 = 아래
-const add = (p: V, d: V, k: number): V => [p[0] + d[0] * k, p[1] + d[1] * k];
-
 /** 붙임 지점(발 기준점으로부터 px, 화면 아래가 +y) */
 export interface Anchors { hand: V; handB: V; wpn: number; head: V; headRot: number; chest: V; lean: number }
 
-type Cap = { a: V; b: V; r: number };
-type Limb = { g: Group; caps: Cap[]; hand?: { c: V; r: number } };
-type Group = 'armB' | 'legB' | 'legF' | 'torso' | 'head' | 'armF';
-const ORDER: Group[] = ['armB', 'legB', 'legF', 'torso', 'head', 'armF'];
+/** 조각: 칸 목록(열, 줄, 글자)과 회전축 */
+type Piece = { px: [number, number, string][]; pivot: V };
+type PartName = 'head' | 'torso' | 'armB' | 'armF' | 'legB' | 'legF';
+/** 시안을 조각으로 나눈다. 팔(11~18줄의 바깥쪽), 다리(21줄 아래), 머리(0~9줄), 나머지는 몸통.
+ *  팔을 떼어낸 자리에서 몸통 가장자리가 비지 않도록 맞닿은 칸은 테두리로 메운다(대기 자세에선 팔 조각이 그대로 덮는다). */
+const PIECES: Record<PartName, Piece> = (() => {
+  const part = (c: number, r: number): PartName =>
+    r <= 9 ? 'head' : r >= 21 ? (c <= 9 ? 'legB' : 'legF') : r >= 11 && r <= 18 && c <= 6 ? 'armB' : r >= 11 && r <= 18 && c >= 12 ? 'armF' : 'torso';
+  const out: Record<PartName, Piece> = {
+    head: { px: [], pivot: [9.5, 8] }, torso: { px: [], pivot: [9.5, 20] },
+    armB: { px: [], pivot: [6.5, 11.5] }, armF: { px: [], pivot: [12.5, 11.5] },
+    legB: { px: [], pivot: [8, 21] }, legF: { px: [], pivot: [11, 21] },
+  };
+  const filled = (c: number, r: number) => BASE_PX[r]?.[c] !== undefined && BASE_PX[r][c] !== '.';
+  BASE_PX.forEach((row, r) => [...row].forEach((ch, c) => { if (ch !== '.') out[part(c, r)].px.push([c, r, ch]); }));
+  // 팔 자리 메우기: 팔 칸 중 몸통 칸과 맞닿은 곳 → 몸통 테두리
+  for (const arm of ['armB', 'armF'] as const) for (const [c, r] of out[arm].px) {
+    const touch = [[1, 0], [-1, 0]].some(([dx]) => filled(c + dx, r) && part(c + dx, r) === 'torso' && BASE_PX[r][c + dx] !== '3');
+    if (touch) out.torso.px.push([c, r, '3']);
+  }
+  return out;
+})();
+// 쉬는 자세에서 손의 중심(그림 칸)
+const HAND_REST: Record<'armB' | 'armF', V> = { armB: [4.5, 16], armF: [14.5, 16] };
+const LEG_PARTS: PartName[] = ['legB', 'legF'];
 
-function inCap(c: Cap, x: number, y: number) {
-  const bx = c.b[0] - c.a[0], by = c.b[1] - c.a[1], L2 = bx * bx + by * by || 1e-6;
-  const t = Math.max(0, Math.min(1, ((x - c.a[0]) * bx + (y - c.a[1]) * by) / L2));
-  const dx = x - c.a[0] - bx * t, dy = y - c.a[1] - by * t;
-  return dx * dx + dy * dy <= c.r * c.r;
+/** 조각을 축 기준으로 돌려(가장 가까운 칸) 옮긴 칸 목록 */
+function place(pc: Piece, ang: number, dx: number, dy: number): [number, number, string][] {
+  if (Math.abs(ang) < 0.04) return pc.px.map(([c, r, ch]) => [c + dx, r + dy, ch]);
+  const cs = Math.cos(ang), sn = Math.sin(ang), [px, py] = pc.pivot;
+  const src = new Map(pc.px.map(([c, r, ch]) => [`${c},${r}`, ch]));
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [c, r] of pc.px) {
+    const ox = c + 0.5 - px, oy = r + 0.5 - py, nx = px + ox * cs - oy * sn, ny = py + ox * sn + oy * cs;
+    x0 = Math.min(x0, nx); x1 = Math.max(x1, nx); y0 = Math.min(y0, ny); y1 = Math.max(y1, ny);
+  }
+  const res: [number, number, string][] = [];
+  for (let y = Math.floor(y0 - 1); y <= Math.ceil(y1 + 1); y++) for (let x = Math.floor(x0 - 1); x <= Math.ceil(x1 + 1); x++) {
+    // 거꾸로 돌려 원래 칸을 찾는다
+    const ox = x + 0.5 - px, oy = y + 0.5 - py, sx = px + ox * cs + oy * sn, sy = py - ox * sn + oy * cs;
+    const ch = src.get(`${Math.floor(sx)},${Math.floor(sy)}`);
+    if (ch) res.push([x + dx, y + dy, ch]);
+  }
+  return res;
 }
+const rot = (p: V, pv: V, a: number): V => {
+  const ox = p[0] - pv[0], oy = p[1] - pv[1];
+  return [pv[0] + ox * Math.cos(a) - oy * Math.sin(a), pv[1] + ox * Math.sin(a) + oy * Math.cos(a)];
+};
 
-/** 포즈 → 팔다리 도형, 머리·몸통 위치, 붙임 지점 */
+/** 포즈 → 조각마다 놓인 칸, 붙임 지점 */
 function layout(p: Pose) {
   const lift = Math.round(p.by * 0.6); // 숨쉬기·튐: 윗몸만 위아래로
   const sway = Math.round(p.lean * 3); // 곧게 선 자세: 기울기는 1칸 정도 옮기는 것으로만
-  const headDx = sway + Math.round(p.head * 2);
-  const limb = (g: Group, root: V, a0: number, a1: number, l0: number, l1: number, r: number, hand: boolean): Limb => {
-    const j = add(root, dir(a0), l0), e = add(j, dir(a0 + a1), l1);
-    return { g, caps: [{ a: root, b: j, r }, { a: j, b: e, r }], hand: hand ? { c: add(e, dir(a0 + a1), 0.5), r: 1.75 } : undefined };
+  const legLift = Math.min(0, lift);
+  // 화면 회전 각: 팔·다리를 앞(+x)으로 a 만큼 들면 시계 반대 방향 = -a
+  const armAng = (v: [number, number]) => -(v[0] + v[1] * 0.5);
+  const placed: Record<PartName, [number, number, string][]> = {
+    legB: place(PIECES.legB, -(p.legB[0] + p.legB[1] * 0.5), 0, legLift),
+    legF: place(PIECES.legF, -(p.legF[0] + p.legF[1] * 0.5), 0, legLift),
+    torso: place(PIECES.torso, 0, sway, lift),
+    head: place(PIECES.head, 0, sway + Math.round(p.head * 2), lift),
+    armB: place(PIECES.armB, armAng(p.armB), sway, lift),
+    armF: place(PIECES.armF, armAng(p.armF), sway, lift),
   };
-  const sy = SHOULDER_Y + lift;
-  const armB = limb('armB', [-SHOULDER_X + sway, sy], -0.38 + p.armB[0] - BASE.armB[0], p.armB[1] - BASE.armB[1], UPPER_ARM, FORE_ARM, 1.02, true);
-  const armF = limb('armF', [SHOULDER_X + sway, sy], 0.38 + p.armF[0] - BASE.armF[0], p.armF[1] - BASE.armF[1], UPPER_ARM, FORE_ARM, 1.02, true);
-  const legB = limb('legB', [-HIP_X, HIP_Y], p.legB[0], p.legB[1], THIGH, SHIN, 1.02, false);
-  const legF = limb('legF', [HIP_X, HIP_Y], p.legF[0], p.legF[1], THIGH, SHIN, 1.02, false);
-  const head: V = [HEAD_AT[0] + headDx, HEAD_AT[1] + lift], torso: V = [TORSO_AT[0] + sway, TORSO_AT[1] + lift];
-  const hand = armF.hand!.c, handB = armB.hand!.c;
-  const headC: V = [head[0] + 5 - 9.5, head[1] + 5 - 25.5];
-  return { armB, armF, legB, legF, head, torso, anchors: { hand, handB, wpn: p.wpn, head: headC, headRot: 0, chest: [sway, -11 + lift] as V, lean: p.lean } };
+  const toRoot = (c: number, r: number): V => [c - 9.5, r - 25.5]; // 그림 칸 중심 → 발 기준 좌표
+  const hand = rot(HAND_REST.armF, PIECES.armF.pivot, armAng(p.armF)), handB = rot(HAND_REST.armB, PIECES.armB.pivot, armAng(p.armB));
+  const anchors: Anchors = {
+    hand: toRoot(hand[0] + sway, hand[1] + lift), handB: toRoot(handB[0] + sway, handB[1] + lift), wpn: p.wpn,
+    head: toRoot(9.5 + sway, 4.5 + lift), headRot: 0, chest: toRoot(9.5 + sway, 14 + lift), lean: p.lean,
+  };
+  return { placed, anchors };
 }
 
 // ───────── 색 ─────────
@@ -214,44 +253,19 @@ const TONE_ALPHA = [255, 255, 255, 255, 255, 255, 105];
 
 /** 한 포즈를 두 층(몸, 앞팔)으로 굽는다. 결과는 톤 번호 배열(-1 = 빈 칸) */
 function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } {
-  const L = layout(p);
-  const N = FW * FH, tone = new Int8Array(N).fill(-1), grp = new Int8Array(N).fill(-1);
-  const put = (x: number, y: number, t: number, gi: number) => {
-    if (x < 0 || y < 0 || x >= FW || y >= FH) return;
-    tone[y * FW + x] = t; grp[y * FW + x] = gi;
-  };
-  const toPx = (c: number, r: number): V => [c + ROOT_X - 10, r + ROOT_Y - 26]; // 그림 칸 → 프레임 칸
-  const grid = (rows: string[], at: V, gi: number) => rows.forEach((row, r) => [...row].forEach((ch, c) => {
-    if (ch === '.') return;
-    const [x, y] = toPx(at[0] + c, at[1] + r); put(x, y, CH_TONE[ch], gi);
-  }));
-  // 팔다리: 속은 2칸 굵기, 바라보는 반대쪽(왼쪽) 가장자리는 밝게, 오른쪽은 그늘, 둘레는 짙은 선
-  const drawLimb = (lb: Limb) => {
-    const gi = ORDER.indexOf(lb.g), back = lb.g === 'armB' || lb.g === 'legB', arm = lb.g.startsWith('arm');
-    const inside = (x: number, y: number) => {
-      const cx = x + 0.5 - ROOT_X, cy = y + 0.5 - ROOT_Y;
-      if (lb.caps.some((c) => inCap(c, cx, cy))) return true;
-      return !!lb.hand && (cx - lb.hand.c[0]) ** 2 + (cy - lb.hand.c[1]) ** 2 <= lb.hand.r ** 2;
-    };
-    const m = new Uint8Array(N);
-    for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) if (inside(x, y)) m[y * FW + x] = 1;
-    const at = (x: number, y: number) => x >= 0 && y >= 0 && x < FW && y < FH && m[y * FW + x] === 1;
-    for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
-      if (at(x, y)) {
-        // 다리는 시안처럼 그늘색(허벅지 위쪽만 조금 밝게)
-        let t = arm ? (!at(x + 1, y) ? 2 : !at(x - 1, y) ? 0 : 1) : (y + 0.5 - ROOT_Y < HIP_Y + 1.5 && !at(x - 1, y) ? 1 : 2);
-        if (back) t = Math.min(3, t + 1);
-        put(x, y, t, gi);
-      } else if (at(x + 1, y) || at(x - 1, y) || at(x, y + 1) || at(x, y - 1)) put(x, y, 5, gi);
+  const { placed, anchors } = layout(p);
+  const N = FW * FH, body = new Int8Array(N).fill(-1), front = new Int8Array(N).fill(-1);
+  const draw = (layer: Int8Array, cells: [number, number, string][]) => {
+    for (const [c, r, ch] of cells) {
+      const x = c + ROOT_X - 10, y = r + ROOT_Y - 26; // 그림 칸 → 프레임 칸
+      if (x < 0 || y < 0 || x >= FW || y >= FH) continue;
+      layer[y * FW + x] = CH_TONE[ch];
     }
   };
-  drawLimb(L.armB); drawLimb(L.legB); drawLimb(L.legF);
-  grid(TORSO_PX, L.torso, ORDER.indexOf('torso'));
-  grid(HEAD_PX, L.head, ORDER.indexOf('head'));
-  drawLimb(L.armF);
-  const body = new Int8Array(N).fill(-1), front = new Int8Array(N).fill(-1), FRONT = ORDER.indexOf('armF');
-  for (let i = 0; i < N; i++) if (tone[i] >= 0) (grp[i] === FRONT ? front : body)[i] = tone[i];
-  return { body, front, anchors: L.anchors };
+  // 시안과 같은 겹침 순서: 다리 → 몸통 → 머리 → 뒷팔 / 앞팔은 따로(무기 위에 그린다)
+  for (const k of [...LEG_PARTS, 'torso', 'head', 'armB'] as PartName[]) draw(body, placed[k]);
+  draw(front, placed.armF);
+  return { body, front, anchors };
 }
 
 export interface BakedClip { frames: number; loop: boolean; anchors: Anchors[]; body: Int8Array[]; front: Int8Array[] }
