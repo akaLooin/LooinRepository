@@ -20,22 +20,22 @@ export interface Pose {
 type Key = Partial<Pose> & { t: number; ease?: 'in' | 'out' | 'inout' | 'lin' };
 interface ClipDef { frames: number; loop: boolean; keys: Key[] }
 
-const BASE: Pose = { bx: 0, by: 0, lean: 0, head: 0, armF: [0.22, 0.15], armB: [-0.22, -0.15], legF: [0, 0], legB: [0, 0], wpn: 0.55 };
+const BASE: Pose = { bx: 0, by: 0, lean: 0, head: 0, armF: [0.1, -0.05], armB: [-0.1, 0.05], legF: [0, 0], legB: [0, 0], wpn: 0.55 };
 
 // ───────── 동작 ─────────
 // 원작의 "통통 튀는 작은 몸" 느낌은 살리되, 자세·타이밍은 새로 설계했다(구체관절 인형의 또렷한 관절 동작).
 export const CLIPS: Record<string, ClipDef> = {
   idle: { frames: 12, loop: true, keys: [
-    { t: 0, by: 0, armF: [0.22, 0.15], armB: [-0.22, -0.15], head: 0, ease: 'inout' },
-    { t: 0.5, by: 1, armF: [0.22, 0.15], armB: [-0.22, -0.15], head: 0, ease: 'inout' },
-    { t: 1, by: 0, armF: [0.22, 0.15], armB: [-0.22, -0.15], head: 0 },
+    { t: 0, by: 0, armF: [0.1, -0.05], armB: [-0.1, 0.05], head: 0, ease: 'inout' },
+    { t: 0.5, by: 1, armF: [0.1, -0.05], armB: [-0.1, 0.05], head: 0, ease: 'inout' },
+    { t: 1, by: 0, armF: [0.1, -0.05], armB: [-0.1, 0.05], head: 0 },
   ] },
   // 걷기: 몸은 거의 정면을 본 채 다리만 앞뒤로 딛고, 팔은 몸 옆에서 작게 흔든다
   walk: { frames: 12, loop: true, keys: [
     { t: 0, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.3, 0.35], armB: [0.25, 0.3], by: 0.5, lean: 0.04, ease: 'out' },
-    { t: 0.25, legF: [0.02, -0.05], legB: [0.12, -0.9], armF: [0.22, 0.15], armB: [-0.22, -0.15], by: -1, lean: 0.05, ease: 'in' },
+    { t: 0.25, legF: [0.02, -0.05], legB: [0.12, -0.9], armF: [0.1, -0.05], armB: [-0.1, 0.05], by: -1, lean: 0.05, ease: 'in' },
     { t: 0.5, legF: [-0.38, -0.22], legB: [0.42, -0.08], armF: [0.45, 0.4], armB: [-0.3, -0.2], by: 0.5, lean: 0.04, ease: 'out' },
-    { t: 0.75, legF: [0.12, -0.9], legB: [0.02, -0.05], armF: [0.22, 0.15], armB: [-0.22, -0.15], by: -1, lean: 0.05, ease: 'in' },
+    { t: 0.75, legF: [0.12, -0.9], legB: [0.02, -0.05], armF: [0.1, -0.05], armB: [-0.1, 0.05], by: -1, lean: 0.05, ease: 'in' },
     { t: 1, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.3, 0.35], armB: [0.25, 0.3], by: 0.5, lean: 0.04 },
   ] },
   jump: { frames: 3, loop: false, keys: [
@@ -173,13 +173,13 @@ function layout(p0: Pose): { parts: { g: Group; s: Shape }[]; anchors: Anchors }
   };
   const sh = add(neck, up, -1.4);
   // 뒤에서 앞으로: 뒷팔 → 다리 → 몸통 → 머리 → 앞팔
-  const handB = arm('armB', add(sh, side, -3.7), p.lean + p.armB[0], p.armB[1]);
+  const handB = arm('armB', add(sh, side, -2.3), p.lean + p.armB[0], p.armB[1]);
   leg('legB', add(pelvis, side, -1.4), p.legB[0], p.legB[1]);
   leg('legF', add(pelvis, side, 1.4), p.legF[0], p.legF[1]);
   // 몸통: 어깨가 좁고 엉덩이가 조금 넓은 둥근 모양
   parts.push({ g: 'torso', s: { k: 'cap', a: add(pelvis, up, 1.6), b: add(neck, up, -1.8), r0: 3.3, r1: 2.7 } });
   parts.push({ g: 'head', s: { k: 'ell', c: headC, rx: HEAD_R[0], ry: HEAD_R[1], rot: p.lean + p.head } });
-  const hand = arm('armF', add(sh, side, 3.7), p.lean + p.armF[0], p.armF[1]);
+  const hand = arm('armF', add(sh, side, 2.3), p.lean + p.armF[0], p.armF[1]);
   return { parts, anchors: { hand, handB, wpn: p.wpn, head: headC, headRot: p.lean + p.head, chest: add(pelvis, up, 4), lean: p.lean } };
 }
 
