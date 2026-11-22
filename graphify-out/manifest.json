@@ -186,8 +186,8 @@
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1795304074.0462317,
-    "seen": 1795304369.229631,
+    "mtime": 1795307846.2917588,
+    "seen": 1795307862.3486006,
     "ast_hash": "50b43d71e740638b92eb6270441684e4",
     "semantic_hash": ""
   },
@@ -1008,8 +1008,8 @@
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795307277.2202845,
-    "seen": 1795307314.3038533,
+    "mtime": 1795307846.2902946,
+    "seen": 1795307862.3485773,
     "ast_hash": "1bdd00896e877a6cae15a794ae31cd12",
     "semantic_hash": ""
   },
