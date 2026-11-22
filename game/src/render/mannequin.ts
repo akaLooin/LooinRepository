@@ -20,79 +20,79 @@ export interface Pose {
 type Key = Partial<Pose> & { t: number; ease?: 'in' | 'out' | 'inout' | 'lin' };
 interface ClipDef { frames: number; loop: boolean; keys: Key[] }
 
-const BASE: Pose = { bx: 0, by: 0, lean: 0, head: 0, armF: [0.1, -0.05], armB: [-0.1, 0.05], legF: [0, 0], legB: [0, 0], wpn: 0.55 };
+const BASE: Pose = { bx: 0, by: 0, lean: 0, head: 0, armF: [0, 0], armB: [0, 0], legF: [0, 0], legB: [0, 0], wpn: 0.55 };
 
 // ───────── 동작 ─────────
 // 원작의 "통통 튀는 작은 몸" 느낌은 살리되, 자세·타이밍은 새로 설계했다(구체관절 인형의 또렷한 관절 동작).
 export const CLIPS: Record<string, ClipDef> = {
   idle: { frames: 12, loop: true, keys: [
-    { t: 0, by: 0, armF: [0.1, -0.05], armB: [-0.1, 0.05], head: 0, ease: 'inout' },
-    { t: 0.5, by: 1, armF: [0.1, -0.05], armB: [-0.1, 0.05], head: 0, ease: 'inout' },
-    { t: 1, by: 0, armF: [0.1, -0.05], armB: [-0.1, 0.05], head: 0 },
+    { t: 0, by: 0, armF: [0, 0], armB: [0, 0], head: 0, ease: 'inout' },
+    { t: 0.5, by: 1.7, armF: [0.04, 0.06], armB: [-0.04, -0.06], head: 0, ease: 'inout' },
+    { t: 1, by: 0, armF: [0, 0], armB: [0, 0], head: 0 },
   ] },
   // 걷기: 몸은 거의 정면을 본 채 다리만 앞뒤로 딛고, 팔은 몸 옆에서 작게 흔든다
   walk: { frames: 12, loop: true, keys: [
-    { t: 0, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.3, 0.35], armB: [0.25, 0.3], by: 0.5, lean: 0.04, ease: 'out' },
-    { t: 0.25, legF: [0.02, -0.05], legB: [0.12, -0.9], armF: [0.1, -0.05], armB: [-0.1, 0.05], by: -1, lean: 0.05, ease: 'in' },
-    { t: 0.5, legF: [-0.38, -0.22], legB: [0.42, -0.08], armF: [0.45, 0.4], armB: [-0.3, -0.2], by: 0.5, lean: 0.04, ease: 'out' },
-    { t: 0.75, legF: [0.12, -0.9], legB: [0.02, -0.05], armF: [0.1, -0.05], armB: [-0.1, 0.05], by: -1, lean: 0.05, ease: 'in' },
-    { t: 1, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.3, 0.35], armB: [0.25, 0.3], by: 0.5, lean: 0.04 },
+    { t: 0, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.15, 0.05], armB: [0.15, 0.05], by: 0.5, lean: 0.04, ease: 'out' },
+    { t: 0.25, legF: [0.02, -0.05], legB: [0.12, -0.9], armF: [0, 0], armB: [0, 0], by: -1.7, lean: 0.05, ease: 'in' },
+    { t: 0.5, legF: [-0.38, -0.22], legB: [0.42, -0.08], armF: [0.15, 0.05], armB: [-0.15, -0.05], by: 0.5, lean: 0.04, ease: 'out' },
+    { t: 0.75, legF: [0.12, -0.9], legB: [0.02, -0.05], armF: [0, 0], armB: [0, 0], by: -1.7, lean: 0.05, ease: 'in' },
+    { t: 1, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.15, 0.05], armB: [0.15, 0.05], by: 0.5, lean: 0.04 },
   ] },
   jump: { frames: 3, loop: false, keys: [
-    { t: 0, legF: [0.5, -1.0], legB: [0.1, -0.8], armF: [0.9, 1.1], armB: [-0.6, 0.4], lean: -0.03, by: -1, head: -0.05, wpn: 0.4, ease: 'out' },
-    { t: 1, legF: [0.4, -0.9], legB: [0.0, -0.6], armF: [1.0, 1.0], armB: [-0.7, 0.4], lean: -0.02, by: -1, head: -0.06, wpn: 0.4 },
+    { t: 0, legF: [0.5, -1.0], legB: [0.1, -0.8], armF: [0.45, 0.3], armB: [-0.45, -0.3], lean: -0.03, by: -1, head: -0.05, wpn: 0.4, ease: 'out' },
+    { t: 1, legF: [0.4, -0.9], legB: [0.0, -0.6], armF: [0.5, 0.3], armB: [-0.5, -0.3], lean: -0.02, by: -1, head: -0.06, wpn: 0.4 },
   ] },
   fall: { frames: 3, loop: false, keys: [
-    { t: 0, legF: [0.25, -0.3], legB: [-0.15, -0.4], armF: [1.4, 0.5], armB: [-1.0, 0.3], lean: 0.02, by: -1, head: 0.03, wpn: 0.6, ease: 'inout' },
-    { t: 1, legF: [0.2, -0.2], legB: [-0.2, -0.3], armF: [1.5, 0.4], armB: [-1.1, 0.3], lean: 0.02, by: -1, head: 0.04, wpn: 0.7 },
+    { t: 0, legF: [0.25, -0.3], legB: [-0.15, -0.4], armF: [0.6, 0.2], armB: [-0.6, -0.2], lean: 0.02, by: -1, head: 0.03, wpn: 0.6, ease: 'inout' },
+    { t: 1, legF: [0.2, -0.2], legB: [-0.2, -0.3], armF: [0.65, 0.2], armB: [-0.65, -0.2], lean: 0.02, by: -1, head: 0.04, wpn: 0.7 },
   ] },
   // 휘두르기: 무게를 뒤로 실었다가(와인드업) 앞발을 디디며 내려친 뒤 천천히 돌아온다
   swing: { frames: 10, loop: false, keys: [
     { t: 0, armF: [0.3, 0.5], wpn: 0.6, ease: 'out' },
-    { t: 0.3, armF: [2.85, 0.35], armB: [-0.18, -0.25], wpn: -0.7, lean: -0.14, head: -0.1, legF: [0.2, -0.1], legB: [-0.2, -0.1], by: -0.5, ease: 'in' },
-    { t: 0.55, armF: [0.95, 0.05], armB: [-0.18, -0.25], wpn: 2.15, lean: 0.2, head: 0.1, legF: [0.45, -0.25], legB: [-0.45, -0.15], by: 1, ease: 'out' },
-    { t: 1, armF: [0.45, 0.4], armB: [-0.18, -0.25], wpn: 1.1, lean: 0.06, head: 0.02, legF: [0.25, -0.15], legB: [-0.25, -0.1], by: 0.3 },
+    { t: 0.3, armF: [2.85, 0.35], armB: [0, 0], wpn: -0.7, lean: -0.14, head: -0.1, legF: [0.2, -0.1], legB: [-0.2, -0.1], by: -0.5, ease: 'in' },
+    { t: 0.55, armF: [0.95, 0.05], armB: [0, 0], wpn: 2.15, lean: 0.2, head: 0.1, legF: [0.45, -0.25], legB: [-0.45, -0.15], by: 1, ease: 'out' },
+    { t: 1, armF: [0.45, 0.4], armB: [0, 0], wpn: 1.1, lean: 0.06, head: 0.02, legF: [0.25, -0.15], legB: [-0.25, -0.1], by: 0.3 },
   ] },
   // 활: 앞팔을 뻗어 활을 세우고 뒷손으로 시위를 당겼다가 놓는다
   shoot: { frames: 8, loop: false, keys: [
-    { t: 0, armF: [0.9, 0.2], armB: [-0.18, -0.25], wpn: 0.3, ease: 'out' },
-    { t: 0.35, armF: [1.58, 0.0], armB: [-0.18, -0.25], wpn: 0, lean: -0.04, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'lin' },
-    { t: 0.5, armF: [1.58, 0.0], armB: [-0.18, -0.25], wpn: 0, lean: -0.06, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'out' },
-    { t: 0.6, armF: [1.55, 0.05], armB: [-0.18, -0.25], wpn: 0, lean: -0.02, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'inout' },
-    { t: 1, armF: [0.8, 0.3], armB: [-0.18, -0.25], wpn: 0.2, legF: [0.15, -0.08], legB: [-0.15, -0.06] },
+    { t: 0, armF: [0.9, 0.2], armB: [0, 0], wpn: 0.3, ease: 'out' },
+    { t: 0.35, armF: [1.58, 0.0], armB: [0, 0], wpn: 0, lean: -0.04, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'lin' },
+    { t: 0.5, armF: [1.58, 0.0], armB: [0, 0], wpn: 0, lean: -0.06, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'out' },
+    { t: 0.6, armF: [1.55, 0.05], armB: [0, 0], wpn: 0, lean: -0.02, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'inout' },
+    { t: 1, armF: [0.8, 0.3], armB: [0, 0], wpn: 0.2, legF: [0.15, -0.08], legB: [-0.15, -0.06] },
   ] },
   // 지팡이: 머리 위로 들어 기를 모았다가 앞으로 찌르듯 뻗는다
   cast: { frames: 8, loop: false, keys: [
     { t: 0, armF: [0.5, 0.4], wpn: 0.5, ease: 'out' },
-    { t: 0.4, armF: [2.6, 0.1], armB: [-0.18, -0.25], wpn: 0.1, lean: -0.1, head: -0.1, by: -1, ease: 'in' },
-    { t: 0.6, armF: [1.5, -0.05], armB: [-0.18, -0.25], wpn: 1.45, lean: 0.12, head: 0.05, legF: [0.35, -0.2], legB: [-0.35, -0.1], ease: 'out' },
-    { t: 1, armF: [0.7, 0.3], armB: [-0.18, -0.25], wpn: 0.8, lean: 0.04 },
+    { t: 0.4, armF: [2.6, 0.1], armB: [0, 0], wpn: 0.1, lean: -0.1, head: -0.1, by: -1, ease: 'in' },
+    { t: 0.6, armF: [1.5, -0.05], armB: [0, 0], wpn: 1.45, lean: 0.12, head: 0.05, legF: [0.35, -0.2], legB: [-0.35, -0.1], ease: 'out' },
+    { t: 1, armF: [0.7, 0.3], armB: [0, 0], wpn: 0.8, lean: 0.04 },
   ] },
   // 곡괭이: 머리 위에서 아래로 크게 찍는다
   mine: { frames: 10, loop: false, keys: [
     { t: 0, armF: [0.4, 0.5], wpn: 0.6, ease: 'out' },
-    { t: 0.32, armF: [3.0, 0.25], armB: [-0.18, -0.25], wpn: -1.1, lean: -0.16, head: -0.12, by: -0.5, ease: 'in' },
-    { t: 0.55, armF: [0.85, 0.3], armB: [-0.18, -0.25], wpn: 1.95, lean: 0.28, head: 0.12, legF: [0.4, -0.35], legB: [-0.4, -0.2], by: 1.5, ease: 'out' },
-    { t: 1, armF: [0.55, 0.45], armB: [-0.18, -0.25], wpn: 1.2, lean: 0.1, legF: [0.2, -0.15], legB: [-0.2, -0.1], by: 0.5 },
+    { t: 0.32, armF: [3.0, 0.25], armB: [0, 0], wpn: -1.1, lean: -0.16, head: -0.12, by: -0.5, ease: 'in' },
+    { t: 0.55, armF: [0.85, 0.3], armB: [0, 0], wpn: 1.95, lean: 0.28, head: 0.12, legF: [0.4, -0.35], legB: [-0.4, -0.2], by: 1.5, ease: 'out' },
+    { t: 1, armF: [0.55, 0.45], armB: [0, 0], wpn: 1.2, lean: 0.1, legF: [0.2, -0.15], legB: [-0.2, -0.1], by: 0.5 },
   ] },
   // 도끼: 옆으로 크게 돌려 벤다
   chop: { frames: 10, loop: false, keys: [
     { t: 0, armF: [0.4, 0.5], wpn: 0.6, ease: 'out' },
-    { t: 0.32, armF: [2.0, 0.6], armB: [-0.18, -0.25], wpn: -1.2, lean: -0.18, head: -0.06, legF: [0.15, -0.1], legB: [-0.3, -0.2], ease: 'in' },
-    { t: 0.55, armF: [1.45, 0.0], armB: [-0.18, -0.25], wpn: 1.7, lean: 0.16, head: 0.06, legF: [0.4, -0.25], legB: [-0.4, -0.15], by: 1, ease: 'out' },
-    { t: 1, armF: [0.6, 0.4], armB: [-0.18, -0.25], wpn: 1.0, lean: 0.05, by: 0.3 },
+    { t: 0.32, armF: [2.0, 0.6], armB: [0, 0], wpn: -1.2, lean: -0.18, head: -0.06, legF: [0.15, -0.1], legB: [-0.3, -0.2], ease: 'in' },
+    { t: 0.55, armF: [1.45, 0.0], armB: [0, 0], wpn: 1.7, lean: 0.16, head: 0.06, legF: [0.4, -0.25], legB: [-0.4, -0.15], by: 1, ease: 'out' },
+    { t: 1, armF: [0.6, 0.4], armB: [0, 0], wpn: 1.0, lean: 0.05, by: 0.3 },
   ] },
   climb: { frames: 8, loop: true, keys: [
-    { t: 0, armF: [2.95, 0.15], armB: [2.35, 0.7], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4, ease: 'inout' },
-    { t: 0.5, armF: [2.35, 0.7], armB: [2.95, 0.15], legF: [0.1, -0.3], legB: [0.55, -1.1], by: 0.5, wpn: 0.4, ease: 'inout' },
-    { t: 1, armF: [2.95, 0.15], armB: [2.35, 0.7], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4 },
+    { t: 0, armF: [2.6, 0.2], armB: [-2.1, -0.5], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4, ease: 'inout' },
+    { t: 0.5, armF: [2.1, 0.5], armB: [-2.6, -0.2], legF: [0.1, -0.3], legB: [0.55, -1.1], by: 0.5, wpn: 0.4, ease: 'inout' },
+    { t: 1, armF: [2.6, 0.2], armB: [-2.1, -0.5], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4 },
   ] },
   hurt: { frames: 3, loop: false, keys: [
-    { t: 0, lean: -0.22, head: -0.2, armF: [-0.5, 0.9], armB: [-0.3, 0.8], legF: [0.35, -0.3], legB: [-0.2, -0.2], by: 0.5, wpn: -0.2, ease: 'out' },
-    { t: 1, lean: -0.1, head: -0.08, armF: [-0.2, 1.0], armB: [-0.1, 0.9], legF: [0.2, -0.2], legB: [-0.15, -0.1], wpn: 0.2 },
+    { t: 0, lean: -0.22, head: -0.2, armF: [0.6, 0.3], armB: [-0.6, -0.3], legF: [0.35, -0.3], legB: [-0.2, -0.2], by: 0.5, wpn: -0.2, ease: 'out' },
+    { t: 1, lean: -0.1, head: -0.08, armF: [0.15, 0.05], armB: [-0.15, -0.05], legF: [0.2, -0.2], legB: [-0.15, -0.1], wpn: 0.2 },
   ] },
   dead: { frames: 1, loop: false, keys: [
-    { t: 0, lean: 0, head: 0.2, armF: [0.6, 0.6], armB: [-0.3, 0.6], legF: [0.2, -0.1], legB: [-0.2, -0.1], wpn: 1.4 },
+    { t: 0, lean: 0, head: 0.2, armF: [0.3, 0.2], armB: [-0.3, -0.2], legF: [0.2, -0.1], legB: [-0.2, -0.1], wpn: 1.4 },
   ] },
 };
 
@@ -119,85 +119,78 @@ export function samplePose(clip: ClipDef, t: number): Pose {
   };
 }
 
-// ───────── 뼈대 치수(px, 1배) ─────────
-// 기준: 사용자가 준 치비 픽셀 뼈대(둥근 머리, 아래가 넓은 몸통, 짧은 팔다리 + 둥근 손발).
-// 거기서 머리를 줄이고(키의 약 40%) 몸통·다리를 늘려 더 날씬한 비율로. 키 약 30칸.
-const PELVIS_Y = -8.5, TORSO = 7.5, HEAD_R: [number, number] = [5.6, 5.4], HEAD_UP = 5.2;
-const UPPER_ARM = 3.6, FORE_ARM = 3.0, THIGH = 3.9, SHIN = 3.6;
+// ───────── 기본 몸(손으로 찍은 픽셀) ─────────
+// 사용자가 준 치비 픽셀 뼈대를 흰 피부·얼굴 없음·날씬한 비율로 다시 찍은 그림.
+// 머리와 몸통은 이 픽셀을 그대로 쓰고, 팔다리는 같은 굵기(속 2칸)·색·테두리 규칙으로 관절을 따라 매 프레임 그린다.
+// 글자: 3 짙은 선, 4 밝은 선, 5 그늘, 6 기본, 7 밝은 면
+const HEAD_PX = [
+  '...3333...',
+  '.33776633.',
+  '.37766663.',
+  '3776666663',
+  '3666666653',
+  '3666666553',
+  '3666665553',
+  '.36665553.',
+  '.33555533.',
+  '...3333...',
+];
+const TORSO_PX = [
+  '33777733',
+  '37777763',
+  '37777763',
+  '37777763',
+  '37777763',
+  '37777763',
+  '37777763',
+  '37777763',
+  '37777763',
+  '37777653',
+  '37747653',
+];
+// 그림 칸(열 c, 줄 r) ↔ 발 기준 좌표: x = c - 9.5, y = r - 25.5 (전체 그림 21×27칸, 몸 중심 9.5열, 발밑 26줄)
+const HEAD_AT: V = [5, 0], TORSO_AT: V = [6, 10];
+const SHOULDER_Y = -14.6, SHOULDER_X = 3.0, HIP_Y = -5.3, HIP_X = 2.0;
+const UPPER_ARM = 2.9, FORE_ARM = 2.2, THIGH = 2.5, SHIN = 2.3;
+const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5 };
 
 type V = [number, number];
 const dir = (a: number): V => [Math.sin(a), Math.cos(a)]; // 0 = 아래
 const add = (p: V, d: V, k: number): V => [p[0] + d[0] * k, p[1] + d[1] * k];
-/** 관절을 픽셀 격자에 맞춘다(작은 팔다리가 프레임마다 들쭉날쭉하지 않게) */
-const snap = (p: V): V => [Math.round(p[0] * 2) / 2, Math.round(p[1] * 2) / 2];
 
 /** 붙임 지점(발 기준점으로부터 px, 화면 아래가 +y) */
 export interface Anchors { hand: V; handB: V; wpn: number; head: V; headRot: number; chest: V; lean: number }
 
-type Shape =
-  | { k: 'cap'; a: V; b: V; r0: number; r1: number }
-  | { k: 'ell'; c: V; rx: number; ry: number; rot: number };
+type Cap = { a: V; b: V; r: number };
+type Limb = { g: Group; caps: Cap[]; hand?: { c: V; r: number } };
 type Group = 'armB' | 'legB' | 'legF' | 'torso' | 'head' | 'armF';
 const ORDER: Group[] = ['armB', 'legB', 'legF', 'torso', 'head', 'armF'];
-const T_IDX = 3; // 몸통은 다리 위를 덮는다(다리와 몸통 사이엔 선을 긋지 않는다)
 
-/** 포즈 → 도형 목록과 붙임 지점. 몸은 바라보는 쪽(오른쪽)으로 살짝 돈 정면(3/4) */
-function layout(p0: Pose): { parts: { g: Group; s: Shape }[]; anchors: Anchors } {
-  // 곧게 선 자세: 몸 기울기·고개·위아래 튐은 줄여 쓴다
-  const p: Pose = { ...p0, lean: p0.lean * 0.35, head: p0.head * 0.4, by: p0.by * 0.6 };
-  const pelvis: V = [Math.round(p.bx), Math.round(PELVIS_Y + p.by)];
-  const up: V = [Math.sin(p.lean), -Math.cos(p.lean)];
-  const side: V = [Math.cos(p.lean), Math.sin(p.lean)];
-  const neck = add(pelvis, up, TORSO);
-  const hd: V = [Math.sin(p.lean + p.head), -Math.cos(p.lean + p.head)];
-  const headC = add(add(neck, hd, HEAD_UP), side, 0.4);
-  const parts: { g: Group; s: Shape }[] = [];
-  // 팔: 위팔 + 아래팔(둥근 끝) + 둥근 손
-  const arm = (g: Group, root: V, a0: number, a1: number) => {
-    root = snap(root);
-    const elbow = snap(add(root, dir(a0), UPPER_ARM)), hand = snap(add(elbow, dir(a0 + a1), FORE_ARM));
-    parts.push({ g, s: { k: 'cap', a: root, b: elbow, r0: 1.35, r1: 1.2 } });
-    parts.push({ g, s: { k: 'cap', a: elbow, b: hand, r0: 1.2, r1: 1.1 } });
-    parts.push({ g, s: { k: 'ell', c: hand, rx: 1.6, ry: 1.6, rot: 0 } });
-    return hand;
-  };
-  // 다리: 허벅지 + 정강이 + 앞을 향한 둥근 발
-  const leg = (g: Group, root: V, a0: number, a1: number) => {
-    root = snap(root);
-    const knee = snap(add(root, dir(a0), THIGH)), ankle = snap(add(knee, dir(a0 + a1), SHIN));
-    parts.push({ g, s: { k: 'cap', a: root, b: knee, r0: 1.7, r1: 1.45 } });
-    parts.push({ g, s: { k: 'cap', a: knee, b: ankle, r0: 1.45, r1: 1.3 } });
-    const f: V = [ankle[0] + 0.5, ankle[1] + 0.6];
-    parts.push({ g, s: { k: 'ell', c: f, rx: 2.0, ry: 1.25, rot: 0 } });
-    return f;
-  };
-  const sh = add(neck, up, -1.4);
-  // 뒤에서 앞으로: 뒷팔 → 다리 → 몸통 → 머리 → 앞팔
-  const handB = arm('armB', add(sh, side, -2.3), p.lean + p.armB[0], p.armB[1]);
-  leg('legB', add(pelvis, side, -1.4), p.legB[0], p.legB[1]);
-  leg('legF', add(pelvis, side, 1.4), p.legF[0], p.legF[1]);
-  // 몸통: 어깨가 좁고 엉덩이가 조금 넓은 둥근 모양
-  parts.push({ g: 'torso', s: { k: 'cap', a: add(pelvis, up, 1.6), b: add(neck, up, -1.8), r0: 3.3, r1: 2.7 } });
-  parts.push({ g: 'head', s: { k: 'ell', c: headC, rx: HEAD_R[0], ry: HEAD_R[1], rot: p.lean + p.head } });
-  const hand = arm('armF', add(sh, side, 2.3), p.lean + p.armF[0], p.armF[1]);
-  return { parts, anchors: { hand, handB, wpn: p.wpn, head: headC, headRot: p.lean + p.head, chest: add(pelvis, up, 4), lean: p.lean } };
+function inCap(c: Cap, x: number, y: number) {
+  const bx = c.b[0] - c.a[0], by = c.b[1] - c.a[1], L2 = bx * bx + by * by || 1e-6;
+  const t = Math.max(0, Math.min(1, ((x - c.a[0]) * bx + (y - c.a[1]) * by) / L2));
+  const dx = x - c.a[0] - bx * t, dy = y - c.a[1] - by * t;
+  return dx * dx + dy * dy <= c.r * c.r;
 }
 
-/** 도형 안이면 [법선x, 법선y, 법선z] */
-function hit(s: Shape, x: number, y: number): [number, number, number] | null {
-  if (s.k === 'ell') {
-    const dx = x - s.c[0], dy = y - s.c[1], c = Math.cos(-s.rot), sn = Math.sin(-s.rot);
-    const u = (dx * c - dy * sn) / s.rx, v = (dx * sn + dy * c) / s.ry, d2 = u * u + v * v;
-    if (d2 > 1) return null;
-    const c2 = Math.cos(s.rot), s2 = Math.sin(s.rot);
-    return [u * c2 - v * s2, u * s2 + v * c2, Math.sqrt(1 - d2)];
-  }
-  const [ax, ay] = s.a, bx = s.b[0] - ax, by = s.b[1] - ay, L2 = bx * bx + by * by || 1e-6;
-  const t = Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2));
-  const cx = ax + bx * t, cy = ay + by * t, r = s.r0 + (s.r1 - s.r0) * t;
-  const dx = x - cx, dy = y - cy, d2 = (dx * dx + dy * dy) / (r * r);
-  if (d2 > 1) return null;
-  return [dx / r, dy / r, Math.sqrt(1 - d2)];
+/** 포즈 → 팔다리 도형, 머리·몸통 위치, 붙임 지점 */
+function layout(p: Pose) {
+  const lift = Math.round(p.by * 0.6); // 숨쉬기·튐: 윗몸만 위아래로
+  const sway = Math.round(p.lean * 3); // 곧게 선 자세: 기울기는 1칸 정도 옮기는 것으로만
+  const headDx = sway + Math.round(p.head * 2);
+  const limb = (g: Group, root: V, a0: number, a1: number, l0: number, l1: number, r: number, hand: boolean): Limb => {
+    const j = add(root, dir(a0), l0), e = add(j, dir(a0 + a1), l1);
+    return { g, caps: [{ a: root, b: j, r }, { a: j, b: e, r }], hand: hand ? { c: add(e, dir(a0 + a1), 0.5), r: 1.75 } : undefined };
+  };
+  const sy = SHOULDER_Y + lift;
+  const armB = limb('armB', [-SHOULDER_X + sway, sy], -0.38 + p.armB[0] - BASE.armB[0], p.armB[1] - BASE.armB[1], UPPER_ARM, FORE_ARM, 1.02, true);
+  const armF = limb('armF', [SHOULDER_X + sway, sy], 0.38 + p.armF[0] - BASE.armF[0], p.armF[1] - BASE.armF[1], UPPER_ARM, FORE_ARM, 1.02, true);
+  const legB = limb('legB', [-HIP_X, HIP_Y], p.legB[0], p.legB[1], THIGH, SHIN, 1.02, false);
+  const legF = limb('legF', [HIP_X, HIP_Y], p.legF[0], p.legF[1], THIGH, SHIN, 1.02, false);
+  const head: V = [HEAD_AT[0] + headDx, HEAD_AT[1] + lift], torso: V = [TORSO_AT[0] + sway, TORSO_AT[1] + lift];
+  const hand = armF.hand!.c, handB = armB.hand!.c;
+  const headC: V = [head[0] + 5 - 9.5, head[1] + 5 - 25.5];
+  return { armB, armF, legB, legF, head, torso, anchors: { hand, handB, wpn: p.wpn, head: headC, headRot: 0, chest: [sway, -11 + lift] as V, lean: p.lean } };
 }
 
 // ───────── 색 ─────────
@@ -209,69 +202,51 @@ const mixC = (a: string, b: string, t: number) => {
 /** 흰 기본 피부 */
 export const MANNEQUIN_WHITE = '#f4f2ee';
 
-/** 톤: 0 밝은 면, 1 기본, 2 그늘, 3 짙은 그늘(뒤쪽 팔다리), 4 밝은 선(위·왼쪽 외곽선, 안쪽 선), 5 짙은 선(아래·오른쪽 외곽선)
- *  선은 검정이 아니라 피부색을 어둡게 한 색(참고 그림처럼 부드러운 색 외곽선) */
+/** 톤: 0 밝은 면, 1 기본, 2 그늘, 3 짙은 그늘(뒤쪽 팔다리), 4 밝은 선, 5 짙은 선 */
 export function tones(skin: string): string[] {
-  return [mixC(skin, '#ffffff', 0.7), skin, mixC(skin, '#a9a6bd', 0.38), mixC(skin, '#8d89a6', 0.55), mixC(skin, '#5a4c5e', 0.72), mixC(skin, '#32283a', 0.86)];
+  return [mixC(skin, '#ffffff', 0.75), mixC(skin, '#dcd9e2', 0.35), mixC(skin, '#b9b4c6', 0.5), mixC(skin, '#9e98b0', 0.55), mixC(skin, '#8e8296', 0.6), mixC(skin, '#6a5e6c', 0.85)];
 }
-const LIGHT = (() => { const v = [-0.55, -0.65, 0.53], n = Math.hypot(...v); return v.map((x) => x / n); })();
 
 /** 한 포즈를 두 층(몸, 앞팔)으로 굽는다. 결과는 톤 번호 배열(-1 = 빈 칸) */
 function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } {
-  const { parts, anchors } = layout(p);
+  const L = layout(p);
   const N = FW * FH, tone = new Int8Array(N).fill(-1), grp = new Int8Array(N).fill(-1);
-  for (const { g, s } of parts) {
-    const gi = ORDER.indexOf(g), back = g === 'armB' || g === 'legB';
-    for (let py = 0; py < FH; py++) for (let px = 0; px < FW; px++) {
-      const n = hit(s, px + 0.5 - ROOT_X, py + 0.5 - ROOT_Y);
-      if (!n) continue;
-      // 왼쪽 위에서 빛: 밝은 면 / 기본 / 그늘 세 단계(뒤쪽 팔다리는 한 단계 어둡게)
-      const lum = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
-      let t = lum > 0.9 ? 0 : lum > 0.3 ? 1 : 2;
-      if (back) t = Math.min(3, t + 1);
-      const i = py * FW + px;
-      tone[i] = t; grp[i] = gi;
+  const put = (x: number, y: number, t: number, gi: number) => {
+    if (x < 0 || y < 0 || x >= FW || y >= FH) return;
+    tone[y * FW + x] = t; grp[y * FW + x] = gi;
+  };
+  const toPx = (c: number, r: number): V => [c + ROOT_X - 10, r + ROOT_Y - 26]; // 그림 칸 → 프레임 칸
+  const grid = (rows: string[], at: V, gi: number) => rows.forEach((row, r) => [...row].forEach((ch, c) => {
+    if (ch === '.') return;
+    const [x, y] = toPx(at[0] + c, at[1] + r); put(x, y, CH_TONE[ch], gi);
+  }));
+  // 팔다리: 속은 2칸 굵기, 바라보는 반대쪽(왼쪽) 가장자리는 밝게, 오른쪽은 그늘, 둘레는 짙은 선
+  const drawLimb = (lb: Limb) => {
+    const gi = ORDER.indexOf(lb.g), back = lb.g === 'armB' || lb.g === 'legB', arm = lb.g.startsWith('arm');
+    const inside = (x: number, y: number) => {
+      const cx = x + 0.5 - ROOT_X, cy = y + 0.5 - ROOT_Y;
+      if (lb.caps.some((c) => inCap(c, cx, cy))) return true;
+      return !!lb.hand && (cx - lb.hand.c[0]) ** 2 + (cy - lb.hand.c[1]) ** 2 <= lb.hand.r ** 2;
+    };
+    const m = new Uint8Array(N);
+    for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) if (inside(x, y)) m[y * FW + x] = 1;
+    const at = (x: number, y: number) => x >= 0 && y >= 0 && x < FW && y < FH && m[y * FW + x] === 1;
+    for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+      if (at(x, y)) {
+        // 다리는 시안처럼 그늘색(허벅지 위쪽만 조금 밝게)
+        let t = arm ? (!at(x + 1, y) ? 2 : !at(x - 1, y) ? 0 : 1) : (y + 0.5 - ROOT_Y < HIP_Y + 1.5 && !at(x - 1, y) ? 1 : 2);
+        if (back) t = Math.min(3, t + 1);
+        put(x, y, t, gi);
+      } else if (at(x + 1, y) || at(x - 1, y) || at(x, y + 1) || at(x, y - 1)) put(x, y, 5, gi);
     }
-  }
-  // 외톨이 픽셀 정리
-  const t2 = tone.slice();
-  for (let y = 1; y < FH - 1; y++) for (let x = 1; x < FW - 1; x++) {
-    const i = y * FW + x;
-    if (tone[i] < 0) continue;
-    const nb = [i - 1, i + 1, i - FW, i + FW].filter((j) => grp[j] === grp[i]).map((j) => tone[j]);
-    if (nb.length >= 3 && nb.every((v) => v !== tone[i])) {
-      const cnt = new Map<number, number>(); nb.forEach((v) => cnt.set(v, (cnt.get(v) ?? 0) + 1));
-      t2[i] = [...cnt.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    }
-  }
-  // 안쪽 선: 뒤에 있는 다른 덩어리와 맞닿은 앞 덩어리의 가장자리
-  const t3 = t2.slice();
-  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
-    const i = y * FW + x;
-    if (grp[i] < 0) continue;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= FW || ny >= FH) continue;
-      const j = ny * FW + nx;
-      if (grp[j] >= 0 && grp[j] < grp[i] && !(grp[i] === T_IDX && (grp[j] === 1 || grp[j] === 2))) { t3[i] = 4; break; }
-    }
-  }
-  // 외곽선: 위·왼쪽은 밝은 선, 아래·오른쪽은 짙은 선(앞팔 옆이면 앞팔 층으로)
+  };
+  drawLimb(L.armB); drawLimb(L.legB); drawLimb(L.legF);
+  grid(TORSO_PX, L.torso, ORDER.indexOf('torso'));
+  grid(HEAD_PX, L.head, ORDER.indexOf('head'));
+  drawLimb(L.armF);
   const body = new Int8Array(N).fill(-1), front = new Int8Array(N).fill(-1), FRONT = ORDER.indexOf('armF');
-  for (let i = 0; i < N; i++) if (grp[i] >= 0) (grp[i] === FRONT ? front : body)[i] = t3[i];
-  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
-    const i = y * FW + x;
-    if (grp[i] >= 0) continue;
-    let near = -1, lightSide = false;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= FW || ny >= FH) continue;
-      const g = grp[ny * FW + nx];
-      if (g >= 0) { near = Math.max(near, g); if (dx === 1 || dy === 1) lightSide = true; }
-    }
-    if (near >= 0) (near === FRONT ? front : body)[i] = lightSide ? 4 : 5;
-  }
-  return { body, front, anchors };
+  for (let i = 0; i < N; i++) if (tone[i] >= 0) (grp[i] === FRONT ? front : body)[i] = tone[i];
+  return { body, front, anchors: L.anchors };
 }
 
 export interface BakedClip { frames: number; loop: boolean; anchors: Anchors[]; body: Int8Array[]; front: Int8Array[] }
