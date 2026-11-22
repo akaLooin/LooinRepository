@@ -29,3 +29,22 @@ export const supabase: SupabaseClient | null =
 
 /** Shown in the config error screen so the user can compare with the dashboard. */
 export const supabaseUrlInUse = url;
+
+/**
+ * The account saved on this phone, read straight from storage (no network). Supabase's own getSession() first
+ * refreshes an expired sign-in over the network, so after an hour away the app waited on it before showing
+ * anything; the sign-in gate opens with this instead and lets Supabase catch up (user, 2026-11-22: slow start).
+ * Same key Supabase uses by default (`sb-<project>-auth-token`).
+ */
+export async function peekSavedUserId(): Promise<string | null> {
+  if (!url || !supabase) return null;
+  try {
+    const raw = await AsyncStorage.getItem(`sb-${new URL(url).hostname.split(".")[0]}-auth-token`);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    const id = saved?.user?.id ?? saved?.currentSession?.user?.id;
+    return typeof id === "string" ? id : null;
+  } catch {
+    return null;
+  }
+}

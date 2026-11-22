@@ -77,7 +77,7 @@
     "scheme": "todomateclone",
     "updates": {
       "url": "https://u.expo.dev/20e21693-a78a-4088-8483-327b41fc12f2",
-      "fallbackToCacheTimeout": 10000,
+      "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD"
     },
     "extra": {

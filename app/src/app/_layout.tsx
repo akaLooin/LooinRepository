@@ -13,6 +13,7 @@ import { KeyboardRoot } from "../components/KeyboardSpacer";
 import { PhotoViewerHost } from "../components/PhotoViewer";
 import { AuthGate } from "../features/auth/AuthGate";
 import { AdminApp } from "../features/admin/AdminApp";
+import { useQuietUpdates } from "../lib/quietUpdates";
 import { ADMIN_APP, DESIGN_TRIAL } from "../lib/variant";
 import { refreshAppConfig, useAppConfig } from "../lib/appConfig";
 import { AppText } from "../components/AppText";
@@ -29,6 +30,7 @@ function Shell() {
     return () => { alive = false; };
   }, [font, setFont]);
   useEffect(() => { loadPrefs(); }, []);
+  useQuietUpdates(); // new versions download in the background and switch over when the app is left
   // tapping a push opens its chat or the 알림 tab (also when the tap started the app)
   useEffect(() => {
     if (Platform.OS === "web") return;

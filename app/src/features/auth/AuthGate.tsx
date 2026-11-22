@@ -5,7 +5,7 @@ import { parseAuthLink } from "../../lib/authLink";
 import { NewPasswordScreen } from "./NewPasswordScreen";
 import { endSession, startSession } from "../../data/store";
 import { registerPush } from "../../lib/push";
-import { supabase, supabaseConfigError } from "../../lib/supabase";
+import { peekSavedUserId, supabase, supabaseConfigError } from "../../lib/supabase";
 import { ConfigErrorScreen } from "./ConfigErrorScreen";
 import { supabaseRemote } from "../../data/supabaseRemote";
 import { LoginScreen } from "./LoginScreen";
@@ -57,7 +57,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       setSession(s);
       setReady(true);
     };
-    sb.auth.getSession().then(({ data }) => apply(data.session));
+    // open at once with the account saved on this phone; Supabase refreshes the sign-in in the background
+    peekSavedUserId().then(async (uid) => {
+      if (!uid || current) return;
+      current = uid;
+      await startSession({ mode: "cloud", userId: uid, remote: supabaseRemote(sb) });
+      setSession((s) => s ?? ({ user: { id: uid } } as Session));
+      setReady(true);
+    });
+    sb.auth.getSession().then(({ data, error }) => {
+      // offline with an expired sign-in: keep the saved account open (the data is on the phone); a real sign-out
+      // comes through onAuthStateChange
+      if (!data.session && error && current) return;
+      apply(data.session);
+    });
     const { data } = sb.auth.onAuthStateChange((_e, s) => { apply(s); });
     return () => data.subscription.unsubscribe();
   }, []);
