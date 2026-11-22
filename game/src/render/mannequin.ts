@@ -123,17 +123,18 @@ export function samplePose(clip: ClipDef, t: number): Pose {
 // 사용자가 준 치비 픽셀 뼈대를 흰 피부·얼굴 없음·날씬한 비율로 다시 찍은 그림.
 // 머리와 몸통은 이 픽셀을 그대로 쓰고, 팔다리는 같은 굵기(속 2칸)·색·테두리 규칙으로 관절을 따라 매 프레임 그린다.
 // 글자: 3 짙은 선, 4 밝은 선, 5 그늘, 6 기본, 7 밝은 면
+// a = 반투명 테두리: 대각선 계단 바깥 모서리에 넣어 머리가 더 둥글게 보이게 한다
 const HEAD_PX = [
-  '...3333...',
+  '..a3333a..',
   '.33776633.',
-  '.37766663.',
+  'a37766663a',
   '3776666663',
   '3666666653',
   '3666666553',
   '3666665553',
-  '.36665553.',
+  'a36665553a',
   '.33555533.',
-  '...3333...',
+  '..a3333a..',
 ];
 const TORSO_PX = [
   '33777733',
@@ -152,7 +153,7 @@ const TORSO_PX = [
 const HEAD_AT: V = [5, 0], TORSO_AT: V = [6, 10];
 const SHOULDER_Y = -14.6, SHOULDER_X = 3.0, HIP_Y = -5.3, HIP_X = 2.0;
 const UPPER_ARM = 2.9, FORE_ARM = 2.2, THIGH = 2.5, SHIN = 2.3;
-const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5 };
+const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5, a: 6 };
 
 type V = [number, number];
 const dir = (a: number): V => [Math.sin(a), Math.cos(a)]; // 0 = 아래
@@ -202,10 +203,14 @@ const mixC = (a: string, b: string, t: number) => {
 /** 흰 기본 피부 */
 export const MANNEQUIN_WHITE = '#f4f2ee';
 
-/** 톤: 0 밝은 면, 1 기본, 2 그늘, 3 짙은 그늘(뒤쪽 팔다리), 4 밝은 선, 5 짙은 선 */
+/** 캐릭터 테두리(검정) */
+export const OUTLINE = '#141016';
+/** 톤: 0 밝은 면, 1 기본, 2 그늘, 3 짙은 그늘(뒤쪽 팔다리), 4 밝은 선, 5 테두리(검정), 6 반투명 테두리(모서리 다듬기) */
 export function tones(skin: string): string[] {
-  return [mixC(skin, '#ffffff', 0.75), mixC(skin, '#dcd9e2', 0.35), mixC(skin, '#b9b4c6', 0.5), mixC(skin, '#9e98b0', 0.55), mixC(skin, '#8e8296', 0.6), mixC(skin, '#6a5e6c', 0.85)];
+  return [mixC(skin, '#ffffff', 0.75), mixC(skin, '#dcd9e2', 0.35), mixC(skin, '#b9b4c6', 0.5), mixC(skin, '#9e98b0', 0.55), mixC(skin, '#8e8296', 0.6), OUTLINE, OUTLINE];
 }
+/** 톤별 불투명도(255 = 불투명) */
+const TONE_ALPHA = [255, 255, 255, 255, 255, 255, 105];
 
 /** 한 포즈를 두 층(몸, 앞팔)으로 굽는다. 결과는 톤 번호 배열(-1 = 빈 칸) */
 function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } {
@@ -277,7 +282,7 @@ export function paintClip(name: string, skin: string): HTMLCanvasElement {
       const t = layer[i];
       if (t < 0) continue;
       const x = ox + (i % FW), y = oy + Math.floor(i / FW), o = (y * cv.width + x) * 4, [r, g, b] = pal[t];
-      d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255;
+      d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = TONE_ALPHA[t];
     }
   };
   for (let f = 0; f < c.frames; f++) { put(c.body[f], f * FW, 0); put(c.front[f], f * FW, FH); }
