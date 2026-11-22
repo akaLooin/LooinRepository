@@ -1002,15 +1002,15 @@
     "semantic_hash": ""
   },
   "replica/design/art-spec.md": {
-    "mtime": 1795306911.3651896,
-    "seen": 1795306918.4821048,
-    "ast_hash": "67f58439a22d89ed12474f37a322fa43",
+    "mtime": 1795307087.4056382,
+    "seen": 1795307089.5799646,
+    "ast_hash": "cd46ab0d226b13a8943730fc76120f58",
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795306868.702709,
-    "seen": 1795306918.4806159,
-    "ast_hash": "1b43bb332c3359d6706eaeb8ccc2b2c5",
+    "mtime": 1795307069.4737346,
+    "seen": 1795307089.579101,
+    "ast_hash": "c88461445293aece89c966f128dcde70",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {
