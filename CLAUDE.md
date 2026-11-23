@@ -17,6 +17,7 @@ Personal Android app that rebuilds the to-do app "todo mate" (Expo + Supabase), 
 - **Reply in Korean**, in plain language. The user is not a developer by trade: say what to click or type, one step at a time.
 - The user runs the app from a **Windows PC** (PowerShell: use `npm.cmd` / `npx.cmd`) with **Expo Go** on a Samsung Android phone. Sometimes no PC is available: then do work that needs no device.
 - Ask before changing anything the user decided (see DECISIONS.md).
+- **From 2026-12-01: APK builds first.** If today is 2026-12-01 or later and PC-TODO C-4 (new APKs) is still open, start your very first reply by reminding the user that the free EAS builds have reset and that the 립마크 and admin APKs should be built first, then guide that before anything else (user request, 2026-11-23). Remove this line once built.
 - **PC steps wait in `docs/context/PC-TODO.md`.** Add every new PC/dashboard step there. When the user says a PC is available, walk them through the open items of that list in order, one step at a time, and tick them off.
 
 ## Rules
