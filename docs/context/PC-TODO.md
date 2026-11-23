@@ -15,7 +15,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 
 ## B. Supabase 대시보드 설정 (폰 브라우저로도 가능)
 - ✅ (11-23, 이미 있었음) 비밀번호 찾기 링크: Authentication → URL Configuration → Redirect URLs → `todomateclone://**` 추가 (backend.md 8)
-- [ ] 크루 대화 푸시: Database → Webhooks → `push-crew-messages`, 표 `crew_messages`, 헤더 `x-push-secret` (backend.md 17, 아래 C의 push 다시 올리기 뒤에)
+- ✅ (11-23, 이미 있었음) 크루 대화 푸시: Database → Webhooks → `push-crew-messages`, 표 `crew_messages`, 헤더 `x-push-secret` (backend.md 17, 아래 C의 push 다시 올리기 뒤에)
 
 ## C. PC에서 (PowerShell)
 1. ✅ (11-23) 최신 코드 받기: `cd C:\Users\User\LooinRepository` → `git pull`
