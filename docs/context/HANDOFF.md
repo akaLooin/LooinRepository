@@ -6,8 +6,8 @@
 **이름(11-21)**: 메인 앱 = 립마크(Lib Mark, 디자인 앱 빌드), 복사 앱 = 기존 앱, 관리자 앱 = 립마크 관리자, 원본 앱 = todo mate. 아이콘 `app/assets/libmark/`(노트 + 초록 리본 책갈피 + 별 표시, 관리자는 주황 리본); 이름·아이콘은 새 APK부터(메인·관리자). 메인 앱 공지사항은 관리자 앱에서 쓴 것만(복사 앱의 기본 공지 숨김), 관리 메뉴에서 할 일 캘린더 뺌.
 **시작 속도(11-22)**: 업데이트 안 기다림(`fallbackToCacheTimeout` 0), 받은 업데이트는 나갈 때 적용(`lib/quietUpdates.ts`), 저장된 계정으로 바로 열기(`peekSavedUserId`).
 **아래 내비게이션 바(11-23)**: `expo-navigation-bar`(있을 때만 `requireOptionalNativeModule`, 버전 1.0.0 유지, 바 색은 다음 APK부터), `enforceContrast: false`, `setStyle`("light"=어두운 바).
-**메인 앱(11-23)**: 할 일 메뉴 아이콘, 중요 별 `OuterGlow`, 카테고리 접기, `SelectionBar`·`AgendaDrop`·주/월, `boxH`, `useSegments`; 원본 닮은 화면들 다시 만듦.
-**11-23 3차**: 메인 앱 시트 = 앱 안에 그림(`Portal`·`PortalHost`, `KeyboardSpacer`, `BackHandler`). 할 일 제목 17/24px(`TodoRow`). 미래 날짜 완료 불가(`isFutureDay`). 수동 루틴 할 일 삭제 = + 줄로. **스킨**(`theme/skins.ts`, pref `skin`, `SkinsScreen`): 황혼의 재즈(`SkinDecor` 별), 8비트 모험(`useFrame`·네모 모서리·갈무리 글꼴 OFL 일부).
+**메인 앱(11-23)**: 원본 닮은 화면들 다시 만듦(할 일 메뉴, `OuterGlow`, 카테고리 접기, `SelectionBar`·`AgendaDrop`).
+**11-23 3차**: 메인 앱 시트 = 앱 안(`Portal`). 미래 날짜 완료 불가(`isFutureDay`). **스킨**(`theme/skins.ts`, `SkinsScreen`, 장식 `SkinDecor`).
 **11-23 4차**: 아래 입력줄 키보드 기억(`QuickAdd` `want`, 다른 곳 누르면 안 열림). 달력 넘기기 = 가로 `FlatList`(`CalendarPager`). 할 일 고치기 = 제목+메모 한 시트.
 **11-23 5차(일정)**: 반복(`EventRepeat`, `expandEvents` id `원본~날짜`, `selectEvents`, "이 일정만/모든 반복" `saveEventIn`·`deleteEventIn`), 일정 카테고리(표 `event_categories`, 설정 → 일정 카테고리). SQL 20261124000000 미실행. 강조 색: 기본 = 항목 색, 설정 → 화면 → 강조 색에서 카테고리별(`glowMode`·`glowColors`, `GlowTint`). 하루 목록 맨 위: 일정 추가 | 일기.
 **11-23 6차**: 메인 앱 입력칸은 자기 글자를 가짐(`useOwnText`; Portal 시트에서 한글 조합 깨짐 방지). 달력 넘김 `snapToInterval`(폭 반올림 금지), `removeClippedSubviews` 끔.
