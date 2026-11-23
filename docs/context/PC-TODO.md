@@ -23,7 +23,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 3. [ ] 서버 함수 올리기 (`C:\Users\User\LooinRepository`에서, `<ref>` = Supabase 주소의 프로젝트 id):
    - ✅ (11-23) `npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <ref>` (크루 대화 푸시, backend.md 17)
    - ✅ (11-23) `npx.cmd supabase functions deploy admin-broadcast --project-ref <ref>` (관리자 앱 전체 알림, backend.md 23.2) — 했는지 미확인
-   - [ ] `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (D를 먼저)
+   - ✅ (11-23) `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (D를 먼저)
 4. [ ] 새 APK 빌드 (`C:\Users\User\LooinRepository\app`에서). 앱 이름·아이콘(립마크), 내비게이션 바 색, 픽셀 글꼴, 새 네이티브 부품이 이때 들어감. 데이터는 그대로:
    - [ ] 메인 앱(립마크): `npx.cmd eas-cli@latest build -p android --profile design`
    - [ ] 관리자 앱: `npx.cmd eas-cli@latest build -p android --profile admin`
@@ -34,6 +34,6 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 2. ✅ (11-23, 프로덕션 단계) (홈페이지·개인정보처리방침 주소 필요: 브랜딩에 https://github.com/akaLooin/LooinRepository 와 https://github.com/akaLooin/LooinRepository/blob/claude/replica-skill-install-ll9jb4/docs/privacy.md) Google 인증 플랫폼(OAuth 동의 화면): 앱 이름 `립마크`, 대상 **외부**, 데이터 액세스 → 범위 `calendar.events`, `calendar.calendarlist.readonly`, `openid`, `email` 추가 → 대상 → **앱 게시**(테스트 상태면 7일마다 연결이 끊김)
 3. ✅ (11-23) 클라이언트 만들기 → **웹 애플리케이션** → 승인된 리디렉션 URI `https://<ref>.supabase.co/functions/v1/google-calendar/callback` → 클라이언트 ID·보안 비밀 복사 (채팅·저장소에 붙이지 않기)
 4. ✅ (11-23) Supabase → Edge Functions → Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_STATE_SECRET`(아무 긴 글자), `GOOGLE_CRON_SECRET`(다른 긴 글자)
-5. [ ] C-3의 google-calendar 올리기
+5. ✅ (11-23) C-3의 google-calendar 올리기
 6. [ ] 15분마다 자동 맞추기: Database → Extensions → `pg_cron`, `pg_net` 켜기 → SQL Editor에 backend.md 28.7의 한 줄 (ref와 cron 비밀 넣어서)
 7. [ ] 폰: 프로필 → 구글 캘린더 → 구글 계정 연결하기 → 동의 ("확인되지 않은 앱"이 뜨면 고급 → 립마크(으)로 이동) → 연동할 캘린더 고르기
