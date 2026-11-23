@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, ChevronDown, ChevronUp, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, CalendarPlus, NotebookPen, useGlowOf, GlowTint, VisibilityIcon, type DragHandle } from "../../components";
+import { AppText, BottomSheet, Button, ChevronDown, ChevronUp, Ellipsis, MoodMark, MemoInput, ReorderableList, TitleInput, TodoRow, CalendarPlus, NotebookPen, useGlowOf, GlowTint, VisibilityIcon, type DragHandle } from "../../components";
 import { reactionsOnMine, type Received } from "../../data/social";
 import { ReactionLine } from "../social/FriendHome";
 import { smoothLayout } from "../../lib/motion";
@@ -54,7 +54,11 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
   const diary = useDB((d) => d.diaries.find((x) => x.date === day));
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
-  const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; title: string; memo: string } | null>(null);
+  const saveRenaming = () => {
+    if (renaming?.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim(), memo: renaming.memo.trim() });
+    setRenaming(null);
+  };
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
   const [editing, setEditing] = useState<EventDraft | null>(null);
   const ddays = useDB(selectDDays);
@@ -147,7 +151,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
         onAlarmPress={selecting ? undefined : () => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
         selected={selecting?.has(t.id)}
         below={received.todos[t.id]?.length ? <ReactionLine list={received.todos[t.id]} /> : undefined}
-        onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title }); } : undefined}
+        onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title, memo: t.memo ?? "" }); } : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
         right={mark(t, glow)} {...drag} />
       </GlowTint>
@@ -277,10 +281,15 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
 
 
 
-      <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setRenaming({ id, title: db.todos.find((x) => x.id === id)?.title ?? "" })} notice={notice} />
-      <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: () => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); } } : undefined}>
-        {renaming ? <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일"
-          onSubmit={() => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); }} /> : null}
+      <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => { const t = db.todos.find((x) => x.id === id); setRenaming({ id, title: t?.title ?? "", memo: t?.memo ?? "" }); }} notice={notice} />
+      {/* 할 일 고치기: the title and the memo together (user, 2026-11-23) */}
+      <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: saveRenaming } : undefined}>
+        {renaming ? (
+          <View style={{ gap: 12 }}>
+            <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일" onSubmit={saveRenaming} />
+            <MemoInput value={renaming.memo} onChangeText={(memo) => setRenaming({ ...renaming, memo })} placeholder="메모" />
+          </View>
+        ) : null}
       </BottomSheet>
       <EventEditor draft={editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); notice(m); }} />
       <ListMenuSheet open={listMenu === "menu"} onClose={() => setListMenu(null)} onConfirm={runList} />

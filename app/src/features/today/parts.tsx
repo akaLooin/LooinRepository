@@ -65,6 +65,9 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
 
 /** The bar at the bottom: type a to-do, it goes to the shown day in the chosen category (tap the chip to change it). */
 /** `day` null = 보관함 (no date). */
+/** The text field that has the cursor, if any (not on the web). */
+const focusedField = () => (TextInput.State?.currentlyFocusedInput?.() ?? null);
+
 export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
   const t = useT();
   const { c, skin } = useTheme();
@@ -79,6 +82,14 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
   // - Another field took over (a memo sheet) and closed, or the user comes back from another screen or tab while
   //   typing here: the field takes the cursor again and the keyboard opens.
   const want = useRef(false);
+  const selfBlur = useRef(false); // the field put away on purpose (leaving the screen or tab): the wish stays
+  const blurQuietly = () => { if (input.current?.isFocused()) { selfBlur.current = true; input.current.blur(); } };
+  // the cursor left the field: if no other field took it over (a tap somewhere else closed the keyboard), the
+  // keyboard stays closed from now on (user, 2026-11-23: it came back and would not close)
+  const onBlur = () => {
+    if (selfBlur.current) { selfBlur.current = false; return; }
+    setTimeout(() => { if (!focusedField()) want.current = false; }, 60);
+  };
   const screenFocused = useIsFocused();
   const focusedRef = useRef(screenFocused);
   focusedRef.current = screenFocused;
@@ -87,22 +98,22 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
       // wait a moment: a screen opening on top hides the keyboard at the same time as it takes the focus
       setTimeout(() => {
         if (!focusedRef.current) return; // another screen opened on top: keep the wish for the way back
-        const holder = TextInput.State.currentlyFocusedInput();
+        const holder = focusedField();
         if (holder) {
           want.current = false; // closed by the user
           if (input.current?.isFocused()) input.current.blur();
-        } else if (want.current) {
+        } else if (want.current && !Keyboard.isVisible()) {
           input.current?.focus();
         }
       }, 80);
     });
     // shown again (a tab coming back): reopen if it was open; hidden (another tab): put the cursor away for now
     if (want.current) setTimeout(() => input.current?.focus(), 120);
-    return () => { sub.remove(); if (input.current?.isFocused()) input.current.blur(); };
+    return () => { sub.remove(); blurQuietly(); };
   }, []);
   // back from a screen opened on top (시간표, 일기 …)
   useEffect(() => {
-    if (!screenFocused) { if (input.current?.isFocused()) input.current.blur(); return; } // leaving: put the cursor away, keep the wish
+    if (!screenFocused) { blurQuietly(); return; } // leaving: put the cursor away, keep the wish
     if (want.current) { const t = setTimeout(() => input.current?.focus(), 150); return () => clearTimeout(t); }
   }, [screenFocused]);
   const submit = () => {
@@ -120,7 +131,7 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
   return (
     <View style={{ paddingHorizontal: G, paddingTop: 8, paddingBottom: 10, backgroundColor: c.bg }}>
       <View style={{ height: 48, borderRadius: skin.square ? 3 : 24, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, gap: 8, ...(skin.square ? { borderWidth: 2, borderColor: c.text } : {}) }}>
-        <TextInput ref={input} onFocus={() => { want.current = true; }} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
+        <TextInput ref={input} onFocus={() => { want.current = true; }} onBlur={onBlur} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
           placeholder={day ? t("quickadd.placeholder", { date: `${parseDay(day).m}월 ${parseDay(day).d}일` }) : "날짜 없이 보관할 할 일"} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
           style={{ flex: 1, minWidth: 0, color: c.text, fontSize: tokens.type.bodyLg.size, fontFamily: fontFamily(400), paddingVertical: 0, outlineStyle: "none" as never }} />
         <Pressable onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={`카테고리 ${cat.title}, 바꾸기`}
