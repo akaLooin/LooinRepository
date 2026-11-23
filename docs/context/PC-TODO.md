@@ -39,6 +39,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 7. ✅ (11-23, 연결됨) 폰: 프로필 → 구글 캘린더 → 구글 계정 연결하기 → 동의 ("확인되지 않은 앱"이 뜨면 고급 → 립마크(으)로 이동) → 연동할 캘린더 고르기
 8. ✅ (11-23) 연결 뒤 앱으로 바로 돌아오게 고친 서버 기능 다시 올리기: `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (Supabase 기본 주소는 웹페이지를 못 보여 줘서 안내 페이지 글자가 깨졌음)
 
+9. [ ] 캘린더 색 바뀜 따라가기 반영(11-23): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>`
+
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행
-

@@ -9,6 +9,8 @@
 //   {action: "cron"} with header x-cron-secret: sync everyone (every 15 minutes, set up with pg_cron).
 // GET …/google-calendar/callback: Google sends the browser back here after the user agreed.
 //
+// Colours: an event wears its own Google colour (colorId) if it has one, else its calendar's; when a calendar's colour
+// changes in Google, the events that wore it (and its 일정 카테고리) follow.
 // How a sync goes, per user: refresh the calendar list (the main one picked at first), give each picked calendar
 // a 일정 카테고리 of its name and colour, pull Google's changes since last time (sync tokens), then send the app's
 // changes to Google. Each event says where it goes (events.google_calendar_id, picked in the event editor; empty =
@@ -157,6 +159,16 @@ async function syncUser(db: SupabaseClient, uid: string) {
     selected: had.get(c.id)?.selected ?? (first && !!c.primary), is_default: had.get(c.id)?.is_default ?? (first && !!c.primary),
   }));
   if (rows.length) await db.from("google_calendars").upsert(rows);
+  // a calendar's colour changed in Google: its events that wear the calendar's colour (none of their own) and its
+  // 일정 카테고리 follow it; events with their own Google colour keep theirs (user, 2026-11-23)
+  for (const r of rows) {
+    const old = had.get(r.calendar_id);
+    if (!old || old.color.toUpperCase() === r.color) continue;
+    const { data: moved } = await db.from("events").update({ color: r.color }).eq("user_id", uid).eq("google_calendar_id", r.calendar_id).ilike("color", old.color).is("deleted_at", null).select("id, updated_at");
+    // not a change to send back to Google: the links stay in step
+    for (const m of moved ?? []) await db.from("google_event_links").update({ synced_at: m.updated_at }).eq("event_id", m.id);
+    if (old.category_id) await db.from("event_categories").update({ color: r.color }).eq("id", old.category_id).ilike("color", old.color);
+  }
   const gone = [...had.keys()].filter((id) => !list.some((c) => c.id === id));
   if (gone.length) await db.from("google_calendars").delete().eq("user_id", uid).in("calendar_id", gone);
   const { data: calsNow } = await db.from("google_calendars").select("*").eq("user_id", uid);
