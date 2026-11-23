@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, ScrollView, View } from "react-native";
 import { AppText, Check, ConfirmDialog, ScreenHeader, Toggle, useFrame, useToast } from "../../components";
 import { goBack } from "../../lib/nav";
+import { usePrefs } from "../../data/prefs";
 import {
-  connectGoogle, disconnectGoogle, googleCalendars, googleStatus, pickCalendar, syncGoogle, GoogleError,
+  connectGoogle, disconnectGoogle, googleCalendars, googleColors, googleStatus, pickCalendar, syncGoogle, GoogleError,
   type GoogleCalendar, type GoogleStatus,
 } from "../../lib/googleCalendar";
 import { onColor, tokens, useInsets, useTheme } from "../../theme";
@@ -23,6 +24,7 @@ export function GoogleCalendarScreen() {
   const { c } = useTheme();
   const insets = useInsets();
   const frame = useFrame();
+  const prefs = usePrefs();
   const [toast, notice] = useToast();
   const [status, setStatus] = useState<GoogleStatus | null>(null);
   const [cals, setCals] = useState<GoogleCalendar[]>([]);
@@ -40,6 +42,7 @@ export function GoogleCalendarScreen() {
     const s = await googleStatus();
     setStatus(s);
     setCals(s.connected ? await googleCalendars() : []);
+    if (s.connected) googleColors().catch(() => {});
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   // back from the browser after agreeing on Google's page
@@ -83,6 +86,9 @@ export function GoogleCalendarScreen() {
             <View style={{ ...card, padding: 16, gap: 4 }}>
               <AppText variant="body" weight={700}>{status.email ?? "구글 계정"}</AppText>
               <AppText variant="helper" color={status.last_error ? "danger" : "textMuted"}>{status.last_error ?? when(status.last_sync_at)}</AppText>
+              {prefs.googleEventColors.length ? (
+                <AppText variant="small" color="textMuted">{`구글이 알려 준 색: 일정 색 ${prefs.googleEventColors.length}가지 · 캘린더 색 ${prefs.googleCalendarColorCount}가지`}</AppText>
+              ) : null}
             </View>
 
             <AppText variant="small" weight={700} color="textMuted" style={{ marginTop: 22, marginBottom: 8, marginLeft: 4 }} accessibilityRole="header">연동할 캘린더</AppText>

@@ -58,6 +58,15 @@ export async function pickCalendar(id: string, selected: boolean) {
   await googleCalendars();
 }
 
+/** The colours this account's Google Calendar offers (kept on the phone for the event editor). */
+export async function googleColors() {
+  const r = (await call("colors")) as { event?: Record<string, string>; calendar?: Record<string, string> };
+  const event = Object.entries(r.event ?? {}).map(([id, hex]) => ({ id, hex })).sort((a, b) => Number(a.id) - Number(b.id));
+  if (event.length) setPref("googleEventColors", event);
+  setPref("googleCalendarColorCount", Object.keys(r.calendar ?? {}).length);
+  return event;
+}
+
 let lastSync = 0;
 let syncing: Promise<unknown> | null = null;
 /** Both ways now: the app's changes first (the usual sync), then the server with Google, then pull what came. */
@@ -68,6 +77,7 @@ export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number }
     const r = await call("sync");
     lastSync = Date.now();
     await googleCalendars();
+    await googleColors().catch(() => {});
     if (r.changed) await syncNow();
     return r;
   })();
@@ -80,6 +90,7 @@ export async function disconnectGoogle() {
   setPref("googleLinked", false);
   setPref("googleCalendars", []);
   setPref("googleEmail", null);
+  setPref("googleEventColors", []);
   await syncNow();
 }
 

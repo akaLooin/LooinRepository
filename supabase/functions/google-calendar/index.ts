@@ -60,6 +60,10 @@ Deno.serve(async (req) => {
   if (input?.action === "sync") {
     try { return json(await syncUser(db, uid)); } catch (e) { return json({ error: String(e) }, 500); }
   }
+  // the colours this account's Google Calendar offers (user, 2026-11-23: more than eleven), for the event editor
+  if (input?.action === "colors") {
+    try { return json(await livePalette(await accessToken(db, uid))); } catch (e) { return json({ error: String(e) }, 500); }
+  }
   if (input?.action === "disconnect") {
     const { data: acc } = await db.from("google_accounts").select("refresh_token").eq("user_id", uid).maybeSingle();
     if (acc) await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(acc.refresh_token)}`, { method: "POST" }).catch(() => {});
@@ -197,7 +201,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
   }
 
   // the eleven colours as Google's apps show them (the colors API answers older shades)
-  const palette = GOOGLE_EVENT_COLORS;
+  const palette = (await livePalette(token)).event;
 
   // 2. pull
   for (const c of picked) {
@@ -263,6 +267,18 @@ async function syncUser(db: SupabaseClient, uid: string) {
   }
   await db.from("google_accounts").update({ last_sync_at: new Date().toISOString(), last_error: null }).eq("user_id", uid);
   return { ok: true, ...stats, changed: stats.pulled > 0 };
+}
+
+/**
+ * The colours Google answers for this account, by colorId: `event` (an event's own colour) and `calendar`. The first
+ * eleven event colours are given in the shades Google's apps show (the API still answers older, paler ones); any
+ * other colour comes as Google gives it. Without an answer, the eleven.
+ */
+async function livePalette(token: string): Promise<{ event: Record<string, string>; calendar: Record<string, string> }> {
+  const r = await g(token, "/colors");
+  const pick = (o: Record<string, Row> | undefined) => Object.fromEntries(Object.entries(o ?? {}).map(([id, v]) => [id, String(v.background ?? "").toUpperCase()]).filter(([, c]) => /^#[0-9A-F]{6}$/.test(c)));
+  const event = { ...pick(r.body?.event), ...GOOGLE_EVENT_COLORS };
+  return { event: Object.keys(event).length ? event : { ...GOOGLE_EVENT_COLORS }, calendar: pick(r.body?.calendar) };
 }
 
 /** The days of a series that Google keeps as changed single times (sent as such, not as EXDATEs). */

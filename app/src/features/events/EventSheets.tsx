@@ -9,7 +9,7 @@ import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCatego
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
 import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, REPEAT_LABELS, repeatLabel, toMinutes, type CalEvent, type EventRepeat } from "../../lib/events";
 import { DESIGN_TRIAL } from "../../lib/variant";
-import { GOOGLE_COLORS, isGoogleColor } from "../../lib/googleColors";
+import { googleColorChoices, isGoogleColor } from "../../lib/googleColors";
 import { fontFamily, onColor, tokens, useTheme } from "../../theme";
 
 export type EventDraft = Omit<CalEvent, "id"> & { id?: string };
@@ -60,7 +60,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   const pickGoogleCalendar = (id: string) => {
     const cal = prefs.googleCalendars.find((k) => k.id === id);
     if (!cal) return;
-    put({ googleCalendarId: id, ...(cal.categoryId ? { categoryId: cal.categoryId } : {}), ...(!isGoogleColor(e.color, cal.color) || e.color === (prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.color) ? { color: cal.color } : {}) });
+    put({ googleCalendarId: id, ...(cal.categoryId ? { categoryId: cal.categoryId } : {}), ...(!isGoogleColor(e.color, cal.color, prefs.googleEventColors) || e.color === (prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.color) ? { color: cal.color } : {}) });
   };
   const chooseAccount = (google: boolean) => {
     if (!google) { put({ googleCalendarId: null }); return; }
@@ -161,7 +161,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <AppText variant="small" color="textMuted">구글 캘린더에 올리는 일정이라 구글 캘린더에 있는 색만 고를 수 있어요</AppText>
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
           {option(gcal.color, "캘린더 색")}
-          {GOOGLE_COLORS.map((k) => option(k.hex, k.name))}
+          {googleColorChoices(prefs.googleEventColors).map((k) => option(k.hex, k.name))}
         </View>
         <Button kind="sheetPrimary" label="완료" onPress={back} />
       </View>

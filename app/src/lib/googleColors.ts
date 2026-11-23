@@ -16,5 +16,14 @@ export const GOOGLE_COLORS: { id: string; hex: string; name: string }[] = [
   { id: "3", hex: "#8E24AA", name: "포도" },
   { id: "8", hex: "#616161", name: "흑연" },
 ];
-export const isGoogleColor = (hex: string, calendarColor?: string) =>
-  GOOGLE_COLORS.some((c) => c.hex === hex.toUpperCase()) || (!!calendarColor && calendarColor.toUpperCase() === hex.toUpperCase());
+/**
+ * The colours to offer: what Google answered for this account (user, 2026-11-23: there are more than eleven), named
+ * where we know the name; the eleven when nothing came yet.
+ */
+export function googleColorChoices(live: { id: string; hex: string }[]): { id: string; hex: string; name: string }[] {
+  if (!live.length) return GOOGLE_COLORS;
+  const named = new Map(GOOGLE_COLORS.map((c) => [c.id, c.name]));
+  return live.map((c, i) => ({ ...c, name: named.get(c.id) ?? `색 ${i + 1}` }));
+}
+export const isGoogleColor = (hex: string, calendarColor: string | undefined, live: { id: string; hex: string }[]) =>
+  googleColorChoices(live).some((c) => c.hex.toUpperCase() === hex.toUpperCase()) || (!!calendarColor && calendarColor.toUpperCase() === hex.toUpperCase());
