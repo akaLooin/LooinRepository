@@ -33,3 +33,4 @@ export * from "./PhotoViewer";
 export * from "./TabPills";
 export * from "./Portal";
 export * from "./SkinDecor";
+export * from "./UpdateCurtain";

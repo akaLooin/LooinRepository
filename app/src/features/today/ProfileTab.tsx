@@ -4,7 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Bell, ChevronRight, CircleQuestionMark, FlaskConical, Info, Lock, Megaphone, Monitor, Palette, Pencil, Shield, SmilePlus, Tag, CalendarDays, StoredImage, User, Users, useFrame,
+  AppText, Bell, ChevronRight, CircleQuestionMark, FlaskConical, Info, Lock, Megaphone, Monitor, Palette, Pencil, Shield, SmilePlus, Tag, CalendarDays, StoredImage, User, Users, useFrame, useToast, RefreshCw,
 } from "../../components";
 import { followList, getPerson } from "../../data/social";
 import { sessionUserId, useDB } from "../../data/store";
@@ -12,6 +12,7 @@ import { streakOf, today } from "../../lib/dates";
 import { useFeature, useT } from "../../lib/appConfig";
 import { unregisterPush } from "../../lib/push";
 import { supabase } from "../../lib/supabase";
+import { updateNow } from "../../lib/updateNow";
 import { tokens, useInsets, useTheme } from "../../theme";
 
 const G = tokens.layout.gutter;
@@ -27,6 +28,7 @@ const GROUPS: [string, Row[]][] = [
 export function SettingsGroups() {
   const { c } = useTheme();
   const frame = useFrame();
+  const [toast, notice] = useToast();
   const version = Constants.expoConfig?.version ?? "";
   const at = Updates.isEnabled && !Updates.isEmbeddedLaunch && Updates.createdAt ? Updates.createdAt : null;
   const updated = at ? `${at.getMonth() + 1}월 ${at.getDate()}일 ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")} 업데이트` : "설치한 그대로";
@@ -49,6 +51,18 @@ export function SettingsGroups() {
       ))}
       <View style={{ marginTop: 22, alignItems: "center", gap: 2 }}>
         <AppText variant="small" color="textMuted">{`버전 ${version} · ${updated}`}</AppText>
+        {/* 지금 업데이트 (user, 2026-11-23): a new version at once, without closing the app */}
+        <Pressable onPress={async () => {
+            const r = await updateNow();
+            if (r === "latest") notice("이미 최신 버전이에요");
+            else if (r === "unavailable") notice("여기서는 업데이트를 받을 수 없어요");
+            else if (r === "failed") notice("새 버전을 받지 못했어요. 인터넷을 확인해 주세요");
+          }} accessibilityRole="button" accessibilityLabel="지금 업데이트"
+          style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 40, paddingHorizontal: 16, marginTop: 8, borderRadius: 20, backgroundColor: c.surface, ...frame }}>
+          <RefreshCw size={15} color={c.text} />
+          <AppText variant="helper" weight={700}>지금 업데이트</AppText>
+        </Pressable>
+        {toast}
         {supabase ? (
           <Pressable onPress={async () => { await unregisterPush(); await supabase?.auth.signOut(); }} accessibilityRole="button" style={{ height: 44, justifyContent: "center" }}>
             <AppText variant="helper" color="danger" weight={600}>로그아웃</AppText>

@@ -18,6 +18,7 @@ import { loadPrefs, usePrefs } from "../data/prefs";
 import { KeyboardRoot } from "../components/KeyboardSpacer";
 import { PhotoViewerHost } from "../components/PhotoViewer";
 import { PortalHost } from "../components/Portal";
+import { UpdateCurtain } from "../components/UpdateCurtain";
 import { AuthGate } from "../features/auth/AuthGate";
 import { AdminApp } from "../features/admin/AdminApp";
 import { useQuietUpdates } from "../lib/quietUpdates";
@@ -81,6 +82,8 @@ function Shell() {
         </AuthGate>
         {/* the main app's sheets, drawn above every screen in the app's own window */}
         <PortalHost />
+        {/* 지금 업데이트: 립마크's own screen while a new version comes in (main app) */}
+        {DESIGN_TRIAL ? <UpdateCurtain /> : null}
       </ScaledRoot>
       <PhotoViewerHost />
     </View>

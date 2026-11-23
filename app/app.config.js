@@ -29,12 +29,19 @@ module.exports = ({ config }) => {
       monochromeImage: "./assets/libmark/adaptive-monochrome.png",
     },
   });
+  // the screen Android shows while the app starts (and restarts for an update): 립마크's dark green with its mark,
+  // not white (user, 2026-11-23). Native: comes with the next APK.
+  const splash = (pre) => ["expo-splash-screen", {
+    backgroundColor: "#0e1311", image: `./assets/libmark/${pre}adaptive-foreground.png`, imageWidth: 200, resizeMode: "contain",
+    dark: { backgroundColor: "#0e1311", image: `./assets/libmark/${pre}adaptive-foreground.png` },
+  }];
   if (admin) return {
     ...config,
     name: "립마크 관리자",
     icon: libmarkIcons("admin-").icon,
     scheme: "todomateclone-admin",
     android: { ...android, adaptiveIcon: libmarkIcons("admin-").adaptiveIcon, package: "com.looin.todomateclone.admin" },
+    plugins: [...(config.plugins ?? []), splash("admin-")],
     extra: { ...config.extra, variant: "admin" },
   };
   if (!design) return { ...config, android, extra: { ...config.extra, variant: "main" } };
@@ -44,6 +51,7 @@ module.exports = ({ config }) => {
     icon: libmarkIcons("").icon,
     scheme: "todomateclone-design",
     android: { ...android, adaptiveIcon: libmarkIcons("").adaptiveIcon, package: "com.looin.todomateclone.design" },
+    plugins: [...(config.plugins ?? []), splash("")],
     extra: { ...config.extra, variant: "design" },
   };
 };

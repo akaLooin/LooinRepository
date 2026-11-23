@@ -24,7 +24,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
    - ✅ (11-23) `npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <ref>` (크루 대화 푸시, backend.md 17)
    - ✅ (11-23) `npx.cmd supabase functions deploy admin-broadcast --project-ref <ref>` (관리자 앱 전체 알림, backend.md 23.2) — 했는지 미확인
    - ✅ (11-23) `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (D를 먼저)
-4. [ ] (11-23 시도: expo 무료 요금제의 이번 달 안드로이드 빌드 횟수를 다 써서 실패 → **12월 1일 이후** 다시. 유료 Starter로 바로 할 수도 있음) 새 APK 빌드 (`C:\Users\User\LooinRepository\app`에서). 앱 이름·아이콘(립마크), 내비게이션 바 색, 픽셀 글꼴, 새 네이티브 부품이 이때 들어감. 데이터는 그대로:
+4. [ ] (11-23 시도: expo 무료 요금제의 이번 달 안드로이드 빌드 횟수를 다 써서 실패 → **12월 1일 이후** 다시. 유료 Starter로 바로 할 수도 있음) 새 APK 빌드 (`C:\Users\User\LooinRepository\app`에서). **빌드 전에 `git pull` → `npm.cmd install` 먼저**(11-23 expo-splash-screen 추가: 시작 화면이 흰색 → 립마크 짙은 초록). 앱 이름·아이콘(립마크), 내비게이션 바 색, 픽셀 글꼴, 새 네이티브 부품이 이때 들어감. 데이터는 그대로:
    - [ ] 메인 앱(립마크): `npx.cmd eas-cli@latest build -p android --profile design`
    - [ ] 관리자 앱: `npx.cmd eas-cli@latest build -p android --profile admin`
    - [ ] 복사 앱(원할 때만): `npx.cmd eas-cli@latest build -p android --profile preview`

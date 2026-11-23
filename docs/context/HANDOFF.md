@@ -18,6 +18,7 @@
 **11-23 7차**: 강조 불씨 켜고 끄기(설정 → 화면, pref `glowParticles`, `Embers`가 봄), 디데이 날짜 = 숫자 + 뒤에 퍼지는 빨간 빛(`Calendar` `DDayNumber`: SVG 방사형 그라데이션; 글자 그림자는 안드로이드에서 네모로 잘려서 안 씀, 맥박 0.35~1, 빛 44×32로 별을 안 덮음, 고른 날엔 숫자 onSelected 색). 달력 줄은 일정 막대가 없어도 막대 2줄 자리를 늘 둠(달마다 크기 같음). 업데이트 재시작 뒤에도 보던 탭 유지(`lib/resume.ts`: 재시작 직전에만 탭 저장), 사용자가 앱을 완전히 닫으면 홈부터.
 **11-23 8차**: 디데이 안내 = `parts.tsx` `DDayNotice`(달력·홈 맨 위 같은 자리, 홈의 디데이 카드는 뺌). 메모를 눌러도 제목+메모 시트(`AgendaList` `editTodo(id, "memo")`, 메모 공개 칩 `MemoLockChip` 포함). 스킨 추가: 설레는 마음(분홍, 하트가 떠오름), 첫눈 오는 날(하늘색·흰색, 눈이 내림) — `SkinDecor` `Drift`, 지금은 모든 스킨 무료(`FREE_SKINS`).
 **11-23 9차**: 일기(메인 앱) 새 구조 = 책상 위 종이 한 장(`DiaryScreen` DESIGN_TRIAL 분기: 큰 날짜, 오른쪽 위 기울어진 "기분 도장", **낭만 농도**(기분 온도 대신, 같은 `moodTemp` 0~100을 %로, 단계 5개 `ROMANCE_STAGES`·`RomanceGauge`), 사진 2열, 종이 색, 아래 이름 붙은 도구줄). 색 고르기 두 줄 버그: `ColorCodeInput`에 `presets`를 넘겨 한 줄만.
+**11-23 10차**: 프로필 맨 아래 "지금 업데이트"(`lib/updateNow.ts`: 확인→받기→바로 적용, 보던 탭 유지) + 업데이트 중 립마크 화면(`UpdateCurtain`, 루트 `_layout`). 시작 화면(흰색) → 짙은 초록+마크 = `expo-splash-screen` 플러그인(`app.config.js`, 메인·관리자), **새 APK부터**(버전은 1.0.0 그대로: OTA 계속).
 todo mate 개인용 재구현(Expo + Supabase).
 
 ## 진행 현황 (`replica/features.csv`의 clone 열)
