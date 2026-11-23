@@ -35,6 +35,8 @@ export type EventRepeat = {
   weekdays?: number[];
   /** the last day it may start on (inclusive); none = keeps going */
   until?: Day | null;
+  /** every n days / weeks / months / years (from Google Calendar; 1 when missing) */
+  every?: number;
 };
 
 export type EventCategory = { id: string; title: string; color: string; sortOrder: number };
@@ -46,7 +48,9 @@ export function repeatLabel(r: EventRepeat | null | undefined, start: Day): stri
   if (!r) return "반복 안 함";
   const [, m, d] = start.split("-").map(Number);
   const days = (r.weekdays?.length ? [...r.weekdays].sort() : [weekdayOf(start)]).map((x) => WD[x]).join("·");
-  const base = r.kind === "weekly" ? `매주 ${days}` : r.kind === "monthly" ? `매월 ${d}일` : r.kind === "yearly" ? `매년 ${m}월 ${d}일` : "매일";
+  const n = r.every && r.every > 1 ? r.every : 0;
+  const base = r.kind === "weekly" ? `${n ? `${n}주마다` : "매주"} ${days}` : r.kind === "monthly" ? `${n ? `${n}개월마다` : "매월"} ${d}일`
+    : r.kind === "yearly" ? `${n ? `${n}년마다` : "매년"} ${m}월 ${d}일` : n ? `${n}일마다` : "매일";
   if (!r.until) return base;
   const [, um, ud] = r.until.split("-").map(Number);
   return `${base} · ${um}월 ${ud}일까지`;
@@ -57,12 +61,17 @@ const weekdayOf = (d: Day) => { const [y, m, dd] = d.split("-").map(Number); ret
 export function repeatsOn(e: Pick<CalEvent, "startDate" | "repeat">, day: Day): boolean {
   const r = e.repeat;
   if (!r || day < e.startDate || (r.until && day > r.until)) return false;
-  const [, sm, sd] = e.startDate.split("-").map(Number);
-  const [, m, d] = day.split("-").map(Number);
-  if (r.kind === "daily") return true;
-  if (r.kind === "weekly") return (r.weekdays?.length ? r.weekdays : [weekdayOf(e.startDate)]).includes(weekdayOf(day));
-  if (r.kind === "monthly") return d === sd;
-  return m === sm && d === sd;
+  const [sy, sm, sd] = e.startDate.split("-").map(Number);
+  const [y, m, d] = day.split("-").map(Number);
+  const n = Math.max(1, r.every ?? 1);
+  if (r.kind === "daily") return daysBetween(e.startDate, day) % n === 0;
+  if (r.kind === "weekly") {
+    // weeks counted from the first day's week (Sunday start, as Google counts WKST=SU)
+    const weeks = Math.floor((daysBetween(e.startDate, day) + weekdayOf(e.startDate)) / 7);
+    return weeks % n === 0 && (r.weekdays?.length ? r.weekdays : [weekdayOf(e.startDate)]).includes(weekdayOf(day));
+  }
+  if (r.kind === "monthly") return d === sd && ((y - sy) * 12 + (m - sm)) % n === 0;
+  return m === sm && d === sd && (y - sy) % n === 0;
 }
 
 /**

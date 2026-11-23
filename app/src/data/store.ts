@@ -114,6 +114,10 @@ export function useSyncStatus() {
 
 let running = false;
 let again = false;
+/** Told after each sync that went through (구글 캘린더 runs its own sync after the app's). */
+const synced = new Set<(info: { eventsSent: boolean }) => void>();
+export const onSynced = (f: (info: { eventsSent: boolean }) => void) => { synced.add(f); return () => { synced.delete(f); }; };
+
 export async function syncNow() {
   if (session.mode !== "cloud") return;
   if (running) { again = true; return; }
@@ -139,6 +143,8 @@ export async function syncNow() {
     persistSoon();
     notificationsSoon();
     setStatus({ state: "idle", lastSyncedAt: new Date().toISOString(), rejected: [...status.rejected, ...rejected].slice(-20) });
+    const eventsSent = Object.keys(sent.upsert.events).length + Object.keys(sent.remove.events).length + Object.keys(sent.upsert.event_categories).length > 0;
+    synced.forEach((f) => { try { f({ eventsSent }); } catch { /* a listener's trouble is its own */ } });
   } catch {
     setStatus({ state: "offline" });
   } finally {

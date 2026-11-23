@@ -4,7 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Bell, ChevronRight, CircleQuestionMark, FlaskConical, Info, Lock, Megaphone, Monitor, Palette, Pencil, Shield, SmilePlus, Tag, StoredImage, User, Users, useFrame,
+  AppText, Bell, ChevronRight, CircleQuestionMark, FlaskConical, Info, Lock, Megaphone, Monitor, Palette, Pencil, Shield, SmilePlus, Tag, CalendarDays, StoredImage, User, Users, useFrame,
 } from "../../components";
 import { followList, getPerson } from "../../data/social";
 import { sessionUserId, useDB } from "../../data/store";
@@ -19,7 +19,7 @@ const G = tokens.layout.gutter;
 type Row = [string, typeof User, string];
 const GROUPS: [string, Row[]][] = [
   ["계정", [["계정", User, "/settings/account"], ["개인정보 보호", Shield, "/settings/privacy"], ["앱 권한", Lock, "/settings/permissions"]]],
-  ["앱", [["스킨", Palette, "/settings/skins"], ["일정 카테고리", Tag, "/settings/event-categories"], ["화면", Monitor, "/settings/display"], ["알림", Bell, "/settings/notifications"], ["내 스티커", SmilePlus, "/settings/stickers"], ["실험실", FlaskConical, "/settings/lab"]]],
+  ["앱", [["스킨", Palette, "/settings/skins"], ["일정 카테고리", Tag, "/settings/event-categories"], ["구글 캘린더", CalendarDays, "/settings/google"], ["화면", Monitor, "/settings/display"], ["알림", Bell, "/settings/notifications"], ["내 스티커", SmilePlus, "/settings/stickers"], ["실험실", FlaskConical, "/settings/lab"]]],
   ["도움", [["공지사항", Megaphone, "/settings/notices"], ["문의하기", CircleQuestionMark, "/settings/faq"], ["정보", Info, "/settings/about"]]],
 ];
 

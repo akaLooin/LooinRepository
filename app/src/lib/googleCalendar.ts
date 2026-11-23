@@ -1,0 +1,94 @@
+/**
+ * 구글 캘린더 연동 (메인 앱, 2026-11-23; user's choice: two ways, through the server, calendars picked in 설정).
+ * The server function `google-calendar` talks to Google; the app only connects, picks calendars and asks for a
+ * sync. Events from Google arrive like any other change (the usual sync pulls them).
+ */
+import { Linking } from "react-native";
+import { onSynced, syncNow } from "../data/store";
+import { getPrefs, setPref } from "../data/prefs";
+import { supabase } from "./supabase";
+
+export type GoogleStatus = { connected: boolean; email?: string | null; last_sync_at?: string | null; last_error?: string | null; missing?: boolean };
+export type GoogleCalendar = { calendar_id: string; summary: string; color: string; can_write: boolean; selected: boolean; is_default: boolean };
+
+const FN = "google-calendar";
+/** "not_set_up": the server's Google keys are not in yet (a PC step); "no_sql": the SQL has not been run. */
+export class GoogleError extends Error {}
+
+async function call(action: string): Promise<Record<string, unknown>> {
+  if (!supabase) throw new GoogleError("로그인이 필요해요");
+  const { data, error } = await supabase.functions.invoke(FN, { body: { action } });
+  if (error) {
+    const ctx = (error as { context?: Response }).context;
+    const body = ctx ? await ctx.json().catch(() => null) : null;
+    if (body?.error === "not_set_up") throw new GoogleError("서버에 구글 설정이 아직 없어요 (PC에서 할 일)");
+    if (ctx?.status === 404) throw new GoogleError("서버에 연동 기능이 아직 없어요 (PC에서 할 일)");
+    throw new GoogleError(body?.error ? String(body.error) : "서버에 닿지 않았어요");
+  }
+  return data ?? {};
+}
+
+export async function googleStatus(): Promise<GoogleStatus> {
+  if (!supabase) return { connected: false };
+  const { data, error } = await supabase.rpc("google_status");
+  if (error) return { connected: false, missing: true };
+  const s = data as GoogleStatus;
+  if (getPrefs().googleLinked !== !!s.connected) setPref("googleLinked", !!s.connected);
+  return s;
+}
+
+export async function googleCalendars(): Promise<GoogleCalendar[]> {
+  if (!supabase) return [];
+  const { data } = await supabase.from("google_calendars").select("calendar_id, summary, color, can_write, selected, is_default").order("summary");
+  return (data ?? []) as GoogleCalendar[];
+}
+
+/** Opens Google's agreement page in the browser; Google sends it back to the server, which keeps the account. */
+export async function connectGoogle() {
+  const { url } = await call("auth-url");
+  await Linking.openURL(String(url));
+}
+
+export async function pickCalendar(id: string, selected: boolean) {
+  await supabase?.from("google_calendars").update({ selected }).eq("calendar_id", id);
+}
+/** Where new events (and events without a 일정 카테고리) go. */
+export async function setDefaultCalendar(id: string) {
+  await supabase?.from("google_calendars").update({ is_default: false }).neq("calendar_id", id);
+  await supabase?.from("google_calendars").update({ is_default: true, selected: true }).eq("calendar_id", id);
+}
+
+let lastSync = 0;
+let syncing: Promise<unknown> | null = null;
+/** Both ways now: the app's changes first (the usual sync), then the server with Google, then pull what came. */
+export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number }> {
+  if (syncing) await syncing;
+  const run = (async () => {
+    await syncNow();
+    const r = await call("sync");
+    lastSync = Date.now();
+    if (r.changed) await syncNow();
+    return r;
+  })();
+  syncing = run;
+  try { return (await run) as { pulled?: number; pushed?: number }; } finally { syncing = null; }
+}
+
+export async function disconnectGoogle() {
+  await call("disconnect");
+  setPref("googleLinked", false);
+  await syncNow();
+}
+
+/** After the app's own sync: if connected, let the server sync with Google when events changed or a while passed. */
+let started = false;
+export function startGoogleAutoSync() {
+  if (started) return;
+  started = true;
+  onSynced(({ eventsSent }) => {
+    if (!getPrefs().googleLinked || syncing) return;
+    if (!eventsSent && Date.now() - lastSync < 3 * 60000) return;
+    lastSync = Date.now();
+    syncing = call("sync").then((r) => (r.changed ? syncNow() : undefined)).catch(() => {}).finally(() => { syncing = null; });
+  });
+}

@@ -22,6 +22,7 @@ import { AuthGate } from "../features/auth/AuthGate";
 import { AdminApp } from "../features/admin/AdminApp";
 import { useQuietUpdates } from "../lib/quietUpdates";
 import { ADMIN_APP, DESIGN_TRIAL } from "../lib/variant";
+import { startGoogleAutoSync } from "../lib/googleCalendar";
 import { refreshAppConfig, useAppConfig } from "../lib/appConfig";
 import { AppText } from "../components/AppText";
 import { extraFontFiles, fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
@@ -39,6 +40,8 @@ function Shell() {
   }, [font, setFont]);
   useEffect(() => { loadPrefs(); }, []);
   useQuietUpdates(); // new versions download in the background and switch over when the app is left
+  // 구글 캘린더 (main app): after the app's own sync, the server syncs with Google when connected
+  useEffect(() => { if (DESIGN_TRIAL && !ADMIN_APP) startGoogleAutoSync(); }, []);
   // tapping a push opens its chat or the 알림 tab (also when the tap started the app)
   useEffect(() => {
     if (Platform.OS === "web") return;
