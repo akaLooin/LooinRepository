@@ -43,7 +43,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 10. ✅ (11-23, found 0 · removed 0: 서버가 올린 립마크 일정은 없었음) (1회만) 립마크에서 올라간 일정을 구글에서 빼기: 9번 올린 뒤 SQL Editor에서 `net.http_post(... body {"action":"remove-app-uploads"}, 헤더 x-cron-secret)` 한 번 → `select status_code, content from net._http_response order by id desc limit 1;`로 결과 확인
 11. ✅ (11-23, items 957 · colorId 73 · eventLabelId 83 · 라벨 정의는 calendars 권한 필요) 서버 다시 올리기(보기만 캘린더 보호 등) → **1회만** 색 다시 맞추기: SQL Editor에서 `net.http_post(... body {"action":"refresh-colors"}, 헤더 x-cron-secret)` → 10~30초 뒤 `select status_code, content from net._http_response order by id desc limit 1;` 결과를 Claude에게(`colours`에 colorId·다른 색 필드 개수가 나옴)
 12. ✅ (11-23, 권한 받음·라벨 24개 확인) 구글 라벨 색: Google 인증 플랫폼 → 데이터 액세스 → 범위 `calendar.calendars.readonly` 추가·저장 → 서버 올리기 → 립마크 구글 캘린더 → "구글 권한 다시 받기" → SQL로 `labels-probe` 다시 → 결과를 Claude에게
-13. [ ] (11-23) **SQL 먼저** `supabase\migrations\20261126000000_event_details.sql`(장소·화상 회의 칸) → 서버 올리기 → SQL로 `refresh-colors` 한 번 더(라벨 색 + 장소·회의 링크를 기존 일정에도, `updated`에 고친 개수)
+13. ✅ (11-23, updated 51) **SQL 먼저** `supabase\migrations\20261126000000_event_details.sql`(장소·화상 회의 칸) → 서버 올리기 → SQL로 `refresh-colors` 한 번 더(라벨 색 + 장소·회의 링크를 기존 일정에도, `updated`에 고친 개수)
 
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행
