@@ -6,11 +6,11 @@
 
 ## A. Supabase SQL 실행 (폰 브라우저로도 가능)
 Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전부 붙여 넣고 Run. 여러 번 실행해도 안전함. **위에서부터 순서대로.**
-- [ ] `supabase\migrations\20261109000300_crews2.sql` (크루 2차) — 실행했는지 미확인
-- [ ] `supabase\migrations\20261112000000_my_features.sql` (디데이 당일 포함·신고·여러 날 할 일) — 미확인
-- [ ] `supabase\migrations\20261120000000_important.sql` (중요 표시) — 미확인
-- [ ] `supabase\migrations\20261124000000_event_repeat_categories.sql` (일정 반복·일정 카테고리)
-- [ ] `supabase\migrations\20261125000000_google_calendar.sql` (구글 캘린더, 바로 위 것 다음에)
+- ✅ (11-23) `supabase\migrations\20261109000300_crews2.sql` (크루 2차)
+- ✅ (11-23) `supabase\migrations\20261112000000_my_features.sql` (디데이 당일 포함·신고·여러 날 할 일)
+- ✅ (11-23) `supabase\migrations\20261120000000_important.sql` (중요 표시)
+- ✅ (11-23) `supabase\migrations\20261124000000_event_repeat_categories.sql` (일정 반복·일정 카테고리)
+- ✅ (11-23) `supabase\migrations\20261125000000_google_calendar.sql` (구글 캘린더, 바로 위 것 다음에)
 - ✅ 20261107~20261109000200, 20261118000000_events, 20261121000000_admin, 20261122000000_admin_live
 
 ## B. Supabase 대시보드 설정 (폰 브라우저로도 가능)
@@ -18,8 +18,8 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 - [ ] 크루 대화 푸시: Database → Webhooks → `push-crew-messages`, 표 `crew_messages`, 헤더 `x-push-secret` (backend.md 17, 아래 C의 push 다시 올리기 뒤에)
 
 ## C. PC에서 (PowerShell)
-1. [ ] 최신 코드 받기: `cd C:\Users\User\LooinRepository` → `git pull`
-2. [ ] 부품 설치: `cd app` → `npm.cmd install`
+1. ✅ (11-23) 최신 코드 받기: `cd C:\Users\User\LooinRepository` → `git pull`
+2. ✅ (11-23) 부품 설치: `cd app` → `npm.cmd install`
 3. [ ] 서버 함수 올리기 (`C:\Users\User\LooinRepository`에서, `<ref>` = Supabase 주소의 프로젝트 id):
    - [ ] `npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <ref>` (크루 대화 푸시, backend.md 17)
    - [ ] `npx.cmd supabase functions deploy admin-broadcast --project-ref <ref>` (관리자 앱 전체 알림, backend.md 23.2) — 했는지 미확인
