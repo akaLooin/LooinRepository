@@ -55,17 +55,32 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * One date. Memoised: picking a day redraws only the old and the new picked cell, not every clover of the three
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
-/** A D-day's date: a thin red edge round the digits and a soft red glow that breathes with the other highlights. */
-function DDayNumber({ label, color }: { label: string; color: Parameters<typeof AppText>[0]["color"] }) {
+/**
+ * A D-day's date: the digits drawn in red with a red edge, and a strong red glow (three stacked layers: one text
+ * shadow is faint on Android) that breathes with the other highlights (user, 2026-11-23: brighter). The digits themselves are in the text colour, so a D-day stands out from
+ * Sunday's red numbers.
+ */
+function DDayNumber({ label }: { label: string }) {
   const { c } = useTheme();
-  const glow = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] });
-  const text = { includeFontPadding: false, textAlignVertical: "center" as const, textShadowOffset: { width: 0, height: 0 } };
+  const glow = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
+  const text = { includeFontPadding: false, textAlignVertical: "center" as const, textShadowOffset: { width: 0, height: 0 }, textShadowColor: c.dday };
+  const layer = (radius: number) => (
+    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
+      <AppText variant="date" weight={800} raw={c.dday} style={{ ...text, textShadowRadius: radius }}>{label}</AppText>
+    </View>
+  );
   return (
     <View>
       <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, opacity: glow }}>
-        <AppText variant="date" weight={700} raw={c.dday} style={{ ...text, textShadowColor: c.dday, textShadowRadius: 9 }}>{label}</AppText>
+        {layer(22)}
+        {layer(16)}
+        {layer(16)}
+        {layer(10)}
+        {layer(10)}
+        {layer(5)}
       </Animated.View>
-      <AppText variant="date" weight={700} color={color} style={{ ...text, textShadowColor: c.dday, textShadowRadius: 1.6 }}>{label}</AppText>
+      {/* a neon sign: the digits in the text colour with a tight red edge, the glow around them */}
+      <AppText variant="date" weight={800} color="text" style={{ ...text, textShadowRadius: 4 }}>{label}</AppText>
     </View>
   );
 }
@@ -97,7 +112,7 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
         accessibilityLabel={dday ? "디데이" : undefined}>
         {dday && boxed
           // 메인 앱 (user, 2026-11-23): on a D-day the number's own outline glows red, no circle
-          ? <DDayNumber label={label} color={numberColor} />
+          ? <DDayNumber label={label} />
           : <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>}
       </View>
     </>
