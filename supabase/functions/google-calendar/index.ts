@@ -73,27 +73,28 @@ Deno.serve(async (req) => {
   return json({ error: "unknown action" }, 400);
 });
 
-/** Google sends the browser back here with a code: keep the account's key, then tell the user to go back to the app. */
+/**
+ * Google sends the browser back here with a code: keep the account's key, then send the browser back into the app
+ * (립마크's 구글 캘린더 screen). Supabase's own address serves no web pages (an HTML answer shows as plain text,
+ * user 2026-11-23: broken letters), so the answer is a jump into the app, with the outcome in the address.
+ */
 async function callback(url: URL): Promise<Response> {
-  const page = (title: string, text: string) => new Response(
-    `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
-<body style="font-family:sans-serif;background:#111;color:#eee;display:flex;align-items:center;justify-content:center;min-height:90vh;text-align:center">
-<div><h2>${title}</h2><p>${text}</p></div></body>`, { headers: { "content-type": "text/html; charset=utf-8" } });
+  const back = (outcome: string) => new Response(null, { status: 302, headers: { location: `todomateclone-design://settings/google?google=${outcome}` } });
   const uid = await readState(url.searchParams.get("state") ?? "", env("GOOGLE_STATE_SECRET"));
   const code = url.searchParams.get("code");
-  if (!uid || !code) return page("연결하지 못했어요", "시간이 지났거나 취소했어요. 립마크에서 다시 눌러 주세요.");
+  if (!uid || !code) return back("expired");
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ code, client_id: env("GOOGLE_CLIENT_ID"), client_secret: env("GOOGLE_CLIENT_SECRET"), redirect_uri: callbackUrl(), grant_type: "authorization_code" }),
   });
   const tok = await res.json().catch(() => ({}));
-  if (!res.ok || !tok.refresh_token) return page("연결하지 못했어요", "구글이 열쇠를 주지 않았어요. 립마크에서 다시 눌러 주세요.");
+  if (!res.ok || !tok.refresh_token) return back("no_key");
   let email: string | null = null;
   try { email = JSON.parse(atob(String(tok.id_token).split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).email ?? null; } catch { /* no e-mail */ }
   const db = admin();
   await db.from("google_accounts").upsert({ user_id: uid, refresh_token: tok.refresh_token, email, last_error: null });
   await syncUser(db, uid).catch(() => {});
-  return page("구글 캘린더를 연결했어요", "이 창을 닫고 립마크로 돌아가세요.");
+  return back("connected");
 }
 
 type Cal = { calendar_id: string; summary: string; color: string; time_zone: string; can_write: boolean; selected: boolean; is_default: boolean; sync_token: string | null; category_id: string | null };

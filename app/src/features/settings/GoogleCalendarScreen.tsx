@@ -1,4 +1,4 @@
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, ScrollView, View } from "react-native";
 import { AppText, Check, ConfirmDialog, ScreenHeader, Toggle, useFrame, useToast } from "../../components";
@@ -28,6 +28,14 @@ export function GoogleCalendarScreen() {
   const [cals, setCals] = useState<GoogleCalendar[]>([]);
   const [busy, setBusy] = useState<null | "connect" | "sync" | "off">(null);
   const [asking, setAsking] = useState(false);
+  // back from Google's page: the server sends the browser here with how it went
+  const { google } = useLocalSearchParams<{ google?: string }>();
+  useEffect(() => {
+    if (google === "connected") notice("구글 캘린더를 연결했어요");
+    else if (google === "expired") notice("시간이 지났거나 취소했어요. 다시 눌러 주세요");
+    else if (google === "no_key") notice("구글이 연결을 허락하지 않았어요. 다시 눌러 주세요");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [google]);
   const load = useCallback(async () => {
     const s = await googleStatus();
     setStatus(s);
@@ -53,7 +61,7 @@ export function GoogleCalendarScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="구글 캘린더" onBack={() => goBack("/settings")} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: insets.bottom + 40 }}>
         <AppText variant="helper" color="textMuted" style={{ marginVertical: 12 }}>
           고른 구글 캘린더의 일정이 립마크에 들어오고, 그 일정을 립마크에서 바꾸면 구글에도 바뀌어요. 캘린더마다 같은 이름의 일정 카테고리가 생겨요.
         </AppText>

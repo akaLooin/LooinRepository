@@ -36,4 +36,9 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 4. ✅ (11-23) Supabase → Edge Functions → Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_STATE_SECRET`(아무 긴 글자), `GOOGLE_CRON_SECRET`(다른 긴 글자)
 5. ✅ (11-23) C-3의 google-calendar 올리기
 6. ✅ (11-23) 15분마다 자동 맞추기: Database → Extensions → `pg_cron`, `pg_net` 켜기 → SQL Editor에 backend.md 28.7의 한 줄 (ref와 cron 비밀 넣어서)
-7. [ ] 폰: 프로필 → 구글 캘린더 → 구글 계정 연결하기 → 동의 ("확인되지 않은 앱"이 뜨면 고급 → 립마크(으)로 이동) → 연동할 캘린더 고르기
+7. ✅ (11-23, 연결됨) 폰: 프로필 → 구글 캘린더 → 구글 계정 연결하기 → 동의 ("확인되지 않은 앱"이 뜨면 고급 → 립마크(으)로 이동) → 연동할 캘린더 고르기
+8. [ ] 연결 뒤 앱으로 바로 돌아오게 고친 서버 기능 다시 올리기: `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (Supabase 기본 주소는 웹페이지를 못 보여 줘서 안내 페이지 글자가 깨졌음)
+
+## E. 나중에 (선택)
+- [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행
+
