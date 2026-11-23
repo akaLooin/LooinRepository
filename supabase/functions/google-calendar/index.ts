@@ -52,14 +52,7 @@ Deno.serve(async (req) => {
     const { data: accounts } = await db.from("google_accounts").select("user_id");
     const out: Record<string, unknown> = {};
     for (const a of accounts ?? []) {
-      try {
-        await db.from("google_calendars").update({ sync_token: null }).eq("user_id", a.user_id);
-        await db.from("google_event_links").update({ google_updated: null }).eq("user_id", a.user_id).eq("origin", "google");
-        diag = { items: 0, withColorId: 0, colorIds: {}, otherKeys: {} };
-        const r = await syncUser(db, a.user_id);
-        out[a.user_id] = { ...r, colours: diag };
-      } catch (e) { out[a.user_id] = { error: String(e) }; }
-      diag = null;
+      try { out[a.user_id] = await refreshColours(db, a.user_id); } catch (e) { out[a.user_id] = { error: String(e) }; }
     }
     return json(out);
   }
@@ -337,6 +330,53 @@ function exceptionDays(links: Link[], series: Link) {
     if (m) out.add(`${m[1].slice(0, 4)}-${m[1].slice(4, 6)}-${m[1].slice(6, 8)}`);
   }
   return out;
+}
+
+/**
+ * One-time colour refresh, light: lists only id, colour and status of every event of the picked calendars, sets the
+ * colour of the linked app events whose colour differs (Google's own colour, else the calendar's), and keeps the
+ * listing's sync token, so the 15-minute sync goes on from here. Counts what colour fields Google sent.
+ */
+async function refreshColours(db: SupabaseClient, uid: string) {
+  const token = await accessToken(db, uid);
+  const palette = (await livePalette(token)).event;
+  const { data: cals } = await db.from("google_calendars").select("*").eq("user_id", uid).eq("selected", true);
+  const { data: links } = await db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid);
+  const linkOf = new Map((links ?? []).map((l) => [`${l.calendar_id}|${l.google_id}`, l.event_id]));
+  const want = new Map<string, string>(); // event id -> colour
+  const report = { items: 0, withColorId: 0, colorIds: {} as Record<string, number>, otherKeys: {} as Record<string, number>, updated: 0 };
+  for (const c of (cals ?? []) as Cal[]) {
+    let next: string | undefined;
+    for (let page: string | undefined; ;) {
+      const q = new URLSearchParams({ maxResults: "2500", showDeleted: "true", singleEvents: "false" });
+      if (page) q.set("pageToken", page);
+      const r = await g(token, `/calendars/${enc(c.calendar_id)}/events?${q}`);
+      if (!r.ok) throw new Error(`events ${r.status}`);
+      for (const item of (r.body.items ?? []) as GEvent[]) {
+        if (item.status === "cancelled") continue;
+        report.items++;
+        if (item.colorId) { report.withColorId++; report.colorIds[item.colorId] = (report.colorIds[item.colorId] ?? 0) + 1; }
+        for (const k of Object.keys(item)) if (!KNOWN.has(k)) report.otherKeys[k] = (report.otherKeys[k] ?? 0) + 1;
+        const id = linkOf.get(`${c.calendar_id}|${item.id}`);
+        if (id) want.set(id, (item.colorId && palette[item.colorId]) || c.color);
+      }
+      page = r.body.nextPageToken;
+      if (!page) { next = r.body.nextSyncToken; break; }
+    }
+    if (next) await db.from("google_calendars").update({ sync_token: next }).eq("user_id", uid).eq("calendar_id", c.calendar_id);
+  }
+  const ids = [...want.keys()];
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data: rows } = await db.from("events").select("id, color").in("id", ids.slice(i, i + 200));
+    for (const row of rows ?? []) {
+      const colour = want.get(row.id)!;
+      if (String(row.color).toUpperCase() === colour.toUpperCase()) continue;
+      const { data: up } = await db.from("events").update({ color: colour }).eq("id", row.id).select("updated_at").maybeSingle();
+      if (up) await db.from("google_event_links").update({ synced_at: up.updated_at }).eq("event_id", row.id);
+      report.updated++;
+    }
+  }
+  return report;
 }
 
 /** While a colour refresh runs: what Google sent about colours (counts only, no event contents). */
