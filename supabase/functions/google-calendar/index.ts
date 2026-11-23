@@ -326,10 +326,18 @@ async function syncOnce(db: SupabaseClient, uid: string) {
     const { __fallbackColorId: fallback, ...body } = full;
     // conferenceDataVersion=1: so a video meeting asked for (or taken off) in 립마크 is made (or removed) by Google
     path = `${path}${path.includes("?") ? "&" : "?"}conferenceDataVersion=1`;
+    // event labels (Google's 24 colours) are written only with eventLabelVersion=1 in the address (Google, July 2026);
+    // with it the old colorId is ignored, so it goes only when a label is set or the calendar's colour is wanted
+    // (no label, no colorId). Any other colour goes as the old colorId, without it.
+    if (body.eventLabelId || (body.eventLabelId === null && body.colorId == null)) {
+      path += "&eventLabelVersion=1";
+      if (!body.eventLabelId) body.eventLabelId = ""; // "" takes the label off
+    } else delete body.eventLabelId;
     let r = await g(token, path, { method, body: JSON.stringify(body) });
     if (!r.ok && r.status === 400 && body.eventLabelId) {
       // Google refused the label: the nearest old colour instead, and say so
-      r = await g(token, path, { method, body: JSON.stringify({ ...body, eventLabelId: null, colorId: fallback ?? null }) });
+      const { eventLabelId: _l, ...rest } = body;
+      r = await g(token, path.replace("&eventLabelVersion=1", ""), { method, body: JSON.stringify({ ...rest, colorId: fallback ?? null }) });
       if (r.ok) firstError ??= "구글이 고른 색(라벨)을 받지 않아 가장 가까운 기본 색으로 올렸어요";
     }
     // Google took the change but not the label (it keeps its labels to itself): the same change again with the
@@ -337,7 +345,7 @@ async function syncOnce(db: SupabaseClient, uid: string) {
     // became green in Google)
     if (r.ok && body.eventLabelId && r.body?.eventLabelId !== body.eventLabelId) {
       const again = method === "POST" ? `${target}/${enc(r.body.id)}` : path;
-      const back = await g(token, `${again}${again.includes("?") ? "&" : "?"}conferenceDataVersion=1`, { method: "PATCH", body: JSON.stringify({ eventLabelId: null, colorId: fallback ?? null }) });
+      const back = await g(token, `${again.split("?")[0]}?conferenceDataVersion=1`, { method: "PATCH", body: JSON.stringify({ colorId: fallback ?? null }) });
       if (back.ok) { r = back; firstError ??= "구글이 이 색(라벨)을 립마크에서 바꾸지 못하게 해서, 구글에 있는 가장 가까운 기본 색으로 올렸어요"; }
     }
     if (!r.ok) { stats.failed++; firstError ??= `구글에 못 올렸어요 (${r.status} ${String(r.body?.error?.message ?? "").slice(0, 120)})`; }
