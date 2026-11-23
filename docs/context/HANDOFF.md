@@ -45,8 +45,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - SQL 실행 완료 ✅: 20261107000000 ~ 20261109000200. 20261118000000_events도 실행 ✅. **미실행/미확인**: 20261120000000_important, 20261109000300_crews2, 20261112000000_my_features
 - 이용자 PC 할 일: push 재배포 + Webhook crew_messages(backend.md 17), `npm.cmd install` 후 새 APK(새 네이티브 부품: clipboard·keyboard-controller·reanimated·media-library)
 
-## 3단계: 우리만의 기능 (2026-11-12, 9가지 완료, 폰 확인 필요)
-- 디데이 당일 포함·붉은 동그라미, 루틴 종료 없음, 사진 크게 보기(`PhotoViewer`), 뽀모도로(`lib/pomodoro.ts`), 검색(`/search`), 알림 탭 4개, 날짜로 끌어 옮기기, ~~여러 날 할 일~~ → 일정
+## 3단계 (11-12): 디데이 당일 포함, 루틴 종료 없음, 사진 크게 보기, 뽀모도로, 검색, 알림 탭, 날짜로 끌어 옮기기
 
 ## 4단계 (11-18~20): 일정 · 시간표 · 중요한 날 · 별 모양
 - 일정 = `events` 표(`lib/events.ts`, `features/events/`), 시간표 `/events/[date]`(하루씩 넘기기, 늘이기·꾹 옮기기 `lib/eventDrag.ts`, 1분 휠 `TimeGrid`). 중요한 날 = 할 일 체크 꾹(`toggleImportant`)·일정 강조, 빛 효과 `components/Highlight.tsx`(`glowColor`, 기본 #00FF7F). SQL 미실행 표/열은 폰에서 대기(`missingTable`/`missingColumn`). 자세한 건 `replica/build-log.md`
@@ -63,7 +62,7 @@ todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 �
 - 끌기 버그 고침: `ReorderableList`가 처음 그려질 때의 콜백을 계속 써서 나중에 추가된 할 일의 카테고리가 안 바뀌던 문제(두 앱 공통). `onTargetChange`(끄는 중 미리 보기용 콜백)는 남아 있음
 - 이번 주 카드: 일·공휴일 빨강, 토 파랑, 오늘은 골라도 #00ff7f. 공휴일 표 `lib/holidays.ts`(2025~2029)
 - e2e `design-structure.js`(APP_VARIANT=design 빌드, 숨은 탭도 DOM에 있어 `filter({visible:true})` 필요; 변형 바꿀 땐 export `--clear`), DB 테스트 `admin.test.sql`
-- 원본 닮은 곳 차별화(11-21, 전부 `DESIGN_TRIAL` 분기, 기존 앱 그대로): 화면 제목줄(둥근 뒤로 + 왼쪽 큰 제목 + 채운 알약 버튼 `ScreenHeader`), 시트(떠 있는 둥근 카드·왼쪽 제목·X `BottomSheet`), 관리 메뉴(타일 시트 `HomeMenu` `ManageSheet`), 목록 줄(카드 `PillRow`·`RoutineRow`), 카테고리 제목(색 막대 줄 `CategoryPill`), + 버튼(둥근 `AddPill`), 이름 입력(채운 칸 + 왼쪽 색 막대 `TitleInput`·`InlineTodoInput`), 선택(오른쪽 체크 `RadioList`·`RadioCheck`), 설정 줄(타일 + 값 칩 `ValueRow`·`ToggleRow`, 스위치 글자 없음), 할 일 메뉴(수정·삭제 위 + 4열 타일), 할 일 정보(정보 카드), 타이머(고리 + 종류 전환 + 둥근 재생), 일기(날짜 제목 + 기분·온도·공개 칩, 떠 있는 도구 막대), 카테고리 편집(종료·삭제 줄), 보관함 제목 왼쪽
+- 원본 닮은 곳 차별화 1차(11-21, `DESIGN_TRIAL` 분기): 제목줄·시트·관리 메뉴·목록 줄·카테고리 제목·+버튼·입력칸·선택·설정 줄·할 일 메뉴·정보·타이머·일기·카테고리 편집
 - 다음 후보: 이용자 폰 확인, 테마(스킨) 기능, 앱 이름·아이콘(나중)
 
 ## 알려진 한계
