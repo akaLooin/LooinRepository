@@ -5,7 +5,7 @@
 ## 한 줄 요약
 **이름(11-21)**: 메인 앱 = 립마크(Lib Mark, 디자인 앱 빌드), 복사 앱 = 기존 앱, 관리자 앱 = 립마크 관리자, 원본 앱 = todo mate. 아이콘 `app/assets/libmark/`(노트 + 초록 리본 책갈피 + 별 표시, 관리자는 주황 리본); 이름·아이콘은 새 APK부터(메인·관리자). 메인 앱 공지사항은 관리자 앱에서 쓴 것만(복사 앱의 기본 공지 숨김), 관리 메뉴에서 할 일 캘린더 뺌.
 **시작 속도(11-22)**: 업데이트 안 기다림(`fallbackToCacheTimeout` 0), 받은 업데이트는 나갈 때 적용(`lib/quietUpdates.ts`), 저장된 계정으로 바로 열기(`peekSavedUserId`).
-**아래 내비게이션 바(11-23, 2차)**: 테마파크 커스텀 바에서 여전히 흰색 → `expo-navigation-bar` 추가(네이티브; 있을 때만 불러옴 `requireOptionalNativeModule` → 버전 1.0.0 그대로, 바 색은 다음 APK부터, 나머지는 OTA로). 대비용 흰 막 끔(`enforceContrast: false`), 바의 밝음 표시를 앱 테마대로(`NavigationBar.setStyle`; 이 모듈에서 "light"=밝은 버튼=어두운 바, 반대로 헷갈리기 쉬움).
+**아래 내비게이션 바(11-23)**: `expo-navigation-bar`(있을 때만 `requireOptionalNativeModule`, 버전 1.0.0 유지, 바 색은 다음 APK부터), `enforceContrast: false`, `setStyle`("light"=어두운 바).
 **메인 앱 6가지(11-23)**: 할 일 메뉴 아이콘(`TodoSheets`), 일정 수정 시트 삭제, 중요 별 바깥만 빛남(`OuterGlow`), 카테고리 제목 접기(`collapsedCategoryIds`)·길게 = 편집, 할 일 선택(`SelectionBar`)·친구 반응·날짜로 끌기(`AgendaDrop`)·주/월 보기, 칸 상자 높이 고정(`boxH`), 위 화면에서 돌아오면 보던 탭(`useSegments`).
 **원본 닮은 곳 2차(11-23, 메인 앱만)**: 리스트 메뉴 타일, `VisibilityTiles`, 카테고리·디데이·루틴 편집, 하루 알림, 보관함 입력줄, 메모 잠금 칩, 친구 화면, 네모 날짜 고르기, 달력 마지막 주 여백.
 **11-23 3차**: 메인 앱 시트는 Modal 대신 앱 안에 그림(`Portal`·`PortalHost`, 키보드 `KeyboardSpacer`로 따라 올라감, 뒤로 가기 `BackHandler`) → 키보드가 닫혔다 열리지 않고 바로 뜸(메모 포커스 0.03초, 두 번 눌러 고치기 자동 포커스 `TitleInput onSubmit`). 할 일 제목 17/24px·별과 첫 줄 가운데 맞춤(`TodoRow`). 오늘 이후 날짜 할 일은 완료 못 함(`isFutureDay`, `toggleTodo`가 false). 수동 루틴 할 일 삭제 = 줄 삭제(다시 + 줄로). **스킨**(`theme/skins.ts`, pref `skin`·`ownedSkins`, 설정 → 스킨 `SkinsScreen`, 상점은 나중): 황혼의 재즈(남보라·금빛·별 `SkinDecor`), 8비트 모험(크림·검은 테두리 `useFrame`·네모 모서리 `tokens.radius` 줄임·갈무리 픽셀 글꼴, 일부만 담은 OFL 폰트).
