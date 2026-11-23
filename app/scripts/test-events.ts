@@ -136,3 +136,64 @@ t("일정: an event over midnight moves whole; highlighted events take the 할 �
   assert.deepEqual(rowSegments(row, bars, 2, true).segments.map((x) => x.id), ["c", "a"]);
   assert.deepEqual(rowSegments(row, bars, 2).segments.map((x) => x.id), ["a", "b"]);
 });
+
+t("일정 반복: days, weekdays, month and year days, end day, skipped days, row round trip", () => {
+  const { expandEvents, repeatLabel, seriesOf } = require("../src/lib/events") as typeof import("../src/lib/events");
+  const days = (e: CalEvent, from: string, to: string) => expandEvents([e], from, to).map((x) => x.startDate);
+  // 2026-11-24 is a Tuesday
+  const weekly = ev("w", { startDate: "2026-11-24", endDate: "2026-11-24", repeat: { kind: "weekly", weekdays: [2, 4] }, skipDates: ["2026-12-01"] });
+  assert.deepEqual(days(weekly, "2026-11-20", "2026-12-06"), ["2026-11-24", "2026-11-26", "2026-12-03"], "Tue and Thu, 12-01 taken out, nothing before the first day");
+  const shown = expandEvents([weekly], "2026-11-24", "2026-11-24")[0];
+  assert.equal(shown.id, "w~2026-11-24"); assert.equal(shown.seriesId, "w"); assert.equal(seriesOf(shown.id), "w");
+  assert.deepEqual(days(ev("d", { startDate: "2026-11-24", repeat: { kind: "daily", until: "2026-11-26" } }), "2026-11-01", "2026-12-31"), ["2026-11-24", "2026-11-25", "2026-11-26"]);
+  assert.deepEqual(days(ev("m", { startDate: "2026-01-31", endDate: "2026-01-31", repeat: { kind: "monthly" } }), "2026-01-01", "2026-05-31"), ["2026-01-31", "2026-03-31", "2026-05-31"], "months without the day are skipped");
+  assert.deepEqual(days(ev("y", { startDate: "2024-02-29", endDate: "2024-02-29", repeat: { kind: "yearly" } }), "2024-01-01", "2028-12-31"), ["2024-02-29", "2028-02-29"]);
+  // a two-day time that began before the shown range is still there
+  const trip = ev("t", { startDate: "2026-11-23", endDate: "2026-11-24", allDay: true, repeat: { kind: "weekly" } });
+  assert.deepEqual(expandEvents([trip], "2026-11-24", "2026-11-24").map((x) => `${x.startDate}..${x.endDate}`), ["2026-11-23..2026-11-24"]);
+  assert.equal(repeatLabel(weekly.repeat, weekly.startDate), "매주 화·목");
+  assert.equal(repeatLabel({ kind: "monthly", until: "2026-12-31" }, "2026-11-24"), "매월 24일 · 12월 31일까지");
+  // stored and read back; an event without the new fields sends none of them (servers without the SQL keep syncing)
+  const row = toRow.events({ ...weekly, categoryId: "k" }, "u");
+  assert.deepEqual(fromRow.events(row), { ...weekly, categoryId: "k" });
+  assert.equal("repeat" in toRow.events(ev("plain", {}), "u"), false);
+});
+
+t("일정 반복: this time only or every time, delete one or all", () => {
+  const { expandEvents, saveEventIn, deleteEventIn } = require("../src/lib/events") as typeof import("../src/lib/events");
+  let n = 0;
+  const newId = () => `id${++n}`;
+  let events: CalEvent[] = [];
+  const save = (x: Omit<CalEvent, "id"> & { id?: string }, scope: "one" | "all") => { const r = saveEventIn(events, x, scope, newId); events = r.events; return r.id; };
+  const id = save({ title: "영어", startDate: "2026-11-24", endDate: "2026-11-24", allDay: false, startTime: "19:00", endTime: "20:00", color: "#3DA5F4", memo: "", alarmMinutes: null, repeat: { kind: "weekly" } }, "all");
+  const occ = (day: string) => expandEvents(events, "2026-01-01", "2027-12-31").find((e) => e.id === `${id}~${day}`);
+  assert.ok(occ("2026-12-01"));
+  // this time only: taken out of the repeat, kept as its own event
+  save({ ...occ("2026-12-01")!, startTime: "18:00", endTime: "19:00" }, "one");
+  assert.equal(occ("2026-12-01"), undefined);
+  const lone = events.find((e) => e.id !== id)!;
+  assert.equal(lone.startDate, "2026-12-01"); assert.equal(lone.startTime, "18:00"); assert.equal("repeat" in lone, false); assert.equal("seriesId" in lone, false);
+  // every time: moved a day on (from a later time), the title too
+  save({ ...occ("2026-12-08")!, startDate: "2026-12-09", endDate: "2026-12-09", title: "영어 회화" }, "all");
+  const series = events.find((e) => e.id === id)!;
+  assert.equal(series.startDate, "2026-11-25"); assert.equal(series.title, "영어 회화"); assert.deepEqual(series.skipDates, ["2026-12-01"]);
+  // the repeat turned off for all from a later time: the earlier times stay, ending the day before
+  save({ ...occ("2026-12-16")!, repeat: null }, "all");
+  assert.equal(events.find((e) => e.id === id)!.repeat!.until, "2026-12-15");
+  events = deleteEventIn(events, `${id}~2026-12-02`, "one");
+  assert.deepEqual(events.find((e) => e.id === id)!.skipDates, ["2026-12-01", "2026-12-02"]);
+  events = deleteEventIn(events, `${id}~2026-12-09`, "all");
+  assert.equal(events.some((e) => e.id === id), false);
+});
+
+t("강조 색: a day glows in its first important to-do's colour (category order)", () => {
+  const { importantDayColors } = require("../src/lib/events") as typeof import("../src/lib/events");
+  const cats = [{ id: "a", color: "#111111" }, { id: "b", color: "#222222" }];
+  const todos = [
+    { date: "2026-11-24", isImportant: true, categoryId: "b", sortOrder: 0 },
+    { date: "2026-11-24", isImportant: true, categoryId: "a", sortOrder: 5 },
+    { date: "2026-11-25", isImportant: false, categoryId: "a", sortOrder: 0 },
+  ];
+  const m = importantDayColors(todos, cats, "2026-11-01", "2026-11-30", (id, own) => (id === "b" ? "#FF0000" : own));
+  assert.deepEqual([...m], [["2026-11-24", "#111111"]]);
+});

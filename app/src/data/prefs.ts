@@ -44,6 +44,11 @@ export type Prefs = {
   timelineHourHeight: number;
   // 강조 색 (설정 → 화면): the glow of important days and events (user: #00FF7F by default)
   glowColor: string;
+  // 강조 색 (메인 앱, user 2026-11-23): "follow" = each item glows in its own colour (the event's, the to-do's
+  // category's); "custom" = a colour picked per to-do category and per 일정 카테고리 (glowColors, by category id;
+  // "event:none" = events without a category); this phone only
+  glowMode: "follow" | "custom";
+  glowColors: Record<string, string>;
   // 오늘 (design app): the category the input bar adds to; this phone only
   quickAddCategory: string | null;
   // 홈 바로가기 (design app): ids in order, null = the default set; this phone only
@@ -62,7 +67,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel"],
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel"],
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

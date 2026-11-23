@@ -22,8 +22,8 @@ export interface Remote {
 }
 
 export const emptyOutbox = (): Outbox => ({
-  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {}, events: {} },
-  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {}, events: {} },
+  upsert: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {}, event_categories: {}, events: {} },
+  remove: { categories: {}, routines: {}, todos: {}, ddays: {}, diaries: {}, reminders: {}, event_categories: {}, events: {} },
   profile: 0,
 });
 

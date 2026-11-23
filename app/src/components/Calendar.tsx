@@ -6,7 +6,7 @@ import { rowSegments, type SpanBar } from "../lib/spans";
 import { onColor, tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 import { Clover, type CloverState } from "./Clover";
-import { GlowFrame } from "./Highlight";
+import { GlowFrame, GlowTint } from "./Highlight";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 import { DESIGN_TRIAL } from "../lib/variant";
@@ -63,7 +63,8 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   hover?: boolean;
   cellRef?: (d: Day, v: ViewType | null) => void;
   /** 중요한 날: the clover glows (user's feature) */
-  important?: boolean;
+  /** a colour = that glow (메인 앱: the important item's own) */
+  important?: boolean | string;
   /** design app's 달력: the whole cell shows the choice (today grey, the picked day white), no circle (user) */
   boxed?: boolean;
   /** boxed: the box's height (a plain row; on the 일정 캘린더 it stops above the first name bar) */
@@ -75,7 +76,7 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   const numberColor = ring && wd !== 0 && wd !== 6 ? "onSelected" : dayColor(wd);
   const inner = (
     <>
-      {clover ? <Clover state={clover} glow={important} /> : null}
+      {clover ? <GlowTint color={typeof important === "string" ? important : null}><Clover state={clover} glow={!!important} /></GlowTint> : null}
       <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: picker && DESIGN_TRIAL ? 10 : (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
         borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}
         accessibilityLabel={dday ? "디데이" : undefined}>
@@ -126,7 +127,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
   spans?: SpanBar[];
   kind?: "basic" | "span";
   /** 중요한 날: an important to-do or event on the date (the 할 일 캘린더's clover glows; on the 일정 캘린더 the bar does) */
-  importantOn?: (d: Day) => boolean;
+  importantOn?: (d: Day) => boolean | string | undefined;
   /** the picked day and today shown as a filled cell, not a circle (design app's 달력) */
   boxed?: boolean;
 }) {
@@ -171,7 +172,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
             const cs = !picker && !long && state ? state(day) : undefined;
             return (
               <DayCell key={j} day={day} ring={ring} todayDisc={todayDisc} picker={!!picker} clover={cs} cloverKey={cs ? JSON.stringify(cs) : ""}
-                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} important={!picker && !long && !!importantOn?.(day)} boxed={boxed && !picker} boxH={long ? 32 : tokens.layout.calendarRowHeight - 2} />
+                ringSize={ringSize} onPick={pick} dday={!picker && !!ddayOn?.(day)} hover={day === dropHover} cellRef={cellRef} important={!picker && !long ? importantOn?.(day) || false : false} boxed={boxed && !picker} boxH={long ? 32 : tokens.layout.calendarRowHeight - 2} />
             );
           })}
           {bars ? (
@@ -185,7 +186,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                   <View key={b.id} style={{ ...pos, top: 34 + b.lane * 17, height: 15 }} accessibilityLabel={`${b.title}${b.done ? ", 완료" : ""}${b.important ? ", 강조" : ""}`}>
                     {b.important ? (
                       // 강조: a glowing frame around the bar (and, in the design trial, embers)
-                      <GlowFrame radius={4} inset={6} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 4 * (b.to - b.from + 1), rise: 20, size: 3.5 }} />
+                      <GlowTint color={b.glow}><GlowFrame radius={4} inset={6} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 4 * (b.to - b.from + 1), rise: 20, size: 3.5 }} /></GlowTint>
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill, justifyContent: "center", paddingHorizontal: 4 }}>
                       {!b.opensLeft || b.from === row.findIndex(Boolean) ? (
@@ -197,7 +198,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
                   <View key={b.id} style={{ ...pos, bottom: 2 + b.lane * LINE_STEP, height: 3 }} accessibilityLabel={b.important ? `${b.title}, 강조` : undefined}>
                     {b.important ? (
                       // 강조 on the 할 일 캘린더: the line itself glows (not the day's clover, user)
-                      <GlowFrame radius={2} inset={4.5} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 3 * (b.to - b.from + 1), rise: 14, size: 3 }} />
+                      <GlowTint color={b.glow}><GlowFrame radius={2} inset={4.5} left={b.opensLeft ? 0 : 4} right={b.opensRight ? 0 : 4} embers={{ count: 3 * (b.to - b.from + 1), rise: 14, size: 3 }} /></GlowTint>
                     ) : null}
                     <View style={{ flex: 1, ...ends, ...round, backgroundColor: fill }} />
                   </View>

@@ -39,7 +39,7 @@ export function toFriendView(raw: R): FriendView | null {
     todos: todos.map((t) => fromRow.todos(t)),
     routines: (raw.routines ?? []).map((r: R) => fromRow.routines(r)),
     diaries: diaries.map((d) => fromRow.diaries({ ...d, visibility: "public" })),
-    ddays: [], reminders: [], events: [],
+    ddays: [], reminders: [], event_categories: [], events: [],
   };
   return {
     person, db,

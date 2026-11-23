@@ -1,11 +1,11 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Dimensions, Pressable, View, type ViewInstance } from "react-native";
-import { AppText, Calendar, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock, Clover, DragScrollView, Search, useToast } from "../../components";
+import { AppText, Calendar, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock, Clover, DragScrollView, Search, useGlowOf, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { deleteTodos, isDDayOn, moveTodos, selectActiveCategories, selectCategories, selectDDays, selectEvents, todosForDay, useDB } from "../../data/store";
 import { addDays, fromMonthIndex, monthIndex, parseDay, pickAfterPaging, today, weekStart, type Day } from "../../lib/dates";
-import { eventBars, importantDays } from "../../lib/events";
+import { eventBars, importantDayColors, importantDays } from "../../lib/events";
 import { smoothLayout } from "../../lib/motion";
 import { takeHomeDay } from "../../lib/todoCalendar";
 import { tokens, useInsets, useTheme } from "../../theme";
@@ -42,9 +42,12 @@ export function CalendarTab() {
   const eventMode = prefs.calendarKind === "span";
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
   const calCats = active.filter((x) => calIds.has(x.id));
-  const bars = useMemo(() => eventBars(events), [events]);
+  const glowOf = useGlowOf();
+  const bars = useMemo(() => eventBars(events, (e) => glowOf(e.categoryId, e.color)), [events, prefs.glowMode, prefs.glowColors]); // eslint-disable-line react-hooks/exhaustive-deps
   const monthKey = `${view.y}-${String(view.m).padStart(2, "0")}`;
   const lit = useMemo(() => importantDays(db.todos, [], `${monthKey}-01`, `${monthKey}-31`), [db.todos, monthKey]);
+  // 메인 앱: a day glows in the colour of its first important to-do (its category's, or the one picked for it)
+  const litColor = useMemo(() => importantDayColors(db.todos, categories, `${monthKey}-01`, `${monthKey}-31`, glowOf), [db.todos, categories, monthKey, prefs.glowMode, prefs.glowColors]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // each day's star is worked out once per change of the data, not again on every tap or swipe (speed, user)
   const calKey = calCats.map((x) => x.id + x.color).join();
@@ -155,7 +158,7 @@ export function CalendarTab() {
                 if (eventMode) router.push(`/events/${d}` as never);
               }}
               state={starOf}
-              spans={bars} kind={prefs.calendarKind} importantOn={(d) => lit.has(d)} ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))} />
+              spans={bars} kind={prefs.calendarKind} importantOn={(d) => litColor.get(d) ?? lit.has(d)} ddayOn={(d) => ddays.some((x) => isDDayOn(x, d))} />
           );
         }} />
         <View style={{ height: 1, backgroundColor: c.sectionLine, marginTop: 14 }} />

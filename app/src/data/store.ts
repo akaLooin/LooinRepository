@@ -7,7 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
-import { addDays, today, type Day } from "../lib/dates";
+import { addDays, daysBetween, today, type Day } from "../lib/dates";
 import { isUploaded, rememberLocal } from "../lib/photoPaths";
 import { smoothLayout } from "../lib/motion";
 import { moveSpan } from "../lib/spans";
@@ -18,7 +18,7 @@ import { fromSettingsRow, toSettingsRow } from "./prefsRow";
 import { seed } from "./seed";
 import { applyPull, emptyOutbox, pendingCount, push, settle, sinceFor, track, upgradeOutbox, type Outbox, type Remote } from "./sync";
 import type { CalEvent, Category, DB, DDay, Diary, Profile, Reminder, Routine, Todo, Visibility } from "./types";
-import { liftSpans, shiftStart } from "../lib/events";
+import { deleteEventIn, expandEvents, liftSpans, saveEventIn, seriesOf, shiftStart, type EventCategory, type EventScope } from "../lib/events";
 
 // ── session: demo (sample data, this device only) or cloud (signed in, synced) ──
 type Session = { mode: "demo" } | { mode: "cloud"; userId: string; remote: Remote };
@@ -54,7 +54,7 @@ function persistSoon() {
   }, 300);
 }
 
-const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [], events: [] });
+const emptyDB = (userId: string): DB => ({ profile: { id: userId, nickname: "", bio: "" }, categories: [], todos: [], routines: [], ddays: [], diaries: [], reminders: [], event_categories: [], events: [] });
 
 /** Loads this device's copy for the session, then (cloud) syncs. */
 export async function startSession(next: Session) {
@@ -63,7 +63,7 @@ export async function startSession(next: Session) {
   const saved = await AsyncStorage.getItem(storageKey()).catch(() => null);
   const parsed = saved ? JSON.parse(saved) : null;
   db = parsed?.db ?? (next.mode === "demo" ? seed() : emptyDB(next.userId));
-  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [], reminders: db.reminders ?? [], events: db.events ?? [] }; // copies saved by older versions
+  db = { ...db, routines: db.routines ?? [], diaries: db.diaries ?? [], reminders: db.reminders ?? [], event_categories: db.event_categories ?? [], events: db.events ?? [] }; // copies saved by older versions
   outbox = upgradeOutbox(parsed?.outbox);
   liftOldSpans();
   lastPulled = parsed?.lastPulled ?? null;
@@ -497,7 +497,19 @@ export function deleteTodos(ids: string[]) {
 }
 
 // ── 일정 (events) ──────────────────────────────────────────
-export const selectEvents = (d: DB) => d.events;
+/**
+ * The events as shown: a repeating event drawn out into its times (id `series~day`), a few years either side of
+ * today. Worked out again only when the events change.
+ */
+let shownFrom: CalEvent[] | null = null;
+let shown: CalEvent[] = [];
+export const selectEvents = (d: DB): CalEvent[] => {
+  if (d.events !== shownFrom) { shownFrom = d.events; shown = expandEvents(d.events, addDays(today(), -3 * 366), addDays(today(), 5 * 366)); }
+  return shown;
+};
+/** A shown event by its id (a time of a repeating event too). */
+export const findEvent = (d: DB, id: string | null | undefined) => (id ? selectEvents(d).find((e) => e.id === id) ?? d.events.find((e) => e.id === id) : undefined);
+export type { EventScope };
 
 /** 여러 날 할 일 from before 일정 (this phone, or pulled from the server) become events; see liftSpans. */
 function liftOldSpans() {
@@ -517,15 +529,10 @@ function liftOldSpans() {
   syncSoon();
 }
 
-export function saveEvent(input: Omit<CalEvent, "id"> & { id?: string }): string {
-  const clean = (e: CalEvent): CalEvent => (e.allDay ? { ...e, startTime: undefined, endTime: undefined } : e);
-  if (input.id && db.events.some((e) => e.id === input.id)) {
-    set({ ...db, events: db.events.map((e) => (e.id === input.id ? clean({ ...e, ...input, id: e.id }) : e)) });
-    return input.id;
-  }
-  const id = newId();
-  set({ ...db, events: [...db.events, clean({ ...input, id })] });
-  return id;
+export function saveEvent(input: Omit<CalEvent, "id"> & { id?: string }, scope: EventScope = "all"): string {
+  const r = saveEventIn(db.events, input, scope, newId);
+  set({ ...db, events: r.events });
+  return r.id;
 }
 
 /** 중요한 날: long-pressing a to-do's check turns it on and off (a routine day becomes a real row first). */
@@ -539,6 +546,7 @@ export function toggleImportant(id: string): boolean {
 
 /** 강조: an event's glow on and off. */
 export function toggleEventImportant(id: string): boolean {
+  id = seriesOf(id); // a repeating event: all its times
   const e = db.events.find((x) => x.id === id);
   if (!e) return false;
   set({ ...db, events: db.events.map((x) => (x.id === id ? { ...x, important: !x.important } : x)) });
@@ -546,11 +554,34 @@ export function toggleEventImportant(id: string): boolean {
 }
 
 export function moveEvent(id: string, start: Day) {
+  const occ = id.includes("~") ? findEvent(db, id) : undefined;
+  if (occ) { saveEvent({ ...occ, ...shiftStart(occ, start) }, "one"); return; } // one time of a repeat, moved on its own
   set({ ...db, events: db.events.map((e) => (e.id === id ? { ...e, ...shiftStart(e, start) } : e)) });
 }
 
-export function deleteEvent(id: string) {
-  set({ ...db, events: db.events.filter((e) => e.id !== id) });
+export function deleteEvent(id: string, scope: EventScope = "all") {
+  set({ ...db, events: deleteEventIn(db.events, id, scope) });
+}
+
+// ── 일정 카테고리 (event categories) ───────────────────────
+export const selectEventCategories = (d: DB) => d.event_categories;
+export function saveEventCategory(input: Omit<EventCategory, "id" | "sortOrder"> & { id?: string }): string {
+  if (input.id && db.event_categories.some((k) => k.id === input.id)) {
+    set({ ...db, event_categories: db.event_categories.map((k) => (k.id === input.id ? { ...k, ...input, id: k.id } : k)) });
+    return input.id;
+  }
+  const id = newId();
+  const sortOrder = Math.max(0, ...db.event_categories.map((k) => k.sortOrder)) + 1;
+  set({ ...db, event_categories: [...db.event_categories, { title: input.title, color: input.color, id, sortOrder }] });
+  return id;
+}
+/** Removing a category leaves its events without one (as the server does). */
+export function deleteEventCategory(id: string) {
+  set({
+    ...db,
+    event_categories: db.event_categories.filter((k) => k.id !== id),
+    events: db.events.map((e) => (e.categoryId === id ? { ...e, categoryId: null } : e)),
+  });
 }
 
 // ── d-days ─────────────────────────────────────────────────

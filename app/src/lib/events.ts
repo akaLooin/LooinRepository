@@ -18,7 +18,119 @@ export type CalEvent = {
   memo: string;
   alarmMinutes?: number | null; // minutes before the start (종일: before 9:00 of the first day); null = none
   important?: boolean; // 중요한 날 (강조): its bar and days glow on the calendars
+  /** 일정 카테고리 (2026-11-23): separate from the to-dos' categories; null/undefined = none */
+  categoryId?: string | null;
+  /** 반복 (2026-11-23): the event comes back on these days; startDate is the first time */
+  repeat?: EventRepeat | null;
+  /** days taken out of the repeat (one time deleted, or changed on its own) */
+  skipDates?: Day[];
+  /** on a shown time of a repeating event: the stored event's id and the day this time starts */
+  seriesId?: string;
+  occurrence?: Day;
 };
+
+export type EventRepeat = {
+  kind: "daily" | "weekly" | "monthly" | "yearly";
+  /** weekly: 0 = Sunday … 6 = Saturday (empty: the first day's weekday) */
+  weekdays?: number[];
+  /** the last day it may start on (inclusive); none = keeps going */
+  until?: Day | null;
+};
+
+export type EventCategory = { id: string; title: string; color: string; sortOrder: number };
+
+export const REPEAT_LABELS: Record<EventRepeat["kind"], string> = { daily: "매일", weekly: "매주", monthly: "매월", yearly: "매년" };
+const WD = ["일", "월", "화", "수", "목", "금", "토"];
+/** "반복 안 함", "매일", "매주 월·수", "매월 24일", "매년 11월 24일", with "~ 12월 31일" when it ends. */
+export function repeatLabel(r: EventRepeat | null | undefined, start: Day): string {
+  if (!r) return "반복 안 함";
+  const [, m, d] = start.split("-").map(Number);
+  const days = (r.weekdays?.length ? [...r.weekdays].sort() : [weekdayOf(start)]).map((x) => WD[x]).join("·");
+  const base = r.kind === "weekly" ? `매주 ${days}` : r.kind === "monthly" ? `매월 ${d}일` : r.kind === "yearly" ? `매년 ${m}월 ${d}일` : "매일";
+  if (!r.until) return base;
+  const [, um, ud] = r.until.split("-").map(Number);
+  return `${base} · ${um}월 ${ud}일까지`;
+}
+const weekdayOf = (d: Day) => { const [y, m, dd] = d.split("-").map(Number); return new Date(y, m - 1, dd).getDay(); };
+
+/** Does a repeating event start a time on `day`? (Not looking at skipDates.) */
+export function repeatsOn(e: Pick<CalEvent, "startDate" | "repeat">, day: Day): boolean {
+  const r = e.repeat;
+  if (!r || day < e.startDate || (r.until && day > r.until)) return false;
+  const [, sm, sd] = e.startDate.split("-").map(Number);
+  const [, m, d] = day.split("-").map(Number);
+  if (r.kind === "daily") return true;
+  if (r.kind === "weekly") return (r.weekdays?.length ? r.weekdays : [weekdayOf(e.startDate)]).includes(weekdayOf(day));
+  if (r.kind === "monthly") return d === sd;
+  return m === sm && d === sd;
+}
+
+/**
+ * The events as shown from `from` to `to`: a repeating event becomes one event per time (id `series~day`, with
+ * seriesId and occurrence); the others stay as they are. Times that started before `from` but still run are kept.
+ */
+export function expandEvents(events: CalEvent[], from: Day, to: Day): CalEvent[] {
+  const out: CalEvent[] = [];
+  for (const e of events) {
+    if (!e.repeat) { out.push(e); continue; }
+    const len = daysBetween(e.startDate, e.endDate);
+    const skip = new Set(e.skipDates ?? []);
+    const first = addDays(from, -len) > e.startDate ? addDays(from, -len) : e.startDate;
+    const last = e.repeat.until && e.repeat.until < to ? e.repeat.until : to;
+    for (let d = first; d <= last; d = addDays(d, 1)) {
+      if (skip.has(d) || !repeatsOn(e, d)) continue;
+      out.push({ ...e, id: `${e.id}~${d}`, seriesId: e.id, occurrence: d, startDate: d, endDate: addDays(d, len) });
+    }
+  }
+  return out;
+}
+
+/** The stored id behind a shown event. */
+export const seriesOf = (id: string) => id.split("~")[0];
+
+/** 이 일정만 (this time only) or 모든 반복 일정 (the whole repeat). */
+export type EventScope = "one" | "all";
+
+/**
+ * Saving an event (new, changed, or one time of a repeating one). For a time of a repeat:
+ * - "one": that day is taken out of the repeat and the time kept as an event of its own;
+ * - "all": the repeat changes; moving this time by n days moves the whole repeat by n days;
+ * - "all" with the repeat turned off: the times before this day stay (the repeat ends the day before) and this one
+ *   is kept on its own.
+ */
+export function saveEventIn(events: CalEvent[], input: Omit<CalEvent, "id"> & { id?: string }, scope: EventScope, newId: () => string): { events: CalEvent[]; id: string } {
+  const clean = (e: CalEvent): CalEvent => {
+    const { seriesId: _s, occurrence: _o, ...rest } = e;
+    return rest.allDay ? { ...rest, startTime: undefined, endTime: undefined } : rest;
+  };
+  const series = input.seriesId ? events.find((x) => x.id === input.seriesId) : undefined;
+  if (series && input.occurrence) {
+    const day = input.occurrence;
+    const { seriesId: _s, occurrence: _o, id: _i, ...fields } = input;
+    if (scope === "one" || !input.repeat) {
+      const id = newId();
+      const rest = scope === "one"
+        ? { ...series, skipDates: [...new Set([...(series.skipDates ?? []), day])] }
+        : day <= series.startDate ? null : { ...series, repeat: { ...series.repeat!, until: addDays(day, -1) } };
+      const lone = clean({ ...fields, id, repeat: undefined, skipDates: undefined } as CalEvent);
+      delete lone.repeat; delete lone.skipDates;
+      return { events: [...events.flatMap((x) => (x.id === series.id ? (rest ? [rest] : []) : [x])), lone], id };
+    }
+    const startDate = addDays(series.startDate, daysBetween(day, input.startDate));
+    const next = clean({ ...series, ...fields, id: series.id, startDate, endDate: addDays(startDate, daysBetween(input.startDate, input.endDate)), skipDates: series.skipDates });
+    return { events: events.map((x) => (x.id === series.id ? next : x)), id: series.id };
+  }
+  if (input.id && events.some((e) => e.id === input.id)) return { events: events.map((e) => (e.id === input.id ? clean({ ...e, ...input, id: e.id }) : e)), id: input.id };
+  const id = newId();
+  return { events: [...events, clean({ ...input, id } as CalEvent)], id };
+}
+
+/** Deleting an event; a time of a repeat with "one" only takes that day out. */
+export function deleteEventIn(events: CalEvent[], id: string, scope: EventScope): CalEvent[] {
+  const [sid, day] = id.split("~");
+  if (day && scope === "one") return events.map((e) => (e.id === sid ? { ...e, skipDates: [...new Set([...(e.skipDates ?? []), day])] } : e));
+  return events.filter((e) => e.id !== sid);
+}
 
 export const DAY_MINUTES = 24 * 60;
 export const SNAP = 30; // a tap on the hour grid starts at the half hour under the finger
@@ -44,8 +156,8 @@ export function eventsOn(events: CalEvent[], day: Day): CalEvent[] {
 }
 
 /** Bars for the month calendar (the same shape the 긴 할 일 bars had). Events have no check, so never "done". */
-export const eventBars = (events: CalEvent[]): SpanBar[] =>
-  events.map((e) => ({ id: e.id, start: e.startDate, end: e.endDate, color: e.color, done: false, title: e.title, important: !!e.important }));
+export const eventBars = (events: CalEvent[], glow?: (e: CalEvent) => string): SpanBar[] =>
+  events.map((e) => ({ id: e.id, start: e.startDate, end: e.endDate, color: e.color, done: false, title: e.title, important: !!e.important, ...(glow && e.important ? { glow: glow(e) } : {}) }));
 
 /**
  * 중요한 날: the days with an important to-do (not deleted) or within an important event, for the 할 일 캘린더's glow.
@@ -58,6 +170,19 @@ export function importantDays(todos: { date: Day | null; isImportant?: boolean; 
     if (!e.important || e.endDate < from || e.startDate > to) continue;
     for (let d = e.startDate < from ? from : e.startDate; d <= e.endDate && d <= to; d = addDays(d, 1)) out.add(d);
   }
+  return out;
+}
+
+/** The glow colour of each important day: that of its first important to-do (in category order). */
+export function importantDayColors(
+  todos: { date: Day | null; isImportant?: boolean; isSkipped?: boolean; categoryId: string; sortOrder: number }[],
+  categories: { id: string; color: string }[], from: Day, to: Day, glowOf: (categoryId: string, own: string) => string,
+): Map<Day, string> {
+  const order = new Map(categories.map((x, i) => [x.id, i]));
+  const out = new Map<Day, string>();
+  const list = todos.filter((t) => t.isImportant && t.date && !t.isSkipped && t.date >= from && t.date <= to)
+    .sort((a, b) => (order.get(a.categoryId) ?? 0) - (order.get(b.categoryId) ?? 0) || a.sortOrder - b.sortOrder);
+  for (const t of list) if (!out.has(t.date!)) out.set(t.date!, glowOf(t.categoryId, categories.find((x) => x.id === t.categoryId)?.color ?? "#00FF7F"));
   return out;
 }
 

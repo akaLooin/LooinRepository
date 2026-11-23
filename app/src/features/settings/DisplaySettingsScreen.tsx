@@ -1,4 +1,6 @@
+import { router } from "expo-router";
 import { goBack } from "../../lib/nav";
+import { DESIGN_TRIAL } from "../../lib/variant";
 import { useInsets } from "../../theme";
 import { useState } from "react";
 import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
@@ -59,7 +61,10 @@ export function DisplaySettingsScreen() {
         <ValueRow title="할 일 캘린더에서 표시할 카테고리" value={String(p.calendarCategoryCount)} onPress={() => setPref("calendarCategoryCount", (p.calendarCategoryCount % 4) + 1)} />
         {/* not in the original: added for this app */}
         <ValueRow title="체크 표시 색" value={p.checkColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("checkColor", p.checkColor === "black" ? "white" : "black")} />
-        <ValueRow title="강조 색" value={p.glowColor.toUpperCase()} onPress={() => { setDraftGlow(p.glowColor); setSheet("glow"); }} />
+        {/* 메인 앱: its own screen (each item's own colour by default, or one per category) */}
+        {DESIGN_TRIAL
+          ? <ValueRow title="강조 색" value={p.glowMode === "custom" ? "카테고리별" : "기본"} onPress={() => router.push("/settings/glow" as never)} />
+          : <ValueRow title="강조 색" value={p.glowColor.toUpperCase()} onPress={() => { setDraftGlow(p.glowColor); setSheet("glow"); }} />}
         <ValueRow title="캘린더 숫자 색" value={p.cloverNumberColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("cloverNumberColor", p.cloverNumberColor === "black" ? "white" : "black")} />
         <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} divider={false} />
       </ScrollView>

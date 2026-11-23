@@ -49,6 +49,7 @@ export function seed(): DB {
     diaries: [],
     reminders: [],
     // 일정: a trip over a few days, and two timed events today (demo of the hour grid)
+    event_categories: [],
     events: [
       { id: "e0000000-0000-4000-8000-000000000001", title: "제주 여행", startDate: toDay(2026, 11, 24), endDate: toDay(2026, 11, 27), allDay: true, color: "#3DA5F4", memo: "", alarmMinutes: null },
       { id: "e0000000-0000-4000-8000-000000000002", title: "팀 회의", startDate: today(), endDate: today(), allDay: false, startTime: "10:00", endTime: "11:00", color: "#FF6B81", memo: "회의실 3", alarmMinutes: 10 },

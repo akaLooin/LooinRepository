@@ -5,14 +5,24 @@
  * (several fading rings) rather than one hard line.
  * Every glowing item shares one pulse and one ember clock, so they move together and only two animations run.
  */
-import { useEffect } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { Animated, AppState, Easing, View } from "react-native";
-import { usePrefs } from "../data/prefs";
+import { usePrefs, type Prefs } from "../data/prefs";
+import { DESIGN_TRIAL } from "../lib/variant";
 import { useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 
-/** 강조 색 (설정 → 화면): #00FF7F unless changed. */
-export const useGlowColor = () => usePrefs().glowColor || "#00FF7F";
+const Tint = createContext<string | null>(null);
+/** 강조 색 (설정 → 화면): the item's own glow when it is inside a GlowTint (메인 앱), else the one colour (#00FF7F unless changed). */
+export const useGlowColor = () => { const tint = useContext(Tint); const p = usePrefs(); return tint ?? (p.glowColor || "#00FF7F"); };
+/** Everything glowing inside glows in `color` (none: the usual 강조 색). */
+export function GlowTint({ color, children }: { color?: string | null; children: React.ReactNode }) {
+  return color ? <Tint.Provider value={color}>{children}</Tint.Provider> : <>{children}</>;
+}
+/** The glow colour of an item: its category (a to-do category, a 일정 카테고리, or none for an event) and its own colour. */
+export const glowOf = (p: Pick<Prefs, "glowColor" | "glowMode" | "glowColors">, categoryId: string | null | undefined, own: string) =>
+  !DESIGN_TRIAL ? p.glowColor || "#00FF7F" : p.glowMode === "custom" ? p.glowColors[categoryId || "event:none"] ?? own : own;
+export const useGlowOf = () => { const p = usePrefs(); return (categoryId: string | null | undefined, own: string) => glowOf(p, categoryId, own); };
 
 /** How strongly the outline breathes: [faint, bright] opacity. */
 export const GLOW_RANGE: [number, number] = [0.35, 1];

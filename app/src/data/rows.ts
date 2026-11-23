@@ -1,8 +1,8 @@
 // Local objects (camelCase) <-> Supabase rows (snake_case). Field lists follow supabase/migrations.
-import type { CalEvent, Category, DDay, Diary, Profile, Reminder, Routine, Todo } from "./types";
+import type { CalEvent, Category, EventCategory, DDay, Diary, Profile, Reminder, Routine, Todo } from "./types";
 
-export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries" | "reminders" | "events";
-export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries", "reminders", "events"]; // push order (parents first)
+export type Table = "categories" | "routines" | "todos" | "ddays" | "diaries" | "reminders" | "event_categories" | "events";
+export const TABLES: Table[] = ["categories", "routines", "todos", "ddays", "diaries", "reminders", "event_categories", "events"]; // push order (parents first)
 
 type Row = Record<string, unknown>;
 const n = (v: unknown) => (v === undefined ? null : v);
@@ -46,7 +46,12 @@ export const toRow = {
     id: e.id, user_id, title: e.title, start_date: e.startDate, end_date: e.endDate, all_day: e.allDay,
     start_time: e.allDay ? null : n(e.startTime), end_time: e.allDay ? null : n(e.endTime), color: e.color, memo: e.memo, alarm_minutes: n(e.alarmMinutes),
     ...(e.important !== undefined ? { important: e.important } : {}),
+    // 일정 카테고리 · 반복 (SQL 20261124000000): sent only once used, so other events keep syncing before it is run
+    ...(e.categoryId !== undefined ? { category_id: e.categoryId } : {}),
+    ...(e.repeat !== undefined ? { repeat: e.repeat } : {}),
+    ...(e.skipDates !== undefined ? { skip_dates: e.skipDates } : {}),
   }),
+  event_categories: (k: EventCategory, user_id: string): Row => ({ id: k.id, user_id, title: k.title, color: k.color, sort_order: k.sortOrder }),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,5 +87,9 @@ export const fromRow = {
     startTime: r.start_time ? String(r.start_time).slice(0, 5) : undefined, endTime: r.end_time ? String(r.end_time).slice(0, 5) : undefined,
     color: r.color ?? "#4A90E2", memo: r.memo ?? "", alarmMinutes: typeof r.alarm_minutes === "number" ? r.alarm_minutes : null,
     ...(r.important ? { important: true } : {}),
+    ...(r.category_id ? { categoryId: r.category_id } : {}),
+    ...(r.repeat && typeof r.repeat === "object" && r.repeat.kind ? { repeat: r.repeat } : {}),
+    ...(Array.isArray(r.skip_dates) && r.skip_dates.length ? { skipDates: r.skip_dates.map(String) } : {}),
   }),
+  event_categories: (r: R): EventCategory => ({ id: r.id, title: r.title, color: r.color ?? "#4A90E2", sortOrder: Number(r.sort_order ?? 0) }),
 };

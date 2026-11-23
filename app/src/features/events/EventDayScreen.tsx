@@ -1,15 +1,15 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { BackHandler, FlatList, PanResponder, Platform, Pressable, ScrollView, View, type FlatListInstance, type ScrollViewInstance } from "react-native";
-import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowColor, GlowFrame, useToast } from "../../components";
+import { AppText, ChevronLeft, ChevronRight, Pencil, PillButton, Plus, Sparkles, Trash2, useGlowOf, GlowFrame, GlowTint, useToast } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
-import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
+import { deleteEvent, saveEvent, selectEvents, toggleEventImportant, useDB } from "../../data/store";
 import { addDays, daysBetween, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, DAY_MINUTES, eventsOn, eventTimeLabel, fromMinutes, inBand, slotAt, toMinutes, type Block, type CalEvent } from "../../lib/events";
 import { moveBlock, moveSpanBlock, resizeBlock, shiftEvent } from "../../lib/eventDrag";
 import { goBack } from "../../lib/nav";
 import { onColor, tokens, useDesignScale, useInsets, useTheme } from "../../theme";
-import { dayLabel, EventDetail, EventEditor, newDraft, type EventDraft } from "./EventSheets";
+import { dayLabel, EventDeleteDialog, EventDetail, EventEditor, newDraft, type EventDraft } from "./EventSheets";
 
 const LABEL_W = tokens.layout.hourLabelWidth;
 const H_MIN = 28, H_MAX = 200; // how far two fingers can squeeze or spread an hour
@@ -36,9 +36,10 @@ export function EventDayScreen() {
   const insets = useInsets();
   const prefs = usePrefs();
   const scale = useDesignScale();
-  const events = useDB((d) => d.events);
+  const events = useDB(selectEvents);
   const [day, setDay] = useState<Day>(isDay(date) ? date : today());
   const [draft, setDraft] = useState<EventDraft | null>(null);
+  const [removing, setRemoving] = useState<CalEvent | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [drag, setDrag] = useState<Drag>(null);
@@ -151,7 +152,7 @@ export function EventDayScreen() {
     if (moved !== undefined && e.startDate !== e.endDate) {
       if (!moved) return;
       const shifted = shiftEvent(e, moved);
-      saveEvent(shifted);
+      saveEvent(shifted, "one"); // a repeating event: only this time moves
       notice(`${eventTimeLabel(shifted, prefs.use24h, Number(day.slice(0, 4)))}로 옮겼어요`);
       return;
     }
@@ -160,13 +161,14 @@ export function EventDayScreen() {
     const next = e.startDate === e.endDate
       ? { ...e, startTime: fromMinutes(top), endTime: fromMinutes(bottom) }
       : { ...e, ...(e.startDate === day ? { startTime: fromMinutes(top) } : {}), ...(e.endDate === day ? { endTime: fromMinutes(bottom) } : {}) };
-    saveEvent(next);
+    saveEvent(next, "one");
     notice(`${eventTimeLabel(next, prefs.use24h, Number(day.slice(0, 4)))}로 바꿨어요`);
   };
 
   const isToday = day === today();
   // what the pages draw from (the list redraws its pages when this changes)
   const pageState = { events, draft, selected, drag, H, locked, day, use24h: prefs.use24h };
+  const glowOf = useGlowOf();
 
   // one day's page: its 종일 line and its hours (the middle one is the day in view)
   const page = (d: Day) => {
@@ -184,7 +186,7 @@ export function EventDayScreen() {
             {band.map((e) => (
               <Pressable key={e.id} onPress={() => setOpen(e.id)} accessibilityRole="button" accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, 0)}${e.important ? ", 강조" : ""}`}
                 style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
-                {e.important ? <GlowFrame radius={tokens.radius.sm} inset={6} embers={{ count: 7, rise: 20, size: 3.5 }} /> : null}
+                {e.important ? <GlowTint color={glowOf(e.categoryId, e.color)}><GlowFrame radius={tokens.radius.sm} inset={6} embers={{ count: 7, rise: 20, size: 3.5 }} /></GlowTint> : null}
                 <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
               </Pressable>
             ))}
@@ -242,7 +244,7 @@ export function EventDayScreen() {
                   onCancel={() => { setDrag(null); setLocked(false); }}
                   onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
                   onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
-                  onDelete={() => { setSelected(null); deleteEvent(b.e.id); notice("일정을 지웠어요"); }} />
+                  onDelete={() => { setSelected(null); if (b.e.seriesId) setRemoving(b.e); else { deleteEvent(b.e.id); notice("일정을 지웠어요"); } }} />
               ))}
             </View>
           </View>
@@ -284,6 +286,7 @@ export function EventDayScreen() {
         ) : null}
       </View>
 
+      <EventDeleteDialog event={removing} onClose={() => setRemoving(null)} onDone={(m) => { setRemoving(null); notice(m); }} />
       <Pressable onPress={() => { setSelected(null); addAt(day, Math.min(isToday ? Math.ceil(minutesNow() / 60) * 60 : 9 * 60, DAY_MINUTES - 60)); }} accessibilityRole="button" accessibilityLabel="일정 추가"
         style={{ position: "absolute", right: tokens.layout.gutter, bottom: insets.bottom + 24, width: 56, height: 56, borderRadius: 18, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" }}>
         <Plus size={28} color={onColor(c.accent)} strokeWidth={2.4} />
@@ -307,7 +310,7 @@ function EventBlock({ b, day, hour: H, drag, selected, scale, use24h, onTap, onH
   onEdit: () => void; onImportant: () => void; onDelete: () => void;
 }) {
   const { c } = useTheme();
-  const glow = useGlowColor();
+  const glow = useGlowOf()(b.e.categoryId, b.e.color);
   const top = drag?.top ?? b.top, bottom = drag?.bottom ?? b.bottom;
   // an event over midnight shows only its part of this day: its real start (first day) and end (last day) can be
   // stretched with the handles; it is not moved by holding
@@ -378,7 +381,7 @@ function EventBlock({ b, day, hour: H, drag, selected, scale, use24h, onTap, onH
       paddingRight: 2, zIndex: selected || drag ? 5 : 1 }}>
       {b.e.important ? (
         // 강조: the glowing frame (and, in the design trial, embers)
-        <GlowFrame radius={tokens.radius.sm} inset={6} right={2} embers={{ count: 10, rise: 30, size: 4.5 }} />
+        <GlowTint color={glow}><GlowFrame radius={tokens.radius.sm} inset={6} right={2} embers={{ count: 10, rise: 30, size: 4.5 }} /></GlowTint>
       ) : null}
       <View {...body.panHandlers} accessible accessibilityRole="button" accessibilityLabel={b.e.important ? `${label}, 강조` : label} accessibilityState={{ selected }}
         accessibilityHint={selected ? "다시 누르면 선택 해제, 길게 눌러 옮기기" : "눌러서 선택, 길게 눌러 옮기기"}

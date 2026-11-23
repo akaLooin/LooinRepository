@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Bell, Button, Calendar, ConfirmDialog, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
-  PRESET_COLORS, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
+  PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
-import { deleteEvent, saveEvent, toggleEventImportant, useDB } from "../../data/store";
+import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCategories, toggleEventImportant, useDB, type EventScope } from "../../data/store";
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
-import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, toMinutes, type CalEvent } from "../../lib/events";
+import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, REPEAT_LABELS, repeatLabel, toMinutes, type CalEvent, type EventRepeat } from "../../lib/events";
+import { DESIGN_TRIAL } from "../../lib/variant";
 import { fontFamily, onColor, tokens, useTheme } from "../../theme";
 
 export type EventDraft = Omit<CalEvent, "id"> & { id?: string };
@@ -19,7 +20,7 @@ export function newDraft(day: Day, startTime: string, endTime: string, color: st
   return { title: "", startDate: day, endDate: day, allDay: false, startTime, endTime, color, memo: "", alarmMinutes: null }; // 알림 없음 by default (user)
 }
 
-type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm";
+type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm" | "category" | "repeat" | "until";
 
 /**
  * Add or change an 일정 (user's feature; the flow follows the user's screen recording of a calendar app: tap an hour,
@@ -35,17 +36,27 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   const [sub, setSub] = useState<Sub>("form");
   const [problem, setProblem] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
-  const saved = useDB((d) => !!draft && d.events.some((x) => x.id === draft.id));
-  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); }, [draft]);
+  const [scopeAsk, setScopeAsk] = useState(false);
+  const [newCat, setNewCat] = useState("");
+  const eventCats = useDB(selectEventCategories);
+  const saved = useDB((d) => !!draft && !!findEvent(d, draft.id));
+  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); setScopeAsk(false); setNewCat(""); }, [draft]);
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
 
   const put = (patch: Partial<EventDraft>) => { setProblem(null); setE((x) => (x ? { ...x, ...patch } : x)); };
-  const save = () => {
+  const save = (scope?: EventScope) => {
     const p = eventProblem(e);
     if (p) { setProblem(p); return; }
-    saveEvent({ ...e, title: e.title.trim(), memo: e.memo.trim() });
+    // one time of a repeating event: this time only, or every time? (asked first)
+    if (e.seriesId && !scope) { setScopeAsk(true); return; }
+    setScopeAsk(false);
+    saveEvent({ ...e, title: e.title.trim(), memo: e.memo.trim() }, scope ?? "all");
     onSaved(`${dayLabel(e.startDate)}에 '${e.title.trim()}'을(를) 저장했어요`);
   };
+  const cat = eventCats.find((k) => k.id === e.categoryId);
+  const pickCat = (id: string | null) => { const k = eventCats.find((x) => x.id === id); put(k ? { categoryId: k.id, color: k.color } : { categoryId: null }); back(); };
+  const setRepeat = (kind: EventRepeat["kind"] | null) =>
+    put({ repeat: kind ? { kind, until: e.repeat?.until ?? null, ...(kind === "weekly" ? { weekdays: e.repeat?.weekdays?.length ? e.repeat.weekdays : [weekday(e.startDate)] } : {}) } : null });
   const setStartDate = (d: Day) => put({ startDate: d, endDate: addDays(d, Math.max(0, daysBetween(e.startDate, e.endDate))) });
   const setStartTime = (hm: string) => {
     const length = e.startDate === e.endDate ? toMinutes(e.endTime ?? hm) - toMinutes(e.startTime ?? hm) : 60;
@@ -62,7 +73,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
       </Pressable>
       <View style={{ flex: 1 }} />
       {sub === "form" ? (
-        <Pressable onPress={save} accessibilityRole="button" accessibilityLabel="일정 저장"
+        <Pressable onPress={() => save()} accessibilityRole="button" accessibilityLabel="일정 저장"
           style={{ backgroundColor: c.accent, borderRadius: tokens.radius.pill, paddingHorizontal: 20, height: 38, justifyContent: "center" }}>
           <AppText variant="body" weight={700} raw={onColor(c.accent)}>저장</AppText>
         </Pressable>
@@ -128,6 +139,89 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <Button kind="sheetPrimary" label="완료" onPress={back} />
       </View>
     );
+  } else if (sub === "category") {
+    // 일정 카테고리 (user, 2026-11-23): apart from the to-dos' categories; picking one takes its colour
+    const choice = (id: string | null, label: string, col?: string) => (
+      <Pressable key={id ?? "none"} onPress={() => pickCat(id)} accessibilityRole="radio" accessibilityState={{ checked: (e.categoryId ?? null) === id }} accessibilityLabel={label}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 50 }}>
+        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: col ?? "transparent", borderWidth: col ? 0 : 1.5, borderColor: c.textMuted }} />
+        <AppText variant="bodyLg" style={{ flex: 1 }}>{label}</AppText>
+        {(e.categoryId ?? null) === id ? <Check size={20} color={c.text} /> : null}
+      </Pressable>
+    );
+    body = (
+      <View>
+        <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>일정 카테고리</AppText>
+        <ScrollView style={{ maxHeight: 340 }} keyboardShouldPersistTaps="handled">
+          {choice(null, "카테고리 없음")}
+          {eventCats.map((k) => choice(k.id, k.title, k.color))}
+        </ScrollView>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
+          <TextInput value={newCat} onChangeText={setNewCat} placeholder="새 카테고리 이름" placeholderTextColor={c.textPlaceholder} maxLength={40} accessibilityLabel="새 일정 카테고리 이름"
+            style={{ flex: 1, height: 44, paddingHorizontal: 14, borderRadius: tokens.radius.md, backgroundColor: c.surfaceInput, color: c.text, fontFamily: fontFamily(400), fontSize: tokens.type.body.size, outlineStyle: "none" as never }} />
+          <Pressable onPress={() => {
+            const title = newCat.trim();
+            if (!title) return;
+            const id = saveEventCategory({ title, color: PRESET_COLORS[eventCats.length % PRESET_COLORS.length] });
+            setNewCat("");
+            put({ categoryId: id, color: PRESET_COLORS[eventCats.length % PRESET_COLORS.length] });
+            back();
+          }} accessibilityRole="button" accessibilityLabel="카테고리 추가"
+            style={{ height: 44, paddingHorizontal: 16, borderRadius: tokens.radius.md, backgroundColor: c.surfaceButton, justifyContent: "center" }}>
+            <AppText variant="body" weight={700}>추가</AppText>
+          </Pressable>
+        </View>
+        <AppText variant="small" color="textMuted" style={{ marginTop: 8 }}>이름과 색은 설정 → 일정 카테고리에서 바꿀 수 있어요</AppText>
+      </View>
+    );
+  } else if (sub === "repeat") {
+    const kinds: (EventRepeat["kind"] | null)[] = [null, "daily", "weekly", "monthly", "yearly"];
+    const wd = e.repeat?.weekdays ?? [];
+    body = (
+      <View>
+        <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>반복</AppText>
+        {kinds.map((k) => {
+          const on = (e.repeat?.kind ?? null) === k;
+          return (
+            <Pressable key={k ?? "none"} onPress={() => setRepeat(k)} accessibilityRole="radio" accessibilityState={{ checked: on }}
+              style={{ flexDirection: "row", alignItems: "center", height: 48 }}>
+              <AppText variant="bodyLg" style={{ flex: 1 }}>{k ? REPEAT_LABELS[k] : "반복 안 함"}</AppText>
+              {on ? <Check size={20} color={c.text} /> : null}
+            </Pressable>
+          );
+        })}
+        {e.repeat?.kind === "weekly" ? (
+          <View style={{ flexDirection: "row", gap: 6, marginVertical: 8 }}>
+            {WEEKDAY_LABELS.map((label, i) => {
+              const on = wd.includes(i);
+              return (
+                <Pressable key={label} onPress={() => { const next = on ? wd.filter((x) => x !== i) : [...wd, i]; if (next.length) put({ repeat: { ...e.repeat!, weekdays: next.sort() } }); }}
+                  accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={`${label}요일`}
+                  style={{ flex: 1, height: 40, borderRadius: tokens.radius.md, alignItems: "center", justifyContent: "center", backgroundColor: on ? c.selectedBg : c.surfaceButton }}>
+                  <AppText variant="body" weight={700} raw={on ? c.onSelected : undefined}>{label}</AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+        {e.repeat ? (
+          <View style={{ flexDirection: "row", alignItems: "center", minHeight: 50, marginTop: 4 }}>
+            <AppText variant="bodyLg" style={{ flex: 1 }}>끝나는 날</AppText>
+            <Pressable onPress={() => put({ repeat: { ...e.repeat!, until: null } })} accessibilityRole="radio" accessibilityState={{ checked: !e.repeat.until }}
+              style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: "center", backgroundColor: !e.repeat.until ? c.selectedBg : c.surfaceButton, marginRight: 8 }}>
+              <AppText variant="body" weight={600} raw={!e.repeat.until ? c.onSelected : undefined}>계속</AppText>
+            </Pressable>
+            <Pressable onPress={() => setSub("until")} accessibilityRole="button" accessibilityLabel="끝나는 날 고르기"
+              style={{ height: 36, paddingHorizontal: 14, borderRadius: 18, justifyContent: "center", backgroundColor: e.repeat.until ? c.selectedBg : c.surfaceButton }}>
+              <AppText variant="body" weight={600} raw={e.repeat.until ? c.onSelected : undefined}>{e.repeat.until ? dayLabel(e.repeat.until) : "날짜"}</AppText>
+            </Pressable>
+          </View>
+        ) : null}
+        <Button kind="sheetPrimary" label="완료" onPress={back} />
+      </View>
+    );
+  } else if (sub === "until") {
+    body = <DayPicker initial={e.repeat?.until ?? addDays(e.startDate, 30)} min={e.startDate} onPick={(d) => { put({ repeat: { ...e.repeat!, until: d } }); setSub("repeat"); }} />;
   } else if (sub === "alarm") {
     body = (
       <View>
@@ -167,6 +261,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         </View>
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
         {row(icon(Bell), alarmLabel(e.alarmMinutes), () => setSub("alarm"), `알림 ${alarmLabel(e.alarmMinutes)}`)}
+        {DESIGN_TRIAL ? row(icon(Repeat), repeatLabel(e.repeat, e.startDate), () => setSub("repeat"), `반복 ${repeatLabel(e.repeat, e.startDate)}`) : null}
+        {DESIGN_TRIAL ? row(icon(Tag), cat ? cat.title : "카테고리 없음", () => setSub("category"), `일정 카테고리 ${cat ? cat.title : "없음"}`) : null}
         {row(<View style={{ width: 22, alignItems: "center" }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: e.color }} /></View>, "색", () => setSub("color"), "색 고르기")}
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingTop: 6 }}>
@@ -188,13 +284,29 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   return (
     // the phone's back button steps back: a date, time, colour or alarm page returns to the form (the keyboard closes
     // on its own first), and only the form closes the sheet (user)
-    <BottomSheet visible={!!draft} onClose={onClose} onBack={sub === "form" ? onClose : back}>
+    <BottomSheet visible={!!draft} onClose={onClose} onBack={sub === "form" ? onClose : sub === "until" ? () => setSub("repeat") : back}>
       {header}
       {body}
-      <ConfirmDialog visible={asking} message={`'${e.title || "일정"}' 일정을 지울까요?`} cancel="취소" ok="지우기" danger
-        onCancel={() => setAsking(false)} onOk={() => { setAsking(false); if (e.id) deleteEvent(e.id); onSaved(`'${e.title || "일정"}' 일정을 지웠어요`); }} />
+      <EventDeleteDialog event={asking && e.id ? ({ ...e, id: e.id } as CalEvent) : null} onClose={() => setAsking(false)} onDone={(m) => { setAsking(false); onSaved(m); }} />
+      <ConfirmDialog visible={scopeAsk} message="반복 일정이에요. 어디까지 바꿀까요?" onCancel={() => setScopeAsk(false)}
+        options={[{ label: "이 일정만", onPress: () => save("one") }, { label: "모든 반복 일정", onPress: () => save("all") }]} />
     </BottomSheet>
   );
+}
+
+/** Deleting an event; a time of a repeating one asks: this time only, or the whole repeat. */
+export function EventDeleteDialog({ event, onClose, onDone }: { event: CalEvent | null; onClose: () => void; onDone: (msg: string) => void }) {
+  if (!event) return null;
+  const name = `'${event.title || "일정"}'`;
+  if (event.seriesId)
+    return (
+      <ConfirmDialog visible message={`${name}은(는) 반복 일정이에요. 어떻게 지울까요?`} onCancel={onClose}
+        options={[
+          { label: "이 일정만 지우기", danger: true, onPress: () => { deleteEvent(event.id, "one"); onDone(`${name} 이날 일정을 지웠어요`); } },
+          { label: "모든 반복 일정 지우기", danger: true, onPress: () => { deleteEvent(event.id, "all"); onDone(`${name} 반복 일정을 모두 지웠어요`); } },
+        ]} />
+    );
+  return <ConfirmDialog visible message={`${name} 일정을 지울까요?`} cancel="취소" ok="지우기" danger onCancel={onClose} onOk={() => { deleteEvent(event.id); onDone(`${name} 일정을 지웠어요`); }} />;
 }
 
 /** A month to pick a day from (inside the editor sheet). */
@@ -222,7 +334,8 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
   const { c } = useTheme();
   const glow = useGlowColor();
   const prefs = usePrefs();
-  const e = useDB((d) => d.events.find((x) => x.id === id));
+  const e = useDB((d) => findEvent(d, id));
+  const [removing, setRemoving] = useState(false);
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
   return (
     <BottomSheet visible={!!id} onClose={onClose}>
@@ -242,8 +355,9 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
       <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
         <TileButton label="수정하기" icon={<Pencil size={28} color={c.menuEdit} />} onPress={() => onEdit(e)} />
         <TileButton label={e.important ? "강조 해제" : "강조"} icon={<Sparkles size={28} color={glow} />} onPress={() => notice(toggleEventImportant(e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")} />
-        <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { deleteEvent(e.id); onClose(); notice("일정을 지웠어요"); }} />
+        <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { if (e.seriesId) setRemoving(true); else { deleteEvent(e.id); onClose(); notice("일정을 지웠어요"); } }} />
       </View>
+      <EventDeleteDialog event={removing ? e : null} onClose={() => setRemoving(false)} onDone={(m) => { setRemoving(false); onClose(); notice(m); }} />
     </BottomSheet>
   );
 }

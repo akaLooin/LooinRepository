@@ -1,18 +1,18 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, ChevronDown, ChevronUp, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, VisibilityIcon, type DragHandle } from "../../components";
+import { AppText, BottomSheet, Button, ChevronDown, ChevronUp, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, CalendarPlus, NotebookPen, useGlowOf, GlowTint, VisibilityIcon, type DragHandle } from "../../components";
 import { reactionsOnMine, type Received } from "../../data/social";
 import { ReactionLine } from "../social/FriendHome";
 import { smoothLayout } from "../../lib/motion";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { useFeature, useT } from "../../lib/appConfig";
-import { EventEditor, type EventDraft } from "../events/EventSheets";
+import { EventEditor, newDraft, type EventDraft } from "../events/EventSheets";
 import { formatTime, setPref, usePrefs } from "../../data/prefs";
 import {
-  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
+  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectEvents, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
 } from "../../data/store";
-import { addDays, parseDay, type Day } from "../../lib/dates";
+import { addDays, parseDay, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand, type CalEvent } from "../../lib/events";
 import { onColor, tokens, useTheme, visibleOn } from "../../theme";
 import { ListMenuSheet, type ListAction } from "../home/HomeSheets";
@@ -69,19 +69,20 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
   // wording and shown parts from the admin app
   const tx = useT();
   const showDDays = useFeature("agenda.ddays"), showDiary = useFeature("agenda.diaryCard"), showCount = useFeature("agenda.groupCount");
-  const glow = useGlowColor();
+  const glowOf = useGlowOf(); // 메인 앱: each item glows in its own colour (or the one picked for its category)
   const catOf = useMemo(() => new Map(categories.map((x) => [x.id, x])), [categories]);
   const catOrder = useMemo(() => new Map(categories.map((x, i) => [x.id, i])), [categories]);
 
   const todos = todosForDay(db, day);
+  const shownEvents = useDB(selectEvents);
   const timeOf = (t: Todo) => {
     if (!t.remindAt) return null;
     const d = new Date(t.remindAt);
     return d.getHours() * 60 + d.getMinutes();
   };
-  const band = eventsOn(db.events, day).filter(inBand);
+  const band = eventsOn(shownEvents, day).filter(inBand);
   const timed: Item[] = [
-    ...dayBlocks(db.events, day).map((b) => ({ kind: "event" as const, at: b.top, e: b.e, from: b.top, to: b.bottom })),
+    ...dayBlocks(shownEvents, day).map((b) => ({ kind: "event" as const, at: b.top, e: b.e, from: b.top, to: b.bottom })),
     ...todos.filter((t) => timeOf(t) !== null).map((t) => ({ kind: "todo" as const, at: timeOf(t)!, t })),
   ].sort((a, b) => a.at - b.at);
   // grouped by category (user, 2026-11-21): inside a category 강조 to-dos first, done ones last, then the user's order
@@ -121,14 +122,16 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
   const parts: [string, (m: number) => boolean][] = [[tx("agenda.morning"), (m) => m < 12 * 60], [tx("agenda.afternoon"), (m) => m >= 12 * 60 && m < 18 * 60], [tx("agenda.evening"), (m) => m >= 18 * 60]];
 
   // the right side of a to-do: 중요 when it is marked (user: named 중요 here) (no category tag any more; the groups show the category)
-  const mark = (t: Todo) => (t.isImportant ? (
+  const mark = (t: Todo, glow: string) => (t.isImportant ? (
     <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: glow, alignSelf: "flex-start", marginTop: 2 }} accessibilityLabel={tx("agenda.important")}>
       <AppText variant="small" weight={700} raw={glow}>{tx("agenda.important")}</AppText>
     </View>
   ) : null);
   const row = (t: Todo, withTime: boolean, drag?: DragHandle) => {
     const cat = catOf.get(t.categoryId);
+    const glow = glowOf(t.categoryId, cat?.color ?? c.accent);
     return (
+      <GlowTint key={t.id} color={glow}>
       <TodoRow key={t.id}
         title={t.title}
         alarm={withTime || !t.remindAt ? undefined : formatTime(new Date(t.remindAt), prefs.use24h)}
@@ -146,14 +149,15 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
         below={received.todos[t.id]?.length ? <ReactionLine list={received.todos[t.id]} /> : undefined}
         onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title }); } : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
-        right={mark(t)} {...drag} />
+        right={mark(t, glow)} {...drag} />
+      </GlowTint>
     );
   };
   const eventCard = (e: CalEvent, from: number, to: number) => (
     <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정"
       accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, parseDay(day).y)}${e.important ? ", 강조" : ""}`}
       style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 12, borderRadius: tokens.radius.md, backgroundColor: e.color + "26", borderLeftWidth: 3, borderLeftColor: e.color, marginVertical: 4 }}>
-      {e.important ? <GlowFrame radius={tokens.radius.md} inset={4} embers={{ count: 6, rise: 18, size: 3 }} /> : null}
+      {e.important ? <GlowTint color={glowOf(e.categoryId, e.color)}><GlowFrame radius={tokens.radius.md} inset={4} embers={{ count: 6, rise: 18, size: 3 }} /></GlowTint> : null}
       <AppText variant="body" weight={600} numberOfLines={1}>{e.title}</AppText>
       <AppText variant="small" color="textMuted">{`${clock(fromMinutes(from), prefs.use24h)}~${clock(fromMinutes(to), prefs.use24h)} · 일정`}</AppText>
     </Pressable>
@@ -180,6 +184,26 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
 
   return (
     <View>
+      {/* 일정 추가 | 일기 (user, 2026-11-23): always first, above the events and the to-dos, so they never move */}
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+        <Pressable onPress={() => {
+          const now = new Date();
+          const h = day === today() ? Math.min(now.getHours() + 1, 23) : 9;
+          setEditing(newDraft(day, fromMinutes(h * 60), fromMinutes(Math.min(h * 60 + 60, 24 * 60 - 5)), db.events[db.events.length - 1]?.color ?? c.accent));
+        }} accessibilityRole="button" accessibilityLabel="일정 추가"
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, height: 50, paddingHorizontal: 14, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+          <CalendarPlus size={22} color={c.text} />
+          <AppText variant="body" weight={600} numberOfLines={1} style={{ flex: 1 }}>일정 추가</AppText>
+        </Pressable>
+        {showDiary ? (
+          <Pressable onPress={() => router.push(`/diary/${day}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
+            style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, height: 50, paddingHorizontal: 14, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+            {diary?.emoji ? <MoodMark value={diary.emoji} size={24} /> : <NotebookPen size={22} color={c.text} />}
+            <AppText variant="body" weight={600} color={diary ? "text" : "textSecondary"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "기분을 남겼어요" : tx("agenda.diary")}</AppText>
+            {diary && received.diaries[diary.id]?.length ? <ReactionLine list={received.diaries[diary.id].slice(-2)} size={20} /> : null}
+          </Pressable>
+        ) : null}
+      </View>
       {band.length ? (
         <>
           {heading(tx("agenda.allday"))}
@@ -187,7 +211,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
             {band.map((e) => (
               <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정" accessibilityLabel={`${e.title}, 종일${e.important ? ", 강조" : ""}`}
                 style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
-                {e.important ? <GlowFrame radius={tokens.radius.sm} inset={5} embers={{ count: 6, rise: 16, size: 3 }} /> : null}
+                {e.important ? <GlowTint color={glowOf(e.categoryId, e.color)}><GlowFrame radius={tokens.radius.sm} inset={5} embers={{ count: 6, rise: 16, size: 3 }} /></GlowTint> : null}
                 <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
               </Pressable>
             ))}
@@ -251,12 +275,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
         <AppText variant="body" color="textMuted" style={{ paddingVertical: 14 }}>{categories.length ? tx("agenda.empty") : "먼저 관리 메뉴에서 카테고리를 만들어 주세요"}</AppText>
       ) : null}
 
-      {showDiary ? <Pressable onPress={() => router.push(`/diary/${day}` as never)} accessibilityRole="button" accessibilityLabel={diary ? "일기 보기" : "일기 쓰기"}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 22, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
-        {diary?.emoji ? <MoodMark value={diary.emoji} size={26} /> : <AppText variant="bodyLg">📔</AppText>}
-        <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : tx("agenda.diary")}</AppText>
-        {diary && received.diaries[diary.id]?.length ? <ReactionLine list={received.diaries[diary.id].slice(-3)} size={24} /> : null}
-      </Pressable> : null}
+
 
       <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setRenaming({ id, title: db.todos.find((x) => x.id === id)?.title ?? "" })} notice={notice} />
       <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: () => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); } } : undefined}>

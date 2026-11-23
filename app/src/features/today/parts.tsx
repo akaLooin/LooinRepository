@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useIsFocused } from "expo-router";
 import { Keyboard, PanResponder, Pressable, TextInput, View } from "react-native";
-import { AppText, BottomSheet, Check, Clover, KeyboardSpacer } from "../../components";
+import { AppText, BottomSheet, Check, Clover, GlowTint, KeyboardSpacer, useGlowOf } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { addTodo, EndedCategoryError, selectActiveCategories, todosForDay, useDB } from "../../data/store";
 import { addDays, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
-import { importantDays } from "../../lib/events";
+import { importantDayColors, importantDays } from "../../lib/events";
 import { isHoliday } from "../../lib/holidays";
 import { useNumber, useT } from "../../lib/appConfig";
 import { fontFamily, tokens, useInsets, useTheme, visibleOn } from "../../theme";
@@ -27,6 +27,8 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
   const start = weekStart(day, prefs.weekStartsSunday);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const lit = useMemo(() => importantDays(db.todos, [], start, addDays(start, 6)), [db.todos, start]);
+  const glowOf = useGlowOf();
+  const litColor = importantDayColors(db.todos, cats, start, addDays(start, 6), glowOf);
   const now = today();
   const starBig = useNumber("weekStarSize"); // 홈 card's star size, from the admin app
   const latest = useRef({ day, onPick });
@@ -53,7 +55,7 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
             <AppText variant="small" weight={600} color={wd === 0 || isHoliday(d) ? "sunday" : wd === 6 ? "saturday" : "textMuted"}>{WEEKDAY_LABELS[wd]}</AppText>
             {/* today stays green even when picked; Sundays and 공휴일 red, Saturdays blue (user) */}
             <AppText variant={big ? "bodyLg" : "body"} weight={700} color={d === now ? "accent" : wd === 0 || isHoliday(d) ? "sunday" : wd === 6 ? "saturday" : "text"}>{String(parseDay(d).d)}</AppText>
-            <Clover size={big ? starBig : 16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} />
+            <GlowTint color={litColor.get(d)}><Clover size={big ? starBig : 16} state={dayState(list, cats, prefs.calendarCategoryCount)} glow={lit.has(d)} /></GlowTint>
           </Pressable>
         );
       })}

@@ -1,9 +1,9 @@
 // Mirrors replica/schema.sql (phase 1). Field names are camelCase versions of the columns.
 import type { Day } from "../lib/dates";
 import type { RepeatRule } from "../lib/routines";
-import type { CalEvent } from "../lib/events";
+import type { CalEvent, EventCategory } from "../lib/events";
 
-export type { CalEvent };
+export type { CalEvent, EventCategory };
 
 export type Visibility = "public" | "followers" | "partial" | "private";
 
@@ -78,4 +78,4 @@ export type Diary = {
 
 export type Reminder = { id: string; timeOfDay: string }; // "HH:MM", every day
 
-export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[]; reminders: Reminder[]; events: CalEvent[] };
+export type DB = { profile: Profile; categories: Category[]; todos: Todo[]; routines: Routine[]; ddays: DDay[]; diaries: Diary[]; reminders: Reminder[]; event_categories: EventCategory[]; events: CalEvent[] };

@@ -1,9 +1,9 @@
 import { router, useFocusEffect } from "expo-router";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { AppText, ChevronRight, NeonText, Search, TodoRow, useFrame, useToast } from "../../components";
+import { AppText, ChevronRight, GlowTint, NeonText, Search, TodoRow, useFrame, useGlowOf, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
-import { ddayLabel, isDDayToday, selectActiveCategories, selectCategories, selectDDays, todosForDay, toggleTodo, useDB } from "../../data/store";
+import { ddayLabel, isDDayToday, selectActiveCategories, selectCategories, selectDDays, selectEvents, todosForDay, toggleTodo, useDB } from "../../data/store";
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand } from "../../lib/events";
 import { peekHomeDay, requestHomeDay } from "../../lib/todoCalendar";
@@ -31,6 +31,8 @@ export function HomeDash() {
   const insets = useInsets();
   const prefs = usePrefs();
   const db = useDB((d) => d);
+  const shownEvents = useDB(selectEvents);
+  const glowOf = useGlowOf();
   const cats = useDB(selectActiveCategories);
   const ddays = useDB(selectDDays);
   const profile = useDB((d) => d.profile);
@@ -56,12 +58,12 @@ export function HomeDash() {
   // what is next today: the next timed event or to-do from now on
   const next = useMemo(() => {
     const items = [
-      ...dayBlocks(db.events, now).map((b) => ({ at: b.top, title: b.e.title, kind: "일정" })),
+      ...dayBlocks(shownEvents, now).map((b) => ({ at: b.top, title: b.e.title, kind: "일정" })),
       ...todos.filter((t) => t.remindAt && !t.isDone).map((t) => { const d = new Date(t.remindAt!); return { at: d.getHours() * 60 + d.getMinutes(), title: t.title, kind: "할 일" }; }),
     ].filter((x) => x.at >= nowMin).sort((a, b) => a.at - b.at);
     return items[0];
-  }, [db.events, todos, now, nowMin]);
-  const allDay = eventsOn(db.events, now).filter((e) => e.allDay);
+  }, [shownEvents, todos, now, nowMin]);
+  const allDay = eventsOn(shownEvents, now).filter((e) => e.allDay);
   const ws = weekStart(now, prefs.weekStartsSunday);
   const weekStars = db.todos.filter((t) => t.isDone && t.date && t.date >= ws && t.date <= addDays(ws, 6)).length;
   // 중요한 날 coming in the next 30 days (to-dos and highlighted events)
@@ -72,17 +74,17 @@ export function HomeDash() {
         const cat = all.find((x) => x.id === t.categoryId);
         return { d: t.date!, title: t.title, id: t.id, color: cat?.color ?? c.accent, sub: `${cat?.title ?? "할 일"}${t.isDone ? " · 완료" : ""}` };
       }),
-      ...db.events.filter((e) => e.important && e.endDate >= now && e.startDate <= end).map((e) => ({
+      ...shownEvents.filter((e) => e.important && e.endDate >= now && e.startDate <= end).map((e) => ({
         d: e.startDate < now ? now : e.startDate, title: e.title, id: e.id, color: e.color, sub: `일정 · ${eventTimeLabel(e, prefs.use24h, parseDay(now).y)}`,
       })),
     ];
     return list.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0)).slice(0, comingCount);
-  }, [db.todos, db.events, now, all, c.accent, prefs.use24h, comingDays, comingCount]);
+  }, [db.todos, shownEvents, now, all, c.accent, prefs.use24h, comingDays, comingCount]);
   // the picked day of the week card, shown right in the card
   // the same order as 달력's To Do, with 강조 to-dos above all others (user)
   const catOrder = new Map(all.map((x, i) => [x.id, i]));
   const peekTodos = todosForDay(db, peek).sort((a, b) => Number(!!b.isImportant) - Number(!!a.isImportant) || agendaSort(catOrder, prefs.todoSort === "done_last")(a, b));
-  const peekEvents = eventsOn(db.events, peek);
+  const peekEvents = eventsOn(shownEvents, peek);
 
   const card = (children: React.ReactNode, onPress?: () => void, label?: string) => {
     const style = { marginTop: 14, padding: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface, ...frame };
@@ -130,8 +132,10 @@ export function HomeDash() {
               </View>
             ))}
             {peekTodos.slice(0, peekMax).map((t) => (
-              <TodoRow key={t.id} title={t.title} done={t.isDone} important={t.isImportant} small
+              <GlowTint key={t.id} color={glowOf(t.categoryId, all.find((x) => x.id === t.categoryId)?.color ?? c.accent)}>
+              <TodoRow title={t.title} done={t.isDone} important={t.isImportant} small
                 color={all.find((x) => x.id === t.categoryId)?.color ?? c.accent} onToggle={() => toggleTodo(t.id) || notice("다가올 날의 할 일은 그날이 되면 완료할 수 있어요")} onPress={() => openDay(peek)} />
+              </GlowTint>
             ))}
             {peekTodos.length > peekMax ? <AppText variant="small" color="textMuted" style={{ paddingTop: 4 }}>{`할 일 ${peekTodos.length - peekMax}개 더`}</AppText> : null}
             {!peekTodos.length && !peekEvents.length ? <AppText variant="helper" color="textMuted" style={{ paddingVertical: 8 }}>할 일도 일정도 없어요</AppText> : null}
