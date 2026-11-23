@@ -54,7 +54,9 @@ export type Prefs = {
   // 강조 효과의 불씨·불꽃 (메인 앱): on by default; off keeps only the glow; this phone only
   glowParticles: boolean;
   // 구글 캘린더 (메인 앱): the picked, writable calendars, offered in the event editor (kept so it works offline)
-  googleCalendars: { id: string; summary: string; color: string }[];
+  googleCalendars: { id: string; summary: string; color: string; categoryId?: string | null }[];
+  // the connected Google account (shown as what an event can be put in)
+  googleEmail: string | null;
   // 오늘 (design app): the category the input bar adds to; this phone only
   quickAddCategory: string | null;
   // 홈 바로가기 (design app): ids in order, null = the default set; this phone only
@@ -73,7 +75,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, googleLinked: false, glowParticles: true, googleCalendars: [], quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel", "love", "winter"],
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, googleLinked: false, glowParticles: true, googleCalendars: [], googleEmail: null, quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel", "love", "winter"],
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

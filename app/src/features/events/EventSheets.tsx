@@ -56,8 +56,22 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     onSaved(`${dayLabel(e.startDate)}에 '${e.title.trim()}'을(를) 저장했어요`);
   };
   const cat = eventCats.find((k) => k.id === e.categoryId);
+  // a Google calendar as the event's category: where it goes, its 일정 카테고리, and (if Google lacks the colour) its colour
+  const pickGoogleCalendar = (id: string) => {
+    const cal = prefs.googleCalendars.find((k) => k.id === id);
+    if (!cal) return;
+    put({ googleCalendarId: id, ...(cal.categoryId ? { categoryId: cal.categoryId } : {}), ...(!isGoogleColor(e.color, cal.color) || e.color === (prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.color) ? { color: cal.color } : {}) });
+  };
+  const chooseAccount = (google: boolean) => {
+    if (!google) { put({ googleCalendarId: null }); return; }
+    if (e.googleCalendarId) return;
+    // the calendar whose category the event already has, else the first one
+    const cal = prefs.googleCalendars.find((k) => k.categoryId && k.categoryId === e.categoryId) ?? prefs.googleCalendars[0];
+    if (cal) pickGoogleCalendar(cal.id);
+  };
   const gcal = e.googleCalendarId ? prefs.googleCalendars.find((k) => k.id === e.googleCalendarId) ?? { id: e.googleCalendarId, summary: "구글 캘린더", color: e.color } : null;
-  const googleLabel = e.googleCalendarId ? `구글 · ${prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.summary ?? "캘린더"}` : "립마크에만";
+  const googleLabel = e.googleCalendarId ? `구글 캘린더 · ${prefs.googleEmail ?? "연결한 계정"}` : "립마크에만";
+  const catLabel = e.googleCalendarId ? prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.summary ?? "구글 캘린더" : cat ? cat.title : "카테고리 없음";
   const pickCat = (id: string | null) => { const k = eventCats.find((x) => x.id === id); put(k ? { categoryId: k.id, color: k.color } : { categoryId: null }); back(); };
   const setRepeat = (kind: EventRepeat["kind"] | null) =>
     put({ repeat: kind ? { kind, until: e.repeat?.until ?? null, ...(kind === "weekly" ? { weekdays: e.repeat?.weekdays?.length ? e.repeat.weekdays : [weekday(e.startDate)] } : {}) } : null });
@@ -161,6 +175,22 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <Button kind="sheetPrimary" label="완료" onPress={back} />
       </View>
     );
+  } else if (sub === "category" && e.googleCalendarId) {
+    // going to Google: the account's calendars are the categories (each has a 일정 카테고리 of its name and colour)
+    body = (
+      <View>
+        <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>구글 캘린더</AppText>
+        {prefs.googleCalendars.map((k) => (
+          <Pressable key={k.id} onPress={() => { pickGoogleCalendar(k.id); back(); }} accessibilityRole="radio" accessibilityState={{ checked: e.googleCalendarId === k.id }} accessibilityLabel={k.summary}
+            style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 50 }}>
+            <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: k.color }} />
+            <AppText variant="bodyLg" style={{ flex: 1 }} numberOfLines={1}>{k.summary}</AppText>
+            {e.googleCalendarId === k.id ? <Check size={20} color={c.text} /> : null}
+          </Pressable>
+        ))}
+        <AppText variant="small" color="textMuted" style={{ marginTop: 8 }}>여기 보이는 캘린더는 설정 → 구글 캘린더에서 골라요</AppText>
+      </View>
+    );
   } else if (sub === "category") {
     // 일정 카테고리 (user, 2026-11-23): apart from the to-dos' categories; picking one takes its colour
     const choice = (id: string | null, label: string, col?: string) => (
@@ -243,26 +273,22 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
       </View>
     );
   } else if (sub === "google") {
-    // 구글 캘린더 (user, 2026-11-23): picked for each event; 립마크에만 keeps it out of Google (and takes it off if it was there)
-    const choice = (id: string | null, label: string, col?: string) => (
-      <Pressable key={id ?? "none"} onPress={() => {
-        // going to a Google calendar with a colour Google does not have: the calendar's own colour instead
-        const cal = prefs.googleCalendars.find((k) => k.id === id);
-        put(cal && !isGoogleColor(e.color, cal.color) ? { googleCalendarId: id, color: cal.color } : { googleCalendarId: id });
-        back();
-      }} accessibilityRole="radio" accessibilityState={{ checked: (e.googleCalendarId ?? null) === id }} accessibilityLabel={label}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 50 }}>
-        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: col ?? "transparent", borderWidth: col ? 0 : 1.5, borderColor: c.textMuted }} />
-        <AppText variant="bodyLg" style={{ flex: 1 }}>{label}</AppText>
-        {(e.googleCalendarId ?? null) === id ? <Check size={20} color={c.text} /> : null}
+    // 올릴 곳 (user, 2026-11-23): the account. 립마크에만, or the Google account; its calendars are then the categories
+    const choice = (google: boolean, label: string) => (
+      <Pressable key={label} onPress={() => { chooseAccount(google); back(); if (google && !e.googleCalendarId) setSub("category"); }}
+        accessibilityRole="radio" accessibilityState={{ checked: !!e.googleCalendarId === google }} accessibilityLabel={label}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 52 }}>
+        <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: c.textMuted, backgroundColor: !!e.googleCalendarId === google ? c.text : "transparent" }} />
+        <AppText variant="bodyLg" style={{ flex: 1 }} numberOfLines={1}>{label}</AppText>
+        {!!e.googleCalendarId === google ? <Check size={20} color={c.text} /> : null}
       </Pressable>
     );
     body = (
       <View>
         <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>올릴 곳</AppText>
-        {choice(null, "립마크에만 (구글에 안 올림)")}
-        {prefs.googleCalendars.map((k) => choice(k.id, k.summary, k.color))}
-        <AppText variant="small" color="textMuted" style={{ marginTop: 8 }}>연동할 캘린더는 설정 → 구글 캘린더에서 골라요</AppText>
+        {choice(false, "립마크에만 (구글에 안 올림)")}
+        {choice(true, `구글 캘린더 · ${prefs.googleEmail ?? "연결한 계정"}`)}
+        <AppText variant="small" color="textMuted" style={{ marginTop: 8 }}>구글 계정을 고르면 카테고리에서 그 계정의 캘린더를 골라요</AppText>
       </View>
     );
   } else if (sub === "until") {
@@ -308,8 +334,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
         {row(icon(Bell), alarmLabel(e.alarmMinutes), () => setSub("alarm"), `알림 ${alarmLabel(e.alarmMinutes)}`)}
         {DESIGN_TRIAL ? row(icon(Repeat), repeatLabel(e.repeat, e.startDate), () => setSub("repeat"), `반복 ${repeatLabel(e.repeat, e.startDate)}`) : null}
-        {DESIGN_TRIAL ? row(icon(Tag), cat ? cat.title : "카테고리 없음", () => setSub("category"), `일정 카테고리 ${cat ? cat.title : "없음"}`) : null}
-        {DESIGN_TRIAL && (prefs.googleLinked || e.googleCalendarId) ? row(icon(CalendarDays), googleLabel, () => setSub("google"), `구글 캘린더 ${googleLabel}`) : null}
+        {DESIGN_TRIAL && (prefs.googleLinked || e.googleCalendarId) ? row(icon(CalendarDays), googleLabel, () => setSub("google"), `올릴 곳 ${googleLabel}`) : null}
+        {DESIGN_TRIAL ? row(icon(Tag), catLabel, () => setSub("category"), `일정 카테고리 ${catLabel}`) : null}
         {row(<View style={{ width: 22, alignItems: "center" }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: e.color }} /></View>, "색", () => setSub("color"), "색 고르기")}
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingTop: 6 }}>

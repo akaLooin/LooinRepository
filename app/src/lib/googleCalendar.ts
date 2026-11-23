@@ -9,7 +9,7 @@ import { getPrefs, setPref } from "../data/prefs";
 import { supabase } from "./supabase";
 
 export type GoogleStatus = { connected: boolean; email?: string | null; last_sync_at?: string | null; last_error?: string | null; missing?: boolean };
-export type GoogleCalendar = { calendar_id: string; summary: string; color: string; can_write: boolean; selected: boolean; is_default: boolean };
+export type GoogleCalendar = { calendar_id: string; summary: string; color: string; can_write: boolean; selected: boolean; is_default: boolean; category_id?: string | null };
 
 const FN = "google-calendar";
 /** "not_set_up": the server's Google keys are not in yet (a PC step); "no_sql": the SQL has not been run. */
@@ -34,15 +34,16 @@ export async function googleStatus(): Promise<GoogleStatus> {
   if (error) return { connected: false, missing: true };
   const s = data as GoogleStatus;
   if (getPrefs().googleLinked !== !!s.connected) setPref("googleLinked", !!s.connected);
+  if (s.connected && s.email && getPrefs().googleEmail !== s.email) setPref("googleEmail", s.email);
   return s;
 }
 
 export async function googleCalendars(): Promise<GoogleCalendar[]> {
   if (!supabase) return [];
-  const { data } = await supabase.from("google_calendars").select("calendar_id, summary, color, can_write, selected, is_default").order("summary");
+  const { data } = await supabase.from("google_calendars").select("calendar_id, summary, color, can_write, selected, is_default, category_id").order("summary");
   const list = (data ?? []) as GoogleCalendar[];
   // the event editor offers the picked ones it can write to
-  setPref("googleCalendars", list.filter((k) => k.selected && k.can_write).map((k) => ({ id: k.calendar_id, summary: k.summary, color: k.color })));
+  setPref("googleCalendars", list.filter((k) => k.selected && k.can_write).map((k) => ({ id: k.calendar_id, summary: k.summary, color: k.color, categoryId: k.category_id ?? null })));
   return list;
 }
 
@@ -78,6 +79,7 @@ export async function disconnectGoogle() {
   await call("disconnect");
   setPref("googleLinked", false);
   setPref("googleCalendars", []);
+  setPref("googleEmail", null);
   await syncNow();
 }
 
