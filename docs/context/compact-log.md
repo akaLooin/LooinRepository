@@ -67,3 +67,16 @@
   - e2ebdd1 fix: picked calendar day gets a fresh rounded box like today's; navigation-bar module loaded only when the APK has it, so the version stays 1.0.0 and phones keep getting updates (the last-week grid fix now reaches them)
   - c7a238b docs: handoff trim
   - 3e28ea4 feat: main app — sheets drawn in-app so the keyboard opens at once and stays between fields, auto focus on double-tap edit, bigger to-do title centred on its star, no checking off future days, deleting a manual routine's to-do brings back its + line, and skins (황혼의 재즈, 8비트 모험 with the Galmuri pixel font) in 설정 → 스킨
+
+## 2026-11-23 15:02 UTC · auto
+- 브랜치: claude/replica-skill-install-ll9jb4 · HEAD 91aacfc
+- 커밋 안 된 파일: 5개
+  - `pp/scripts/test-gcal.ts`
+  - `supabase/functions/_shared/gcal.ts`
+  - `supabase/functions/google-calendar/index.ts`
+  - `supabase/tests/run.sh`
+  - `supabase/migrations/20261127000000_google_more.sql`
+- 최근 커밋:
+  - 91aacfc fix: Google Calendar — a label colour goes as the label only (sending the old colorId too made Google show another colour); alarms match both ways: 알림 없음 is no alarm in Google too, Google's default alarm shows in 립마크 as it rings, all-day alarms convert between 9:00 and midnight; the one-time refresh also fills alarms
+  - 51f5e24 fix: Google Calendar — a write Google refuses is reported (설정 → 구글 캘린더, 지금 맞추기) and a refused label is retried as an old colorId; a change made while a Google sync runs goes right after it
+  - 7f08e7b docs: PC to-do — label colours, place and meetings filled in (51 events)

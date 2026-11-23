@@ -61,3 +61,37 @@ The user saw text and icons bigger than the original. Sizes had been measured as
 | status emoji | 2026-11-07 | done | — | Home's dashed 😊+ opens a sheet of 36 everyday system emoji; the pick replaces the button and syncs (profiles.status_emoji, already in the schema). What the original does with it is a guess |
 | home widget | 2026-11-07 | done (needs the next APK + phone check) | — | "오늘 할 일" Android widget (react-native-android-widget): today's to-dos in category order with our clover; tap a clover to check (queued, shown at once, applied and synced when the app opens), tap a title or the header to open the app; redraws after app changes and every 30 min. Entry is index.js (expo-router + widget handler on Android only). Model unit-tested (scripts/test-widget.ts); prebuild shows the receiver and provider; Android bundle exports. Its look on a real home screen is not seen yet |
 | display settings rest | 2026-11-07 | done | 할 일 캘린더 max counts (that screen is unseen) | 폰트: 기본 (Pretendard), 시스템, 나눔고딕, 나눔손글씨 펜 (OFL, built into the APK, loaded on demand in Expo Go/web); the font is part of the theme so every text redraws. 피드에서 메모 줄 제한 (무제한/1/2/3/5, for the phase-2 feed). 언어: Korean only (user). Both synced through user_settings (font 'default' = Pretendard, null = 무제한) |
+
+
+## HANDOFF에서 옮김 (11-23)
+
+### 구글 캘린더 세부 (11-23)
+**구글 캘린더 양방향(11-23, 코드만 · PC 설정 대기)**: 서버 함수 `supabase/functions/google-calendar`(`auth-url`→구글→`/callback`, `sync`, `disconnect`, 15분 `cron`), 변환 `functions/_shared/gcal.ts`(테스트 `test-gcal.ts`), SQL 20261125000000(`google_accounts` 서버 전용, `google_calendars`, `google_event_links`, `events.google_calendar_id`), 앱 `lib/googleCalendar.ts`(`onSynced` 뒤 자동, 고른 캘린더를 pref `googleCalendars`에 보관)·설정 → 구글 캘린더. **올릴 곳은 일정마다 편집 시트에서**: "올릴 곳" 줄 = 계정(립마크에만 / 구글 계정 `googleEmail`), 구글이면 "카테고리" 줄 = 그 계정의 하위 캘린더(pref `googleCalendars`의 `categoryId`로 일정 카테고리도 맞춤). 기본 립마크에만, 기존 일정은 안 올라감. 강조 = 구글 제목 맨 앞 ⭐ 또는 ★(올릴 때는 ⭐). 구글 반복 중 못 그리는 것 `lossy`. 색: 서버가 계정의 실제 색 목록을 받음(`livePalette`, 1~11은 구글 앱 색조 `GOOGLE_EVENT_COLORS`), 앱은 pref `googleEventColors`로 받아 편집 시트에 그 색+캘린더 색만(`googleColorChoices`). **라벨**(구글의 새 색): 캘린더마다 `labelProperties.eventLabels`(24개, 권한 `calendar.calendars.readonly`), 일정은 `eventLabelId`. 색 우선순위 라벨 → colorId → 캘린더 색, 올릴 때 라벨 색이면 `eventLabelId`. 앱 pref `googleLabels`, 편집 시트는 그 캘린더 라벨 24색(`labelChoices`, 이름 `GOOGLE_24`). 고칠 때 PATCH(구글의 다른 정보 보존), 라벨 색은 라벨만(옆에 colorId를 보내면 구글이 옛 색을 씀; 거절되면 `__fallbackColorId`). 알림: 없음 = 구글도 없음(`overrides: []`), 구글 기본 알림은 캘린더 `defaultReminders`로 읽음, 종일은 9시 기준↔자정 기준(`alarmFromGoogle`/`alarmToGoogle`). 장소 `events.location`(양쪽), 화상 회의 `meet_link`(구글→립마크, 보기·열기만), SQL 20261126000000. **PC 할 일: `docs/context/PC-TODO.md`**.
+
+### 5단계: 출시 리디자인 (2026-11-21~)
+- 기존 앱 = 별 모양으로 확정(`Clover.tsx` `STAR = true`) 후 그대로 유지. 디자인 앱만 새 구조(`DESIGN_TRIAL`)
+- 탭 홈·달력·커뮤니티·프로필(`BottomNav` `DESIGN_TABS`), 화면은 `features/today/`:
+  - `HomeDash` 홈: 관리자 공지 줄, 오늘 카드, 이번 주(큰 별 30, 날짜 탭 = 카드 안에 그날 할 일·일정, 두 번 탭 = 달력), 디데이, 중요한 날(색 막대·D-n), 바로가기(`Shortcuts.tsx`, 편집 시트에서 보이기·순서, pref `homeShortcuts`)
+  - `CalendarTab` 달력: 위 검색·메뉴, 한 달(`Calendar boxed` 오늘 회색 칸 `todayCell`·고른 날 흰 칸) + `AgendaList`(구간 구분선 `sectionLine`, 종일/오전/오후/저녁, **To Do**(그날 디데이가 맨 위, 그 아래 카테고리 묶음: 색 막대 + 이름 + 완료/전체(원본 알약과 다르게), 카테고리 왼쪽에 공개 범위 아이콘, 묶음 안 강조 먼저·오른쪽 '중요' 표시, 꾹 끌어 다른 묶음 안에 놓으면 그 카테고리 `arrangeByHeaders`; 카테고리 태그는 없앰), 일정 탭 = `EventEditor` 바로)
+  - `TogetherScreen` 커뮤니티: 친구 목록 먼저, 친구 소식/친구 찾기 전환, 크루는 `app_config` 켜질 때만(`lib/appConfig.ts`, 규칙 `configRules.ts`)
+  - `ProfileTab` 프로필: 가운데 카드 + 기록 3칸(연속 기록 `streakOf`) + 설정 묶음 카드(`SettingsGroups`, 디자인 앱 설정 화면도 같음)
+- **관리자 앱**: `APP_VARIANT=admin`(`features/admin`, `AdminEditors.tsx`), 원격 설정 목록 `lib/remoteCatalog.ts`·규칙 `configRules.ts`·캐시 `appConfig.ts`(`useT`·`useFeature`·`useNumber`), 실시간 구독, 변경 기록 `app_config_history`, 저장소 복사 `docs/context/remote-config.md`(backend.md 23~24).
+- 속도(11-21): 디자인 앱 탭 4개는 `(tabs)/_layout.tsx` `DesignTabs`가 React `Activity`로 계속 살려 둠, 탭 바꾸기는 라우터 대신 `lib/tabSwitch.ts` `goTab`(라우트를 바꾸면 탭 레이아웃 전체가 다시 만들어지던 게 느림의 원인). 달력 별 계산 캐시. 꾹 누르기 0.3초 + 회색 띠가 화면 양끝까지(`ReorderableList` `WIDE_BAND`, 디자인 앱만; 퍼지는 빛은 해 보고 되돌림)
+- 끌기 버그 고침: `ReorderableList`가 처음 그려질 때의 콜백을 계속 써서 나중에 추가된 할 일의 카테고리가 안 바뀌던 문제(두 앱 공통). `onTargetChange`(끄는 중 미리 보기용 콜백)는 남아 있음
+- 이번 주 카드: 일·공휴일 빨강, 토 파랑, 오늘은 골라도 #00ff7f. 공휴일 표 `lib/holidays.ts`(2025~2029)
+- e2e `design-structure.js`(APP_VARIANT=design 빌드, 숨은 탭도 DOM에 있어 `filter({visible:true})` 필요; 변형 바꿀 땐 export `--clear`), DB 테스트 `admin.test.sql`
+- 원본 닮은 곳 차별화 1차(11-21, `DESIGN_TRIAL` 분기): 제목줄·시트·관리 메뉴·목록 줄·카테고리 제목·+버튼·입력칸·선택·설정 줄·할 일 메뉴·정보·타이머·일기·카테고리 편집
+- 다음 후보: 이용자 폰 확인, 테마(스킨) 기능, 앱 이름·아이콘(나중)
+
+### 11-23 차수별 (HANDOFF에서 옮김)
+**아래 내비게이션 바(11-23)**: `expo-navigation-bar`(있을 때만 `requireOptionalNativeModule`, 버전 1.0.0 유지, 바 색은 다음 APK부터), `enforceContrast: false`, `setStyle`("light"=어두운 바).
+**메인 앱(11-23)**: 원본 닮은 화면들 다시 만듦(할 일 메뉴, `OuterGlow`, 카테고리 접기, `SelectionBar`·`AgendaDrop`).
+**11-23 3차**: 메인 앱 시트 = 앱 안(`Portal`). 미래 날짜 완료 불가(`isFutureDay`). **스킨**(`theme/skins.ts`, `SkinsScreen`, 장식 `SkinDecor`).
+**11-23 4차**: 아래 입력줄 키보드 기억(`QuickAdd` `want`, 다른 곳 누르면 안 열림). 달력 넘기기 = 가로 `FlatList`(`CalendarPager`). 할 일 고치기 = 제목+메모 한 시트.
+**11-23 5차(일정)**: 반복(`EventRepeat`, `expandEvents` id `원본~날짜`, `selectEvents`, "이 일정만/모든 반복" `saveEventIn`·`deleteEventIn`), 일정 카테고리(표 `event_categories`, 설정 → 일정 카테고리). SQL 20261124000000 미실행. 강조 색: 기본 = 항목 색, 설정 → 화면 → 강조 색에서 카테고리별(`glowMode`·`glowColors`, `GlowTint`). 하루 목록 맨 위: 일정 추가 | 일기.
+**11-23 6차**: 메인 앱 입력칸은 자기 글자를 가짐(`useOwnText`; Portal 시트에서 한글 조합 깨짐 방지). 달력 넘김 `snapToInterval`(폭 반올림 금지), `removeClippedSubviews` 끔.
+**11-23 7차**: 강조 불씨 켜고 끄기(pref `glowParticles`). 디데이 날짜 = 숫자 뒤 빨간 빛(`DDayNumber`, SVG 그라데이션; 글자 그림자는 안드로이드에서 잘림). 달력 줄은 막대 2줄 자리 고정. 업데이트 재시작만 보던 탭 유지(`lib/resume.ts`), 앱을 닫으면 홈부터.
+**11-23 8차**: 디데이 안내 `DDayNotice`(달력·홈 맨 위). 메모 눌러도 제목+메모 시트(`MemoLockChip`). 스킨 설레는 마음·첫눈 오는 날(`Drift`, `FREE_SKINS`).
+**11-23 9차**: 일기(메인 앱) = 종이 한 장(큰 날짜, 기분 도장, **낭만 농도** = `moodTemp`를 %로 `ROMANCE_STAGES`·`RomanceGauge`, 사진 2열). `ColorCodeInput` `presets`(색 견본 한 줄).
+**11-23 10차**: 프로필 맨 아래 "지금 업데이트"(`lib/updateNow.ts`: 확인→받기→바로 적용, 보던 탭 유지) + 업데이트 중 립마크 화면(`UpdateCurtain`, 루트 `_layout`). 시작 화면(흰색) → 짙은 초록+마크 = `expo-splash-screen` 플러그인(`app.config.js`, 메인·관리자), **새 APK부터**(버전은 1.0.0 그대로: OTA 계속).
+**11-23 11차**: 일정 막대 순서 = 강조 → 종일 → 시간(`SpanBar.allDay`, 메인 앱). 보기만 가능한 구글 캘린더 일정 = 정보만(`isReadOnlyEvent`, pref `googleReadOnlyCalendarIds`; 편집 시트 읽기 화면, 시간표에서 끌기·강조·삭제 막음). 서버 1회 `refresh-colors`(다시 읽어 색·⭐ 적용 + 색 필드 진단). 지금 업데이트: 새 버전이 없을 때 GitHub 작업이 도는 중이면 "아직 준비 중" 안내.

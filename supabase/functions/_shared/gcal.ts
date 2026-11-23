@@ -4,6 +4,7 @@
 export type Day = string; // YYYY-MM-DD
 export type Repeat = { kind: "daily" | "weekly" | "monthly" | "yearly"; weekdays?: number[]; until?: Day | null; every?: number };
 /** An events row as stored (the parts Google knows about). */
+export type Attendee = { email: string; name?: string; status?: string; organizer?: boolean; self?: boolean; optional?: boolean };
 export type EventFields = {
   title: string; start_date: Day; end_date: Day; all_day: boolean; start_time: string | null; end_time: string | null;
   color: string; memo: string; alarm_minutes: number | null; repeat: Repeat | null; skip_dates: Day[];
@@ -11,7 +12,16 @@ export type EventFields = {
   important: boolean;
   /** 장소 (both ways) and the video meeting Google made (read only in the app) */
   location?: string;
+  /** the video meeting; "new" asks Google to make a Meet, "" takes it away (app → Google only) */
   meet_link?: string | null;
+  /** every alarm, minutes before (alarm_minutes is the first one, for older apps) */
+  alarms?: number[] | null;
+  /** guests: e-mail, name, answer (accepted / declined / tentative / needsAction) */
+  attendees?: Attendee[] | null;
+  /** the event's own time zone (Google's; none = the calendar's) */
+  time_zone?: string | null;
+  /** files attached in Google (read only in the app) */
+  attachments?: { title: string; url: string }[] | null;
 };
 
 /**
@@ -167,7 +177,7 @@ const hex = (c: string | undefined) => (c && /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toU
  * `labels`: the calendar's event labels (Google's newer colours, labelProperties.eventLabels), label id → colour.
  * An event's label wins over its old colorId, which wins over the calendar's colour.
  */
-export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string>, calendarColor: string, labels: Record<string, string> = {}, defaultReminder: number | null = null): { fields: EventFields; lossy: boolean } | null {
+export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string>, calendarColor: string, labels: Record<string, string> = {}, defaultReminders: number | number[] | null = null): { fields: EventFields; lossy: boolean } | null {
   if (g.status === "cancelled" || !g.start) return null;
   const allDay = !!g.start.date;
   let startDate: Day, endDate: Day, startTime: string | null = null, endTime: string | null = null;
@@ -185,8 +195,10 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
   }
   const rec = fromRecurrence(g.recurrence, startDate, allDay, g.start.timeZone || tz);
   // the alarm as Google really rings it: the event's own, or (useDefault) the calendar's default
-  const popup = (g.reminders?.overrides ?? []).find((o: { method: string; minutes: number }) => o.method === "popup");
-  const ring: number | null = g.reminders?.useDefault ? defaultReminder : popup ? popup.minutes : null;
+  const defaults = defaultReminders == null ? [] : Array.isArray(defaultReminders) ? defaultReminders : [defaultReminders];
+  const popups = ((g.reminders?.overrides ?? []) as { method: string; minutes: number }[]).filter((o) => o.method === "popup").map((o) => o.minutes);
+  const rings = [...new Set(g.reminders?.useDefault ? defaults : popups)].sort((a, b) => a - b);
+  const alarms = rings.map((m) => alarmFromGoogle(m, allDay)!).filter((m) => m != null);
   const star = starOff(String(g.summary ?? ""));
   return {
     fields: {
@@ -196,7 +208,14 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
       start_date: startDate, end_date: endDate, all_day: allDay, start_time: startTime, end_time: endTime,
       color: hex(labels[g.eventLabelId]) ?? hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2",
       memo: stripHtml(String(g.description ?? "")).trim().slice(0, 2000),
-      alarm_minutes: alarmFromGoogle(ring, allDay),
+      alarm_minutes: alarms[0] ?? null,
+      alarms,
+      attendees: ((g.attendees ?? []) as GEvent[]).filter((a) => a.email && !a.resource).map((a) => ({
+        email: String(a.email), ...(a.displayName ? { name: String(a.displayName) } : {}), ...(a.responseStatus ? { status: String(a.responseStatus) } : {}),
+        ...(a.organizer ? { organizer: true } : {}), ...(a.self ? { self: true } : {}), ...(a.optional ? { optional: true } : {}),
+      })),
+      time_zone: g.start.timeZone ?? null,
+      attachments: ((g.attachments ?? []) as GEvent[]).filter((a) => a.fileUrl).map((a) => ({ title: String(a.title ?? "첨부파일").slice(0, 200), url: String(a.fileUrl) })),
       repeat: rec.repeat, skip_dates: rec.skip,
     },
     lossy: rec.lossy,
@@ -211,9 +230,16 @@ export function meetLinkOf(g: GEvent): string | null {
 }
 
 /** Our event as a Google event body (insert or full update). */
-export function toGoogle(e: EventFields, tz: string, palette: Record<string, string>, calendarColor: string, exceptions?: Set<Day>, labels: Record<string, string> = {}): GEvent {
+export function toGoogle(e: EventFields, calendarTz: string, palette: Record<string, string>, calendarColor: string, exceptions?: Set<Day>, labels: Record<string, string> = {}): GEvent {
+  // the event's own time zone if it has one (picked in the app or kept from Google), else the calendar's
+  const tz = e.time_zone || calendarTz;
   const body: GEvent = { summary: starOn(e.title, e.important), description: e.memo || "" };
   if (e.location !== undefined) body.location = e.location;
+  // guests: their e-mails and answers as the app has them (no invitation mails are sent from here)
+  if (e.attendees) body.attendees = e.attendees.map((a) => ({ email: a.email, ...(a.status ? { responseStatus: a.status } : {}), ...(a.optional ? { optional: true } : {}), ...(a.name ? { displayName: a.name } : {}) }));
+  // a new video meeting is asked for; "" takes the meeting off (the request goes with conferenceDataVersion=1)
+  if (e.meet_link === "new") body.conferenceData = { createRequest: { requestId: `libmark-${e.start_date}-${Math.random().toString(36).slice(2, 10)}`, conferenceSolutionKey: { type: "hangoutsMeet" } } };
+  else if (e.meet_link === "") body.conferenceData = null;
   if (e.all_day) {
     body.start = { date: e.start_date };
     body.end = { date: addDays(e.end_date, 1) };
@@ -235,8 +261,9 @@ export function toGoogle(e: EventFields, tz: string, palette: Record<string, str
   body.colorId = label ? null : nearest;
   if (label) body.__fallbackColorId = nearest;
   // 알림 없음 = no alarm in Google either (it was "the calendar's default", so a default alarm appeared, user)
-  const ring = alarmToGoogle(e.alarm_minutes, e.all_day);
-  body.reminders = { useDefault: false, overrides: ring == null ? [] : [{ method: "popup", minutes: ring }] };
+  // every alarm (Google takes up to five)
+  const list = (e.alarms?.length ? e.alarms : e.alarm_minutes != null ? [e.alarm_minutes] : []).map((m) => alarmToGoogle(m, e.all_day)!).filter((m) => m != null);
+  body.reminders = { useDefault: false, overrides: [...new Set(list)].sort((a, b) => a - b).slice(0, 5).map((minutes) => ({ method: "popup", minutes })) };
   return body;
 }
 
@@ -244,6 +271,14 @@ export function toGoogle(e: EventFields, tz: string, palette: Record<string, str
  * Alarms: the app counts minutes before the start (an all-day event: before 9:00 of its first day); Google counts
  * minutes before the start (an all-day event: before 00:00), at most four weeks.
  */
+/**
+ * The id Google gives one time of a repeating event: the series id, "_", and when that time was meant to start
+ * (all day: YYYYMMDD; timed: YYYYMMDDTHHMMSSZ in UTC).
+ */
+export function instanceId(seriesGoogleId: string, day: Day, allDay: boolean, startTime: string | null, tz: string): string {
+  return `${seriesGoogleId}_${allDay ? compact(day) : zonedToUtcCompact(day, startTime ?? "00:00", tz)}`;
+}
+
 export function alarmFromGoogle(minutes: number | null | undefined, allDay: boolean): number | null {
   if (minutes == null) return null;
   return Math.min(40320, Math.max(0, allDay ? minutes + 540 : minutes));

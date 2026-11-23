@@ -8,6 +8,7 @@
 // POST {action}: "auth-url" (where to send the browser), "sync" (both ways now), "disconnect";
 //   {action: "cron"} with header x-cron-secret: sync everyone (every 15 minutes, set up with pg_cron).
 // GET …/google-calendar/callback: Google sends the browser back here after the user agreed.
+// POST …/google-calendar/notify: Google's notice that a watched calendar changed (a sync starts at once).
 //
 // Colours: an event wears its own Google colour (colorId) if it has one, else its calendar's; when a calendar's colour
 // changes in Google, the events that wore it (and its 일정 카테고리) follow.
@@ -18,7 +19,7 @@
 // linked event takes it off Google. 강조 = a ⭐ at the front of the Google title. When both sides changed one event,
 // the later wins.
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { addDays, alarmFromGoogle, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, meetLinkOf, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
+import { addDays, alarmFromGoogle, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, instanceId, meetLinkOf, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info" };
@@ -34,6 +35,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const url = new URL(req.url);
   if (req.method === "GET" && url.pathname.endsWith("/callback")) return callback(url);
+  if (req.method === "POST" && url.pathname.endsWith("/notify")) return notify(req);
   if (req.method !== "POST") return new Response("method not allowed", { status: 405, headers: cors });
   const input = await req.json().catch(() => ({}));
   const db = admin();
@@ -154,6 +156,7 @@ Deno.serve(async (req) => {
   }
   if (input?.action === "disconnect") {
     const { data: acc } = await db.from("google_accounts").select("refresh_token").eq("user_id", uid).maybeSingle();
+    try { const t = await accessToken(db, uid); await stopWatches(db, uid, t); } catch { /* the key may be gone already */ }
     if (acc) await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(acc.refresh_token)}`, { method: "POST" }).catch(() => {});
     // events that came from Google leave the app (they stay in Google); events made in the app stay, unlinked
     const { data: links } = await db.from("google_event_links").select("event_id, origin").eq("user_id", uid);
@@ -166,6 +169,59 @@ Deno.serve(async (req) => {
   }
   return json({ error: "unknown action" }, 400);
 });
+
+/**
+ * Google's notice that a watched calendar changed (user, 2026-11-23: changes both ways at once). The channel id is
+ * ours, random and kept per calendar, so a notice is believed only when its id and token match one we made. The
+ * answer goes at once; the sync runs after it.
+ */
+async function notify(req: Request): Promise<Response> {
+  const id = req.headers.get("x-goog-channel-id") ?? "";
+  const tok = req.headers.get("x-goog-channel-token") ?? "";
+  const db = admin();
+  const { data: cal } = id ? await db.from("google_calendars").select("user_id").eq("watch_id", id).maybeSingle() : { data: null };
+  if (!cal || tok !== await channelToken(id)) return new Response(null, { status: 200 }); // not ours: Google stops on its own
+  if (req.headers.get("x-goog-resource-state") === "sync") return new Response(null, { status: 200 }); // the first hello
+  const run = syncUser(db, cal.user_id).catch(() => {});
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime;
+  if (rt?.waitUntil) rt.waitUntil(run); else await run;
+  return new Response(null, { status: 200 });
+}
+const notifyUrl = () => `${env("SUPABASE_URL")}/functions/v1/google-calendar/notify`;
+/** what Google sends back with every notice of a channel: signed with our secret, so nobody else can make one */
+const channelToken = async (id: string) => {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env("GOOGLE_STATE_SECRET")), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`watch:${id}`)));
+  return [...sig.slice(0, 24)].map((b) => b.toString(16).padStart(2, "0")).join("");
+};
+
+/** Picked calendars get a watch (made again a day before it ends); calendars no longer picked lose theirs. */
+async function keepWatches(db: SupabaseClient, uid: string, token: string, cals: (Cal & Row)[]) {
+  const soon = Date.now() + 24 * 3600000;
+  for (const c of cals) {
+    const has = c.watch_id && c.watch_expires && new Date(c.watch_expires).getTime() > soon;
+    if (!c.selected) {
+      if (c.watch_id) await stopOne(db, uid, token, c);
+      continue;
+    }
+    if (has) continue;
+    if (c.watch_id) await stopOne(db, uid, token, c);
+    const id = crypto.randomUUID();
+    const r = await g(token, `/calendars/${enc(c.calendar_id)}/events/watch`, { method: "POST", body: JSON.stringify({ id, type: "web_hook", address: notifyUrl(), token: await channelToken(id) }) });
+    if (!r.ok) continue; // no watch: the 15-minute timer still syncs
+    await db.from("google_calendars").update({ watch_id: id, watch_resource: r.body.resourceId, watch_expires: new Date(Number(r.body.expiration) || Date.now() + 6 * 86400000).toISOString() })
+      .eq("user_id", uid).eq("calendar_id", c.calendar_id);
+  }
+}
+async function stopOne(db: SupabaseClient, uid: string, token: string, c: Row) {
+  if (c.watch_resource) await g(token, "/channels/stop", { method: "POST", body: JSON.stringify({ id: c.watch_id, resourceId: c.watch_resource }) }).catch(() => {});
+  await db.from("google_calendars").update({ watch_id: null, watch_resource: null, watch_expires: null }).eq("user_id", uid).eq("calendar_id", c.calendar_id);
+}
+async function stopWatches(db: SupabaseClient, uid: string, token: string) {
+  const { data } = await db.from("google_calendars").select("*").eq("user_id", uid).not("watch_id", "is", null);
+  for (const c of data ?? []) await stopOne(db, uid, token, c);
+}
 
 /**
  * Google sends the browser back here with a code: keep the account's key, then send the browser back into the app
@@ -225,19 +281,51 @@ const fieldsOf = (r: Row): EventFields => ({
   start_time: r.start_time ? String(r.start_time).slice(0, 5) : null, end_time: r.end_time ? String(r.end_time).slice(0, 5) : null,
   color: r.color, memo: r.memo ?? "", alarm_minutes: r.alarm_minutes, repeat: r.repeat ?? null, skip_dates: r.skip_dates ?? [], important: !!r.important,
   location: r.location ?? "",
+  meet_link: r.meet_link ?? null, alarms: Array.isArray(r.alarms) ? r.alarms : null, attendees: Array.isArray(r.attendees) ? r.attendees : null,
+  time_zone: r.time_zone ?? null,
 });
 /** our row's time columns: "24:00" is stored as 24:00:00 (Postgres time allows it) */
 const toRowFields = (f: EventFields) => ({ ...f, start_time: f.all_day ? null : f.start_time, end_time: f.all_day ? null : f.end_time });
 
-async function syncUser(db: SupabaseClient, uid: string) {
+/**
+ * One sync at a time per person (Google's notices, the app and the timer can come together; two at once would bring
+ * the same Google event in twice). One that comes while another runs asks for one more round after it.
+ */
+async function syncUser(db: SupabaseClient, uid: string): Promise<Row> {
+  const stale = new Date(Date.now() - 3 * 60000).toISOString();
+  const { data: got } = await db.from("google_accounts").update({ sync_lock: new Date().toISOString(), sync_again: false })
+    .eq("user_id", uid).or(`sync_lock.is.null,sync_lock.lt.${stale}`).select("user_id").maybeSingle();
+  if (!got) {
+    await db.from("google_accounts").update({ sync_again: true }).eq("user_id", uid);
+    return { ok: true, busy: true, changed: false, error: null };
+  }
+  let out: Row = { ok: true };
+  let changed = false;
+  try {
+    for (let round = 0; round < 3; round++) {
+      out = await syncOnce(db, uid);
+      changed ||= !!out.changed;
+      const { data: again } = await db.from("google_accounts").update({ sync_again: false }).eq("user_id", uid).eq("sync_again", true).select("user_id").maybeSingle();
+      if (!again) break;
+    }
+  } finally {
+    await db.from("google_accounts").update({ sync_lock: null }).eq("user_id", uid);
+  }
+  return { ...out, changed };
+}
+
+async function syncOnce(db: SupabaseClient, uid: string) {
   const token = await accessToken(db, uid);
   const stats = { pulled: 0, pushed: 0, deleted: 0, failed: 0 };
   let firstError: string | null = null;
   // a write Google refuses is no longer passed over in silence (user, 2026-11-23: a colour change did not reach
   // Google): when it is about the label, the same change goes again with the old colorId only; otherwise the reason
   // is kept for 설정 → 구글 캘린더
-  const write = async (path: string, method: "PATCH" | "POST", full: GEvent) => {
+  const write = async (target: string, method: "PATCH" | "POST", full: GEvent) => {
+    let path = target;
     const { __fallbackColorId: fallback, ...body } = full;
+    // conferenceDataVersion=1: so a video meeting asked for (or taken off) in 립마크 is made (or removed) by Google
+    path = `${path}${path.includes("?") ? "&" : "?"}conferenceDataVersion=1`;
     let r = await g(token, path, { method, body: JSON.stringify(body) });
     if (!r.ok && r.status === 400 && body.eventLabelId) {
       // Google refused the label: the nearest old colour instead, and say so
@@ -292,7 +380,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
   }
   const picked = cals.filter((c) => c.selected);
   // each calendar's default alarm (what Google rings for an event that keeps the default)
-  const defaultAlarm = new Map(list.map((c) => [c.id, ((c.defaultReminders ?? []) as { method: string; minutes: number }[]).find((d) => d.method === "popup")?.minutes ?? null]));
+  const defaultAlarm = new Map(list.map((c) => [c.id, ((c.defaultReminders ?? []) as { method: string; minutes: number }[]).filter((d) => d.method === "popup").map((d) => d.minutes)]));
 
   const { data: linkRows } = await db.from("google_event_links").select("*").eq("user_id", uid);
   const links: Link[] = linkRows ?? [];
@@ -310,6 +398,9 @@ async function syncUser(db: SupabaseClient, uid: string) {
   const palette = (await livePalette(token)).event;
   const labels = new Map<string, Record<string, string>>();
   for (const c of picked) labels.set(c.calendar_id, await labelsOf(token, c.calendar_id).catch(() => ({})));
+
+  // Google tells us at once when a picked calendar changes (a watch, about a week long, renewed here)
+  await keepWatches(db, uid, token, cals).catch(() => {});
 
   // 2. pull
   for (const c of picked) {
@@ -329,7 +420,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
     }
     // series and single events first, then the changed or cancelled times of series
     items.sort((a, b) => Number(!!a.recurringEventId) - Number(!!b.recurringEventId));
-    for (const item of items) stats.pulled += await pullOne(db, uid, c, item, palette, byGoogle, labels.get(c.calendar_id) ?? {}, defaultAlarm.get(c.calendar_id) ?? null);
+    for (const item of items) stats.pulled += await pullOne(db, uid, c, item, palette, byGoogle, labels.get(c.calendar_id) ?? {}, defaultAlarm.get(c.calendar_id) ?? []);
     if (next) await db.from("google_calendars").update({ sync_token: next }).eq("user_id", uid).eq("calendar_id", c.calendar_id);
   }
 
@@ -347,8 +438,40 @@ async function syncUser(db: SupabaseClient, uid: string) {
     await db.from("google_event_links").delete().eq("event_id", l.event_id);
     stats.deleted++;
   };
-  for (const e of evRows ?? []) {
+  // after Google took a change: what Google decided (a meeting made or taken off) comes back into the app row
+  const afterPush = async (e: Row, body: GEvent) => {
+    if (e.meet_link !== "new" && e.meet_link !== "") return e.updated_at;
+    const { data: up } = await db.from("events").update({ meet_link: meetLinkOf(body) }).eq("id", e.id).select("updated_at").maybeSingle();
+    return up?.updated_at ?? e.updated_at;
+  };
+  // one time of a Google repeat changed on its own in 립마크 ("이 일정만"): that time is changed in Google, the
+  // repeat stays as it is (user, 2026-11-23: the whole repeat was redrawn). These go first, so the series' skipped
+  // day is known as a changed time, not sent as a deleted one.
+  const ordered = [...(evRows ?? [])].sort((a, b) => Number(!!b.instance_of) - Number(!!a.instance_of));
+  // the days of a series kept as changed single times in 립마크 (local days; a Google id's day is in UTC)
+  const changedDays = (sid: string) => new Set(ordered.filter((x) => !x.deleted_at && String(x.instance_of ?? "").startsWith(`${sid}|`)).map((x) => String(x.instance_of).split("|")[1]));
+  for (const e of ordered) {
     const l = linkOf.get(e.id);
+    if (!l && e.instance_of && !e.deleted_at) {
+      const [sid, day] = String(e.instance_of).split("|");
+      const sl = linkOf.get(sid);
+      const series = ordered.find((x) => x.id === sid);
+      const cal = sl && cals.find((c) => c.calendar_id === sl.calendar_id);
+      if (sl && series && cal?.can_write && day) {
+        const iid = instanceId(sl.google_id, day, !!series.all_day, series.start_time ? String(series.start_time).slice(0, 5) : null, series.time_zone || cal.time_zone);
+        const body = toGoogle(fieldsOf(e), cal.time_zone, palette, cal.color, undefined, labels.get(cal.calendar_id));
+        delete body.recurrence; // one time has no repeat of its own
+        const r = await write(`/calendars/${enc(cal.calendar_id)}/events/${enc(iid)}`, "PATCH", body);
+        if (r.ok) {
+          const synced = await afterPush(e, r.body);
+          const nl: Link = { event_id: e.id, calendar_id: cal.calendar_id, google_id: r.body.id, origin: "google", lossy: false, google_updated: r.body.updated, synced_at: synced };
+          await db.from("google_event_links").insert({ ...nl, user_id: uid });
+          linkOf.set(e.id, nl); byGoogle.set(`${nl.calendar_id}|${nl.google_id}`, nl);
+          stats.pushed++;
+        }
+        continue;
+      }
+    }
     if (l) {
       if (e.deleted_at) { await takeOff(l); continue; }
       if (new Date(e.updated_at) <= new Date(l.synced_at)) continue;
@@ -362,9 +485,10 @@ async function syncUser(db: SupabaseClient, uid: string) {
         const mv = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(gid)}/move?destination=${enc(target.calendar_id)}`, { method: "POST" });
         if (mv.ok) gid = mv.body.id;
       }
-      const r = await write(`/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, "PATCH", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, exceptionDays(links, l), labels.get(target.calendar_id)));
+      const r = await write(`/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, "PATCH", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, new Set([...exceptionDays([...byGoogle.values()], l), ...changedDays(e.id)]), labels.get(target.calendar_id)));
       if (r.ok) {
-        await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: e.updated_at }).eq("event_id", e.id);
+        const synced = await afterPush(e, r.body);
+        await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: synced }).eq("event_id", e.id);
         stats.pushed++;
       }
     } else if (!e.deleted_at && e.google_calendar_id && new Date(e.created_at ?? 0) > connectedAt) {
@@ -372,7 +496,8 @@ async function syncUser(db: SupabaseClient, uid: string) {
       if (!target) continue;
       const r = await write(`/calendars/${enc(target.calendar_id)}/events`, "POST", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id)));
       if (r.ok) {
-        await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: e.updated_at });
+        const synced = await afterPush(e, r.body);
+        await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: synced });
         stats.pushed++;
       }
     }
@@ -423,7 +548,7 @@ async function refreshColours(db: SupabaseClient, uid: string) {
   const linkOf = new Map((links ?? []).map((l) => [`${l.calendar_id}|${l.google_id}`, l.event_id]));
   const want = new Map<string, { color: string; location: string; meet_link: string | null; alarm_minutes: number | null }>(); // event id -> what Google has
   const entries = await g(token, `/users/me/calendarList?maxResults=250`);
-  const defaultAlarm = new Map(((entries.body?.items ?? []) as GEvent[]).map((c) => [c.id, ((c.defaultReminders ?? []) as { method: string; minutes: number }[]).find((d) => d.method === "popup")?.minutes ?? null]));
+  const defaultAlarm = new Map(((entries.body?.items ?? []) as GEvent[]).map((c) => [c.id, ((c.defaultReminders ?? []) as { method: string; minutes: number }[]).filter((d) => d.method === "popup").map((d) => d.minutes)]));
   const report = { items: 0, withColorId: 0, colorIds: {} as Record<string, number>, otherKeys: {} as Record<string, number>, updated: 0 };
   for (const c of (cals ?? []) as Cal[]) {
     const labels = await labelsOf(token, c.calendar_id).catch(() => ({} as Record<string, string>));
@@ -440,8 +565,9 @@ async function refreshColours(db: SupabaseClient, uid: string) {
         for (const k of Object.keys(item)) if (!KNOWN.has(k)) report.otherKeys[k] = (report.otherKeys[k] ?? 0) + 1;
         const id = linkOf.get(`${c.calendar_id}|${item.id}`);
         if (id) {
-          const popup = (item.reminders?.overrides ?? []).find((o: { method: string }) => o.method === "popup");
-          const ring = item.reminders?.useDefault ? defaultAlarm.get(c.calendar_id) ?? null : popup ? popup.minutes : null;
+          const popups = ((item.reminders?.overrides ?? []) as { method: string; minutes: number }[]).filter((o) => o.method === "popup").map((o) => o.minutes);
+          const rings = [...new Set(item.reminders?.useDefault ? defaultAlarm.get(c.calendar_id) ?? [] : popups)].sort((a, b) => a - b);
+          const ring = rings[0] ?? null;
           want.set(id, { color: (item.eventLabelId && labels[item.eventLabelId]) || (item.colorId && palette[item.colorId]) || c.color, location: String(item.location ?? "").slice(0, 500), meet_link: meetLinkOf(item), alarm_minutes: alarmFromGoogle(ring, !!item.start?.date) });
         }
       }
@@ -470,7 +596,7 @@ let diag: Diag | null = null;
 const KNOWN = new Set(["kind", "etag", "id", "status", "htmlLink", "created", "updated", "summary", "description", "location", "colorId", "creator", "organizer", "start", "end", "endTimeUnspecified", "recurrence", "recurringEventId", "originalStartTime", "transparency", "visibility", "iCalUID", "sequence", "attendees", "attendeesOmitted", "extendedProperties", "hangoutLink", "conferenceData", "gadget", "anyoneCanAddSelf", "guestsCanInviteOthers", "guestsCanModify", "guestsCanSeeOtherGuests", "privateCopy", "locked", "reminders", "source", "workingLocationProperties", "outOfOfficeProperties", "focusTimeProperties", "attachments", "birthdayProperties", "eventType"]);
 
 /** One Google event into the app. Returns 1 when the app changed. */
-async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, palette: Record<string, string>, byGoogle: Map<string, Link>, labels: Record<string, string> = {}, defaultReminder: number | null = null): Promise<number> {
+async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, palette: Record<string, string>, byGoogle: Map<string, Link>, labels: Record<string, string> = {}, defaultReminders: number[] = []): Promise<number> {
   if (diag && item.status !== "cancelled") {
     diag.items++;
     if (item.colorId) { diag.withColorId++; diag.colorIds[item.colorId] = (diag.colorIds[item.colorId] ?? 0) + 1; }
@@ -490,7 +616,7 @@ async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, pa
     if (up) await db.from("google_event_links").update({ synced_at: up.updated_at }).eq("event_id", seriesLink.event_id);
   };
 
-  const mapped = fromGoogle(item, c.time_zone, palette, c.color, labels, defaultReminder);
+  const mapped = fromGoogle(item, c.time_zone, palette, c.color, labels, defaultReminders);
   if (!mapped) {
     // deleted in Google (a whole event, or one time of a series)
     if (item.recurringEventId) await skipInSeries();
@@ -518,7 +644,9 @@ async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, pa
     return 1;
   }
   const id = crypto.randomUUID();
-  const { data: ins, error } = await db.from("events").insert({ id, user_id: uid, ...fields, category_id: c.category_id, google_calendar_id: c.calendar_id }).select("updated_at").maybeSingle();
+  const day = item.recurringEventId ? originalDay(item, c.time_zone) : null;
+  const instance_of = seriesLink && day ? `${seriesLink.event_id}|${day}` : null;
+  const { data: ins, error } = await db.from("events").insert({ id, user_id: uid, ...fields, category_id: c.category_id, google_calendar_id: c.calendar_id, ...(instance_of ? { instance_of } : {}) }).select("updated_at").maybeSingle();
   if (error || !ins) return 0;
   const l: Link = { event_id: id, calendar_id: c.calendar_id, google_id: item.id, origin: "google", lossy: mapped.lossy, google_updated: item.updated, synced_at: ins.updated_at };
   await db.from("google_event_links").insert({ ...l, user_id: uid });

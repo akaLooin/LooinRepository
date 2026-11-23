@@ -27,12 +27,28 @@ export type CalEvent = {
   /** 장소 (2026-11-23, both ways with Google) and the video meeting Google made for it (read only) */
   location?: string;
   meetLink?: string;
+  /** 알림 여러 개 (2026-11-23, like Google): minutes before, smallest first; alarmMinutes is the first of them */
+  alarms?: number[];
+  /** 참석자 (Google's guests): their e-mail and answer */
+  attendees?: EventGuest[];
+  /** 시간대 (IANA, e.g. "Asia/Seoul"); none = the phone's (or the Google calendar's) */
+  timeZone?: string | null;
+  /** 첨부파일 from Google Drive (shown and opened only) */
+  attachments?: { title: string; url: string }[];
+  /** a time of a repeat changed on its own: "series id|day" (Google keeps it as that time of the repeat) */
+  instanceOf?: string;
   /** 구글 캘린더 (2026-11-23): the Google calendar it is kept in; null/undefined = only in 립마크 (picked per event) */
   googleCalendarId?: string | null;
   /** on a shown time of a repeating event: the stored event's id and the day this time starts */
   seriesId?: string;
   occurrence?: Day;
 };
+
+export type EventGuest = { email: string; name?: string; status?: "needsAction" | "accepted" | "declined" | "tentative" | string; organizer?: boolean; self?: boolean; optional?: boolean };
+
+/** The alarms of an event, smallest first (older events have only alarmMinutes). */
+export const alarmsOf = (e: Pick<CalEvent, "alarms" | "alarmMinutes">): number[] =>
+  e.alarms?.length ? [...new Set(e.alarms)].sort((a, b) => a - b) : e.alarmMinutes != null ? [e.alarmMinutes] : [];
 
 export type EventRepeat = {
   kind: "daily" | "weekly" | "monthly" | "yearly";
@@ -126,7 +142,8 @@ export function saveEventIn(events: CalEvent[], input: Omit<CalEvent, "id"> & { 
       const rest = scope === "one"
         ? { ...series, skipDates: [...new Set([...(series.skipDates ?? []), day])] }
         : day <= series.startDate ? null : { ...series, repeat: { ...series.repeat!, until: addDays(day, -1) } };
-      const lone = clean({ ...fields, id, repeat: undefined, skipDates: undefined } as CalEvent);
+      // "이 일정만": kept as that time of the repeat (Google changes only that time, user 2026-11-23)
+      const lone = clean({ ...fields, id, repeat: undefined, skipDates: undefined, ...(scope === "one" ? { instanceOf: `${series.id}|${day}` } : {}) } as CalEvent);
       delete lone.repeat; delete lone.skipDates;
       return { events: [...events.flatMap((x) => (x.id === series.id ? (rest ? [rest] : []) : [x])), lone], id };
     }
@@ -276,12 +293,14 @@ export function shiftStart(e: Pick<CalEvent, "startDate" | "endDate">, start: Da
 }
 
 /** When the alarm rings, or null. 종일 events ring at 9:00 of the first day minus the minutes. */
-export function alarmAt(e: CalEvent): Date | null {
-  if (e.alarmMinutes == null) return null;
+export function alarmAt(e: CalEvent, minutes: number | null | undefined = e.alarmMinutes): Date | null {
+  if (minutes == null) return null;
   const [y, m, d] = e.startDate.split("-").map(Number);
   const start = e.allDay ? 9 * 60 : toMinutes(e.startTime ?? "00:00");
-  return new Date(y, m - 1, d, 0, start - e.alarmMinutes);
+  return new Date(y, m - 1, d, 0, start - minutes);
 }
+/** Every alarm of the event (알림 여러 개), smallest first. */
+export const alarmTimes = (e: CalEvent): Date[] => alarmsOf(e).map((m) => alarmAt(e, m)!).filter(Boolean);
 
 export const ALARM_CHOICES: { minutes: number | null; label: string }[] = [
   { minutes: null, label: "알림 없음" },

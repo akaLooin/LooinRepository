@@ -2,7 +2,7 @@
 import { isVirtual, todosForDay } from "../data/occurrences";
 import type { DB } from "../data/types";
 import { addDays, toDay } from "./dates";
-import { alarmAt, clock, expandEvents } from "./events";
+import { alarmTimes, clock, expandEvents } from "./events";
 
 export type PlannedNotification = { key: string; at: Date; title: string; body: string };
 
@@ -45,9 +45,11 @@ export function planNotifications(db: DB, now: Date): PlannedNotification[] {
   // a repeating event rings for each of its times in the next weeks
   const nowDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   for (const e of expandEvents(db.events ?? [], nowDay, addDays(nowDay, 45))) {
-    const at = alarmAt(e);
-    if (!at || at <= now) continue;
-    out.push({ key: `event:${e.id}`, at, title: e.title, body: e.allDay ? "오늘 종일 일정" : `${clock(e.startTime ?? "00:00", false)} 시작` });
+    // 알림 여러 개: one notice per alarm (the first keeps the old key)
+    alarmTimes(e).forEach((at, i) => {
+      if (at <= now) return;
+      out.push({ key: i ? `event:${e.id}:${i}` : `event:${e.id}`, at, title: e.title, body: e.allDay ? "오늘 종일 일정" : `${clock(e.startTime ?? "00:00", false)} 시작` });
+    });
   }
   return out.sort((a, b) => +a.at - +b.at).slice(0, MAX);
 }

@@ -112,10 +112,32 @@ export function startGoogleAutoSync() {
       if (again) { again = false; run(); }
     });
   };
+  live();
   onSynced(({ eventsSent }) => {
+    live();
     if (!getPrefs().googleLinked) return;
     if (syncing) { if (eventsSent) again = true; return; }
     if (!eventsSent && Date.now() - lastSync < 3 * 60000) return;
     run();
   });
+}
+
+/**
+ * 실시간 (user, 2026-11-23: changes in Google show at once): when Google tells the server a calendar changed, the
+ * server writes the events; the open app hears that through Supabase Realtime and pulls them (a moment later, so a
+ * burst of changes is one pull).
+ */
+let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
+let pullSoon: ReturnType<typeof setTimeout> | null = null;
+function live() {
+  if (!supabase) return;
+  const want = getPrefs().googleLinked;
+  if (!want && channel) { supabase.removeChannel(channel); channel = null; return; }
+  if (!want || channel) return;
+  channel = supabase.channel("events-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "events" }, () => {
+      if (pullSoon) clearTimeout(pullSoon);
+      pullSoon = setTimeout(() => { pullSoon = null; syncNow().catch(() => {}); }, 1500);
+    })
+    .subscribe();
 }

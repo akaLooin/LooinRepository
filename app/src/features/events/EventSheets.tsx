@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Bell, Button, Calendar, ConfirmDialog, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
-  CalendarDays, Lock, MapPin, Video, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
+  CalendarDays, Globe, Lock, MapPin, Paperclip, Plus, Users, Video, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCategories, toggleEventImportant, useDB, type EventScope } from "../../data/store";
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
-import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, REPEAT_LABELS, repeatLabel, toMinutes, type CalEvent, type EventRepeat } from "../../lib/events";
+import { ALARM_CHOICES, alarmLabel, alarmsOf, type EventGuest, clock, eventProblem, eventTimeLabel, fromMinutes, REPEAT_LABELS, repeatLabel, toMinutes, type CalEvent, type EventRepeat } from "../../lib/events";
 import { DESIGN_TRIAL } from "../../lib/variant";
 import { googleColorChoices, isGoogleColor, isReadOnlyEvent, labelChoices } from "../../lib/googleColors";
 import { fontFamily, onColor, tokens, useTheme } from "../../theme";
@@ -21,7 +21,20 @@ export function newDraft(day: Day, startTime: string, endTime: string, color: st
   return { title: "", startDate: day, endDate: day, allDay: false, startTime, endTime, color, memo: "", alarmMinutes: null }; // 알림 없음 by default (user)
 }
 
-type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm" | "category" | "repeat" | "until" | "google";
+type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm" | "category" | "repeat" | "until" | "google" | "tz" | "guests";
+
+/** 시간대 choices (Google's list is long; the ones people here travel to, and the phone's own) */
+const TIME_ZONES: { id: string; label: string }[] = [
+  { id: "Asia/Seoul", label: "한국 표준시" }, { id: "Asia/Tokyo", label: "일본 표준시" }, { id: "Asia/Shanghai", label: "중국 표준시" },
+  { id: "Asia/Taipei", label: "타이베이" }, { id: "Asia/Hong_Kong", label: "홍콩" }, { id: "Asia/Singapore", label: "싱가포르" },
+  { id: "Asia/Bangkok", label: "방콕" }, { id: "Asia/Ho_Chi_Minh", label: "베트남" }, { id: "Australia/Sydney", label: "시드니" },
+  { id: "Europe/London", label: "런던" }, { id: "Europe/Paris", label: "파리" }, { id: "Europe/Berlin", label: "베를린" },
+  { id: "America/New_York", label: "뉴욕" }, { id: "America/Chicago", label: "시카고" }, { id: "America/Los_Angeles", label: "로스앤젤레스" },
+  { id: "Pacific/Honolulu", label: "하와이" }, { id: "UTC", label: "협정 세계시 (UTC)" },
+];
+const tzLabel = (id?: string | null) => TIME_ZONES.find((z) => z.id === id)?.label ?? id ?? "한국 표준시";
+const GUEST_STATUS: Record<string, string> = { accepted: "참석", declined: "불참", tentative: "미정", needsAction: "답 없음" };
+const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 /**
  * Add or change an 일정 (user's feature; the flow follows the user's screen recording of a calendar app: tap an hour,
@@ -39,10 +52,13 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   const [asking, setAsking] = useState(false);
   const [scopeAsk, setScopeAsk] = useState(false);
   const [newCat, setNewCat] = useState("");
+  // 알림 여러 개: which alarm the alarm page changes (-1 = a new one)
+  const [alarmSlot, setAlarmSlot] = useState(-1);
+  const [guest, setGuest] = useState("");
   const [formKey, setFormKey] = useState(0); // a new draft: the title field starts afresh
   const eventCats = useDB(selectEventCategories);
   const saved = useDB((d) => !!draft && !!findEvent(d, draft.id));
-  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); setScopeAsk(false); setNewCat(""); setFormKey((n) => n + 1); }, [draft]);
+  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); setScopeAsk(false); setNewCat(""); setGuest(""); setFormKey((n) => n + 1); }, [draft]);
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
 
   const put = (patch: Partial<EventDraft>) => { setProblem(null); setE((x) => (x ? { ...x, ...patch } : x)); };
@@ -85,6 +101,16 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   };
   const colors = [...new Set([...categories.map((x) => x.color.toUpperCase()), ...PRESET_COLORS])].slice(0, 12);
   const back = () => setSub("form");
+  const alarms = alarmsOf(e);
+  const setAlarms = (list: number[]) => { const l = [...new Set(list)].sort((a, b) => a - b).slice(0, 5); put({ alarms: l, alarmMinutes: l[0] ?? null }); };
+  const guests = e.attendees ?? [];
+  const addGuest = () => {
+    const mail = guest.trim().toLowerCase();
+    if (!isEmail(mail)) { setProblem("이메일 주소를 확인해 주세요"); return; }
+    if (!guests.some((g) => g.email.toLowerCase() === mail)) put({ attendees: [...guests, { email: mail, status: "needsAction" }] });
+    setGuest("");
+  };
+  const meetState = e.meetLink === "new" ? "new" : e.meetLink ? "on" : "off";
 
   const header = (
     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
@@ -301,13 +327,63 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
       <View>
         <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>알림</AppText>
         {ALARM_CHOICES.map((a) => (
-          <Pressable key={String(a.minutes)} onPress={() => { put({ alarmMinutes: a.minutes }); back(); }} accessibilityRole="radio" accessibilityState={{ checked: (e.alarmMinutes ?? null) === a.minutes }}
+          <Pressable key={String(a.minutes)} onPress={() => {
+            if (!DESIGN_TRIAL) put({ alarmMinutes: a.minutes });
+            // 알림 여러 개 (user, 2026-11-23, like Google): a picked time changes this alarm or adds one; 알림 없음 takes it off
+            else setAlarms(alarmSlot < 0 ? (a.minutes == null ? alarms : [...alarms, a.minutes]) : alarms.flatMap((m, i) => (i === alarmSlot ? (a.minutes == null ? [] : [a.minutes]) : [m])));
+            back();
+          }} accessibilityRole="radio" accessibilityState={{ checked: DESIGN_TRIAL ? alarmSlot >= 0 && alarms[alarmSlot] === a.minutes : (e.alarmMinutes ?? null) === a.minutes }}
             style={{ flexDirection: "row", alignItems: "center", height: 50 }}>
             <AppText variant="bodyLg" style={{ flex: 1 }}>{e.allDay && a.minutes !== null ? `${a.label} (오전 9시 기준)` : a.label}</AppText>
-            {(e.alarmMinutes ?? null) === a.minutes ? <Check size={20} color={c.text} /> : null}
+            {(DESIGN_TRIAL ? alarmSlot >= 0 && alarms[alarmSlot] === a.minutes : (e.alarmMinutes ?? null) === a.minutes) ? <Check size={20} color={c.text} /> : null}
           </Pressable>
         ))}
       </View>
+    );
+  } else if (sub === "tz") {
+    body = (
+      <ScrollView style={{ maxHeight: 520 }}>
+        <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>시간대</AppText>
+        {TIME_ZONES.map((z) => {
+          const on = (e.timeZone || "Asia/Seoul") === z.id;
+          return (
+            <Pressable key={z.id} onPress={() => { put({ timeZone: z.id }); back(); }} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={z.label}
+              style={{ flexDirection: "row", alignItems: "center", height: 50 }}>
+              <AppText variant="bodyLg" style={{ flex: 1 }}>{z.label}</AppText>
+              <AppText variant="small" color="textMuted" style={{ marginRight: 10 }}>{z.id}</AppText>
+              {on ? <Check size={20} color={c.text} /> : null}
+            </Pressable>
+          );
+        })}
+        <AppText variant="small" color="textMuted" style={{ marginTop: 8 }}>립마크에는 적은 시각 그대로 보이고, 구글에서는 이 시간대의 시각으로 맞춰져요</AppText>
+      </ScrollView>
+    );
+  } else if (sub === "guests") {
+    body = (
+      <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 520 }}>
+        <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>참석자</AppText>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TextInput value={guest} onChangeText={(t) => { setGuest(t); setProblem(null); }} placeholder="이메일 주소로 사용자 추가" placeholderTextColor={c.textPlaceholder}
+            accessibilityLabel="참석자 이메일" autoCapitalize="none" keyboardType="email-address" returnKeyType="done" onSubmitEditing={addGuest} maxLength={200}
+            style={{ flex: 1, outlineStyle: "none" as never, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.divider }} />
+          <PillButton onPress={addGuest} a11y="참석자 추가"><Plus size={18} color={c.text} /></PillButton>
+        </View>
+        {problem ? <AppText variant="helper" color="danger" style={{ marginTop: 6 }}>{problem}</AppText> : null}
+        {guests.map((g: EventGuest) => (
+          <View key={g.email} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52 }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="bodyLg" numberOfLines={1}>{g.name || g.email}</AppText>
+              <AppText variant="small" color="textMuted" numberOfLines={1}>{`${g.name ? `${g.email} · ` : ""}${g.organizer ? "주최자 · " : ""}${GUEST_STATUS[g.status ?? "needsAction"] ?? "답 없음"}`}</AppText>
+            </View>
+            {g.organizer ? null : (
+              <Pressable onPress={() => put({ attendees: guests.filter((x) => x.email !== g.email) })} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${g.email} 빼기`}>
+                <X size={20} color={c.textMuted} />
+              </Pressable>
+            )}
+          </View>
+        ))}
+        <AppText variant="small" color="textMuted" style={{ marginTop: 10 }}>구글 일정에 참석자로 들어가요. 초대 메일은 립마크가 보내지 않아요 (보내려면 구글 캘린더에서)</AppText>
+      </ScrollView>
     );
   } else if (readOnly) {
     const calName = prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.summary;
@@ -327,9 +403,12 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 6 }} />
         {e.repeat ? line(Repeat, repeatLabel(e.repeat, e.startDate)) : null}
         {line(CalendarDays, calName ? `구글 · ${calName}` : "구글 캘린더")}
-        {e.alarmMinutes != null ? line(Bell, alarmLabel(e.alarmMinutes)) : null}
+        {alarms.length ? line(Bell, alarms.map(alarmLabel).join(", ")) : null}
+        {e.timeZone && e.timeZone !== "Asia/Seoul" && !e.allDay ? line(Globe, tzLabel(e.timeZone)) : null}
+        {guests.length ? line(Users, guests.map((g) => `${g.name || g.email} (${GUEST_STATUS[g.status ?? "needsAction"] ?? "답 없음"})`).join("\n")) : null}
         {e.location ? line(MapPin, e.location) : null}
-        {e.meetLink ? row(<Video size={20} color={c.info} />, "화상 회의 참여", () => Linking.openURL(e.meetLink!), "화상 회의 참여") : null}
+        {e.meetLink && e.meetLink !== "new" ? row(<Video size={20} color={c.info} />, "화상 회의 참여", () => Linking.openURL(e.meetLink!), "화상 회의 참여") : null}
+        {(e.attachments ?? []).map((a) => row(<Paperclip size={20} color={c.textMuted} />, a.title, () => Linking.openURL(a.url), `첨부파일 ${a.title} 열기`))}
         {e.memo ? (
           <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingVertical: 8 }}>
             <FileText size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{e.memo}</AppText>
@@ -361,13 +440,31 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
           {when("start")}
           {when("end")}
         </View>
+        {/* 시간대 (user, 2026-11-23: as in Google, 한국 표준시 unless picked) */}
+        {DESIGN_TRIAL && !e.allDay && e.googleCalendarId ? row(icon(Globe), tzLabel(e.timeZone), () => setSub("tz"), `시간대 ${tzLabel(e.timeZone)}`) : null}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
           <Sparkles size={22} color={e.important ? glow : c.textMuted} />
           <AppText variant="bodyLg" style={{ flex: 1 }}>중요한 일정으로 강조</AppText>
           <Toggle value={!!e.important} label="중요한 일정으로 강조" onChange={(important) => put({ important })} />
         </View>
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
-        {row(icon(Bell), alarmLabel(e.alarmMinutes), () => setSub("alarm"), `알림 ${alarmLabel(e.alarmMinutes)}`)}
+        {!DESIGN_TRIAL ? row(icon(Bell), alarmLabel(e.alarmMinutes), () => setSub("alarm"), `알림 ${alarmLabel(e.alarmMinutes)}`) : (
+          // 알림 여러 개 (user, 2026-11-23, like Google): each alarm, a cross to take it off, and 알림 추가
+          <View>
+            {alarms.map((m, i) => (
+              <View key={m} style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
+                {i === 0 ? icon(Bell) : <View style={{ width: 22 }} />}
+                <Pressable onPress={() => { setAlarmSlot(i); setSub("alarm"); }} accessibilityRole="button" accessibilityLabel={`알림 ${alarmLabel(m)} 바꾸기`} style={{ flex: 1, paddingVertical: 12 }}>
+                  <AppText variant="bodyLg">{alarmLabel(m)}</AppText>
+                </Pressable>
+                <Pressable onPress={() => setAlarms(alarms.filter((_, j) => j !== i))} hitSlop={10} accessibilityRole="button" accessibilityLabel={`알림 ${alarmLabel(m)} 빼기`}>
+                  <X size={20} color={c.textMuted} />
+                </Pressable>
+              </View>
+            ))}
+            {alarms.length < 5 ? row(alarms.length ? <View style={{ width: 22 }} /> : icon(Bell), "알림 추가", () => { setAlarmSlot(-1); setSub("alarm"); }, "알림 추가") : null}
+          </View>
+        )}
         {DESIGN_TRIAL ? row(icon(Repeat), repeatLabel(e.repeat, e.startDate), () => setSub("repeat"), `반복 ${repeatLabel(e.repeat, e.startDate)}`) : null}
         {DESIGN_TRIAL && (prefs.googleLinked || e.googleCalendarId) ? row(icon(CalendarDays), googleLabel, () => setSub("google"), `올릴 곳 ${googleLabel}`) : null}
         {DESIGN_TRIAL ? row(icon(Tag), catLabel, () => setSub("category"), `일정 카테고리 ${catLabel}`) : null}
@@ -379,7 +476,28 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
           <TextInput key={`loc${formKey}`} defaultValue={e.location ?? ""} onChangeText={(location) => put({ location })} placeholder="장소 추가" placeholderTextColor={c.textPlaceholder}
             accessibilityLabel="장소" maxLength={500} style={{ flex: 1, outlineStyle: "none" as never, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 10 }} />
         </View>
-        {e.meetLink ? row(<Video size={22} color={c.info} />, "화상 회의 참여", () => Linking.openURL(e.meetLink!), "화상 회의 참여") : null}
+        {/* 참석자 · 화상 회의 (Google's guests and Meet; only for an event kept in a Google calendar) */}
+        {DESIGN_TRIAL && e.googleCalendarId ? row(icon(Users), guests.length ? `참석자 ${guests.length}명` : "사용자 추가", () => setSub("guests"), guests.length ? `참석자 ${guests.length}명` : "사용자 추가") : null}
+        {meetState === "on" ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
+            <Video size={22} color={c.info} />
+            <Pressable onPress={() => Linking.openURL(e.meetLink!)} accessibilityRole="button" accessibilityLabel="화상 회의 참여" style={{ flex: 1, paddingVertical: 12 }}>
+              <AppText variant="bodyLg" raw={c.info}>화상 회의 참여</AppText>
+            </Pressable>
+            {DESIGN_TRIAL && e.googleCalendarId ? (
+              <Pressable onPress={() => put({ meetLink: "" })} hitSlop={10} accessibilityRole="button" accessibilityLabel="화상 회의 빼기"><X size={20} color={c.textMuted} /></Pressable>
+            ) : null}
+          </View>
+        ) : DESIGN_TRIAL && e.googleCalendarId ? (
+          meetState === "new" ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
+              {icon(Video)}
+              <AppText variant="bodyLg" style={{ flex: 1 }}>저장하면 Google Meet 회의가 만들어져요</AppText>
+              <Pressable onPress={() => put({ meetLink: e.id ? "" : undefined })} hitSlop={10} accessibilityRole="button" accessibilityLabel="화상 회의 추가 취소"><X size={20} color={c.textMuted} /></Pressable>
+            </View>
+          ) : row(icon(Video), "Google Meet 화상 회의 추가", () => put({ meetLink: "new" }), "화상 회의 추가")
+        ) : null}
+        {(e.attachments ?? []).map((a) => row(<Paperclip size={22} color={c.textMuted} />, a.title, () => Linking.openURL(a.url), `첨부파일 ${a.title} 열기`))}
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingTop: 6 }}>
           <View style={{ paddingTop: 12 }}>{icon(FileText)}</View>
           <View style={{ flex: 1 }}><MemoInput value={e.memo} onChangeText={(memo) => put({ memo })} placeholder="설명 추가" /></View>
@@ -462,8 +580,11 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
           <AppText variant="body" color="textSecondary">{`${e.startDate === e.endDate ? `${dayLabel(e.startDate)} · ` : ""}${eventTimeLabel(e, prefs.use24h, parseDay(today()).y)}`}</AppText>
         </View>
       </View>
-      {e.alarmMinutes != null ? (
-        <View style={{ flexDirection: "row", gap: 14, alignItems: "center", minHeight: 40 }}><Bell size={20} color={c.textMuted} /><AppText variant="body">{alarmLabel(e.alarmMinutes)}</AppText></View>
+      {alarmsOf(e).length ? (
+        <View style={{ flexDirection: "row", gap: 14, alignItems: "center", minHeight: 40 }}><Bell size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{alarmsOf(e).map(alarmLabel).join(", ")}</AppText></View>
+      ) : null}
+      {e.attendees?.length ? (
+        <View style={{ flexDirection: "row", gap: 14, alignItems: "center", minHeight: 40 }}><Users size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{`참석자 ${e.attendees.length}명`}</AppText></View>
       ) : null}
       {e.memo ? (
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingVertical: 8 }}><FileText size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{e.memo}</AppText></View>

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { alarmAt, clock, dayBlocks, eventProblem, eventsOn, eventTimeLabel, inBand, liftSpans, slotAt, type CalEvent } from "../src/lib/events";
+import { alarmAt, alarmsOf, alarmTimes, clock, dayBlocks, eventProblem, eventsOn, eventTimeLabel, inBand, liftSpans, slotAt, type CalEvent } from "../src/lib/events";
 import { planNotifications } from "../src/lib/notificationPlan";
 import { missingTable } from "../src/data/sync";
 import { fromRow, toRow } from "../src/data/rows";
@@ -173,6 +173,8 @@ t("일정 반복: this time only or every time, delete one or all", () => {
   assert.equal(occ("2026-12-01"), undefined);
   const lone = events.find((e) => e.id !== id)!;
   assert.equal(lone.startDate, "2026-12-01"); assert.equal(lone.startTime, "18:00"); assert.equal("repeat" in lone, false); assert.equal("seriesId" in lone, false);
+  // kept as that time of the repeat, so Google changes only that time (user, 2026-11-23)
+  assert.equal(lone.instanceOf, `${id}|2026-12-01`);
   // every time: moved a day on (from a later time), the title too
   save({ ...occ("2026-12-08")!, startDate: "2026-12-09", endDate: "2026-12-09", title: "영어 회화" }, "all");
   const series = events.find((e) => e.id === id)!;
@@ -196,4 +198,12 @@ t("강조 색: a day glows in its first important to-do's colour (category order
   ];
   const m = importantDayColors(todos, cats, "2026-11-01", "2026-11-30", (id, own) => (id === "b" ? "#FF0000" : own));
   assert.deepEqual([...m], [["2026-11-24", "#111111"]]);
+});
+
+t("알림 여러 개: each rings, smallest first", () => {
+  const e: CalEvent = { id: "a", title: "x", startDate: "2026-11-18", endDate: "2026-11-18", allDay: false, startTime: "10:00", endTime: "11:00", color: "#111111", memo: "", alarmMinutes: 10, alarms: [60, 10, 60] };
+  assert.deepEqual(alarmsOf(e), [10, 60]);
+  assert.deepEqual(alarmTimes(e), [new Date(2026, 10, 18, 9, 50), new Date(2026, 10, 18, 9, 0)]);
+  assert.deepEqual(alarmsOf({ alarmMinutes: 30 }), [30]);
+  assert.deepEqual(alarmsOf({ alarmMinutes: null }), []);
 });

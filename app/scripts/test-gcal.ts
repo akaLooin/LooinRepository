@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { GOOGLE_EVENT_COLORS, starOff, starOn, fromGoogle, fromRecurrence, localParts, readState, signState, toGoogle, toRecurrence, zonedToUtcCompact, type EventFields } from "../../supabase/functions/_shared/gcal";
+import { GOOGLE_EVENT_COLORS, instanceId, starOff, starOn, fromGoogle, fromRecurrence, localParts, readState, signState, toGoogle, toRecurrence, zonedToUtcCompact, type EventFields } from "../../supabase/functions/_shared/gcal";
 import { expandEvents, type CalEvent } from "../src/lib/events";
 import { GOOGLE_COLORS } from "../src/lib/googleColors";
 
 const t = async (n: string, f: () => void | Promise<void>) => { await f(); console.log("ok", n); };
 const TZ = "Asia/Seoul";
 const palette = { "1": "#7986CB", "11": "#D50000", "10": "#0B8043" };
-const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date: "2026-11-24", all_day: false, start_time: "19:00", end_time: "20:00", color: "#4A90E2", memo: "", alarm_minutes: null, repeat: null, skip_dates: [], important: false, location: "", meet_link: null };
+const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date: "2026-11-24", all_day: false, start_time: "19:00", end_time: "20:00", color: "#4A90E2", memo: "", alarm_minutes: null, repeat: null, skip_dates: [], important: false, location: "", meet_link: null, alarms: [], attendees: [], time_zone: null, attachments: [] };
 
 (async () => {
   await t("구글 캘린더: time zones", () => {
@@ -21,7 +21,7 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     assert.deepEqual(g.reminders, { useDefault: false, overrides: [{ method: "popup", minutes: 30 }] });
     assert.equal(g.colorId, null, "the calendar's own colour sends no colorId");
     const back = fromGoogle({ ...g, start: { dateTime: "2026-11-24T19:00:00+09:00" }, end: { dateTime: "2026-11-24T20:00:00+09:00" } }, TZ, palette, "#4A90E2")!;
-    assert.deepEqual(back.fields, { ...base, alarm_minutes: 30, memo: "3층" });
+    assert.deepEqual(back.fields, { ...base, alarm_minutes: 30, alarms: [30], memo: "3층" });
     // all day: Google's end is the day after
     const trip = { ...base, all_day: true, start_time: null, end_time: null, end_date: "2026-11-26" };
     const ga = toGoogle(trip, TZ, palette, "#4A90E2");
@@ -127,5 +127,10 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     assert.equal(await readState(s, "other", 2000), null, "a note signed with another key is refused");
     assert.equal(await readState(s, "secret", 1000 + 16 * 60000), null, "too old");
     assert.equal(await readState(s.replace(/^./, "x"), "secret", 2000), null, "changed");
+  });
+  await t("one time of a Google repeat: its id in Google", () => {
+    assert.equal(instanceId("abc", "2026-12-01", true, null, "Asia/Seoul"), "abc_20261201");
+    // 08:00 in Seoul is the day before in UTC
+    assert.equal(instanceId("abc", "2026-12-01", false, "08:00", "Asia/Seoul"), "abc_20261130T230000Z");
   });
 })();

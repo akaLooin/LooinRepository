@@ -54,6 +54,14 @@ export const toRow = {
     ...(e.googleCalendarId !== undefined ? { google_calendar_id: e.googleCalendarId } : {}),
     // 장소 (SQL 20261126000000): sent once written; the meeting link is the server's
     ...(e.location !== undefined ? { location: e.location } : {}),
+    // 알림 여러 개 · 참석자 · 시간대 · 화상 회의 (SQL 20261127000000): sent once used. A changed single alarm (an editor
+    // that only knows alarmMinutes) wins over an older list.
+    ...(e.alarms !== undefined ? { alarms: e.alarms[0] === (e.alarmMinutes ?? undefined) ? e.alarms : e.alarmMinutes != null ? [e.alarmMinutes] : [] } : {}),
+    ...(e.attendees !== undefined ? { attendees: e.attendees } : {}),
+    ...(e.timeZone !== undefined ? { time_zone: e.timeZone } : {}),
+    ...(e.instanceOf !== undefined ? { instance_of: e.instanceOf } : {}),
+    // "new" = make a meeting, "" = take it off (the server asks Google and keeps the link it makes)
+    ...(e.meetLink !== undefined ? { meet_link: e.meetLink } : {}),
   }),
   event_categories: (k: EventCategory, user_id: string): Row => ({ id: k.id, user_id, title: k.title, color: k.color, sort_order: k.sortOrder }),
 };
@@ -97,6 +105,11 @@ export const fromRow = {
     ...(r.google_calendar_id ? { googleCalendarId: String(r.google_calendar_id) } : {}),
     ...(r.location ? { location: String(r.location) } : {}),
     ...(r.meet_link ? { meetLink: String(r.meet_link) } : {}),
+    ...(Array.isArray(r.alarms) ? { alarms: r.alarms.filter((m: unknown) => typeof m === "number") } : {}),
+    ...(Array.isArray(r.attendees) && r.attendees.length ? { attendees: r.attendees.filter((g: R) => g && typeof g.email === "string") } : {}),
+    ...(r.time_zone ? { timeZone: String(r.time_zone) } : {}),
+    ...(Array.isArray(r.attachments) && r.attachments.length ? { attachments: r.attachments.filter((a: R) => a && a.url).map((a: R) => ({ title: String(a.title ?? "첨부파일"), url: String(a.url) })) } : {}),
+    ...(r.instance_of ? { instanceOf: String(r.instance_of) } : {}),
   }),
   event_categories: (r: R): EventCategory => ({ id: r.id, title: r.title, color: r.color ?? "#4A90E2", sortOrder: Number(r.sort_order ?? 0) }),
 };
