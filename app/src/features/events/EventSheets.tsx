@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Bell, Button, Calendar, ConfirmDialog, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
-  CalendarDays, Lock, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
+  CalendarDays, Lock, MapPin, Video, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCategories, toggleEventImportant, useDB, type EventScope } from "../../data/store";
@@ -52,7 +52,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     // one time of a repeating event: this time only, or every time? (asked first)
     if (e.seriesId && !scope) { setScopeAsk(true); return; }
     setScopeAsk(false);
-    saveEvent({ ...e, title: e.title.trim(), memo: e.memo.trim() }, scope ?? "all");
+    saveEvent({ ...e, title: e.title.trim(), memo: e.memo.trim(), ...(e.location !== undefined ? { location: e.location.trim() } : {}) }, scope ?? "all");
     onSaved(`${dayLabel(e.startDate)}에 '${e.title.trim()}'을(를) 저장했어요`);
   };
   const cat = eventCats.find((k) => k.id === e.categoryId);
@@ -328,6 +328,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         {e.repeat ? line(Repeat, repeatLabel(e.repeat, e.startDate)) : null}
         {line(CalendarDays, calName ? `구글 · ${calName}` : "구글 캘린더")}
         {e.alarmMinutes != null ? line(Bell, alarmLabel(e.alarmMinutes)) : null}
+        {e.location ? line(MapPin, e.location) : null}
+        {e.meetLink ? row(<Video size={20} color={c.info} />, "화상 회의 참여", () => Linking.openURL(e.meetLink!), "화상 회의 참여") : null}
         {e.memo ? (
           <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingVertical: 8 }}>
             <FileText size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{e.memo}</AppText>
@@ -371,6 +373,13 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         {DESIGN_TRIAL ? row(icon(Tag), catLabel, () => setSub("category"), `일정 카테고리 ${catLabel}`) : null}
         {row(<View style={{ width: 22, alignItems: "center" }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: e.color }} /></View>, "색", () => setSub("color"), "색 고르기")}
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
+        {/* 장소 (user, 2026-11-23: what Google has, editable here too) */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 50 }}>
+          {icon(MapPin)}
+          <TextInput key={`loc${formKey}`} defaultValue={e.location ?? ""} onChangeText={(location) => put({ location })} placeholder="장소 추가" placeholderTextColor={c.textPlaceholder}
+            accessibilityLabel="장소" maxLength={500} style={{ flex: 1, outlineStyle: "none" as never, fontFamily: fontFamily(400), fontSize: tokens.type.bodyLg.size, color: c.text, paddingVertical: 10 }} />
+        </View>
+        {e.meetLink ? row(<Video size={22} color={c.info} />, "화상 회의 참여", () => Linking.openURL(e.meetLink!), "화상 회의 참여") : null}
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingTop: 6 }}>
           <View style={{ paddingTop: 12 }}>{icon(FileText)}</View>
           <View style={{ flex: 1 }}><MemoInput value={e.memo} onChangeText={(memo) => put({ memo })} placeholder="설명 추가" /></View>

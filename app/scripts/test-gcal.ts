@@ -6,7 +6,7 @@ import { GOOGLE_COLORS } from "../src/lib/googleColors";
 const t = async (n: string, f: () => void | Promise<void>) => { await f(); console.log("ok", n); };
 const TZ = "Asia/Seoul";
 const palette = { "1": "#7986CB", "11": "#D50000", "10": "#0B8043" };
-const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date: "2026-11-24", all_day: false, start_time: "19:00", end_time: "20:00", color: "#4A90E2", memo: "", alarm_minutes: null, repeat: null, skip_dates: [], important: false };
+const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date: "2026-11-24", all_day: false, start_time: "19:00", end_time: "20:00", color: "#4A90E2", memo: "", alarm_minutes: null, repeat: null, skip_dates: [], important: false, location: "", meet_link: null };
 
 (async () => {
   await t("구글 캘린더: time zones", () => {
@@ -93,6 +93,15 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     const own = toGoogle({ ...base, color: "#4A90E2" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2", undefined, labels);
     assert.equal(own.eventLabelId, null); assert.equal(own.colorId, null);
     assert.equal(toGoogle({ ...base, color: "#123123" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2", undefined, labels).eventLabelId, null);
+  });
+
+  await t("구글 캘린더: place both ways, the video meeting read from Google", () => {
+    const g = toGoogle({ ...base, location: "서울 강남역 2번 출구" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2");
+    assert.equal(g.location, "서울 강남역 2번 출구");
+    const back = fromGoogle({ ...g, start: { dateTime: "2026-11-24T19:00:00+09:00" }, end: { dateTime: "2026-11-24T20:00:00+09:00" }, hangoutLink: "https://meet.google.com/abc-defg-hij" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2")!;
+    assert.equal(back.fields.location, "서울 강남역 2번 출구"); assert.equal(back.fields.meet_link, "https://meet.google.com/abc-defg-hij");
+    assert.equal("meet_link" in toGoogle({ ...base, meet_link: "https://x" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2"), false, "the meeting is Google's, never sent");
+    assert.equal(fromGoogle({ summary: "x", start: { date: "2026-11-24" }, end: { date: "2026-11-25" }, conferenceData: { entryPoints: [{ entryPointType: "phone", uri: "tel:1" }, { entryPointType: "video", uri: "https://zoom.us/j/1" }] } }, TZ, GOOGLE_EVENT_COLORS, "#1")!.fields.meet_link, "https://zoom.us/j/1");
   });
 
   await t("구글 캘린더: the signed note of who is connecting", async () => {

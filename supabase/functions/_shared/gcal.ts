@@ -9,6 +9,9 @@ export type EventFields = {
   color: string; memo: string; alarm_minutes: number | null; repeat: Repeat | null; skip_dates: Day[];
   /** 강조: shown in Google as a ⭐ at the front of the title (user, 2026-11-23) */
   important: boolean;
+  /** 장소 (both ways) and the video meeting Google made (read only in the app) */
+  location?: string;
+  meet_link?: string | null;
 };
 
 /**
@@ -186,6 +189,8 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
   return {
     fields: {
       title: star.title.trim().slice(0, 100) || "(제목 없음)", important: star.important,
+      location: String(g.location ?? "").slice(0, 500),
+      meet_link: meetLinkOf(g),
       start_date: startDate, end_date: endDate, all_day: allDay, start_time: startTime, end_time: endTime,
       color: hex(labels[g.eventLabelId]) ?? hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2",
       memo: stripHtml(String(g.description ?? "")).trim().slice(0, 2000),
@@ -196,9 +201,17 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
   };
 }
 
+/** The video meeting of a Google event (Meet or another one added there). */
+export function meetLinkOf(g: GEvent): string | null {
+  const video = (g.conferenceData?.entryPoints ?? []).find((p: { entryPointType?: string; uri?: string }) => p.entryPointType === "video")?.uri;
+  const link = String(g.hangoutLink ?? video ?? "");
+  return /^https:\/\//.test(link) ? link.slice(0, 500) : null;
+}
+
 /** Our event as a Google event body (insert or full update). */
 export function toGoogle(e: EventFields, tz: string, palette: Record<string, string>, calendarColor: string, exceptions?: Set<Day>, labels: Record<string, string> = {}): GEvent {
   const body: GEvent = { summary: starOn(e.title, e.important), description: e.memo || "" };
+  if (e.location !== undefined) body.location = e.location;
   if (e.all_day) {
     body.start = { date: e.start_date };
     body.end = { date: addDays(e.end_date, 1) };

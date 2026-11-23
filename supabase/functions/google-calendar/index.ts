@@ -18,7 +18,7 @@
 // linked event takes it off Google. 강조 = a ⭐ at the front of the Google title. When both sides changed one event,
 // the later wins.
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { addDays, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
+import { addDays, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, meetLinkOf, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info" };
@@ -224,6 +224,7 @@ const fieldsOf = (r: Row): EventFields => ({
   title: r.title, start_date: r.start_date, end_date: r.end_date, all_day: r.all_day,
   start_time: r.start_time ? String(r.start_time).slice(0, 5) : null, end_time: r.end_time ? String(r.end_time).slice(0, 5) : null,
   color: r.color, memo: r.memo ?? "", alarm_minutes: r.alarm_minutes, repeat: r.repeat ?? null, skip_dates: r.skip_dates ?? [], important: !!r.important,
+  location: r.location ?? "",
 });
 /** our row's time columns: "24:00" is stored as 24:00:00 (Postgres time allows it) */
 const toRowFields = (f: EventFields) => ({ ...f, start_time: f.all_day ? null : f.start_time, end_time: f.all_day ? null : f.end_time });
@@ -403,7 +404,7 @@ async function refreshColours(db: SupabaseClient, uid: string) {
   const { data: cals } = await db.from("google_calendars").select("*").eq("user_id", uid).eq("selected", true);
   const { data: links } = await db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid);
   const linkOf = new Map((links ?? []).map((l) => [`${l.calendar_id}|${l.google_id}`, l.event_id]));
-  const want = new Map<string, string>(); // event id -> colour
+  const want = new Map<string, { color: string; location: string; meet_link: string | null }>(); // event id -> what Google has
   const report = { items: 0, withColorId: 0, colorIds: {} as Record<string, number>, otherKeys: {} as Record<string, number>, updated: 0 };
   for (const c of (cals ?? []) as Cal[]) {
     const labels = await labelsOf(token, c.calendar_id).catch(() => ({} as Record<string, string>));
@@ -419,7 +420,7 @@ async function refreshColours(db: SupabaseClient, uid: string) {
         if (item.colorId) { report.withColorId++; report.colorIds[item.colorId] = (report.colorIds[item.colorId] ?? 0) + 1; }
         for (const k of Object.keys(item)) if (!KNOWN.has(k)) report.otherKeys[k] = (report.otherKeys[k] ?? 0) + 1;
         const id = linkOf.get(`${c.calendar_id}|${item.id}`);
-        if (id) want.set(id, (item.eventLabelId && labels[item.eventLabelId]) || (item.colorId && palette[item.colorId]) || c.color);
+        if (id) want.set(id, { color: (item.eventLabelId && labels[item.eventLabelId]) || (item.colorId && palette[item.colorId]) || c.color, location: String(item.location ?? "").slice(0, 500), meet_link: meetLinkOf(item) });
       }
       page = r.body.nextPageToken;
       if (!page) { next = r.body.nextSyncToken; break; }
@@ -428,11 +429,11 @@ async function refreshColours(db: SupabaseClient, uid: string) {
   }
   const ids = [...want.keys()];
   for (let i = 0; i < ids.length; i += 200) {
-    const { data: rows } = await db.from("events").select("id, color").in("id", ids.slice(i, i + 200));
+    const { data: rows } = await db.from("events").select("id, color, location, meet_link").in("id", ids.slice(i, i + 200));
     for (const row of rows ?? []) {
-      const colour = want.get(row.id)!;
-      if (String(row.color).toUpperCase() === colour.toUpperCase()) continue;
-      const { data: up } = await db.from("events").update({ color: colour }).eq("id", row.id).select("updated_at").maybeSingle();
+      const w = want.get(row.id)!;
+      if (String(row.color).toUpperCase() === w.color.toUpperCase() && (row.location ?? "") === w.location && (row.meet_link ?? null) === w.meet_link) continue;
+      const { data: up } = await db.from("events").update({ color: w.color, location: w.location, meet_link: w.meet_link }).eq("id", row.id).select("updated_at").maybeSingle();
       if (up) await db.from("google_event_links").update({ synced_at: up.updated_at }).eq("event_id", row.id);
       report.updated++;
     }

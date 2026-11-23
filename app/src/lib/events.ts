@@ -24,6 +24,9 @@ export type CalEvent = {
   repeat?: EventRepeat | null;
   /** days taken out of the repeat (one time deleted, or changed on its own) */
   skipDates?: Day[];
+  /** 장소 (2026-11-23, both ways with Google) and the video meeting Google made for it (read only) */
+  location?: string;
+  meetLink?: string;
   /** 구글 캘린더 (2026-11-23): the Google calendar it is kept in; null/undefined = only in 립마크 (picked per event) */
   googleCalendarId?: string | null;
   /** on a shown time of a repeating event: the stored event's id and the day this time starts */

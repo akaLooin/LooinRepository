@@ -168,7 +168,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
       style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 12, borderRadius: tokens.radius.md, backgroundColor: e.color + "26", borderLeftWidth: 3, borderLeftColor: e.color, marginVertical: 4 }}>
       {e.important ? <GlowTint color={glowOf(e.categoryId, e.color)}><GlowFrame radius={tokens.radius.md} inset={4} embers={{ count: 6, rise: 18, size: 3 }} /></GlowTint> : null}
       <AppText variant="body" weight={600} numberOfLines={1}>{e.title}</AppText>
-      <AppText variant="small" color="textMuted">{`${clock(fromMinutes(from), prefs.use24h)}~${clock(fromMinutes(to), prefs.use24h)} · 일정`}</AppText>
+      <AppText variant="small" color="textMuted">{`${clock(fromMinutes(from), prefs.use24h)}~${clock(fromMinutes(to), prefs.use24h)} · ${e.location ? e.location : "일정"}`}</AppText>
     </Pressable>
   );
   const heading = (text: string, right?: React.ReactNode) => (

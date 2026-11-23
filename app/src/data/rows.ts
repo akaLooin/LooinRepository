@@ -52,6 +52,8 @@ export const toRow = {
     ...(e.skipDates !== undefined ? { skip_dates: e.skipDates } : {}),
     // 구글 캘린더 (SQL 20261125000000): sent once picked (null = back to 립마크 only)
     ...(e.googleCalendarId !== undefined ? { google_calendar_id: e.googleCalendarId } : {}),
+    // 장소 (SQL 20261126000000): sent once written; the meeting link is the server's
+    ...(e.location !== undefined ? { location: e.location } : {}),
   }),
   event_categories: (k: EventCategory, user_id: string): Row => ({ id: k.id, user_id, title: k.title, color: k.color, sort_order: k.sortOrder }),
 };
@@ -93,6 +95,8 @@ export const fromRow = {
     ...(r.repeat && typeof r.repeat === "object" && r.repeat.kind ? { repeat: r.repeat } : {}),
     ...(Array.isArray(r.skip_dates) && r.skip_dates.length ? { skipDates: r.skip_dates.map(String) } : {}),
     ...(r.google_calendar_id ? { googleCalendarId: String(r.google_calendar_id) } : {}),
+    ...(r.location ? { location: String(r.location) } : {}),
+    ...(r.meet_link ? { meetLink: String(r.meet_link) } : {}),
   }),
   event_categories: (r: R): EventCategory => ({ id: r.id, title: r.title, color: r.color ?? "#4A90E2", sortOrder: Number(r.sort_order ?? 0) }),
 };
