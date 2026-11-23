@@ -5,6 +5,7 @@
 ## 한 줄 요약
 **이름(11-21)**: 메인 앱 = 립마크(Lib Mark, 디자인 앱 빌드), 복사 앱 = 기존 앱, 관리자 앱 = 립마크 관리자, 원본 앱 = todo mate. 아이콘 `app/assets/libmark/`(노트 + 초록 리본 책갈피 + 별 표시, 관리자는 주황 리본); 이름·아이콘은 새 APK부터(메인·관리자). 메인 앱 공지사항은 관리자 앱에서 쓴 것만(복사 앱의 기본 공지 숨김), 관리 메뉴에서 할 일 캘린더 뺌.
 **시작 속도(11-22)**: 켤 때 업데이트를 최대 10초 기다리던 설정 → 0(`app.json` `fallbackToCacheTimeout`, 새 APK부터), 받은 업데이트는 앱을 나갈 때 조용히 적용·10분 넘게 비웠다 오면 다시 확인(`lib/quietUpdates.ts`). 로그인이 만료돼도 폰에 저장된 계정으로 바로 열고 서버 갱신은 뒤에서(`peekSavedUserId`, `AuthGate`; 느린 망 시험 8.6초 → 1초).
+**아래 내비게이션 바(11-23)**: 다크 모드인데 흰색이던 것 → 루트 `_layout`이 앱 테마를 안드로이드에 넘김(`Appearance.setColorScheme`, 'system'이면 unspecified) + 창 배경을 앱 배경색으로(`expo-system-ui`). 원인: 바가 투명이라 시작 화면의 흰 창 배경이 비쳤음. 새 APK 필요 없음(manifest에 uiMode 있어 화면 재시작 없음), 폰 확인 필요.
 todo mate를 개인용으로 다시 만드는 Expo 앱. 1단계(혼자 쓰는 기능) 대부분 완료, Supabase 연결과 실제 폰(Expo Go) 로그인까지 확인됨.
 
 ## 진행 현황 (`replica/features.csv`의 clone 열)

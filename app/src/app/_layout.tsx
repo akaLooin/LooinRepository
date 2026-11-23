@@ -3,7 +3,8 @@ import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import { router, Stack } from "expo-router";
 import * as Notifications from "expo-notifications";
-import { Platform, Pressable } from "react-native";
+import { Appearance, Platform, Pressable } from "react-native";
+import * as SystemUI from "expo-system-ui";
 import { pushTarget } from "../lib/push";
 import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
@@ -40,6 +41,15 @@ function Shell() {
     return () => sub.remove();
   }, []);
   useEffect(() => { setOverride(theme === "system" ? null : theme); }, [theme, setOverride]);
+  // Android's own bars follow the app's theme, not the phone's (user, 2026-11-23: the navigation bar at the bottom
+  // stayed white in dark mode). The app's choice is passed to the system, so the bar and its buttons turn dark or
+  // light with it ("system" hands the choice back to the phone), and the window behind the bars takes the app's
+  // background colour. Both modules are already in the installed apps (no new APK).
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    try { Appearance.setColorScheme(theme === "system" ? "unspecified" : theme); } catch { /* older system: keep */ }
+    SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
+  }, [theme, c.bg]);
   // 점검 모드 from the admin app (design app only)
   const { maintenance } = useAppConfig();
   return (
