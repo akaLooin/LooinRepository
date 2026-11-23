@@ -112,6 +112,8 @@ export function GoogleCalendarScreen() {
             </AppText>
 
             {button("지금 맞추기", () => run("sync", syncGoogle, "구글 캘린더와 맞췄어요"), "main", "sync")}
+            {/* a new permission (calendar labels, 2026-11-23) without disconnecting: Google's page again, everything kept */}
+            {button("구글 권한 다시 받기", () => run("connect", connectGoogle), "plain", "connect")}
             {button("연결 끊기", () => setAsking(true), "danger", "off")}
           </>
         )}

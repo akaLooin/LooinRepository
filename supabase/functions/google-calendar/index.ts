@@ -22,7 +22,9 @@ import { addDays, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, type GEvent
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info" };
-const SCOPES = ["openid", "email", "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar.calendarlist.readonly"];
+const SCOPES = ["openid", "email", "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+  // the calendars themselves (read only): where Google keeps the event labels, its newer colours (user, 2026-11-23)
+  "https://www.googleapis.com/auth/calendar.calendars.readonly"];
 const API = "https://www.googleapis.com/calendar/v3";
 const callbackUrl = () => `${env("SUPABASE_URL")}/functions/v1/google-calendar/callback`;
 const admin = () => createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"));
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
             ids[e.eventLabelId] = (ids[e.eventLabelId] ?? 0) + 1;
             if (!sample) sample = { ...labelish(e), colorId: e.colorId ?? null };
           }
-          perCal.push({ calendar: i + 1, listKeys: Object.keys(entry.body ?? {}), listLabels: labelish(entry.body), calKeys: Object.keys(cal.body ?? {}), calLabels: labelish(cal.body), eventLabelIds: ids, sample });
+          perCal.push({ calendar: i + 1, listKeys: Object.keys(entry.body ?? {}), listLabels: labelish(entry.body), calKeys: Object.keys(cal.body ?? {}), calError: cal.body?.error ? `${cal.status} ${cal.body.error.status ?? ""} ${String(cal.body.error.message ?? "").slice(0, 160)}` : null, calLabels: labelish(cal.body), eventLabelIds: ids, sample });
         }
         const colors = await g(token, "/colors");
         out[a.user_id] = { calendars: perCal, colorsKeys: Object.keys(colors.body ?? {}), colorsLabels: labelish(colors.body) };

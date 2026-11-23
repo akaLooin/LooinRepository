@@ -41,7 +41,8 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 
 9. ✅ (11-23) 캘린더 색 바뀜 따라가기 + 구글이 알려 주는 일정 색 목록 + 연결 전 립마크 일정은 절대 안 올림 반영(11-23; 올린 뒤 설정 → 구글 캘린더에 "일정 색 n가지"가 보이는지 확인): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>`
 10. ✅ (11-23, found 0 · removed 0: 서버가 올린 립마크 일정은 없었음) (1회만) 립마크에서 올라간 일정을 구글에서 빼기: 9번 올린 뒤 SQL Editor에서 `net.http_post(... body {"action":"remove-app-uploads"}, 헤더 x-cron-secret)` 한 번 → `select status_code, content from net._http_response order by id desc limit 1;`로 결과 확인
-11. [ ] (11-23) 서버 다시 올리기(보기만 캘린더 보호 등) → **1회만** 색 다시 맞추기: SQL Editor에서 `net.http_post(... body {"action":"refresh-colors"}, 헤더 x-cron-secret)` → 10~30초 뒤 `select status_code, content from net._http_response order by id desc limit 1;` 결과를 Claude에게(`colours`에 colorId·다른 색 필드 개수가 나옴)
+11. ✅ (11-23, items 957 · colorId 73 · eventLabelId 83 · 라벨 정의는 calendars 권한 필요) 서버 다시 올리기(보기만 캘린더 보호 등) → **1회만** 색 다시 맞추기: SQL Editor에서 `net.http_post(... body {"action":"refresh-colors"}, 헤더 x-cron-secret)` → 10~30초 뒤 `select status_code, content from net._http_response order by id desc limit 1;` 결과를 Claude에게(`colours`에 colorId·다른 색 필드 개수가 나옴)
+12. [ ] (11-23) 구글 라벨 색: Google 인증 플랫폼 → 데이터 액세스 → 범위 `calendar.calendars.readonly` 추가·저장 → 서버 올리기 → 립마크 구글 캘린더 → "구글 권한 다시 받기" → SQL로 `labels-probe` 다시 → 결과를 Claude에게
 
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행
