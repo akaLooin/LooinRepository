@@ -1,12 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
- * Where the user was, kept when the app goes to the background (user, 2026-11-23: after leaving the app for a
- * moment it came back on 홈). Leaving the app may restart it: a downloaded update is put in then (lib/quietUpdates),
- * and Android can close a background app. A restart soon after opens the same tab again.
+ * Where the user was, kept just before the app restarts itself to put in a downloaded update (lib/quietUpdates;
+ * user, 2026-11-23: after leaving the app for a moment it came back on 홈). That restart reopens the same tab.
+ * An app the user closed (swiped away from the recent apps) starts on 홈 (user, 2026-11-23): nothing is kept then.
  */
 const KEY = "libmark:resume";
-const FRESH = 30 * 60_000; // older than this: start from 홈 as usual
+const FRESH = 5 * 60_000; // the restart reads it at once; an older note is left from something else
 let tab: string | null = null;
 
 export const setResumeTab = (t: string | null) => { tab = t; };

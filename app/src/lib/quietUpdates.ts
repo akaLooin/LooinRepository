@@ -19,8 +19,9 @@ export function useQuietUpdates() {
     const sub = AppState.addEventListener("change", (s) => {
       if (s === "background") {
         leftAt = Date.now();
-        // the tab in view is kept first, so the restart (or Android closing the app) reopens it, not 홈
-        saveResume().then(() => { if (pending.current) Updates.reloadAsync().catch(() => {}); });
+        // only our own restart (putting a downloaded update in) comes back to the tab in view; an app the user
+        // closed (swiped away) starts on 홈 as usual (user, 2026-11-23)
+        if (pending.current) saveResume().then(() => Updates.reloadAsync().catch(() => {}));
       } else if (s === "active" && leftAt && Date.now() - leftAt > 10 * 60_000) {
         // back after 10+ minutes: fetch a newer version quietly (used the next time the app is left)
         Updates.checkForUpdateAsync().then((r) => (r.isAvailable ? Updates.fetchUpdateAsync() : null)).catch(() => {});
