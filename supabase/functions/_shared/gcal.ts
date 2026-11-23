@@ -167,7 +167,7 @@ export const GOOGLE_EVENT_COLORS: Record<string, string> = {
 
 // ── events ──────────────────────────────────────────────
 const stripHtml = (s: string) => s.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-const hex = (c: string | undefined) => (c && /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toUpperCase() : null);
+export const hex = (c: string | undefined) => (c && /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toUpperCase() : null);
 
 /**
  * A Google event as our fields (null when it is cancelled). `palette`: Google's event colours by colorId;
@@ -329,4 +329,9 @@ export async function readState(state: string, secret: string, now = Date.now())
     const v = JSON.parse(new TextDecoder().decode(fromB64url(body)));
     return typeof v.u === "string" && v.exp > now ? v.u : null;
   } catch { return null; }
+}
+
+/** The colour Google shows for an event (its label, else its old colorId, else its calendar's). */
+export function shownColor(g: GEvent, palette: Record<string, string>, calendarColor: string, labels: Record<string, string> = {}): string {
+  return hex(labels[g.eventLabelId]) ?? hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2";
 }

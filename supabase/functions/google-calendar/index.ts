@@ -19,7 +19,7 @@
 // linked event takes it off Google. 강조 = a ⭐ at the front of the Google title. When both sides changed one event,
 // the later wins.
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { addDays, alarmFromGoogle, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, instanceId, meetLinkOf, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
+import { addDays, alarmFromGoogle, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, instanceId, meetLinkOf, shownColor, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info" };
@@ -332,6 +332,14 @@ async function syncOnce(db: SupabaseClient, uid: string) {
       r = await g(token, path, { method, body: JSON.stringify({ ...body, eventLabelId: null, colorId: fallback ?? null }) });
       if (r.ok) firstError ??= "구글이 고른 색(라벨)을 받지 않아 가장 가까운 기본 색으로 올렸어요";
     }
+    // Google took the change but not the label (it keeps its labels to itself): the same change again with the
+    // nearest old colour, so Google shows a colour near the one picked, not the calendar's (user, 2026-11-23: 벚꽃
+    // became green in Google)
+    if (r.ok && body.eventLabelId && r.body?.eventLabelId !== body.eventLabelId) {
+      const again = method === "POST" ? `${target}/${enc(r.body.id)}` : path;
+      const back = await g(token, `${again}${again.includes("?") ? "&" : "?"}conferenceDataVersion=1`, { method: "PATCH", body: JSON.stringify({ eventLabelId: null, colorId: fallback ?? null }) });
+      if (back.ok) { r = back; firstError ??= "구글이 이 색(라벨)을 립마크에서 바꾸지 못하게 해서, 구글에 있는 가장 가까운 기본 색으로 올렸어요"; }
+    }
     if (!r.ok) { stats.failed++; firstError ??= `구글에 못 올렸어요 (${r.status} ${String(r.body?.error?.message ?? "").slice(0, 120)})`; }
     return r;
   };
@@ -439,9 +447,16 @@ async function syncOnce(db: SupabaseClient, uid: string) {
     stats.deleted++;
   };
   // after Google took a change: what Google decided (a meeting made or taken off) comes back into the app row
-  const afterPush = async (e: Row, body: GEvent) => {
-    if (e.meet_link !== "new" && e.meet_link !== "") return e.updated_at;
-    const { data: up } = await db.from("events").update({ meet_link: meetLinkOf(body) }).eq("id", e.id).select("updated_at").maybeSingle();
+  // and the colour Google really shows, so both sides show the same (user, 2026-11-23)
+  const afterPush = async (e: Row, body: GEvent, cal?: Cal) => {
+    const patch: Row = {};
+    if (e.meet_link === "new" || e.meet_link === "") patch.meet_link = meetLinkOf(body);
+    if (cal) {
+      const shown = shownColor(body, palette, cal.color, labels.get(cal.calendar_id));
+      if (shown.toUpperCase() !== String(e.color ?? "").toUpperCase()) patch.color = shown;
+    }
+    if (!Object.keys(patch).length) return e.updated_at;
+    const { data: up } = await db.from("events").update(patch).eq("id", e.id).select("updated_at").maybeSingle();
     return up?.updated_at ?? e.updated_at;
   };
   // one time of a Google repeat changed on its own in 립마크 ("이 일정만"): that time is changed in Google, the
@@ -463,7 +478,7 @@ async function syncOnce(db: SupabaseClient, uid: string) {
         delete body.recurrence; // one time has no repeat of its own
         const r = await write(`/calendars/${enc(cal.calendar_id)}/events/${enc(iid)}`, "PATCH", body);
         if (r.ok) {
-          const synced = await afterPush(e, r.body);
+          const synced = await afterPush(e, r.body, cal);
           const nl: Link = { event_id: e.id, calendar_id: cal.calendar_id, google_id: r.body.id, origin: "google", lossy: false, google_updated: r.body.updated, synced_at: synced };
           await db.from("google_event_links").insert({ ...nl, user_id: uid });
           linkOf.set(e.id, nl); byGoogle.set(`${nl.calendar_id}|${nl.google_id}`, nl);
@@ -487,7 +502,7 @@ async function syncOnce(db: SupabaseClient, uid: string) {
       }
       const r = await write(`/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, "PATCH", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, new Set([...exceptionDays([...byGoogle.values()], l), ...changedDays(e.id)]), labels.get(target.calendar_id)));
       if (r.ok) {
-        const synced = await afterPush(e, r.body);
+        const synced = await afterPush(e, r.body, target);
         await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: synced }).eq("event_id", e.id);
         stats.pushed++;
       }
@@ -496,7 +511,7 @@ async function syncOnce(db: SupabaseClient, uid: string) {
       if (!target) continue;
       const r = await write(`/calendars/${enc(target.calendar_id)}/events`, "POST", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id)));
       if (r.ok) {
-        const synced = await afterPush(e, r.body);
+        const synced = await afterPush(e, r.body, target);
         await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: synced });
         stats.pushed++;
       }
