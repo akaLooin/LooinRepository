@@ -183,7 +183,7 @@ function MemoSheet({ todo, onClose }: { todo: Todo; onClose: () => void }) {
   );
 }
 
-function MemoLockChip({ priv, onChange }: { priv: boolean; onChange: (v: boolean) => void }) {
+export function MemoLockChip({ priv, onChange }: { priv: boolean; onChange: (v: boolean) => void }) {
   const { c } = useTheme();
   return (
     <Pressable onPress={() => onChange(!priv)} accessibilityRole="switch" accessibilityState={{ checked: priv }} accessibilityLabel="메모 나만 보기"

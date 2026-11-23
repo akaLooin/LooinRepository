@@ -17,7 +17,7 @@ import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand, type C
 import { onColor, tokens, useTheme, visibleOn } from "../../theme";
 import { ListMenuSheet, type ListAction } from "../home/HomeSheets";
 import { PendingRoutineRow } from "../home/PendingRoutineRow";
-import { DatePickSheet, TodoSheets } from "../home/TodoSheets";
+import { DatePickSheet, MemoLockChip, TodoSheets } from "../home/TodoSheets";
 import { GlowFrame } from "../../components";
 
 const TIME_W = 50;
@@ -54,10 +54,15 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
   const diary = useDB((d) => d.diaries.find((x) => x.date === day));
   const [sheetTodo, setSheetTodo] = useState<string | null>(null);
   const [sheetStart, setSheetStart] = useState<"menu" | "memo" | "alarm">("menu");
-  const [renaming, setRenaming] = useState<{ id: string; title: string; memo: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; title: string; memo: string; priv: boolean; focus: "title" | "memo" } | null>(null);
   const saveRenaming = () => {
-    if (renaming?.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim(), memo: renaming.memo.trim() });
+    if (renaming?.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim(), memo: renaming.memo.trim(), memoIsPrivate: renaming.priv });
     setRenaming(null);
+  };
+  // the title and the memo in one sheet, from the title (double tap, 수정) or from the memo (a tap on it) (user)
+  const editTodo = (id: string, focus: "title" | "memo") => {
+    const t = db.todos.find((x) => x.id === id);
+    setRenaming({ id, title: t?.title ?? "", memo: t?.memo ?? "", priv: !!t?.memoIsPrivate, focus });
   };
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
   const [editing, setEditing] = useState<EventDraft | null>(null);
@@ -147,11 +152,11 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
         onImportant={selecting ? undefined : () => notice(toggleImportant(t.id) ? "중요한 날로 표시했어요" : "중요한 날 표시를 풀었어요")}
         onToggle={() => (selecting ? pick(t.id) : toggleTodo(t.id) || notice("다가올 날의 할 일은 그날이 되면 완료할 수 있어요"))}
         onPress={() => { if (selecting) return pick(t.id); setSheetStart("menu"); setSheetTodo(materialize(t.id)); }}
-        onMemoPress={selecting ? undefined : () => { setSheetStart("memo"); setSheetTodo(materialize(t.id)); }}
+        onMemoPress={selecting ? undefined : () => editTodo(materialize(t.id), "memo")}
         onAlarmPress={selecting ? undefined : () => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
         selected={selecting?.has(t.id)}
         below={received.todos[t.id]?.length ? <ReactionLine list={received.todos[t.id]} /> : undefined}
-        onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title, memo: t.memo ?? "" }); } : undefined}
+        onDoubleTap={prefs.doubleTapToEdit ? () => editTodo(materialize(t.id), "title") : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
         right={mark(t, glow)} {...drag} />
       </GlowTint>
@@ -281,13 +286,17 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
 
 
 
-      <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => { const t = db.todos.find((x) => x.id === id); setRenaming({ id, title: t?.title ?? "", memo: t?.memo ?? "" }); }} notice={notice} />
+      <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => editTodo(id, "title")} notice={notice} />
       {/* 할 일 고치기: the title and the memo together (user, 2026-11-23) */}
       <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: saveRenaming } : undefined}>
         {renaming ? (
           <View style={{ gap: 12 }}>
-            <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일" onSubmit={saveRenaming} />
-            <MemoInput value={renaming.memo} onChangeText={(memo) => setRenaming({ ...renaming, memo })} placeholder="메모" />
+            <TitleInput value={renaming.title} onChangeText={(title) => setRenaming((r) => (r ? { ...r, title } : r))} autoFocus={renaming.focus === "title"} placeholder="할 일" onSubmit={saveRenaming} />
+            <View>
+              {/* who sees the memo, set right here too (user, 2026-11-23) */}
+              <MemoLockChip priv={renaming.priv} onChange={(priv) => setRenaming((r) => (r ? { ...r, priv } : r))} />
+              <MemoInput value={renaming.memo} onChangeText={(memo) => setRenaming((r) => (r ? { ...r, memo } : r))} placeholder="메모" focusOnOpen={renaming.focus === "memo"} />
+            </View>
           </View>
         ) : null}
       </BottomSheet>

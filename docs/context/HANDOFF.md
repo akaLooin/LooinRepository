@@ -13,6 +13,7 @@
 **11-23 6차**: 메인 앱 입력칸은 자기 글자를 가짐(`Form.tsx` `useOwnText`, 일정 제목 `defaultValue`): Portal로 그린 시트에 값을 되돌려 주면 한 박자 늦어 한글 조합이 깨졌음. 달력 넘김: 페이지 폭을 반올림하지 않고 `snapToInterval`(반올림한 폭이 페이지마다 어긋나 달이 반쯤 잘렸음), `removeClippedSubviews` 끔, SPAN 300. 디데이 원 숫자 굵기 고정(+글꼴 여백 끔), 달력 탭 맨 위 줄에 가장 가까운 디데이 안내(누르면 `/ddays`).
 **구글 캘린더 양방향(11-23, 코드만 · PC 설정 대기)**: 서버 함수 `supabase/functions/google-calendar`(`auth-url`→구글→`/callback`, `sync`, `disconnect`, 15분 `cron`), 변환 `functions/_shared/gcal.ts`(테스트 `test-gcal.ts`), SQL 20261125000000(`google_accounts` 서버 전용, `google_calendars`, `google_event_links`, `events.google_calendar_id`), 앱 `lib/googleCalendar.ts`(`onSynced` 뒤 자동, 고른 캘린더를 pref `googleCalendars`에 보관)·설정 → 구글 캘린더. **올릴 곳은 일정마다 편집 시트의 "구글 캘린더" 줄에서**(기본 립마크에만, 기존 일정은 안 올라감). 강조 = 구글 제목 맨 앞 ⭐ 또는 ★(올릴 때는 ⭐). 구글 반복 중 못 그리는 것 `lossy`. **PC 할 일: `docs/context/PC-TODO.md`**.
 **11-23 7차**: 강조 불씨 켜고 끄기(설정 → 화면, pref `glowParticles`, `Embers`가 봄), 디데이 날짜 = 숫자 + 뒤에 퍼지는 빨간 빛(`Calendar` `DDayNumber`: SVG 방사형 그라데이션; 글자 그림자는 안드로이드에서 네모로 잘려서 안 씀, 맥박 0.35~1, 빛 44×32로 별을 안 덮음, 고른 날엔 숫자 onSelected 색). 달력 줄은 일정 막대가 없어도 막대 2줄 자리를 늘 둠(달마다 크기 같음). 앱을 나갔다 와도 보던 탭 유지(`lib/resume.ts`: 나갈 때 탭 저장 → 업데이트 재시작·안드로이드 종료 뒤 30분 안이면 그 탭).
+**11-23 8차**: 디데이 안내 = `parts.tsx` `DDayNotice`(달력·홈 맨 위 같은 자리, 홈의 디데이 카드는 뺌). 메모를 눌러도 제목+메모 시트(`AgendaList` `editTodo(id, "memo")`, 메모 공개 칩 `MemoLockChip` 포함). 스킨 추가: 설레는 마음(분홍, 하트가 떠오름), 첫눈 오는 날(하늘색·흰색, 눈이 내림) — `SkinDecor` `Drift`, 지금은 모든 스킨 무료(`FREE_SKINS`).
 todo mate 개인용 재구현(Expo + Supabase).
 
 ## 진행 현황 (`replica/features.csv`의 clone 열)

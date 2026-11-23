@@ -15,7 +15,7 @@ import { dayState } from "../home/dayState";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
 import { AgendaList, type AgendaDrop } from "./AgendaList";
 import { SelectionBar } from "../home/SelectionBar";
-import { dayTitle, QuickAdd } from "./parts";
+import { dayTitle, DDayNotice, QuickAdd } from "./parts";
 
 const G = tokens.layout.gutter;
 
@@ -34,10 +34,6 @@ export function CalendarTab() {
   const ddays = useDB(selectDDays);
   const events = useDB(selectEvents);
   const now = today();
-  // the nearest D-days from today (the notice at the top)
-  const upcoming = useMemo(() => ddays.map((d) => ({ d, at: nextOccurrence(d, now) })).filter((x) => x.at >= now).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)), [ddays, now]);
-  const nextDDay = upcoming[0]?.d;
-  const moreDDays = Math.max(0, upcoming.length - 1);
   const [selected, setSelected] = useState<Day>(now);
   const [view, setView] = useState(() => ({ y: parseDay(now).y, m: parseDay(now).m }));
   const [filter, setFilter] = useState(false);
@@ -129,15 +125,7 @@ export function CalendarTab() {
       <DragScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
         {/* the same top row as 홈 (search, menu), so the month has room above it */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
-          {/* 디데이 안내 (user, 2026-11-23): the nearest D-day stays at the very top; tapping it opens 디데이 */}
-          <Pressable onPress={() => router.push("/ddays" as never)} accessibilityRole="button"
-            accessibilityLabel={nextDDay ? `디데이 ${nextDDay.title} ${ddayLabel(nextDDay, now)}${moreDDays ? `, 외 ${moreDDays}개` : ""}, 디데이 보기` : ddays.length ? `디데이 ${ddays.length}개, 디데이 보기` : "디데이 추가하기"}
-            style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: c.surface, minWidth: 0 }}>
-            {nextDDay ? <AppText variant="small" weight={800} color="dday">{ddayLabel(nextDDay, now)}</AppText> : null}
-            <AppText variant="small" weight={600} numberOfLines={1} color={nextDDay ? "text" : "textMuted"} style={{ flexShrink: 1 }}>{nextDDay ? nextDDay.title : ddays.length ? `디데이 ${ddays.length}개 · 다가오는 디데이 없음` : "디데이 추가하기"}</AppText>
-            {moreDDays ? <AppText variant="small" color="textMuted">{`외 ${moreDDays}`}</AppText> : null}
-            <ChevronRight size={14} color={c.textMuted} />
-          </Pressable>
+          <DDayNotice />
           <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
           <MenuButton onPress={() => setMenu(true)} />
         </View>

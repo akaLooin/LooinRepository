@@ -10,8 +10,10 @@ import type { Palette } from "./tokens";
  *   a pink-orange horizon, small twinkling stars.
  * - 8비트 모험 (8-bit adventure): an old handheld game's adventure: cream paper, black pixel frames, square corners,
  *   a pixel font, bright red and blue.
+ * - 설레는 마음 (love, 2026-11-23): soft pink paper, rose accents, small hearts floating up.
+ * - 첫눈 오는 날 (winter, 2026-11-23): white snow and pale sky blue, flakes drifting down.
  */
-export type SkinId = "default" | "twilight" | "pixel";
+export type SkinId = "default" | "twilight" | "pixel" | "love" | "winter";
 export type Skin = {
   id: SkinId;
   name: string;
@@ -22,7 +24,7 @@ export type Skin = {
   font?: FontFace;
   /** square corners and black frames */
   square?: boolean;
-  decor?: "stars";
+  decor?: "stars" | "hearts" | "snow";
   /** a few colours for the preview card in 설정 → 스킨 */
   swatch: string[];
 };
@@ -53,9 +55,35 @@ export const SKINS: Record<SkinId, Skin> = {
       cloverNumber: "#1d1d1d", info: "#2f5fcf", play: "#d8402e", checkWhite: "#ffffff",
     },
   },
+  love: {
+    id: "love", name: "설레는 마음", desc: "연분홍 편지지에 장밋빛 포인트, 둥실 떠오르는 작은 하트.", scheme: "light", decor: "hearts",
+    swatch: ["#FFF0F4", "#FFFFFF", "#FF5C8A", "#E8456B"],
+    colors: {
+      bg: "#FFF0F4", surface: "#FFFFFF", surfaceRaised: "#FFFFFF", surfaceInput: "#FFE4EC", surfaceRow: "#FFE9F0", surfaceButton: "#FFE1EA",
+      surfaceStrong: "#FFD3E0", selectedDay: "#FFD3E0", text: "#4A2333", textSecondary: "#6E3A50", textMuted: "#A26A80", textPlaceholder: "#C99AAD",
+      iconInactive: "#C08AA0", accent: "#FF5C8A", onAccent: "#FFFFFF", sunday: "#E8456B", saturday: "#7A6CF0", dday: "#E8456B", sectionLine: "#F6CFDC",
+      todayCell: "#FFD3E0", divider: "#F6CFDC", grabber: "#E7A9BE", cloverEmpty: "#F7CFDC", selectedBg: "#FF5C8A", onSelected: "#FFFFFF",
+      toggleOn: "#FF5C8A", toggleOff: "#F2C4D3", dropTarget: "#FFC2D6", spanDone: "#E7B8C7", hourLine: "#FBE0E9", nowLine: "#FF5C8A", danger: "#E0435F",
+      cloverNumber: "#4A2333", info: "#7A6CF0", play: "#FF5C8A", checkWhite: "#FFFFFF",
+    },
+  },
+  winter: {
+    id: "winter", name: "첫눈 오는 날", desc: "하얀 눈과 맑은 하늘색, 천천히 내려오는 눈송이.", scheme: "light", decor: "snow",
+    swatch: ["#F3F9FF", "#FFFFFF", "#4AA8E8", "#9BD0F5"],
+    colors: {
+      bg: "#F3F9FF", surface: "#FFFFFF", surfaceRaised: "#FFFFFF", surfaceInput: "#E6F2FC", surfaceRow: "#EAF4FD", surfaceButton: "#E1EFFB",
+      surfaceStrong: "#D3E7F8", selectedDay: "#D3E7F8", text: "#1E3550", textSecondary: "#3C5A7A", textMuted: "#6F8BA8", textPlaceholder: "#9DB4CB",
+      iconInactive: "#8EA8C2", accent: "#4AA8E8", onAccent: "#FFFFFF", sunday: "#E0627A", saturday: "#3B86D6", dday: "#E0627A", sectionLine: "#D6E6F5",
+      todayCell: "#D3E7F8", divider: "#D6E6F5", grabber: "#A9C6E2", cloverEmpty: "#D5E5F4", selectedBg: "#4AA8E8", onSelected: "#FFFFFF",
+      toggleOn: "#4AA8E8", toggleOff: "#C9DDF0", dropTarget: "#BFE0F8", spanDone: "#B8CCE0", hourLine: "#E3EEF9", nowLine: "#4AA8E8", danger: "#D9536A",
+      cloverNumber: "#1E3550", info: "#3B86D6", play: "#4AA8E8", checkWhite: "#FFFFFF",
+    },
+  },
 };
 
-export const SKIN_ORDER: SkinId[] = ["default", "twilight", "pixel"];
+export const SKIN_ORDER: SkinId[] = ["default", "twilight", "pixel", "love", "winter"];
+/** Skins everyone has for now (the shop comes later): listed even when the saved owned list is older. */
+export const FREE_SKINS: SkinId[] = ["default", "twilight", "pixel", "love", "winter"];
 export const skinOf = (id: string | undefined): Skin => SKINS[(id as SkinId) in SKINS ? (id as SkinId) : "default"];
 
 /** Square corners for the pixel skin (pills too, so buttons look like a game's menu boxes). */

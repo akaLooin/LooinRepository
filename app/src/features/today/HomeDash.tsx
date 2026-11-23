@@ -13,7 +13,7 @@ import { featureOn, numberOf, textOf } from "../../lib/configRules";
 import type { FeatureKey, HomeCard, NumberKey, TextKey } from "../../lib/remoteCatalog";
 import { tokens, useInsets, useTheme, visibleOn } from "../../theme";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
-import { dayTitle, QuickAdd, WeekStrip } from "./parts";
+import { dayTitle, DDayNotice, QuickAdd, WeekStrip } from "./parts";
 import { ShortcutEditSheet, ShortcutGrid } from "./Shortcuts";
 import { agendaSort } from "./AgendaList";
 
@@ -141,7 +141,7 @@ export function HomeDash() {
             {!peekTodos.length && !peekEvents.length ? <AppText variant="helper" color="textMuted" style={{ paddingVertical: 8 }}>할 일도 일정도 없어요</AppText> : null}
           </View>
         </>) : null),
-    dday: () => (ddays.length && on("home.ddayCard") ? card(<>
+    dday: () => (false && ddays.length && on("home.ddayCard") ? card(<>
           {cardTitle(t("home.dday"), "모두 보기")}
           {ddays.slice(0, num("ddayCount")).map((d) => (
             <View key={d.id} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 5 }}>
@@ -188,6 +188,8 @@ export function HomeDash() {
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 24 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 18, height: 52, justifyContent: "flex-end" }}>
+          {/* the D-days moved up here, where 달력 has them too (user, 2026-11-23; the 디데이 card is gone) */}
+          <DDayNotice />
           <Pressable onPress={() => router.push("/search" as never)} hitSlop={10} accessibilityRole="button" accessibilityLabel="할 일과 일기 검색"><Search size={23} color={c.text} /></Pressable>
           <MenuButton onPress={() => setMenu(true)} />
         </View>

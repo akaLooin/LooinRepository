@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useIsFocused } from "expo-router";
+import { router, useIsFocused } from "expo-router";
 import { Keyboard, PanResponder, Pressable, TextInput, View } from "react-native";
-import { AppText, BottomSheet, Check, Clover, GlowTint, KeyboardSpacer, useGlowOf } from "../../components";
+import { AppText, BottomSheet, Check, ChevronRight, Clover, GlowTint, KeyboardSpacer, useGlowOf } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
-import { addTodo, EndedCategoryError, selectActiveCategories, todosForDay, useDB } from "../../data/store";
+import { addTodo, ddayLabel, EndedCategoryError, nextOccurrence, selectActiveCategories, selectDDays, todosForDay, useDB } from "../../data/store";
 import { addDays, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
 import { importantDayColors, importantDays } from "../../lib/events";
 import { isHoliday } from "../../lib/holidays";
@@ -156,3 +156,25 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
   );
 }
 
+/**
+ * 디데이 안내 (user, 2026-11-23): the nearest D-day at the very top of 달력 and 홈 (same place on both); tapping it
+ * opens 디데이.
+ */
+export function DDayNotice() {
+  const { c } = useTheme();
+  const ddays = useDB(selectDDays);
+  const now = today();
+  const upcoming = useMemo(() => ddays.map((d) => ({ d, at: nextOccurrence(d, now) })).filter((x) => x.at >= now).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)), [ddays, now]);
+  const nextDDay = upcoming[0]?.d;
+  const moreDDays = Math.max(0, upcoming.length - 1);
+  return (
+    <Pressable onPress={() => router.push("/ddays" as never)} accessibilityRole="button"
+      accessibilityLabel={nextDDay ? `디데이 ${nextDDay.title} ${ddayLabel(nextDDay, now)}${moreDDays ? `, 외 ${moreDDays}개` : ""}, 디데이 보기` : ddays.length ? `디데이 ${ddays.length}개, 디데이 보기` : "디데이 추가하기"}
+      style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: c.surface, minWidth: 0 }}>
+      {nextDDay ? <AppText variant="small" weight={800} color="dday">{ddayLabel(nextDDay, now)}</AppText> : null}
+      <AppText variant="small" weight={600} numberOfLines={1} color={nextDDay ? "text" : "textMuted"} style={{ flexShrink: 1 }}>{nextDDay ? nextDDay.title : ddays.length ? `디데이 ${ddays.length}개 · 다가오는 디데이 없음` : "디데이 추가하기"}</AppText>
+      {moreDDays ? <AppText variant="small" color="textMuted">{`외 ${moreDDays}`}</AppText> : null}
+      <ChevronRight size={14} color={c.textMuted} />
+    </Pressable>
+  );
+}

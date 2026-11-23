@@ -4,7 +4,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { AppText, Check, ScreenHeader, Sparkles } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { goBack } from "../../lib/nav";
-import { extraFontFiles, fontFamily, SKIN_ORDER, SKINS, tokens, useInsets, useTheme, type Skin, type SkinId } from "../../theme";
+import { extraFontFiles, fontFamily, FREE_SKINS, SKIN_ORDER, SKINS, tokens, useInsets, useTheme, type Skin, type SkinId } from "../../theme";
 
 /**
  * 설정 → 스킨 (user, 2026-11-23): the skins this phone owns, each with a small preview drawn in its own colours, font
@@ -17,7 +17,7 @@ export function SkinsScreen() {
   useEffect(() => { Font.loadAsync(extraFontFiles.galmuri).then(() => setFontsReady(true)).catch(() => {}); }, []);
   const insets = useInsets();
   const prefs = usePrefs();
-  const owned = SKIN_ORDER.filter((id) => prefs.ownedSkins.includes(id));
+  const owned = SKIN_ORDER.filter((id) => prefs.ownedSkins.includes(id) || FREE_SKINS.includes(id));
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="스킨" onBack={() => goBack("/me")} />
@@ -49,7 +49,10 @@ function SkinCard({ skin, active, onPick }: { skin: Skin; active: boolean; onPic
         {skin.decor === "stars" ? [8, 22, 37, 55, 71, 86, 93].map((x, i) => (
           <View key={i} style={{ position: "absolute", left: `${x}%`, top: 6 + ((i * 13) % 30), width: 3, height: 3, borderRadius: 2, backgroundColor: i % 3 ? text : accent, opacity: 0.7 }} />
         )) : null}
-        <AppText style={{ fontFamily: font(700), fontSize: 15, color: text, marginTop: skin.decor === "stars" ? 14 : 0 }}>오늘 할 일</AppText>
+        {skin.decor === "hearts" || skin.decor === "snow" ? [10, 28, 47, 66, 84].map((x, i) => (
+          <AppText key={i} style={{ position: "absolute", left: `${x}%`, top: 4 + ((i * 11) % 22), fontSize: 10, color: skin.decor === "hearts" ? accent : other, opacity: 0.7 }}>{skin.decor === "hearts" ? "♥" : "❄"}</AppText>
+        )) : null}
+        <AppText style={{ fontFamily: font(700), fontSize: 15, color: text, marginTop: skin.decor ? 14 : 0 }}>오늘 할 일</AppText>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: r, backgroundColor: surface, borderWidth: skin.square ? 2 : 0, borderColor: text }}>
           <View style={{ width: 16, height: 16, borderRadius: skin.square ? 1 : 5, backgroundColor: accent, transform: [{ rotate: "45deg" }] }} />
           <AppText style={{ fontFamily: font(500), fontSize: 13, color: text, flex: 1 }}>산책 30분</AppText>
