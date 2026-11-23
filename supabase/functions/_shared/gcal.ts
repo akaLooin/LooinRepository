@@ -11,9 +11,12 @@ export type EventFields = {
   important: boolean;
 };
 
-/** ⭐ at the front of a Google title = 강조 in the app (the star itself is taken off; "⭐️" with its variation mark too). */
+/**
+ * ⭐ at the front of a Google title = 강조 in the app (the star itself is taken off; "⭐️" with its variation mark too).
+ * ★ counts the same, for typing on a PC without emoji (user, 2026-11-23).
+ */
 export function starOff(title: string): { title: string; important: boolean } {
-  const m = /^\s*\u2B50\uFE0F?\s*/.exec(title);
+  const m = /^\s*(?:\u2B50|\u2605)\uFE0F?\s*/.exec(title);
   return m ? { title: title.slice(m[0].length), important: true } : { title, important: false };
 }
 /** 강조 in the app = "⭐ " at the front of the Google title. */

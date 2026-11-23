@@ -94,7 +94,7 @@ export function GoogleCalendarScreen() {
 
             <AppText variant="small" color="textMuted" style={{ marginTop: 14, marginLeft: 4 }}>
               립마크에서 만든 일정은 일정을 추가하거나 고칠 때 '구글 캘린더' 줄에서 올릴 캘린더를 골라야 올라가요. 고르지 않으면 립마크에만 있어요.
-              강조한 일정은 구글에서 제목 맨 앞에 ⭐가 붙고, 구글에서 제목 맨 앞에 ⭐를 붙이면 립마크에서 강조돼요.
+              강조한 일정은 구글에서 제목 맨 앞에 ⭐가 붙고, 구글에서 제목 맨 앞에 ⭐ 또는 ★를 붙이면 립마크에서 강조돼요.
             </AppText>
 
             {button("지금 맞추기", () => run("sync", syncGoogle, "구글 캘린더와 맞췄어요"), "main", "sync")}

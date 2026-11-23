@@ -60,6 +60,10 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
   await t("구글 캘린더: ⭐ at the front of the Google title = 강조 in the app, both ways", () => {
     assert.deepEqual(starOff("⭐ 시험"), { title: "시험", important: true });
     assert.deepEqual(starOff("⭐️시험"), { title: "시험", important: true }, "with the emoji's variation mark, no space");
+    assert.deepEqual(starOff("★ 시험"), { title: "시험", important: true }, "★ (typed on a PC) counts too");
+    assert.deepEqual(starOff("★시험"), { title: "시험", important: true });
+    assert.equal(starOn("★ 시험", true), "⭐ 시험", "written back as ⭐");
+    assert.equal(starOn("★ 시험", false), "시험");
     assert.deepEqual(starOff("시험 ⭐"), { title: "시험 ⭐", important: false }, "only at the front");
     assert.equal(starOn("시험", true), "⭐ 시험");
     assert.equal(starOn("⭐ 시험", true), "⭐ 시험", "never two stars");
