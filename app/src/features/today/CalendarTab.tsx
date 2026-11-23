@@ -65,8 +65,12 @@ export function CalendarTab() {
   const epochWeek = weekStart("2000-01-02", prefs.weekStartsSunday);
   const weekIndexOf = (d: Day) => Math.round((Date.parse(weekStart(d, prefs.weekStartsSunday)) - Date.parse(epochWeek)) / (7 * 86400000));
   const pageIndex = mode === "month" ? monthIndex(view.y, view.m) : weekIndexOf(selected);
+  const lastPage = useRef(0);
   const goPage = (i: number, dir: 1 | -1) => {
-    smoothLayout(200);
+    // swipes one after another: no fading layout, so the next month is there at once (user, 2026-11-23)
+    const quick = Date.now() - lastPage.current < 700;
+    lastPage.current = Date.now();
+    if (!quick) smoothLayout(200);
     if (mode === "week") {
       const next = addDays(selected, dir * 7 * Math.abs(i - pageIndex || 1));
       setSelected(next);
