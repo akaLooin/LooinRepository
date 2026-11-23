@@ -30,7 +30,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
    - [ ] 복사 앱(원할 때만): `npx.cmd eas-cli@latest build -p android --profile preview`
 
 ## D. 구글 캘린더 연동 준비 (backend.md 28, PC 권장)
-1. [ ] https://console.cloud.google.com → 새 프로젝트 → API 및 서비스 → 라이브러리 → **Google Calendar API** → 사용
+1. ✅ (11-23, 프로젝트 libmark) https://console.cloud.google.com → 새 프로젝트 → API 및 서비스 → 라이브러리 → **Google Calendar API** → 사용
 2. [ ] Google 인증 플랫폼(OAuth 동의 화면): 앱 이름 `립마크`, 대상 **외부**, 데이터 액세스 → 범위 `calendar.events`, `calendar.calendarlist.readonly`, `openid`, `email` 추가 → 대상 → **앱 게시**(테스트 상태면 7일마다 연결이 끊김)
 3. [ ] 클라이언트 만들기 → **웹 애플리케이션** → 승인된 리디렉션 URI `https://<ref>.supabase.co/functions/v1/google-calendar/callback` → 클라이언트 ID·보안 비밀 복사 (채팅·저장소에 붙이지 않기)
 4. [ ] Supabase → Edge Functions → Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_STATE_SECRET`(아무 긴 글자), `GOOGLE_CRON_SECRET`(다른 긴 글자)
