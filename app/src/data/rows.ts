@@ -50,6 +50,8 @@ export const toRow = {
     ...(e.categoryId !== undefined ? { category_id: e.categoryId } : {}),
     ...(e.repeat !== undefined ? { repeat: e.repeat } : {}),
     ...(e.skipDates !== undefined ? { skip_dates: e.skipDates } : {}),
+    // 구글 캘린더 (SQL 20261125000000): sent once picked (null = back to 립마크 only)
+    ...(e.googleCalendarId !== undefined ? { google_calendar_id: e.googleCalendarId } : {}),
   }),
   event_categories: (k: EventCategory, user_id: string): Row => ({ id: k.id, user_id, title: k.title, color: k.color, sort_order: k.sortOrder }),
 };
@@ -90,6 +92,7 @@ export const fromRow = {
     ...(r.category_id ? { categoryId: r.category_id } : {}),
     ...(r.repeat && typeof r.repeat === "object" && r.repeat.kind ? { repeat: r.repeat } : {}),
     ...(Array.isArray(r.skip_dates) && r.skip_dates.length ? { skipDates: r.skip_dates.map(String) } : {}),
+    ...(r.google_calendar_id ? { googleCalendarId: String(r.google_calendar_id) } : {}),
   }),
   event_categories: (r: R): EventCategory => ({ id: r.id, title: r.title, color: r.color ?? "#4A90E2", sortOrder: Number(r.sort_order ?? 0) }),
 };

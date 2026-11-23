@@ -71,7 +71,13 @@ const R = (i: number, k: number) => { const x = Math.sin(i * 12.9898 + k * 78.23
  * Embers rising from the box it covers (position it over the item): small soft sparks in the glow colour, a few
  * whiter ones, drifting sideways and fading out above the item.
  */
-export function Embers({ count = 6, rise = 22, size = 4, from = 0.15, to = 0.85, strength = 1, start = 30, seed = 0 }: {
+export function Embers(props: Parameters<typeof SparksOn>[0]) {
+  // 메인 앱: sparks and flames can be turned off in 설정 → 화면 (user, 2026-11-23); the glow stays
+  const on = usePrefs().glowParticles;
+  return DESIGN_TRIAL && !on ? null : <SparksOn {...props} />;
+}
+
+function SparksOn({ count = 6, rise = 22, size = 4, from = 0.15, to = 0.85, strength = 1, start = 30, seed = 0 }: {
   count?: number; rise?: number; size?: number;
   /** how bright at most (0–1), for the soft flame layer under the sparks */
   strength?: number;

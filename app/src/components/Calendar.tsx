@@ -1,12 +1,12 @@
 import { memo, useCallback, useRef, useState } from "react";
 import type { ViewInstance as ViewType } from "react-native";
-import { Pressable, View } from "react-native";
+import { Animated, Pressable, View } from "react-native";
 import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/dates";
 import { rowSegments, type SpanBar } from "../lib/spans";
 import { onColor, tokens, useTheme, type ColorName } from "../theme";
 import { AppText } from "./AppText";
 import { Clover, type CloverState } from "./Clover";
-import { GlowFrame, GlowTint } from "./Highlight";
+import { GlowFrame, GlowTint, usePulse } from "./Highlight";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
 import { DESIGN_TRIAL } from "../lib/variant";
@@ -55,6 +55,21 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * One date. Memoised: picking a day redraws only the old and the new picked cell, not every clover of the three
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
+/** A D-day's date: a thin red edge round the digits and a soft red glow that breathes with the other highlights. */
+function DDayNumber({ label, color }: { label: string; color: Parameters<typeof AppText>[0]["color"] }) {
+  const { c } = useTheme();
+  const glow = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] });
+  const text = { includeFontPadding: false, textAlignVertical: "center" as const, textShadowOffset: { width: 0, height: 0 } };
+  return (
+    <View>
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, opacity: glow }}>
+        <AppText variant="date" weight={700} raw={c.dday} style={{ ...text, textShadowColor: c.dday, textShadowRadius: 9 }}>{label}</AppText>
+      </Animated.View>
+      <AppText variant="date" weight={700} color={color} style={{ ...text, textShadowColor: c.dday, textShadowRadius: 1.6 }}>{label}</AppText>
+    </View>
+  );
+}
+
 const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ringSize, onPick, dday, hover, cellRef, important, boxed, boxH }: {
   day: Day; ring: boolean; todayDisc: boolean; picker: boolean; clover?: CloverState; cloverKey: string; ringSize: number; onPick: (d: Day) => void;
   /** a D-day falls on this date: a red circle around the number (user's feature) */
@@ -78,10 +93,12 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
     <>
       {clover ? <GlowTint color={typeof important === "string" ? important : null}><Clover state={clover} glow={!!important} /></GlowTint> : null}
       <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: picker && DESIGN_TRIAL ? 10 : (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
-        borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}
+        borderWidth: dday && !boxed ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}
         accessibilityLabel={dday ? "디데이" : undefined}>
-        {/* one weight in a D-day circle, picked or not: the bold font sits a little differently on Android (user) */}
-        <AppText variant="date" weight={ring || (dday && boxed) ? 700 : 500} color={numberColor} style={dday && boxed ? { includeFontPadding: false, textAlignVertical: "center" } : undefined}>{label}</AppText>
+        {dday && boxed
+          // 메인 앱 (user, 2026-11-23): on a D-day the number's own outline glows red, no circle
+          ? <DDayNumber label={label} color={numberColor} />
+          : <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>}
       </View>
     </>
   );

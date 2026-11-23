@@ -40,7 +40,10 @@ export async function googleStatus(): Promise<GoogleStatus> {
 export async function googleCalendars(): Promise<GoogleCalendar[]> {
   if (!supabase) return [];
   const { data } = await supabase.from("google_calendars").select("calendar_id, summary, color, can_write, selected, is_default").order("summary");
-  return (data ?? []) as GoogleCalendar[];
+  const list = (data ?? []) as GoogleCalendar[];
+  // the event editor offers the picked ones it can write to
+  setPref("googleCalendars", list.filter((k) => k.selected && k.can_write).map((k) => ({ id: k.calendar_id, summary: k.summary, color: k.color })));
+  return list;
 }
 
 /** Opens Google's agreement page in the browser; Google sends it back to the server, which keeps the account. */
@@ -51,11 +54,7 @@ export async function connectGoogle() {
 
 export async function pickCalendar(id: string, selected: boolean) {
   await supabase?.from("google_calendars").update({ selected }).eq("calendar_id", id);
-}
-/** Where new events (and events without a 일정 카테고리) go. */
-export async function setDefaultCalendar(id: string) {
-  await supabase?.from("google_calendars").update({ is_default: false }).neq("calendar_id", id);
-  await supabase?.from("google_calendars").update({ is_default: true, selected: true }).eq("calendar_id", id);
+  await googleCalendars();
 }
 
 let lastSync = 0;
@@ -67,6 +66,7 @@ export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number }
     await syncNow();
     const r = await call("sync");
     lastSync = Date.now();
+    await googleCalendars();
     if (r.changed) await syncNow();
     return r;
   })();
@@ -77,6 +77,7 @@ export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number }
 export async function disconnectGoogle() {
   await call("disconnect");
   setPref("googleLinked", false);
+  setPref("googleCalendars", []);
   await syncNow();
 }
 

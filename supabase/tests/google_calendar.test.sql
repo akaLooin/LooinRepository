@@ -35,5 +35,8 @@ reset role;
 do $$ begin
   assert (select count(*) from google_calendars where selected and user_id = '00000000-0000-0000-0000-00000000ac01') = 1, 'someone else cannot pick my calendars';
 end $$;
+do $$ begin
+  assert exists (select 1 from information_schema.columns where table_name = 'events' and column_name = 'google_calendar_id'), 'each event says where it goes';
+end $$;
 \o
 \echo ok google calendar: tokens hidden, own calendars, only picks change

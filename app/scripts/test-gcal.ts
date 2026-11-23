@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { fromGoogle, fromRecurrence, localParts, readState, signState, toGoogle, toRecurrence, zonedToUtcCompact, type EventFields } from "../../supabase/functions/_shared/gcal";
+import { starOff, starOn, fromGoogle, fromRecurrence, localParts, readState, signState, toGoogle, toRecurrence, zonedToUtcCompact, type EventFields } from "../../supabase/functions/_shared/gcal";
 import { expandEvents, type CalEvent } from "../src/lib/events";
 
 const t = async (n: string, f: () => void | Promise<void>) => { await f(); console.log("ok", n); };
 const TZ = "Asia/Seoul";
 const palette = { "1": "#7986CB", "11": "#D50000", "10": "#0B8043" };
-const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date: "2026-11-24", all_day: false, start_time: "19:00", end_time: "20:00", color: "#4A90E2", memo: "", alarm_minutes: null, repeat: null, skip_dates: [] };
+const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date: "2026-11-24", all_day: false, start_time: "19:00", end_time: "20:00", color: "#4A90E2", memo: "", alarm_minutes: null, repeat: null, skip_dates: [], important: false };
 
 (async () => {
   await t("구글 캘린더: time zones", () => {
@@ -55,6 +55,19 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     assert.equal(fromRecurrence(["RRULE:FREQ=MONTHLY;BYDAY=2MO"], "2026-11-09", true, TZ).lossy, true, "the second Monday cannot be drawn: never written back");
     assert.equal(fromRecurrence(["RRULE:FREQ=MONTHLY;BYMONTHDAY=9"], "2026-11-09", true, TZ).lossy, false);
     assert.deepEqual(fromRecurrence(["RRULE:FREQ=DAILY", "EXDATE:20261124T100000Z,20261125T100000Z"], "2026-11-23", false, TZ).skip, ["2026-11-24", "2026-11-25"]);
+  });
+
+  await t("구글 캘린더: ⭐ at the front of the Google title = 강조 in the app, both ways", () => {
+    assert.deepEqual(starOff("⭐ 시험"), { title: "시험", important: true });
+    assert.deepEqual(starOff("⭐️시험"), { title: "시험", important: true }, "with the emoji's variation mark, no space");
+    assert.deepEqual(starOff("시험 ⭐"), { title: "시험 ⭐", important: false }, "only at the front");
+    assert.equal(starOn("시험", true), "⭐ 시험");
+    assert.equal(starOn("⭐ 시험", true), "⭐ 시험", "never two stars");
+    assert.equal(starOn("⭐ 시험", false), "시험", "강조 off takes the star away");
+    const g = fromGoogle({ summary: "⭐ 발표", start: { date: "2026-11-24" }, end: { date: "2026-11-25" } }, TZ, palette, "#123456")!;
+    assert.equal(g.fields.title, "발표"); assert.equal(g.fields.important, true);
+    assert.equal(toGoogle({ ...base, important: true }, TZ, palette, "#4A90E2").summary, "⭐ 회의");
+    assert.equal(toGoogle({ ...base, important: false }, TZ, palette, "#4A90E2").summary, "회의");
   });
 
   await t("구글 캘린더: the signed note of who is connecting", async () => {

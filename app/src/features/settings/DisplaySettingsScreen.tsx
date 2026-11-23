@@ -65,6 +65,7 @@ export function DisplaySettingsScreen() {
         {DESIGN_TRIAL
           ? <ValueRow title="강조 색" value={p.glowMode === "custom" ? "카테고리별" : "기본"} onPress={() => router.push("/settings/glow" as never)} />
           : <ValueRow title="강조 색" value={p.glowColor.toUpperCase()} onPress={() => { setDraftGlow(p.glowColor); setSheet("glow"); }} />}
+        {DESIGN_TRIAL ? <ToggleRow title="강조 효과에 불씨 보이기" value={p.glowParticles} onChange={(v) => setPref("glowParticles", v)} /> : null}
         <ValueRow title="캘린더 숫자 색" value={p.cloverNumberColor === "black" ? "검은색" : "하얀색"} onPress={() => setPref("cloverNumberColor", p.cloverNumberColor === "black" ? "white" : "black")} />
         <ValueRow title="화면 크기" value={scaleLabel(String(p.uiScale))} onPress={() => { setDraftScale(String(p.uiScale)); setSheet("scale"); }} divider={false} />
       </ScrollView>

@@ -4,7 +4,7 @@ import { ActivityIndicator, AppState, Pressable, ScrollView, View } from "react-
 import { AppText, Check, ConfirmDialog, ScreenHeader, Toggle, useFrame, useToast } from "../../components";
 import { goBack } from "../../lib/nav";
 import {
-  connectGoogle, disconnectGoogle, googleCalendars, googleStatus, pickCalendar, setDefaultCalendar, syncGoogle, GoogleError,
+  connectGoogle, disconnectGoogle, googleCalendars, googleStatus, pickCalendar, syncGoogle, GoogleError,
   type GoogleCalendar, type GoogleStatus,
 } from "../../lib/googleCalendar";
 import { onColor, tokens, useInsets, useTheme } from "../../theme";
@@ -55,7 +55,7 @@ export function GoogleCalendarScreen() {
       <ScreenHeader title="구글 캘린더" onBack={() => goBack("/settings")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: 40 }}>
         <AppText variant="helper" color="textMuted" style={{ marginVertical: 12 }}>
-          고른 구글 캘린더의 일정이 립마크에 들어오고, 립마크에서 바꾼 일정도 구글 캘린더에 올라가요. 캘린더마다 같은 이름의 일정 카테고리가 생겨요.
+          고른 구글 캘린더의 일정이 립마크에 들어오고, 그 일정을 립마크에서 바꾸면 구글에도 바뀌어요. 캘린더마다 같은 이름의 일정 카테고리가 생겨요.
         </AppText>
         {!status ? <ActivityIndicator color={c.text} style={{ marginTop: 30 }} /> : status.missing ? (
           <View style={{ ...card, padding: 16 }}>
@@ -92,18 +92,10 @@ export function GoogleCalendarScreen() {
             </View>
             <AppText variant="small" color="textMuted" style={{ marginTop: 8, marginLeft: 4 }}>끄면 그 캘린더에서 온 일정은 립마크에서만 사라져요 (구글엔 남아요).</AppText>
 
-            <AppText variant="small" weight={700} color="textMuted" style={{ marginTop: 22, marginBottom: 8, marginLeft: 4 }} accessibilityRole="header">새 일정을 넣을 캘린더</AppText>
-            <View style={card} accessibilityRole="radiogroup">
-              {cals.filter((k) => k.can_write).map((k, i) => (
-                <Pressable key={k.calendar_id} onPress={() => run("sync", async () => { await setDefaultCalendar(k.calendar_id); })} accessibilityRole="radio" accessibilityState={{ checked: k.is_default }}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 52, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: c.sectionLine }}>
-                  <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: k.color }} />
-                  <AppText variant="bodyLg" numberOfLines={1} weight={k.is_default ? 700 : 400} style={{ flex: 1 }}>{k.summary}</AppText>
-                  {k.is_default ? <Check size={20} color={c.text} /> : null}
-                </Pressable>
-              ))}
-            </View>
-            <AppText variant="small" color="textMuted" style={{ marginTop: 8, marginLeft: 4 }}>일정 카테고리가 없는 일정도 여기로 가요. 구글 캘린더의 카테고리를 고른 일정은 그 캘린더로 가요.</AppText>
+            <AppText variant="small" color="textMuted" style={{ marginTop: 14, marginLeft: 4 }}>
+              립마크에서 만든 일정은 일정을 추가하거나 고칠 때 '구글 캘린더' 줄에서 올릴 캘린더를 골라야 올라가요. 고르지 않으면 립마크에만 있어요.
+              강조한 일정은 구글에서 제목 맨 앞에 ⭐가 붙고, 구글에서 제목 맨 앞에 ⭐를 붙이면 립마크에서 강조돼요.
+            </AppText>
 
             {button("지금 맞추기", () => run("sync", syncGoogle, "구글 캘린더와 맞췄어요"), "main", "sync")}
             {button("연결 끊기", () => setAsking(true), "danger", "off")}

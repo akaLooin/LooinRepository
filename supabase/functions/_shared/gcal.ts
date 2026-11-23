@@ -7,7 +7,17 @@ export type Repeat = { kind: "daily" | "weekly" | "monthly" | "yearly"; weekdays
 export type EventFields = {
   title: string; start_date: Day; end_date: Day; all_day: boolean; start_time: string | null; end_time: string | null;
   color: string; memo: string; alarm_minutes: number | null; repeat: Repeat | null; skip_dates: Day[];
+  /** 강조: shown in Google as a ⭐ at the front of the title (user, 2026-11-23) */
+  important: boolean;
 };
+
+/** ⭐ at the front of a Google title = 강조 in the app (the star itself is taken off; "⭐️" with its variation mark too). */
+export function starOff(title: string): { title: string; important: boolean } {
+  const m = /^\s*\u2B50\uFE0F?\s*/.exec(title);
+  return m ? { title: title.slice(m[0].length), important: true } : { title, important: false };
+}
+/** 강조 in the app = "⭐ " at the front of the Google title. */
+export const starOn = (title: string, important: boolean) => (important ? `⭐ ${starOff(title).title}` : starOff(title).title);
 // deno-lint-ignore no-explicit-any
 export type GEvent = Record<string, any>;
 
@@ -155,9 +165,10 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
   }
   const rec = fromRecurrence(g.recurrence, startDate, allDay, g.start.timeZone || tz);
   const popup = (g.reminders?.overrides ?? []).find((o: { method: string; minutes: number }) => o.method === "popup");
+  const star = starOff(String(g.summary ?? ""));
   return {
     fields: {
-      title: String(g.summary ?? "").trim().slice(0, 100) || "(제목 없음)",
+      title: star.title.trim().slice(0, 100) || "(제목 없음)", important: star.important,
       start_date: startDate, end_date: endDate, all_day: allDay, start_time: startTime, end_time: endTime,
       color: hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2",
       memo: stripHtml(String(g.description ?? "")).trim().slice(0, 2000),
@@ -170,7 +181,7 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
 
 /** Our event as a Google event body (insert or full update). */
 export function toGoogle(e: EventFields, tz: string, palette: Record<string, string>, calendarColor: string, exceptions?: Set<Day>): GEvent {
-  const body: GEvent = { summary: e.title, description: e.memo || "" };
+  const body: GEvent = { summary: starOn(e.title, e.important), description: e.memo || "" };
   if (e.all_day) {
     body.start = { date: e.start_date };
     body.end = { date: addDays(e.end_date, 1) };

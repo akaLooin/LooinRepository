@@ -53,6 +53,9 @@ drop trigger if exists google_calendars_updated on google_calendars;
 create trigger google_calendars_updated before update on google_calendars
   for each row execute function set_updated_at();
 
+-- 일정마다 올릴 곳 (이용자, 2026-11-23): 구글 캘린더 id, 없으면 립마크에만 있는 일정. 이미 있던 일정은 비어 있어 올라가지 않는다.
+alter table events add column if not exists google_calendar_id text;
+
 -- 립마크 일정 ↔ 구글 일정 (서버 함수만 쓴다)
 create table if not exists google_event_links (
   event_id uuid primary key references events(id) on delete cascade,

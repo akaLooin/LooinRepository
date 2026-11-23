@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Bell, Button, Calendar, ConfirmDialog, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
-  PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
+  CalendarDays, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCategories, toggleEventImportant, useDB, type EventScope } from "../../data/store";
@@ -20,7 +20,7 @@ export function newDraft(day: Day, startTime: string, endTime: string, color: st
   return { title: "", startDate: day, endDate: day, allDay: false, startTime, endTime, color, memo: "", alarmMinutes: null }; // 알림 없음 by default (user)
 }
 
-type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm" | "category" | "repeat" | "until";
+type Sub = "form" | "startDate" | "endDate" | "startTime" | "endTime" | "color" | "alarm" | "category" | "repeat" | "until" | "google";
 
 /**
  * Add or change an 일정 (user's feature; the flow follows the user's screen recording of a calendar app: tap an hour,
@@ -55,6 +55,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     onSaved(`${dayLabel(e.startDate)}에 '${e.title.trim()}'을(를) 저장했어요`);
   };
   const cat = eventCats.find((k) => k.id === e.categoryId);
+  const googleLabel = e.googleCalendarId ? `구글 · ${prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.summary ?? "캘린더"}` : "립마크에만";
   const pickCat = (id: string | null) => { const k = eventCats.find((x) => x.id === id); put(k ? { categoryId: k.id, color: k.color } : { categoryId: null }); back(); };
   const setRepeat = (kind: EventRepeat["kind"] | null) =>
     put({ repeat: kind ? { kind, until: e.repeat?.until ?? null, ...(kind === "weekly" ? { weekdays: e.repeat?.weekdays?.length ? e.repeat.weekdays : [weekday(e.startDate)] } : {}) } : null });
@@ -221,6 +222,24 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <Button kind="sheetPrimary" label="완료" onPress={back} />
       </View>
     );
+  } else if (sub === "google") {
+    // 구글 캘린더 (user, 2026-11-23): picked for each event; 립마크에만 keeps it out of Google (and takes it off if it was there)
+    const choice = (id: string | null, label: string, col?: string) => (
+      <Pressable key={id ?? "none"} onPress={() => { put({ googleCalendarId: id }); back(); }} accessibilityRole="radio" accessibilityState={{ checked: (e.googleCalendarId ?? null) === id }} accessibilityLabel={label}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 50 }}>
+        <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: col ?? "transparent", borderWidth: col ? 0 : 1.5, borderColor: c.textMuted }} />
+        <AppText variant="bodyLg" style={{ flex: 1 }}>{label}</AppText>
+        {(e.googleCalendarId ?? null) === id ? <Check size={20} color={c.text} /> : null}
+      </Pressable>
+    );
+    body = (
+      <View>
+        <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>올릴 곳</AppText>
+        {choice(null, "립마크에만 (구글에 안 올림)")}
+        {prefs.googleCalendars.map((k) => choice(k.id, k.summary, k.color))}
+        <AppText variant="small" color="textMuted" style={{ marginTop: 8 }}>연동할 캘린더는 설정 → 구글 캘린더에서 골라요</AppText>
+      </View>
+    );
   } else if (sub === "until") {
     body = <DayPicker initial={e.repeat?.until ?? addDays(e.startDate, 30)} min={e.startDate} onPick={(d) => { put({ repeat: { ...e.repeat!, until: d } }); setSub("repeat"); }} />;
   } else if (sub === "alarm") {
@@ -265,6 +284,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         {row(icon(Bell), alarmLabel(e.alarmMinutes), () => setSub("alarm"), `알림 ${alarmLabel(e.alarmMinutes)}`)}
         {DESIGN_TRIAL ? row(icon(Repeat), repeatLabel(e.repeat, e.startDate), () => setSub("repeat"), `반복 ${repeatLabel(e.repeat, e.startDate)}`) : null}
         {DESIGN_TRIAL ? row(icon(Tag), cat ? cat.title : "카테고리 없음", () => setSub("category"), `일정 카테고리 ${cat ? cat.title : "없음"}`) : null}
+        {DESIGN_TRIAL && (prefs.googleLinked || e.googleCalendarId) ? row(icon(CalendarDays), googleLabel, () => setSub("google"), `구글 캘린더 ${googleLabel}`) : null}
         {row(<View style={{ width: 22, alignItems: "center" }}><View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: e.color }} /></View>, "색", () => setSub("color"), "색 고르기")}
         <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 8 }} />
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingTop: 6 }}>

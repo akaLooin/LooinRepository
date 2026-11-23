@@ -11,8 +11,10 @@
 //
 // How a sync goes, per user: refresh the calendar list (the main one picked at first), give each picked calendar
 // a 일정 카테고리 of its name and colour, pull Google's changes since last time (sync tokens), then send the app's
-// changes (new, changed, deleted events) to Google. An event's 일정 카테고리 says which calendar it belongs to;
-// events with none go to the calendar picked for new events. When both sides changed one event, the later wins.
+// changes to Google. Each event says where it goes (events.google_calendar_id, picked in the event editor; empty =
+// only in 립마크, so events made before connecting stay in the app, user 2026-11-23). Picking 립마크 only for a
+// linked event takes it off Google. 강조 = a ⭐ at the front of the Google title. When both sides changed one event,
+// the later wins.
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { addDays, type EventFields, fromGoogle, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
 
@@ -126,7 +128,7 @@ const FIELDS = ["title", "start_date", "end_date", "all_day", "start_time", "end
 const fieldsOf = (r: Row): EventFields => ({
   title: r.title, start_date: r.start_date, end_date: r.end_date, all_day: r.all_day,
   start_time: r.start_time ? String(r.start_time).slice(0, 5) : null, end_time: r.end_time ? String(r.end_time).slice(0, 5) : null,
-  color: r.color, memo: r.memo ?? "", alarm_minutes: r.alarm_minutes, repeat: r.repeat ?? null, skip_dates: r.skip_dates ?? [],
+  color: r.color, memo: r.memo ?? "", alarm_minutes: r.alarm_minutes, repeat: r.repeat ?? null, skip_dates: r.skip_dates ?? [], important: !!r.important,
 });
 /** our row's time columns: "24:00" is stored as 24:00:00 (Postgres time allows it) */
 const toRowFields = (f: EventFields) => ({ ...f, start_time: f.all_day ? null : f.start_time, end_time: f.all_day ? null : f.end_time });
@@ -168,8 +170,6 @@ async function syncUser(db: SupabaseClient, uid: string) {
     if (!error) { await db.from("google_calendars").update({ category_id: id }).eq("user_id", uid).eq("calendar_id", c.calendar_id); c.category_id = id; }
   }
   const picked = cals.filter((c) => c.selected);
-  const calOfCategory = new Map(picked.filter((c) => c.category_id).map((c) => [c.category_id!, c]));
-  const defaultCal = picked.find((c) => c.is_default && c.can_write) ?? picked.find((c) => c.can_write);
 
   const { data: linkRows } = await db.from("google_event_links").select("*").eq("user_id", uid);
   const links: Link[] = linkRows ?? [];
@@ -178,6 +178,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
   // calendars no longer picked: their Google events leave the app, the app's own stay (unlinked)
   for (const l of links.filter((l) => !picked.some((c) => c.calendar_id === l.calendar_id))) {
     if (l.origin === "google") await db.from("events").update({ deleted_at: new Date().toISOString() }).eq("id", l.event_id);
+    else await db.from("events").update({ google_calendar_id: null }).eq("id", l.event_id);
     await db.from("google_event_links").delete().eq("event_id", l.event_id);
     byGoogle.delete(`${l.calendar_id}|${l.google_id}`);
   }
@@ -210,20 +211,23 @@ async function syncUser(db: SupabaseClient, uid: string) {
   // 3. push: what changed in the app since it was last in step with Google
   const { data: evRows } = await db.from("events").select("*").eq("user_id", uid);
   const linkOf = new Map([...byGoogle.values()].map((l) => [l.event_id, l]));
+  const writable = (id: string | null | undefined) => (id ? picked.find((c) => c.calendar_id === id && c.can_write) : undefined);
+  const takeOff = async (l: Link) => {
+    const cal = cals.find((c) => c.calendar_id === l.calendar_id);
+    if (cal?.can_write && !l.lossy) await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(l.google_id)}`, { method: "DELETE" });
+    await db.from("google_event_links").delete().eq("event_id", l.event_id);
+    stats.deleted++;
+  };
   for (const e of evRows ?? []) {
     const l = linkOf.get(e.id);
     if (l) {
-      if (e.deleted_at) {
-        if (l.origin === "google" && !picked.some((c) => c.calendar_id === l.calendar_id)) continue;
-        const cal = cals.find((c) => c.calendar_id === l.calendar_id);
-        if (cal?.can_write && !l.lossy) await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(l.google_id)}`, { method: "DELETE" });
-        await db.from("google_event_links").delete().eq("event_id", e.id);
-        stats.deleted++;
-        continue;
-      }
-      if (new Date(e.updated_at) <= new Date(l.synced_at) || l.lossy) continue;
-      const target = (e.category_id && calOfCategory.get(e.category_id)) || cals.find((c) => c.calendar_id === l.calendar_id);
-      if (!target?.can_write) continue;
+      if (e.deleted_at) { await takeOff(l); continue; }
+      if (new Date(e.updated_at) <= new Date(l.synced_at)) continue;
+      // 립마크 only picked for it: off Google, kept in the app
+      if (!e.google_calendar_id) { await takeOff(l); continue; }
+      if (l.lossy) continue;
+      const target = writable(e.google_calendar_id);
+      if (!target) continue;
       let gid = l.google_id;
       if (target.calendar_id !== l.calendar_id) {
         const mv = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(gid)}/move?destination=${enc(target.calendar_id)}`, { method: "POST" });
@@ -234,9 +238,9 @@ async function syncUser(db: SupabaseClient, uid: string) {
         await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: e.updated_at }).eq("event_id", e.id);
         stats.pushed++;
       }
-    } else if (!e.deleted_at) {
-      const target = (e.category_id && calOfCategory.get(e.category_id)) || defaultCal;
-      if (!target?.can_write) continue;
+    } else if (!e.deleted_at && e.google_calendar_id) {
+      const target = writable(e.google_calendar_id);
+      if (!target) continue;
       const r = await g(token, `/calendars/${enc(target.calendar_id)}/events`, { method: "POST", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color)) });
       if (r.ok) {
         await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: e.updated_at });
@@ -295,14 +299,14 @@ async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, pa
     if (e && !e.deleted_at && new Date(e.updated_at) > new Date(link.synced_at) && new Date(e.updated_at) > new Date(item.updated)) return 0;
     // keep the days the app already knows were changed on their own
     const skip = [...new Set([...(fields.skip_dates ?? []), ...exceptionsFor(byGoogle, c.calendar_id, item.id)])].sort();
-    const { data: up } = await db.from("events").update({ ...fields, skip_dates: skip, category_id: c.category_id, deleted_at: null }).eq("id", link.event_id).select("updated_at").maybeSingle();
+    const { data: up } = await db.from("events").update({ ...fields, skip_dates: skip, google_calendar_id: c.calendar_id, deleted_at: null }).eq("id", link.event_id).select("updated_at").maybeSingle();
     if (!up) return 0;
     await db.from("google_event_links").update({ google_updated: item.updated, synced_at: up.updated_at, lossy: mapped.lossy }).eq("event_id", link.event_id);
     link.google_updated = item.updated; link.synced_at = up.updated_at; link.lossy = mapped.lossy;
     return 1;
   }
   const id = crypto.randomUUID();
-  const { data: ins, error } = await db.from("events").insert({ id, user_id: uid, ...fields, category_id: c.category_id }).select("updated_at").maybeSingle();
+  const { data: ins, error } = await db.from("events").insert({ id, user_id: uid, ...fields, category_id: c.category_id, google_calendar_id: c.calendar_id }).select("updated_at").maybeSingle();
   if (error || !ins) return 0;
   const l: Link = { event_id: id, calendar_id: c.calendar_id, google_id: item.id, origin: "google", lossy: mapped.lossy, google_updated: item.updated, synced_at: ins.updated_at };
   await db.from("google_event_links").insert({ ...l, user_id: uid });
