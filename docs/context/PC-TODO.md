@@ -50,6 +50,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 17. [ ] (11-23, 원인: 라벨은 주소에 `eventLabelVersion=1`이 있어야 구글이 받음 → 고침) 벚꽃을 골랐는데 구글에서 초록: 서버가 구글이 라벨을 받았는지 확인하고, 안 받았으면 가장 가까운 기본 색으로 다시 올리고 립마크 색도 구글에 보이는 색으로 맞춤 → `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` → 색 다시 바꾸고 설정 → 구글 캘린더의 빨간 글씨 확인
 18. [ ] (11-23) 립마크에서 바꾼 색이 구글에 늦게 감 → 빠른 올리기(립마크 변경만 바로, 캘린더 목록·당겨오기는 건너뜀): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` → 폰 지금 업데이트 → 색 바꿔서 몇 초 걸리는지 확인
 19. [ ] (11-23, 급하지 않음: 앱이 이미 모든 캘린더를 연동으로 바꿈) 계정의 캘린더 전부 연동(새로 생긴 캘린더도 처음부터): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (18과 한 번에)
+20. [ ] (11-23, **가장 먼저**) 저장하면 구글 일정이 하나 더 생김(원인: 서버가 일정·연결을 1000개까지만 읽음 → 연결을 못 읽은 일정을 새로 올림) → `git pull` → 서버 올리기(18·19도 같이 됨) → SQL로 복사본 세기 `remove-copies` + `"dry":true` → 숫자를 Claude에게 → 괜찮으면 `"dry":false`로 한 번(같은 캘린더·제목·날짜·시간·반복인 일정 중 가장 오래된 것만 남기고 립마크·구글에서 지움)
 
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행

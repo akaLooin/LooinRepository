@@ -105,6 +105,15 @@ Deno.serve(async (req) => {
 
   // one-time clean-up (user, 2026-11-23): events made in 립마크 that went to Google come off Google again and stay
   // only in 립마크. Run once from the SQL Editor with the timer's secret; nothing in the app calls it.
+  if (input?.action === "remove-copies") {
+    if (!env("GOOGLE_CRON_SECRET") || req.headers.get("x-cron-secret") !== env("GOOGLE_CRON_SECRET")) return json({ error: "forbidden" }, 403);
+    const { data: accounts } = await db.from("google_accounts").select("user_id");
+    const out: Record<string, unknown> = {};
+    for (const a of accounts ?? []) {
+      try { out[a.user_id] = await removeCopies(db, a.user_id, input?.dry !== false); } catch (e) { out[a.user_id] = { error: String(e) }; }
+    }
+    return json(out);
+  }
   if (input?.action === "remove-app-uploads") {
     if (!env("GOOGLE_CRON_SECRET") || req.headers.get("x-cron-secret") !== env("GOOGLE_CRON_SECRET")) return json({ error: "forbidden" }, 403);
     const { data: accounts } = await db.from("google_accounts").select("user_id");
@@ -159,7 +168,7 @@ Deno.serve(async (req) => {
     try { const t = await accessToken(db, uid); await stopWatches(db, uid, t); } catch { /* the key may be gone already */ }
     if (acc) await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(acc.refresh_token)}`, { method: "POST" }).catch(() => {});
     // events that came from Google leave the app (they stay in Google); events made in the app stay, unlinked
-    const { data: links } = await db.from("google_event_links").select("event_id, origin").eq("user_id", uid);
+    const links = await every(() => db.from("google_event_links").select("event_id, origin").eq("user_id", uid), "event_id");
     const fromGoogleIds = (links ?? []).filter((l) => l.origin === "google").map((l) => l.event_id);
     for (let i = 0; i < fromGoogleIds.length; i += 200) await db.from("events").update({ deleted_at: new Date().toISOString() }).in("id", fromGoogleIds.slice(i, i + 200));
     await db.from("google_event_links").delete().eq("user_id", uid);
@@ -405,8 +414,9 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
   // each calendar's default alarm (what Google rings for an event that keeps the default)
   const defaultAlarm = new Map(list.map((c) => [c.id, ((c.defaultReminders ?? []) as { method: string; minutes: number }[]).filter((d) => d.method === "popup").map((d) => d.minutes)]));
 
-  const { data: linkRows } = await db.from("google_event_links").select("*").eq("user_id", uid);
-  const links: Link[] = linkRows ?? [];
+  // every row, not the first 1000 (user, 2026-11-23: with more than 1000 events, a saved Google event whose link was
+  // not read went up to Google again as a new one)
+  const links = (await every(() => db.from("google_event_links").select("*").eq("user_id", uid), "event_id")) as Link[];
   const byGoogle = new Map(links.map((l) => [`${l.calendar_id}|${l.google_id}`, l]));
 
   // calendars no longer picked: their Google events leave the app, the app's own stay (unlinked)
@@ -449,7 +459,7 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
   }
 
   // 3. push: what changed in the app since it was last in step with Google
-  const { data: evRows } = await db.from("events").select("*").eq("user_id", uid);
+  const evRows: Row[] = await every(() => db.from("events").select("*").eq("user_id", uid), "id");
   // events made in 립마크 before the account was connected stay in 립마크, always (user, 2026-11-23: they showed up
   // in Google); only events made or picked for Google after connecting go up
   const { data: acc } = await db.from("google_accounts").select("created_at").eq("user_id", uid).maybeSingle();
@@ -525,7 +535,13 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
     } else if (!e.deleted_at && e.google_calendar_id && new Date(e.created_at ?? 0) > connectedAt) {
       const target = writable(e.google_calendar_id);
       if (!target) continue;
-      const r = await write(`/calendars/${enc(target.calendar_id)}/events`, "POST", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id)));
+      // never a second copy: an event already linked (or one from Google) is not made again
+      if (e.instance_of) continue;
+      const { data: had } = await db.from("google_event_links").select("event_id").eq("event_id", e.id).maybeSingle();
+      if (had) continue;
+      const body = toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id));
+      body.extendedProperties = { private: { libmark: e.id } }; // which 립마크 event it is
+      const r = await write(`/calendars/${enc(target.calendar_id)}/events`, "POST", body);
       if (r.ok) {
         const synced = await afterPush(e, r.body, target);
         await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: synced });
@@ -542,6 +558,57 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
  * eleven event colours are given in the shades Google's apps show (the API still answers older, paler ones); any
  * other colour comes as Google gives it. Without an answer, the eleven.
  */
+/** Every row of a query, page by page (a select alone returns at most 1000). */
+// deno-lint-ignore no-explicit-any
+async function every(make: () => any, key: string): Promise<Row[]> {
+  const out: Row[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await make().order(key).range(from, from + 999);
+    if (error) throw new Error(error.message);
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) return out;
+  }
+}
+
+/**
+ * One-time clean-up of copies (user, 2026-11-23: saving a Google event made a new one): events of the same Google
+ * calendar with the same title, days, times and repeat are copies; the oldest stays, the others leave the app and
+ * Google. {dry: true} only counts.
+ */
+async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
+  await syncUser(db, uid).catch(() => {}); // first bring in what Google has (copies made there too)
+  const token = await accessToken(db, uid);
+  const evs = await every(() => db.from("events").select("id, title, start_date, end_date, all_day, start_time, end_time, repeat, instance_of, google_calendar_id, created_at").eq("user_id", uid).is("deleted_at", null).not("google_calendar_id", "is", null), "id");
+  const links = new Map((await every(() => db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid), "event_id")).map((l) => [l.event_id, l]));
+  const { data: cals } = await db.from("google_calendars").select("calendar_id, can_write").eq("user_id", uid);
+  const canWrite = new Set((cals ?? []).filter((c) => c.can_write).map((c) => c.calendar_id));
+  const groups = new Map<string, Row[]>();
+  for (const e of evs) {
+    const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time, e.repeat ?? null, e.instance_of ?? null]);
+    groups.set(k, [...(groups.get(k) ?? []), e]);
+  }
+  let copies = 0, removed = 0, groupsWithCopies = 0;
+  const now = new Date().toISOString();
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    groupsWithCopies++;
+    list.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    for (const e of list.slice(1)) {
+      copies++;
+      if (dry || !canWrite.has(e.google_calendar_id)) continue;
+      const l = links.get(e.id);
+      if (l) {
+        const r = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(l.google_id)}`, { method: "DELETE" });
+        if (!r.ok && r.status !== 404 && r.status !== 410) continue;
+        await db.from("google_event_links").delete().eq("event_id", e.id);
+      }
+      await db.from("events").update({ deleted_at: now }).eq("id", e.id);
+      removed++;
+    }
+  }
+  return { events: evs.length, groupsWithCopies, copies, removed, dry };
+}
+
 /** What Google said a moment ago (colours, labels), kept while this server copy lives: a quick round asks less. */
 const memo = new Map<string, { at: number; v: unknown }>();
 async function remembered<T>(key: string, keepMs: number, f: () => Promise<T>): Promise<T> {
@@ -585,7 +652,7 @@ async function refreshColours(db: SupabaseClient, uid: string) {
   const token = await accessToken(db, uid);
   const palette = (await livePalette(token)).event;
   const { data: cals } = await db.from("google_calendars").select("*").eq("user_id", uid).eq("selected", true);
-  const { data: links } = await db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid);
+  const links = await every(() => db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid), "event_id");
   const linkOf = new Map((links ?? []).map((l) => [`${l.calendar_id}|${l.google_id}`, l.event_id]));
   const want = new Map<string, { color: string; location: string; meet_link: string | null; alarm_minutes: number | null }>(); // event id -> what Google has
   const entries = await g(token, `/users/me/calendarList?maxResults=250`);
