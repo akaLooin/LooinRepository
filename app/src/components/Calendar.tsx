@@ -1,6 +1,7 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useId, useRef, useState } from "react";
 import type { ViewInstance as ViewType } from "react-native";
 import { Animated, Pressable, View } from "react-native";
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from "react-native-svg";
 import { monthGrid, parseDay, weekday, weekdayLabels, type Day } from "../lib/dates";
 import { rowSegments, type SpanBar } from "../lib/spans";
 import { onColor, tokens, useTheme, type ColorName } from "../theme";
@@ -56,31 +57,34 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
 /**
- * A D-day's date, like a neon sign: the digits in the text colour with a tight red edge, and a wide red glow that
- * breathes with the other highlights (user, 2026-11-23). Android draws a text's shadow only inside the text's own
- * box, which cut the glow off square, so the glow layers are texts in a bigger box (padding) centred on the digits.
+ * A D-day's date, like a neon sign: the digits in the text colour with a tight red edge, over a soft red halo that
+ * breathes with the other highlights (user, 2026-11-23). The halo is a drawing (a radial gradient), not a text
+ * shadow: Android drew a text's shadow only inside a box round the text, so the glow ended in a square.
  */
-const GLOW_ROOM = 18;
+const HALO_W = 64, HALO_H = 52;
 function DDayNumber({ label }: { label: string }) {
   const { c } = useTheme();
+  const id = useId().replace(/:/g, "");
   const pulse = usePulse();
-  const glow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] });
-  const grow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.08] });
-  const text = { includeFontPadding: false, textAlignVertical: "center" as const, textAlign: "center" as const, textShadowOffset: { width: 0, height: 0 }, textShadowColor: c.dday };
-  const layer = (radius: number) => (
-    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
-      <AppText variant="date" weight={800} raw={c.dday} style={{ ...text, textShadowRadius: radius, padding: GLOW_ROOM }}>{label}</AppText>
-    </View>
-  );
+  const glow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
+  const grow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.1] });
   return (
-    <View>
-      <Animated.View pointerEvents="none" style={{ position: "absolute", left: -GLOW_ROOM, right: -GLOW_ROOM, top: -GLOW_ROOM, bottom: -GLOW_ROOM, opacity: glow, transform: [{ scale: grow }] }}>
-        {layer(18)}
-        {layer(14)}
-        {layer(10)}
-        {layer(6)}
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
+      <Animated.View pointerEvents="none" style={{ position: "absolute", width: HALO_W, height: HALO_H, opacity: glow, transform: [{ scale: grow }] }}>
+        <Svg width={HALO_W} height={HALO_H}>
+          <Defs>
+            <RadialGradient id={`dd${id}`} cx="50%" cy="50%" rx="50%" ry="50%">
+              <Stop offset="0" stopColor={c.dday} stopOpacity={0.95} />
+              <Stop offset="0.35" stopColor={c.dday} stopOpacity={0.6} />
+              <Stop offset="0.7" stopColor={c.dday} stopOpacity={0.18} />
+              <Stop offset="1" stopColor={c.dday} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx={HALO_W / 2} cy={HALO_H / 2} rx={HALO_W / 2} ry={HALO_H / 2} fill={`url(#dd${id})`} />
+        </Svg>
       </Animated.View>
-      <AppText variant="date" weight={800} color="text" style={{ ...text, textShadowRadius: 4 }}>{label}</AppText>
+      <AppText variant="date" weight={800} color="text"
+        style={{ includeFontPadding: false, textAlignVertical: "center", textShadowOffset: { width: 0, height: 0 }, textShadowColor: c.dday, textShadowRadius: 3 }}>{label}</AppText>
     </View>
   );
 }
@@ -190,7 +194,10 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
         const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2, !long) : null;
         // 할 일 캘린더: a row with event lines grows by their height, so the lines sit under the date circles
         // instead of over them (user)
-        const lineRoom = !long && bars?.segments.length ? 3 + (Math.max(...bars.segments.map((x) => x.lane)) + 1) * LINE_STEP : 0;
+        // 메인 앱 (user, 2026-11-23): every row keeps the room of two lines, so a month with event lines is as tall as
+        // one without
+        const lineRoom = long ? 0 : boxed && !picker ? 3 + 2 * LINE_STEP
+          : bars?.segments.length ? 3 + (Math.max(...bars.segments.map((x) => x.lane)) + 1) * LINE_STEP : 0;
         return (
         <View key={i} style={{ flexDirection: "row", height: picker ? 52 : long ? tokens.layout.spanRowHeight : tokens.layout.calendarRowHeight + lineRoom, marginHorizontal: -bleed }}>
           {row.map((day, j) => {
