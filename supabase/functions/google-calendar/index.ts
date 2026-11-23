@@ -44,6 +44,30 @@ Deno.serve(async (req) => {
     return json({ users: Object.keys(out).length });
   }
 
+  // one-time clean-up (user, 2026-11-23): events made in 립마크 that went to Google come off Google again and stay
+  // only in 립마크. Run once from the SQL Editor with the timer's secret; nothing in the app calls it.
+  if (input?.action === "remove-app-uploads") {
+    if (!env("GOOGLE_CRON_SECRET") || req.headers.get("x-cron-secret") !== env("GOOGLE_CRON_SECRET")) return json({ error: "forbidden" }, 403);
+    const { data: accounts } = await db.from("google_accounts").select("user_id");
+    const out: Record<string, unknown> = {};
+    for (const a of accounts ?? []) {
+      try {
+        const token = await accessToken(db, a.user_id);
+        const { data: links } = await db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", a.user_id).eq("origin", "app");
+        let removed = 0;
+        for (const l of links ?? []) {
+          const r = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(l.google_id)}`, { method: "DELETE" });
+          if (!r.ok && r.status !== 404 && r.status !== 410) continue; // keep the link to try again
+          await db.from("google_event_links").delete().eq("event_id", l.event_id);
+          await db.from("events").update({ google_calendar_id: null }).eq("id", l.event_id);
+          removed++;
+        }
+        out[a.user_id] = { found: links?.length ?? 0, removed };
+      } catch (e) { out[a.user_id] = { error: String(e) }; }
+    }
+    return json(out);
+  }
+
   const asUser = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
   const { data: me } = await asUser.auth.getUser();
   if (!me.user) return json({ error: "unauthorized" }, 401);

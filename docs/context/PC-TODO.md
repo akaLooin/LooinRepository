@@ -40,6 +40,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 8. ✅ (11-23) 연결 뒤 앱으로 바로 돌아오게 고친 서버 기능 다시 올리기: `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (Supabase 기본 주소는 웹페이지를 못 보여 줘서 안내 페이지 글자가 깨졌음)
 
 9. [ ] 캘린더 색 바뀜 따라가기 + 구글이 알려 주는 일정 색 목록 + 연결 전 립마크 일정은 절대 안 올림 반영(11-23; 올린 뒤 설정 → 구글 캘린더에 "일정 색 n가지"가 보이는지 확인): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>`
+10. [ ] (1회만) 립마크에서 올라간 일정을 구글에서 빼기: 9번 올린 뒤 SQL Editor에서 `net.http_post(... body {"action":"remove-app-uploads"}, 헤더 x-cron-secret)` 한 번 → `select status_code, content from net._http_response order by id desc limit 1;`로 결과 확인
 
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행
