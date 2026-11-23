@@ -22,10 +22,12 @@ const TABS: Item[] = [
 
 /** `dots`: a small dot on a tab (보내기: unread messages). */
 export function BottomNav({ active, onChange, dots, items = TABS }: { active: Tab; onChange: (t: Tab) => void; dots?: Partial<Record<Tab, boolean>>; items?: Item[] }) {
-  const { c } = useTheme();
+  const { c, skin } = useTheme();
   const labelled = items !== TABS;
+  // skins: a black pixel line (8비트 모험) or a thin gold lamplight line (황혼의 재즈) on top of the tab bar
+  const edge = skin.square ? { borderTopWidth: 2, borderTopColor: c.text } : skin.decor === "stars" ? { borderTopWidth: 1, borderTopColor: c.accent + "66" } : {};
   return (
-    <View style={{ height: tokens.layout.bottomNavHeight, flexDirection: "row", alignItems: "center", backgroundColor: c.bg }} accessibilityRole="tablist">
+    <View style={{ height: tokens.layout.bottomNavHeight, flexDirection: "row", alignItems: "center", backgroundColor: c.bg, ...edge }} accessibilityRole="tablist">
       {items.map(({ key, label, Icon, filled }) => {
         const on = key === active;
         const col = on ? c.text : c.iconInactive;

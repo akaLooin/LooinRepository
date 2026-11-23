@@ -33,10 +33,20 @@ export function FieldRow({ title, value, onPress, right }: { title: string; valu
 }
 
 /** Title field with a 2dp underline in the category colour (S04, S06b, S07b, S21b). */
-export function TitleInput({ value, onChangeText, placeholder, underline, textColor, error, autoFocus, bold }: {
+export function TitleInput({ value, onChangeText, placeholder, underline, textColor, error, autoFocus, bold, onSubmit }: {
   value: string; onChangeText: (s: string) => void; placeholder?: string; underline?: string; textColor?: string; error?: string; autoFocus?: boolean; bold?: boolean;
+  /** the keyboard's 완료 key */
+  onSubmit?: () => void;
 }) {
   const { c } = useTheme();
+  // autoFocus alone is not always honoured on Android inside a sheet: focus right after mounting too (user: the
+  // keyboard should open by itself when editing a to-do)
+  const ref = useRef<TextInputInstance>(null);
+  useEffect(() => {
+    if (!autoFocus) return;
+    const t = setTimeout(() => ref.current?.focus(), 30);
+    return () => clearTimeout(t);
+  }, [autoFocus]);
   const t = tokens.type["bodyLg"];
   // design app: a filled box with a colour bar on its left instead of the original's coloured underline
   if (DESIGN_TRIAL) return (
@@ -44,7 +54,8 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
       <View style={{ flexDirection: "row", alignItems: "center", borderRadius: tokens.radius.md, backgroundColor: c.surface, overflow: "hidden",
         borderWidth: error ? 1 : 0, borderColor: c.danger }}>
         <View style={{ width: 4, alignSelf: "stretch", backgroundColor: underline ?? c.textMuted }} />
-        <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={c.textPlaceholder} autoFocus={autoFocus} accessibilityLabel={placeholder}
+        <TextInput ref={ref} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={c.textPlaceholder} autoFocus={autoFocus} accessibilityLabel={placeholder}
+          onSubmitEditing={onSubmit} returnKeyType={onSubmit ? "done" : undefined}
           style={{ flex: 1, outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 600), fontSize: bold ? 18 : t.size, color: textColor ?? c.text, paddingVertical: 14, paddingHorizontal: 14 }} />
       </View>
       {error ? <AppText variant="helper" color="danger" style={{ marginTop: 6 }}>{error}</AppText> : null}
@@ -53,11 +64,13 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
   return (
     <View>
       <TextInput
+        ref={ref}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={c.textPlaceholder}
         autoFocus={autoFocus}
+        onSubmitEditing={onSubmit}
         accessibilityLabel={placeholder}
         style={{ outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 500), fontSize: bold ? 18 : t.size, color: textColor ?? c.text, paddingVertical: 10, paddingHorizontal: 4,
           borderBottomWidth: 2, borderBottomColor: error ? c.danger : underline ?? c.text }}
@@ -74,7 +87,9 @@ export function MemoInput({ value, onChangeText, placeholder, focusOnOpen }: { v
   // after the sheet has slid up, so the keyboard and the sheet rise together
   useEffect(() => {
     if (!focusOnOpen) return;
-    const t = setTimeout(() => ref.current?.focus(), 280);
+    // the main app's sheets live in the app's own window: focus at once (the keyboard rises with the sheet); the copy
+    // app waits for its sheet window to slide up first
+    const t = setTimeout(() => ref.current?.focus(), DESIGN_TRIAL ? 30 : 280);
     return () => clearTimeout(t);
   }, [focusOnOpen]);
   return (

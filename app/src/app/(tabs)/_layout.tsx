@@ -9,7 +9,7 @@ import { TogetherScreen } from "../../features/today/TogetherScreen";
 import { onTabSwitch } from "../../lib/tabSwitch";
 import { useFeature, useT } from "../../lib/appConfig";
 import type { TextKey } from "../../lib/remoteCatalog";
-import { BottomNav, DESIGN_TABS, type Tab } from "../../components";
+import { BottomNav, DESIGN_TABS, SkinDecor, type Tab } from "../../components";
 import { DESIGN_TRIAL } from "../../lib/variant";
 import { useTheme } from "../../theme";
 import { useUnreadConversations } from "../../data/chat";
@@ -62,6 +62,8 @@ function DesignTabs() {
         })}
         {/* other screens under the tabs (보관함, 대화, 알림 …) still come from the router */}
         {shown ? null : <Slot />}
+        {/* a skin's decoration (황혼의 재즈: twinkling stars) over the tab screens */}
+        <SkinDecor />
       </View>
       <View style={{ paddingBottom: insets.bottom, backgroundColor: c.bg }}>
         <BottomNav items={tabItems} active={active} dots={{ together: unread > 0 }}

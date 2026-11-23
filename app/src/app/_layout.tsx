@@ -13,6 +13,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadPrefs, usePrefs } from "../data/prefs";
 import { KeyboardRoot } from "../components/KeyboardSpacer";
 import { PhotoViewerHost } from "../components/PhotoViewer";
+import { PortalHost } from "../components/Portal";
 import { AuthGate } from "../features/auth/AuthGate";
 import { AdminApp } from "../features/admin/AdminApp";
 import { useQuietUpdates } from "../lib/quietUpdates";
@@ -22,12 +23,13 @@ import { AppText } from "../components/AppText";
 import { extraFontFiles, fontFiles, ScaledRoot, ThemeProvider, useTheme } from "../theme";
 
 function Shell() {
-  const { c, scheme, setOverride, setFont } = useTheme();
-  const { theme, font } = usePrefs();
+  const { c, scheme, setOverride, setFont, skin } = useTheme();
+  const { theme, font: pickedFont } = usePrefs();
+  const font = skin.font ?? pickedFont; // a skin may bring its own font (8비트 모험: pixel letters)
   // a picked font is loaded first (in Expo Go and on the web; the installed app has them built in), then used
   useEffect(() => {
     let alive = true;
-    const files = font === "pretendard" || font === "system" ? null : extraFontFiles[font];
+    const files = font === "pretendard" || font === "system" ? null : extraFontFiles[font as Exclude<typeof font, "pretendard" | "system">];
     (files ? Font.loadAsync(files).catch(() => {}) : Promise.resolve()).then(() => { if (alive) setFont(font); });
     return () => { alive = false; };
   }, [font, setFont]);
@@ -70,6 +72,8 @@ function Shell() {
           </Stack>
           )}
         </AuthGate>
+        {/* the main app's sheets, drawn above every screen in the app's own window */}
+        <PortalHost />
       </ScaledRoot>
       <PhotoViewerHost />
     </View>

@@ -64,7 +64,7 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
 /** `day` null = 보관함 (no date). */
 export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
   const t = useT();
-  const { c } = useTheme();
+  const { c, skin } = useTheme();
   const insets = useInsets();
   const [text, setText] = useState("");
   const [picking, setPicking] = useState(false);
@@ -84,7 +84,7 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
   const col = visibleOn(cat.color, c.bg, c.text);
   return (
     <View style={{ paddingHorizontal: G, paddingTop: 8, paddingBottom: 10, backgroundColor: c.bg }}>
-      <View style={{ height: 48, borderRadius: 24, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, gap: 8 }}>
+      <View style={{ height: 48, borderRadius: skin.square ? 3 : 24, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, gap: 8, ...(skin.square ? { borderWidth: 2, borderColor: c.text } : {}) }}>
         <TextInput ref={input} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
           placeholder={day ? t("quickadd.placeholder", { date: `${parseDay(day).m}월 ${parseDay(day).d}일` }) : "날짜 없이 보관할 할 일"} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
           style={{ flex: 1, minWidth: 0, color: c.text, fontSize: tokens.type.bodyLg.size, fontFamily: fontFamily(400), paddingVertical: 0, outlineStyle: "none" as never }} />

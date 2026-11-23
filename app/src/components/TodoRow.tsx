@@ -6,6 +6,7 @@ import { AppText } from "./AppText";
 import { Clover } from "./Clover";
 import { StoredImage } from "./StoredImage";
 import { ZoomPhoto } from "./PhotoViewer";
+import { DESIGN_TRIAL } from "../lib/variant";
 
 const DOUBLE_TAP_MS = 260;
 
@@ -38,6 +39,7 @@ export function TodoRow({ important, onImportant, period, photoOthers, right, be
   important?: boolean; onImportant?: () => void;
 }) {
   const { c } = useTheme();
+  const titleSize = small ? 15 : 17, titleLine = small ? 21 : 24;
   // With double-tap editing on, a single tap waits a moment to see if a second one follows, so a double tap
   // goes straight to editing without the menu flashing in between (user).
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,10 +56,13 @@ export function TodoRow({ important, onImportant, period, photoOthers, right, be
   };
   return (
     <View style={{ flexDirection: "row", gap: 12, paddingVertical: 8, paddingHorizontal: selected === undefined ? 0 : 6, marginHorizontal: selected === undefined ? 0 : -6, borderRadius: tokens.radius.md, backgroundColor: selected ? c.surfaceButton : "transparent" }} accessibilityState={selected === undefined ? undefined : { selected }}>
-      <Clover size={tokens.size.cloverTodo} state={done ? { kind: "todoDone", color } : { kind: "todoOpen" }} onPress={onToggle} onLongPress={onImportant} glow={important}
-        label={`${title}, ${done ? "완료됨" : "미완료"}${important ? ", 중요" : ""}`} />
-      <Pressable onPress={press} onLongPress={onLongPress} delayLongPress={delayLongPress} style={{ flex: 1, gap: 2 }} accessibilityRole="button" accessibilityHint="메뉴 열기">
-        <AppText variant={small ? "body" : "bodyLg"}>{title}</AppText>
+      {/* 메인 앱 (user, 2026-11-23): a slightly bigger title, its first line centred on the star */}
+      <View style={DESIGN_TRIAL ? { marginTop: Math.max(0, (titleLine - tokens.size.cloverTodo) / 2) } : undefined}>
+        <Clover size={tokens.size.cloverTodo} state={done ? { kind: "todoDone", color } : { kind: "todoOpen" }} onPress={onToggle} onLongPress={onImportant} glow={important}
+          label={`${title}, ${done ? "완료됨" : "미완료"}${important ? ", 중요" : ""}`} />
+      </View>
+      <Pressable onPress={press} onLongPress={onLongPress} delayLongPress={delayLongPress} style={{ flex: 1, gap: 2, paddingTop: DESIGN_TRIAL ? Math.max(0, (tokens.size.cloverTodo - titleLine) / 2) : 0 }} accessibilityRole="button" accessibilityHint="메뉴 열기">
+        <AppText variant={small ? "body" : "bodyLg"} style={DESIGN_TRIAL ? { fontSize: titleSize, lineHeight: titleLine } : undefined}>{title}</AppText>
         {period ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }} accessibilityLabel={`기간 ${period}`}>
             <View style={{ width: 14, height: 4, borderRadius: 2, backgroundColor: done ? c.spanDone : color }} />

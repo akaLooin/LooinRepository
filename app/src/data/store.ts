@@ -193,6 +193,7 @@ export const selectRoutines = (d: DB) => [...d.routines].sort(byOrder);
 
 export { isVirtual, manualRoutinesOn, todosForDay, virtualId } from "./occurrences";
 import { isVirtual, routineAlarm, todosForDay } from "./occurrences";
+import { DESIGN_TRIAL } from "../lib/variant";
 
 // ── profile ────────────────────────────────────────────────
 export function updateProfile(patch: Partial<Profile>) {
@@ -317,19 +318,28 @@ export function updateTodo(id: string, patch: Partial<Todo>) {
   set({ ...db, todos: db.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
 }
 
-export function toggleTodo(id: string) {
+/** A to-do of a day after today cannot be checked off yet (메인 앱, user 2026-11-23). */
+export const isFutureDay = (date: Day | null | undefined) => DESIGN_TRIAL && !!date && date > today();
+
+/** Returns false when nothing changed (a future day's to-do in the main app). */
+export function toggleTodo(id: string): boolean {
   // no layout animation here: it made the clover's lobes jump on the phone (user's video); the original just flips
+  const before = db.todos.find((x) => x.id === id) ?? todosForDay(db, id.split(":")[2] ?? "").find((x) => x.id === id);
+  if (before && !before.isDone && isFutureDay(before.date)) return false;
   id = materialize(id);
   const t = db.todos.find((x) => x.id === id);
-  if (!t) return;
+  if (!t) return false;
   updateTodo(id, t.isDone ? { isDone: false, doneAt: undefined } : { isDone: true, doneAt: now() });
+  return true;
 }
 
 export function deleteTodo(id: string) {
   smoothLayout();
   const t = db.todos.find((x) => x.id === id);
-  // A routine occurrence is kept as a skipped row so the routine does not bring it back.
-  if (t?.routineId) set({ ...db, todos: db.todos.map((x) => (x.id === id ? { ...x, isSkipped: true } : x)) });
+  // A routine occurrence is kept as a skipped row so the routine does not bring it back. A manual-add routine's
+  // to-do is removed instead, so the day shows the routine's "+" line again (user, 2026-11-23).
+  const manual = !!t?.routineId && !!db.routines.find((r) => r.id === t.routineId)?.manualAdd;
+  if (t?.routineId && !manual) set({ ...db, todos: db.todos.map((x) => (x.id === id ? { ...x, isSkipped: true } : x)) });
   else set({ ...db, todos: db.todos.filter((x) => x.id !== id) });
 }
 

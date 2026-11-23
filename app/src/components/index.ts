@@ -31,3 +31,5 @@ export * from "./ConfirmDialog";
 export * from "./KeyboardSpacer";
 export * from "./PhotoViewer";
 export * from "./TabPills";
+export * from "./Portal";
+export * from "./SkinDecor";

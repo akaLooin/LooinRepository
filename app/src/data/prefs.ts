@@ -48,6 +48,9 @@ export type Prefs = {
   quickAddCategory: string | null;
   // 홈 바로가기 (design app): ids in order, null = the default set; this phone only
   homeShortcuts: string[] | null;
+  // 스킨 (메인 앱): the one in use and the ones owned (a shop adds more later); this phone only
+  skin: "default" | "twilight" | "pixel";
+  ownedSkins: string[];
 };
 
 export type Audience = "all" | "followers" | "none";
@@ -59,7 +62,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", quickAddCategory: null, homeShortcuts: null,
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel"],
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

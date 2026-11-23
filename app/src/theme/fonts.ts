@@ -10,8 +10,8 @@ export const fontFiles = {
 
 
 /** 설정 → 화면 → 폰트. Pretendard is the default; the others are open-licence Korean fonts (assets/fonts/README.md). */
-export type FontFace = "pretendard" | "system" | "nanumGothic" | "nanumPen";
-export const FONT_LABEL: Record<FontFace, string> = { pretendard: "기본", system: "시스템", nanumGothic: "나눔고딕", nanumPen: "나눔손글씨 펜" };
+export type FontFace = "pretendard" | "system" | "nanumGothic" | "nanumPen" | "galmuri";
+export const FONT_LABEL: Record<FontFace, string> = { pretendard: "기본", system: "시스템", nanumGothic: "나눔고딕", nanumPen: "나눔손글씨 펜", galmuri: "갈무리 (픽셀)" };
 
 /** Loaded only when picked (they are big); in the installed app they are built in (app.json expo-font). */
 export const extraFontFiles: Record<Exclude<FontFace, "pretendard" | "system">, Record<string, number>> = {
@@ -20,6 +20,11 @@ export const extraFontFiles: Record<Exclude<FontFace, "pretendard" | "system">, 
     "NanumGothic-Bold": require("../../assets/fonts/NanumGothic-Bold.ttf"),
   },
   nanumPen: { "NanumPenScript-Regular": require("../../assets/fonts/NanumPenScript-Regular.ttf") },
+  // the 8비트 모험 skin's pixel font (Galmuri11, OFL; trimmed to common Korean, Latin and symbols)
+  galmuri: {
+    "Galmuri11": require("../../assets/fonts/Galmuri11.ttf"),
+    "Galmuri11-Bold": require("../../assets/fonts/Galmuri11-Bold.ttf"),
+  },
 };
 
 let face: FontFace = "pretendard";
@@ -30,6 +35,7 @@ export function fontFamily(weight: number) {
   if (face === "system") return Platform.OS === "web" ? "system-ui" : Platform.OS === "ios" ? "System" : "sans-serif";
   if (face === "nanumGothic") return weight >= 600 ? "NanumGothic-Bold" : "NanumGothic-Regular";
   if (face === "nanumPen") return "NanumPenScript-Regular";
+  if (face === "galmuri") return weight >= 600 ? "Galmuri11-Bold" : "Galmuri11";
   if (weight >= 700) return "Pretendard-Bold";
   if (weight >= 600) return "Pretendard-SemiBold";
   if (weight >= 500) return "Pretendard-Medium";

@@ -138,7 +138,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
         color={cat?.color ?? c.accent}
         important={t.isImportant}
         onImportant={selecting ? undefined : () => notice(toggleImportant(t.id) ? "중요한 날로 표시했어요" : "중요한 날 표시를 풀었어요")}
-        onToggle={() => (selecting ? pick(t.id) : toggleTodo(t.id))}
+        onToggle={() => (selecting ? pick(t.id) : toggleTodo(t.id) || notice("다가올 날의 할 일은 그날이 되면 완료할 수 있어요"))}
         onPress={() => { if (selecting) return pick(t.id); setSheetStart("menu"); setSheetTodo(materialize(t.id)); }}
         onMemoPress={selecting ? undefined : () => { setSheetStart("memo"); setSheetTodo(materialize(t.id)); }}
         onAlarmPress={selecting ? undefined : () => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
@@ -260,7 +260,8 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
 
       <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setRenaming({ id, title: db.todos.find((x) => x.id === id)?.title ?? "" })} notice={notice} />
       <BottomSheet visible={!!renaming} onClose={() => setRenaming(null)} title="할 일 고치기" right={renaming ? { label: "완료", onPress: () => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); } } : undefined}>
-        {renaming ? <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일" /> : null}
+        {renaming ? <TitleInput value={renaming.title} onChangeText={(title) => setRenaming({ ...renaming, title })} autoFocus placeholder="할 일"
+          onSubmit={() => { if (renaming.title.trim()) updateTodo(renaming.id, { title: renaming.title.trim() }); setRenaming(null); }} /> : null}
       </BottomSheet>
       <EventEditor draft={editing} onClose={() => setEditing(null)} onSaved={(m) => { setEditing(null); notice(m); }} />
       <ListMenuSheet open={listMenu === "menu"} onClose={() => setListMenu(null)} onConfirm={runList} />

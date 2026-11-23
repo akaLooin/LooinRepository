@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Keyboard, Modal, Platform, Pressable, View } from "react-native";
+import { Animated, BackHandler, Dimensions, Easing, Keyboard, Modal, Platform, Pressable, View } from "react-native";
+import { usePortal } from "./Portal";
+import { KeyboardSpacer } from "./KeyboardSpacer";
 import { ScaledRoot, tokens, useDesignScale, useInsets, useTheme } from "../theme";
 import { AppText } from "./AppText";
 import { TextButton } from "./Button";
@@ -16,7 +18,7 @@ export function BottomSheet({ visible, onClose, title, right, children, inline, 
   /** the phone's back button, when it should step back inside the sheet instead of closing it (default: close) */
   onBack?: () => void;
 }) {
-  const { c } = useTheme();
+  const { c, skin } = useTheme();
   const insets = useInsets();
   // stay mounted while sliding out
   const [mounted, setMounted] = useState(visible);
@@ -26,7 +28,7 @@ export function BottomSheet({ visible, onClose, title, right, children, inline, 
   const s = useDesignScale();
   const lift = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (Platform.OS === "web" || !mounted) return;
+    if (Platform.OS === "web" || !mounted || DESIGN_TRIAL) return; // the main app's sheets follow KeyboardSpacer
     const move = (to: number, ms: number) =>
       Animated.timing(lift, { toValue: to, duration: ms, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     const show = Keyboard.addListener("keyboardDidShow", (e) => {
@@ -68,10 +70,32 @@ export function BottomSheet({ visible, onClose, title, right, children, inline, 
     </View>
   );
   const body = DESIGN_TRIAL
-    ? { backgroundColor: c.surfaceRaised, borderRadius: 28, marginHorizontal: 8, marginBottom: 8 + insets.bottom, paddingTop: 14, paddingHorizontal: tokens.layout.gutter - 4, paddingBottom: 20 }
+    ? { backgroundColor: c.surfaceRaised, borderRadius: skin.square ? 3 : 28, ...(skin.square ? { borderWidth: 2, borderColor: c.text } : {}), marginHorizontal: 8, marginBottom: 8 + insets.bottom, paddingTop: 14, paddingHorizontal: tokens.layout.gutter - 4, paddingBottom: 20 }
     : { backgroundColor: c.surfaceRaised, borderTopLeftRadius: tokens.radius.sheet, borderTopRightRadius: tokens.radius.sheet, paddingTop: 12, paddingHorizontal: tokens.layout.gutter, paddingBottom: 24 + insets.bottom };
   const head = DESIGN_TRIAL ? designTop : top;
   if (inline) return <View style={body}>{head}{children}</View>; // for the design gallery
+  // 메인 앱: drawn on top of the app in its own window (Portal), not as a separate Android window, so the keyboard
+  // opens at once and stays open when moving from one field to the next (user, 2026-11-23). The sheet rides the
+  // keyboard frame by frame (KeyboardSpacer).
+  const overlay = DESIGN_TRIAL && (mounted || visible) ? (
+    <View style={{ flex: 1, justifyContent: "flex-end" }}>
+      <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: tokens.scrim, opacity: scrimOpacity }}>
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="닫기" />
+      </Animated.View>
+      <Animated.View style={[body, { transform: [{ translateY }] }]}>
+        {head}
+        {children}
+      </Animated.View>
+      <KeyboardSpacer already={8 + insets.bottom} />
+    </View>
+  ) : null;
+  usePortal(DESIGN_TRIAL && !inline ? overlay : null);
+  useEffect(() => {
+    if (!DESIGN_TRIAL || inline || !visible) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => { (onBack ?? onClose)(); return true; });
+    return () => sub.remove();
+  }, [visible, inline, onBack, onClose]);
+  if (DESIGN_TRIAL) return null;
   if (!mounted && !visible) return null;
   return (
     <Modal visible transparent animationType="none" onRequestClose={onBack ?? onClose} statusBarTranslucent>

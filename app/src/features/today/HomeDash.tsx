@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { AppText, ChevronRight, NeonText, Search, TodoRow, useToast } from "../../components";
+import { AppText, ChevronRight, NeonText, Search, TodoRow, useFrame, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { ddayLabel, isDDayToday, selectActiveCategories, selectCategories, selectDDays, todosForDay, toggleTodo, useDB } from "../../data/store";
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, weekStart, type Day } from "../../lib/dates";
@@ -27,6 +27,7 @@ const greetingKey = (h: number): TextKey => (h < 5 ? "home.greeting.night" : h <
  */
 export function HomeDash() {
   const { c } = useTheme();
+  const frame = useFrame(); // 8비트 모험: black pixel frames
   const insets = useInsets();
   const prefs = usePrefs();
   const db = useDB((d) => d);
@@ -84,7 +85,7 @@ export function HomeDash() {
   const peekEvents = eventsOn(db.events, peek);
 
   const card = (children: React.ReactNode, onPress?: () => void, label?: string) => {
-    const style = { marginTop: 14, padding: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface };
+    const style = { marginTop: 14, padding: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface, ...frame };
     // a card without its own action is a plain box, so the days and links inside take the taps
     return onPress
       ? <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={style}>{children}</Pressable>
@@ -130,7 +131,7 @@ export function HomeDash() {
             ))}
             {peekTodos.slice(0, peekMax).map((t) => (
               <TodoRow key={t.id} title={t.title} done={t.isDone} important={t.isImportant} small
-                color={all.find((x) => x.id === t.categoryId)?.color ?? c.accent} onToggle={() => toggleTodo(t.id)} onPress={() => openDay(peek)} />
+                color={all.find((x) => x.id === t.categoryId)?.color ?? c.accent} onToggle={() => toggleTodo(t.id) || notice("다가올 날의 할 일은 그날이 되면 완료할 수 있어요")} onPress={() => openDay(peek)} />
             ))}
             {peekTodos.length > peekMax ? <AppText variant="small" color="textMuted" style={{ paddingTop: 4 }}>{`할 일 ${peekTodos.length - peekMax}개 더`}</AppText> : null}
             {!peekTodos.length && !peekEvents.length ? <AppText variant="helper" color="textMuted" style={{ paddingVertical: 8 }}>할 일도 일정도 없어요</AppText> : null}

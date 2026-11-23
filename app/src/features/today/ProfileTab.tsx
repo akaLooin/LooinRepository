@@ -4,7 +4,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, Bell, ChevronRight, CircleQuestionMark, FlaskConical, Info, Lock, Megaphone, Monitor, Pencil, Shield, SmilePlus, StoredImage, User, Users,
+  AppText, Bell, ChevronRight, CircleQuestionMark, FlaskConical, Info, Lock, Megaphone, Monitor, Palette, Pencil, Shield, SmilePlus, StoredImage, User, Users, useFrame,
 } from "../../components";
 import { followList, getPerson } from "../../data/social";
 import { sessionUserId, useDB } from "../../data/store";
@@ -19,13 +19,14 @@ const G = tokens.layout.gutter;
 type Row = [string, typeof User, string];
 const GROUPS: [string, Row[]][] = [
   ["계정", [["계정", User, "/settings/account"], ["개인정보 보호", Shield, "/settings/privacy"], ["앱 권한", Lock, "/settings/permissions"]]],
-  ["앱", [["화면", Monitor, "/settings/display"], ["알림", Bell, "/settings/notifications"], ["내 스티커", SmilePlus, "/settings/stickers"], ["실험실", FlaskConical, "/settings/lab"]]],
+  ["앱", [["스킨", Palette, "/settings/skins"], ["화면", Monitor, "/settings/display"], ["알림", Bell, "/settings/notifications"], ["내 스티커", SmilePlus, "/settings/stickers"], ["실험실", FlaskConical, "/settings/lab"]]],
   ["도움", [["공지사항", Megaphone, "/settings/notices"], ["문의하기", CircleQuestionMark, "/settings/faq"], ["정보", Info, "/settings/about"]]],
 ];
 
 /** The settings as grouped cards (design app): used under 프로필 and as the 설정 screen. */
 export function SettingsGroups() {
   const { c } = useTheme();
+  const frame = useFrame();
   const version = Constants.expoConfig?.version ?? "";
   const at = Updates.isEnabled && !Updates.isEmbeddedLaunch && Updates.createdAt ? Updates.createdAt : null;
   const updated = at ? `${at.getMonth() + 1}월 ${at.getDate()}일 ${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")} 업데이트` : "설치한 그대로";
@@ -34,7 +35,7 @@ export function SettingsGroups() {
       {GROUPS.map(([title, rows]) => (
         <View key={title} style={{ marginTop: 22 }}>
           <AppText variant="small" weight={700} color="textMuted" style={{ marginBottom: 8, marginLeft: 4 }} accessibilityRole="header">{title}</AppText>
-          <View style={{ borderRadius: tokens.radius.lg, backgroundColor: c.surface, overflow: "hidden" }}>
+          <View style={{ borderRadius: tokens.radius.lg, backgroundColor: c.surface, overflow: "hidden", ...frame }}>
             {rows.map(([label, I, path], i) => (
               <Pressable key={label} onPress={() => router.push(path as never)} accessibilityRole="button" accessibilityLabel={label}
                 style={{ flexDirection: "row", alignItems: "center", gap: 14, height: 52, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: c.sectionLine }}>
@@ -65,6 +66,7 @@ export function SettingsGroups() {
  */
 export function ProfileTab() {
   const { c } = useTheme();
+  const frame = useFrame();
   const insets = useInsets();
   const profile = useDB((d) => d.profile);
   const todos = useDB((d) => d.todos);
@@ -84,7 +86,7 @@ export function ProfileTab() {
   const streak = streakOf(new Set(done.map((t) => t.date).filter((d): d is string => !!d)), now);
   const a = 84;
   const tile = (value: string, label: string) => (
-    <View style={{ flex: 1, alignItems: "center", gap: 4, paddingVertical: 14, borderRadius: tokens.radius.lg, backgroundColor: c.surface }} accessible accessibilityLabel={`${label} ${value}`}>
+    <View style={{ flex: 1, alignItems: "center", gap: 4, paddingVertical: 14, borderRadius: tokens.radius.lg, backgroundColor: c.surface, ...frame }} accessible accessibilityLabel={`${label} ${value}`}>
       <AppText variant="monthTitle" weight={700}>{value}</AppText>
       <AppText variant="small" color="textMuted">{label}</AppText>
     </View>
@@ -96,7 +98,7 @@ export function ProfileTab() {
         <AppText variant="monthTitle" weight={700} style={{ flex: 1 }} accessibilityRole="header">{tx("profile.title")}</AppText>
       </View>
       <ScrollView contentContainerStyle={{ paddingHorizontal: G, paddingBottom: 40 }}>
-        <View style={{ alignItems: "center", paddingVertical: 22, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+        <View style={{ alignItems: "center", paddingVertical: 22, borderRadius: tokens.radius.lg, backgroundColor: c.surface, ...frame }}>
           <Pressable onPress={() => router.push("/profile" as never)} accessibilityRole="button" accessibilityLabel="프로필 고치기">
             {profile.avatarUri
               ? <StoredImage uri={profile.avatarUri} label="프로필 사진" style={{ width: a, height: a, borderRadius: a / 2 }} />
