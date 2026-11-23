@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import {
-  AppText, BottomSheet, Bell, Button, Calendar, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
+  AppText, BottomSheet, Bell, Button, Calendar, ConfirmDialog, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
   PRESET_COLORS, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
@@ -34,7 +34,9 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   const [e, setE] = useState<EventDraft | null>(draft);
   const [sub, setSub] = useState<Sub>("form");
   const [problem, setProblem] = useState<string | null>(null);
-  useEffect(() => { setE(draft); setSub("form"); setProblem(null); }, [draft]);
+  const [asking, setAsking] = useState(false);
+  const saved = useDB((d) => !!draft && d.events.some((x) => x.id === draft.id));
+  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); }, [draft]);
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
 
   const put = (patch: Partial<EventDraft>) => { setProblem(null); setE((x) => (x ? { ...x, ...patch } : x)); };
@@ -171,6 +173,14 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
           <View style={{ paddingTop: 12 }}>{icon(FileText)}</View>
           <View style={{ flex: 1 }}><MemoInput value={e.memo} onChangeText={(memo) => put({ memo })} placeholder="설명 추가" /></View>
         </View>
+        {/* an event already saved can be deleted right here (user, 2026-11-23: without going into the timeline) */}
+        {saved ? (
+          <Pressable onPress={() => setAsking(true)} accessibilityRole="button" accessibilityLabel="일정 삭제"
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 48, marginTop: 18, borderRadius: 24, borderWidth: 1, borderColor: c.danger }}>
+            <Trash2 size={18} color={c.danger} />
+            <AppText variant="body" weight={700} color="danger">일정 삭제</AppText>
+          </Pressable>
+        ) : null}
       </ScrollView>
     );
   }
@@ -181,6 +191,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     <BottomSheet visible={!!draft} onClose={onClose} onBack={sub === "form" ? onClose : back}>
       {header}
       {body}
+      <ConfirmDialog visible={asking} message={`'${e.title || "일정"}' 일정을 지울까요?`} cancel="취소" ok="지우기" danger
+        onCancel={() => setAsking(false)} onOk={() => { setAsking(false); if (e.id) deleteEvent(e.id); onSaved(`'${e.title || "일정"}' 일정을 지웠어요`); }} />
     </BottomSheet>
   );
 }

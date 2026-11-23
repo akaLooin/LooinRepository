@@ -5,6 +5,7 @@ import { Platform, Pressable, View } from "react-native";
 import {
   AppText, Archive, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
   TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown, CircleCheck,
+  SkipForward, CalendarClock, AlarmClock, StickyNote, CopyPlus, CalendarPlus, PenLine, ImageOff, ScanText, Timer, Repeat, Camera, Inbox, Sunrise,
 } from "../../components";
 import { ensurePermission } from "../../data/notifications";
 import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, moveTodos, setTodoAlarm, setTodoPhoto, updateTodo, useDB, type Todo } from "../../data/store";
@@ -33,11 +34,14 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
   const now = today();
   const day = todo.date ?? now;
   const past = day < now;
-  const icon = (I: typeof Pencil) => <I size={DESIGN_TRIAL ? 20 : 18} color={c.onIcon} strokeWidth={2.4} />;
+  // main app (user, 2026-11-23): its own glyphs (`g(copy app's, main app's)`) in one green tint, red only for deleting,
+  // instead of the original-looking coloured circles
+  const g = (a: typeof Pencil, b: typeof Pencil) => (DESIGN_TRIAL ? b : a);
+  const icon = (I: typeof Pencil, danger = false) => <I size={DESIGN_TRIAL ? 20 : 18} color={DESIGN_TRIAL ? (danger ? c.danger : c.text) : c.onIcon} strokeWidth={2.4} />;
   const editRow = (
     <View style={{ flexDirection: "row", gap: 12, marginTop: DESIGN_TRIAL ? 0 : 12 }}>
-      <TileButton inline label={DESIGN_TRIAL ? "수정" : "수정하기"} icon={<Pencil size={DESIGN_TRIAL ? 18 : 24} color={c.menuEdit} />} onPress={() => { close(); onEdit(todo.id); }} />
-      <TileButton inline label={DESIGN_TRIAL ? "삭제" : "삭제하기"} icon={<Trash2 size={DESIGN_TRIAL ? 18 : 24} color={c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
+      <TileButton inline label={DESIGN_TRIAL ? "수정" : "수정하기"} icon={DESIGN_TRIAL ? <PenLine size={18} color={c.text} /> : <Pencil size={24} color={c.menuEdit} />} onPress={() => { close(); onEdit(todo.id); }} />
+      <TileButton inline label={DESIGN_TRIAL ? "삭제" : "삭제하기"} icon={<Trash2 size={DESIGN_TRIAL ? 18 : 24} color={DESIGN_TRIAL ? c.danger : c.menuDelete} />} onPress={() => { close(); deleteTodo(todo.id); notice("할 일을 지웠어요"); }} />
     </View>
   );
 
@@ -57,33 +61,33 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {inbox ? (
           <>
-            <SheetMenuRow half title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, today()); close(); notice("오늘 할 일로 옮겼어요"); }} />
-            <SheetMenuRow half title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
-            <SheetMenuRow half title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
-            <SheetMenuRow half title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
+            <SheetMenuRow half title="오늘하기" color="menuMove" icon={icon(g(ArrowDown, Sunrise))} onPress={() => { moveTodo(todo.id, today()); close(); notice("오늘 할 일로 옮겼어요"); }} />
+            <SheetMenuRow half title="날짜 바꾸기" color="menuMove" icon={icon(g(Redo2, CalendarClock))} onPress={() => setMode({ kind: "date", action: "move" })} />
+            <SheetMenuRow half title="메모" color="menuMemo" icon={icon(g(FileText, StickyNote))} onPress={() => setMode({ kind: "memo" })} />
+            <SheetMenuRow half title="정보 보기" color="menuInfo" icon={DESIGN_TRIAL ? icon(ScanText) : <Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
           </>
         ) : (
         <>
         {todo.isDone ? (
           <>
             {past ? (
-              <SheetMenuRow half title="오늘 또 하기" color="menuRepeat" icon={icon(ArrowDown)} onPress={() => { copyTodo(todo.id, now); close(); notice("오늘 할 일에 추가했어요"); }} />
+              <SheetMenuRow half title="오늘 또 하기" color="menuRepeat" icon={icon(g(ArrowDown, CopyPlus))} onPress={() => { copyTodo(todo.id, now); close(); notice("오늘 할 일에 추가했어요"); }} />
             ) : (
-              <SheetMenuRow half title="내일 또 하기" color="menuRepeat" icon={icon(ArrowRight)} onPress={() => { copyTodoTomorrow(todo.id); close(); notice("내일 할 일에 추가했어요"); }} />
+              <SheetMenuRow half title="내일 또 하기" color="menuRepeat" icon={icon(g(ArrowRight, CopyPlus))} onPress={() => { copyTodoTomorrow(todo.id); close(); notice("내일 할 일에 추가했어요"); }} />
             )}
-            <SheetMenuRow half title="다른 날 또 하기" color="menuRepeat" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "copy" })} />
+            <SheetMenuRow half title="다른 날 또 하기" color="menuRepeat" icon={icon(g(Redo2, CalendarPlus))} onPress={() => setMode({ kind: "date", action: "copy" })} />
           </>
         ) : past ? (
-          <SheetMenuRow half title="오늘하기" color="menuMove" icon={icon(ArrowDown)} onPress={() => { moveTodo(todo.id, now); close(); notice("오늘 할 일로 옮겼어요"); }} />
+          <SheetMenuRow half title="오늘하기" color="menuMove" icon={icon(g(ArrowDown, Sunrise))} onPress={() => { moveTodo(todo.id, now); close(); notice("오늘 할 일로 옮겼어요"); }} />
         ) : (
-          <SheetMenuRow half title="내일 하기" color="menuMove" icon={icon(ArrowRight)} onPress={() => { moveTodo(todo.id, addDays(day, 1)); close(); notice("내일로 옮겼어요"); }} />
+          <SheetMenuRow half title="내일 하기" color="menuMove" icon={icon(g(ArrowRight, SkipForward))} onPress={() => { moveTodo(todo.id, addDays(day, 1)); close(); notice("내일로 옮겼어요"); }} />
         )}
-        <SheetMenuRow half title="날짜 바꾸기" color="menuMove" icon={icon(Redo2)} onPress={() => setMode({ kind: "date", action: "move" })} />
+        <SheetMenuRow half title="날짜 바꾸기" color="menuMove" icon={icon(g(Redo2, CalendarClock))} onPress={() => setMode({ kind: "date", action: "move" })} />
         {!todo.isDone ? (
-          <SheetMenuRow half title="보관함으로 이동" color="menuMove" icon={icon(Archive)} onPress={() => { moveTodos([todo.id], null); close(); notice("보관함으로 옮겼어요"); }} />
+          <SheetMenuRow half title="보관함으로 이동" color="menuMove" icon={icon(g(Archive, Inbox))} onPress={() => { moveTodos([todo.id], null); close(); notice("보관함으로 옮겼어요"); }} />
         ) : null}
         {todo.isDone || todo.photoUri ? (
-          <SheetMenuRow half title={todo.photoUri ? "사진 바꾸기" : "사진 인증"} color="menuPhoto" icon={icon(Image)} onPress={async () => {
+          <SheetMenuRow half title={todo.photoUri ? "사진 바꾸기" : "사진 인증"} color="menuPhoto" icon={icon(g(Image, Camera))} onPress={async () => {
             close();
             try {
               const uri = await pickPhoto();
@@ -93,16 +97,16 @@ export function TodoSheets({ todoId, onClose, onEdit, notice, inbox, start = "me
             }
           }} />
         ) : null}
-        {todo.photoUri ? <SheetMenuRow half title="사진 지우기" color="menuDelete" icon={icon(Trash2)} onPress={() => { setTodoPhoto(todo.id, null); close(); notice("사진을 지웠어요"); }} /> : null}
+        {todo.photoUri ? <SheetMenuRow half title="사진 지우기" color="menuDelete" icon={icon(g(Trash2, ImageOff), true)} onPress={() => { setTodoPhoto(todo.id, null); close(); notice("사진을 지웠어요"); }} /> : null}
         {!past ? (
-          <SheetMenuRow half title="시간 알림" sub={todo.remindAt ? alarmLabel(todo.remindAt) : undefined} color="menuTime" icon={icon(Clock)} onPress={() => setMode({ kind: "alarm" })} />
+          <SheetMenuRow half title="시간 알림" sub={todo.remindAt ? alarmLabel(todo.remindAt) : undefined} color="menuTime" icon={icon(g(Clock, AlarmClock))} onPress={() => setMode({ kind: "alarm" })} />
         ) : null}
         {todo.date && !todo.routineId ? (
-          <SheetMenuRow half title="루틴 등록하기" color="menuMove" icon={icon(CircleCheck)} onPress={() => { close(); router.push(`/routines/new?category=${todo.categoryId}&from=${todo.id}` as never); }} />
+          <SheetMenuRow half title="루틴 등록하기" color="menuMove" icon={icon(g(CircleCheck, Repeat))} onPress={() => { close(); router.push(`/routines/new?category=${todo.categoryId}&from=${todo.id}` as never); }} />
         ) : null}
-        <SheetMenuRow half title="타이머 열기" color="menuTime" icon={icon(Clock)} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
-        <SheetMenuRow half title="메모" color="menuMemo" icon={icon(FileText)} onPress={() => setMode({ kind: "memo" })} />
-        <SheetMenuRow half title="정보 보기" color="menuInfo" icon={<Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
+        <SheetMenuRow half title="타이머 열기" color="menuTime" icon={icon(g(Clock, Timer))} onPress={() => { close(); router.push(`/timer/${todo.id}` as never); }} />
+        <SheetMenuRow half title="메모" color="menuMemo" icon={icon(g(FileText, StickyNote))} onPress={() => setMode({ kind: "memo" })} />
+        <SheetMenuRow half title="정보 보기" color="menuInfo" icon={DESIGN_TRIAL ? icon(ScanText) : <Info size={18} color={c.text} />} onPress={() => { close(); router.push(`/todo/${todo.id}` as never); }} />
         </>
         )}
         </View>

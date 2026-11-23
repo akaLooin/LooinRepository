@@ -1,6 +1,6 @@
 import { useInsets } from "../../theme";
-import { router, Slot, usePathname } from "expo-router";
-import { Activity, useEffect, useState } from "react";
+import { router, Slot, usePathname, useSegments } from "expo-router";
+import { Activity, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { CalendarTab } from "../../features/today/CalendarTab";
 import { HomeDash } from "../../features/today/HomeDash";
@@ -28,7 +28,13 @@ function DesignTabs() {
   const insets = useInsets();
   const path = usePathname();
   const unread = useUnreadConversations();
-  const fromPath = hostedOf(path);
+  // Only addresses inside the tabs decide the tab. Opening a screen above them (the timeline, a diary …) changes the
+  // address too; following it reset the tab to 홈 on the way back (user, 2026-11-23), so the last in-tab answer stays.
+  const segments = useSegments();
+  const inTabs = segments[0] === "(tabs)";
+  const lastInTabs = useRef<Hosted | null>(hostedOf(path));
+  if (inTabs) lastInTabs.current = hostedOf(path);
+  const fromPath = lastInTabs.current;
   // the tab shows at once on a tap; the address follows
   const [shown, setShown] = useState<Hosted | null>(fromPath);
   useEffect(() => { setShown(fromPath); }, [fromPath]); // a new route (e.g. back from 알림) decides again

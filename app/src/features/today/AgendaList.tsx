@@ -1,11 +1,14 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, BottomSheet, Button, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, VisibilityIcon, type DragHandle } from "../../components";
+import { AppText, BottomSheet, Button, ChevronDown, ChevronUp, Ellipsis, MoodMark, ReorderableList, TitleInput, TodoRow, useGlowColor, VisibilityIcon, type DragHandle } from "../../components";
+import { reactionsOnMine, type Received } from "../../data/social";
+import { ReactionLine } from "../social/FriendHome";
+import { smoothLayout } from "../../lib/motion";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { useFeature, useT } from "../../lib/appConfig";
 import { EventEditor, type EventDraft } from "../events/EventSheets";
-import { formatTime, usePrefs } from "../../data/prefs";
+import { formatTime, setPref, usePrefs } from "../../data/prefs";
 import {
   addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
 } from "../../data/store";
@@ -34,7 +37,16 @@ type Item = { kind: "event"; at: number; e: CalEvent; from: number; to: number }
  * category groups (강조 ones first, marked on the right; hold and drop in another group to move them there). Events
  * open their editor. Thin lines part the blocks. The diary of the day closes the list.
  */
-export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => void }) {
+/** Somewhere outside the list a to-do can be dropped on (달력: a date; see ReorderableList `drop`). */
+export type AgendaDrop = { prepare: () => void; at: (x: number, y: number) => string | null; onHover: (target: string | null) => void; onDropOn: (key: string, target: string) => void };
+
+export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
+  day: Day; notice: (m: string) => void;
+  /** drag a to-do onto a date of the calendar above (as in the copy app) */
+  drop?: AgendaDrop;
+  /** 할 일 선택 (list menu): the picked to-dos, shown with a tick; the calendar tab shows the action bar */
+  selecting?: Set<string> | null; onSelecting?: (s: Set<string> | null) => void;
+}) {
   const { c } = useTheme();
   const prefs = usePrefs();
   const db = useDB((d) => d);
@@ -46,6 +58,14 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const [listMenu, setListMenu] = useState<null | "menu" | "move" | "copy" | "delete">(null);
   const [editing, setEditing] = useState<EventDraft | null>(null);
   const ddays = useDB(selectDDays);
+  const pick = (id: string) => { const n = new Set(selecting ?? []); if (n.has(id)) n.delete(id); else n.add(id); onSelecting?.(n); };
+  // reactions friends left on my to-dos and diary around this day (shown under them, as in the copy app)
+  const [received, setReceived] = useState<Received>({ todos: {}, diaries: {} });
+  useEffect(() => {
+    let alive = true;
+    reactionsOnMine(addDays(day, -7), addDays(day, 7)).then((r) => { if (alive) setReceived(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [day]);
   // wording and shown parts from the admin app
   const tx = useT();
   const showDDays = useFeature("agenda.ddays"), showDiary = useFeature("agenda.diaryCard"), showCount = useFeature("agenda.groupCount");
@@ -70,11 +90,14 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
   const pending = categories.filter((x) => !x.endedAt).flatMap((cat) => manualRoutinesOn(db, day, cat.id).map((r) => ({ r, cat })));
   type Cat = (typeof categories)[number];
   type GroupRow = { kind: "head" | "foot"; key: string; cat: Cat } | { kind: "todo"; key: string; cat: Cat; t: Todo };
+  // fold a category by tapping its title (user, 2026-11-23; the copy app's 카테고리 접기 펼치기)
+  const folded = new Set(prefs.collapsedCategoryIds);
+  const toggleFold = (id: string) => { smoothLayout(); setPref("collapsedCategoryIds", folded.has(id) ? prefs.collapsedCategoryIds.filter((x) => x !== id) : [...prefs.collapsedCategoryIds, id]); };
   const groupRows: GroupRow[] = categories
     .filter((cat) => anytime.some((t) => t.categoryId === cat.id) || pending.some((x) => x.cat.id === cat.id))
     .flatMap((cat) => [
       { kind: "head" as const, key: `h:${cat.id}`, cat },
-      ...anytime.filter((t) => t.categoryId === cat.id).map((t) => ({ kind: "todo" as const, key: t.id, cat, t })),
+      ...(folded.has(cat.id) ? [] : anytime.filter((t) => t.categoryId === cat.id).map((t) => ({ kind: "todo" as const, key: t.id, cat, t }))),
       { kind: "foot" as const, key: `f:${cat.id}`, cat },
     ]);
   // a group title of our own (not the original's pill): a short colour bar, the name in its colour, done/all on the right
@@ -82,13 +105,17 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     const col = visibleOn(cat.color, c.bg, c.text);
     const list = anytime.filter((t) => t.categoryId === cat.id);
     return (
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 34, marginTop: 6 }} accessibilityRole="header" accessibilityLabel={`${cat.title} 카테고리`}>
+      // tap: fold or open the group; hold: edit the category (as the copy app's category title)
+      <Pressable onPress={() => toggleFold(cat.id)} onLongPress={() => router.push(`/categories/${cat.id}` as never)} delayLongPress={450}
+        accessibilityRole="button" accessibilityLabel={`${cat.title} 카테고리, ${folded.has(cat.id) ? "접힘" : "펼침"}`} accessibilityHint="눌러서 접기·펼치기, 길게 눌러 카테고리 편집"
+        style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 34, marginTop: 6 }}>
         <View style={{ width: 3, height: 14, borderRadius: 2, backgroundColor: col }} />
         <AppText variant="helper" weight={700} raw={col} numberOfLines={1} style={{ flex: 1 }}>{cat.title}</AppText>
         {/* who can see this category, just left of the count (user) */}
         <VisibilityIcon value={cat.visibility} size={13} color={c.textMuted} />
         {list.length && showCount ? <AppText variant="small" color="textMuted">{`${list.filter((t) => t.isDone).length}/${list.length}`}</AppText> : null}
-      </View>
+        {folded.has(cat.id) ? <ChevronDown size={16} color={c.textMuted} /> : <ChevronUp size={16} color={c.textMuted} />}
+      </Pressable>
     );
   };
   const parts: [string, (m: number) => boolean][] = [[tx("agenda.morning"), (m) => m < 12 * 60], [tx("agenda.afternoon"), (m) => m >= 12 * 60 && m < 18 * 60], [tx("agenda.evening"), (m) => m >= 18 * 60]];
@@ -110,11 +137,13 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         done={t.isDone}
         color={cat?.color ?? c.accent}
         important={t.isImportant}
-        onImportant={() => notice(toggleImportant(t.id) ? "중요한 날로 표시했어요" : "중요한 날 표시를 풀었어요")}
-        onToggle={() => toggleTodo(t.id)}
-        onPress={() => { setSheetStart("menu"); setSheetTodo(materialize(t.id)); }}
-        onMemoPress={() => { setSheetStart("memo"); setSheetTodo(materialize(t.id)); }}
-        onAlarmPress={() => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
+        onImportant={selecting ? undefined : () => notice(toggleImportant(t.id) ? "중요한 날로 표시했어요" : "중요한 날 표시를 풀었어요")}
+        onToggle={() => (selecting ? pick(t.id) : toggleTodo(t.id))}
+        onPress={() => { if (selecting) return pick(t.id); setSheetStart("menu"); setSheetTodo(materialize(t.id)); }}
+        onMemoPress={selecting ? undefined : () => { setSheetStart("memo"); setSheetTodo(materialize(t.id)); }}
+        onAlarmPress={selecting ? undefined : () => { setSheetStart("alarm"); setSheetTodo(materialize(t.id)); }}
+        selected={selecting?.has(t.id)}
+        below={received.todos[t.id]?.length ? <ReactionLine list={received.todos[t.id]} /> : undefined}
         onDoubleTap={prefs.doubleTapToEdit ? () => { const id = materialize(t.id); setRenaming({ id, title: t.title }); } : undefined}
         small={prefs.smallTodoText} smallMemo={prefs.smallTodoMemo} smallPhoto={prefs.smallTodoPhoto}
         right={mark(t)} {...drag} />
@@ -146,6 +175,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
     if (a === "otherDay") setListMenu("move");
     if (a === "copyAll") setListMenu("copy");
     if (a === "deleteAll") setListMenu("delete");
+    if (a === "select") onSelecting?.(new Set());
   };
 
   return (
@@ -196,9 +226,12 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         </Pressable>
       ))}
       {/* to-dos in category groups; hold to move, dropped inside another group it joins that category (user) */}
-      <ReorderableList items={groupRows} keyOf={(r) => r.key} labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)} fixed={(r) => r.kind !== "todo"}
-        onReorder={(keys, moved) => {
+      <ReorderableList items={groupRows} keyOf={(r) => r.key} labelOf={(r) => (r.kind === "todo" ? r.t.title : r.cat.title)} fixed={(r) => r.kind !== "todo" || !!selecting}
+        drop={drop}
+        onReorder={(rawKeys, moved) => {
           const owner = (k: string) => (k.startsWith("h:") || k.startsWith("f:") ? k.slice(2) : null);
+          // to-dos hidden in folded groups are not in the list: put them back after their title first
+          const keys = rawKeys.flatMap((k) => (k.startsWith("h:") && folded.has(k.slice(2)) ? [k, ...anytime.filter((t) => t.categoryId === k.slice(2)).map((t) => t.id)] : [k]));
           const before = anytime.find((t) => t.id === moved)?.categoryId;
           const entries = arrangeByHeaders(keys, owner);
           const joined = entries.find((e) => e.id === moved)?.categoryId;
@@ -210,7 +243,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
           if (r.kind === "head") return groupHead(r.cat);
           return (
             <View style={{ paddingBottom: 6 }}>
-              {pending.filter((x) => x.cat.id === r.cat.id).map(({ r: rt }) => <PendingRoutineRow key={rt.id} title={rt.title} onAdd={() => addRoutineTodo(rt.id, day)} />)}
+              {folded.has(r.cat.id) ? null : pending.filter((x) => x.cat.id === r.cat.id).map(({ r: rt }) => <PendingRoutineRow key={rt.id} title={rt.title} onAdd={() => addRoutineTodo(rt.id, day)} />)}
             </View>
           );
         }} />
@@ -222,6 +255,7 @@ export function AgendaList({ day, notice }: { day: Day; notice: (m: string) => v
         style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 22, paddingVertical: 12, paddingHorizontal: 16, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
         {diary?.emoji ? <MoodMark value={diary.emoji} size={26} /> : <AppText variant="bodyLg">📔</AppText>}
         <AppText variant="body" color={diary ? "text" : "textMuted"} numberOfLines={1} style={{ flex: 1 }}>{diary ? diary.body || "오늘의 기분을 남겼어요" : tx("agenda.diary")}</AppText>
+        {diary && received.diaries[diary.id]?.length ? <ReactionLine list={received.diaries[diary.id].slice(-3)} size={24} /> : null}
       </Pressable> : null}
 
       <TodoSheets todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setRenaming({ id, title: db.todos.find((x) => x.id === id)?.title ?? "" })} notice={notice} />

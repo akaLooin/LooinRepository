@@ -56,20 +56,20 @@ const { chromium } = require("playwright");
   // To Do is in category groups (no tags); hold a to-do and drop it inside another group: it joins that category
   const groups = () => p.evaluate(() => {
     const out = {}; let cur = "";
-    for (const el of document.querySelectorAll('[aria-label$=" 카테고리"], [role="checkbox"]')) {
+    for (const el of document.querySelectorAll('[aria-label*=" 카테고리, "], [role="checkbox"]')) {
       if (!el.offsetParent) continue;
       const l = el.getAttribute("aria-label");
-      if (l.endsWith(" 카테고리")) cur = l.replace(/ 카테고리$/, ""); else out[l.split(",")[0]] = cur;
+      if (/ 카테고리, (접힘|펼침)$/.test(l)) cur = l.replace(/ 카테고리, (접힘|펼침)$/, ""); else out[l.split(",")[0]] = cur;
     }
     return out;
   });
   const g0 = await groups();
   r.groupsBefore = g0;
   r.noTags = (await p.getByRole("button", { name: /의 카테고리 .*, 바꾸기$/ }).count()) === 0;
-  const heads = await p.locator('[aria-label$=" 카테고리"]').filter({ visible: true }).all();
+  const heads = await p.locator('[aria-label*=" 카테고리, "]').filter({ visible: true }).all();
   r.groupHeads = heads.length;
   // bring the group titles and the to-do into view first (the list scrolls under the input bar)
-  await p.locator('[aria-label$=" 카테고리"]').filter({ visible: true }).first().evaluate((el) => el.scrollIntoView({ block: "start" })); await p.waitForTimeout(400);
+  await p.locator('[aria-label*=" 카테고리, "]').filter({ visible: true }).first().evaluate((el) => el.scrollIntoView({ block: "start" })); await p.waitForTimeout(400);
   const from = await p.getByText("다른 칸 테스트", { exact: true }).filter({ visible: true }).first().boundingBox();
   const to = await heads[0].boundingBox();
   r.dragBoxes = { from: Math.round(from.y), to: Math.round(to.y) };
@@ -79,7 +79,7 @@ const { chromium } = require("playwright");
   await p.mouse.up(); await p.waitForTimeout(700);
   const g1 = await groups();
   r.groupsAfter = g1;
-  r.dragJoined = g0["다른 칸 테스트"] !== g1["다른 칸 테스트"] && g1["다른 칸 테스트"] === (await heads[0].getAttribute("aria-label")).replace(/ 카테고리$/, "");
+  r.dragJoined = g0["다른 칸 테스트"] !== g1["다른 칸 테스트"] && g1["다른 칸 테스트"] === (await heads[0].getAttribute("aria-label")).replace(/ 카테고리, (접힘|펼침)$/, "");
   // the picked day is a white cell, today a grey one
   const d2 = new Date(now); d2.setDate(now.getDate() === 1 ? 2 : 1);
   await p.getByLabel(`${d2.getMonth() + 1}월 ${d2.getDate()}일`, { exact: true }).first().click(); await p.waitForTimeout(400);

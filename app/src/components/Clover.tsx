@@ -2,7 +2,8 @@ import { useId } from "react";
 import { Animated, Pressable, View } from "react-native";
 import { Fire, useGlowColor, usePulse } from "./Highlight";
 import { usePrefs } from "../data/prefs";
-import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
+import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Mask, Path, Rect, Stop } from "react-native-svg";
+import { DESIGN_TRIAL } from "../lib/variant";
 /**
  * The four-point star (the design trial's look) is the shape in both apps since 2026-11-21 (user: "디자인 앱으로 정식
  * 픽스"). The clover drawing below stays only as a fallback for STAR = false.
@@ -128,6 +129,44 @@ function Glow({ size, bleed }: { size: number; bleed: number }) {
   );
 }
 
+/**
+ * 메인 앱 (user, 2026-11-23): only the outside glows, and the star's own edge is the bright line (no extra ring and
+ * no dark gap). `under` sits below the star: the soft glow, masked so nothing shows inside the shape. `edge` sits
+ * above it: the star's outline itself in the glow colour. Both pulse together.
+ */
+function OuterGlow({ size, bleed, part, id }: { size: number; bleed: number; part: "under" | "edge"; id: string }) {
+  const neon = useGlowColor();
+  const opacity = usePulse().interpolate({ inputRange: [0, 1], outputRange: part === "edge" ? [0.75, 1] : [0.45, 1] });
+  const m = size * 0.3 + bleed;
+  const w = size + 2 * m;
+  const d = starPath(size);
+  return (
+    <Animated.View pointerEvents="none" style={{ position: "absolute", left: -m, top: -m, width: w, height: w, opacity }}>
+      <Svg width={w} height={w}>
+        {part === "under" ? (
+          <>
+            <Defs>
+              <Mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={w} height={w}>
+                <Rect x={0} y={0} width={w} height={w} fill="#fff" />
+                <G x={m} y={m}><Path d={d} fill="#000" /></G>
+              </Mask>
+            </Defs>
+            <G mask={`url(#${id})`}>
+              <G x={m} y={m}>
+                <Path d={d} fill="none" stroke={neon} strokeWidth={size * 0.42} strokeOpacity={0.22} strokeLinejoin="round" />
+                <Path d={d} fill="none" stroke={neon} strokeWidth={size * 0.24} strokeOpacity={0.45} strokeLinejoin="round" />
+                <Path d={d} fill="none" stroke={neon} strokeWidth={size * 0.12} strokeOpacity={0.85} strokeLinejoin="round" />
+              </G>
+            </G>
+          </>
+        ) : (
+          <G x={m} y={m}><Path d={d} fill="none" stroke={neon} strokeWidth={size * 0.07} strokeLinejoin="round" /></G>
+        )}
+      </Svg>
+    </Animated.View>
+  );
+}
+
 export function Clover({
   state,
   size = tokens.size.cloverCalendar,
@@ -193,8 +232,10 @@ export function Clover({
       body = <Lobes size={size} fill={fill(state.color)} />;
       break;
     case "todoOpen":
-      // grey until done, as in the original; the design trial draws an outline star (the user's picture)
-      body = STAR ? <Path d={starPath(size, size * 0.04)} fill="none" stroke={empty} strokeWidth={size * 0.08} strokeLinejoin="round" />
+      // grey until done, as in the original; the copy app draws an outline star (the user's picture); the main app
+      // a filled grey star (user, 2026-11-23)
+      body = DESIGN_TRIAL ? <Lobes size={size} fill={empty} />
+        : STAR ? <Path d={starPath(size, size * 0.04)} fill="none" stroke={empty} strokeWidth={size * 0.08} strokeLinejoin="round" />
         : <Lobes size={size} fill={empty} />;
       break;
     case "done":
@@ -233,11 +274,18 @@ export function Clover({
 
   const shape = (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-      {glow ? <Glow size={size} bleed={bleed} /> : null}
+      {glow ? (DESIGN_TRIAL && STAR ? <OuterGlow size={size} bleed={bleed} part="under" id={`${clipId}m`} /> : <Glow size={size} bleed={bleed} />) : null}
+      {/* main app: the sparks rise behind the star, so only the outside shines (user, 2026-11-23) */}
+      {glow && DESIGN_TRIAL && STAR ? (
+        <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: size, height: size }}>
+          <Fire size={size * 0.16} count={7} rise={size * 1.1} />
+        </View>
+      ) : null}
       <Svg width={size + 2 * bleed} height={size + 2 * bleed} pointerEvents="none" style={{ position: "absolute", left: -bleed, top: -bleed }}>
         <G x={bleed} y={bleed}>{body}</G>
       </Svg>
-      {glow ? (
+      {glow && DESIGN_TRIAL && STAR ? <OuterGlow size={size} bleed={bleed} part="edge" id={`${clipId}e`} /> : null}
+      {glow && !(DESIGN_TRIAL && STAR) ? (
         <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0, width: size, height: size }}>
           <Fire size={size * 0.16} count={7} rise={size * 1.1} />
         </View>

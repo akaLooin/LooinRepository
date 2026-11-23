@@ -81,7 +81,8 @@ export function SheetMenuRow({ title, icon, color, onPress, half, sub }: Base & 
     return (
       <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={sub ? `${title} ${sub}` : title}
         style={({ pressed }) => ({ width: "25%", alignItems: "center", gap: 6, paddingVertical: 10, borderRadius: tokens.radius.md, backgroundColor: pressed ? c.surfaceButton : "transparent" })}>
-        <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: c[color], alignItems: "center", justifyContent: "center" }}>{icon}</View>
+        {/* one soft tile colour for every action, red-tinted only for deleting (not the original's colour per action) */}
+        <View style={{ width: 46, height: 46, borderRadius: 15, backgroundColor: color === "menuDelete" ? c.danger + "26" : c.surfaceStrong, alignItems: "center", justifyContent: "center" }}>{icon}</View>
         <AppText variant="small" weight={600} center numberOfLines={1}>{title}</AppText>
         {sub ? <AppText variant="small" color="textMuted" center numberOfLines={1} style={{ marginTop: -4 }}>{sub}</AppText> : null}
       </Pressable>
