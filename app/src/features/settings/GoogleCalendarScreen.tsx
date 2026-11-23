@@ -111,7 +111,11 @@ export function GoogleCalendarScreen() {
               강조한 일정은 구글에서 제목 맨 앞에 ⭐가 붙고, 구글에서 제목 맨 앞에 ⭐ 또는 ★를 붙이면 립마크에서 강조돼요.
             </AppText>
 
-            {button("지금 맞추기", () => run("sync", syncGoogle, "구글 캘린더와 맞췄어요"), "main", "sync")}
+            {button("지금 맞추기", () => run("sync", async () => {
+              const r = await syncGoogle();
+              // what Google refused (if anything) is said here, not passed over
+              if (r.error) throw new GoogleError(r.error);
+            }, "구글 캘린더와 맞췄어요"), "main", "sync")}
             {/* a new permission (calendar labels, 2026-11-23) without disconnecting: Google's page again, everything kept */}
             {button("구글 권한 다시 받기", () => run("connect", connectGoogle), "plain", "connect")}
             {button("연결 끊기", () => setAsking(true), "danger", "off")}

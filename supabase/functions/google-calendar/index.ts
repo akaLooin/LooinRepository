@@ -231,7 +231,20 @@ const toRowFields = (f: EventFields) => ({ ...f, start_time: f.all_day ? null : 
 
 async function syncUser(db: SupabaseClient, uid: string) {
   const token = await accessToken(db, uid);
-  const stats = { pulled: 0, pushed: 0, deleted: 0 };
+  const stats = { pulled: 0, pushed: 0, deleted: 0, failed: 0 };
+  let firstError: string | null = null;
+  // a write Google refuses is no longer passed over in silence (user, 2026-11-23: a colour change did not reach
+  // Google): when it is about the label, the same change goes again with the old colorId only; otherwise the reason
+  // is kept for 설정 → 구글 캘린더
+  const write = async (path: string, method: "PATCH" | "POST", body: GEvent) => {
+    let r = await g(token, path, { method, body: JSON.stringify(body) });
+    if (!r.ok && r.status === 400 && "eventLabelId" in body) {
+      const { eventLabelId: _x, ...rest } = body;
+      r = await g(token, path, { method, body: JSON.stringify(rest) });
+    }
+    if (!r.ok) { stats.failed++; firstError ??= `구글에 못 올렸어요 (${r.status} ${String(r.body?.error?.message ?? "").slice(0, 120)})`; }
+    return r;
+  };
 
   // 1. calendars
   const list: GEvent[] = [];
@@ -345,7 +358,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
         const mv = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(gid)}/move?destination=${enc(target.calendar_id)}`, { method: "POST" });
         if (mv.ok) gid = mv.body.id;
       }
-      const r = await g(token, `/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, { method: "PATCH", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color, exceptionDays(links, l), labels.get(target.calendar_id))) });
+      const r = await write(`/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, "PATCH", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, exceptionDays(links, l), labels.get(target.calendar_id)));
       if (r.ok) {
         await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: e.updated_at }).eq("event_id", e.id);
         stats.pushed++;
@@ -353,15 +366,15 @@ async function syncUser(db: SupabaseClient, uid: string) {
     } else if (!e.deleted_at && e.google_calendar_id && new Date(e.created_at ?? 0) > connectedAt) {
       const target = writable(e.google_calendar_id);
       if (!target) continue;
-      const r = await g(token, `/calendars/${enc(target.calendar_id)}/events`, { method: "POST", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id))) });
+      const r = await write(`/calendars/${enc(target.calendar_id)}/events`, "POST", toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id)));
       if (r.ok) {
         await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: e.updated_at });
         stats.pushed++;
       }
     }
   }
-  await db.from("google_accounts").update({ last_sync_at: new Date().toISOString(), last_error: null }).eq("user_id", uid);
-  return { ok: true, ...stats, changed: stats.pulled > 0 };
+  await db.from("google_accounts").update({ last_sync_at: new Date().toISOString(), last_error: firstError }).eq("user_id", uid);
+  return { ok: true, ...stats, changed: stats.pulled > 0, error: firstError };
 }
 
 /**

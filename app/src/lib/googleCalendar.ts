@@ -73,7 +73,7 @@ export async function googleColors() {
 let lastSync = 0;
 let syncing: Promise<unknown> | null = null;
 /** Both ways now: the app's changes first (the usual sync), then the server with Google, then pull what came. */
-export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number }> {
+export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number; failed?: number; error?: string | null }> {
   if (syncing) await syncing;
   const run = (async () => {
     await syncNow();
@@ -85,7 +85,7 @@ export async function syncGoogle(): Promise<{ pulled?: number; pushed?: number }
     return r;
   })();
   syncing = run;
-  try { return (await run) as { pulled?: number; pushed?: number }; } finally { syncing = null; }
+  try { return (await run) as { pulled?: number; pushed?: number; failed?: number; error?: string | null }; } finally { syncing = null; }
 }
 
 export async function disconnectGoogle() {
@@ -102,10 +102,20 @@ let started = false;
 export function startGoogleAutoSync() {
   if (started) return;
   started = true;
-  onSynced(({ eventsSent }) => {
-    if (!getPrefs().googleLinked || syncing) return;
-    if (!eventsSent && Date.now() - lastSync < 3 * 60000) return;
+  // a change made while a Google sync runs goes right after it, not at the next timer (user, 2026-11-23: a colour
+  // changed in 립마크 did not reach Google at once)
+  let again = false;
+  const run = () => {
     lastSync = Date.now();
-    syncing = call("sync").then((r) => (r.changed ? syncNow() : undefined)).catch(() => {}).finally(() => { syncing = null; });
+    syncing = call("sync").then((r) => (r.changed ? syncNow() : undefined)).catch(() => {}).finally(() => {
+      syncing = null;
+      if (again) { again = false; run(); }
+    });
+  };
+  onSynced(({ eventsSent }) => {
+    if (!getPrefs().googleLinked) return;
+    if (syncing) { if (eventsSent) again = true; return; }
+    if (!eventsSent && Date.now() - lastSync < 3 * 60000) return;
+    run();
   });
 }
