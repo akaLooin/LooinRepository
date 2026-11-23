@@ -167,7 +167,7 @@ const hex = (c: string | undefined) => (c && /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toU
  * `labels`: the calendar's event labels (Google's newer colours, labelProperties.eventLabels), label id → colour.
  * An event's label wins over its old colorId, which wins over the calendar's colour.
  */
-export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string>, calendarColor: string, labels: Record<string, string> = {}): { fields: EventFields; lossy: boolean } | null {
+export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string>, calendarColor: string, labels: Record<string, string> = {}, defaultReminder: number | null = null): { fields: EventFields; lossy: boolean } | null {
   if (g.status === "cancelled" || !g.start) return null;
   const allDay = !!g.start.date;
   let startDate: Day, endDate: Day, startTime: string | null = null, endTime: string | null = null;
@@ -184,7 +184,9 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
     if (endDate === startDate && endTime <= startTime) endTime = startTime === "23:59" ? "24:00" : `${pad(Math.min(23, Number(startTime.slice(0, 2)) + 1))}:${startTime.slice(3)}`;
   }
   const rec = fromRecurrence(g.recurrence, startDate, allDay, g.start.timeZone || tz);
+  // the alarm as Google really rings it: the event's own, or (useDefault) the calendar's default
   const popup = (g.reminders?.overrides ?? []).find((o: { method: string; minutes: number }) => o.method === "popup");
+  const ring: number | null = g.reminders?.useDefault ? defaultReminder : popup ? popup.minutes : null;
   const star = starOff(String(g.summary ?? ""));
   return {
     fields: {
@@ -194,7 +196,7 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
       start_date: startDate, end_date: endDate, all_day: allDay, start_time: startTime, end_time: endTime,
       color: hex(labels[g.eventLabelId]) ?? hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2",
       memo: stripHtml(String(g.description ?? "")).trim().slice(0, 2000),
-      alarm_minutes: !allDay && popup && !g.reminders?.useDefault ? Math.min(40320, Math.max(0, popup.minutes)) : null,
+      alarm_minutes: alarmFromGoogle(ring, allDay),
       repeat: rec.repeat, skip_dates: rec.skip,
     },
     lossy: rec.lossy,
@@ -224,11 +226,31 @@ export function toGoogle(e: EventFields, tz: string, palette: Record<string, str
   body.recurrence = rec ?? [];
   // the calendar's own colour: no label, no colorId; a label's colour: that label (and the old colorId nearest to it,
   // as Google keeps both); any other colour: the nearest old colorId
+  // a label's colour goes as that label only: sending the old colorId beside it made Google show the old, nearest
+  // colour instead (user, 2026-11-23). `__fallbackColorId` is what to send if Google refuses the label (taken off
+  // before sending).
   const label = sameColor(e.color, calendarColor) ? undefined : Object.entries(labels).find(([, c]) => sameColor(e.color, c))?.[0];
+  const nearest = sameColor(e.color, calendarColor) ? null : nearestColorId(e.color, palette);
   body.eventLabelId = label ?? null;
-  body.colorId = sameColor(e.color, calendarColor) ? null : nearestColorId(e.color, palette);
-  body.reminders = !e.all_day && e.alarm_minutes != null ? { useDefault: false, overrides: [{ method: "popup", minutes: e.alarm_minutes }] } : { useDefault: true };
+  body.colorId = label ? null : nearest;
+  if (label) body.__fallbackColorId = nearest;
+  // 알림 없음 = no alarm in Google either (it was "the calendar's default", so a default alarm appeared, user)
+  const ring = alarmToGoogle(e.alarm_minutes, e.all_day);
+  body.reminders = { useDefault: false, overrides: ring == null ? [] : [{ method: "popup", minutes: ring }] };
   return body;
+}
+
+/**
+ * Alarms: the app counts minutes before the start (an all-day event: before 9:00 of its first day); Google counts
+ * minutes before the start (an all-day event: before 00:00), at most four weeks.
+ */
+export function alarmFromGoogle(minutes: number | null | undefined, allDay: boolean): number | null {
+  if (minutes == null) return null;
+  return Math.min(40320, Math.max(0, allDay ? minutes + 540 : minutes));
+}
+export function alarmToGoogle(minutes: number | null | undefined, allDay: boolean): number | null {
+  if (minutes == null) return null;
+  return Math.min(40320, Math.max(0, allDay ? minutes - 540 : minutes));
 }
 
 const rgb = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));

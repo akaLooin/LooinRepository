@@ -104,6 +104,23 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     assert.equal(fromGoogle({ summary: "x", start: { date: "2026-11-24" }, end: { date: "2026-11-25" }, conferenceData: { entryPoints: [{ entryPointType: "phone", uri: "tel:1" }, { entryPointType: "video", uri: "https://zoom.us/j/1" }] } }, TZ, GOOGLE_EVENT_COLORS, "#1")!.fields.meet_link, "https://zoom.us/j/1");
   });
 
+  await t("구글 캘린더: 알림 both ways (none means none, the calendar's default is shown as it rings, all-day counted from 9:00)", () => {
+    const none = toGoogle({ ...base, alarm_minutes: null }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2");
+    assert.deepEqual(none.reminders, { useDefault: false, overrides: [] }, "알림 없음 sends no alarm, not the calendar's default");
+    const ev = { summary: "x", start: { dateTime: "2026-11-24T19:00:00+09:00" }, end: { dateTime: "2026-11-24T20:00:00+09:00" } };
+    assert.equal(fromGoogle({ ...ev, reminders: { useDefault: true } }, TZ, GOOGLE_EVENT_COLORS, "#1", {}, 30)!.fields.alarm_minutes, 30, "a default alarm shows as it rings");
+    assert.equal(fromGoogle({ ...ev, reminders: { useDefault: false, overrides: [] } }, TZ, GOOGLE_EVENT_COLORS, "#1", {}, 30)!.fields.alarm_minutes, null);
+    const allDay = { ...base, all_day: true, start_time: null, end_time: null, alarm_minutes: 1440 }; // the day before, 9:00
+    const g = toGoogle(allDay, TZ, GOOGLE_EVENT_COLORS, "#4A90E2");
+    assert.deepEqual(g.reminders.overrides, [{ method: "popup", minutes: 900 }]);
+    assert.equal(fromGoogle(g, TZ, GOOGLE_EVENT_COLORS, "#4A90E2")!.fields.alarm_minutes, 1440);
+  });
+
+  await t("구글 캘린더: a label colour goes as the label only (the old colorId beside it showed another colour)", () => {
+    const g = toGoogle({ ...base, color: "#D81B60" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2", undefined, { "lab-cherry": "#D81B60" });
+    assert.equal(g.eventLabelId, "lab-cherry"); assert.equal(g.colorId, null); assert.ok(g.__fallbackColorId, "a fallback if Google refuses the label");
+  });
+
   await t("구글 캘린더: the signed note of who is connecting", async () => {
     const s = await signState("user-1", "secret", 1000);
     assert.equal(await readState(s, "secret", 2000), "user-1");
