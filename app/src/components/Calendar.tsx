@@ -61,13 +61,14 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * breathes with the other highlights (user, 2026-11-23). The halo is a drawing (a radial gradient), not a text
  * shadow: Android drew a text's shadow only inside a box round the text, so the glow ended in a square.
  */
-const HALO_W = 64, HALO_H = 52;
-function DDayNumber({ label }: { label: string }) {
+// small enough to stay clear of the star above it (user, 2026-11-23)
+const HALO_W = 44, HALO_H = 32;
+function DDayNumber({ label, picked }: { label: string; picked: boolean }) {
   const { c } = useTheme();
   const id = useId().replace(/:/g, "");
   const pulse = usePulse();
   const glow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
-  const grow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.1] });
+  const grow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] });
   return (
     <View style={{ alignItems: "center", justifyContent: "center" }}>
       <Animated.View pointerEvents="none" style={{ position: "absolute", width: HALO_W, height: HALO_H, opacity: glow, transform: [{ scale: grow }] }}>
@@ -83,7 +84,8 @@ function DDayNumber({ label }: { label: string }) {
           <Ellipse cx={HALO_W / 2} cy={HALO_H / 2} rx={HALO_W / 2} ry={HALO_H / 2} fill={`url(#dd${id})`} />
         </Svg>
       </Animated.View>
-      <AppText variant="date" weight={800} color="text"
+      {/* on the picked (white) box the digits take the box's text colour, or white digits vanish in dark mode */}
+      <AppText variant="date" weight={800} color={picked ? "onSelected" : "text"}
         style={{ includeFontPadding: false, textAlignVertical: "center", textShadowOffset: { width: 0, height: 0 }, textShadowColor: c.dday, textShadowRadius: 3 }}>{label}</AppText>
     </View>
   );
@@ -116,7 +118,7 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
         accessibilityLabel={dday ? "디데이" : undefined}>
         {dday && boxed
           // 메인 앱 (user, 2026-11-23): on a D-day the number's own outline glows red, no circle
-          ? <DDayNumber label={label} />
+          ? <DDayNumber label={label} picked={ring} />
           : <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>}
       </View>
     </>
