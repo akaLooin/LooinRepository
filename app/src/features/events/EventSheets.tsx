@@ -9,6 +9,7 @@ import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCatego
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
 import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, REPEAT_LABELS, repeatLabel, toMinutes, type CalEvent, type EventRepeat } from "../../lib/events";
 import { DESIGN_TRIAL } from "../../lib/variant";
+import { GOOGLE_COLORS, isGoogleColor } from "../../lib/googleColors";
 import { fontFamily, onColor, tokens, useTheme } from "../../theme";
 
 export type EventDraft = Omit<CalEvent, "id"> & { id?: string };
@@ -55,6 +56,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     onSaved(`${dayLabel(e.startDate)}에 '${e.title.trim()}'을(를) 저장했어요`);
   };
   const cat = eventCats.find((k) => k.id === e.categoryId);
+  const gcal = e.googleCalendarId ? prefs.googleCalendars.find((k) => k.id === e.googleCalendarId) ?? { id: e.googleCalendarId, summary: "구글 캘린더", color: e.color } : null;
   const googleLabel = e.googleCalendarId ? `구글 · ${prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.summary ?? "캘린더"}` : "립마크에만";
   const pickCat = (id: string | null) => { const k = eventCats.find((x) => x.id === id); put(k ? { categoryId: k.id, color: k.color } : { categoryId: null }); back(); };
   const setRepeat = (kind: EventRepeat["kind"] | null) =>
@@ -122,6 +124,31 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
           const hm = fromMinutes(h * 60 + m);
           if (sub === "startTime") setStartTime(hm); else put({ endTime: hm });
         }} />
+        <Button kind="sheetPrimary" label="완료" onPress={back} />
+      </View>
+    );
+  } else if (sub === "color" && gcal) {
+    // going to Google (user, 2026-11-23): only the colours Google Calendar has, so what shows here is what shows there
+    const option = (hex: string, name: string) => {
+      const on = e.color.toUpperCase() === hex.toUpperCase();
+      return (
+        <Pressable key={name} onPress={() => put({ color: hex })} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`색 ${name}`}
+          style={{ width: "25%", alignItems: "center", gap: 4, paddingVertical: 6 }}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: hex, alignItems: "center", justifyContent: "center", borderWidth: on ? 3 : 0, borderColor: c.text }}>
+            {on ? <Check size={18} color={onColor(hex)} strokeWidth={3} /> : null}
+          </View>
+          <AppText variant="small" color={on ? "text" : "textMuted"} weight={on ? 700 : 400} numberOfLines={1}>{name}</AppText>
+        </Pressable>
+      );
+    };
+    body = (
+      <View style={{ gap: 14 }}>
+        <AppText variant="bodyLg" weight={700}>색</AppText>
+        <AppText variant="small" color="textMuted">구글 캘린더에 올리는 일정이라 구글 캘린더에 있는 색만 고를 수 있어요</AppText>
+        <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          {option(gcal.color, "캘린더 색")}
+          {GOOGLE_COLORS.map((k) => option(k.hex, k.name))}
+        </View>
         <Button kind="sheetPrimary" label="완료" onPress={back} />
       </View>
     );
@@ -218,7 +245,12 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   } else if (sub === "google") {
     // 구글 캘린더 (user, 2026-11-23): picked for each event; 립마크에만 keeps it out of Google (and takes it off if it was there)
     const choice = (id: string | null, label: string, col?: string) => (
-      <Pressable key={id ?? "none"} onPress={() => { put({ googleCalendarId: id }); back(); }} accessibilityRole="radio" accessibilityState={{ checked: (e.googleCalendarId ?? null) === id }} accessibilityLabel={label}
+      <Pressable key={id ?? "none"} onPress={() => {
+        // going to a Google calendar with a colour Google does not have: the calendar's own colour instead
+        const cal = prefs.googleCalendars.find((k) => k.id === id);
+        put(cal && !isGoogleColor(e.color, cal.color) ? { googleCalendarId: id, color: cal.color } : { googleCalendarId: id });
+        back();
+      }} accessibilityRole="radio" accessibilityState={{ checked: (e.googleCalendarId ?? null) === id }} accessibilityLabel={label}
         style={{ flexDirection: "row", alignItems: "center", gap: 12, height: 50 }}>
         <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: col ?? "transparent", borderWidth: col ? 0 : 1.5, borderColor: c.textMuted }} />
         <AppText variant="bodyLg" style={{ flex: 1 }}>{label}</AppText>

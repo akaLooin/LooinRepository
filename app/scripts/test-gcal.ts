@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { starOff, starOn, fromGoogle, fromRecurrence, localParts, readState, signState, toGoogle, toRecurrence, zonedToUtcCompact, type EventFields } from "../../supabase/functions/_shared/gcal";
+import { GOOGLE_EVENT_COLORS, starOff, starOn, fromGoogle, fromRecurrence, localParts, readState, signState, toGoogle, toRecurrence, zonedToUtcCompact, type EventFields } from "../../supabase/functions/_shared/gcal";
 import { expandEvents, type CalEvent } from "../src/lib/events";
+import { GOOGLE_COLORS } from "../src/lib/googleColors";
 
 const t = async (n: string, f: () => void | Promise<void>) => { await f(); console.log("ok", n); };
 const TZ = "Asia/Seoul";
@@ -72,6 +73,12 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     assert.equal(g.fields.title, "발표"); assert.equal(g.fields.important, true);
     assert.equal(toGoogle({ ...base, important: true }, TZ, palette, "#4A90E2").summary, "⭐ 회의");
     assert.equal(toGoogle({ ...base, important: false }, TZ, palette, "#4A90E2").summary, "회의");
+  });
+
+  await t("구글 캘린더: the app offers exactly Google's eleven colours, and each goes back as its own colorId", () => {
+    assert.deepEqual(Object.fromEntries(GOOGLE_COLORS.map((c) => [c.id, c.hex])), GOOGLE_EVENT_COLORS);
+    for (const k of GOOGLE_COLORS) assert.equal(toGoogle({ ...base, color: k.hex }, TZ, GOOGLE_EVENT_COLORS, "#123456").colorId, k.id, k.name);
+    assert.equal(fromGoogle({ summary: "x", colorId: "6", start: { date: "2026-11-24" }, end: { date: "2026-11-25" } }, TZ, GOOGLE_EVENT_COLORS, "#123456")!.fields.color, "#F4511E");
   });
 
   await t("구글 캘린더: the signed note of who is connecting", async () => {

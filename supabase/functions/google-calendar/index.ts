@@ -18,7 +18,7 @@
 // linked event takes it off Google. 강조 = a ⭐ at the front of the Google title. When both sides changed one event,
 // the later wins.
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { addDays, type EventFields, fromGoogle, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
+import { addDays, type EventFields, fromGoogle, GOOGLE_EVENT_COLORS, type GEvent, originalDay, readState, signState, toGoogle } from "../_shared/gcal.ts";
 
 const env = (k: string) => Deno.env.get(k) ?? "";
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info" };
@@ -196,8 +196,8 @@ async function syncUser(db: SupabaseClient, uid: string) {
     byGoogle.delete(`${l.calendar_id}|${l.google_id}`);
   }
 
-  const colors = await g(token, "/colors");
-  const palette: Record<string, string> = Object.fromEntries(Object.entries(colors.body?.event ?? {}).map(([id, v]) => [id, String((v as Row).background).toUpperCase()]));
+  // the eleven colours as Google's apps show them (the colors API answers older shades)
+  const palette = GOOGLE_EVENT_COLORS;
 
   // 2. pull
   for (const c of picked) {

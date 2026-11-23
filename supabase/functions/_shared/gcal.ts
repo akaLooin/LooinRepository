@@ -142,6 +142,16 @@ function lastOfCount(r: Repeat, start: Day, count: number): Day {
   return addDays(start, 366 * 30);
 }
 
+/**
+ * Google Calendar's eleven event colours (colorId → colour), as Google's own apps show them. The colors API still
+ * answers older, paler shades; these are the ones a person sees and picks, so the app offers exactly these when an
+ * event goes to Google (user, 2026-11-23). app/src/lib/googleColors.ts has the same list (a test keeps them equal).
+ */
+export const GOOGLE_EVENT_COLORS: Record<string, string> = {
+  "11": "#D50000", "4": "#E67C73", "6": "#F4511E", "5": "#F6BF26", "2": "#33B679", "10": "#0B8043",
+  "7": "#039BE5", "9": "#3F51B5", "1": "#7986CB", "3": "#8E24AA", "8": "#616161",
+};
+
 // ── events ──────────────────────────────────────────────
 const stripHtml = (s: string) => s.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
 const hex = (c: string | undefined) => (c && /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toUpperCase() : null);
