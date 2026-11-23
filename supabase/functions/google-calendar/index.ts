@@ -143,7 +143,14 @@ Deno.serve(async (req) => {
   }
   // the colours this account's Google Calendar offers (user, 2026-11-23: more than eleven), for the event editor
   if (input?.action === "colors") {
-    try { return json(await livePalette(await accessToken(db, uid))); } catch (e) { return json({ error: String(e) }, 500); }
+    try {
+      const token = await accessToken(db, uid);
+      const { data: cals } = await db.from("google_calendars").select("calendar_id").eq("user_id", uid).eq("selected", true).eq("can_write", true);
+      // each picked calendar's event labels (its 24 colours), for the event editor
+      const labels: Record<string, Record<string, string>> = {};
+      for (const c of cals ?? []) labels[c.calendar_id] = await labelsOf(token, c.calendar_id).catch(() => ({}));
+      return json({ ...(await livePalette(token)), labels });
+    } catch (e) { return json({ error: String(e) }, 500); }
   }
   if (input?.action === "disconnect") {
     const { data: acc } = await db.from("google_accounts").select("refresh_token").eq("user_id", uid).maybeSingle();
@@ -283,6 +290,8 @@ async function syncUser(db: SupabaseClient, uid: string) {
 
   // the eleven colours as Google's apps show them (the colors API answers older shades)
   const palette = (await livePalette(token)).event;
+  const labels = new Map<string, Record<string, string>>();
+  for (const c of picked) labels.set(c.calendar_id, await labelsOf(token, c.calendar_id).catch(() => ({})));
 
   // 2. pull
   for (const c of picked) {
@@ -302,7 +311,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
     }
     // series and single events first, then the changed or cancelled times of series
     items.sort((a, b) => Number(!!a.recurringEventId) - Number(!!b.recurringEventId));
-    for (const item of items) stats.pulled += await pullOne(db, uid, c, item, palette, byGoogle);
+    for (const item of items) stats.pulled += await pullOne(db, uid, c, item, palette, byGoogle, labels.get(c.calendar_id) ?? {});
     if (next) await db.from("google_calendars").update({ sync_token: next }).eq("user_id", uid).eq("calendar_id", c.calendar_id);
   }
 
@@ -335,7 +344,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
         const mv = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(gid)}/move?destination=${enc(target.calendar_id)}`, { method: "POST" });
         if (mv.ok) gid = mv.body.id;
       }
-      const r = await g(token, `/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, { method: "PUT", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color, exceptionDays(links, l))) });
+      const r = await g(token, `/calendars/${enc(target.calendar_id)}/events/${enc(gid)}`, { method: "PATCH", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color, exceptionDays(links, l), labels.get(target.calendar_id))) });
       if (r.ok) {
         await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: e.updated_at }).eq("event_id", e.id);
         stats.pushed++;
@@ -343,7 +352,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
     } else if (!e.deleted_at && e.google_calendar_id && new Date(e.created_at ?? 0) > connectedAt) {
       const target = writable(e.google_calendar_id);
       if (!target) continue;
-      const r = await g(token, `/calendars/${enc(target.calendar_id)}/events`, { method: "POST", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color)) });
+      const r = await g(token, `/calendars/${enc(target.calendar_id)}/events`, { method: "POST", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color, undefined, labels.get(target.calendar_id))) });
       if (r.ok) {
         await db.from("google_event_links").insert({ event_id: e.id, user_id: uid, calendar_id: target.calendar_id, google_id: r.body.id, origin: "app", google_updated: r.body.updated, synced_at: e.updated_at });
         stats.pushed++;
@@ -364,6 +373,13 @@ async function livePalette(token: string): Promise<{ event: Record<string, strin
   const pick = (o: Record<string, Row> | undefined) => Object.fromEntries(Object.entries(o ?? {}).map(([id, v]) => [id, String(v.background ?? "").toUpperCase()]).filter(([, c]) => /^#[0-9A-F]{6}$/.test(c)));
   const event = { ...pick(r.body?.event), ...GOOGLE_EVENT_COLORS };
   return { event: Object.keys(event).length ? event : { ...GOOGLE_EVENT_COLORS }, calendar: pick(r.body?.calendar) };
+}
+
+/** A calendar's event labels (Google's newer colours): label id → colour; none when the calendar has none. */
+async function labelsOf(token: string, calendarId: string): Promise<Record<string, string>> {
+  const r = await g(token, `/calendars/${enc(calendarId)}`);
+  const list = (r.body?.labelProperties?.eventLabels ?? []) as { id: string; backgroundColor?: string }[];
+  return Object.fromEntries(list.filter((l) => l.id && /^#[0-9a-fA-F]{6}$/.test(l.backgroundColor ?? "")).map((l) => [l.id, l.backgroundColor!.toUpperCase()]));
 }
 
 /** The days of a series that Google keeps as changed single times (sent as such, not as EXDATEs). */
@@ -390,6 +406,7 @@ async function refreshColours(db: SupabaseClient, uid: string) {
   const want = new Map<string, string>(); // event id -> colour
   const report = { items: 0, withColorId: 0, colorIds: {} as Record<string, number>, otherKeys: {} as Record<string, number>, updated: 0 };
   for (const c of (cals ?? []) as Cal[]) {
+    const labels = await labelsOf(token, c.calendar_id).catch(() => ({} as Record<string, string>));
     let next: string | undefined;
     for (let page: string | undefined; ;) {
       const q = new URLSearchParams({ maxResults: "2500", showDeleted: "true", singleEvents: "false" });
@@ -402,7 +419,7 @@ async function refreshColours(db: SupabaseClient, uid: string) {
         if (item.colorId) { report.withColorId++; report.colorIds[item.colorId] = (report.colorIds[item.colorId] ?? 0) + 1; }
         for (const k of Object.keys(item)) if (!KNOWN.has(k)) report.otherKeys[k] = (report.otherKeys[k] ?? 0) + 1;
         const id = linkOf.get(`${c.calendar_id}|${item.id}`);
-        if (id) want.set(id, (item.colorId && palette[item.colorId]) || c.color);
+        if (id) want.set(id, (item.eventLabelId && labels[item.eventLabelId]) || (item.colorId && palette[item.colorId]) || c.color);
       }
       page = r.body.nextPageToken;
       if (!page) { next = r.body.nextSyncToken; break; }
@@ -429,7 +446,7 @@ let diag: Diag | null = null;
 const KNOWN = new Set(["kind", "etag", "id", "status", "htmlLink", "created", "updated", "summary", "description", "location", "colorId", "creator", "organizer", "start", "end", "endTimeUnspecified", "recurrence", "recurringEventId", "originalStartTime", "transparency", "visibility", "iCalUID", "sequence", "attendees", "attendeesOmitted", "extendedProperties", "hangoutLink", "conferenceData", "gadget", "anyoneCanAddSelf", "guestsCanInviteOthers", "guestsCanModify", "guestsCanSeeOtherGuests", "privateCopy", "locked", "reminders", "source", "workingLocationProperties", "outOfOfficeProperties", "focusTimeProperties", "attachments", "birthdayProperties", "eventType"]);
 
 /** One Google event into the app. Returns 1 when the app changed. */
-async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, palette: Record<string, string>, byGoogle: Map<string, Link>): Promise<number> {
+async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, palette: Record<string, string>, byGoogle: Map<string, Link>, labels: Record<string, string> = {}): Promise<number> {
   if (diag && item.status !== "cancelled") {
     diag.items++;
     if (item.colorId) { diag.withColorId++; diag.colorIds[item.colorId] = (diag.colorIds[item.colorId] ?? 0) + 1; }
@@ -449,7 +466,7 @@ async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, pa
     if (up) await db.from("google_event_links").update({ synced_at: up.updated_at }).eq("event_id", seriesLink.event_id);
   };
 
-  const mapped = fromGoogle(item, c.time_zone, palette, c.color);
+  const mapped = fromGoogle(item, c.time_zone, palette, c.color, labels);
   if (!mapped) {
     // deleted in Google (a whole event, or one time of a series)
     if (item.recurringEventId) await skipInSeries();

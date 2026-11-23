@@ -21,6 +21,25 @@ export const isReadOnlyEvent = (e: { googleCalendarId?: string | null }, readOnl
   !!e.googleCalendarId && readOnlyCalendars.includes(e.googleCalendarId);
 
 /**
+ * Google Calendar's 24 colours (each calendar's event labels carry these), in the order of Google's palette, named
+ * in Korean by us. A label of another colour keeps a number.
+ */
+export const GOOGLE_24: [string, string][] = [
+  ["#D50000", "토마토"], ["#D81B60", "벚꽃"], ["#AD1457", "라디키오"], ["#E67C73", "플라밍고"], ["#EF6C00", "호박"], ["#F4511E", "귤"],
+  ["#F09300", "망고"], ["#F6BF26", "바나나"], ["#E4C441", "시트론"], ["#C0CA33", "아보카도"], ["#7CB342", "피스타치오"], ["#33B679", "세이지"],
+  ["#0B8043", "바질"], ["#009688", "유칼립투스"], ["#039BE5", "공작"], ["#4285F4", "코발트"], ["#3F51B5", "블루베리"], ["#7986CB", "라벤더"],
+  ["#B39DDB", "등나무"], ["#9E69AF", "자수정"], ["#8E24AA", "포도"], ["#795548", "코코아"], ["#A79B8E", "자작나무"], ["#616161", "흑연"],
+];
+/** A calendar's label colours in Google's order, named. */
+export function labelChoices(labels: { id: string; hex: string }[]): { id: string; hex: string; name: string }[] {
+  const order = new Map(GOOGLE_24.map(([h], i) => [h, i]));
+  const name = new Map(GOOGLE_24);
+  return [...labels].map((l) => ({ ...l, hex: l.hex.toUpperCase() }))
+    .sort((a, b) => (order.get(a.hex) ?? 99) - (order.get(b.hex) ?? 99))
+    .map((l, i) => ({ ...l, name: name.get(l.hex) ?? `색 ${i + 1}` }));
+}
+
+/**
  * The colours to offer: what Google answered for this account (user, 2026-11-23: there are more than eleven), named
  * where we know the name; the eleven when nothing came yet.
  */

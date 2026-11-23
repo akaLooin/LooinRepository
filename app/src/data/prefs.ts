@@ -60,6 +60,8 @@ export type Prefs = {
   // the colours Google answers for this account: an event's own (by colorId) and how many calendar colours it has
   googleEventColors: { id: string; hex: string }[];
   googleCalendarColorCount: number;
+  // each picked calendar's event labels (Google's newer colours): calendar id → label colours
+  googleLabels: Record<string, { id: string; hex: string }[]>;
   // 일정 카테고리 of Google calendars that can only be read: never offered as a category (user, 2026-11-23)
   googleReadOnlyCategoryIds: string[];
   // Google calendars that can only be read: their events are shown, never changed in 립마크 (user, 2026-11-23)
@@ -82,7 +84,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, googleLinked: false, glowParticles: true, googleCalendars: [], googleEmail: null, googleEventColors: [], googleCalendarColorCount: 0, googleReadOnlyCategoryIds: [], googleReadOnlyCalendarIds: [], quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel", "love", "winter"],
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, googleLinked: false, glowParticles: true, googleCalendars: [], googleEmail: null, googleEventColors: [], googleCalendarColorCount: 0, googleLabels: {}, googleReadOnlyCategoryIds: [], googleReadOnlyCalendarIds: [], quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel", "love", "winter"],
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

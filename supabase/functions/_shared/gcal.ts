@@ -160,7 +160,11 @@ const hex = (c: string | undefined) => (c && /^#[0-9A-Fa-f]{6}$/.test(c) ? c.toU
  * A Google event as our fields (null when it is cancelled). `palette`: Google's event colours by colorId;
  * `calendarColor`: used when the event has none of its own.
  */
-export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string>, calendarColor: string): { fields: EventFields; lossy: boolean } | null {
+/**
+ * `labels`: the calendar's event labels (Google's newer colours, labelProperties.eventLabels), label id → colour.
+ * An event's label wins over its old colorId, which wins over the calendar's colour.
+ */
+export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string>, calendarColor: string, labels: Record<string, string> = {}): { fields: EventFields; lossy: boolean } | null {
   if (g.status === "cancelled" || !g.start) return null;
   const allDay = !!g.start.date;
   let startDate: Day, endDate: Day, startTime: string | null = null, endTime: string | null = null;
@@ -183,7 +187,7 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
     fields: {
       title: star.title.trim().slice(0, 100) || "(제목 없음)", important: star.important,
       start_date: startDate, end_date: endDate, all_day: allDay, start_time: startTime, end_time: endTime,
-      color: hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2",
+      color: hex(labels[g.eventLabelId]) ?? hex(palette[g.colorId]) ?? hex(calendarColor) ?? "#4A90E2",
       memo: stripHtml(String(g.description ?? "")).trim().slice(0, 2000),
       alarm_minutes: !allDay && popup && !g.reminders?.useDefault ? Math.min(40320, Math.max(0, popup.minutes)) : null,
       repeat: rec.repeat, skip_dates: rec.skip,
@@ -193,7 +197,7 @@ export function fromGoogle(g: GEvent, tz: string, palette: Record<string, string
 }
 
 /** Our event as a Google event body (insert or full update). */
-export function toGoogle(e: EventFields, tz: string, palette: Record<string, string>, calendarColor: string, exceptions?: Set<Day>): GEvent {
+export function toGoogle(e: EventFields, tz: string, palette: Record<string, string>, calendarColor: string, exceptions?: Set<Day>, labels: Record<string, string> = {}): GEvent {
   const body: GEvent = { summary: starOn(e.title, e.important), description: e.memo || "" };
   if (e.all_day) {
     body.start = { date: e.start_date };
@@ -205,6 +209,10 @@ export function toGoogle(e: EventFields, tz: string, palette: Record<string, str
   }
   const rec = toRecurrence(e, tz, exceptions);
   body.recurrence = rec ?? [];
+  // the calendar's own colour: no label, no colorId; a label's colour: that label (and the old colorId nearest to it,
+  // as Google keeps both); any other colour: the nearest old colorId
+  const label = sameColor(e.color, calendarColor) ? undefined : Object.entries(labels).find(([, c]) => sameColor(e.color, c))?.[0];
+  body.eventLabelId = label ?? null;
   body.colorId = sameColor(e.color, calendarColor) ? null : nearestColorId(e.color, palette);
   body.reminders = !e.all_day && e.alarm_minutes != null ? { useDefault: false, overrides: [{ method: "popup", minutes: e.alarm_minutes }] } : { useDefault: true };
   return body;

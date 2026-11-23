@@ -62,7 +62,8 @@ export async function pickCalendar(id: string, selected: boolean) {
 
 /** The colours this account's Google Calendar offers (kept on the phone for the event editor). */
 export async function googleColors() {
-  const r = (await call("colors")) as { event?: Record<string, string>; calendar?: Record<string, string> };
+  const r = (await call("colors")) as { event?: Record<string, string>; calendar?: Record<string, string>; labels?: Record<string, Record<string, string>> };
+  setPref("googleLabels", Object.fromEntries(Object.entries(r.labels ?? {}).map(([cal, l]) => [cal, Object.entries(l).map(([id, hex]) => ({ id, hex }))])));
   const event = Object.entries(r.event ?? {}).map(([id, hex]) => ({ id, hex })).sort((a, b) => Number(a.id) - Number(b.id));
   if (event.length) setPref("googleEventColors", event);
   setPref("googleCalendarColorCount", Object.keys(r.calendar ?? {}).length);

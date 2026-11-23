@@ -81,6 +81,20 @@ const base: EventFields = { title: "회의", start_date: "2026-11-24", end_date:
     assert.equal(fromGoogle({ summary: "x", colorId: "6", start: { date: "2026-11-24" }, end: { date: "2026-11-25" } }, TZ, GOOGLE_EVENT_COLORS, "#123456")!.fields.color, "#F4511E");
   });
 
+  await t("구글 캘린더: event labels (the newer colours) both ways", () => {
+    const labels = { "lab-cherry": "#D81B60", "lab-banana": "#F6BF26" };
+    const ev = { summary: "x", start: { date: "2026-11-24" }, end: { date: "2026-11-25" } };
+    // a label wins over the old colorId Google keeps beside it, which wins over the calendar's colour
+    assert.equal(fromGoogle({ ...ev, eventLabelId: "lab-cherry", colorId: "11" }, TZ, GOOGLE_EVENT_COLORS, "#123456", labels)!.fields.color, "#D81B60");
+    assert.equal(fromGoogle({ ...ev, eventLabelId: "unknown", colorId: "6" }, TZ, GOOGLE_EVENT_COLORS, "#123456", labels)!.fields.color, "#F4511E");
+    assert.equal(fromGoogle(ev, TZ, GOOGLE_EVENT_COLORS, "#123456", labels)!.fields.color, "#123456");
+    // back: a label colour sends that label; the calendar's colour sends none; another colour no label
+    assert.equal(toGoogle({ ...base, color: "#d81b60" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2", undefined, labels).eventLabelId, "lab-cherry");
+    const own = toGoogle({ ...base, color: "#4A90E2" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2", undefined, labels);
+    assert.equal(own.eventLabelId, null); assert.equal(own.colorId, null);
+    assert.equal(toGoogle({ ...base, color: "#123123" }, TZ, GOOGLE_EVENT_COLORS, "#4A90E2", undefined, labels).eventLabelId, null);
+  });
+
   await t("구글 캘린더: the signed note of who is connecting", async () => {
     const s = await signState("user-1", "secret", 1000);
     assert.equal(await readState(s, "secret", 2000), "user-1");
