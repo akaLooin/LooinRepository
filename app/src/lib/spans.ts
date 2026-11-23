@@ -25,7 +25,7 @@ export function spanLabel(t: Dated, thisYear: number) {
   return `${f(t.date)} – ${f(t.endDate)}`;
 }
 
-export type SpanBar = { id: string; start: Day; end: Day; color: string; done: boolean; title: string; important?: boolean; /** its glow colour (메인 앱: the item's own) */ glow?: string };
+export type SpanBar = { id: string; start: Day; end: Day; color: string; done: boolean; title: string; important?: boolean; /** its glow colour (메인 앱: the item's own) */ glow?: string; /** an all-day event (메인 앱: before timed ones) */ allDay?: boolean };
 export type RowSegment = SpanBar & { lane: number; from: number; to: number; opensLeft: boolean; opensRight: boolean };
 
 /**
@@ -41,7 +41,8 @@ export function rowSegments(row: (Day | null)[], bars: SpanBar[], lanes: number,
   const inRow = bars
     .filter((b) => b.start <= last && b.end >= first)
     // 할 일 캘린더 (two lines a day): highlighted events take the lines first (user)
-    .sort((a, b) => (importantFirst ? Number(!!b.important) - Number(!!a.important) : 0) || (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || daysBetween(b.start, b.end) - daysBetween(a.start, a.end) || (a.id < b.id ? -1 : 1));
+    // 메인 앱 (user, 2026-11-23): highlighted first, then all-day events before timed ones
+    .sort((a, b) => (importantFirst ? Number(!!b.important) - Number(!!a.important) : 0) || Number(!!b.allDay) - Number(!!a.allDay) || (a.start < b.start ? -1 : a.start > b.start ? 1 : 0) || daysBetween(b.start, b.end) - daysBetween(a.start, a.end) || (a.id < b.id ? -1 : 1));
   const taken: boolean[][] = [];
   const segments: RowSegment[] = [];
   for (const b of inRow) {

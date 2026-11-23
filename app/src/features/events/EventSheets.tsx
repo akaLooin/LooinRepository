@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import {
   AppText, BottomSheet, Bell, Button, Calendar, ConfirmDialog, Check, ChevronLeft, ChevronRight, Clock, ColorCodeInput, FileText, MemoInput, Pencil, PillButton, Sparkles,
-  CalendarDays, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
+  CalendarDays, Lock, PRESET_COLORS, Repeat, Tag, TileButton, useGlowColor, TimeGrid, Toggle, Trash2, X,
 } from "../../components";
 import { usePrefs } from "../../data/prefs";
 import { deleteEvent, findEvent, saveEvent, saveEventCategory, selectEventCategories, toggleEventImportant, useDB, type EventScope } from "../../data/store";
 import { addDays, daysBetween, parseDay, today, WEEKDAY_LABELS, weekday, type Day } from "../../lib/dates";
 import { ALARM_CHOICES, alarmLabel, clock, eventProblem, eventTimeLabel, fromMinutes, REPEAT_LABELS, repeatLabel, toMinutes, type CalEvent, type EventRepeat } from "../../lib/events";
 import { DESIGN_TRIAL } from "../../lib/variant";
-import { googleColorChoices, isGoogleColor } from "../../lib/googleColors";
+import { googleColorChoices, isGoogleColor, isReadOnlyEvent } from "../../lib/googleColors";
 import { fontFamily, onColor, tokens, useTheme } from "../../theme";
 
 export type EventDraft = Omit<CalEvent, "id"> & { id?: string };
@@ -56,6 +56,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     onSaved(`${dayLabel(e.startDate)}에 '${e.title.trim()}'을(를) 저장했어요`);
   };
   const cat = eventCats.find((k) => k.id === e.categoryId);
+  // from a Google calendar that can only be read: information only
+  const readOnly = !!e.id && isReadOnlyEvent(e, prefs.googleReadOnlyCalendarIds);
   // a Google calendar as the event's category: where it goes, its 일정 카테고리, and (if Google lacks the colour) its colour
   const pickGoogleCalendar = (id: string) => {
     const cal = prefs.googleCalendars.find((k) => k.id === id);
@@ -90,7 +92,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         {sub === "form" ? <X size={24} color={c.text} /> : <ChevronLeft size={26} color={c.text} />}
       </Pressable>
       <View style={{ flex: 1 }} />
-      {sub === "form" ? (
+      {sub === "form" && !readOnly ? (
         <Pressable onPress={() => save()} accessibilityRole="button" accessibilityLabel="일정 저장"
           style={{ backgroundColor: c.accent, borderRadius: tokens.radius.pill, paddingHorizontal: 20, height: 38, justifyContent: "center" }}>
           <AppText variant="body" weight={700} raw={onColor(c.accent)}>저장</AppText>
@@ -306,6 +308,36 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         ))}
       </View>
     );
+  } else if (readOnly) {
+    const calName = prefs.googleCalendars.find((k) => k.id === e.googleCalendarId)?.summary;
+    const line = (I: typeof Bell, text: string) => (
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 14, minHeight: 44 }}>
+        <I size={20} color={c.textMuted} />
+        <AppText variant="bodyLg" style={{ flex: 1 }}>{text}</AppText>
+      </View>
+    );
+    body = (
+      <ScrollView style={{ maxHeight: 520 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: e.color }} />
+          <AppText variant="sheetTitle" style={{ flex: 1 }} accessibilityRole="header">{e.title}</AppText>
+        </View>
+        <AppText variant="body" color="textSecondary" style={{ marginBottom: 10 }}>{`${dayLabel(e.startDate)} · ${eventTimeLabel({ ...e, id: e.id ?? "" }, prefs.use24h, parseDay(today()).y)}`}</AppText>
+        <View style={{ height: 1, backgroundColor: c.divider, marginVertical: 6 }} />
+        {e.repeat ? line(Repeat, repeatLabel(e.repeat, e.startDate)) : null}
+        {line(CalendarDays, calName ? `구글 · ${calName}` : "구글 캘린더")}
+        {e.alarmMinutes != null ? line(Bell, alarmLabel(e.alarmMinutes)) : null}
+        {e.memo ? (
+          <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingVertical: 8 }}>
+            <FileText size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{e.memo}</AppText>
+          </View>
+        ) : null}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, padding: 12, borderRadius: tokens.radius.md, backgroundColor: c.surfaceButton }}>
+          <Lock size={16} color={c.textMuted} />
+          <AppText variant="small" color="textSecondary" style={{ flex: 1 }}>보기만 할 수 있는 구글 캘린더의 일정이라 립마크에서는 바꾸거나 지울 수 없어요</AppText>
+        </View>
+      </ScrollView>
+    );
   } else {
     const icon = (I: typeof Bell) => <I size={22} color={c.textMuted} />;
     body = (
@@ -409,6 +441,7 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
   const prefs = usePrefs();
   const e = useDB((d) => findEvent(d, id));
   const [removing, setRemoving] = useState(false);
+  const readOnly = !!e && isReadOnlyEvent(e, prefs.googleReadOnlyCalendarIds);
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
   return (
     <BottomSheet visible={!!id} onClose={onClose}>
@@ -425,11 +458,15 @@ export function EventDetail({ id, onClose, onEdit, notice }: { id: string | null
       {e.memo ? (
         <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", paddingVertical: 8 }}><FileText size={20} color={c.textMuted} /><AppText variant="body" style={{ flex: 1 }}>{e.memo}</AppText></View>
       ) : null}
+      {readOnly ? (
+        <AppText variant="small" color="textMuted" style={{ marginTop: 12 }}>보기만 할 수 있는 구글 캘린더의 일정이에요</AppText>
+      ) : (
       <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
         <TileButton label="수정하기" icon={<Pencil size={28} color={c.menuEdit} />} onPress={() => onEdit(e)} />
         <TileButton label={e.important ? "강조 해제" : "강조"} icon={<Sparkles size={28} color={glow} />} onPress={() => notice(toggleEventImportant(e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")} />
         <TileButton label="삭제하기" icon={<Trash2 size={28} color={c.menuDelete} />} onPress={() => { if (e.seriesId) setRemoving(true); else { deleteEvent(e.id); onClose(); notice("일정을 지웠어요"); } }} />
       </View>
+      )}
       <EventDeleteDialog event={removing ? e : null} onClose={() => setRemoving(false)} onDone={(m) => { setRemoving(false); onClose(); notice(m); }} />
     </BottomSheet>
   );

@@ -43,7 +43,7 @@ export function CalendarTab() {
   const calIds = new Set(prefs.calendarCategoryIds ?? categories.map((x) => x.id));
   const calCats = active.filter((x) => calIds.has(x.id));
   const glowOf = useGlowOf();
-  const bars = useMemo(() => eventBars(events, (e) => glowOf(e.categoryId, e.color)), [events, prefs.glowMode, prefs.glowColors]); // eslint-disable-line react-hooks/exhaustive-deps
+  const bars = useMemo(() => eventBars(events, (e) => glowOf(e.categoryId, e.color), true), [events, prefs.glowMode, prefs.glowColors]); // eslint-disable-line react-hooks/exhaustive-deps
   const monthKey = `${view.y}-${String(view.m).padStart(2, "0")}`;
   const lit = useMemo(() => importantDays(db.todos, [], `${monthKey}-01`, `${monthKey}-31`), [db.todos, monthKey]);
   // 메인 앱: a day glows in the colour of its first important to-do (its category's, or the one picked for it)

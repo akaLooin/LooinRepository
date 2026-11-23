@@ -55,6 +55,7 @@ export function SettingsGroups() {
         <Pressable onPress={async () => {
             const r = await updateNow();
             if (r === "latest") notice("이미 최신 버전이에요");
+            else if (r === "preparing") notice("새 버전을 아직 준비하고 있어요. 2~3분 뒤에 다시 눌러 주세요");
             else if (r === "unavailable") notice("여기서는 업데이트를 받을 수 없어요");
             else if (r === "failed") notice("새 버전을 받지 못했어요. 인터넷을 확인해 주세요");
           }} accessibilityRole="button" accessibilityLabel="지금 업데이트"

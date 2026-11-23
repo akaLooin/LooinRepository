@@ -9,12 +9,14 @@ import { clock, dayBlocks, DAY_MINUTES, eventsOn, eventTimeLabel, fromMinutes, i
 import { moveBlock, moveSpanBlock, resizeBlock, shiftEvent } from "../../lib/eventDrag";
 import { goBack } from "../../lib/nav";
 import { onColor, tokens, useDesignScale, useInsets, useTheme } from "../../theme";
+import { isReadOnlyEvent } from "../../lib/googleColors";
 import { dayLabel, EventDeleteDialog, EventDetail, EventEditor, newDraft, type EventDraft } from "./EventSheets";
 
 const LABEL_W = tokens.layout.hourLabelWidth;
 const H_MIN = 28, H_MAX = 200; // how far two fingers can squeeze or spread an hour
 const LONG_PRESS = 400;
 const SPAN = 365; // days reachable by swiping, either way from the day opened
+const READ_ONLY = "보기만 할 수 있는 구글 캘린더의 일정이에요";
 const DAY_INDEXES = Array.from({ length: SPAN * 2 + 1 }, (_, i) => i);
 const isDay = (s: unknown): s is Day => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const minutesNow = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
@@ -146,6 +148,7 @@ export function EventDayScreen() {
   const commit = (b: Block, top: number, bottom: number, day: Day, moved?: number) => {
     setDrag(null);
     setLocked(false);
+    if (isReadOnlyEvent(b.e, prefs.googleReadOnlyCalendarIds)) return;
     if (top === b.top && bottom === b.bottom && !moved) return;
     const e = b.e;
     // an event over midnight held and moved: the whole event moves (across midnight if need be)
@@ -238,13 +241,13 @@ export function EventDayScreen() {
               {blocks.map((b) => (
                 <EventBlock key={b.e.id} b={b} day={d} hour={H} drag={middle && drag?.id === b.e.id ? drag : null} selected={middle && selected === b.e.id} scale={scale} use24h={prefs.use24h}
                   onTap={() => setSelected((x) => (x === b.e.id ? null : b.e.id))}
-                  onHold={() => { setSelected(b.e.id); setLocked(true); }}
-                  onDrag={(top, bottom) => { setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
+                  onHold={() => { if (isReadOnlyEvent(b.e, prefs.googleReadOnlyCalendarIds)) return notice(READ_ONLY); setSelected(b.e.id); setLocked(true); }}
+                  onDrag={(top, bottom) => { if (isReadOnlyEvent(b.e, prefs.googleReadOnlyCalendarIds)) return; setLocked(true); setDrag({ id: b.e.id, top, bottom }); }}
                   onDrop={(top, bottom, moved) => commit(b, top, bottom, d, moved)}
                   onCancel={() => { setDrag(null); setLocked(false); }}
                   onEdit={() => { setSelected(null); setDraft({ ...b.e }); }}
-                  onImportant={() => notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요")}
-                  onDelete={() => { setSelected(null); if (b.e.seriesId) setRemoving(b.e); else { deleteEvent(b.e.id); notice("일정을 지웠어요"); } }} />
+                  onImportant={() => (isReadOnlyEvent(b.e, prefs.googleReadOnlyCalendarIds) ? notice(READ_ONLY) : notice(toggleEventImportant(b.e.id) ? "중요한 일정으로 강조했어요" : "강조를 풀었어요"))}
+                  onDelete={() => { setSelected(null); if (isReadOnlyEvent(b.e, prefs.googleReadOnlyCalendarIds)) return notice(READ_ONLY); if (b.e.seriesId) setRemoving(b.e); else { deleteEvent(b.e.id); notice("일정을 지웠어요"); } }} />
               ))}
             </View>
           </View>

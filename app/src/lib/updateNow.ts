@@ -13,15 +13,32 @@ const listeners = new Set<() => void>();
 const set = (s: UpdateStage) => { stage = s; listeners.forEach((l) => l()); };
 export const useUpdateStage = () => useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => stage, () => stage);
 
-/** "latest": nothing newer; "unavailable": updates are off here (the browser, a development build); "failed": no network or the like. */
-export async function updateNow(): Promise<"applied" | "latest" | "unavailable" | "failed"> {
+/**
+ * Is a new version still being made? Updates are published by the repository's GitHub workflow after each push
+ * (.github/workflows/eas-update.yml, a few minutes); its latest run queued or running means "wait a little"
+ * (user, 2026-11-23). The repository is public, so this needs no sign-in. Unknown (no network) counts as no.
+ */
+const RUNS = "https://api.github.com/repos/akaLooin/LooinRepository/actions/workflows/eas-update.yml/runs?per_page=1&branch=claude/replica-skill-install-ll9jb4";
+async function beingMade(): Promise<boolean> {
+  try {
+    const res = await fetch(RUNS, { headers: { accept: "application/vnd.github+json" } });
+    const run = (await res.json())?.workflow_runs?.[0];
+    return !!run && run.status !== "completed";
+  } catch { return false; }
+}
+
+/**
+ * "latest": nothing newer; "preparing": nothing yet, but a new version is being made right now; "unavailable": updates
+ * are off here (the browser, a development build); "failed": no network or the like.
+ */
+export async function updateNow(): Promise<"applied" | "latest" | "preparing" | "unavailable" | "failed"> {
   if (!Updates.isEnabled) return "unavailable";
   if (stage !== "idle") return "failed";
   try {
     set("checking");
     const check = await Updates.checkForUpdateAsync();
     // a version downloaded earlier (waiting for the app to be left) is still "available": fetching it again is instant
-    if (!check.isAvailable) { set("idle"); return "latest"; }
+    if (!check.isAvailable) { const making = await beingMade(); set("idle"); return making ? "preparing" : "latest"; }
     set("downloading");
     await Updates.fetchUpdateAsync();
     set("applying");

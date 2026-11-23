@@ -193,7 +193,7 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
         ))}
       </View>
       {grid.map((row, i) => {
-        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2, !long) : null;
+        const bars = !picker && spans?.length ? rowSegments(row, spans, long ? LONG_LANES : 2, !long || !!boxed) : null;
         // 할 일 캘린더: a row with event lines grows by their height, so the lines sit under the date circles
         // instead of over them (user)
         // 메인 앱 (user, 2026-11-23): every row keeps the room of two lines, so a month with event lines is as tall as

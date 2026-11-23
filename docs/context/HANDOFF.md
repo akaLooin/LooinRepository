@@ -19,6 +19,7 @@
 **11-23 8차**: 디데이 안내 `DDayNotice`(달력·홈 맨 위). 메모 눌러도 제목+메모 시트(`MemoLockChip`). 스킨 설레는 마음·첫눈 오는 날(`Drift`, `FREE_SKINS`).
 **11-23 9차**: 일기(메인 앱) = 종이 한 장(큰 날짜, 기분 도장, **낭만 농도** = `moodTemp`를 %로 `ROMANCE_STAGES`·`RomanceGauge`, 사진 2열). `ColorCodeInput` `presets`(색 견본 한 줄).
 **11-23 10차**: 프로필 맨 아래 "지금 업데이트"(`lib/updateNow.ts`: 확인→받기→바로 적용, 보던 탭 유지) + 업데이트 중 립마크 화면(`UpdateCurtain`, 루트 `_layout`). 시작 화면(흰색) → 짙은 초록+마크 = `expo-splash-screen` 플러그인(`app.config.js`, 메인·관리자), **새 APK부터**(버전은 1.0.0 그대로: OTA 계속).
+**11-23 11차**: 일정 막대 순서 = 강조 → 종일 → 시간(`SpanBar.allDay`, 메인 앱). 보기만 가능한 구글 캘린더 일정 = 정보만(`isReadOnlyEvent`, pref `googleReadOnlyCalendarIds`; 편집 시트 읽기 화면, 시간표에서 끌기·강조·삭제 막음). 서버 1회 `refresh-colors`(다시 읽어 색·⭐ 적용 + 색 필드 진단). 지금 업데이트: 새 버전이 없을 때 GitHub 작업이 도는 중이면 "아직 준비 중" 안내.
 todo mate 개인용 재구현(Expo + Supabase).
 
 ## 진행 현황 (`replica/features.csv`의 clone 열)

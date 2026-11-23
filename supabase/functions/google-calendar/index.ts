@@ -44,6 +44,26 @@ Deno.serve(async (req) => {
     return json({ users: Object.keys(out).length });
   }
 
+  // one-time colour refresh (user, 2026-11-23: events pulled before the colour fixes wore their calendar's colour):
+  // read every event of the picked calendars again from Google, so colours (and ⭐ 강조) are applied anew. Also
+  // reports which colour fields Google sends, to see where the extra colours come from.
+  if (input?.action === "refresh-colors") {
+    if (!env("GOOGLE_CRON_SECRET") || req.headers.get("x-cron-secret") !== env("GOOGLE_CRON_SECRET")) return json({ error: "forbidden" }, 403);
+    const { data: accounts } = await db.from("google_accounts").select("user_id");
+    const out: Record<string, unknown> = {};
+    for (const a of accounts ?? []) {
+      try {
+        await db.from("google_calendars").update({ sync_token: null }).eq("user_id", a.user_id);
+        await db.from("google_event_links").update({ google_updated: null }).eq("user_id", a.user_id).eq("origin", "google");
+        diag = { items: 0, withColorId: 0, colorIds: {}, otherKeys: {} };
+        const r = await syncUser(db, a.user_id);
+        out[a.user_id] = { ...r, colours: diag };
+      } catch (e) { out[a.user_id] = { error: String(e) }; }
+      diag = null;
+    }
+    return json(out);
+  }
+
   // one-time clean-up (user, 2026-11-23): events made in 립마크 that went to Google come off Google again and stay
   // only in 립마크. Run once from the SQL Editor with the timer's secret; nothing in the app calls it.
   if (input?.action === "remove-app-uploads") {
@@ -319,8 +339,18 @@ function exceptionDays(links: Link[], series: Link) {
   return out;
 }
 
+/** While a colour refresh runs: what Google sent about colours (counts only, no event contents). */
+type Diag = { items: number; withColorId: number; colorIds: Record<string, number>; otherKeys: Record<string, number> };
+let diag: Diag | null = null;
+const KNOWN = new Set(["kind", "etag", "id", "status", "htmlLink", "created", "updated", "summary", "description", "location", "colorId", "creator", "organizer", "start", "end", "endTimeUnspecified", "recurrence", "recurringEventId", "originalStartTime", "transparency", "visibility", "iCalUID", "sequence", "attendees", "attendeesOmitted", "extendedProperties", "hangoutLink", "conferenceData", "gadget", "anyoneCanAddSelf", "guestsCanInviteOthers", "guestsCanModify", "guestsCanSeeOtherGuests", "privateCopy", "locked", "reminders", "source", "workingLocationProperties", "outOfOfficeProperties", "focusTimeProperties", "attachments", "birthdayProperties", "eventType"]);
+
 /** One Google event into the app. Returns 1 when the app changed. */
 async function pullOne(db: SupabaseClient, uid: string, c: Cal, item: GEvent, palette: Record<string, string>, byGoogle: Map<string, Link>): Promise<number> {
+  if (diag && item.status !== "cancelled") {
+    diag.items++;
+    if (item.colorId) { diag.withColorId++; diag.colorIds[item.colorId] = (diag.colorIds[item.colorId] ?? 0) + 1; }
+    for (const k of Object.keys(item)) if (!KNOWN.has(k)) diag.otherKeys[k] = (diag.otherKeys[k] ?? 0) + 1;
+  }
   const key = `${c.calendar_id}|${item.id}`;
   const link = byGoogle.get(key);
   const now = new Date().toISOString();

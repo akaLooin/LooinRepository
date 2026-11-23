@@ -16,6 +16,10 @@ export const GOOGLE_COLORS: { id: string; hex: string; name: string }[] = [
   { id: "3", hex: "#8E24AA", name: "포도" },
   { id: "8", hex: "#616161", name: "흑연" },
 ];
+/** An event of a Google calendar that can only be read: shown in 립마크, never changed there (user, 2026-11-23). */
+export const isReadOnlyEvent = (e: { googleCalendarId?: string | null }, readOnlyCalendars: string[]) =>
+  !!e.googleCalendarId && readOnlyCalendars.includes(e.googleCalendarId);
+
 /**
  * The colours to offer: what Google answered for this account (user, 2026-11-23: there are more than eleven), named
  * where we know the name; the eleven when nothing came yet.

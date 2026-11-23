@@ -167,8 +167,8 @@ export function eventsOn(events: CalEvent[], day: Day): CalEvent[] {
 }
 
 /** Bars for the month calendar (the same shape the 긴 할 일 bars had). Events have no check, so never "done". */
-export const eventBars = (events: CalEvent[], glow?: (e: CalEvent) => string): SpanBar[] =>
-  events.map((e) => ({ id: e.id, start: e.startDate, end: e.endDate, color: e.color, done: false, title: e.title, important: !!e.important, ...(glow && e.important ? { glow: glow(e) } : {}) }));
+export const eventBars = (events: CalEvent[], glow?: (e: CalEvent) => string, allDayFirst = false): SpanBar[] =>
+  events.map((e) => ({ id: e.id, start: e.startDate, end: e.endDate, color: e.color, done: false, title: e.title, important: !!e.important, ...(glow && e.important ? { glow: glow(e) } : {}), ...(allDayFirst && e.allDay ? { allDay: true } : {}) }));
 
 /**
  * 중요한 날: the days with an important to-do (not deleted) or within an important event, for the 할 일 캘린더's glow.
