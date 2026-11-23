@@ -1,11 +1,11 @@
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, ScrollView, View } from "react-native";
-import { AppText, Check, ConfirmDialog, ScreenHeader, Toggle, useFrame, useToast } from "../../components";
+import { AppText, ConfirmDialog, ScreenHeader, useFrame, useToast } from "../../components";
 import { goBack } from "../../lib/nav";
 import { usePrefs } from "../../data/prefs";
 import {
-  connectGoogle, disconnectGoogle, googleCalendars, googleColors, googleStatus, pickCalendar, syncGoogle, GoogleError,
+  connectGoogle, disconnectGoogle, googleCalendars, googleColors, googleStatus, syncGoogle, GoogleError,
   type GoogleCalendar, type GoogleStatus,
 } from "../../lib/googleCalendar";
 import { onColor, tokens, useInsets, useTheme } from "../../theme";
@@ -66,7 +66,7 @@ export function GoogleCalendarScreen() {
       <ScreenHeader title="구글 캘린더" onBack={() => goBack("/settings")} />
       <ScrollView contentContainerStyle={{ paddingHorizontal: tokens.layout.gutter, paddingBottom: insets.bottom + 40 }}>
         <AppText variant="helper" color="textMuted" style={{ marginVertical: 12 }}>
-          고른 구글 캘린더의 일정이 립마크에 들어오고, 그 일정을 립마크에서 바꾸면 구글에도 바뀌어요. 캘린더마다 같은 이름의 일정 카테고리가 생겨요.
+          연결한 구글 계정의 캘린더가 모두 립마크에 들어오고, 그 일정을 립마크에서 바꾸면 구글에도 바뀌어요. 캘린더마다 같은 이름의 일정 카테고리가 생겨요.
         </AppText>
         {!status ? <ActivityIndicator color={c.text} style={{ marginTop: 30 }} /> : status.missing ? (
           <View style={{ ...card, padding: 16 }}>
@@ -91,7 +91,7 @@ export function GoogleCalendarScreen() {
               ) : null}
             </View>
 
-            <AppText variant="small" weight={700} color="textMuted" style={{ marginTop: 22, marginBottom: 8, marginLeft: 4 }} accessibilityRole="header">연동할 캘린더</AppText>
+            <AppText variant="small" weight={700} color="textMuted" style={{ marginTop: 22, marginBottom: 8, marginLeft: 4 }} accessibilityRole="header">연동된 캘린더</AppText>
             <View style={card}>
               {cals.length ? cals.map((k, i) => (
                 <View key={k.calendar_id} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 54, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: c.sectionLine }}>
@@ -100,11 +100,10 @@ export function GoogleCalendarScreen() {
                     <AppText variant="bodyLg" numberOfLines={1}>{k.summary}</AppText>
                     {!k.can_write ? <AppText variant="small" color="textMuted">보기만 할 수 있는 캘린더</AppText> : null}
                   </View>
-                  <Toggle value={k.selected} label={`${k.summary} 연동`} onChange={(v) => run("sync", async () => { await pickCalendar(k.calendar_id, v); setCals((l) => l.map((x) => (x.calendar_id === k.calendar_id ? { ...x, selected: v } : x))); await syncGoogle(); })} />
                 </View>
               )) : <AppText variant="body" color="textMuted" style={{ padding: 16 }}>캘린더를 불러오는 중이에요. 지금 맞추기를 눌러 보세요.</AppText>}
             </View>
-            <AppText variant="small" color="textMuted" style={{ marginTop: 8, marginLeft: 4 }}>끄면 그 캘린더에서 온 일정은 립마크에서만 사라져요 (구글엔 남아요).</AppText>
+            <AppText variant="small" color="textMuted" style={{ marginTop: 8, marginLeft: 4 }}>계정의 캘린더는 모두 연동돼요. 달력에서 가리려면 달력 탭 → 메뉴(관리) → 보기 설정에서 끄세요.</AppText>
 
             <AppText variant="small" color="textMuted" style={{ marginTop: 14, marginLeft: 4 }}>
               립마크에서 만든 일정은 일정을 추가하거나 고칠 때 '구글 캘린더' 줄에서 올릴 캘린더를 골라야 올라가요. 고르지 않으면 립마크에만 있어요.

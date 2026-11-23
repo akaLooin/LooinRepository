@@ -41,7 +41,15 @@ export async function googleStatus(): Promise<GoogleStatus> {
 export async function googleCalendars(): Promise<GoogleCalendar[]> {
   if (!supabase) return [];
   const { data } = await supabase.from("google_calendars").select("calendar_id, summary, color, can_write, selected, is_default, category_id").order("summary");
-  const list = (data ?? []) as GoogleCalendar[];
+  let list = (data ?? []) as GoogleCalendar[];
+  // every calendar of the account is synced (user, 2026-11-23); hiding one is 달력 탭 → 관리 → 보기 설정
+  const off = list.filter((k) => !k.selected).map((k) => k.calendar_id);
+  if (off.length) {
+    await supabase.from("google_calendars").update({ selected: true }).in("calendar_id", off);
+    list = list.map((k) => ({ ...k, selected: true }));
+    setTimeout(() => { syncGoogle().catch(() => {}); }, 0);
+  }
+  setPref("googleAllCalendars", list.map((k) => ({ id: k.calendar_id, summary: k.summary, color: k.color })));
   // the event editor offers the picked ones it can write to
   setPref("googleCalendars", list.filter((k) => k.selected && k.can_write).map((k) => ({ id: k.calendar_id, summary: k.summary, color: k.color, categoryId: k.category_id ?? null })));
   setPref("googleReadOnlyCategoryIds", list.filter((k) => !k.can_write && k.category_id).map((k) => k.category_id!));

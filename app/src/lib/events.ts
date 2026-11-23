@@ -329,3 +329,7 @@ export function liftSpans<T extends { id: string; title: string; date: Day | nul
   }
   return { events, lifted };
 }
+
+/** 보기 설정 (달력 탭): events of hidden Google calendars left out. */
+export const shownOnCalendar = (events: CalEvent[], hidden: string[]) =>
+  hidden.length ? events.filter((e) => !e.googleCalendarId || !hidden.includes(e.googleCalendarId)) : events;

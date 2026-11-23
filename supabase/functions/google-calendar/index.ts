@@ -373,8 +373,8 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
   const rows = list.map((c) => ({
     user_id: uid, calendar_id: c.id, summary: String(c.summaryOverride ?? c.summary ?? "").slice(0, 100), color: /^#[0-9a-fA-F]{6}$/.test(c.backgroundColor ?? "") ? c.backgroundColor.toUpperCase() : "#4A90E2",
     time_zone: c.timeZone ?? "Asia/Seoul", can_write: c.accessRole === "owner" || c.accessRole === "writer",
-    // at first only the main calendar is picked, and new events go there
-    selected: had.get(c.id)?.selected ?? (first && !!c.primary), is_default: had.get(c.id)?.is_default ?? (first && !!c.primary),
+    // every calendar of the account is synced (user, 2026-11-23; hiding is the app's 보기 설정); new events go to the main one
+    selected: true, is_default: had.get(c.id)?.is_default ?? (first && !!c.primary),
   }));
   if (rows.length) await db.from("google_calendars").upsert(rows);
   // a calendar's colour changed in Google: its events that wear the calendar's colour (none of their own) and its

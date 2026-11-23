@@ -66,6 +66,10 @@ export type Prefs = {
   googleReadOnlyCategoryIds: string[];
   // Google calendars that can only be read: their events are shown, never changed in 립마크 (user, 2026-11-23)
   googleReadOnlyCalendarIds: string[];
+  // every calendar of the connected account (all are synced, user 2026-11-23), for 보기 설정
+  googleAllCalendars: { id: string; summary: string; color: string }[];
+  // 보기 설정 (달력 탭): Google calendars whose events the 달력 tab hides; the editor still offers them; this phone
+  hiddenGoogleCalendarIds: string[];
   // 오늘 (design app): the category the input bar adds to; this phone only
   quickAddCategory: string | null;
   // 홈 바로가기 (design app): ids in order, null = the default set; this phone only
@@ -84,7 +88,7 @@ export const DEFAULT_PREFS: Prefs = {
   followApproval: false, likesTodo: "all", likesDiary: "all", chatFrom: "all", searchable: true,
   notifyMarketing: false, notifyLikes: true, notifyFollowing: true, notifyChat: true,
   font: "pretendard", feedMemoLines: 0,
-  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, googleLinked: false, glowParticles: true, googleCalendars: [], googleEmail: null, googleEventColors: [], googleCalendarColorCount: 0, googleLabels: {}, googleReadOnlyCategoryIds: [], googleReadOnlyCalendarIds: [], quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel", "love", "winter"],
+  timerMode: "stopwatch", pomodoroMinutes: 25, pomodoro: null, calendarKind: "basic", timelineHourHeight: 52, glowColor: "#00FF7F", glowMode: "follow", glowColors: {}, googleLinked: false, glowParticles: true, googleCalendars: [], googleEmail: null, googleEventColors: [], googleCalendarColorCount: 0, googleLabels: {}, googleReadOnlyCategoryIds: [], googleReadOnlyCalendarIds: [], googleAllCalendars: [], hiddenGoogleCalendarIds: [], quickAddCategory: null, homeShortcuts: null, skin: "default", ownedSkins: ["default", "twilight", "pixel", "love", "winter"],
   monthCalendarMax: 10, weekCalendarMax: 0, // the original's defaults (user's screenshot of 설정 → 화면)
 };
 

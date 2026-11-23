@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { alarmAt, alarmsOf, alarmTimes, clock, dayBlocks, eventProblem, eventsOn, eventTimeLabel, inBand, liftSpans, slotAt, type CalEvent } from "../src/lib/events";
+import { shownOnCalendar } from "../src/lib/events";
 import { planNotifications } from "../src/lib/notificationPlan";
 import { missingTable } from "../src/data/sync";
 import { fromRow, toRow } from "../src/data/rows";
@@ -206,4 +207,11 @@ t("알림 여러 개: each rings, smallest first", () => {
   assert.deepEqual(alarmTimes(e), [new Date(2026, 10, 18, 9, 50), new Date(2026, 10, 18, 9, 0)]);
   assert.deepEqual(alarmsOf({ alarmMinutes: 30 }), [30]);
   assert.deepEqual(alarmsOf({ alarmMinutes: null }), []);
+});
+
+t("보기 설정: hidden Google calendars leave the 달력 tab only", () => {
+  const mk = (id: string, cal?: string): CalEvent => ({ id, title: id, startDate: "2026-11-18", endDate: "2026-11-18", allDay: true, color: "#111111", memo: "", ...(cal ? { googleCalendarId: cal } : {}) });
+  const all = [mk("a"), mk("b", "work"), mk("c", "home")];
+  assert.deepEqual(shownOnCalendar(all, ["work"]).map((e) => e.id), ["a", "c"]);
+  assert.equal(shownOnCalendar(all, []), all);
 });

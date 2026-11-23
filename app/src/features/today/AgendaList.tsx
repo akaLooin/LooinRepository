@@ -8,9 +8,10 @@ import { smoothLayout } from "../../lib/motion";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { useFeature, useT } from "../../lib/appConfig";
 import { EventEditor, newDraft, type EventDraft } from "../events/EventSheets";
+import { useCalendarEvents } from "../../lib/calendarView";
 import { formatTime, setPref, usePrefs } from "../../data/prefs";
 import {
-  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectEvents, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
+  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
 } from "../../data/store";
 import { addDays, parseDay, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand, type CalEvent } from "../../lib/events";
@@ -83,7 +84,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
   const catOrder = useMemo(() => new Map(categories.map((x, i) => [x.id, i])), [categories]);
 
   const todos = todosForDay(db, day);
-  const shownEvents = useDB(selectEvents);
+  const shownEvents = useCalendarEvents(); // 보기 설정: hidden Google calendars left out
   const timeOf = (t: Todo) => {
     if (!t.remindAt) return null;
     const d = new Date(t.remindAt);

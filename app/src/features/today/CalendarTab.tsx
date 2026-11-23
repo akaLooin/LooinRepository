@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Dimensions, Pressable, View, type ViewInstance } from "react-native";
 import { AppText, Calendar, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock, Clover, DragScrollView, Search, useGlowOf, useToast } from "../../components";
 import { usePrefs } from "../../data/prefs";
-import { ddayLabel, deleteTodos, isDDayOn, nextOccurrence, moveTodos, selectActiveCategories, selectCategories, selectDDays, selectEvents, todosForDay, useDB } from "../../data/store";
+import { ddayLabel, deleteTodos, isDDayOn, nextOccurrence, moveTodos, selectActiveCategories, selectCategories, selectDDays, todosForDay, useDB } from "../../data/store";
 import { addDays, fromMonthIndex, monthIndex, parseDay, pickAfterPaging, today, weekStart, type Day } from "../../lib/dates";
 import { eventBars, importantDayColors, importantDays } from "../../lib/events";
 import { smoothLayout } from "../../lib/motion";
@@ -13,6 +13,7 @@ import { CalendarPager, calendarJustSwiped } from "../home/CalendarPager";
 import { CalendarFilterSheet } from "../home/HomeSheets";
 import { dayState } from "../home/dayState";
 import { HomeMenu, MenuButton } from "../home/HomeMenu";
+import { useCalendarEvents } from "../../lib/calendarView";
 import { AgendaList, type AgendaDrop } from "./AgendaList";
 import { SelectionBar } from "../home/SelectionBar";
 import { dayTitle, DDayNotice, QuickAdd } from "./parts";
@@ -32,7 +33,7 @@ export function CalendarTab() {
   const categories = useDB(selectCategories);
   const active = useDB(selectActiveCategories);
   const ddays = useDB(selectDDays);
-  const events = useDB(selectEvents);
+  const events = useCalendarEvents(); // 보기 설정: hidden Google calendars left out
   const now = today();
   const [selected, setSelected] = useState<Day>(now);
   const [view, setView] = useState(() => ({ y: parseDay(now).y, m: parseDay(now).m }));

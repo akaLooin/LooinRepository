@@ -1,7 +1,9 @@
 import { useInsets } from "../../theme";
 import { router } from "expo-router";
-import { Modal, Pressable, View } from "react-native";
-import { AppText, Bell, BottomSheet, List, Palette, PopupMenu, Sparkles } from "../../components";
+import { useState } from "react";
+import { Modal, Pressable, ScrollView, View } from "react-native";
+import { AppText, Bell, BottomSheet, CalendarDays, ChevronLeft, List, Palette, PopupMenu, Sparkles, Toggle } from "../../components";
+import { setPref, usePrefs } from "../../data/prefs";
 import { DESIGN_TRIAL } from "../../lib/variant";
 import { ScaledRoot, tokens, useTheme } from "../../theme";
 
@@ -48,6 +50,10 @@ export function HomeMenu({ open, onClose }: { open: boolean; onClose: () => void
 
 function ManageSheet({ open, onClose, go }: { open: boolean; onClose: () => void; go: (href: string) => () => void }) {
   const { c } = useTheme();
+  const prefs = usePrefs();
+  const [viewing, setViewing] = useState(false);
+  const close = () => { setViewing(false); onClose(); };
+  if (viewing) return <ViewSettings onBack={() => setViewing(false)} onClose={close} />;
   const tiles: [string, string, typeof List, string][] = [
     ["카테고리", "이름 · 색 · 공개 범위", Palette, "/categories"],
     ["루틴", "반복하는 할 일", List, "/routines"],
@@ -55,7 +61,7 @@ function ManageSheet({ open, onClose, go }: { open: boolean; onClose: () => void
     ["리마인더", "매일 알림 시간", Bell, "/reminders"],
   ];
   return (
-    <BottomSheet visible={open} onClose={onClose} title="관리">
+    <BottomSheet visible={open} onClose={close} title="관리">
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {tiles.map(([label, sub, Icon, href]) => (
           <Pressable key={href} onPress={go(href)} accessibilityRole="button" accessibilityLabel={`${label} 관리`}
@@ -67,7 +73,45 @@ function ManageSheet({ open, onClose, go }: { open: boolean; onClose: () => void
             </View>
           </Pressable>
         ))}
+        {/* 보기 설정 (user, 2026-11-23): which Google calendars the 달력 tab shows */}
+        {prefs.googleLinked ? (
+          <Pressable onPress={() => setViewing(true)} accessibilityRole="button" accessibilityLabel="보기 설정"
+            style={({ pressed }) => ({ width: "48%", flexGrow: 1, padding: 14, gap: 10, borderRadius: tokens.radius.lg, backgroundColor: pressed ? c.surfaceRow : c.surface })}>
+            <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: c.surfaceStrong, alignItems: "center", justifyContent: "center" }}><CalendarDays size={19} color={c.text} /></View>
+            <View>
+              <AppText variant="body" weight={700}>보기 설정</AppText>
+              <AppText variant="small" color="textMuted" numberOfLines={1}>달력에 보일 구글 캘린더</AppText>
+            </View>
+          </Pressable>
+        ) : null}
       </View>
+    </BottomSheet>
+  );
+}
+
+/** 보기 설정: each calendar of the Google account, on = its events show on the 달력 tab. */
+function ViewSettings({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+  const { c } = useTheme();
+  const prefs = usePrefs();
+  const hidden = prefs.hiddenGoogleCalendarIds;
+  const set = (id: string, show: boolean) => setPref("hiddenGoogleCalendarIds", show ? hidden.filter((x) => x !== id) : [...new Set([...hidden, id])]);
+  const cals = prefs.googleAllCalendars.length ? prefs.googleAllCalendars : prefs.googleCalendars;
+  return (
+    <BottomSheet visible onClose={onClose} onBack={onBack}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="뒤로" style={{ padding: 4 }}><ChevronLeft size={26} color={c.text} /></Pressable>
+        <AppText variant="sheetTitle" accessibilityRole="header">보기 설정</AppText>
+      </View>
+      <AppText variant="small" color="textMuted" style={{ marginBottom: 10 }}>{prefs.googleEmail ?? "구글 계정"}의 캘린더예요. 끄면 달력 탭에서만 가려지고, 일정을 추가할 때는 그대로 고를 수 있어요.</AppText>
+      <ScrollView style={{ maxHeight: 460 }}>
+        {cals.length ? cals.map((k, i) => (
+          <View key={k.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, borderTopWidth: i ? 1 : 0, borderTopColor: c.sectionLine }}>
+            <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: k.color }} />
+            <AppText variant="bodyLg" numberOfLines={1} style={{ flex: 1 }}>{k.summary}</AppText>
+            <Toggle value={!hidden.includes(k.id)} label={`${k.summary} 달력에 보이기`} onChange={(v) => set(k.id, v)} />
+          </View>
+        )) : <AppText variant="body" color="textMuted">설정 → 구글 캘린더를 한 번 열면 캘린더 목록이 들어와요</AppText>}
+      </ScrollView>
     </BottomSheet>
   );
 }
