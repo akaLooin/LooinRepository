@@ -38,9 +38,10 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
   const [asking, setAsking] = useState(false);
   const [scopeAsk, setScopeAsk] = useState(false);
   const [newCat, setNewCat] = useState("");
+  const [formKey, setFormKey] = useState(0); // a new draft: the title field starts afresh
   const eventCats = useDB(selectEventCategories);
   const saved = useDB((d) => !!draft && !!findEvent(d, draft.id));
-  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); setScopeAsk(false); setNewCat(""); }, [draft]);
+  useEffect(() => { setE(draft); setSub("form"); setProblem(null); setAsking(false); setScopeAsk(false); setNewCat(""); setFormKey((n) => n + 1); }, [draft]);
   if (!e) return <BottomSheet visible={false} onClose={onClose}>{null}</BottomSheet>;
 
   const put = (patch: Partial<EventDraft>) => { setProblem(null); setE((x) => (x ? { ...x, ...patch } : x)); };
@@ -239,7 +240,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     const icon = (I: typeof Bell) => <I size={22} color={c.textMuted} />;
     body = (
       <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 520 }}>
-        <TextInput value={e.title} onChangeText={(title) => put({ title })} placeholder="제목 추가" placeholderTextColor={c.textPlaceholder} autoFocus={!e.id}
+        {/* keeps its own text (see useOwnText in Form.tsx): a value sent back while typing mixed up Korean letters */}
+        <TextInput key={formKey} defaultValue={e.title} onChangeText={(title) => put({ title })} placeholder="제목 추가" placeholderTextColor={c.textPlaceholder} autoFocus={!e.id}
           accessibilityLabel="일정 제목" maxLength={100} returnKeyType="done"
           style={{ outlineStyle: "none" as never, fontFamily: fontFamily(600), fontSize: 24, color: c.text, paddingVertical: 8 }} />
         <AppText variant="body" color="textSecondary" style={{ marginBottom: 8 }}>{`${dayLabel(e.startDate)} · ${eventTimeLabel({ ...e, id: "" }, prefs.use24h, parseDay(today()).y)}`}</AppText>

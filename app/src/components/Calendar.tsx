@@ -80,7 +80,8 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
       <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: picker && DESIGN_TRIAL ? 10 : (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
         borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}
         accessibilityLabel={dday ? "디데이" : undefined}>
-        <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>
+        {/* one weight in a D-day circle, picked or not: the bold font sits a little differently on Android (user) */}
+        <AppText variant="date" weight={ring || (dday && boxed) ? 700 : 500} color={numberColor} style={dday && boxed ? { includeFontPadding: false, textAlignVertical: "center" } : undefined}>{label}</AppText>
       </View>
     </>
   );

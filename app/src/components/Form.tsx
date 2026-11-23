@@ -33,6 +33,23 @@ export function FieldRow({ title, value, onPress, right }: { title: string; valu
 }
 
 /** Title field with a 2dp underline in the category colour (S04, S06b, S07b, S21b). */
+/**
+ * 메인 앱: a field that keeps its own text (the value is only its starting text). The main app's sheets are drawn
+ * through the in-app layer (Portal), so a value sent back while typing arrived one draw late and mixed up Korean
+ * letters being composed (user, 2026-11-23: typing a new 일정 went wrong). A change from outside (a reset) is still
+ * written into the field.
+ */
+function useOwnText(ref: React.RefObject<TextInputInstance | null>, value: string, onChangeText: (s: string) => void) {
+  const typed = useRef(value);
+  useEffect(() => {
+    if (value === typed.current) return;
+    typed.current = value;
+    if (!value) ref.current?.clear();
+    else (ref.current as unknown as { setNativeProps?: (p: object) => void })?.setNativeProps?.({ text: value });
+  }, [value, ref]);
+  return { defaultValue: value, onChangeText: (s: string) => { typed.current = s; onChangeText(s); } };
+}
+
 export function TitleInput({ value, onChangeText, placeholder, underline, textColor, error, autoFocus, bold, onSubmit }: {
   value: string; onChangeText: (s: string) => void; placeholder?: string; underline?: string; textColor?: string; error?: string; autoFocus?: boolean; bold?: boolean;
   /** the keyboard's 완료 key */
@@ -48,13 +65,14 @@ export function TitleInput({ value, onChangeText, placeholder, underline, textCo
     return () => clearTimeout(t);
   }, [autoFocus]);
   const t = tokens.type["bodyLg"];
+  const own = useOwnText(ref, value, onChangeText);
   // design app: a filled box with a colour bar on its left instead of the original's coloured underline
   if (DESIGN_TRIAL) return (
     <View>
       <View style={{ flexDirection: "row", alignItems: "center", borderRadius: tokens.radius.md, backgroundColor: c.surface, overflow: "hidden",
         borderWidth: error ? 1 : 0, borderColor: c.danger }}>
         <View style={{ width: 4, alignSelf: "stretch", backgroundColor: underline ?? c.textMuted }} />
-        <TextInput ref={ref} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={c.textPlaceholder} autoFocus={autoFocus} accessibilityLabel={placeholder}
+        <TextInput ref={ref} {...own} placeholder={placeholder} placeholderTextColor={c.textPlaceholder} autoFocus={autoFocus} accessibilityLabel={placeholder}
           onSubmitEditing={onSubmit} returnKeyType={onSubmit ? "done" : undefined}
           style={{ flex: 1, outlineStyle: "none" as never, fontFamily: fontFamily(bold ? 700 : 600), fontSize: bold ? 18 : t.size, color: textColor ?? c.text, paddingVertical: 14, paddingHorizontal: 14 }} />
       </View>
@@ -92,11 +110,11 @@ export function MemoInput({ value, onChangeText, placeholder, focusOnOpen }: { v
     const t = setTimeout(() => ref.current?.focus(), DESIGN_TRIAL ? 30 : 280);
     return () => clearTimeout(t);
   }, [focusOnOpen]);
+  const own = useOwnText(ref, value, onChangeText);
   return (
     <TextInput
       ref={ref}
-      value={value}
-      onChangeText={onChangeText}
+      {...(DESIGN_TRIAL ? own : { value, onChangeText })}
       placeholder={placeholder}
       placeholderTextColor={c.textPlaceholder}
       multiline
