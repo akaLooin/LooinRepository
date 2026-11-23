@@ -58,3 +58,12 @@
   - a366521 docs: handoff trim
   - bc7c0cf feat: design app — 홈 becomes a summary with shortcuts; 달력 is the day agenda under a month; picked day as a white cell, today grey
   - f338e6a docs: handoff trim
+
+## 2026-11-23 02:31 UTC · auto
+- 브랜치: claude/replica-skill-install-ll9jb4 · HEAD e2ebdd1
+- 커밋 안 된 파일: 1개
+  - `pp/src/features/today/parts.tsx`
+- 최근 커밋:
+  - e2ebdd1 fix: picked calendar day gets a fresh rounded box like today's; navigation-bar module loaded only when the APK has it, so the version stays 1.0.0 and phones keep getting updates (the last-week grid fix now reaches them)
+  - c7a238b docs: handoff trim
+  - 3e28ea4 feat: main app — sheets drawn in-app so the keyboard opens at once and stays between fields, auto focus on double-tap edit, bigger to-do title centred on its star, no checking off future days, deleting a manual routine's to-do brings back its + line, and skins (황혼의 재즈, 8비트 모험 with the Galmuri pixel font) in 설정 → 스킨

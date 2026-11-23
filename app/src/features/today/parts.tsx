@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from "react";
-import { PanResponder, Pressable, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useIsFocused } from "expo-router";
+import { Keyboard, PanResponder, Pressable, TextInput, View } from "react-native";
 import { AppText, BottomSheet, Check, Clover, KeyboardSpacer } from "../../components";
 import { setPref, usePrefs } from "../../data/prefs";
 import { addTodo, EndedCategoryError, selectActiveCategories, todosForDay, useDB } from "../../data/store";
@@ -70,6 +71,38 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
   const [picking, setPicking] = useState(false);
   const cat = cats.find((x) => x.id === lastId) ?? cats[0];
   const input = useRef<React.ElementRef<typeof TextInput>>(null);
+  // The keyboard comes back by itself only if it was open (user, 2026-11-23). `want` = the user is typing here.
+  // - The user closes the keyboard (back key) while the field still has the cursor: the cursor goes too, so
+  //   nothing reopens it later.
+  // - Another field took over (a memo sheet) and closed, or the user comes back from another screen or tab while
+  //   typing here: the field takes the cursor again and the keyboard opens.
+  const want = useRef(false);
+  const screenFocused = useIsFocused();
+  const focusedRef = useRef(screenFocused);
+  focusedRef.current = screenFocused;
+  useEffect(() => {
+    const sub = Keyboard.addListener("keyboardDidHide", () => {
+      // wait a moment: a screen opening on top hides the keyboard at the same time as it takes the focus
+      setTimeout(() => {
+        if (!focusedRef.current) return; // another screen opened on top: keep the wish for the way back
+        const holder = TextInput.State.currentlyFocusedInput();
+        if (holder) {
+          want.current = false; // closed by the user
+          if (input.current?.isFocused()) input.current.blur();
+        } else if (want.current) {
+          input.current?.focus();
+        }
+      }, 80);
+    });
+    // shown again (a tab coming back): reopen if it was open; hidden (another tab): put the cursor away for now
+    if (want.current) setTimeout(() => input.current?.focus(), 120);
+    return () => { sub.remove(); if (input.current?.isFocused()) input.current.blur(); };
+  }, []);
+  // back from a screen opened on top (시간표, 일기 …)
+  useEffect(() => {
+    if (!screenFocused) { if (input.current?.isFocused()) input.current.blur(); return; } // leaving: put the cursor away, keep the wish
+    if (want.current) { const t = setTimeout(() => input.current?.focus(), 150); return () => clearTimeout(t); }
+  }, [screenFocused]);
   const submit = () => {
     const title = text.trim();
     if (!title || !cat) return;
@@ -85,7 +118,7 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats:
   return (
     <View style={{ paddingHorizontal: G, paddingTop: 8, paddingBottom: 10, backgroundColor: c.bg }}>
       <View style={{ height: 48, borderRadius: skin.square ? 3 : 24, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, gap: 8, ...(skin.square ? { borderWidth: 2, borderColor: c.text } : {}) }}>
-        <TextInput ref={input} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
+        <TextInput ref={input} onFocus={() => { want.current = true; }} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
           placeholder={day ? t("quickadd.placeholder", { date: `${parseDay(day).m}월 ${parseDay(day).d}일` }) : "날짜 없이 보관할 할 일"} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
           style={{ flex: 1, minWidth: 0, color: c.text, fontSize: tokens.type.bodyLg.size, fontFamily: fontFamily(400), paddingVertical: 0, outlineStyle: "none" as never }} />
         <Pressable onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={`카테고리 ${cat.title}, 바꾸기`}
