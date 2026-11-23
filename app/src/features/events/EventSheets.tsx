@@ -206,7 +206,7 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
         <AppText variant="bodyLg" weight={700} style={{ marginBottom: 6 }}>일정 카테고리</AppText>
         <ScrollView style={{ maxHeight: 340 }} keyboardShouldPersistTaps="handled">
           {choice(null, "카테고리 없음")}
-          {eventCats.map((k) => choice(k.id, k.title, k.color))}
+          {eventCats.filter((k) => !prefs.googleReadOnlyCategoryIds.includes(k.id) || e.categoryId === k.id).map((k) => choice(k.id, k.title, k.color))}
         </ScrollView>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
           <TextInput value={newCat} onChangeText={setNewCat} placeholder="새 카테고리 이름" placeholderTextColor={c.textPlaceholder} maxLength={40} accessibilityLabel="새 일정 카테고리 이름"

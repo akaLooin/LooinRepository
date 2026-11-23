@@ -44,6 +44,7 @@ export async function googleCalendars(): Promise<GoogleCalendar[]> {
   const list = (data ?? []) as GoogleCalendar[];
   // the event editor offers the picked ones it can write to
   setPref("googleCalendars", list.filter((k) => k.selected && k.can_write).map((k) => ({ id: k.calendar_id, summary: k.summary, color: k.color, categoryId: k.category_id ?? null })));
+  setPref("googleReadOnlyCategoryIds", list.filter((k) => !k.can_write && k.category_id).map((k) => k.category_id!));
   return list;
 }
 

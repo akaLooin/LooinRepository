@@ -227,6 +227,10 @@ async function syncUser(db: SupabaseClient, uid: string) {
 
   // 3. push: what changed in the app since it was last in step with Google
   const { data: evRows } = await db.from("events").select("*").eq("user_id", uid);
+  // events made in 립마크 before the account was connected stay in 립마크, always (user, 2026-11-23: they showed up
+  // in Google); only events made or picked for Google after connecting go up
+  const { data: acc } = await db.from("google_accounts").select("created_at").eq("user_id", uid).maybeSingle();
+  const connectedAt = acc?.created_at ? new Date(acc.created_at) : new Date();
   const linkOf = new Map([...byGoogle.values()].map((l) => [l.event_id, l]));
   const writable = (id: string | null | undefined) => (id ? picked.find((c) => c.calendar_id === id && c.can_write) : undefined);
   const takeOff = async (l: Link) => {
@@ -255,7 +259,7 @@ async function syncUser(db: SupabaseClient, uid: string) {
         await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: e.updated_at }).eq("event_id", e.id);
         stats.pushed++;
       }
-    } else if (!e.deleted_at && e.google_calendar_id) {
+    } else if (!e.deleted_at && e.google_calendar_id && new Date(e.created_at ?? 0) > connectedAt) {
       const target = writable(e.google_calendar_id);
       if (!target) continue;
       const r = await g(token, `/calendars/${enc(target.calendar_id)}/events`, { method: "POST", body: JSON.stringify(toGoogle(fieldsOf(e), target.time_zone, palette, target.color)) });
