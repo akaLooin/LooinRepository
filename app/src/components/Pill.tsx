@@ -112,3 +112,30 @@ export function AddPill({ label = "추가하기", onPress }: { label?: string; o
     </Pressable>
   );
 }
+
+/** 메인 앱's 공개 범위 picker: four tiles with what each means; one tap picks (not the original's radio list + 확인). */
+const VIS_TILES: { v: Visibility; label: string; sub: string }[] = [
+  { v: "public", label: "모두에게", sub: "누구나 볼 수 있어요" },
+  { v: "followers", label: "친구에게", sub: "나를 팔로우한 사람" },
+  { v: "partial", label: "일부만", sub: "제목만 보이고 내용은 숨겨요" },
+  { v: "private", label: "나만", sub: "아무에게도 안 보여요" },
+];
+export const VISIBILITY_WORD: Record<Visibility, string> = { public: "모두에게", followers: "친구에게", partial: "일부만", private: "나만" };
+export function VisibilityTiles({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
+  const { c } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }} accessibilityRole="radiogroup">
+      {VIS_TILES.map(({ v, label, sub }) => {
+        const on = v === value;
+        return (
+          <Pressable key={v} onPress={() => onChange(v)} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`${label}, ${sub}`}
+            style={{ width: "48%", flexGrow: 1, padding: 12, gap: 6, borderRadius: tokens.radius.md, backgroundColor: c.surface, borderWidth: 1.5, borderColor: on ? c.text : "transparent" }}>
+            <VisibilityIcon value={v} size={18} color={on ? c.text : c.textMuted} />
+            <AppText variant="body" weight={on ? 800 : 600}>{label}</AppText>
+            <AppText variant="small" color="textMuted" numberOfLines={2}>{sub}</AppText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}

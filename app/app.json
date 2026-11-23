@@ -2,7 +2,7 @@
   "expo": {
     "name": "todomate-clone",
     "slug": "todomate-clone",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -71,6 +71,13 @@
           "granularPermissions": [
             "photo"
           ]
+        }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "style": "light"
         }
       ]
     ],

@@ -4,7 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, BottomSheet, Button, ColorCodeInput, FieldGroup, FieldRow, RadioCheck, ScreenHeader, TitleInput, VisibilityIcon, type Visibility,
+  AppText, BottomSheet, Button, ColorCodeInput, FieldGroup, FieldRow, PRESET_COLORS, RadioCheck, ScreenHeader, TitleInput, VisibilityIcon, VisibilityTiles, type Visibility,
 } from "../../components";
 import { deleteCategory, endCategory, moveCategoryTodos, saveCategory, selectCategories, useDB } from "../../data/store";
 import { readableOn, tokens, useTheme, visibleOn } from "../../theme";
@@ -39,12 +39,52 @@ export function CategoryEditScreen() {
     goBack("/categories");
   };
   const others = categories.filter((x) => x.id !== existing?.id && !x.endedAt);
+  const section = (t: string) => <AppText variant="small" weight={700} color="textMuted" style={{ marginTop: 18, marginBottom: 6, marginLeft: 2 }}>{t}</AppText>;
+  // 메인 앱 (user, 2026-11-23: not the original's rows that each open a sheet): everything on the page in sections —
+  // colour swatches, the 공개 범위 tiles, then 관리
+  const mainBody = (
+    <>
+      {section("색")}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        {[...new Set([color.toUpperCase(), ...PRESET_COLORS])].map((col) => {
+          const on = col.toUpperCase() === color.toUpperCase();
+          return (
+            <Pressable key={col} onPress={() => setColor(col)} accessibilityRole="radio" accessibilityState={{ checked: on }} accessibilityLabel={`색 ${col}`}
+              style={{ width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: on ? 2 : 0, borderColor: c.text }}>
+              <View style={{ width: on ? 26 : 32, height: on ? 26 : 32, borderRadius: on ? 7 : 9, backgroundColor: visibleOn(col, c.bg, c.text) }} />
+            </Pressable>
+          );
+        })}
+        <Pressable onPress={() => { setDraftColor(color); setSheet("color"); }} accessibilityRole="button" accessibilityLabel="색 코드 직접 입력"
+          style={{ height: 36, paddingHorizontal: 12, borderRadius: 10, backgroundColor: c.surface, justifyContent: "center" }}>
+          <AppText variant="small" weight={700}>#코드</AppText>
+        </Pressable>
+      </View>
+      {section("누가 볼 수 있나요")}
+      <VisibilityTiles value={visibility} onChange={setVisibility} />
+      {!isNew ? (
+        <>
+          {section("관리")}
+          <FieldGroup>
+            <FieldRow title="할 일을 다른 카테고리로 옮기기" onPress={() => setSheet("move")} />
+            <FieldRow title={existing?.endedAt ? "다시 사용하기" : "그만 쓰기 (기록은 남김)"} onPress={() => { endCategory(existing!.id, !existing?.endedAt); goBack("/categories"); }} />
+            <Pressable onPress={() => setSheet("delete")} accessibilityRole="button" accessibilityLabel="카테고리 삭제"
+              style={{ height: tokens.size.fieldHeight, paddingHorizontal: 18, justifyContent: "center", backgroundColor: c.surfaceInput }}>
+              <AppText variant="bodyLg" weight={600} color="danger">카테고리와 할 일 모두 지우기</AppText>
+            </Pressable>
+          </FieldGroup>
+        </>
+      ) : null}
+    </>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="카테고리" onBack={() => goBack("/categories")} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 7, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="카테고리 이름" underline={shown} textColor={readableOn(shown, c.bg)} error={error} autoFocus={isNew} bold />
+        {DESIGN_TRIAL ? mainBody : (
+        <>
         <View style={{ height: 6 }} />
         <FieldGroup>
           <FieldRow title="공개설정" value={VISIBILITY_LABEL[visibility]} onPress={() => { setDraftVis(visibility); setSheet("visibility"); }} right={<VisibilityIcon value={visibility} color={c.textMuted} />} />
@@ -79,6 +119,8 @@ export function CategoryEditScreen() {
             </View>
           </>
         ) : null}
+        </>
+        )}
       </ScrollView>
 
       <BottomSheet visible={sheet === "visibility"} onClose={() => setSheet(null)} title="공개설정">

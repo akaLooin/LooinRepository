@@ -4,11 +4,13 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
-  AppText, BottomSheet, Button, Calendar, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FieldGroup, FieldRow, PillButton, RadioList, ScreenHeader, TitleInput, Toggle,
+  AppText, BottomSheet, Button, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FieldGroup, FieldRow, PillButton, RadioList, ScreenHeader, TitleInput, Toggle,
 } from "../../components";
 import { ddayLabel, deleteDDay, saveDDay, useDB, type DDay } from "../../data/store";
 import { parseDay, today, weekday, type Day } from "../../lib/dates";
 import { tokens, useTheme } from "../../theme";
+import { DESIGN_TRIAL } from "../../lib/variant";
+import { DatePickSheet } from "../home/TodoSheets";
 
 const WD = "일월화수목금토";
 const long = (d: Day) => { const { y, m, d: dd } = parseDay(d); return `${y}년 ${m}월 ${dd}일 (${WD[weekday(d)]})`; };
@@ -29,6 +31,7 @@ export function DDayEditScreen() {
   const [ym, setYm] = useState(() => ({ y: parseDay(date).y, m: parseDay(date).m }));
   const [error, setError] = useState<string>();
   const [confirm, setConfirm] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   const shift = (n: number) => setYm(({ y, m }) => { const t = m + n; return { y: y + Math.floor((t - 1) / 12), m: ((t - 1 + 120) % 12) + 1 }; });
   const save = () => {
@@ -38,6 +41,58 @@ export function DDayEditScreen() {
     goBack("/ddays");
   };
 
+  // 메인 앱 (user, 2026-11-23: not the original's 타입 radio list and unfolding date row): a big preview of the count
+  // (tap it to pick the date), one switch for how it repeats, and option chips
+  const kind = type === "fixed" ? "once" : unit;
+  const setKind = (k: "once" | "yearly" | "monthly") => { if (k === "once") setType("fixed"); else { setType("repeat"); setUnit(k); } };
+  const chip = (on: boolean, label: string, onPress: () => void) => (
+    <Pressable onPress={onPress} accessibilityRole="switch" accessibilityState={{ checked: on }} accessibilityLabel={label}
+      style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 38, paddingHorizontal: 14, borderRadius: 19, borderWidth: 1.5, borderColor: on ? c.text : c.surfaceStrong, backgroundColor: on ? c.surfaceStrong : "transparent" }}>
+      {on ? <Check size={15} color={c.text} strokeWidth={3} /> : null}
+      <AppText variant="helper" weight={on ? 700 : 500} color={on ? "text" : "textSecondary"}>{label}</AppText>
+    </Pressable>
+  );
+  if (DESIGN_TRIAL) return (
+    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
+      <ScreenHeader title="디데이" onBack={() => goBack("/ddays")} right={{ label: "저장", onPress: save }} />
+      <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="무슨 날인가요?" error={error} autoFocus={!existing} />
+        <Pressable onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={`${ddayLabel({ type, targetDate: date, repeatUnit: unit, includeToday })}, ${long(date)}, 날짜 바꾸기`}
+          style={{ alignItems: "center", paddingVertical: 22, gap: 6, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+          <AppText variant="bodyLg" weight={800} color="dday" style={{ fontSize: 40, lineHeight: 48 }}>{ddayLabel({ type, targetDate: date, repeatUnit: unit, includeToday })}</AppText>
+          <AppText variant="body" weight={600}>{long(date)}</AppText>
+          <AppText variant="small" color="textMuted">눌러서 날짜 바꾸기</AppText>
+        </Pressable>
+        <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: c.surface }} role="radiogroup">
+          {([["once", "한 번"], ["yearly", "매년"], ["monthly", "매월"]] as const).map(([k, label]) => (
+            <Pressable key={k} onPress={() => setKind(k)} role="radio" aria-checked={kind === k} accessibilityLabel={label}
+              style={{ flex: 1, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: kind === k ? c.surfaceStrong : "transparent" }}>
+              <AppText variant="helper" weight={kind === k ? 800 : 500} color={kind === k ? "text" : "textMuted"}>{label}</AppText>
+            </Pressable>
+          ))}
+        </View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {chip(includeToday, "그날을 1일로 세기", () => setIncludeToday(!includeToday))}
+          {chip(isPrivate, "나만 보기", () => setPrivate(!isPrivate))}
+        </View>
+        <AppText variant="small" color="textMuted">그날을 1일로 세면 시작한 날부터 며칠째인지 셀 수 있어요. 나만 보기는 친구에게 숨겨요.</AppText>
+        {existing ? (
+          <Pressable onPress={() => setConfirm(true)} accessibilityRole="button" accessibilityLabel="디데이 지우기"
+            style={{ height: 46, marginTop: 10, borderRadius: 23, borderWidth: 1, borderColor: c.danger, alignItems: "center", justifyContent: "center" }}>
+            <AppText variant="body" weight={700} color="danger">디데이 지우기</AppText>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+      {picking ? <DatePickSheet title="날짜 고르기" initial={date} onClose={() => setPicking(false)} onPick={(d) => { setDate(d); setPicking(false); }} /> : null}
+      <BottomSheet visible={confirm} onClose={() => setConfirm(false)} title="디데이 지우기">
+        <AppText variant="body" color="textSecondary" center style={{ marginBottom: 20 }}>{`'${existing?.title ?? ""}'을 지울까요?`}</AppText>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Button kind="plain" flex label="취소" onPress={() => setConfirm(false)} />
+          <Button kind="danger" flex label="지우기" onPress={() => { if (existing) deleteDDay(existing.id); setConfirm(false); goBack("/ddays"); }} />
+        </View>
+      </BottomSheet>
+    </View>
+  );
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="디데이" onBack={() => goBack("/ddays")} right={{ label: "완료", onPress: save }} />

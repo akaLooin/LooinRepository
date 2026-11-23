@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText, Calendar, CalendarHeader, CategoryPill, Heart, ProfileHeader, TodoRow, useToast, MoodMark } from "../../components";
+import { AppText, Calendar, CalendarHeader, CategoryPill, ChevronLeft, ChevronRight, Heart, ProfileHeader, StoredImage, TodoRow, useToast, MoodMark } from "../../components";
 import type { Diary } from "../../data/types";
 import { friendMonth, react, type FriendView, type Reaction } from "../../data/social";
 import { isVirtual, todosForDay } from "../../data/store";
@@ -8,7 +8,7 @@ import { usePrefs } from "../../data/prefs";
 import { nextReaction } from "../../lib/friend";
 import { addDays, fromMonthIndex, monthGrid, monthIndex, parseDay, pickAfterPaging, today, weekday, weekStart, type Day } from "../../lib/dates";
 import { smoothLayout } from "../../lib/motion";
-import { tokens, useTheme } from "../../theme";
+import { tokens, useTheme, visibleOn } from "../../theme";
 import { CalendarPager, calendarJustSwiped } from "../home/CalendarPager";
 import { dayState } from "../home/dayState";
 import { FriendDiarySheet } from "./FriendDiarySheet";
@@ -16,6 +16,7 @@ import { ReactionLine } from "./ReactionLine";
 
 export { ReactionLine };
 import { ReactionSheet } from "./ReactionSheet";
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 const G = tokens.layout.gutter;
 
@@ -130,6 +131,7 @@ export function FriendHome({ id }: { id: string }) {
     const ym = mode === "month" ? fromMonthIndex(i) : view;
     return (
       <Calendar
+        boxed={DESIGN_TRIAL}
         year={ym.y}
         month={ym.m}
         today={now}
@@ -146,10 +148,41 @@ export function FriendHome({ id }: { id: string }) {
 
   return (
     <View>
+      {DESIGN_TRIAL ? (
+        // 메인 앱 (user, 2026-11-23: not the original home's profile row): a centred card, as on 프로필
+        <View style={{ marginHorizontal: G, marginTop: 8, alignItems: "center", paddingVertical: 18, gap: 4, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+          {p.avatarUri ? <StoredImage uri={p.avatarUri} label={`${p.nickname} 사진`} style={{ width: 72, height: 72, borderRadius: 36 }} />
+            : <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: c.surfaceStrong }} />}
+          <AppText variant="bodyLg" weight={800} style={{ marginTop: 8 }}>{p.nickname}</AppText>
+          {p.bio ? <AppText variant="small" color="textMuted" center style={{ paddingHorizontal: 20 }}>{p.bio}</AppText> : null}
+          {diary ? (
+            <Pressable onPress={() => setDiaryOpen(true)} accessibilityRole="button" accessibilityLabel={`${p.nickname}의 오늘 기분과 일기`}
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: c.surfaceStrong }}>
+              {diary.emoji ? <MoodMark value={diary.emoji} size={18} /> : <AppText variant="small">📔</AppText>}
+              <AppText variant="small" weight={700}>오늘의 기분</AppText>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : (
       <View style={{ paddingHorizontal: G, marginTop: 34 }}>
         <ProfileHeader name={p.nickname} avatar={p.avatarUri} bio={p.bio} emoji={diary ? diary.emoji ?? "📔" : undefined} onEmoji={() => setDiaryOpen(true)} readOnly />
       </View>
-      <View style={{ paddingHorizontal: G, marginTop: 27, gap: 16 }}>
+      )}
+      <View style={{ paddingHorizontal: G, marginTop: DESIGN_TRIAL ? 16 : 27, gap: 16 }}>
+        {DESIGN_TRIAL ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Pressable onPress={() => { setSelected(now); setView({ y: parseDay(now).y, m: parseDay(now).m }); }} style={{ flex: 1 }} accessibilityRole="button" accessibilityLabel={`${title}, 오늘로 이동`}>
+              <AppText variant="bodyLg" weight={800} style={{ fontSize: 22, lineHeight: 30 }} accessibilityRole="header">{title}</AppText>
+            </Pressable>
+            <Pressable onPress={() => { smoothLayout(); setMode(mode === "month" ? "week" : "month"); setView({ y: parseDay(selected).y, m: parseDay(selected).m }); }}
+              accessibilityRole="button" accessibilityLabel={mode === "month" ? "한 주만 보기" : "한 달 보기"}
+              style={{ height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: c.surface, justifyContent: "center" }}>
+              <AppText variant="helper" weight={700}>{mode === "month" ? "월" : "주"}</AppText>
+            </Pressable>
+            <Pressable onPress={() => goPage(pageIndex - 1, -1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="이전" style={{ padding: 4 }}><ChevronLeft size={24} color={c.text} /></Pressable>
+            <Pressable onPress={() => goPage(pageIndex + 1, 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="다음" style={{ padding: 4 }}><ChevronRight size={24} color={c.text} /></Pressable>
+          </View>
+        ) : (
         <CalendarHeader
           title={title}
           mode={mode}
@@ -159,6 +192,7 @@ export function FriendHome({ id }: { id: string }) {
           onNext={() => goPage(pageIndex + 1, 1)}
           filterColors={cats.slice(0, 2).map((x) => x.color)}
         />
+        )}
         <CalendarPager key={`friend-${id}-${mode}-${sundayFirst}`} index={pageIndex} onIndexChange={goPage} renderPage={renderPage} gutter={G} />
       </View>
       <View style={{ paddingHorizontal: G, marginTop: 20, gap: 12, marginLeft: 3 }}>
@@ -169,7 +203,14 @@ export function FriendHome({ id }: { id: string }) {
         {current && shown.length === 0 ? <AppText variant="body" color="textMuted" style={{ paddingVertical: 16 }}>이날 보이는 할 일이 없어요</AppText> : null}
         {shown.map((cat) => (
           <View key={cat.id} style={{ gap: 2 }}>
-            <View style={{ marginBottom: 8 }}><CategoryPill title={cat.title} color={cat.color} visibility="public" /></View>
+            {DESIGN_TRIAL ? (
+              // the 달력 tab's group title (colour bar, name, done/all)
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 32 }}>
+                <View style={{ width: 3, height: 14, borderRadius: 2, backgroundColor: visibleOn(cat.color, c.bg, c.text) }} />
+                <AppText variant="helper" weight={700} raw={visibleOn(cat.color, c.bg, c.text)} style={{ flex: 1 }} numberOfLines={1}>{cat.title}</AppText>
+                <AppText variant="small" color="textMuted">{`${dayTodos.filter((t) => t.categoryId === cat.id && t.isDone).length}/${dayTodos.filter((t) => t.categoryId === cat.id).length}`}</AppText>
+              </View>
+            ) : <View style={{ marginBottom: 8 }}><CategoryPill title={cat.title} color={cat.color} visibility="public" /></View>}
             {dayTodos.filter((t) => t.categoryId === cat.id).map((t) => {
               const list = listFor(t.id, "todo");
               const mine = list.some((r) => r.mine);

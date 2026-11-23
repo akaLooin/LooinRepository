@@ -9,6 +9,7 @@ import { Clover, type CloverState } from "./Clover";
 import { GlowFrame } from "./Highlight";
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from "./icons";
 import { PillButton } from "./Pill";
+import { DESIGN_TRIAL } from "../lib/variant";
 
 /** 일정 캘린더: up to four events a day, then "+n" (user) */
 const LONG_LANES = 4;
@@ -75,7 +76,7 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   const inner = (
     <>
       {clover ? <Clover state={clover} glow={important} /> : null}
-      <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
+      <View style={{ width: picker ? 34 : ringSize, height: picker ? 34 : ringSize, borderRadius: picker && DESIGN_TRIAL ? 10 : (picker ? 34 : ringSize) / 2, alignItems: "center", justifyContent: "center", backgroundColor: !boxed && ring ? c.selectedBg : !boxed && todayDisc ? c.selectedDay : "transparent", marginTop: picker ? 0 : -5,
         borderWidth: dday ? 2 : 0, borderColor: c.dday, transform: [{ translateY: (ring || todayDisc || dday) && !picker && !boxed ? 4 : 0 }] }}
         accessibilityLabel={dday ? "디데이" : undefined}>
         <AppText variant="date" weight={ring ? 700 : 500} color={numberColor}>{label}</AppText>
@@ -154,7 +155,9 @@ export function Calendar({ year, month, today, selected, onSelect, state, picker
         return (
         <View key={i} style={{ flexDirection: "row", height: picker ? 52 : long ? tokens.layout.spanRowHeight : tokens.layout.calendarRowHeight + lineRoom, marginHorizontal: -bleed }}>
           {row.map((day, j) => {
-            if (!day) return <View key={j} style={{ flex: 1 }} />;
+            // an empty slot takes the same side margin as a boxed day, so a short first or last week keeps the grid
+            // (user, 2026-11-23: the last week's days were wider and off line)
+            if (!day) return <View key={j} style={{ flex: 1, marginHorizontal: boxed && !picker ? 2 : 0 }} />;
             const isToday = day === today;
             // As in the original: the picked day is a white disc (black number, red/blue kept on Sun/Sat),
             // today is a grey disc when another day is picked. The date picker sheet only marks the picked day.

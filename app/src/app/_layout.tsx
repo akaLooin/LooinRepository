@@ -5,6 +5,7 @@ import { router, Stack } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Appearance, Platform, Pressable } from "react-native";
 import * as SystemUI from "expo-system-ui";
+import { NavigationBar } from "expo-navigation-bar";
 import { pushTarget } from "../lib/push";
 import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
@@ -49,7 +50,11 @@ function Shell() {
     if (Platform.OS !== "android") return;
     try { Appearance.setColorScheme(theme === "system" ? "unspecified" : theme); } catch { /* older system: keep */ }
     SystemUI.setBackgroundColorAsync(c.bg).catch(() => {});
-  }, [theme, c.bg]);
+    // the bar's own light/dark flag (custom bars such as Samsung Theme Park read it; user, 2026-11-23): dark app →
+    // dark bar with light buttons. In expo-navigation-bar "light"/"dark" name the BUTTONS (its native code: "dark"
+    // = dark content on a light bar), so a dark app asks for "light". The contrast veil is off (app.json).
+    try { NavigationBar.setStyle(scheme === "dark" ? "light" : "dark"); } catch { /* an APK without the module */ }
+  }, [theme, c.bg, scheme]);
   // 점검 모드 from the admin app (design app only)
   const { maintenance } = useAppConfig();
   return (

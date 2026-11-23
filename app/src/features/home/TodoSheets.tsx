@@ -5,7 +5,7 @@ import { Platform, Pressable, View } from "react-native";
 import {
   AppText, Archive, ArrowRight, BottomSheet, Button, Calendar, Clock, FileText, Image, Info, MemoInput, Pencil, Redo2, SheetMenuRow,
   TileButton, TimeGrid, Toggle, Trash2, ChevronLeft, ChevronRight, PillButton, ArrowDown, CircleCheck,
-  SkipForward, CalendarClock, AlarmClock, StickyNote, CopyPlus, CalendarPlus, PenLine, ImageOff, ScanText, Timer, Repeat, Camera, Inbox, Sunrise,
+  Lock, SkipForward, CalendarClock, AlarmClock, StickyNote, CopyPlus, CalendarPlus, PenLine, ImageOff, ScanText, Timer, Repeat, Camera, Inbox, Sunrise,
 } from "../../components";
 import { ensurePermission } from "../../data/notifications";
 import { copyTodo, copyTodoTomorrow, deleteTodo, moveTodo, moveTodos, setTodoAlarm, setTodoPhoto, updateTodo, useDB, type Todo } from "../../data/store";
@@ -168,12 +168,29 @@ function MemoSheet({ todo, onClose }: { todo: Todo; onClose: () => void }) {
   };
   return (
     <BottomSheet visible onClose={save} title={todo.title} right={{ label: "완료", onPress: save }}>
-      <MemoInput value={memo} onChangeText={setMemo} placeholder="메모를 남겨 보세요" focusOnOpen />
+      {DESIGN_TRIAL ? (
+        // 메인 앱 (user, 2026-11-23): the lock is a chip above the note (not the original's switch under it)
+        <MemoLockChip priv={priv} onChange={setPriv} />
+      ) : null}
+      <MemoInput value={memo} onChangeText={setMemo} placeholder={DESIGN_TRIAL ? "이 할 일에 남길 메모" : "메모를 남겨 보세요"} focusOnOpen />
+      {DESIGN_TRIAL ? null : (
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 10, marginTop: 14 }}>
         <AppText variant="body">나만 보기</AppText>
         <Toggle value={priv} onChange={setPriv} label="메모 나만 보기" />
       </View>
+      )}
     </BottomSheet>
+  );
+}
+
+function MemoLockChip({ priv, onChange }: { priv: boolean; onChange: (v: boolean) => void }) {
+  const { c } = useTheme();
+  return (
+    <Pressable onPress={() => onChange(!priv)} accessibilityRole="switch" accessibilityState={{ checked: priv }} accessibilityLabel="메모 나만 보기"
+      style={{ flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", height: 32, paddingHorizontal: 12, marginBottom: 10, borderRadius: 16, backgroundColor: priv ? c.text : c.surfaceStrong }}>
+      <Lock size={14} color={priv ? c.bg : c.textMuted} />
+      <AppText variant="small" weight={700} raw={priv ? c.bg : c.textSecondary}>{priv ? "메모는 나만 봐요" : "친구도 메모를 볼 수 있어요"}</AppText>
+    </Pressable>
   );
 }
 

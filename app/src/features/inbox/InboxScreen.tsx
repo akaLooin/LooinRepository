@@ -8,6 +8,7 @@ import { addTodo, arrangeTodos, EndedCategoryError, selectActiveCategories, sele
 import { tokens, useInsets, useTheme } from "../../theme";
 import { arrangeByHeaders } from "../../lib/arrange";
 import { InlineTodoInput } from "../home/InlineTodoInput";
+import { QuickAdd } from "../today/parts";
 import { TodoSheets } from "../home/TodoSheets";
 import { useSwipeRight } from "../home/useSwipeRight";
 import { usePager } from "../home/pagerContext";
@@ -60,7 +61,7 @@ export function InboxScreen() {
         </View>
         <View style={{ paddingHorizontal: tokens.layout.gutter, gap: 12, marginTop: 8 }}>
           {todos.length === 0 ? (
-            <AppText variant="helper" color="textMuted">날짜를 정하지 않은 할 일을 모아 두는 곳이에요. 카테고리의 + 를 눌러 추가해 보세요.</AppText>
+            <AppText variant="helper" color="textMuted">{DESIGN_TRIAL ? "날짜가 아직 없는 할 일을 모아 둬요. 아래 칸에 적어 넣고, 날짜가 정해지면 메뉴에서 옮겨요." : "날짜를 정하지 않은 할 일을 모아 두는 곳이에요. 카테고리의 + 를 눌러 추가해 보세요."}</AppText>
           ) : null}
           {/* one list, as on home: a held to-do can move into another category */}
           <ReorderableList
@@ -76,7 +77,7 @@ export function InboxScreen() {
                   <View style={{ marginBottom: 10 }}>
                     <CategoryPill title={cat.title} color={cat.color} visibility={cat.visibility}
                       onPress={() => router.push(`/categories/${cat.id}` as never)}
-                      onAdd={() => { setEditing(null); setAdding(cat.id); }} />
+                      onAdd={DESIGN_TRIAL ? undefined : () => { setEditing(null); setAdding(cat.id); }} />
                   </View>
                 );
               }
@@ -99,6 +100,8 @@ export function InboxScreen() {
           />
         </View>
       </DragScrollView>
+      {/* 메인 앱: one input bar at the bottom, as in 달력 (not the original's + on each category) */}
+      {DESIGN_TRIAL ? <QuickAdd day={null} cats={categories} lastId={prefs.quickAddCategory} notice={notice} /> : null}
       <TodoSheets inbox todoId={sheetTodo} start={sheetStart} onClose={() => setSheetTodo(null)} onEdit={(id) => setEditing(id)} notice={notice} />
       {toast}
     </View>

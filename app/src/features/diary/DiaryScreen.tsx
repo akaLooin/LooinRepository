@@ -7,7 +7,7 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import {
   AppText, BottomSheet, Button, ChevronDown, ConfirmDialog, ZoomPhoto, Image, MoodGauge, MoodMark, KeyboardSpacer, RadioCheck, ScreenHeader, Slider, SmilePlus, Sticker, StoredImage, Thermometer,
-  useToast, VisibilityIcon, type Visibility,
+  useToast, VisibilityIcon, VisibilityTiles, VISIBILITY_WORD, type Visibility,
 } from "../../components";
 import { saveDiary, selectDiary, useDB } from "../../data/store";
 import { reactionsOnMine, type Reaction } from "../../data/social";
@@ -104,7 +104,7 @@ export function DiaryScreen() {
               </Pressable>
               <Pressable onPress={() => setSheet("visibility")} accessibilityRole="button" accessibilityLabel={`공개 범위 ${VISIBILITY_LABEL[visibility]}, 바꾸기`} style={CHIP}>
                 <VisibilityIcon value={visibility} color={ink} size={15} />
-                <AppText variant="helper" weight={600} raw={ink}>{VISIBILITY_LABEL[visibility]}</AppText>
+                <AppText variant="helper" weight={600} raw={ink}>{VISIBILITY_WORD[visibility]}</AppText>
               </Pressable>
             </View>
           </View>
@@ -212,8 +212,9 @@ export function DiaryScreen() {
         </View>
       </BottomSheet>
 
-      <BottomSheet visible={sheet === "visibility"} onClose={() => setSheet(null)} title="공개설정">
-        {ORDER.map((v) => (
+      <BottomSheet visible={sheet === "visibility"} onClose={() => setSheet(null)} title={DESIGN_TRIAL ? "누가 볼 수 있나요" : "공개설정"}>
+        {DESIGN_TRIAL ? <VisibilityTiles value={visibility} onChange={(v) => { setVisibility(v); setSheet(null); }} /> : null}
+        {(DESIGN_TRIAL ? [] : ORDER).map((v) => (
           <Pressable key={v} onPress={() => { setVisibility(v); setSheet(null); }} accessibilityRole="radio" accessibilityState={{ checked: visibility === v }}
             style={{ flexDirection: "row", alignItems: "center", height: 58, gap: 14 }}>
             <VisibilityIcon value={v} color={c.textMuted} size={22} />

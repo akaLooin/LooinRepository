@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { AppText, ArrowRight, BottomSheet, Button, CalendarRange, Clover, Copy, List, RadioCheck, Redo2, X } from "../../components";
+import { AppText, ArrowRight, BottomSheet, Button, CalendarClock, CalendarRange, Clover, Copy, CopyPlus, List, RadioCheck, Redo2, SkipForward, X } from "../../components";
+import { Eraser, ListChecks } from "lucide-react-native";
+import { DESIGN_TRIAL } from "../../lib/variant";
 import { setPref, usePrefs } from "../../data/prefs";
 import type { Category } from "../../data/store";
-import { useTheme } from "../../theme";
+import { tokens, useTheme } from "../../theme";
 
 /**
  * ▼ next to the month: 캘린더 종류 (clovers, or the 긴 할 일 calendar with the multi-day to-dos as bars; user's
@@ -65,10 +67,36 @@ const LIST_ACTIONS: { key: ListAction; label: string; color: "menuSoft" | "menuE
   { key: "deleteAll", label: "모든 할 일 삭제", color: "menuDelete", Icon: X, danger: true },
 ];
 
+const MAIN_ACTIONS: { key: ListAction; label: string; sub: string; Icon: typeof ArrowRight; danger?: boolean }[] = [
+  { key: "tomorrow", label: "남은 것 내일로", sub: "끝내지 못한 할 일을 내일로", Icon: SkipForward },
+  { key: "otherDay", label: "남은 것 다른 날로", sub: "날짜를 골라 옮기기", Icon: CalendarClock },
+  { key: "select", label: "골라서 정리", sub: "여러 개 골라 옮기거나 지우기", Icon: ListChecks },
+  { key: "copyAll", label: "하루 복사", sub: "이날 할 일을 다른 날에도", Icon: CopyPlus },
+  { key: "deleteAll", label: "하루 비우기", sub: "이날 할 일을 모두 지우기", Icon: Eraser, danger: true },
+];
+
 /** 리스트 메뉴 (S03 bottom): pick one action for the selected day, then 확인. Matches the reference screenshot. */
 export function ListMenuSheet({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: (a: ListAction) => void }) {
   const { c } = useTheme();
   const [picked, setPicked] = useState<ListAction | null>(null);
+  // 메인 앱 (user, 2026-11-23: not like the original's list): a grid of tiles in our own words; one tap acts
+  // (deleting the whole day still asks first, where the list handles it)
+  if (DESIGN_TRIAL) return (
+    <BottomSheet visible={open} onClose={onClose} title="이날 한꺼번에">
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {MAIN_ACTIONS.map(({ key, label, sub, Icon, danger }) => (
+          <Pressable key={key} onPress={() => onConfirm(key)} accessibilityRole="button" accessibilityLabel={label}
+            style={({ pressed }) => ({ width: "48%", flexGrow: 1, padding: 14, gap: 8, borderRadius: tokens.radius.lg, backgroundColor: pressed ? c.surfaceRow : c.surface })}>
+            <Icon size={20} color={danger ? c.danger : c.text} />
+            <View>
+              <AppText variant="body" weight={700} color={danger ? "danger" : "text"}>{label}</AppText>
+              <AppText variant="small" color="textMuted">{sub}</AppText>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+    </BottomSheet>
+  );
   const close = () => { setPicked(null); onClose(); };
   return (
     <BottomSheet visible={open} onClose={close} title="리스트 메뉴">

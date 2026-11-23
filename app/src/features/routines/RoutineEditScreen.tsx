@@ -4,13 +4,14 @@ import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, TextInput, View } from "react-native";
 import {
-  AppText, BottomSheet, Button, FieldGroup, FieldRow, MemoInput, RadioList, ScreenHeader, TimeGrid, TitleInput, Toggle,
+  AppText, BottomSheet, Button, Check, FieldGroup, FieldRow, MemoInput, RadioList, ScreenHeader, TimeGrid, TitleInput, Toggle,
 } from "../../components";
 import { deleteRoutine, saveRoutine, updateTodo, useDB } from "../../data/store";
 import { addDays, parseDay, today, weekday, type Day } from "../../lib/dates";
 import { ruleLabel, type RepeatRule, type RepeatType } from "../../lib/routines";
 import { fontFamily, ScaledRoot, tokens, useTheme, visibleOn } from "../../theme";
 import { DatePickSheet } from "../home/TodoSheets";
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 const TYPES: { value: RepeatType; label: string }[] = [
   { value: "daily", label: "매일" }, { value: "interval", label: "간격" }, { value: "weekly", label: "매주" },
@@ -57,11 +58,51 @@ export function RoutineEditScreen() {
     goBack(source ? "/" : "/routines");
   };
 
+  const sec = (t: string) => <AppText variant="small" weight={700} color="textMuted" style={{ marginTop: 6, marginLeft: 2 }}>{t}</AppText>;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
       <ScreenHeader title="루틴" onBack={() => goBack(source ? "/" : "/routines")} right={{ label: "확인", onPress: save }} />
       <ScrollView contentContainerStyle={{ padding: tokens.layout.gutter, paddingTop: 6, gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <TitleInput value={title} onChangeText={(s) => { setTitle(s); setError(undefined); }} placeholder="루틴 이름" underline={color} error={error} autoFocus={!existing} />
+        {DESIGN_TRIAL ? (
+          // 메인 앱 (user, 2026-11-23: not the original's field order): a one-line summary, then 어떻게 → 몇 시 → 기간,
+          // 메모, the manual-add option as a chip and an outline delete
+          <>
+            <View style={{ padding: 14, borderRadius: tokens.radius.lg, backgroundColor: c.surface }}>
+              <AppText variant="body" weight={700}>{`${ruleLabel(rule)}${time ? ` · ${time}` : ""}`}</AppText>
+              <AppText variant="small" color="textMuted" style={{ marginTop: 2 }}>{`${fmt(startDate)}부터 ${endDate ? `${fmt(endDate)}까지` : "계속"}`}</AppText>
+            </View>
+            {sec("어떻게 반복할까요")}
+            <FieldGroup><FieldRow title="반복" value={ruleLabel(rule)} onPress={() => setSheet("repeat")} /></FieldGroup>
+            {sec("몇 시에 할까요")}
+            <FieldGroup><FieldRow title="시간" value={time ?? "정하지 않음"} onPress={() => { const [h, m] = (time ?? "09:00").split(":").map(Number); setDraftTime({ h, m }); setSheet("time"); }} /></FieldGroup>
+            {sec("언제부터 언제까지")}
+            <FieldGroup>
+              <FieldRow title="시작" value={fmt(startDate)} onPress={() => setSheet("start")} />
+              <FieldRow title="끝" value={endDate ? fmt(endDate) : "계속"} onPress={() => (endDate ? setSheet("end") : setEnd(addDays(startDate, 30)))} />
+            </FieldGroup>
+            {endDate ? (
+              <Pressable onPress={() => setEnd(undefined)} accessibilityRole="button" style={{ alignSelf: "flex-start", paddingVertical: 4 }}>
+                <AppText variant="small" color="textMuted">끝 없이 계속하기</AppText>
+              </Pressable>
+            ) : null}
+            {sec("메모")}
+            <MemoInput value={memo} onChangeText={setMemo} placeholder="루틴에 대한 메모" />
+            <Pressable onPress={() => setManual(!manualAdd)} accessibilityRole="switch" accessibilityState={{ checked: manualAdd }} accessibilityLabel="직접 넣을 때만 나타나기"
+              style={{ flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", height: 38, paddingHorizontal: 14, marginTop: 4, borderRadius: 19, borderWidth: 1.5, borderColor: manualAdd ? c.text : c.surfaceStrong, backgroundColor: manualAdd ? c.surfaceStrong : "transparent" }}>
+              {manualAdd ? <Check size={15} color={c.text} strokeWidth={3} /> : null}
+              <AppText variant="helper" weight={manualAdd ? 700 : 500} color={manualAdd ? "text" : "textSecondary"}>직접 넣을 때만 나타나기</AppText>
+            </Pressable>
+            <AppText variant="small" color="textMuted">켜면 날마다 저절로 생기지 않고, 목록의 + 를 눌러 넣을 때만 할 일이 돼요.</AppText>
+            {existing ? (
+              <Pressable onPress={() => setSheet("delete")} accessibilityRole="button" accessibilityLabel="루틴 지우기"
+                style={{ height: 46, marginTop: 10, borderRadius: 23, borderWidth: 1, borderColor: c.danger, alignItems: "center", justifyContent: "center" }}>
+                <AppText variant="body" weight={700} color="danger">루틴 지우기</AppText>
+              </Pressable>
+            ) : null}
+          </>
+        ) : (
+        <>
         <View style={{ height: 0 }} />
         <FieldGroup>
           <FieldRow title="시작 날짜" value={fmt(startDate)} onPress={() => setSheet("start")} />
@@ -75,6 +116,8 @@ export function RoutineEditScreen() {
         <FieldGroup><FieldRow title="수동으로 할 일 추가" right={<Toggle value={manualAdd} onChange={setManual} label="수동으로 할 일 추가" />} /></FieldGroup>
         <AppText variant="helper" color="textMuted">켜면 홈에 자동으로 나타나지 않고, 할 일을 추가할 때 이 루틴을 골라 넣을 수 있어요.</AppText>
         {existing ? <View style={{ marginTop: 8 }}><Button kind="danger" label="삭제" onPress={() => setSheet("delete")} /></View> : null}
+        </>
+        )}
       </ScrollView>
 
       {sheet === "start" ? <DatePickSheet title="시작 날짜" initial={startDate} onClose={() => setSheet(null)} onPick={(d) => { setStart(d); if (endDate && endDate < d) setEnd(undefined); setSheet(null); }} /> : null}

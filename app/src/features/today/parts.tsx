@@ -61,7 +61,8 @@ export function WeekStrip({ day, onPick, onDouble, big }: { day: Day; onPick: (d
 }
 
 /** The bar at the bottom: type a to-do, it goes to the shown day in the chosen category (tap the chip to change it). */
-export function QuickAdd({ day, cats, lastId, notice }: { day: Day; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
+/** `day` null = 보관함 (no date). */
+export function QuickAdd({ day, cats, lastId, notice }: { day: Day | null; cats: ReturnType<typeof selectActiveCategories>; lastId: string | null; notice: (m: string) => void }) {
   const t = useT();
   const { c } = useTheme();
   const insets = useInsets();
@@ -85,7 +86,7 @@ export function QuickAdd({ day, cats, lastId, notice }: { day: Day; cats: Return
     <View style={{ paddingHorizontal: G, paddingTop: 8, paddingBottom: 10, backgroundColor: c.bg }}>
       <View style={{ height: 48, borderRadius: 24, backgroundColor: c.surface, flexDirection: "row", alignItems: "center", paddingLeft: 18, paddingRight: 6, gap: 8 }}>
         <TextInput ref={input} value={text} onChangeText={setText} onSubmitEditing={submit} blurOnSubmit={false} returnKeyType="done"
-          placeholder={t("quickadd.placeholder", { date: `${parseDay(day).m}월 ${parseDay(day).d}일` })} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
+          placeholder={day ? t("quickadd.placeholder", { date: `${parseDay(day).m}월 ${parseDay(day).d}일` }) : "날짜 없이 보관할 할 일"} placeholderTextColor={c.textPlaceholder} accessibilityLabel="할 일 추가"
           style={{ flex: 1, minWidth: 0, color: c.text, fontSize: tokens.type.bodyLg.size, fontFamily: fontFamily(400), paddingVertical: 0, outlineStyle: "none" as never }} />
         <Pressable onPress={() => setPicking(true)} accessibilityRole="button" accessibilityLabel={`카테고리 ${cat.title}, 바꾸기`}
           style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: col + "22" }}>
