@@ -88,8 +88,13 @@ const DayCell = memo(function DayCell({ day, ring, todayDisc, picker, clover, ri
   // cell; the lines below it get their own room, so the two never overlap (user, 2026-11-23)
   if (boxed) return (
     <Pressable ref={cellRef ? (v) => cellRef(day, v) : undefined} style={{ flex: 1, marginHorizontal: 2 }} onPress={() => onPick(day)} {...a11y}>
-      <View style={{ height: boxH ?? tokens.layout.calendarRowHeight - 2, alignItems: "center", gap: 4, paddingTop: 5, borderRadius: tokens.radius.md,
-        backgroundColor: hover ? c.dropTarget : ring ? c.selectedBg : todayDisc ? c.todayCell : "transparent" }}>
+      <View style={{ height: boxH ?? tokens.layout.calendarRowHeight - 2, alignItems: "center", gap: 4, paddingTop: 5 }}>
+        {/* the white (picked) or grey (today) box is its own view, made fresh when a day is picked: changing the colour
+            of one that was there lost its round corners on the phone (user, 2026-11-23) */}
+        {hover || ring || todayDisc ? (
+          <View key={hover ? "h" : ring ? "r" : "t"} pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderRadius: tokens.radius.md, overflow: "hidden",
+            backgroundColor: hover ? c.dropTarget : ring ? c.selectedBg : c.todayCell }} />
+        ) : null}
         {inner}
       </View>
     </Pressable>

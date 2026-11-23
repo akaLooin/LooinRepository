@@ -83,7 +83,7 @@ const { chromium } = require("playwright");
   // the picked day is a white cell, today a grey one
   const d2 = new Date(now); d2.setDate(now.getDate() === 1 ? 2 : 1);
   await p.getByLabel(`${d2.getMonth() + 1}월 ${d2.getDate()}일`, { exact: true }).first().click(); await p.waitForTimeout(400);
-  r.cellColours = await p.evaluate(([a, b2]) => [a, b2].map((l) => getComputedStyle(document.querySelector(`[aria-label="${l}"]`)).backgroundColor), [`${d2.getMonth() + 1}월 ${d2.getDate()}일`, `${now.getMonth() + 1}월 ${now.getDate()}일`]);
+  r.cellColours = await p.evaluate(([a, b2]) => [a, b2].map((l) => { const el = document.querySelector(`[aria-label="${l}"]`); const box = [...el.querySelectorAll("div")].find((d) => !/rgba\(0, 0, 0, 0\)/.test(getComputedStyle(d).backgroundColor)); return box ? getComputedStyle(box).backgroundColor : "none"; }), [`${d2.getMonth() + 1}월 ${d2.getDate()}일`, `${now.getMonth() + 1}월 ${now.getDate()}일`]);
   await shot("design-calendar");
   await p.getByRole("tab", { name: "커뮤니티" }).click(); await p.waitForTimeout(1200);
   r.crewsHidden = (await p.getByText("크루", { exact: true }).count()) === 0;

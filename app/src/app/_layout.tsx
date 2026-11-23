@@ -5,7 +5,11 @@ import { router, Stack } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { Appearance, Platform, Pressable } from "react-native";
 import * as SystemUI from "expo-system-ui";
-import { NavigationBar } from "expo-navigation-bar";
+import { requireOptionalNativeModule } from "expo";
+// expo-navigation-bar only in APKs built with it: an older APK has no native part, and importing the package there
+// would stop the app at start. So it is loaded only when present, and the app version did not need to change.
+const navBar: { setStyle: (s: "light" | "dark") => void } | null = Platform.OS === "android" && requireOptionalNativeModule("ExpoNavigationBar")
+  ? require("expo-navigation-bar").NavigationBar : null;
 import { pushTarget } from "../lib/push";
 import { StatusBar } from "expo-status-bar";
 import { View } from "react-native";
@@ -55,7 +59,7 @@ function Shell() {
     // the bar's own light/dark flag (custom bars such as Samsung Theme Park read it; user, 2026-11-23): dark app →
     // dark bar with light buttons. In expo-navigation-bar "light"/"dark" name the BUTTONS (its native code: "dark"
     // = dark content on a light bar), so a dark app asks for "light". The contrast veil is off (app.json).
-    try { NavigationBar.setStyle(scheme === "dark" ? "light" : "dark"); } catch { /* an APK without the module */ }
+    try { navBar?.setStyle(scheme === "dark" ? "light" : "dark"); } catch { /* keep the bar as it is */ }
   }, [theme, c.bg, scheme]);
   // 점검 모드 from the admin app (design app only)
   const { maintenance } = useAppConfig();
