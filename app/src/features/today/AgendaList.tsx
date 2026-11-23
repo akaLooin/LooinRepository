@@ -9,9 +9,10 @@ import { arrangeByHeaders } from "../../lib/arrange";
 import { useFeature, useT } from "../../lib/appConfig";
 import { EventEditor, newDraft, type EventDraft } from "../events/EventSheets";
 import { useCalendarEvents } from "../../lib/calendarView";
+import { isReadOnlyEvent } from "../../lib/googleColors";
 import { formatTime, setPref, usePrefs } from "../../data/prefs";
 import {
-  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleImportant, toggleTodo, updateTodo, useDB,
+  addRoutineTodo, arrangeTodos, copyTodos, ddayLabel, deleteTodos, isDDayOn, manualRoutinesOn, materialize, moveTodos, selectCategories, selectDDays, todosForDay, toggleEventImportant, toggleImportant, toggleTodo, updateTodo, useDB,
 } from "../../data/store";
 import { addDays, parseDay, today, type Day } from "../../lib/dates";
 import { clock, dayBlocks, eventsOn, eventTimeLabel, fromMinutes, inBand, type CalEvent } from "../../lib/events";
@@ -163,8 +164,13 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
       </GlowTint>
     );
   };
+  // 꾹 누르기 = 강조 켜고 끄기 (user, 2026-11-23: quicker than opening the event); a read-only Google event stays
+  const glowEvent = (e: CalEvent) => {
+    if (isReadOnlyEvent(e, prefs.googleReadOnlyCalendarIds)) { notice("보기만 할 수 있는 구글 캘린더의 일정이에요"); return; }
+    notice(toggleEventImportant(e.id) ? `'${e.title}' 강조했어요` : `'${e.title}' 강조를 풀었어요`);
+  };
   const eventCard = (e: CalEvent, from: number, to: number) => (
-    <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정"
+    <Pressable key={e.id} onPress={() => setEditing({ ...e })} onLongPress={() => glowEvent(e)} delayLongPress={450} accessibilityRole="button" accessibilityHint="일정 수정, 꾹 누르면 강조"
       accessibilityLabel={`${e.title}, ${eventTimeLabel(e, prefs.use24h, parseDay(day).y)}${e.important ? ", 강조" : ""}`}
       style={{ flex: 1, paddingVertical: 9, paddingHorizontal: 12, borderRadius: tokens.radius.md, backgroundColor: e.color + "26", borderLeftWidth: 3, borderLeftColor: e.color, marginVertical: 4 }}>
       {e.important ? <GlowTint color={glowOf(e.categoryId, e.color)}><GlowFrame radius={tokens.radius.md} inset={4} embers={{ count: 6, rise: 18, size: 3 }} /></GlowTint> : null}
@@ -219,7 +225,7 @@ export function AgendaList({ day, notice, drop, selecting, onSelecting }: {
           {heading(tx("agenda.allday"))}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, paddingTop: 6 }}>
             {band.map((e) => (
-              <Pressable key={e.id} onPress={() => setEditing({ ...e })} accessibilityRole="button" accessibilityHint="일정 수정" accessibilityLabel={`${e.title}, 종일${e.important ? ", 강조" : ""}`}
+              <Pressable key={e.id} onPress={() => setEditing({ ...e })} onLongPress={() => glowEvent(e)} delayLongPress={450} accessibilityRole="button" accessibilityHint="일정 수정, 꾹 누르면 강조" accessibilityLabel={`${e.title}, 종일${e.important ? ", 강조" : ""}`}
                 style={{ backgroundColor: e.color, borderRadius: tokens.radius.sm, paddingHorizontal: 10, paddingVertical: 5 }}>
                 {e.important ? <GlowTint color={glowOf(e.categoryId, e.color)}><GlowFrame radius={tokens.radius.sm} inset={5} embers={{ count: 6, rise: 16, size: 3 }} /></GlowTint> : null}
                 <AppText variant="small" weight={600} raw={onColor(e.color)} numberOfLines={1}>{e.title}</AppText>
