@@ -129,15 +129,8 @@ export function EventEditor({ draft, onClose, onSaved }: { draft: EventDraft | n
     body = (
       <View style={{ gap: 18 }}>
         <AppText variant="bodyLg" weight={700}>색</AppText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-          {colors.map((col) => (
-            <Pressable key={col} onPress={() => put({ color: col })} accessibilityRole="radio" accessibilityState={{ checked: e.color.toUpperCase() === col }} accessibilityLabel={`색 ${col}`}
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: col, alignItems: "center", justifyContent: "center" }}>
-              {e.color.toUpperCase() === col ? <Check size={20} color={onColor(col)} strokeWidth={3} /> : null}
-            </Pressable>
-          ))}
-        </View>
-        <ColorCodeInput value={e.color} onChange={(hex) => put({ color: hex })} />
+        {/* one row of swatches (the category colours first), inside the code field (user: two rows showed) */}
+        <ColorCodeInput value={e.color} onChange={(hex) => put({ color: hex })} presets={colors} />
         <Button kind="sheetPrimary" label="완료" onPress={back} />
       </View>
     );

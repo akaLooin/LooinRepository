@@ -1,12 +1,14 @@
 import { Pressable, ScrollView, View } from "react-native";
 import { useState } from "react";
-import { AppText, BottomSheet, Ellipsis, Heart, MoodGauge, MoodMark, StoredImage, ZoomPhoto } from "../../components";
+import { AppText, BottomSheet, Ellipsis, Heart, MoodGauge, RomanceGauge, MoodMark, StoredImage, ZoomPhoto } from "../../components";
 import { ActionSheet } from "../settings/parts";
 import type { Person, Reaction } from "../../data/social";
 import type { Diary } from "../../data/types";
 import { parseDay, weekday } from "../../lib/dates";
 import { contrast, tokens, useTheme } from "../../theme";
 import { ReactionLine } from "./ReactionLine";
+
+import { DESIGN_TRIAL } from "../../lib/variant";
 
 /**
  * A diary, read only, in a sheet: mood sticker and 기분 온도 on top, name and date, the text, photos, in the diary's
@@ -31,7 +33,7 @@ export function FriendDiarySheet({ diary, person, reactions, onReact, onClose, o
           <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ gap: 14 }}>
             {diary.emoji ? <View style={{ alignItems: "center", gap: 6 }}>
               <MoodMark value={diary.emoji} size={64} />
-              {typeof diary.moodTemp === "number" ? <MoodGauge temp={diary.moodTemp} ink={ink} track={c.surfaceStrong} /> : null}
+              {typeof diary.moodTemp === "number" ? (DESIGN_TRIAL ? <RomanceGauge value={diary.moodTemp} ink={ink} track={c.surfaceStrong} /> : <MoodGauge temp={diary.moodTemp} ink={ink} track={c.surfaceStrong} />) : null}
             </View> : null}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               {person.avatarUri ? <StoredImage uri={person.avatarUri} label="" style={{ width: 40, height: 40, borderRadius: 20 }} />

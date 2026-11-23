@@ -41,15 +41,7 @@ function ColorSheet({ open, title, value, own, onClose, onPick, onReset, resetLa
   const swatches = [...new Set([...(own ? [own.toUpperCase()] : []), ...GLOW_PRESETS, ...PRESET_COLORS])].slice(0, 14);
   return (
     <BottomSheet visible={open} onClose={onClose} title={title}>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
-        {swatches.map((col) => (
-          <Pressable key={col} onPress={() => choose(col)} accessibilityRole="radio" accessibilityState={{ checked: draft.toUpperCase() === col }} accessibilityLabel={`색 ${col}`}
-            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: col, alignItems: "center", justifyContent: "center" }}>
-            {draft.toUpperCase() === col ? <Check size={20} color={onColor(col)} strokeWidth={3} /> : null}
-          </Pressable>
-        ))}
-      </View>
-      <ColorCodeInput key={pick} value={draft} onChange={setDraft} />
+      <ColorCodeInput key={pick} value={draft} onChange={setDraft} presets={swatches} />
       <View style={{ marginTop: 20, flexDirection: "row", gap: 10 }}>
         {onReset ? <Button kind="sheetBlock" flex label={resetLabel ?? "원래 색으로"} onPress={onReset} /> : null}
         <Button kind="sheetBlock" flex label="확인" onPress={() => onPick(draft.toUpperCase())} />

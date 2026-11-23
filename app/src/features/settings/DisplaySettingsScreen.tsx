@@ -71,15 +71,7 @@ export function DisplaySettingsScreen() {
       </ScrollView>
       <BottomSheet visible={sheet === "glow"} onClose={() => setSheet(null)} title="강조 색">
         <AppText variant="helper" color="textMuted" style={{ marginBottom: 14 }}>중요한 날과 강조한 일정이 이 색으로 빛나요.</AppText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
-          {GLOW_PRESETS.map((col) => (
-            <Pressable key={col} onPress={() => setDraftGlow(col)} accessibilityRole="radio" accessibilityState={{ checked: draftGlow.toUpperCase() === col }} accessibilityLabel={`강조 색 ${col}`}
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: col, alignItems: "center", justifyContent: "center" }}>
-              {draftGlow.toUpperCase() === col ? <Check size={20} color={onColor(col)} strokeWidth={3} /> : null}
-            </Pressable>
-          ))}
-        </View>
-        <ColorCodeInput key={glowPick} value={draftGlow} onChange={setDraft} />
+        <ColorCodeInput key={glowPick} value={draftGlow} onChange={setDraft} presets={GLOW_PRESETS} />
         <View style={{ marginTop: 20, flexDirection: "row", gap: 10 }}>
           <Button kind="sheetBlock" flex label="기본값" onPress={() => setDraftGlow("#00FF7F")} />
           <Button kind="sheetBlock" flex label="확인" onPress={() => { setPref("glowColor", draftGlow.toUpperCase()); setSheet(null); }} />
