@@ -57,6 +57,44 @@ Deno.serve(async (req) => {
     return json(out);
   }
 
+  // one-time look at where Google keeps its event labels (the newer colours, user 2026-11-23): only fields whose name
+  // has "label" in it, from the calendar list, the calendars and the events that carry one; no event contents
+  if (input?.action === "labels-probe") {
+    if (!env("GOOGLE_CRON_SECRET") || req.headers.get("x-cron-secret") !== env("GOOGLE_CRON_SECRET")) return json({ error: "forbidden" }, 403);
+    const { data: accounts } = await db.from("google_accounts").select("user_id");
+    const out: Record<string, unknown> = {};
+    const labelish = (o: unknown, path = ""): Record<string, unknown> => {
+      const found: Record<string, unknown> = {};
+      if (o && typeof o === "object") for (const [k, v] of Object.entries(o as Row)) {
+        if (/label/i.test(k)) found[path + k] = v;
+        else if (v && typeof v === "object" && !Array.isArray(v)) Object.assign(found, labelish(v, `${path}${k}.`));
+      }
+      return found;
+    };
+    for (const a of accounts ?? []) {
+      try {
+        const token = await accessToken(db, a.user_id);
+        const { data: cals } = await db.from("google_calendars").select("calendar_id").eq("user_id", a.user_id).eq("selected", true);
+        const perCal: Record<string, unknown>[] = [];
+        for (const [i, c] of (cals ?? []).entries()) {
+          const entry = await g(token, `/users/me/calendarList/${enc(c.calendar_id)}`);
+          const cal = await g(token, `/calendars/${enc(c.calendar_id)}`);
+          const evs = await g(token, `/calendars/${enc(c.calendar_id)}/events?maxResults=2500&singleEvents=false`);
+          const ids: Record<string, number> = {};
+          let sample: Record<string, unknown> | null = null;
+          for (const e of (evs.body?.items ?? []) as GEvent[]) if (e.eventLabelId) {
+            ids[e.eventLabelId] = (ids[e.eventLabelId] ?? 0) + 1;
+            if (!sample) sample = { ...labelish(e), colorId: e.colorId ?? null };
+          }
+          perCal.push({ calendar: i + 1, listKeys: Object.keys(entry.body ?? {}), listLabels: labelish(entry.body), calKeys: Object.keys(cal.body ?? {}), calLabels: labelish(cal.body), eventLabelIds: ids, sample });
+        }
+        const colors = await g(token, "/colors");
+        out[a.user_id] = { calendars: perCal, colorsKeys: Object.keys(colors.body ?? {}), colorsLabels: labelish(colors.body) };
+      } catch (e) { out[a.user_id] = { error: String(e) }; }
+    }
+    return json(out);
+  }
+
   // one-time clean-up (user, 2026-11-23): events made in 립마크 that went to Google come off Google again and stay
   // only in 립마크. Run once from the SQL Editor with the timer's secret; nothing in the app calls it.
   if (input?.action === "remove-app-uploads") {
