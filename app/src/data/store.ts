@@ -157,7 +157,7 @@ let soon: ReturnType<typeof setTimeout> | null = null;
 function syncSoon() {
   if (session.mode !== "cloud") return;
   if (soon) clearTimeout(soon);
-  soon = setTimeout(syncNow, 2000);
+  soon = setTimeout(syncNow, 1000); // 1 s (was 2): a change reaches the server, and Google, sooner
 }
 let interval: ReturnType<typeof setInterval> | null = null;
 let appState: { remove: () => void } | null = null;

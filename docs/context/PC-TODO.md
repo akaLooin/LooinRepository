@@ -48,6 +48,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 15. ✅ (11-23, items 959 · updated 0) 색이 다르게 감·알림 없음인데 알림 생김 → 서버 올리기 → `refresh-colors` 한 번(알림도 구글 그대로 맞춤) → 색이 틀어졌던 일정은 립마크에서 색 다시 고르기
 16. ✅ (11-23, SQL·서버·refresh 완료, 폰 확인 중) (15와 한 번에) 구글 항목 전부 + 실시간 + "이 일정만" 고침: **SQL 먼저** `supabase\migrations\20261127000000_google_more.sql`(알림 여러 개·참석자·시간대·첨부·회차 표시·실시간) → `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` → 15의 `refresh-colors` 한 번 → 폰에서 립마크 업데이트 후 설정 → 구글 캘린더 → 지금 맞추기(이때 구글 "바로 알림" 연결이 생김) → 확인: 구글에서 일정 하나 고치고 몇 초 안에 립마크에 바뀌는지, 립마크에서 반복 일정 하나를 "이 일정만" 고쳤을 때 구글의 다른 회차가 그대로인지
 17. [ ] (11-23, 원인: 라벨은 주소에 `eventLabelVersion=1`이 있어야 구글이 받음 → 고침) 벚꽃을 골랐는데 구글에서 초록: 서버가 구글이 라벨을 받았는지 확인하고, 안 받았으면 가장 가까운 기본 색으로 다시 올리고 립마크 색도 구글에 보이는 색으로 맞춤 → `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` → 색 다시 바꾸고 설정 → 구글 캘린더의 빨간 글씨 확인
+18. [ ] (11-23) 립마크에서 바꾼 색이 구글에 늦게 감 → 빠른 올리기(립마크 변경만 바로, 캘린더 목록·당겨오기는 건너뜀): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` → 폰 지금 업데이트 → 색 바꿔서 몇 초 걸리는지 확인
 
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행

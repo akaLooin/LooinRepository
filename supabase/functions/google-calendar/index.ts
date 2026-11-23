@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
     return json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${q}` });
   }
   if (input?.action === "sync") {
-    try { return json(await syncUser(db, uid)); } catch (e) { return json({ error: String(e) }, 500); }
+    try { return json(await syncUser(db, uid, input?.quick === true)); } catch (e) { return json({ error: String(e) }, 500); }
   }
   // the colours this account's Google Calendar offers (user, 2026-11-23: more than eleven), for the event editor
   if (input?.action === "colors") {
@@ -291,7 +291,7 @@ const toRowFields = (f: EventFields) => ({ ...f, start_time: f.all_day ? null : 
  * One sync at a time per person (Google's notices, the app and the timer can come together; two at once would bring
  * the same Google event in twice). One that comes while another runs asks for one more round after it.
  */
-async function syncUser(db: SupabaseClient, uid: string): Promise<Row> {
+async function syncUser(db: SupabaseClient, uid: string, quick = false): Promise<Row> {
   const stale = new Date(Date.now() - 3 * 60000).toISOString();
   const { data: got } = await db.from("google_accounts").update({ sync_lock: new Date().toISOString(), sync_again: false })
     .eq("user_id", uid).or(`sync_lock.is.null,sync_lock.lt.${stale}`).select("user_id").maybeSingle();
@@ -303,7 +303,7 @@ async function syncUser(db: SupabaseClient, uid: string): Promise<Row> {
   let changed = false;
   try {
     for (let round = 0; round < 3; round++) {
-      out = await syncOnce(db, uid);
+      out = await syncOnce(db, uid, quick && round === 0);
       changed ||= !!out.changed;
       const { data: again } = await db.from("google_accounts").update({ sync_again: false }).eq("user_id", uid).eq("sync_again", true).select("user_id").maybeSingle();
       if (!again) break;
@@ -314,7 +314,12 @@ async function syncUser(db: SupabaseClient, uid: string): Promise<Row> {
   return { ...out, changed };
 }
 
-async function syncOnce(db: SupabaseClient, uid: string) {
+/**
+ * quick (user, 2026-11-23: a colour changed in 립마크 reached Google slowly): only the app's changes go to Google,
+ * with the calendars, colours and labels kept from the last full round; no pull, no watch renewal. A full round
+ * (Google's notice, the timer) does the rest.
+ */
+async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
   const token = await accessToken(db, uid);
   const stats = { pulled: 0, pushed: 0, deleted: 0, failed: 0 };
   let firstError: string | null = null;
@@ -352,8 +357,9 @@ async function syncOnce(db: SupabaseClient, uid: string) {
     return r;
   };
 
-  // 1. calendars
+  // 1. calendars (not in a quick round: the list kept from last time is used)
   const list: GEvent[] = [];
+  if (!quick) {
   for (let page: string | undefined; ;) {
     const r = await g(token, `/users/me/calendarList?maxResults=250${page ? `&pageToken=${enc(page)}` : ""}`);
     if (!r.ok) throw new Error(`calendarList ${r.status}`);
@@ -383,6 +389,7 @@ async function syncOnce(db: SupabaseClient, uid: string) {
   }
   const gone = [...had.keys()].filter((id) => !list.some((c) => c.id === id));
   if (gone.length) await db.from("google_calendars").delete().eq("user_id", uid).in("calendar_id", gone);
+  }
   const { data: calsNow } = await db.from("google_calendars").select("*").eq("user_id", uid);
   const cals: Cal[] = calsNow ?? [];
 
@@ -411,15 +418,16 @@ async function syncOnce(db: SupabaseClient, uid: string) {
   }
 
   // the eleven colours as Google's apps show them (the colors API answers older shades)
-  const palette = (await livePalette(token)).event;
+  const keep = quick ? 30 * 60000 : 0;
+  const palette = (await remembered(`p|${uid}`, keep, () => livePalette(token))).event;
   const labels = new Map<string, Record<string, string>>();
-  for (const c of picked) labels.set(c.calendar_id, await labelsOf(token, c.calendar_id).catch(() => ({})));
+  for (const c of picked) labels.set(c.calendar_id, await remembered(`l|${uid}|${c.calendar_id}`, keep, () => labelsOf(token, c.calendar_id)).catch(() => ({})));
 
   // Google tells us at once when a picked calendar changes (a watch, about a week long, renewed here)
-  await keepWatches(db, uid, token, cals).catch(() => {});
+  if (!quick) await keepWatches(db, uid, token, cals).catch(() => {});
 
   // 2. pull
-  for (const c of picked) {
+  for (const c of quick ? [] : picked) {
     const items: GEvent[] = [];
     let syncToken = c.sync_token;
     let next: string | undefined;
@@ -534,6 +542,16 @@ async function syncOnce(db: SupabaseClient, uid: string) {
  * eleven event colours are given in the shades Google's apps show (the API still answers older, paler ones); any
  * other colour comes as Google gives it. Without an answer, the eleven.
  */
+/** What Google said a moment ago (colours, labels), kept while this server copy lives: a quick round asks less. */
+const memo = new Map<string, { at: number; v: unknown }>();
+async function remembered<T>(key: string, keepMs: number, f: () => Promise<T>): Promise<T> {
+  const m = memo.get(key);
+  if (m && keepMs && Date.now() - m.at < keepMs) return m.v as T;
+  const v = await f();
+  memo.set(key, { at: Date.now(), v });
+  return v;
+}
+
 async function livePalette(token: string): Promise<{ event: Record<string, string>; calendar: Record<string, string> }> {
   const r = await g(token, "/colors");
   const pick = (o: Record<string, Row> | undefined) => Object.fromEntries(Object.entries(o ?? {}).map(([id, v]) => [id, String(v.background ?? "").toUpperCase()]).filter(([, c]) => /^#[0-9A-F]{6}$/.test(c)));

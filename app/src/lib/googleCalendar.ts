@@ -15,9 +15,9 @@ const FN = "google-calendar";
 /** "not_set_up": the server's Google keys are not in yet (a PC step); "no_sql": the SQL has not been run. */
 export class GoogleError extends Error {}
 
-async function call(action: string): Promise<Record<string, unknown>> {
+async function call(action: string, extra: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
   if (!supabase) throw new GoogleError("로그인이 필요해요");
-  const { data, error } = await supabase.functions.invoke(FN, { body: { action } });
+  const { data, error } = await supabase.functions.invoke(FN, { body: { action, ...extra } });
   if (error) {
     const ctx = (error as { context?: Response }).context;
     const body = ctx ? await ctx.json().catch(() => null) : null;
@@ -105,9 +105,14 @@ export function startGoogleAutoSync() {
   // a change made while a Google sync runs goes right after it, not at the next timer (user, 2026-11-23: a colour
   // changed in 립마크 did not reach Google at once)
   let again = false;
+  // quick: a change made in 립마크 goes straight up (user, 2026-11-23: a colour reached Google slowly); Google's own
+  // changes come by its notice to the server
+  let quickNext = false;
   const run = () => {
     lastSync = Date.now();
-    syncing = call("sync").then((r) => (r.changed ? syncNow() : undefined)).catch(() => {}).finally(() => {
+    const quick = quickNext;
+    quickNext = false;
+    syncing = call("sync", quick ? { quick: true } : {}).then((r) => (r.changed ? syncNow() : undefined)).catch(() => {}).finally(() => {
       syncing = null;
       if (again) { again = false; run(); }
     });
@@ -116,6 +121,7 @@ export function startGoogleAutoSync() {
   onSynced(({ eventsSent }) => {
     live();
     if (!getPrefs().googleLinked) return;
+    if (eventsSent) quickNext = true;
     if (syncing) { if (eventsSent) again = true; return; }
     if (!eventsSent && Date.now() - lastSync < 3 * 60000) return;
     run();
