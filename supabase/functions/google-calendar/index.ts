@@ -91,7 +91,11 @@ Deno.serve(async (req) => {
           perCal.push({ calendar: i + 1, listKeys: Object.keys(entry.body ?? {}), listLabels: labelish(entry.body), calKeys: Object.keys(cal.body ?? {}), calError: cal.body?.error ? `${cal.status} ${cal.body.error.status ?? ""} ${String(cal.body.error.message ?? "").slice(0, 160)}` : null, calLabels: labelish(cal.body), eventLabelIds: ids, sample });
         }
         const colors = await g(token, "/colors");
-        out[a.user_id] = { calendars: perCal, colorsKeys: Object.keys(colors.body ?? {}), colorsLabels: labelish(colors.body) };
+        // which permissions the saved key really carries, and when it was last saved (권한 다시 받기)
+        const info = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${enc(token)}`).then((r) => r.json()).catch(() => ({}));
+        const { data: acc } = await db.from("google_accounts").select("updated_at").eq("user_id", a.user_id).maybeSingle();
+        out[a.user_id] = { scopes: String(info.scope ?? "").split(" ").map((x: string) => x.replace("https://www.googleapis.com/auth/", "")), keySavedAt: acc?.updated_at ?? null,
+          calendars: perCal, colorsKeys: Object.keys(colors.body ?? {}), colorsLabels: labelish(colors.body) };
       } catch (e) { out[a.user_id] = { error: String(e) }; }
     }
     return json(out);
