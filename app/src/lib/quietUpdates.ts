@@ -1,6 +1,7 @@
 import * as Updates from "expo-updates";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
+import { saveResume } from "./resume";
 
 /**
  * Updates without waiting at startup (user, 2026-11-22: slow first open). The app opens at once with what it has
@@ -14,12 +15,12 @@ export function useQuietUpdates() {
   const pending = useRef(isUpdatePending);
   pending.current = isUpdatePending;
   useEffect(() => {
-    if (!Updates.isEnabled) return;
     let leftAt = 0;
     const sub = AppState.addEventListener("change", (s) => {
       if (s === "background") {
         leftAt = Date.now();
-        if (pending.current) Updates.reloadAsync().catch(() => {});
+        // the tab in view is kept first, so the restart (or Android closing the app) reopens it, not 홈
+        saveResume().then(() => { if (pending.current) Updates.reloadAsync().catch(() => {}); });
       } else if (s === "active" && leftAt && Date.now() - leftAt > 10 * 60_000) {
         // back after 10+ minutes: fetch a newer version quietly (used the next time the app is left)
         Updates.checkForUpdateAsync().then((r) => (r.isAvailable ? Updates.fetchUpdateAsync() : null)).catch(() => {});

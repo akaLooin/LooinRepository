@@ -7,6 +7,7 @@ import { HomeDash } from "../../features/today/HomeDash";
 import { ProfileTab } from "../../features/today/ProfileTab";
 import { TogetherScreen } from "../../features/today/TogetherScreen";
 import { onTabSwitch } from "../../lib/tabSwitch";
+import { setResumeTab, takeResumeTab } from "../../lib/resume";
 import { useFeature, useT } from "../../lib/appConfig";
 import type { TextKey } from "../../lib/remoteCatalog";
 import { BottomNav, DESIGN_TABS, SkinDecor, type Tab } from "../../components";
@@ -42,7 +43,18 @@ function DesignTabs() {
   useEffect(() => { onTabSwitch((t) => setShown(t)); return () => onTabSwitch(null); }, []);
   const [opened, setOpened] = useState<Set<Hosted>>(() => new Set(fromPath ? [fromPath] : []));
   const open = (t: Hosted) => setOpened((o) => (o.has(t) ? o : new Set(o).add(t)));
-  useEffect(() => { if (shown) open(shown); }, [shown]);
+  useEffect(() => { if (shown) open(shown); setResumeTab(shown); }, [shown]);
+  // restarted a moment after being left (an update put in, or Android closed it): back to the tab that was open.
+  // The tabs wait for this answer (a few milliseconds) so 홈 does not flash first.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; setReady(true); } };
+    takeResumeTab().then((t) => { if (!done && t && path === "/" && t in HOSTED) setShown(t as Hosted); finish(); });
+    const timer = setTimeout(finish, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const active = shown ?? (["/explore", "/alerts", "/send"].includes(path) ? "together" : "home");
   // names and the 커뮤니티 tab come from the admin app (texts, features)
   const t = useT();
@@ -51,7 +63,7 @@ function DesignTabs() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flex: 1 }}>
-        {(Object.keys(HOSTED) as Hosted[]).map((k) => {
+        {ready ? (Object.keys(HOSTED) as Hosted[]).map((k) => {
           if (!opened.has(k) && shown !== k) return null;
           const Screen = HOSTED[k];
           return (
@@ -59,7 +71,7 @@ function DesignTabs() {
               <View style={{ flex: 1, display: shown === k ? "flex" : "none" }}><Screen /></View>
             </Activity>
           );
-        })}
+        }) : null}
         {/* other screens under the tabs (보관함, 대화, 알림 …) still come from the router */}
         {shown ? null : <Slot />}
         {/* a skin's decoration (황혼의 재즈: twinkling stars) over the tab screens */}

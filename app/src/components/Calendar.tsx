@@ -56,30 +56,30 @@ export function CalendarHeader({ title, mode, onToggleMode, onPrev, onNext, filt
  * months the calendar strip keeps (that made a tap take two to three times longer than in the original).
  */
 /**
- * A D-day's date: the digits drawn in red with a red edge, and a strong red glow (three stacked layers: one text
- * shadow is faint on Android) that breathes with the other highlights (user, 2026-11-23: brighter). The digits themselves are in the text colour, so a D-day stands out from
- * Sunday's red numbers.
+ * A D-day's date, like a neon sign: the digits in the text colour with a tight red edge, and a wide red glow that
+ * breathes with the other highlights (user, 2026-11-23). Android draws a text's shadow only inside the text's own
+ * box, which cut the glow off square, so the glow layers are texts in a bigger box (padding) centred on the digits.
  */
+const GLOW_ROOM = 18;
 function DDayNumber({ label }: { label: string }) {
   const { c } = useTheme();
-  const glow = usePulse().interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] });
-  const text = { includeFontPadding: false, textAlignVertical: "center" as const, textShadowOffset: { width: 0, height: 0 }, textShadowColor: c.dday };
+  const pulse = usePulse();
+  const glow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] });
+  const grow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.08] });
+  const text = { includeFontPadding: false, textAlignVertical: "center" as const, textAlign: "center" as const, textShadowOffset: { width: 0, height: 0 }, textShadowColor: c.dday };
   const layer = (radius: number) => (
-    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}>
-      <AppText variant="date" weight={800} raw={c.dday} style={{ ...text, textShadowRadius: radius }}>{label}</AppText>
+    <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+      <AppText variant="date" weight={800} raw={c.dday} style={{ ...text, textShadowRadius: radius, padding: GLOW_ROOM }}>{label}</AppText>
     </View>
   );
   return (
     <View>
-      <Animated.View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, opacity: glow }}>
-        {layer(22)}
-        {layer(16)}
-        {layer(16)}
+      <Animated.View pointerEvents="none" style={{ position: "absolute", left: -GLOW_ROOM, right: -GLOW_ROOM, top: -GLOW_ROOM, bottom: -GLOW_ROOM, opacity: glow, transform: [{ scale: grow }] }}>
+        {layer(18)}
+        {layer(14)}
         {layer(10)}
-        {layer(10)}
-        {layer(5)}
+        {layer(6)}
       </Animated.View>
-      {/* a neon sign: the digits in the text colour with a tight red edge, the glow around them */}
       <AppText variant="date" weight={800} color="text" style={{ ...text, textShadowRadius: 4 }}>{label}</AppText>
     </View>
   );
