@@ -39,13 +39,15 @@ export const CLIPS: Record<string, ClipDef> = {
     { t: 0.75, legF: [0.06, 0], legB: [-0.06, -1.2], armF: [0.14, 0], armB: [-0.14, 0], by: -1.7, lean: 0.03, ease: 'in' },
     { t: 1, legF: [0.1, 0], legB: [-0.1, 0], armF: [0, 0], armB: [0, 0], by: 0 },
   ] },
+  // 점프: 두 무릎을 접어 올리고(앞다리를 더 높이) 팔을 살짝 벌려 위로
   jump: { frames: 3, loop: false, keys: [
-    { t: 0, legF: [0.5, -1.0], legB: [0.1, -0.8], armF: [0.45, 0.3], armB: [-0.45, -0.3], lean: -0.03, by: -1, head: -0.05, wpn: 0.4, ease: 'out' },
-    { t: 1, legF: [0.4, -0.9], legB: [0.0, -0.6], armF: [0.5, 0.3], armB: [-0.5, -0.3], lean: -0.02, by: -1, head: -0.06, wpn: 0.4 },
+    { t: 0, legF: [0.06, -1.6], legB: [-0.06, -0.9], armF: [0.55, 0], armB: [-0.55, 0], by: -1, lean: -0.03, wpn: 0.4, ease: 'out' },
+    { t: 1, legF: [0.06, -1.4], legB: [-0.06, -0.8], armF: [0.7, 0], armB: [-0.7, 0], by: -1, lean: -0.02, wpn: 0.4 },
   ] },
+  // 낙하: 다리를 곧게 펴 내리고 팔을 더 벌려 균형을 잡는다
   fall: { frames: 3, loop: false, keys: [
-    { t: 0, legF: [0.25, -0.3], legB: [-0.15, -0.4], armF: [0.6, 0.2], armB: [-0.6, -0.2], lean: 0.02, by: -1, head: 0.03, wpn: 0.6, ease: 'inout' },
-    { t: 1, legF: [0.2, -0.2], legB: [-0.2, -0.3], armF: [0.65, 0.2], armB: [-0.65, -0.2], lean: 0.02, by: -1, head: 0.04, wpn: 0.7 },
+    { t: 0, legF: [0.1, -0.4], legB: [-0.1, 0], armF: [0.9, 0], armB: [-0.9, 0], by: -0.5, wpn: 0.6, ease: 'inout' },
+    { t: 1, legF: [0.12, 0], legB: [-0.12, 0], armF: [1.05, 0], armB: [-1.05, 0], by: 0, wpn: 0.7 },
   ] },
   // 휘두르기: 무게를 뒤로 실었다가(와인드업) 앞발을 디디며 내려친 뒤 천천히 돌아온다
   swing: { frames: 10, loop: false, keys: [
@@ -96,17 +98,22 @@ export const CLIPS: Record<string, ClipDef> = {
     { t: 0.7, armF: [1.0, 0], wpn: 2.1, lean: 0.08, legF: [0.12, 0], legB: [-0.08, 0], by: 0.4, ease: 'inout' },
     { t: 1, armF: [0.2, 0], wpn: 0.8, lean: 0, by: 0 },
   ] },
+  // 로프 오르기: 한 팔씩 번갈아 머리 옆으로 뻗어 잡고, 반대쪽 다리를 들어 올린다(두 팔이 동시에 머리를 가리지 않게)
   climb: { frames: 8, loop: true, keys: [
-    { t: 0, armF: [2.6, 0.2], armB: [-2.1, -0.5], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4, ease: 'inout' },
-    { t: 0.5, armF: [2.1, 0.5], armB: [-2.6, -0.2], legF: [0.1, -0.3], legB: [0.55, -1.1], by: 0.5, wpn: 0.4, ease: 'inout' },
-    { t: 1, armF: [2.6, 0.2], armB: [-2.1, -0.5], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4 },
+    { t: 0, armF: [2.3, 0], armB: [-0.3, 0], legF: [0.04, 0], legB: [-0.04, -1.3], by: -0.6, wpn: 0.4, ease: 'inout' },
+    { t: 0.25, armF: [0.45, 0], armB: [-0.45, 0], legF: [0.04, -0.6], legB: [-0.04, -0.6], by: 0, wpn: 0.4, ease: 'inout' },
+    { t: 0.5, armF: [0.3, 0], armB: [-2.3, 0], legF: [0.04, -1.3], legB: [-0.04, 0], by: 0.6, wpn: 0.4, ease: 'inout' },
+    { t: 0.75, armF: [0.45, 0], armB: [-0.45, 0], legF: [0.04, -0.6], legB: [-0.04, -0.6], by: 0, wpn: 0.4, ease: 'inout' },
+    { t: 1, armF: [2.3, 0], armB: [-0.3, 0], legF: [0.04, 0], legB: [-0.04, -1.3], by: -0.6, wpn: 0.4 },
   ] },
+  // 피격: 몸이 뒤로 젖혀지며 팔이 들리고, 한 발이 떨어진다
   hurt: { frames: 3, loop: false, keys: [
-    { t: 0, lean: -0.22, head: -0.2, armF: [0.6, 0.3], armB: [-0.6, -0.3], legF: [0.35, -0.3], legB: [-0.2, -0.2], by: 0.5, wpn: -0.2, ease: 'out' },
-    { t: 1, lean: -0.1, head: -0.08, armF: [0.15, 0.05], armB: [-0.15, -0.05], legF: [0.2, -0.2], legB: [-0.15, -0.1], wpn: 0.2 },
+    { t: 0, lean: -0.2, armF: [0.9, 0], armB: [-0.75, 0], legF: [0.06, -1.0], legB: [-0.08, 0], by: 1, wpn: -0.2, ease: 'out' },
+    { t: 1, lean: -0.08, armF: [0.3, 0], armB: [-0.25, 0], legF: [0.06, 0], legB: [-0.06, 0], by: 0.5, wpn: 0.2 },
   ] },
+  // 쓰러짐: 장면에서 몸 전체를 눕히므로 팔다리는 힘없이 늘어뜨린다
   dead: { frames: 1, loop: false, keys: [
-    { t: 0, lean: 0, head: 0.2, armF: [0.3, 0.2], armB: [-0.3, -0.2], legF: [0.2, -0.1], legB: [-0.2, -0.1], wpn: 1.4 },
+    { t: 0, armF: [0.2, 0], armB: [-0.15, 0], legF: [0.05, 0], legB: [-0.05, 0], by: 1, wpn: 1.4 },
   ] },
 };
 
