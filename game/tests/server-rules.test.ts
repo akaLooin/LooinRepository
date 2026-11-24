@@ -88,6 +88,9 @@ describe('플레이 기록 검증', () => {
     expect(t((x) => { x.stats.luk = 99; })).toMatch(/stats/);
     expect(t((x) => { x.mapId = 'forest'; })).toMatch(/mapId/);
     expect(t((_, a) => { a.cards.leafling = 50; })).toMatch(/카드/);
+    expect(t((_, a) => { a.cards.oak = 30; })).toMatch(/카드/);
+    expect(t((_, a) => { a.cards.nope = 1; })).toMatch(/카드/);
+    expect(t((_, a) => { a.cards.oak = (a.cards.oak ?? 0) + 1; })).toBeNull(); // 한 장은 운이 좋으면 가능
     // 같은 기록이라도 서버가 잰 시간이 너무 짧으면 거절
     expect(checkSync(server, 0, c, ca, 2)).not.toBeNull();
   });

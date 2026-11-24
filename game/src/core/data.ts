@@ -240,14 +240,22 @@ export const CLASSES: Record<ClassId, ClassDef> = {
 };
 export const CLASS_LEVEL = 10;
 
-/** 몬스터 카드: 계정 전체에 적용되는 수집 보너스. 1/3/10장에서 단계 상승 */
-export interface CardDef { monster: string; bonus: 'hp' | 'dmg' | 'drop' | 'afk'; per: number; label: string }
+/** 카드: 계정 전체가 함께 모으는 수집 보너스(장착해야 효과). 1/3/10장에서 단계 상승.
+ *  id 는 몬스터 id(몬스터 카드) 또는 자원 id(자원 카드: 채집할 때 드물게) */
+export type CardBonus = 'hp' | 'dmg' | 'drop' | 'afk' | 'mining' | 'chopping' | 'afkSkill';
+export interface CardDef { id: string; from: 'monster' | 'node'; bonus: CardBonus; per: number; label: string }
 export const CARDS: CardDef[] = [
-  { monster: 'mossblob', bonus: 'hp', per: 0.03, label: '최대 체력' },
-  { monster: 'pebbler', bonus: 'dmg', per: 0.03, label: '공격력' },
-  { monster: 'leafling', bonus: 'drop', per: 0.04, label: '드롭률' },
-  { monster: 'mossking', bonus: 'afk', per: 0.03, label: '방치 효율' },
+  { id: 'mossblob', from: 'monster', bonus: 'hp', per: 0.03, label: '최대 체력' },
+  { id: 'pebbler', from: 'monster', bonus: 'dmg', per: 0.03, label: '공격력' },
+  { id: 'leafling', from: 'monster', bonus: 'drop', per: 0.04, label: '드롭률' },
+  { id: 'mossking', from: 'monster', bonus: 'afk', per: 0.03, label: '방치 효율' },
+  { id: 'oak', from: 'node', bonus: 'chopping', per: 0.06, label: '벌목 효율' },
+  { id: 'redrock', from: 'node', bonus: 'mining', per: 0.06, label: '채광 효율' },
+  { id: 'silvertree', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
 ];
+export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
+/** 자원 카드 확률(자원 하나 얻을 때마다) */
+export const NODE_CARD_CHANCE = 1 / 600;
 /** 카드 기본 확률. 아직 없는 카드는 UNOWNED 배로 잘 나온다. 보스는 처치마다 BOSS 확률 */
 export const CARD_CHANCE = 1 / 1500;
 export const CARD_UNOWNED_MULT = 5;

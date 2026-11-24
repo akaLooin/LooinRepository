@@ -447,6 +447,20 @@ describe('방치 정보와 보상', () => {
     expect(rep.food).toBeGreaterThan(0);
     expect(c.food!.qty).toBe(500 - rep.food);
   });
+  it('자원 카드: 나무를 캐며 모으고, 장착하면 벌목 효율이 오른다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow'; c.activity = { k: 'gather', node: 'oak' };
+    const r = afkRates(acc, c);
+    expect(r.mode).toBe('gather');
+    expect(r.cards.map((x) => x.id)).toEqual(['oak']);
+    // 긴 방치(최대 시간)면 첫 장은 거의 확실히 나온다
+    const rep = computeAfk(acc, c, 24 * 3600_000, new Rng(5))!;
+    expect(rep.cards.some((x) => x.name === '참나무')).toBe(true);
+    expect(acc.cards.oak).toBeGreaterThan(0);
+    const before = derive(c, acc.cards).chopping;
+    expect(equipCard(acc, c, 'oak', 0)).toBeNull();
+    expect(derive(c, acc.cards).chopping).toBeGreaterThan(before);
+  });
   it('카드는 드물게: 12시간 사냥해도 수십 장이 나오지 않는다', () => {
     const { acc, c } = setup();
     c.mapId = 'meadow'; c.level = 10; c.stats.luk = 10;

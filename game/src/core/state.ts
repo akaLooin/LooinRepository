@@ -130,9 +130,9 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
   const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
-  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0 };
+  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, afkSkill: 0 };
   // 카드는 장착한 것만 효과가 있다
-  for (const cd of CARDS) if (c.cardSlots?.includes(cd.monster)) cb[cd.bonus] += cardTier(cards[cd.monster] ?? 0) * cd.per;
+  for (const cd of CARDS) if (c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
   const maxMp = Math.floor(8 + wis * 1.5 + c.level);
   const work = 1 + tl('worker') * 0.05;
@@ -141,7 +141,7 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
     str, agi, wis, luk, maxHp, maxMp, mpRegen: 0.5 + maxMp * 0.02,
     acc: 2 + accStat + c.level,
     afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk),
-    afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk),
+    afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill),
     dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg),
     def: e.def + c.level * 0.3 + tl('ironskin') * 1.5,
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
@@ -150,8 +150,8 @@ export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
     xpMult: 1 + wis * 0.005 + tl('insight') * 0.03, dropMult: (1 + luk * 0.004) * (1 + cb.drop),
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
-    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work,
-    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work,
+    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining),
+    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping),
   };
 }
 

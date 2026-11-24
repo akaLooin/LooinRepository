@@ -2,7 +2,7 @@
 // afkRates 는 방치 정보 창과 보상 계산이 함께 쓴다 → 화면에 보이는 숫자 그대로 지급된다.
 // 멀티 전환 시 이 파일은 서버에서 실행되어 보상을 검증/지급한다.
 import {
-  AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARDS, CARD_CHANCE, CARD_UNOWNED_MULT, GatherSkill, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES,
+  AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_BY_ID, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, GatherSkill, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES,
   SkillKey,
 } from './data';
 import { Rng } from './rng';
@@ -42,7 +42,8 @@ export interface AfkRates {
   foodPerHour: number;
   drops: { id: string; perHour: number }[];
   /** perHour: 이미 가진 카드 기준 시간당 기대 장수. 처음 한 장은 더 잘 나온다 */
-  cards: { monster: string; perHour: number; owned: boolean }[];
+  /** 시간당 카드 기대치(몬스터·자원) */
+  cards: { id: string; name: string; perHour: number; owned: boolean }[];
   skill?: { key: GatherSkill; xpPerHour: number; item: string; perHour: number };
 }
 
@@ -66,7 +67,8 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   if (node) {
     const swings = Math.ceil(node.hp / d[node.skill]);
     const perHour = (3600 / (swings * GATHER_INTERVAL)) * d.afkSkill;
-    return { ...base, mode: 'gather', target: node.name, rate: d.afkSkill,
+    const cards = CARD_BY_ID[node.id] ? [{ id: node.id, name: node.name, perHour: perHour * NODE_CARD_CHANCE * d.dropMult, owned: (acc.cards[node.id] ?? 0) > 0 }] : [];
+    return { ...base, mode: 'gather', target: node.name, rate: d.afkSkill, cards,
       skill: { key: node.skill, xpPerHour: perHour * node.xp, item: node.item, perHour } };
   }
   if (!map.spawns.length) return base;
@@ -110,10 +112,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
       const ex = r.drops.find((x) => x.id === dr.item);
       if (ex) ex.perHour += per; else r.drops.push({ id: dr.item, perHour: per });
     }
-    if (CARDS.some((cd) => cd.monster === m.id)) {
-      const owned = (acc.cards[m.id] ?? 0) > 0;
-      r.cards.push({ monster: m.id, perHour: k * CARD_CHANCE * d.dropMult, owned });
-    }
+    if (CARD_BY_ID[m.id] && !m.boss) r.cards.push({ id: m.id, name: m.name, perHour: k * CARD_CHANCE * d.dropMult, owned: (acc.cards[m.id] ?? 0) > 0 });
   }
   return r;
 }
@@ -144,16 +143,6 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     const sum = new Map<string, number>();
     for (const dr of r.drops) sum.set(dr.id, (sum.get(dr.id) ?? 0) + dr.perHour * hours);
     for (const [id, n] of sum) give(id, settle(n, rng));
-    for (const cd of r.cards) {
-      // 없는 카드는 첫 장까지만 확률이 높다: 첫 장이 나올 확률을 먼저 굴리고, 나머지는 기본 확률
-      let n = 0, exp = cd.perHour * hours;
-      if (!cd.owned) {
-        const first = 1 - Math.exp(-exp * CARD_UNOWNED_MULT);
-        if (rng.chance(first)) { n = 1; exp *= 0.5; } else exp = 0;
-      }
-      n += settle(exp, rng);
-      if (n) { acc.cards[cd.monster] = (acc.cards[cd.monster] ?? 0) + n; rep.cards.push({ name: MONSTERS[cd.monster].name, qty: n }); }
-    }
     if (c.food && r.foodPerHour > 0) {
       rep.food = Math.min(c.food.qty, Math.ceil(r.foodPerHour * hours));
       c.food.qty -= rep.food;
@@ -165,6 +154,16 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     give(r.skill.item, yields);
     const sxp = Math.floor(r.skill.xpPerHour * hours);
     rep.skill = { key: r.skill.key, name: SKILL_NAMES[r.skill.key], xp: sxp, levels: gainSkillXp(c, r.skill.key, sxp) };
+  }
+  for (const cd of r.cards) {
+    // 없는 카드는 첫 장까지만 확률이 높다: 첫 장이 나올 확률을 먼저 굴리고, 나머지는 기본 확률
+    let n = 0, exp = cd.perHour * hours;
+    if (!cd.owned) {
+      const first = 1 - Math.exp(-exp * CARD_UNOWNED_MULT);
+      if (rng.chance(first)) { n = 1; exp *= 0.5; } else exp = 0;
+    }
+    n += settle(exp, rng);
+    if (n) { acc.cards[cd.id] = (acc.cards[cd.id] ?? 0) + n; rep.cards.push({ name: cd.name, qty: n }); }
   }
   // 모루 생산은 방치 효율과 무관하게 흐른 시간 그대로
   const a = anvilTick(c, elapsed);

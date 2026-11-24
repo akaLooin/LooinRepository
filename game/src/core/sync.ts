@@ -1,7 +1,7 @@
 // 접속 중 플레이 기록 검증. 기기는 화면에서 전투·채집을 돌리고 주기적으로 결과(캐릭터 상태)를 보낸다.
 // 서버는 "지난 동기화 이후 흐른 시간(서버 시계)" 동안 얻을 수 있는 최대치를 계산해, 넘으면 거절한다.
 // 장비·특성·전직처럼 행동(actions.ts)으로만 바뀌어야 하는 값이 바뀌어 있어도 거절한다.
-import { CARD_CHANCE, CARD_UNOWNED_MULT, ITEMS, MAPS, MONSTERS, NODES, PRODUCTS } from './data';
+import { CARD_BY_ID, CARD_CHANCE, CARD_UNOWNED_MULT, NODE_CARD_CHANCE, ITEMS, MAPS, MONSTERS, NODES, PRODUCTS } from './data';
 import { Account, Character, anvilCap, anvilRate, derive, skillXpToNext, xpToNext } from './state';
 import { GATHER_INTERVAL } from './world';
 
@@ -94,10 +94,15 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   // 계정 값: 코인·카드·보스
   const dc = ca.coins - acc.coins;
   if (dc < 0 || dc > dk * maxCoinKill) return `코인이 너무 많습니다(+${dc})`;
+  // 자원 카드는 이 맵에서 캘 수 있는 자원 수만큼 기회가 있다
+  const yields = (id: string) => map.nodes.filter((n) => n.node === id).length ? Math.ceil(d[NODES[id].skill] / NODES[id].hp) * swings : 0;
   for (const [id, n] of Object.entries(ca.cards)) {
     const gain = n - (acc.cards[id] ?? 0);
-    const cap = Math.ceil(dk * CARD_CHANCE * CARD_UNOWNED_MULT * d.dropMult * 4) + 1;
-    if (gain < 0 || gain > (MONSTERS[id]?.boss ? 1 : cap)) return '카드가 너무 많습니다';
+    if (gain === 0) continue;
+    const cd = CARD_BY_ID[id];
+    const tries = cd?.from === 'node' ? yields(id) * NODE_CARD_CHANCE : dk * CARD_CHANCE;
+    const cap = Math.ceil(tries * CARD_UNOWNED_MULT * d.dropMult * 4) + 1;
+    if (!cd || gain < 0 || gain > (MONSTERS[id]?.boss ? 1 : cap)) return '카드가 너무 많습니다';
   }
   for (const [id, n] of Object.entries(ca.bosses)) {
     const gain = n - (acc.bosses[id] ?? 0);

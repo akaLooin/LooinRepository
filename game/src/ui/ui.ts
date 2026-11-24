@@ -35,6 +35,10 @@ const bar = (kind: string, value: number, max: number, text: string) =>
 const tabs = (names: string[], cur: number, act: string, icons: string[] = []) =>
   `<div class="ui-tabs" role="tablist">${names.map((n, i) => `<button role="tab" aria-selected="${i === cur}" data-act="${act}:${i}">${icons[i] ? ui(icons[i], 'tic') : ''}<span>${n}</span></button>`).join('')}</div>`;
 
+/** 카드 이름·그림: 몬스터 카드는 몬스터, 자원 카드는 그 자원에서 나오는 아이템 그림 */
+const cardName = (id: string) => MONSTERS[id]?.name ?? NODES[id]?.name ?? id;
+const cardIcon = (id: string) => (MONSTERS[id] ? iconUrl(`mob_${id}`) : iconUrl(ITEM_ICON[NODES[id]?.item] ?? 'ui_lock'));
+
 export class UI {
   private root = document.getElementById('ui')!;
   audio: Audio | null = null;
@@ -324,18 +328,18 @@ export class UI {
         let body = '';
         if (tab === 0) {
           const slots = c.cardSlots.map((id, i) => id
-            ? `<button class="ui-slot r3" data-act="cardoff:${i}" aria-label="${MONSTERS[id].name} 카드 빼기"><img class="px" src="${iconUrl(`mob_${id}`)}" alt=""></button>`
+            ? `<button class="ui-slot r3" data-act="cardoff:${i}" aria-label="${cardName(id)} 카드 빼기"><img class="px" src="${cardIcon(id)}" alt=""></button>`
             : `<div class="ui-slot empty" aria-label="빈 카드 칸"></div>`).join('');
           body = `<h3 style="margin-top:0">장착 ${c.cardSlots.filter(Boolean).length}/${CARD_SLOTS} <span class="ui-xs ui-muted">— 장착한 카드만 효과가 있습니다(캐릭터마다)</span></h3><div class="ui-grid">${slots}</div><h3>수집</h3>` + CARDS.map((cd) => {
-            const n = g.acc.cards[cd.monster] ?? 0, tier = cardTier(n), next = cardNext(n), on = c.cardSlots.includes(cd.monster);
+            const n = g.acc.cards[cd.id] ?? 0, tier = cardTier(n), next = cardNext(n), on = c.cardSlots.includes(cd.id);
             const free = c.cardSlots.indexOf(null);
-            const btn = !n ? '' : on ? `<button class="ui-btn sm" data-act="cardoff:${c.cardSlots.indexOf(cd.monster)}">빼기</button>`
-              : `<button class="ui-btn sm primary" data-act="cardon:${cd.monster}" ${free >= 0 ? '' : 'disabled'}>장착</button>`;
-            return `<div class="ui-row line"><span class="ui-slot ${tier >= 3 ? 'r4' : tier === 2 ? 'r3' : tier === 1 ? 'r2' : 'locked'}"><img class="px" style="${n ? '' : 'filter:brightness(0)'}" src="${iconUrl(`mob_${cd.monster}`)}" alt=""></span>
-              <div class="ui-grow"><b>${n ? MONSTERS[cd.monster].name : '???'}</b> <span class="ui-accent">${'★'.repeat(tier)}${'☆'.repeat(3 - tier)}</span>
+            const btn = !n ? '' : on ? `<button class="ui-btn sm" data-act="cardoff:${c.cardSlots.indexOf(cd.id)}">빼기</button>`
+              : `<button class="ui-btn sm primary" data-act="cardon:${cd.id}" ${free >= 0 ? '' : 'disabled'}>장착</button>`;
+            return `<div class="ui-row line"><span class="ui-slot ${tier >= 3 ? 'r4' : tier === 2 ? 'r3' : tier === 1 ? 'r2' : 'locked'}"><img class="px" style="${n ? '' : 'filter:brightness(0)'}" src="${cardIcon(cd.id)}" alt=""></span>
+              <div class="ui-grow"><b>${n ? cardName(cd.id) : '???'}</b> <span class="ui-xs ui-muted">${cd.from === 'node' ? '자원' : '몬스터'}</span> <span class="ui-accent">${'★'.repeat(tier)}${'☆'.repeat(3 - tier)}</span>
               <div class="ui-sm ${on ? 'ui-good' : 'ui-muted'}">${cd.label} +${Math.round(cd.per * Math.max(1, tier) * 100)}%${on ? ' (적용 중)' : ''}</div>
               <div class="ui-xs ui-muted">${next ? `보유 ${n} / 다음 단계 ${next}` : `보유 ${n} · 최고 단계`}</div></div>${btn}</div>`;
-          }).join('') + '<p class="ui-xs ui-muted">카드는 몬스터가 드물게 떨어뜨립니다. 모은 카드는 모든 캐릭터가 함께 쓰고, 장착은 캐릭터마다 따로 합니다.</p>';
+          }).join('') + '<p class="ui-xs ui-muted">몬스터 카드는 사냥할 때, 자원 카드는 나무·광맥을 캘 때 드물게 나옵니다. 모은 카드는 모든 캐릭터가 함께 쓰고, 장착은 캐릭터마다 따로 합니다.</p>';
         } else {
           body = Object.values(NPCS).map((n) => {
             const st = c.quests[n.id] ?? { idx: 0, accepted: false, prog: 0 };

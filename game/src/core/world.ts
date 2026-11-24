@@ -1,6 +1,6 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  CARDS, CARD_BOSS_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
@@ -406,6 +406,7 @@ export class World {
         t.progress -= t.def.hp;
         this.events.push({ t: 'yield', x: t.x, y: t.y - 30, item: t.def.item });
         this.spawnDrop(false, t.def.item, 1, t.x + this.player.facing * -8, t.y - 24, t.y);
+        this.rollCard(t.def.id, t.def.name, NODE_CARD_CHANCE, d);
         const ups = gainSkillXp(c, t.def.skill, t.def.xp);
         if (ups) this.events.push({ t: 'skill', name: SKILL_NAMES[t.def.skill], level: c.skills[t.def.skill].lv });
       }
@@ -442,13 +443,17 @@ export class World {
     for (const dr of m.def.drops) {
       if (this.rng.chance(dr.chance * d.dropMult)) this.spawnDrop(false, dr.item, this.rng.int(dr.qty[0], dr.qty[1]), m.x, m.y - 10, m.y);
     }
-    const owned = (this.acc.cards[m.def.id] ?? 0) > 0;
-    const cardP = m.def.boss ? CARD_BOSS_CHANCE : CARD_CHANCE * (owned ? 1 : CARD_UNOWNED_MULT) * d.dropMult;
-    if (CARDS.some((cd) => cd.monster === m.def.id) && this.rng.chance(cardP)) {
-      this.acc.cards[m.def.id] = (this.acc.cards[m.def.id] ?? 0) + 1;
-      this.events.push({ t: 'loot', text: `★ ${m.def.name} 카드 획득!` });
-    }
+    this.rollCard(m.def.id, m.def.name, m.def.boss ? CARD_BOSS_CHANCE : CARD_CHANCE, d, !!m.def.boss);
     if (this.aiTarget === m) this.aiTarget = null;
+  }
+
+  /** 카드 굴리기: 아직 없는 카드는 더 잘 나온다(보스는 고정 확률) */
+  private rollCard(id: string, name: string, base: number, d: Derived, fixed = false) {
+    if (!CARD_BY_ID[id]) return;
+    const owned = (this.acc.cards[id] ?? 0) > 0;
+    if (!this.rng.chance(fixed ? base : base * (owned ? 1 : CARD_UNOWNED_MULT) * d.dropMult)) return;
+    this.acc.cards[id] = (this.acc.cards[id] ?? 0) + 1;
+    this.events.push({ t: 'loot', text: `★ ${name} 카드 획득!` });
   }
 
   private spawnDrop(coin: boolean, id: string, qty: number, x: number, y: number, floorY: number) {
