@@ -72,8 +72,8 @@
     "semantic_hash": ""
   },
   "game/android/app/capacitor.build.gradle": {
-    "mtime": 1795560385.2410195,
-    "seen": 1795560433.4103081,
+    "mtime": 1795560768.4966598,
+    "seen": 1795560785.3637342,
     "ast_hash": "b863e425fbde80251bd3c68ac8ccba02",
     "semantic_hash": ""
   },
@@ -102,8 +102,8 @@
     "semantic_hash": ""
   },
   "game/android/capacitor.settings.gradle": {
-    "mtime": 1795560385.2410195,
-    "seen": 1795560433.410544,
+    "mtime": 1795560768.4966598,
+    "seen": 1795560785.363858,
     "ast_hash": "455ebb7f9fe84a6974da6bdae43097c2",
     "semantic_hash": ""
   },
