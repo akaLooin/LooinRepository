@@ -14,7 +14,18 @@ data class Config(
     val providers: List<Provider>,
     /** 세계가 스스로 움직이는 간격(시간). 0 이면 끔. */
     val autoWorldHours: Double,
+    /** Claude (Max 요금제 월 API 크레딧). 키가 없으면 무료 두뇌만 쓴다. */
+    val claude: ClaudeConfig? = null,
 ) {
+    data class ClaudeConfig(
+        val apiKey: String,
+        val model: String,
+        val monthlyBudgetUsd: Double,
+        val cycleStartDay: Int,
+        val pacing: Boolean,
+        val fallbacks: Boolean,
+    )
+
     companion object {
         fun fromEnv(env: Map<String, String> = System.getenv()): Config {
             val dataDir = File(env["LOOIN_DATA_DIR"] ?: "data").apply { mkdirs() }
@@ -24,6 +35,16 @@ data class Config(
                 ownerToken = env["LOOIN_OWNER_TOKEN"]?.takeIf { it.isNotBlank() } ?: loadOrCreateToken(dataDir),
                 providers = Providers.fromEnv(env),
                 autoWorldHours = env["LOOIN_AUTO_WORLD_HOURS"]?.toDoubleOrNull() ?: 6.0,
+                claude = env["ANTHROPIC_API_KEY"]?.takeIf { it.isNotBlank() }?.let { key ->
+                    ClaudeConfig(
+                        apiKey = key,
+                        model = env["CLAUDE_MODEL"]?.takeIf { it.isNotBlank() } ?: "claude-opus-5-5",
+                        monthlyBudgetUsd = env["CLAUDE_MONTHLY_BUDGET_USD"]?.toDoubleOrNull() ?: 100.0,
+                        cycleStartDay = env["CLAUDE_CYCLE_START_DAY"]?.toIntOrNull()?.coerceIn(1, 31) ?: 1,
+                        pacing = env["CLAUDE_PACING"]?.lowercase() != "off",
+                        fallbacks = env["CLAUDE_FALLBACKS"]?.lowercase() != "off",
+                    )
+                },
             )
         }
 

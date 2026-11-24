@@ -175,6 +175,8 @@ data class ProviderStatus(
     val available: Boolean,
     val requestsToday: Int,
     val lastError: String? = null,
+    /** 예: "이번 달 $12.30 / $100" */
+    val note: String? = null,
 )
 
 /**

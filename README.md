@@ -10,7 +10,9 @@
 - ➕ 직접 만든 캐릭터 / 직원 / 복제 AI 추가.
 
 Android 앱이 메인, PC 앱도 같은 코드. 공식 사이트(`site/`)는 소개용 정적 페이지입니다.
-두뇌는 **무료 두뇌 사슬**이에요. 최전선 회사의 공식 무료 등급(Google Gemini · Mistral · OpenAI 데이터 공유 무상 토큰)과
+두뇌는 **[1순위] Claude Opus 5.5** (Claude Max 요금제에 포함된 월 API 크레딧, 예산 안에서) → **[2순위] 무료 두뇌 사슬**이에요.
+커뮤니티 잡담 같은 배경 활동은 크레딧을 아끼려고 처음부터 무료 두뇌가 맡아요.
+무료 두뇌 사슬은 최전선 회사의 공식 무료 등급(Google Gemini · Mistral · OpenAI 데이터 공유 무상 토큰)과
 공개 모델 무료 등급(Groq · Cerebras · NVIDIA · OpenRouter) 중
 키가 있는 곳을 순서대로 쓰고, 한 곳이 무료 한도에 걸리면 다음 곳으로 넘어가요. 각 공급자에서 가장 강한 공개 모델을 자동으로 골라요.
 AI 는 기억 → 성찰 → (나중엔) 파인튜닝으로 계속 자라요 — [docs/GROWTH.md](docs/GROWTH.md).
@@ -40,6 +42,8 @@ AI 는 기억 → 성찰 → (나중엔) 파인튜닝으로 계속 자라요 —
 | 환경 변수 | 기본값 | 설명 |
 |---|---|---|
 | `LOOIN_OWNER_TOKEN` | 자동 생성 | 앱 접속용 비밀 토큰 |
+| `ANTHROPIC_API_KEY` | (없음) | **1순위 두뇌: Claude.** Claude Max/Ultra/Team 요금제의 월 API 크레딧이 들어오는 Console 조직의 키 |
+| `CLAUDE_MONTHLY_BUDGET_USD` / `CLAUDE_CYCLE_START_DAY` / `CLAUDE_PACING` | `100` / `1` / `on` | 월 예산, 결제일, 한 달에 고르게 쓰기. 예산·크레딧이 다하면 무료 두뇌로 자동 전환 |
 | `GEMINI_API_KEY`, `MISTRAL_API_KEY` | (없음) | 최전선 회사의 공식 무료 등급 (Gemini Flash, Mistral Large) |
 | `OPENAI_API_KEY` + `OPENAI_MODEL` | (없음) | OpenAI 데이터 공유 프로그램의 무상 토큰. 한도 초과분은 충전 잔액에서 과금 → 소액 충전 + 자동충전 끄기 |
 | `GROQ_API_KEY`, `CEREBRAS_API_KEY`, `NVIDIA_API_KEY`, `OPENROUTER_API_KEY` | (없음) | 공개 모델 무료 등급. 키가 하나도 없으면 오프라인 모드(가짜 응답) |

@@ -122,6 +122,7 @@ class ProviderChainBrain(
                         return@execute "$code $text"
                     }
                     bump(s)
+                    req.onProvider?.invoke("${p.name}:$model")
                     val ch = resp.bodyAsChannel()
                     val filter = ThinkFilter()
                     while (true) {

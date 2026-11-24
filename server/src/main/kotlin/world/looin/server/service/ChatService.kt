@@ -40,12 +40,14 @@ class ChatService(
 
         val owner = repo.profile(world.id)
         val history = repo.messages(conv.id).takeLast(historyLimit).map { Turn(it.role, it.content) }
+        var usedBrain: String? = null
         val brainReq = BrainRequest(
             stableSystem = Prompts.chatSystem(world, owner, agent),
             dynamicSystem = Prompts.understandingBlock(repo.latestInsight(world.id), repo.memories(world.id).take(40)),
             turns = history,
             effort = Effort.MEDIUM,
             maxTokens = 4_096,
+            onProvider = { usedBrain = it },
         )
 
         val sb = StringBuilder()
@@ -56,11 +58,11 @@ class ChatService(
             }
         } catch (e: Exception) {
             log.error("chat stream failed", e)
-            if (sb.isNotEmpty()) repo.addMessage(conv.id, ChatRole.ASSISTANT, sb.toString())
+            if (sb.isNotEmpty()) repo.addMessage(conv.id, ChatRole.ASSISTANT, sb.toString(), usedBrain)
             emit(ChatStreamEvent(ChatStreamEvent.Type.ERROR, conversationId = conv.id, text = e.message ?: e.toString()))
             return@flow
         }
-        val saved = repo.addMessage(conv.id, ChatRole.ASSISTANT, sb.toString())
+        val saved = repo.addMessage(conv.id, ChatRole.ASSISTANT, sb.toString(), usedBrain)
         emit(ChatStreamEvent(ChatStreamEvent.Type.DONE, conversationId = conv.id, message = saved))
 
         background.launch {

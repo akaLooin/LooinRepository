@@ -46,7 +46,7 @@ class ApiTest {
 
     private fun newApp(): App {
         val dir = Files.createTempDirectory("looin").toFile()
-        return App(Config(0, dir, token, emptyList(), 0.0), FakeBrain())
+        return App(Config(0, dir, token, emptyList(), 0.0, null), FakeBrain())
     }
 
     @Test

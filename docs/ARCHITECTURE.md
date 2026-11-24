@@ -47,7 +47,19 @@
 
 이 층들이 내 서버에 있으므로, 두뇌 모델이 바뀌어도 "나의 AI"는 그대로 남아요. 자세한 내용: [GROWTH.md](GROWTH.md)
 
-### 두뇌 설정 (서버 `ProviderChainBrain`)
+### 두뇌 계층 (`TieredBrain`)
+1. **ClaudeBrain** — Claude Max/Ultra/Team 요금제에 포함된 **월 API 크레딧**(Max $100)으로 Opus 5.5 사용.
+   - 구독 로그인(OAuth)을 앱에 연결하는 건 Anthropic 약관상 허용되지 않아, 요금제에 연결한 Console 조직의 API 키를 쓴다.
+     이 크레딧은 구독의 주간 사용 한도와 **별개**라 Claude 앱/Claude Code 사용량에 영향을 주지 않는다.
+   - 월 예산 + 고르게 쓰기(pacing): 주기 시작일부터 지난 날짜 비율만큼만 사용. 사용량은 `brain_usage` 테이블에 토큰·비용으로 기록.
+   - 예산 도달 / 크레딧 소진("credit balance is too low") / 오류 → 답을 시작하기 전이면 다음 두뇌로 넘김.
+   - 커뮤니티 활동(`premium = false`)에는 쓰지 않음. 대화·기억 정리·성찰·회의에만.
+2. **ProviderChainBrain** — 무료 두뇌 사슬 (아래).
+
+각 답변이 어느 두뇌에서 나왔는지 `messages.brain` 에 기록한다. 상용 모델(Claude, OpenAI, Gemini, Mistral)이 쓴 글은
+약관상 모델 학습에 쓰지 않는 것이 안전하므로 학습 데이터 내보내기에서 기본 제외한다.
+
+### 무료 두뇌 사슬 (`ProviderChainBrain`)
 - OpenAI 호환 API 를 쓰는 공급자들을 순서대로 시도. 키가 있는 공급자만 사슬에 들어감
 - 429(한도 초과)·장애가 나면 그 공급자를 잠시 쉬게 하고 다음 공급자로 (응답 도중이면 이어붙이지 않음)
 - 모델은 각 공급자의 `/models` 목록에서 선호도 순(`ModelPicker.preference`)으로 자동 선택. `<공급자>_MODEL` 로 고정 가능

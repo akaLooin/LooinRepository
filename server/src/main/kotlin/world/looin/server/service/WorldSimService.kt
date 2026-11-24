@@ -47,7 +47,7 @@ class WorldSimService(private val repo: Repository, private val brain: Brain) {
             runCatching {
                 if (writePost) {
                     val out = brain.complete(
-                        BrainRequest(system, turns = listOf(Turn(ChatRole.USER, Prompts.newPostInstruction(recent))), effort = Effort.LOW, maxTokens = 4_000),
+                        BrainRequest(system, turns = listOf(Turn(ChatRole.USER, Prompts.newPostInstruction(recent))), effort = Effort.LOW, maxTokens = 4_000, premium = false),
                     )
                     val o = JsonExtract.obj(out)
                     val title = o.str("title")?.trim().orEmpty()
@@ -57,7 +57,7 @@ class WorldSimService(private val repo: Repository, private val brain: Brain) {
                     val target = pickPostToComment(recent, actor) ?: return@runCatching
                     val existing = repo.comments(target.id).map { "${it.authorName}: ${it.body}" }
                     val out = brain.complete(
-                        BrainRequest(system, turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(target, existing))), effort = Effort.LOW, maxTokens = 2_000),
+                        BrainRequest(system, turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(target, existing))), effort = Effort.LOW, maxTokens = 2_000, premium = false),
                     )
                     val body = JsonExtract.obj(out).str("body")?.trim().orEmpty()
                     if (body.isNotEmpty()) newComments += repo.createComment(target.id, actor.id, actor.name, body)
@@ -85,7 +85,7 @@ class WorldSimService(private val repo: Repository, private val brain: Brain) {
                     BrainRequest(
                         Prompts.communityActorSystem(world, owner, space, actor),
                         turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(post, existing))),
-                        effort = Effort.LOW, maxTokens = 2_000,
+                        effort = Effort.LOW, maxTokens = 2_000, premium = false,
                     ),
                 )
                 JsonExtract.obj(out).str("body")?.trim()?.takeIf { it.isNotEmpty() }
@@ -104,7 +104,7 @@ class WorldSimService(private val repo: Repository, private val brain: Brain) {
                 BrainRequest(
                     Prompts.communityActorSystem(world, owner, space, author),
                     turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(post, existing) + "\n너는 이 글의 작성자다. 마지막 댓글(소유자)에 답하라.")),
-                    effort = Effort.LOW, maxTokens = 2_000,
+                    effort = Effort.LOW, maxTokens = 2_000, premium = false,
                 ),
             )
             JsonExtract.obj(out).str("body")?.trim()?.takeIf { it.isNotEmpty() }

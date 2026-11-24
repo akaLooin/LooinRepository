@@ -35,7 +35,9 @@ fun HomeScreen(c: AppController) {
                 val b = ov.brain
                 Text(
                     if (!b.online) "⚠️ 오프라인 모드 — 서버에 무료 두뇌 키(GROQ_API_KEY 등)를 설정하세요"
-                    else "🧠 두뇌: " + b.providers.joinToString(" → ") { p -> (if (p.available) "" else "⏸") + "${p.name}(${p.model})" },
+                    else "🧠 두뇌: " + b.providers.joinToString(" → ") { p ->
+                        (if (p.available) "" else "⏸") + "${p.name}(${p.model}" + (p.note?.let { " · $it" } ?: "") + ")"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (b.online) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                 )

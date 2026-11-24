@@ -22,13 +22,16 @@ import java.security.MessageDigest
 import java.sql.ResultSet
 import java.util.UUID
 
+/** 출력을 모델 학습에 쓰는 것을 약관으로 제한하는 상용 두뇌들 (학습 데이터에서 제외). */
+val COMMERCIAL_BRAINS = listOf("claude", "openai", "gemini", "mistral")
+
 fun newId(): String = UUID.randomUUID().toString()
 fun now(): Long = System.currentTimeMillis()
 fun sha256(s: String): String =
     MessageDigest.getInstance("SHA-256").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
 
 /** 모든 조회는 worldId 로 범위를 제한한다 — 나중에 여러 사용자/월드가 생겨도 데이터가 섞이지 않도록. */
-class Repository(val db: Db) {
+class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
 
     // ---------- users / worlds ----------
     fun userIdForToken(token: String): String? =
@@ -163,10 +166,13 @@ class Repository(val db: Db) {
     fun messages(conversationId: String): List<ChatMessage> =
         db.query("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at, rowid", conversationId) { it.message() }
 
-    fun addMessage(conversationId: String, role: ChatRole, content: String): ChatMessage {
+    fun addMessage(conversationId: String, role: ChatRole, content: String, brain: String? = null): ChatMessage {
         val m = ChatMessage(newId(), conversationId, role, content, now())
         db.tx {
-            exec("INSERT INTO messages VALUES (?,?,?,?,?)", m.id, m.conversationId, m.role.name, m.content, m.createdAt)
+            exec(
+                "INSERT INTO messages(id, conversation_id, role, content, created_at, brain) VALUES (?,?,?,?,?,?)",
+                m.id, m.conversationId, m.role.name, m.content, m.createdAt, brain,
+            )
             exec("UPDATE conversations SET updated_at = ? WHERE id = ?", m.createdAt, conversationId)
         }
         return m
@@ -215,17 +221,32 @@ class Repository(val db: Db) {
         return i
     }
 
-    /** 내가 보낸 메시지와 그 직전 AI 메시지 쌍 — 나중에 "나처럼 말하는 모델"을 학습시킬 재료. */
-    fun ownerReplyPairs(worldId: String, limit: Int = 5000): List<Pair<String, String>> = db.query(
+    /**
+     * 내가 보낸 메시지와 그 직전 AI 메시지 쌍 — 나중에 "나처럼 말하는 모델"을 학습시킬 재료.
+     * 상용 모델(Claude 등)이 쓴 글은 약관상 모델 학습에 쓰지 않는 것이 안전하므로 기본으로 뺀다.
+     */
+    fun ownerReplyPairs(worldId: String, limit: Int = 5000, excludeCommercial: Boolean = true): List<Pair<String, String>> = db.query(
         """SELECT prev.content AS prompt, m.content AS reply
            FROM messages m
            JOIN conversations c ON m.conversation_id = c.id
            JOIN messages prev ON prev.conversation_id = m.conversation_id AND prev.role = 'ASSISTANT'
              AND prev.created_at = (SELECT MAX(p2.created_at) FROM messages p2
                                     WHERE p2.conversation_id = m.conversation_id AND p2.role = 'ASSISTANT' AND p2.created_at < m.created_at)
-           WHERE c.world_id = ? AND m.role = 'USER' ORDER BY m.created_at LIMIT ?""",
-        worldId, limit,
+           WHERE c.world_id = ? AND m.role = 'USER'
+             AND (? = 0 OR prev.brain IS NULL OR NOT (${COMMERCIAL_BRAINS.joinToString(" OR ") { "prev.brain LIKE '$it%'" }}))
+           ORDER BY m.created_at LIMIT ?""",
+        worldId, if (excludeCommercial) 1 else 0, limit,
     ) { it.getString("prompt") to it.getString("reply") }
+
+    // ---------- 두뇌 사용량 (유료 크레딧 예산 관리) ----------
+    override fun recordUsage(provider: String, inputTokens: Long, outputTokens: Long, cacheRead: Long, cacheWrite: Long, costUsd: Double) {
+        db.exec("INSERT INTO brain_usage VALUES (?,?,?,?,?,?,?)", provider, inputTokens, outputTokens, cacheRead, cacheWrite, costUsd, now())
+    }
+
+    override fun spentSince(providerPrefix: String, sinceMillis: Long): Double =
+        db.one("SELECT COALESCE(SUM(cost_usd), 0) FROM brain_usage WHERE provider LIKE ? AND created_at >= ?", "$providerPrefix%", sinceMillis) {
+            it.getDouble(1)
+        } ?: 0.0
 
     fun conversationsWithMessages(worldId: String): List<Pair<Conversation, List<ChatMessage>>> =
         db.query("SELECT * FROM conversations WHERE world_id = ? ORDER BY updated_at", worldId) { it.conversation() }

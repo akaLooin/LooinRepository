@@ -21,7 +21,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.slf4j.LoggerFactory
 import world.looin.server.ai.Brain
+import world.looin.server.ai.ClaudeBrain
+import world.looin.server.ai.ClaudeBudget
 import world.looin.server.ai.ProviderChainBrain
+import world.looin.server.ai.TieredBrain
 import world.looin.server.ai.OfflineBrain
 import world.looin.server.db.Db
 import world.looin.server.db.Repository
@@ -38,9 +41,20 @@ import java.io.File
 class App(val config: Config, brainOverride: Brain? = null) {
     val db = Db(File(config.dataDir, "looin.db")).apply { migrate() }
     val repo = Repository(db)
-    val brain: Brain = brainOverride
-        ?: config.providers.takeIf { it.isNotEmpty() }?.let { ProviderChainBrain(it) }
-        ?: OfflineBrain()
+    val brain: Brain = brainOverride ?: buildList<Brain> {
+        // 1순위: Claude (Max 요금제의 월 API 크레딧, 예산·고르게 쓰기 적용)
+        config.claude?.let { c ->
+            add(ClaudeBrain(c.apiKey, c.model, ClaudeBudget(c.monthlyBudgetUsd, c.cycleStartDay, c.pacing), repo, c.fallbacks))
+        }
+        // 2순위: 무료 두뇌 사슬
+        config.providers.takeIf { it.isNotEmpty() }?.let { add(ProviderChainBrain(it)) }
+    }.let { tiers ->
+        when (tiers.size) {
+            0 -> OfflineBrain()
+            1 -> tiers.single().let { if (it.premiumOnly) TieredBrain(tiers) else it }
+            else -> TieredBrain(tiers)
+        }
+    }
     val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val memory = MemoryService(repo, brain)
     val chat = ChatService(repo, brain, memory, background)
@@ -60,7 +74,7 @@ fun main() {
     if (System.getenv("LOOIN_OWNER_TOKEN").isNullOrBlank()) {
         log.info("앱 접속 토큰은 {} 파일에 있습니다.", File(config.dataDir, "owner_token.txt").absolutePath)
     }
-    if (!app.brain.info.online) log.warn("두뇌 공급자 키(GROQ_API_KEY 등)가 하나도 없어 오프라인 모드로 실행합니다.")
+    if (!app.brain.info.online) log.warn("두뇌 키(ANTHROPIC_API_KEY, GROQ_API_KEY 등)가 하나도 없어 오프라인 모드로 실행합니다.")
     app.growth.startAutoWorld(app.background)
     embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(app) }.start(wait = true)
 }

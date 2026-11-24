@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.sqlite.jdbc)
+    implementation(libs.anthropic.java)
     implementation(libs.logback)
 
     testImplementation(libs.ktor.server.test.host)

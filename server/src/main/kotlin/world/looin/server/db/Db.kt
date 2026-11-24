@@ -49,9 +49,17 @@ class Db(file: File) {
         args.forEachIndexed { i, v -> setObject(i + 1, v) }
     }
 
-    fun migrate() = SCHEMA.split(";").map { it.trim() }.filter { it.isNotEmpty() }.forEach { exec(it) }
+    fun migrate() {
+        SCHEMA.split(";").map { it.trim() }.filter { it.isNotEmpty() }.forEach { exec(it) }
+        // 컬럼 추가는 이미 있으면 실패하므로 조용히 넘긴다.
+        ADDED_COLUMNS.forEach { runCatching { exec(it) } }
+    }
 
     companion object {
+        private val ADDED_COLUMNS = listOf(
+            // 이 답을 쓴 두뇌 (예: "claude:claude-opus-5-5", "groq:openai/gpt-oss-120b")
+            "ALTER TABLE messages ADD COLUMN brain TEXT",
+        )
         private val SCHEMA = """
             CREATE TABLE IF NOT EXISTS users (
               id TEXT PRIMARY KEY, name TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL);
@@ -97,7 +105,11 @@ class Db(file: File) {
               topic TEXT NOT NULL, turns_json TEXT NOT NULL, summary TEXT NOT NULL, created_at INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS insights (
               id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
-              version INTEGER NOT NULL, content TEXT NOT NULL, based_on_memories INTEGER NOT NULL, created_at INTEGER NOT NULL)
+              version INTEGER NOT NULL, content TEXT NOT NULL, based_on_memories INTEGER NOT NULL, created_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS brain_usage (
+              provider TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL,
+              cache_read INTEGER NOT NULL, cache_write INTEGER NOT NULL, cost_usd REAL NOT NULL, created_at INTEGER NOT NULL);
+            CREATE INDEX IF NOT EXISTS idx_usage ON brain_usage(provider, created_at)
         """.trimIndent()
     }
 }
