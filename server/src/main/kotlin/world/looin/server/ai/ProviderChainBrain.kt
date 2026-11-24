@@ -194,7 +194,9 @@ class ProviderChainBrain(
                 check(resp.status.isSuccess()) { "HTTP ${resp.status.value}" }
                 val ids = LooinJson.parseToJsonElement(resp.bodyAsText()).jsonObject["data"]?.jsonArray
                     ?.mapNotNull { (it.jsonObject["id"] as? JsonPrimitive)?.contentOrNull }.orEmpty()
-                ModelPicker.pick(ids, p.freeOnly).also {
+                ModelPicker.pick(ids, p.freeOnly)
+                    ?.let { if ("googleapis" in p.baseUrl) it.removePrefix("models/") else it }
+                    .also {
                     s.model = it
                     log.info("provider {} → model {}", p.name, it)
                 }
@@ -233,6 +235,8 @@ object ModelPicker {
     val preference = listOf(
         // 최상위 공개 모델 (무료로 풀리는 일은 드물지만, 보이면 우선)
         "kimi-k3", "deepseek-v4", "glm-5", "kimi-k2", "kimi", "deepseek-v3", "deepseek-r1", "deepseek",
+        // 최전선 회사의 공식 무료 API (Google AI Studio) — Flash 계열
+        "gemini",
         // 2026년 하반기 무료 등급의 주력: 큰 모델 우선
         "gpt-oss-120b", "nemotron-3-ultra", "nemotron", "glm-4", "llama-4-maverick", "qwen3", "qwen",
         "gemma-4", "gemma", "gpt-oss", "llama-4", "llama-3.3-70b", "mistral-large", "llama",
@@ -245,11 +249,22 @@ object ModelPicker {
             exclude.none { it in l } && (!freeOnly || l.endsWith(":free"))
         }
         for (key in preference) {
-            val hits = usable.filter { key in it.lowercase() }
+            var hits = usable.filter { key in it.lowercase() }
+            if (key == "gemini") {
+                // 무료 한도가 작은 Pro·실험판 대신 Flash(경량 Lite 제외)의 가장 최신 버전
+                hits = hits.filter { val l = it.lowercase(); "flash" in l && "lite" !in l && "live" !in l && "exp" !in l }
+                if (hits.isNotEmpty()) return hits.maxByOrNull { versionScore(it) }
+                continue
+            }
             if (hits.isNotEmpty()) return hits.maxByOrNull { sizeScore(it) }
         }
         return usable.firstOrNull()
     }
+
+    /** "gemini-3.5-flash" → 350 처럼 버전 숫자를 비교용 점수로. */
+    private fun versionScore(id: String): Int =
+        Regex("(\\d+)(?:\\.(\\d+))?").find(id.substringAfter("gemini"))
+            ?.let { it.groupValues[1].toInt() * 100 + (it.groupValues[2].toIntOrNull() ?: 0) * 10 } ?: 0
 
     /** 이름에 들어 있는 파라미터 크기(예: 120b, 70b)가 클수록 우선. */
     private fun sizeScore(id: String): Int =

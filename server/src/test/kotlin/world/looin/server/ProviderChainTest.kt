@@ -58,6 +58,13 @@ class ProviderChainTest {
     fun modelPickerPrefersStrongOpenModels() {
         assertEquals("deepseek/deepseek-v4:free", ModelPicker.pick(listOf("meta/llama-3.3-70b:free", "deepseek/deepseek-v4:free", "x/paid"), freeOnly = true))
         assertEquals("gpt-oss-120b", ModelPicker.pick(listOf("gpt-oss-20b", "gpt-oss-120b", "whisper-large"), freeOnly = false))
+        assertEquals(
+            "models/gemini-3.5-flash",
+            ModelPicker.pick(
+                listOf("models/gemini-3.5-pro", "models/gemini-3.5-flash-lite", "models/gemini-3.5-flash", "models/gemini-2.5-flash", "models/gemma-4-27b-it", "models/text-embedding-004"),
+                freeOnly = false,
+            ),
+        )
     }
 
     @Test
