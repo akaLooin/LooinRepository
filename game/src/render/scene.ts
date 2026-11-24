@@ -8,7 +8,7 @@ import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portr
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
 import { GEAR, gearKey, gearPos, remoteGear } from './gear';
 import { Character, currentQuest, questProgress } from '../core/state';
-import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
+import { canSubclass, CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
 const FONT = 'Galmuri11';
@@ -495,7 +495,7 @@ export class GameScene extends Phaser.Scene {
     // NPC 머리 위: 새 퀘스트 ! / 완료 가능 ? (전직 가능하면 촌장에게 ★)
     for (const n of this.npcs) {
       const c = w.char, q = currentQuest(c, n.id), qp = questProgress(c, n.id);
-      const promo = n.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL;
+      const promo = n.id === CLASS_NPC && ((c.cls === 'beginner' && c.level >= CLASS_LEVEL) || canSubclass(c));
       const m = promo ? '★' : !q ? '' : !c.quests[n.id]?.accepted ? '!' : qp?.done ? '?' : '';
       if (n.mark.text !== m) n.mark.setText(m);
       n.mark.setPosition(n.x, n.y - 45 + Math.sin(this.time0 * 4) * 1.5);

@@ -7,9 +7,10 @@ export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
 export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues';
-export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
+export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage';
+export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer';
 export type WeaponType = 'sword' | 'bow' | 'wand';
-export type EquipSlot = 'weapon' | 'hat' | 'body' | 'ring' | 'pickaxe' | 'axe';
+export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe';
 
 export interface ItemStats {
   dmg?: number; def?: number; hp?: number;
@@ -82,7 +83,7 @@ export const STAT_DESC: Record<StatKey, string> = {
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
-  weapon: '무기', hat: '모자', body: '갑옷', ring: '장신구', pickaxe: '곡괭이', axe: '도끼',
+  weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼',
 };
 
 const items: ItemDef[] = [
@@ -115,6 +116,11 @@ const items: ItemDef[] = [
   ...[['str', '힘의 조각'], ['agi', '날램의 조각'], ['wis', '슬기의 조각'], ['luk', '행운의 조각'], ['guard', '수호의 조각'], ['feast', '풍요의 조각'], ['fortune', '보물의 조각']]
     .map(([k, name]) => ({ id: `statue_${k}`, name, desc: '석상 받침에 바치면 그 석상이 자란다(캐릭터마다).', kind: 'statue' as const, sell: 2 })),
   { id: 'sculpt_tools', name: '조각 도구', desc: '사용하면 마을의 석상 받침을 쓸 수 있다(계정 공용).', kind: 'tool', sell: 0 },
+  { id: 'pants_moss', name: '이끼 바지', desc: '폭신한 이끼를 엮은 바지.', kind: 'equip', slot: 'legs', stats: { def: 2, hp: 8 }, sell: 10 },
+  { id: 'shoes_leaf', name: '잎새 신발', desc: '발걸음이 가볍다.', kind: 'equip', slot: 'shoes', stats: { agi: 2, def: 1 }, reqLv: 5, sell: 18 },
+  { id: 'pants_red', name: '붉은쇠 다리 갑옷', desc: '무릎까지 덮는 쇠판.', kind: 'equip', slot: 'legs', stats: { def: 5, hp: 20 }, reqLv: 10, sell: 60 },
+  { id: 'boots_red', name: '붉은쇠 장화', desc: '쿵쿵 울리는 장화.', kind: 'equip', slot: 'shoes', stats: { def: 3, str: 2 }, reqLv: 10, sell: 60 },
+  { id: 'trophy_moss', name: '이끼왕 트로피', desc: '이끼왕을 쓰러뜨린 증표.', kind: 'equip', slot: 'trophy', stats: { str: 2, agi: 2, wis: 2, luk: 2 }, sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
@@ -137,7 +143,7 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) =
 const monsters: MonsterDef[] = [
   { id: 'mossking', name: '이끼왕', hp: 2600, atk: 26, acc: 24, defZero: 60, xp: 900, coins: [300, 400], speed: 14, motion: 'hop', radius: 20, scale: 2.6,
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
-    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }] },
+    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
     drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
@@ -200,6 +206,10 @@ export const RECIPES: RecipeDef[] = [
   { item: 'pouch_mat', coins: 80, mats: [['twine', 20], ['moss', 15]] },
   { item: 'pouch_res', coins: 80, mats: [['twine', 20], ['log', 15]] },
   { item: 'moss_ring', coins: 150, mats: [['moss', 30], ['twine', 10], ['pebble', 5]] },
+  { item: 'pants_moss', coins: 25, mats: [['moss', 10], ['twine', 5]] },
+  { item: 'shoes_leaf', coins: 60, mats: [['leaf', 8], ['twine', 6], ['log', 2]] },
+  { item: 'pants_red', coins: 180, mats: [['bar_red', 8], ['twine', 10], ['moss', 10]] },
+  { item: 'boots_red', coins: 160, mats: [['bar_red', 6], ['leaf', 6], ['nail', 6]] },
   { item: 'pick_red', coins: 120, mats: [['bar_red', 6], ['log', 6], ['nail', 4]] },
   { item: 'axe_red', coins: 120, mats: [['bar_red', 6], ['log', 6], ['nail', 4]] },
   { item: 'sword_red', coins: 150, mats: [['bar_red', 8], ['plank', 3], ['nail', 5]] },
@@ -228,6 +238,18 @@ export const TALENTS: TalentDef[] = [
   { id: 'volley', name: '연속 사격', max: 10, cls: 'archer', active: { cooldown: 8, mana: 6 }, desc: (lv) => `가까운 적 최대 4마리에게 ${150 + lv * 15}% 피해` },
   { id: 'swift', name: '날랜 손', max: 10, cls: 'archer', desc: (lv) => `공격 속도 +${lv * 2}%` },
   { id: 'nova', name: '별빛 폭발', max: 10, cls: 'mage', active: { cooldown: 10, mana: 10 }, desc: (lv) => `대상 주변의 모든 적에게 ${220 + lv * 25}% 피해` },
+  { id: 'bulwark', name: '성벽', max: 10, cls: 'guardian', desc: (lv) => `최대 체력 +${lv * 3}%` },
+  { id: 'vigil', name: '불침번', max: 10, cls: 'guardian', desc: (lv) => `방어력 +${lv}` },
+  { id: 'frenzy', name: '광분', max: 10, cls: 'berserker', desc: (lv) => `공격력 +${lv * 3}%` },
+  { id: 'bloodlust', name: '피의 열기', max: 10, cls: 'berserker', desc: (lv) => `치명타 확률 +${lv}%p` },
+  { id: 'deadeye', name: '매의 눈', max: 10, cls: 'sharpshooter', desc: (lv) => `치명타 피해 +${lv * 4}%` },
+  { id: 'steady', name: '고요한 숨', max: 10, cls: 'sharpshooter', desc: (lv) => `명중 +${lv * 2}` },
+  { id: 'forager', name: '숲의 선물', max: 10, cls: 'ranger', desc: (lv) => `드롭률 +${lv * 2}%` },
+  { id: 'trailblazer', name: '길잡이', max: 10, cls: 'ranger', desc: (lv) => `채집 효율 +${lv * 4}%` },
+  { id: 'attune', name: '원소 조율', max: 10, cls: 'elementalist', desc: (lv) => `공격력 +${lv * 3}%` },
+  { id: 'overflow', name: '넘치는 마력', max: 10, cls: 'elementalist', desc: (lv) => `최대 마나 +${lv * 5}%, 마나 회복 +${lv * 5}%` },
+  { id: 'patience', name: '기다림의 주문', max: 10, cls: 'hexer', desc: (lv) => `방치 효율 +${lv * 0.5}%p` },
+  { id: 'omen', name: '길조', max: 10, cls: 'hexer', desc: (lv) => `경험치 +${lv * 2}%` },
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
@@ -246,14 +268,34 @@ export const CLEAVE_RANGE = 60;
 export const NOVA_RADIUS = 52;
 
 /** main: 공격력 능력치, acc: 명중 능력치 */
-export interface ClassDef { id: ClassId; name: string; desc: string; main: StatKey; acc: StatKey; range: number; weapon: WeaponType; starter?: string }
+export interface ClassDef {
+  id: ClassId; name: string; desc: string; main: StatKey; acc: StatKey; range: number; weapon: WeaponType; starter?: string;
+  /** 2차 직업이면 바탕이 되는 1차 직업 */
+  base?: ClassId;
+  /** 직업 고유 보정(2차 직업) */
+  perk?: Partial<Record<'hpPct' | 'dmg' | 'crit' | 'def' | 'xp' | 'afk' | 'drop' | 'speed', number>>;
+}
 export const CLASSES: Record<ClassId, ClassDef> = {
   beginner: { id: 'beginner', name: '초보자', desc: '', main: 'luk', acc: 'luk', range: 26, weapon: 'sword' },
   warrior: { id: 'warrior', name: '전사', desc: '근접 전투. 힘이 공격력, 지혜가 명중이 된다. 튼튼하다.', main: 'str', acc: 'wis', range: 28, weapon: 'sword' },
   archer: { id: 'archer', name: '궁수', desc: '활로 멀리서 공격. 민첩이 공격력, 힘이 명중이 된다.', main: 'agi', acc: 'str', range: 115, weapon: 'bow', starter: 'bow_wood' },
   mage: { id: 'mage', name: '마법사', desc: '지팡이로 마법 공격. 지혜가 공격력, 민첩이 명중이 된다.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', starter: 'wand_wood' },
+  guardian: { id: 'guardian', base: 'warrior', name: '수호기사', desc: '방패처럼 버틴다. 최대 체력 +20%, 방어력 +4.', main: 'str', acc: 'wis', range: 28, weapon: 'sword', perk: { hpPct: 20, def: 4 } },
+  berserker: { id: 'berserker', base: 'warrior', name: '광전사', desc: '거칠게 몰아친다. 공격력 +12%, 치명타 +5%p.', main: 'str', acc: 'wis', range: 28, weapon: 'sword', perk: { dmg: 12, crit: 5 } },
+  sharpshooter: { id: 'sharpshooter', base: 'archer', name: '명사수', desc: '한 발 한 발이 정확하다. 치명타 +8%p, 공격력 +6%.', main: 'agi', acc: 'str', range: 125, weapon: 'bow', perk: { crit: 8, dmg: 6 } },
+  ranger: { id: 'ranger', base: 'archer', name: '사냥꾼', desc: '숲을 잘 안다. 드롭률 +12%, 이동 속도 +8.', main: 'agi', acc: 'str', range: 115, weapon: 'bow', perk: { drop: 12, speed: 8 } },
+  elementalist: { id: 'elementalist', base: 'mage', name: '원소술사', desc: '원소를 다룬다. 공격력 +14%.', main: 'wis', acc: 'agi', range: 100, weapon: 'wand', perk: { dmg: 14 } },
+  hexer: { id: 'hexer', base: 'mage', name: '주술사', desc: '느긋하게 쌓는다. 경험치 +10%, 방치 효율 +3%p.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', perk: { xp: 10, afk: 3 } },
 };
 export const CLASS_LEVEL = 10;
+/** 2차 전직 레벨 */
+export const SUBCLASS_LEVEL = 30;
+/** 1차 직업(2차 직업이면 그 바탕) */
+export const baseClass = (cls: ClassId): BaseClass => (CLASSES[cls]?.base ?? cls) as BaseClass;
+/** 초보자부터 지금 직업까지의 계보 */
+/** 2차 전직할 수 있는가 */
+export const canSubclass = (c: { cls: ClassId; level: number }) => !CLASSES[c.cls]?.base && c.cls !== 'beginner' && c.level >= SUBCLASS_LEVEL;
+export const classLine = (cls: ClassId): ClassId[] => (cls === 'beginner' ? ['beginner'] : CLASSES[cls]?.base ? ['beginner', CLASSES[cls].base!, cls] : ['beginner', cls]);
 
 /** 카드: 계정 전체가 함께 모으는 수집 보너스(장착해야 효과). 1/3/10장에서 단계 상승.
  *  id 는 몬스터 id(몬스터 카드) 또는 자원 id(자원 카드: 채집할 때 드물게) */
@@ -324,6 +366,8 @@ export const STORAGE_SIZE = 24;
 /** 가방 한 칸 기본 최대치(주머니로 늘린다). 창고는 제한 없음 */
 export const STACK_BASE = 25;
 export const MAX_CHARACTERS = 6;
+/** 음식 칸 수: 위 칸부터 먹는다 */
+export const FOOD_SLOTS = 3;
 export const AFK_MIN_SECONDS = 60;
 export const AFK_MAX_SECONDS = 12 * 3600;
 /** 방치 효율 기본값(전투·채집). 능력치·특성·카드로 오른다 */
@@ -407,7 +451,7 @@ export const ACHIEVEMENTS: AchieveDef[] = [
 ];
 
 // ───────── 가족(직업별 최고 레벨 → 계정 보너스, 레벨 합 → 캐릭터 칸) ─────────
-export const FAMILY: Record<ClassId, { eff: BonusKey; a: number; b: number; label: string }> = {
+export const FAMILY: Record<BaseClass, { eff: BonusKey; a: number; b: number; label: string }> = {
   beginner: { eff: 'afk', a: 4, b: 40, label: '방치 효율' },
   warrior: { eff: 'hpPct', a: 15, b: 50, label: '최대 체력' },
   archer: { eff: 'dmg', a: 10, b: 50, label: '공격력' },
@@ -423,6 +467,8 @@ export const CARD_SETS: CardSetDef[] = [
   { id: 'w1', name: '첫 숲 세트', cards: ['mossblob', 'pebbler', 'leafling', 'mossking', 'oak', 'redrock', 'silvertree'], tiers: [3, 8, 14, 21], eff: 'afk', v: [1, 2, 3, 5], label: '방치 효율 +%p' },
 ];
 export const CARD_PRESET_LV = 15;
+/** 특성 프리셋(특성 배분 + 공격 바 두 벌)을 쓰는 레벨 */
+export const TALENT_PRESET_LV = 15;
 
 /** 우표(계정 공용): 우표함에 넣어 모으고, 코인 + 재료로 끝없이 올린다.
  *  lin: 레벨마다 a 씩, sat: a·lv/(lv+b) 로 점점 덜 오른다(최대 a에 가까워짐) */

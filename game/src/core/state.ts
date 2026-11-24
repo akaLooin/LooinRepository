@@ -3,7 +3,7 @@ import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
 import { charSlots, progressBonus, useSculptTools } from './progress';
 import {
-  AFK_BASE, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  AFK_BASE, FOOD_SLOTS, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -18,8 +18,8 @@ export interface Character {
   stats: Record<StatKey, number>;
   hp: number;
   mp: number;
-  /** 음식 칸: 체력이 낮아지면 자동으로 하나씩 먹는다 */
-  food: Stack | null;
+  /** 음식 칸(여러 개): 체력이 낮아지면 위 칸부터 하나씩 먹는다 */
+  foods: (Stack | null)[];
   mapId: string; x: number;
   /** 서 있던 높이(발판). 없으면 지면 */
   y?: number;
@@ -41,6 +41,9 @@ export interface Character {
   statues: Record<string, number>;
   /** 정렬한 별자리 */
   sign: string | null;
+  /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
+  talentPresets: { talents: Record<string, number>; bars: (string | null)[][] }[];
+  talentPreset: number;
   auto: boolean; activity: Activity;
   inventory: Stack[];
   equipment: Partial<Record<EquipSlot, string>>;
@@ -110,9 +113,9 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
     cls: 'beginner', level: 1, xp: 0, statPoints: 0,
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
-    hp: 1, mp: 1, food: null, mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
+    hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null,
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0,
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -163,6 +166,17 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const e = equipStats(c);
   // 석상·별자리·업적·가족·카드 세트(값은 %·%p 단위)
   const pb = progressBonus(c, a);
+  // 2차 직업 고유 보정과 2차 직업 특성(모두 패시브)
+  const pk = CLASSES[c.cls]?.perk ?? {}, t2 = (id: string) => c.talents[id] ?? 0;
+  pb.hpPct += (pk.hpPct ?? 0) + t2('bulwark') * 3;
+  pb.def += (pk.def ?? 0) + t2('vigil');
+  pb.dmg += (pk.dmg ?? 0) + t2('frenzy') * 3 + t2('attune') * 3;
+  pb.acc += t2('steady') * 2;
+  pb.drop += (pk.drop ?? 0) + t2('forager') * 2;
+  pb.afk += (pk.afk ?? 0) + t2('patience') * 0.5;
+  pb.xp += (pk.xp ?? 0) + t2('omen') * 2;
+  pb.mining += t2('trailblazer') * 4; pb.chopping += t2('trailblazer') * 4;
+  const critAdd = ((pk.crit ?? 0) + t2('bloodlust')) / 100, mpMult = 1 + t2('overflow') * 0.05;
   const str = c.stats.str + e.str + pb.str, agi = c.stats.agi + e.agi + pb.agi;
   const wis = c.stats.wis + e.wis + pb.wis, luk = c.stats.luk + e.luk + pb.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
@@ -174,19 +188,19 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   // 카드는 장착한 것만 효과가 있다
   for (const cd of CARDS) if (c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
-  const maxMp = Math.floor(8 + wis * 1.5 + c.level);
+  const maxMp = Math.floor((8 + wis * 1.5 + c.level) * mpMult);
   const work = 1 + tl('worker') * 0.05;
-  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp + pb.hp) * (1 + pb.hpPct / 100) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
+  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp + pb.hp) * (1 + pb.hpPct / 100) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (baseClass(c.cls) === 'warrior' ? 1.15 : 1));
   return {
-    str, agi, wis, luk, maxHp, maxMp, mpRegen: 0.5 + maxMp * 0.02,
+    str, agi, wis, luk, maxHp, maxMp, mpRegen: (0.5 + maxMp * 0.02) * mpMult,
     acc: 2 + accStat + c.level + sb.acc + pb.acc,
     afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk + afkAcc),
     afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill + afkAcc),
     dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg) * (1 + sb.dmg / 100) * (1 + pb.dmg / 100),
     def: e.def + c.level * 0.3 + tl('ironskin') * 1.5 + sb.def + pb.def,
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
-    speed: 80 + Math.min(40, agi * 0.6),
-    crit: Math.min(0.75, 0.04 + luk * 0.004 + sb.crit / 100), critMult: 1.6,
+    speed: 80 + Math.min(40, agi * 0.6) + (pk.speed ?? 0),
+    crit: Math.min(0.75, 0.04 + luk * 0.004 + sb.crit / 100 + critAdd), critMult: 1.6 + t2('deadeye') * 0.04,
     xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
     coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins') + pb.coins / 100,
     range: cls.range, ranged: cls.range > 40,
@@ -202,21 +216,27 @@ export const dmgTaken = (m: { atk: number; defZero: number }, def: number, roll 
   Math.max(0, Math.ceil(m.atk * roll * (1 - def / m.defZero)));
 /** 명중률: 명중/요구치 비율이 0.5 이하면 0%, 1 이상이면 100% */
 export const hitChance = (acc: number, need: number) => Math.max(0, Math.min(1, (acc / need - 0.5) * 2));
-/** 음식 칸 넣기/빼기 */
-export function setFood(c: Character, id: string | null): string | null {
+/** 음식 칸 넣기/빼기(slot 번째 칸) */
+export function setFood(c: Character, id: string | null, slot = 0): string | null {
   if (id && ITEMS[id]?.kind !== 'food') return '음식이 아닙니다';
-  if (c.food) {
-    if (!addItem(c, c.food.id, c.food.qty)) return '가방이 가득 찼습니다';
-    c.food = null;
+  if (slot < 0 || slot >= c.foods.length) return '없는 칸';
+  const cur = c.foods[slot];
+  if (cur) {
+    if (!addItem(c, cur.id, cur.qty)) return '가방이 가득 찼습니다';
+    c.foods[slot] = null;
   }
   if (id) {
+    // 같은 음식이 다른 칸에 있으면 그 칸에 합친다
+    const other = c.foods.findIndex((f) => f?.id === id);
     const n = countItem(c, id);
     if (!n) return '가방에 없습니다';
     removeItem(c, id, n);
-    c.food = { id, qty: n };
+    if (other >= 0) c.foods[other]!.qty += n; else c.foods[slot] = { id, qty: n };
   }
   return null;
 }
+/** 음식 칸 전체 회복량 */
+export const foodTotalHeal = (c: Character) => c.foods.reduce((n, f) => n + (f ? (ITEMS[f.id].heal ?? 0) * f.qty : 0), 0);
 
 // ───────── 성장 ─────────
 /** 경험치 지급. 오른 레벨 수를 반환 */
@@ -246,7 +266,7 @@ export function spendStat(c: Character, k: StatKey, n = 1): boolean {
 
 export function learnTalent(c: Character, id: string): boolean {
   const t = TALENT[id], lv = c.talents[id] ?? 0;
-  if (!t || c.talentPoints <= 0 || lv >= t.max || (t.cls && t.cls !== c.cls)) return false;
+  if (!t || c.talentPoints <= 0 || lv >= t.max || (t.cls && !classLine(c.cls).includes(t.cls))) return false;
   c.talents[id] = lv + 1; c.talentPoints--;
   // 액티브를 처음 배우면 지금 공격 바의 빈 칸에 놓아 준다(옮기는 것은 특성 화면에서)
   if (lv === 0 && t.active && !c.attackBars.some((b) => b.includes(id))) {
@@ -264,7 +284,7 @@ export function setBarSlot(c: Character, bar: number, slot: number, id: string |
     const t = TALENT[id];
     if (!t?.active) return '액티브 특성만 놓을 수 있습니다';
     if (!(c.talents[id] > 0)) return '아직 배우지 않은 특성';
-    if (t.cls && t.cls !== c.cls) return '이 직업의 특성이 아닙니다';
+    if (t.cls && !classLine(c.cls).includes(t.cls)) return '이 직업의 특성이 아닙니다';
     const prev = b.indexOf(id);
     if (prev >= 0) b[prev] = b[slot]; // 자리 바꾸기
   }
@@ -272,11 +292,33 @@ export function setBarSlot(c: Character, bar: number, slot: number, id: string |
   return null;
 }
 
+/** 특성 프리셋 바꾸기: 지금 배분·공격 바를 저장하고, 고른 프리셋을 불러온다(포인트 합은 그대로) */
+export function switchTalentPreset(c: Character, i: number): string | null {
+  if (c.level < TALENT_PRESET_LV) return `Lv.${TALENT_PRESET_LV}부터 쓸 수 있습니다`;
+  if (i < 0 || i >= c.talentPresets.length) return '없는 프리셋';
+  if (i === c.talentPreset) return null;
+  const spent = (t: Record<string, number>) => Object.values(t).reduce((n, v) => n + v, 0);
+  const pool = c.talentPoints + spent(c.talents);
+  // 지금 직업 계보에서 쓸 수 없는 특성은 빼고 불러온다
+  const line = classLine(c.cls), next = c.talentPresets[i];
+  const talents = Object.fromEntries(Object.entries(next.talents).filter(([id, lv]) => lv > 0 && TALENT[id] && (!TALENT[id].cls || line.includes(TALENT[id].cls!))));
+  if (spent(talents) > pool) return '포인트가 모자랍니다';
+  c.talentPresets[c.talentPreset] = { talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) };
+  c.talentPreset = i;
+  c.talents = talents;
+  c.attackBars = next.bars.map((b) => b.map((id) => (id && talents[id] ? id : null)));
+  c.talentPoints = pool - spent(talents);
+  return null;
+}
+
 /** 전직. 실패 사유 또는 null */
 export function advanceClass(c: Character, cls: ClassId): string | null {
   const def = CLASSES[cls];
-  if (!def || cls === 'beginner' || c.cls !== 'beginner') return '전직할 수 없습니다';
-  if (c.level < CLASS_LEVEL) return `레벨 ${CLASS_LEVEL} 필요`;
+  if (!def || cls === 'beginner') return '전직할 수 없습니다';
+  // 1차: 초보자 → 전사·궁수·마법사, 2차: 1차 직업 → 그 갈래의 2차 직업
+  const need = def.base ? SUBCLASS_LEVEL : CLASS_LEVEL;
+  if (def.base ? c.cls !== def.base : c.cls !== 'beginner') return '전직할 수 없습니다';
+  if (c.level < need) return `레벨 ${need} 필요`;
   if (def.starter && c.inventory.length >= INVENTORY_SIZE) return '가방이 가득 찼습니다';
   c.cls = cls;
   if (def.starter) {
@@ -660,12 +702,16 @@ export function deserialize(json: string | null): Account | null {
         Object.keys(a.cards).filter((k) => a.cards[k] > 0).slice(0, CARD_SLOTS).forEach((k, i) => (c.cardSlots[i] = k));
       }
       c.skills.smithing ??= { lv: 1, xp: 0 };
-      c.food ??= null;
+      const oldFood = (c as unknown as { food?: Stack | null }).food;
+      c.foods ??= [oldFood ?? null, ...new Array(FOOD_SLOTS - 1).fill(null)];
+      while (c.foods.length < FOOD_SLOTS) c.foods.push(null);
+      delete (c as unknown as { food?: unknown }).food;
       c.mp ??= derive(c, a).maxMp;
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
-      c.statues ??= {}; c.sign ??= null; c.cardSet ??= null; c.cardPreset ??= 0;
+      c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
+      c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];
       c.talentPoints ??= c.level - 1;
     }

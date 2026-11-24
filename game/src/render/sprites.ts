@@ -583,6 +583,21 @@ function buildItems() {
     art(p);
     p.outline().save(`it_stamp_${k}`);
   }
+  // 바지·신발·트로피
+  for (const [k, a, b] of [['pants_moss', '#5fb859', '#3b8c4f'], ['pants_red', '#d9674f', '#8a3328']] as const) {
+    p = new Paint(12, 13);
+    p.rect(2, 1, 8, 4, a); p.rect(2, 5, 3, 7, a); p.rect(7, 5, 3, 7, a); p.rect(2, 1, 8, 1, b); p.rect(4, 5, 1, 7, b); p.rect(9, 5, 1, 7, b); p.rect(3, 2, 2, 1, '#ffffff');
+    p.outline().save(`it_${k}`);
+  }
+  for (const [k, a, b] of [['shoes_leaf', '#8fde5d', '#3b8c4f'], ['boots_red', '#d9674f', '#6a2a22']] as const) {
+    p = new Paint(13, 11);
+    p.rect(2, 1, 4, 6, a); p.rect(2, 6, 8, 3, a); p.disc(10, 7.5, 2, 1.5, a); p.rect(2, 9, 10, 1, b); p.rect(3, 2, 1, 4, '#ffffff');
+    p.outline().save(`it_${k}`);
+  }
+  p = new Paint(13, 14);
+  p.rect(3, 1, 7, 5, '#f6c945'); p.disc(6.5, 6, 3.5, 2.5, '#f6c945'); p.rect(0, 2, 3, 1, '#f6c945'); p.rect(10, 2, 3, 1, '#f6c945'); p.rect(0, 2, 1, 3, '#f6c945'); p.rect(12, 2, 1, 3, '#f6c945');
+  p.rect(6, 8, 1, 3, '#c98f2a'); p.rect(3, 11, 7, 2, '#5fb859'); p.rect(4, 2, 2, 3, '#fff1a8'); p.disc(6.5, 3.5, 1.2, 1.2, '#5fb859');
+  p.outline().save('it_trophy_moss');
   // 석상 조각: 깨진 돌 조각 + 석상별 색 결정
   for (const [k, gem] of [['str', '#d9574a'], ['agi', '#5fb859'], ['wis', '#4e8de2'], ['luk', '#f6c945'], ['guard', '#9aa3ad'], ['feast', '#e25d7a'], ['fortune', '#c98f2a']] as const) {
     p = new Paint(12, 12);
@@ -639,6 +654,7 @@ export const ITEM_ICON: Record<string, string> = {
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
+  pants_moss: 'it_pants_moss', pants_red: 'it_pants_red', shoes_leaf: 'it_shoes_leaf', boots_red: 'it_boots_red', trophy_moss: 'it_trophy_moss',
   bar_red: 'it_bar_red', forge_oil: 'it_oil', sword_red: 'wp_sword_red', pick_red: 'wp_pick_red', axe_red: 'wp_axe_red',
 };
 
@@ -684,6 +700,9 @@ function buildIcons() {
   icon('eq_weapon', (p) => { p.line(3, 12, 12, 3, sil); p.line(4, 12, 13, 3, sil); p.rect(2, 11, 4, 2, sil); p.rect(2, 12, 2, 3, sil); });
   icon('eq_hat', (p) => { p.disc(8, 8, 5, 4, sil); p.rect(1, 10, 14, 2, sil); });
   icon('eq_body', (p) => { p.rect(4, 3, 8, 10, sil); p.rect(1, 3, 3, 5, sil); p.rect(12, 3, 3, 5, sil); p.rect(6, 2, 4, 1, null); });
+  icon('eq_legs', (p) => { p.rect(3, 2, 10, 4, sil); p.rect(3, 6, 4, 9, sil); p.rect(9, 6, 4, 9, sil); });
+  icon('eq_shoes', (p) => { p.rect(3, 4, 4, 7, sil); p.rect(3, 10, 9, 4, sil); p.disc(12, 12, 2, 2, sil); });
+  icon('eq_trophy', (p) => { p.rect(4, 2, 8, 6, sil); p.disc(8, 7, 4, 3, sil); p.rect(7, 10, 2, 3, sil); p.rect(4, 13, 8, 2, sil); p.rect(1, 3, 3, 1, sil); p.rect(12, 3, 3, 1, sil); });
   icon('eq_ring', (p) => { p.disc(8, 9, 5, 5, sil); p.disc(8, 9, 3, 3, null); p.disc(8, 3.5, 2, 1.6, sil); });
   icon('eq_pickaxe', (p) => { p.rect(7, 4, 2, 11, sil); p.line(1, 5, 7, 2, sil); p.line(9, 2, 15, 5, sil); p.rect(6, 2, 4, 3, sil); });
   icon('eq_axe', (p) => { p.rect(7, 2, 2, 13, sil); p.disc(11, 6, 4, 4, sil); });
@@ -694,6 +713,20 @@ function buildIcons() {
   icon('st_wis', (p) => { p.rect(2, 2, 12, 12, C.blue); p.rect(3, 3, 10, 9, '#6fb0f0'); p.rect(2, 12, 12, 2, C.paper); p.disc(8, 7, 2.5, 2.5, C.white); p.disc(8, 7, 1, 1, C.blueD); });
   icon('st_luk', (p) => { for (const [x, y] of [[5, 4], [10, 4], [5, 9], [10, 9]]) p.disc(x, y, 3, 3, C.green); p.disc(7.5, 6.5, 1.5, 1.5, C.green); p.line(8, 9, 11, 15, C.greenD); });
   // 특성(틀 안에 들어가는 그림)
+  // 2차 직업 특성: 직업 색 방패 + 상징
+  const badge = (id: string, col: string, sym: (p: Paint) => void) => icon(`tl_${id}`, (p) => { p.rect(2, 1, 12, 9, col); for (let y = 10; y < 15; y++) p.rect(2 + (y - 10), y, 12 - (y - 10) * 2, 1, col); p.rect(3, 2, 2, 7, '#ffffff'); sym(p); });
+  badge('bulwark', '#6a7480', (p) => { p.rect(5, 4, 6, 6, C.steel); p.rect(7, 4, 2, 6, C.white); });
+  badge('vigil', '#6a7480', (p) => { p.disc(8, 7, 3, 2, C.white); p.disc(8, 7, 1.2, 1.2, '#1e2a44'); });
+  badge('frenzy', '#c9573f', (p) => { p.line(5, 11, 11, 3, C.white); p.line(6, 11, 12, 3, C.gold); });
+  badge('bloodlust', '#c9573f', (p) => { p.disc(8, 8, 2.6, 2.6, C.red); p.rect(7, 3, 2, 3, C.red); });
+  badge('deadeye', '#3b8c4f', (p) => { p.disc(8, 7, 3.4, 3.4, C.white); p.disc(8, 7, 1.6, 1.6, C.red); });
+  badge('steady', '#3b8c4f', (p) => { p.line(4, 7, 12, 7, C.white); p.line(8, 3, 8, 11, C.white); });
+  badge('forager', '#5fb859', (p) => { p.disc(8, 8, 3, 2.6, C.wood); p.rect(7, 4, 2, 2, '#8fde5d'); });
+  badge('trailblazer', '#5fb859', (p) => { p.line(4, 11, 8, 4, C.white); p.line(8, 4, 12, 11, C.white); });
+  badge('attune', '#4e8de2', (p) => { p.disc(6, 6, 1.6, 1.6, C.red); p.disc(10, 6, 1.6, 1.6, '#8fde5d'); p.disc(8, 10, 1.6, 1.6, '#a7d8f0'); });
+  badge('overflow', '#4e8de2', (p) => { p.disc(8, 8, 3, 3, '#a7d8f0'); p.rect(7, 3, 2, 3, '#a7d8f0'); });
+  badge('patience', '#8a6fd1', (p) => { p.rect(5, 3, 6, 1, C.white); p.rect(5, 11, 6, 1, C.white); p.line(6, 4, 10, 10, C.gold); p.line(10, 4, 6, 10, C.gold); });
+  badge('omen', '#8a6fd1', (p) => { p.disc(8, 7, 3, 3, C.gold); p.disc(9.5, 6, 2.4, 2.4, '#8a6fd1'); });
   icon('tl_smash', (p) => { p.rect(6, 6, 3, 10, C.wood); p.rect(2, 1, 11, 6, C.steel); p.rect(2, 1, 11, 2, C.white); for (const [x, y] of [[1, 9], [13, 10], [12, 13]]) p.rect(x, y, 2, 2, C.gold); });
   icon('tl_heal', (p) => { p.disc(7.5, 9, 6, 6, C.red); p.rect(6, 1, 4, 4, C.paper); p.rect(6, 6, 4, 8, C.white); p.rect(3, 8, 10, 4, C.white); });
   icon('tl_sharp', (p) => { p.line(3, 13, 12, 4, C.steel); p.line(4, 13, 13, 4, C.steel); p.line(4, 12, 13, 3, C.white); p.rect(1, 12, 4, 3, C.wood); p.set(13, 1, C.gold); p.set(14, 2, C.gold); p.set(12, 0, C.gold); });

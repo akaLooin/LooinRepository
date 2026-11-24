@@ -2,7 +2,7 @@
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
   ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, STAMPS, STATUES,
-  cardTier, statueNeed,
+  baseClass, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
@@ -107,7 +107,7 @@ export function claimAchievement(acc: Account, id: string): string | null {
 /** 직업별 최고 레벨 */
 export function familyBest(chars: Character[]): Record<keyof typeof FAMILY, number> {
   const out = { beginner: 0, warrior: 0, archer: 0, mage: 0 };
-  for (const c of chars) out[c.cls] = Math.max(out[c.cls], c.level);
+  for (const c of chars) out[baseClass(c.cls)] = Math.max(out[baseClass(c.cls)], c.level);
   return out;
 }
 export const familyValue = (cls: keyof typeof FAMILY, lv: number) => (lv > 0 ? (FAMILY[cls].a * lv) / (lv + FAMILY[cls].b) : 0);

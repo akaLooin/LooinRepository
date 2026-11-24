@@ -3,7 +3,7 @@
 import { ClassId, EquipSlot, MAPS, NODES, StatKey } from './data';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnTalent, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, learnTalent, switchTalentPreset, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
@@ -16,7 +16,7 @@ export type Action =
   | { t: 'talent'; id: string }
   | { t: 'equip'; id: string }
   | { t: 'unequip'; slot: EquipSlot }
-  | { t: 'food'; id: string | null }
+  | { t: 'food'; id: string | null; slot?: number }
   | { t: 'use'; id: string }
   | { t: 'sell'; id: string; qty: number }
   | { t: 'craft'; idx: number }
@@ -56,7 +56,8 @@ export type Action =
   | { t: 'sign'; id: string | null }
   | { t: 'achieve'; id: string }
   | { t: 'cardSet'; id: string | null }
-  | { t: 'cardPreset'; i: number };
+  | { t: 'cardPreset'; i: number }
+  | { t: 'talentPreset'; i: number };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -72,7 +73,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'talent': return learnTalent(c, a.id) ? ok() : fail('특성을 올릴 수 없습니다');
     case 'equip': return res(equipItem(c, a.id));
     case 'unequip': return res(unequipItem(c, a.slot));
-    case 'food': return res(setFood(c, a.id));
+    case 'food': return res(setFood(c, a.id, a.slot ?? 0));
     case 'use': return res(useItem(acc, c, a.id));
     case 'sell': { const n = sellItem(acc, c, a.id, a.qty); return n ? ok(n) : fail('팔 수 없습니다'); }
     case 'craft': return res(craft(acc, c, a.idx));
@@ -123,6 +124,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'achieve': return res(claimAchievement(acc, a.id));
     case 'cardSet': return res(toggleCardSet(c, a.id));
     case 'cardPreset': return res(switchCardPreset(acc, c, a.i));
+    case 'talentPreset': return res(switchTalentPreset(c, a.i));
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

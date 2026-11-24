@@ -82,3 +82,54 @@ describe('업적·가족·카드 세트', () => {
     expect(back.signs).toEqual([]); expect(back.characters[0].cardPresets).toHaveLength(2);
   });
 });
+
+import { CLASS_LEVEL, SUBCLASS_LEVEL } from '../src/core/data';
+describe('2차 전직·음식 칸·장비 칸', () => {
+  it('1차 직업에서 Lv.30이면 그 갈래의 2차 직업으로, 2차 특성을 올릴 수 있다', () => {
+    const { acc, c } = setup();
+    c.level = CLASS_LEVEL;
+    expect(applyAction(acc, 0, { t: 'class', cls: 'guardian' }, 0).ok).toBe(false);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'warrior' }, 0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'guardian' }, 0).err).toMatch(/레벨/);
+    c.level = SUBCLASS_LEVEL;
+    expect(applyAction(acc, 0, { t: 'class', cls: 'ranger' }, 0).ok).toBe(false); // 다른 갈래
+    const hp0 = derive(c, acc).maxHp;
+    expect(applyAction(acc, 0, { t: 'class', cls: 'guardian' }, 0).ok).toBe(true);
+    expect(derive(c, acc).maxHp).toBeGreaterThan(hp0);
+    c.talentPoints = 3;
+    expect(applyAction(acc, 0, { t: 'talent', id: 'bulwark' }, 0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'talent', id: 'cleave' }, 0).ok).toBe(true); // 1차 특성도 계속
+    expect(applyAction(acc, 0, { t: 'talent', id: 'frenzy' }, 0).ok).toBe(false); // 다른 2차
+  });
+  it('음식은 칸마다 넣고, 같은 음식은 한 칸에 합친다', () => {
+    const { acc, c } = setup();
+    addItem(c, 'berry', 5);
+    expect(applyAction(acc, 0, { t: 'food', id: 'berry', slot: 1 }, 0).ok).toBe(true);
+    addItem(c, 'berry', 3);
+    expect(applyAction(acc, 0, { t: 'food', id: 'berry', slot: 2 }, 0).ok).toBe(true);
+    expect(c.foods[1]).toEqual({ id: 'berry', qty: 8 });
+    expect(c.foods[2]).toBeNull();
+  });
+  it('바지·신발·트로피 칸에 장착', () => {
+    const { acc, c } = setup();
+    addItem(c, 'pants_moss', 1); addItem(c, 'trophy_moss', 1);
+    expect(applyAction(acc, 0, { t: 'equip', id: 'pants_moss' }, 0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'equip', id: 'trophy_moss' }, 0).ok).toBe(true);
+    expect(c.equipment.legs).toBe('pants_moss'); expect(c.equipment.trophy).toBe('trophy_moss');
+  });
+});
+
+import { TALENT_PRESET_LV } from '../src/core/data';
+describe('특성 프리셋', () => {
+  it('배분과 공격 바를 두 벌로 저장해 바꿔 끼우고, 포인트 합은 그대로', () => {
+    const { acc, c } = setup();
+    c.level = TALENT_PRESET_LV; c.talentPoints = 5;
+    applyAction(acc, 0, { t: 'talent', id: 'smash' }, 0); applyAction(acc, 0, { t: 'talent', id: 'smash' }, 0);
+    applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 0, id: 'smash' }, 0);
+    expect(applyAction(acc, 0, { t: 'talentPreset', i: 1 }, 0).ok).toBe(true);
+    expect(c.talents).toEqual({}); expect(c.talentPoints).toBe(5); expect(c.attackBars[0][0]).toBeNull();
+    applyAction(acc, 0, { t: 'talent', id: 'heal' }, 0);
+    expect(applyAction(acc, 0, { t: 'talentPreset', i: 0 }, 0).ok).toBe(true);
+    expect(c.talents.smash).toBe(2); expect(c.talentPoints).toBe(3); expect(c.attackBars[0][0]).toBe('smash');
+  });
+});

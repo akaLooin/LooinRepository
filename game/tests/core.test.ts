@@ -339,12 +339,12 @@ describe('전투 공식', () => {
     addItem(c, 'berry', 5);
     expect(setFood(c, 'berry')).toBeNull();
     expect(countItem(c, 'berry')).toBe(0);
-    expect(c.food).toEqual({ id: 'berry', qty: 5 });
+    expect(c.foods[0]).toEqual({ id: 'berry', qty: 5 });
     const w = new World(acc, c, new Rng(1));
     c.hp = 5;
     w.step(1 / 60, { move: 0, climb: 0 });
     expect(c.hp).toBeGreaterThan(19);
-    expect(c.food!.qty).toBe(4);
+    expect(c.foods[0]!.qty).toBe(4);
     expect(w.events.some((e) => e.t === 'heal')).toBe(true);
     expect(setFood(c, null)).toBeNull();
     expect(countItem(c, 'berry')).toBe(4);
@@ -441,13 +441,14 @@ describe('방치 정보와 보상', () => {
     c.mapId = 'hills'; c.level = 5; c.stats.luk = 8;
     const hungry = afkRates(acc, c);
     expect(hungry.survival).toBeLessThan(1);
-    c.food = { id: 'mushroom', qty: 500 };
+    c.foods[0] = { id: 'mushroom', qty: 300 }; c.foods[1] = { id: 'berry', qty: 200 };
     const fed = afkRates(acc, c);
     expect(fed.survival).toBe(1);
     expect(fed.killsPerHour).toBeGreaterThan(hungry.killsPerHour);
     const rep = computeAfk(acc, c, 3600_000, new Rng(1))!;
     expect(rep.food).toBeGreaterThan(0);
-    expect(c.food!.qty).toBe(500 - rep.food);
+    expect((c.foods[0]?.qty ?? 0) + (c.foods[1]?.qty ?? 0)).toBe(500 - rep.food);
+    expect(c.foods[1]!.qty).toBe(200); // 위 칸부터 먹는다
   });
   it('자원 카드: 나무를 캐며 모으고, 장착하면 벌목 효율이 오른다', () => {
     const { acc, c } = setup();

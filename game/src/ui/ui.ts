@@ -4,7 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -216,6 +216,7 @@ export class UI {
 
     // 진행 중인 퀘스트를 NPC마다 한 줄씩
     const lines: string[] = [];
+    if (canSubclass(c)) lines.push(`<span class="ui-accent">★ 2차 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
     if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
     for (const n of Object.values(NPCS)) {
       const q = currentQuest(c, n.id), qp = questProgress(c, n.id);
@@ -305,8 +306,7 @@ export class UI {
           const id = c.equipment[s];
           return `<button class="ui-slot eqslot" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) : ui(`eq_${s}`, 'sil')}</button>`;
         }).join('');
-        const f = c.food;
-        const food = `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food" aria-selected="${this.sel === 'food'}" aria-label="음식 칸${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>` : ui('eq_food', 'sil')}</button>`;
+        const food = c.foods.map((f, i) => `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food:${i}" aria-selected="${this.sel === `food:${i}`}" aria-label="음식 칸 ${i + 1}${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>` : ui('eq_food', 'sil')}</button>`).join('');
         let cells = '';
         for (let i = 0; i < Math.max(invSize(c), c.inventory.length); i++) {
           const s = c.inventory[i];
@@ -314,10 +314,11 @@ export class UI {
             : '<div class="ui-slot empty"></div>';
         }
         let detail = `${ui('ui_items', 'bigic')}<span class="ui-sm ui-muted">칸을 누르면 정보와 할 수 있는 일이 나옵니다.</span>`;
-        if (this.sel === 'food') {
+        if (this.sel?.startsWith('food:')) {
+          const fi = +this.sel.slice(5), f = c.foods[fi];
           detail = f ? `<div class="ui-row"><span class="ui-slot">${icon(f.id)}</span><div><b>${ITEMS[f.id].name}</b><div class="ui-xs ui-muted">음식 칸 · ${f.qty}개</div></div></div>
             <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다.</span>
-            <button class="ui-btn" data-act="food:">가방으로</button>` : '<span class="ui-sm ui-muted">음식을 넣어 두면 체력이 낮을 때 자동으로 먹습니다.</span>';
+            <button class="ui-btn" data-act="food::${fi}">가방으로</button>` : '<span class="ui-sm ui-muted">음식을 넣어 두면 체력이 낮을 때 위 칸부터 자동으로 먹습니다.</span>';
         } else if (this.sel?.startsWith('eq:')) {
           const slot = this.sel.slice(3) as EquipSlot, id = c.equipment[slot];
           if (id) detail = `<div class="ui-row"><span class="ui-slot">${icon(id)}</span><div><b>${ITEMS[id].name}</b><div class="ui-xs ui-muted">${SLOT_NAMES[slot]} · 장착 중</div></div></div>
@@ -340,11 +341,16 @@ export class UI {
 
       case 'char': {
         // 탭: 능력치 / 초보자 특성 / 직업 특성(원작처럼 단계별). 왼쪽 깃발로 공격 바 지정
-        const hasCls = c.cls !== 'beginner';
-        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', hasCls ? CLASSES[c.cls].name : '직업'];
-        const t = tab === 2 && !hasCls ? 1 : tab;
-        const body = t === 0 ? this.statsHtml(c) : this.talentsHtml(c, t === 1 ? 'beginner' : c.cls);
-        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', hasCls ? `tl_${c.cls === 'warrior' ? 'cleave' : c.cls === 'archer' ? 'volley' : 'nova'}` : 'ui_lock'])}
+        // 계보: 초보자 → 1차 → 2차. 탭은 능력치 + 계보마다 하나(아직 없는 단계는 잠김)
+        const line = classLine(c.cls), base = baseClass(c.cls), sub = line[2];
+        const hasCls = base !== 'beginner';
+        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', hasCls ? CLASSES[base].name : '직업', sub ? CLASSES[sub].name : '2차 직업'];
+        const t = (tab === 2 && !hasCls) || (tab === 3 && !sub) ? 1 : tab;
+        const body = t === 0 ? this.statsHtml(c) : this.talentsHtml(c, t === 1 ? 'beginner' : t === 2 ? base : sub!);
+        const baseIcon = hasCls ? `tl_${base === 'warrior' ? 'cleave' : base === 'archer' ? 'volley' : 'nova'}` : 'ui_lock';
+        const subIcon = sub ? `tl_${TALENTS.find((x) => x.cls === sub)!.id}` : 'ui_lock';
+        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', baseIcon, subIcon])}
+          ${t > 0 && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
           <div class="ui-tabpanel talentpanel">${t > 0 ? `<button class="assignflag ${this.assigning !== null || this.attackMode ? 'on' : ''}" data-act="flag" aria-label="공격 지정">${ui('ui_assign', 'mi')}<span>공격<br>지정</span></button>` : ''}${body}</div>`);
       }
 
@@ -428,6 +434,11 @@ export class UI {
         const npc = NPCS[this.npcId] ?? NPCS.elder;
         const speaker = (body: string) => `<div class="ui-dialog" role="dialog" aria-label="${npc.name}"><div class="speaker"><div class="face"><img class="px" src="${portraitUrl(npc.look)}" alt=""></div>${npc.name}</div>
           <div class="ui-grow stack">${body}</div><button class="ui-btn sm close" data-act="close" aria-label="닫기">✕</button></div>`;
+        const subs = (Object.keys(CLASSES) as ClassId[]).filter((id) => CLASSES[id].base === c.cls);
+        if (npc.id === CLASS_NPC && subs.length && c.level >= SUBCLASS_LEVEL) {
+          return speaker(`<p>“${CLASSES[c.cls].name}의 길을 꽤 걸었구먼. 이제 한 갈래를 더 고를 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
+            ${subs.map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
+        }
         if (npc.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
           return speaker(`<p>“많이 강해졌구먼! 이제 자네의 길을 정할 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
             ${(['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
@@ -628,7 +639,7 @@ export class UI {
 
   private familyHtml(): string {
     const acc = this.game.acc, best = familyBest(acc.characters), lv = familyLevel(acc);
-    const rows = (Object.keys(FAMILY) as ClassId[]).map((k) => {
+    const rows = (Object.keys(FAMILY) as BaseClass[]).map((k) => {
       const v = familyValue(k, best[k]);
       return `<div class="ui-row line"><b class="ui-grow">${CLASSES[k].name} <span class="ui-xs ui-muted">최고 Lv.${best[k] || '-'}</span></b><span class="ui-sm ${v ? 'ui-good' : 'ui-muted'}">${FAMILY[k].label} +${(Math.round(v * 10) / 10)}${FAMILY[k].eff === 'afk' ? '%p' : '%'}</span></div>`;
     }).join('');
@@ -901,6 +912,7 @@ export class UI {
       case 'sign': fail(g.act({ t: 'sign', id: a || null }).err ?? null); break;
       case 'ach': { const r = g.act({ t: 'achieve', id: a }); if (r.ok) this.toast(`업적 달성: ${ACHIEVEMENTS.find((d) => d.id === a)!.name}`); else fail(r.err ?? null); break; }
       case 'cset': fail(g.act({ t: 'cardSet', id: a || null }).err ?? null); break;
+      case 'tpre': { const r = g.act({ t: 'talentPreset', i: +a }); if (r.ok) this.toast(`특성 프리셋 ${+a + 1}`); else fail(r.err ?? null); break; }
       case 'cpre': fail(g.act({ t: 'cardPreset', i: +a }).err ?? null); break;
       case 'tclaim': {
         const t = TASK_BY_ID[a], tier = taskDone(g.acc, a) + 1, r = g.act({ t: 'task', id: a });
@@ -954,9 +966,15 @@ export class UI {
         if (r.ok && it) this.toast(`${ITEMS[it].name} ${r.n}개를 ${a === 'store' ? '창고' : '가방'}로`, it); else fail(r.err ?? null);
         break;
       }
-      case 'class': { const r = g.act({ t: 'class', cls: a as ClassId }); fail(r.err ?? null); if (r.ok && c) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'char'; this.tab.char = 1; } break; }
+      case 'class': { const r = g.act({ t: 'class', cls: a as ClassId }); fail(r.err ?? null); if (r.ok && c) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'char'; this.tab.char = CLASSES[c.cls].base ? 3 : 2; } break; }
       case 'equip': fail(g.act({ t: 'equip', id: a }).err ?? null); this.sel = null; break;
-      case 'food': fail(g.act({ t: 'food', id: a || null }).err ?? null); this.sel = a ? 'food' : null; break;
+      case 'food': {
+        // 넣기: 같은 음식 칸 → 빈 칸 → 첫 칸 순서로. 빼기: 고른 칸
+        const slot = b !== undefined ? +b : Math.max(0, c!.foods.findIndex((f) => f?.id === a), c!.foods.findIndex((f) => f?.id === a) >= 0 ? 0 : c!.foods.indexOf(null));
+        fail(g.act({ t: 'food', id: a || null, slot }).err ?? null);
+        this.sel = a ? `food:${c!.foods.findIndex((f) => f?.id === a)}` : null;
+        break;
+      }
       case 'unequip': fail(g.act({ t: 'unequip', slot: a as EquipSlot }).err ?? null); this.sel = null; break;
       case 'sell': { const r = g.act({ t: 'sell', id: a, qty: +b }); if (r.ok) this.toast(`+${r.n} 코인`, 'coin'); break; }
       case 'stat': g.act({ t: 'stat', stat: a as StatKey }); break;

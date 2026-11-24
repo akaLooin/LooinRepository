@@ -6,7 +6,7 @@ import {
   SkillKey,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, addItemSome, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
+import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
 import { GATHER_INTERVAL } from './world';
 
 export interface AfkReport {
@@ -86,12 +86,14 @@ export function afkRates(acc: Account, c: Character): AfkRates {
     dps += w * (dmgTaken(m, d.def) / 1.2) * 0.5;
   }
   // 음식: 피해가 회복을 넘으면 그 차이만큼 음식을 먹어 메운다
-  const heal = c.food ? ITEMS[c.food.id].heal ?? 0 : 0;
+  // 음식: 칸들의 회복량을 위 칸부터 쓴다. 한 개 평균 회복량으로 개수를 어림한다
+  const totalHeal = foodTotalHeal(c), totalQty = c.foods.reduce((n, f) => n + (f?.qty ?? 0), 0);
+  const heal = totalQty ? totalHeal / totalQty : 0;
   const deficit = Math.max(0, dps - d.regen);
   const foodPerHour = heal > 0 ? (deficit * 3600) / heal : 0;
   let survival = 1;
   if (deficit > 0) {
-    const fed = heal > 0 ? Math.min(1, (c.food!.qty * heal) / (deficit * 3600)) : 0; // 1시간 기준 음식이 버티는 비율
+    const fed = heal > 0 ? Math.min(1, totalHeal / (deficit * 3600)) : 0; // 1시간 기준 음식이 버티는 비율
     const alive = d.maxHp / deficit;
     const starved = alive / (alive + RESPAWN + TRAVEL);
     survival = fed + (1 - fed) * starved;
@@ -101,7 +103,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   const kph = Math.min(killCap, raw) * d.afkFight;
 
   const r: AfkRates = { ...base, mode: 'fight', target: [...new Set(map.spawns.map((s) => MONSTERS[s.monster].name))].join(', '),
-    rate: d.afkFight, killsPerHour: kph, killCap, hit: hitAvg, survival, dps, foodPerHour: Math.min(foodPerHour, c.food?.qty ?? 0) };
+    rate: d.afkFight, killsPerHour: kph, killCap, hit: hitAvg, survival, dps, foodPerHour: Math.min(foodPerHour, totalQty) };
   for (const s of map.spawns) {
     const m = MONSTERS[s.monster], k = kph * (s.count / total);
     r.xpPerHour += k * m.xp * d.xpMult;
@@ -143,10 +145,16 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     const sum = new Map<string, number>();
     for (const dr of r.drops) sum.set(dr.id, (sum.get(dr.id) ?? 0) + dr.perHour * hours);
     for (const [id, n] of sum) give(id, settle(n, rng));
-    if (c.food && r.foodPerHour > 0) {
-      rep.food = Math.min(c.food.qty, Math.ceil(r.foodPerHour * hours));
-      c.food.qty -= rep.food;
-      if (c.food.qty <= 0) c.food = null;
+    if (r.foodPerHour > 0) {
+      // 필요한 회복량만큼 위 칸부터 먹는다
+      let need = Math.max(0, r.dps - r.regen) * 3600 * hours;
+      for (let i = 0; i < c.foods.length && need > 0; i++) {
+        const f = c.foods[i];
+        if (!f) continue;
+        const h = ITEMS[f.id].heal ?? 1, n = Math.min(f.qty, Math.ceil(need / h));
+        f.qty -= n; rep.food += n; need -= n * h;
+        if (f.qty <= 0) c.foods[i] = null;
+      }
     }
     rep.levels = gainXp(c, rep.xp);
   } else if (r.mode === 'gather' && r.skill) {

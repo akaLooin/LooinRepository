@@ -1,6 +1,6 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
@@ -248,17 +248,17 @@ export class World {
   private eatT = 0;
   /** 음식 칸에서 하나 먹는다 */
   private eat(d: Derived) {
-    const c = this.char, f = c.food!, it = ITEMS[f.id], p = this.player;
+    const c = this.char, i = c.foods.findIndex(Boolean), f = c.foods[i]!, it = ITEMS[f.id], p = this.player;
     const before = c.hp;
     c.hp = Math.min(d.maxHp, c.hp + (it.heal ?? 0));
-    if (--f.qty <= 0) c.food = null;
+    if (--f.qty <= 0) c.foods[i] = null;
     this.eatT = 1;
     this.events.push({ t: 'heal', x: p.x, y: p.y - 34, amount: Math.round(c.hp - before), food: f.id });
   }
 
   private fire(target: Mob, mult: number) {
     const p = this.player;
-    this.shots.push({ uid: this.uid++, kind: this.char.cls === 'mage' ? 'orb' : 'arrow', x: p.x + p.facing * 8, y: p.y - 15, target, mult, angle: p.facing > 0 ? 0 : Math.PI });
+    this.shots.push({ uid: this.uid++, kind: baseClass(this.char.cls) === 'mage' ? 'orb' : 'arrow', x: p.x + p.facing * 8, y: p.y - 15, target, mult, angle: p.facing > 0 ? 0 : Math.PI });
   }
 
   private damageMob(m: Mob, d: Derived, mult: number, push: number) {
@@ -297,7 +297,7 @@ export class World {
     c.hp = Math.min(d.maxHp, c.hp + d.regen * dt);
     c.mp = Math.min(d.maxMp, c.mp + d.mpRegen * dt);
     this.eatT = Math.max(0, this.eatT - dt);
-    if (c.food && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
+    if (c.foods.some(Boolean) && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
     p.hurtT = Math.max(0, p.hurtT - dt);
     for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);
     if (c.auto && this.acc.options.autoAttacks) {
@@ -364,7 +364,7 @@ export class World {
       const mob = keyed || (!cmd && !c.auto) ? this.mobInRange(d)
         : this.mobs.find((m) => m.uid === this.engaged && m.alive && m.spawnAge >= 0.4) ?? null;
       if (mob && (d.ranged ? inp.move === 0 : true)) {
-        this.startSwing(d.ranged ? (c.cls === 'mage' ? 'cast' : 'shoot') : 'attack', mob, d.atkInterval);
+        this.startSwing(d.ranged ? (baseClass(c.cls) === 'mage' ? 'cast' : 'shoot') : 'attack', mob, d.atkInterval);
       } else {
         const wants = cmd ? cmd.k === 'node' : c.auto && c.activity.k === 'gather';
         const node = wants && inp.move === 0 ? this.nodes.find((n) => Math.abs(n.x - p.x) < 20 && Math.abs(n.y - p.y) < 6 && this.canUse(n)
