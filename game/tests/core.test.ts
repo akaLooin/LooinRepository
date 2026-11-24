@@ -8,6 +8,7 @@ import {
   deposit, depositAll, invSize, setProduct, shopLeft, spendAnvilPoint, stackCap, storageCount, useItem, withdraw, today, learnTalent, questProgress,
 } from '../src/core/state';
 import { World } from '../src/core/world';
+import { familyValue } from '../src/core/progress';
 
 const look = { hair: 0, hairColor: '#000', skin: '#fff', outfit: '#f00' };
 const setup = () => {
@@ -428,7 +429,8 @@ describe('방치 정보와 보상', () => {
     c.mapId = 'meadow';
     const r = afkRates(acc, c);
     expect(r.mode).toBe('fight');
-    expect(r.rate).toBeCloseTo(0.402, 3);
+    // 기본 40% + 행운 1(0.2%p) + 가족 보너스(초보자 Lv.1)
+    expect(r.rate).toBeCloseTo(0.402 + familyValue('beginner', 1) / 100, 6);
     expect(r.killsPerHour).toBeLessThanOrEqual(r.killCap * r.rate + 1e-9);
     expect(r.hit).toBe(1);
     const rep = computeAfk(acc, c, 2 * 3600_000, new Rng(1))!;

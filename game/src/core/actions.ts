@@ -8,6 +8,7 @@ import {
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
 import { MeritEff, buyMerit, claimTask } from './tasks';
+import { alignSign, claimAchievement, claimStar, offerStatue, switchCardPreset, toggleCardSet, unlockSign } from './progress';
 import { ForgeUp, buyForge, forgeCollect, forgeLoad, forgeOil, forgeUpgrade } from './forge';
 
 export type Action =
@@ -48,7 +49,14 @@ export type Action =
   | { t: 'stampUp'; id: string }
   | { t: 'bribe' }
   | { t: 'task'; id: string }
-  | { t: 'merit'; id: MeritEff };
+  | { t: 'merit'; id: MeritEff }
+  | { t: 'statue'; id: string }
+  | { t: 'star'; id: string }
+  | { t: 'signOpen'; id: string }
+  | { t: 'sign'; id: string | null }
+  | { t: 'achieve'; id: string }
+  | { t: 'cardSet'; id: string | null }
+  | { t: 'cardPreset'; i: number };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -108,6 +116,13 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'bribe': return res(buyBribe(acc));
     case 'task': return res(claimTask(acc, a.id));
     case 'merit': return res(buyMerit(acc, a.id));
+    case 'statue': { const r = offerStatue(acc, c, a.id); return typeof r === 'number' ? ok(r) : fail(r); }
+    case 'star': return res(claimStar(acc, c, a.id));
+    case 'signOpen': return res(unlockSign(acc, a.id));
+    case 'sign': return res(alignSign(acc, c, a.id));
+    case 'achieve': return res(claimAchievement(acc, a.id));
+    case 'cardSet': return res(toggleCardSet(c, a.id));
+    case 'cardPreset': return res(switchCardPreset(acc, c, a.i));
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

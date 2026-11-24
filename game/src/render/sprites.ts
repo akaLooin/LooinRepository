@@ -441,6 +441,15 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 석상 받침: 돌 받침대 위 작은 석상 셋
+  p = new Paint(34, 26);
+  p.rect(1, 18, 32, 8, '#8d97a3'); p.rect(1, 18, 32, 2, '#b4bcc6'); p.rect(3, 23, 28, 1, '#6a7480');
+  for (const [x, h] of [[5, 12], [14, 15], [24, 11]] as const) {
+    p.disc(x + 3, 18 - h + 2, 2.6, 2.6, '#c9d1d9'); p.rect(x + 1, 18 - h + 4, 5, h - 4, '#b4bcc6'); p.rect(x + 1, 18 - h + 4, 1, h - 4, '#dfe5ea');
+  }
+  p.rect(15, 4, 4, 1, '#f6c945');
+  p.outline().save('obj_statues');
+
   // 작업판: 나무 게시판 + 붙은 종이들
   p = new Paint(34, 30);
   p.rect(4, 14, 3, 16, '#8a5a3c'); p.rect(27, 14, 3, 16, '#8a5a3c');
@@ -574,6 +583,19 @@ function buildItems() {
     art(p);
     p.outline().save(`it_stamp_${k}`);
   }
+  // 석상 조각: 깨진 돌 조각 + 석상별 색 결정
+  for (const [k, gem] of [['str', '#d9574a'], ['agi', '#5fb859'], ['wis', '#4e8de2'], ['luk', '#f6c945'], ['guard', '#9aa3ad'], ['feast', '#e25d7a'], ['fortune', '#c98f2a']] as const) {
+    p = new Paint(12, 12);
+    p.rect(2, 3, 8, 7, '#b4bcc6'); p.rect(3, 2, 5, 1, '#b4bcc6'); p.rect(2, 9, 3, 2, '#b4bcc6'); p.set(10, 5, '#b4bcc6');
+    p.rect(2, 3, 2, 6, '#dfe5ea'); p.rect(8, 6, 2, 4, '#8d97a3');
+    p.disc(6, 6, 1.8, 1.8, gem); p.set(5, 5, '#ffffff');
+    p.outline().save(`it_statue_${k}`);
+  }
+  // 조각 도구: 끌 + 망치
+  p = new Paint(13, 13);
+  p.line(2, 11, 8, 5, '#8a5a3c'); p.rect(7, 2, 4, 3, '#9aa3ad'); p.rect(8, 1, 2, 1, '#c9d1d9');
+  p.line(10, 11, 5, 6, '#c9d1d9'); p.rect(9, 10, 3, 2, '#8a5a3c');
+  p.outline().save('it_sculpt');
   // 주괴: 사다리꼴 쇳덩이
   p = new Paint(13, 10);
   p.rect(1, 4, 11, 5, '#c9573f'); p.rect(3, 2, 7, 2, '#e8836a'); p.rect(2, 3, 9, 1, '#d9674f');
@@ -616,6 +638,7 @@ export const ITEM_ICON: Record<string, string> = {
   twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
+  ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
   bar_red: 'it_bar_red', forge_oil: 'it_oil', sword_red: 'wp_sword_red', pick_red: 'wp_pick_red', axe_red: 'wp_axe_red',
 };
 
@@ -644,6 +667,9 @@ function buildIcons() {
   icon('ui_swap', (p) => { p.disc(5, 5, 3, 3, C.skin); p.rect(2, 9, 6, 5, C.blue); p.disc(11, 6, 3, 3, C.skin); p.rect(8, 10, 6, 5, C.red); p.line(6, 1, 10, 1, C.gold); p.set(9, 0, C.gold); p.set(9, 2, C.gold); });
   icon('ui_quest', (p) => { p.rect(3, 1, 10, 14, C.paper); p.rect(2, 1, 12, 2, C.paperD); p.rect(2, 13, 12, 2, C.paperD); p.rect(7, 4, 2, 5, C.red); p.rect(7, 10, 2, 2, C.red); });
   icon('ui_card', (p) => { p.rect(3, 1, 10, 14, C.steel); p.rect(4, 2, 8, 9, '#5a7fb8'); p.disc(8, 6, 2.5, 2.5, C.green); p.rect(4, 12, 8, 2, C.paper); });
+  icon('ui_star', (p) => { for (let i = 0; i < 5; i++) { const t = (i / 5) * Math.PI * 2 - Math.PI / 2; p.line(7.5, 8, 7.5 + Math.cos(t) * 7, 8 + Math.sin(t) * 7, C.gold); } p.disc(7.5, 8, 3.5, 3.5, C.gold); p.disc(6.5, 7, 1.2, 1.2, '#fff1a8'); });
+  icon('ui_trophy', (p) => { p.rect(4, 1, 8, 7, C.gold); p.disc(8, 7, 4, 3, C.gold); p.rect(1, 2, 3, 1, C.gold); p.rect(12, 2, 3, 1, C.gold); p.rect(1, 2, 1, 4, C.gold); p.rect(14, 2, 1, 4, C.gold); p.rect(7, 10, 2, 3, C.gold); p.rect(4, 13, 8, 2, C.wood); p.rect(5, 2, 2, 4, '#fff1a8'); });
+  icon('ui_family', (p) => { p.disc(5, 5, 2.6, 2.6, C.paper); p.rect(2, 8, 6, 7, C.paper); p.disc(11, 6.5, 2.2, 2.2, '#cfe6ff'); p.rect(8, 9, 6, 6, '#cfe6ff'); });
   icon('ui_quick', (p) => { p.rect(2, 4, 12, 10, C.wood); p.rect(2, 4, 12, 3, C.woodD); p.rect(7, 6, 2, 3, C.gold); p.disc(11.5, 3.5, 3, 3, '#a7d8f0'); p.disc(11.5, 3.5, 1.6, 1.6, null); p.line(13, 6, 15, 8, C.steelD); });
   icon('ui_teleport', (p) => { p.disc(7.5, 8, 6, 7, C.purple); p.disc(7.5, 8, 4, 5, '#c8b2f0'); p.disc(7.5, 8, 2, 3, C.white); });
   icon('ui_assign', (p) => { p.rect(3, 0, 2, 16, C.woodD); p.rect(5, 1, 10, 8, C.red); p.rect(12, 3, 3, 4, null); p.rect(13, 4, 2, 2, C.red); p.line(7, 3, 9, 5, C.gold); p.line(9, 5, 7, 7, C.gold); });

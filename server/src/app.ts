@@ -8,7 +8,8 @@ import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { z } from 'zod';
 import { Action, applyAction } from '../../game/src/core/actions';
 import { computeAfk } from '../../game/src/core/afk';
-import { HAIR_STYLES, MAX_CHARACTERS } from '../../game/src/core/data';
+import { HAIR_STYLES } from '../../game/src/core/data';
+import { charSlots } from '../../game/src/core/progress';
 import { Rng } from '../../game/src/core/rng';
 import { Account, Character, createCharacter, deserialize, newAccount, serialize } from '../../game/src/core/state';
 import { SyncAccount, acceptSync, checkSync } from '../../game/src/core/sync';
@@ -69,6 +70,13 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('stampUp'), id }),
   z.object({ t: z.literal('bribe') }),
   z.object({ t: z.literal('task'), id }),
+  z.object({ t: z.literal('statue'), id }),
+  z.object({ t: z.literal('star'), id }),
+  z.object({ t: z.literal('signOpen'), id }),
+  z.object({ t: z.literal('sign'), id: id.nullable() }),
+  z.object({ t: z.literal('achieve'), id }),
+  z.object({ t: z.literal('cardSet'), id: id.nullable() }),
+  z.object({ t: z.literal('cardPreset'), i: z.number().int().min(0).max(3) }),
   z.object({ t: z.literal('merit'), id: z.enum(['storage', 'afk', 'drop', 'xp', 'teleport', 'coins']) }),
   z.object({ t: z.literal('target'), activity: z.union([z.object({ k: z.literal('none') }), z.object({ k: z.literal('fight') }), z.object({ k: z.literal('gather'), node: id })]) }),
 ]) as z.ZodType<Action>;
@@ -188,7 +196,7 @@ export function buildApp(o: AppOptions) {
     const b = z.object({ name: z.string().trim().min(1).max(10), look: Look }).safeParse(req.body);
     if (!b.success) return rep.code(400).send({ error: '이름과 외형을 확인하세요' });
     return withAccount(me, rep, (acc) => {
-      if (acc.characters.length >= MAX_CHARACTERS) return { body: { error: '캐릭터 칸이 가득 찼습니다' }, dirty: false };
+      if (acc.characters.length >= charSlots(acc)) return { body: { error: '캐릭터 칸이 가득 찼습니다' }, dirty: false };
       const c = createCharacter(acc, b.data.name, b.data.look, now());
       return { body: { index: acc.characters.length - 1, account: acc, ok: !!c }, dirty: true };
     });

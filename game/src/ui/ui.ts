@@ -4,7 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef, SMELTS, FORGE, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -12,6 +12,7 @@ import {
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
+import { STARS, achieveReady, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
@@ -20,7 +21,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -262,7 +263,9 @@ export class UI {
         <span class="ui-xs ui-muted">${map.name}</span>
         <span class="ui-xs ui-good">${st}${away >= 60 ? ` · ${dur(away)}` : ''}</span></button>`;
     }).join('');
-    const add = acc.characters.length < MAX_CHARACTERS ? `<button class="charcard new" data-act="newChar"><span class="ui-xl">＋</span><span>새 캐릭터</span></button>` : '';
+    const slots = charSlots(acc), nextLv = FAMILY_SLOTS.find((n) => familyLevel(acc) < n);
+    const add = (acc.characters.length < slots ? `<button class="charcard new" data-act="newChar"><span class="ui-xl">＋</span><span>새 캐릭터</span></button>` : '')
+      + (slots < MAX_CHARACTERS && nextLv ? `<div class="charcard locked"><span class="ui-xl">🔒</span><span class="ui-xs ui-muted">가족 레벨 ${nextLv}</span></div>` : '');
     return `<h1>LOOIN IDLE</h1><div class="ui-sm ui-muted">캐릭터를 선택하세요 — 선택하지 않은 캐릭터는 계속 방치 성장합니다</div><div class="cards">${cards}${add}</div>`;
   }
 
@@ -374,8 +377,13 @@ export class UI {
               <div class="qchain">${chain}</div></div></div>`;
           }).join('');
         }
-        if (tab === 2) body = this.quickRefHtml();
-        return win('도감', `${tabs(['카드', '퀘스트', '빠른 참조'], tab, tabAct, ['ui_card', 'ui_quest', 'ui_quick'])}<div class="ui-tabpanel">${body}</div>`);
+        if (tab === 0) body = this.cardExtrasHtml(c) + body;
+        if (tab === 2) body = this.starsHtml(c);
+        if (tab === 3) body = this.achieveHtml();
+        if (tab === 4) body = this.familyHtml();
+        if (tab === 5) body = this.quickRefHtml();
+        const achReady = ACHIEVEMENTS.some((d) => achieveReady(g.acc, d.id));
+        return win('도감', `${tabs(['카드', '퀘스트', '별자리', `업적${achReady ? ' !' : ''}`, '가족', '빠른 참조'], tab, tabAct, ['ui_card', 'ui_quest', 'ui_star', 'ui_trophy', 'ui_family', 'ui_quick'])}<div class="ui-tabpanel">${body}</div>`);
       }
 
       case 'map': {
@@ -498,6 +506,7 @@ export class UI {
         return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
       }
 
+      case 'statues': return win('석상 받침 <span class="ui-sm ui-muted">캐릭터마다</span>', this.statuesHtml(c));
       case 'tasks': {
         const groups = Object.keys(TASK_GROUP_NAMES) as TaskGroup[];
         const names = [...groups.map((k) => TASK_GROUP_NAMES[k]), '공로 상점'];
@@ -556,6 +565,76 @@ export class UI {
         <button class="ui-btn primary block" data-act="sup:${s.id}" ${acc.coins >= cost.coins && mats >= cost.qty ? '' : 'disabled'}>올리기</button>`;
     }
     return `<div class="split"><div class="ui-grid c4">${cells}</div><div class="ui-detail">${detail}</div></div>`;
+  }
+
+  private statuesHtml(c: Character): string {
+    const acc = this.game.acc;
+    if (!acc.statuesOpen) {
+      const has = countItem(c, 'sculpt_tools') > 0;
+      return `<div class="stack"><p class="ui-sm">몬스터가 떨어뜨리는 조각을 석상에 바치면 이 캐릭터의 능력치가 영구히 오릅니다. 먼저 조각 도구로 받침을 열어야 합니다.</p>
+        ${has ? '<button class="ui-btn primary" data-act="sculpt">조각 도구 쓰기</button>' : '<span class="ui-xs ui-muted">조각 도구는 잡화점에서 팝니다.</span>'}</div>`;
+    }
+    return STATUES.map((s) => {
+      const st = statueLevel(c.statues[s.id] ?? 0), n = countItem(c, s.item);
+      const val = Math.round(st.lv * s.per * 10) / 10;
+      return `<div class="ui-row line"><span class="ui-slot">${icon(s.item)}</span><div class="ui-grow"><b>${s.name}</b> <span class="ui-accent">Lv.${st.lv}</span>
+          <span class="ui-sm ${st.lv ? 'ui-good' : 'ui-muted'}">${s.label} +${val}${s.unit} (다음 +${Math.round((st.lv + 1) * s.per * 10) / 10}${s.unit})</span>
+          ${bar('skill', st.into, st.need, `${st.into} / ${st.need}`)}</div>
+        <button class="ui-btn ${n ? 'primary' : ''} sm" data-act="statue:${s.id}" ${n ? '' : 'disabled'}>바치기 ${n}</button></div>`;
+    }).join('') + '<p class="ui-xs ui-muted">조각은 사냥하며 드물게 얻습니다. 가방에 있는 그 조각을 모두 바칩니다.</p>';
+  }
+
+  private cardExtrasHtml(c: Character): string {
+    const acc = this.game.acc;
+    const sets = CARD_SETS.map((s) => {
+      const stars = setStars(acc, s), t = setTier(acc, s), on = c.cardSet === s.id;
+      const next = s.tiers[t];
+      return `<div class="ui-row line"><div class="ui-grow"><b>${s.name}</b> <span class="ui-accent">${t}단계</span>
+        <div class="ui-sm ${on && t ? 'ui-good' : 'ui-muted'}">${t ? s.label.replace('+%p', `+${s.v[t - 1]}%p`) : '세트 효과 없음'}${on ? ' (켜짐)' : ''}</div>
+        <div class="ui-xs ui-muted">세트 카드 별 ${stars}${next ? ` / 다음 단계 ${next}` : ' · 최고 단계'}</div></div>
+        <button class="ui-btn sm ${on ? '' : 'primary'}" data-act="cset:${on ? '' : s.id}">${on ? '끄기' : '켜기'}</button></div>`;
+    }).join('');
+    const presets = c.level >= CARD_PRESET_LV
+      ? `<div class="ui-row"><span class="ui-sm ui-grow">카드 프리셋</span>${c.cardPresets.map((_, i) => `<button class="ui-btn sm ${i === c.cardPreset ? 'primary' : ''}" data-act="cpre:${i}">${i + 1}</button>`).join('')}</div>`
+      : `<p class="ui-xs ui-muted">Lv.${CARD_PRESET_LV}부터 카드 프리셋 2개를 쓸 수 있습니다.</p>`;
+    return `<h3 style="margin-top:0">카드 세트</h3>${sets}${presets}`;
+  }
+
+  private starsHtml(c: Character): string {
+    const acc = this.game.acc;
+    if (c.level < SIGN_LV) return `<p class="ui-muted">Lv.${SIGN_LV}부터 별을 볼 수 있습니다. 맵 곳곳에 숨은 별 지도를 찾아 별 포인트를 모으고, 별자리를 열어 캐릭터마다 하나씩 정렬합니다.</p>`;
+    const stars = STARS.map((s) => {
+      const found = !!acc.stars[s.id], here = c.mapId === s.map, ok = here && s.check(acc, c);
+      return `<div class="ui-row line"><div class="ui-grow"><b>${found || here ? MAPS[s.map].name : '???'}</b><div class="ui-sm ${found ? 'ui-good' : 'ui-muted'}">${found || here ? s.desc : '그 맵에 가면 보입니다'}</div></div>
+        ${found ? '<span class="ui-accent">★</span>' : `<button class="ui-btn sm ${ok ? 'success' : ''}" data-act="star:${s.id}" ${ok ? '' : 'disabled'}>찾기</button>`}</div>`;
+    }).join('');
+    const signs = SIGNS.map((s) => {
+      const open = acc.signs.includes(s.id), on = c.sign === s.id;
+      const btn = on ? `<button class="ui-btn sm" data-act="sign:">해제</button>` : open ? `<button class="ui-btn sm primary" data-act="sign:${s.id}">정렬</button>`
+        : `<button class="ui-btn sm" data-act="signopen:${s.id}" ${acc.starPoints >= s.cost ? '' : 'disabled'}>★${s.cost} 열기</button>`;
+      return `<div class="ui-row line"><div class="ui-grow"><b>${s.name}</b>${on ? ' <span class="ui-good ui-xs">정렬 중</span>' : ''}<div class="ui-sm ${open ? '' : 'ui-muted'}">${s.label}</div></div>${btn}</div>`;
+    }).join('');
+    return `<h3 style="margin-top:0">별 지도 <span class="ui-accent">${Object.keys(acc.stars).length}/${STARS.length}</span> · 별 포인트 <span class="ui-accent">${acc.starPoints}</span></h3>${stars}<h3>별자리 <span class="ui-xs ui-muted">캐릭터마다 하나</span></h3>${signs}`;
+  }
+
+  private achieveHtml(): string {
+    const acc = this.game.acc;
+    return ACHIEVEMENTS.map((d) => {
+      const got = !!acc.achievements[d.id], ready = achieveReady(acc, d.id);
+      return `<div class="ui-row line ${got || ready ? '' : 'ui-muted'}"><span class="ui-slot sm ${got ? 'r3' : ''}">${ui('ui_trophy', 'mi')}</span><div class="ui-grow"><b>${d.name}</b><div class="ui-sm">${d.desc}</div><div class="ui-xs ${got ? 'ui-good' : 'ui-muted'}">보상: ${d.label}</div></div>
+        ${got ? '<span class="ui-good">✓</span>' : `<button class="ui-btn sm ${ready ? 'success' : ''}" data-act="ach:${d.id}" ${ready ? '' : 'disabled'}>받기</button>`}</div>`;
+    }).join('');
+  }
+
+  private familyHtml(): string {
+    const acc = this.game.acc, best = familyBest(acc.characters), lv = familyLevel(acc);
+    const rows = (Object.keys(FAMILY) as ClassId[]).map((k) => {
+      const v = familyValue(k, best[k]);
+      return `<div class="ui-row line"><b class="ui-grow">${CLASSES[k].name} <span class="ui-xs ui-muted">최고 Lv.${best[k] || '-'}</span></b><span class="ui-sm ${v ? 'ui-good' : 'ui-muted'}">${FAMILY[k].label} +${(Math.round(v * 10) / 10)}${FAMILY[k].eff === 'afk' ? '%p' : '%'}</span></div>`;
+    }).join('');
+    const next = FAMILY_SLOTS.find((n) => lv < n);
+    return `<p class="ui-sm">직업마다 가장 높은 캐릭터의 레벨이 계정 전체에 보너스를 줍니다.</p>${rows}
+      <h3>가족 레벨 <span class="ui-accent">${lv}</span></h3><p class="ui-sm">캐릭터 칸 ${charSlots(acc)}/${MAX_CHARACTERS}${next ? ` · 레벨 합 ${next}이면 한 칸 더` : ''}</p>`;
   }
 
   private tasksHtml(group: TaskGroup): string {
@@ -815,6 +894,14 @@ export class UI {
       case 'pslot': this.prodSlot = +a; break;
       case 'fslot': this.forgeSel = +a; break;
       case 'ssel': this.stampSel = a; break;
+      case 'sculpt': { const r = g.act({ t: 'use', id: 'sculpt_tools' }); if (r.ok) this.toast('석상 받침을 열었습니다'); else fail(r.err ?? null); break; }
+      case 'statue': { const r = g.act({ t: 'statue', id: a }); if (r.ok) this.toast(`조각 ${r.n}개를 바쳤습니다`); else fail(r.err ?? null); break; }
+      case 'star': { const r = g.act({ t: 'star', id: a }); if (r.ok) this.toast('별 지도를 찾았습니다! 별 포인트 +1'); else fail(r.err ?? null); break; }
+      case 'signopen': fail(g.act({ t: 'signOpen', id: a }).err ?? null); break;
+      case 'sign': fail(g.act({ t: 'sign', id: a || null }).err ?? null); break;
+      case 'ach': { const r = g.act({ t: 'achieve', id: a }); if (r.ok) this.toast(`업적 달성: ${ACHIEVEMENTS.find((d) => d.id === a)!.name}`); else fail(r.err ?? null); break; }
+      case 'cset': fail(g.act({ t: 'cardSet', id: a || null }).err ?? null); break;
+      case 'cpre': fail(g.act({ t: 'cardPreset', i: +a }).err ?? null); break;
       case 'tclaim': {
         const t = TASK_BY_ID[a], tier = taskDone(g.acc, a) + 1, r = g.act({ t: 'task', id: a });
         if (r.ok) { const it = t.recipes?.[tier]; this.toast(`${t.name} ${tier}단계 완료! 공로 +${t.merit[tier - 1]}${it ? ` · ${ITEMS[it].name} 레시피` : ''}`, it); } else fail(r.err ?? null);

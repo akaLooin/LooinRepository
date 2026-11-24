@@ -1,6 +1,7 @@
 import { Forge, newForge } from './forge';
 import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
+import { charSlots, progressBonus, useSculptTools } from './progress';
 import {
   AFK_BASE, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
@@ -32,6 +33,14 @@ export interface Character {
   attackPage: number;
   /** 장착한 카드(몬스터 ID). 장착한 카드만 효과가 있다 */
   cardSlots: (string | null)[];
+  /** 카드 프리셋(장착 묶음)과 지금 프리셋, 켠 카드 세트 */
+  cardPresets: (string | null)[][];
+  cardPreset: number;
+  cardSet: string | null;
+  /** 석상: 바친 조각 수(레벨은 여기서 계산) */
+  statues: Record<string, number>;
+  /** 정렬한 별자리 */
+  sign: string | null;
   auto: boolean; activity: Activity;
   inventory: Stack[];
   equipment: Partial<Record<EquipSlot, string>>;
@@ -76,6 +85,14 @@ export interface Account {
   tasks: Record<string, number>;
   merit: number;
   meritShop: Record<string, number>;
+  /** 석상 받침을 열었는지(조각 도구) */
+  statuesOpen: boolean;
+  /** 찾은 별 지도, 남은 별 포인트, 연 별자리 */
+  stars: Record<string, true>;
+  starPoints: number;
+  signs: string[];
+  /** 받은 업적 */
+  achievements: Record<string, true>;
   characters: Character[];
   active: number;
   nextId: number;
@@ -84,18 +101,18 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
-  if (acc.characters.length >= MAX_CHARACTERS) return null;
+  if (acc.characters.length >= charSlots(acc)) return null;
   const c: Character = {
     id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
     cls: 'beginner', level: 1, xp: 0, statPoints: 0,
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, food: null, mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null),
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null,
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -138,42 +155,44 @@ export function equipStats(c: Character): Required<ItemStats> {
 
 export type Cards = Record<string, number>;
 /** 능력치 계산에 쓰는 계정 공용 보너스 출처(카드·우표·뇌물 …) */
-export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop'>>;
+export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop' | 'achievements' | 'characters'>>;
 const NO_ACC: AccBonus = { cards: {} };
 
 export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const cards = a.cards;
   const e = equipStats(c);
-  const str = c.stats.str + e.str, agi = c.stats.agi + e.agi;
-  const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
+  // 석상·별자리·업적·가족·카드 세트(값은 %·%p 단위)
+  const pb = progressBonus(c, a);
+  const str = c.stats.str + e.str + pb.str, agi = c.stats.agi + e.agi + pb.agi;
+  const wis = c.stats.wis + e.wis + pb.wis, luk = c.stats.luk + e.luk + pb.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
   const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, afkSkill: 0 };
   // 우표(효과 값은 % 단위)·후원 계약
   const sb = stampBonus(a), bb = bribeBonus(a);
-  const afkAcc = sb.afk / 100 + bb.afk + meritValue(a, 'afk');
+  const afkAcc = sb.afk / 100 + bb.afk + meritValue(a, 'afk') + pb.afk / 100;
   // 카드는 장착한 것만 효과가 있다
   for (const cd of CARDS) if (c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
   const maxMp = Math.floor(8 + wis * 1.5 + c.level);
   const work = 1 + tl('worker') * 0.05;
-  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
+  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp + pb.hp) * (1 + pb.hpPct / 100) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
   return {
     str, agi, wis, luk, maxHp, maxMp, mpRegen: 0.5 + maxMp * 0.02,
-    acc: 2 + accStat + c.level + sb.acc,
+    acc: 2 + accStat + c.level + sb.acc + pb.acc,
     afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk + afkAcc),
     afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill + afkAcc),
-    dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg) * (1 + sb.dmg / 100),
-    def: e.def + c.level * 0.3 + tl('ironskin') * 1.5 + sb.def,
+    dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg) * (1 + sb.dmg / 100) * (1 + pb.dmg / 100),
+    def: e.def + c.level * 0.3 + tl('ironskin') * 1.5 + sb.def + pb.def,
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
     speed: 80 + Math.min(40, agi * 0.6),
     crit: Math.min(0.75, 0.04 + luk * 0.004 + sb.crit / 100), critMult: 1.6,
-    xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp')), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop')),
-    coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins'),
+    xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
+    coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins') + pb.coins / 100,
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
-    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100),
-    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100),
+    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100),
+    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100),
   };
 }
 
@@ -373,6 +392,7 @@ export function useItem(acc: Account, c: Character, id: string): string | null {
   if (it.kind === 'bag') { if (c.bags.includes(id)) return '이미 사용한 가방입니다'; c.bags.push(id); }
   else if (it.kind === 'pouch') { if (c.pouches.includes(id)) return '이미 사용한 주머니입니다'; c.pouches.push(id); }
   else if (it.kind === 'chest') { if (acc.chests.includes(id)) return '이미 사용한 보관함입니다'; acc.chests.push(id); }
+  else if (id === 'sculpt_tools') return useSculptTools(acc, c);
   else return '사용할 수 없는 아이템';
   removeItem(c, id, 1);
   return null;
@@ -617,6 +637,7 @@ export function deserialize(json: string | null): Account | null {
     a.stamps ??= {};
     a.bribes ??= 0;
     a.tasks ??= {}; a.merit ??= 0; a.meritShop ??= {};
+    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {};
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
@@ -644,6 +665,8 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
+      c.statues ??= {}; c.sign ??= null; c.cardSet ??= null; c.cardPreset ??= 0;
+      c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];
       c.talentPoints ??= c.level - 1;
     }
     return a;

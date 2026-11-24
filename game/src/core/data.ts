@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing';
 export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues';
 export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'ring' | 'pickaxe' | 'axe';
@@ -18,7 +18,7 @@ export interface ItemStats {
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
-  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp';
+  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp' | 'statue' | 'tool';
   /** 가방 확장: 사용하면 이 캐릭터의 가방 칸 +n (종류마다 한 번) */
   bagSlots?: number;
   /** 소지 한도 주머니: 이 묶음의 한 칸 최대치를 cap 으로 */
@@ -80,7 +80,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', ring: '장신구', pickaxe: '곡괭이', axe: '도끼',
 };
@@ -112,6 +112,9 @@ const items: ItemDef[] = [
     ['dmg', '칼날 우표'], ['hp', '심장 우표'], ['def', '방패 우표'], ['acc', '과녁 우표'], ['crit', '별똥 우표'],
     ['mining', '곡괭이 우표'], ['chopping', '도끼 우표'], ['drop', '주머니 우표'], ['coins', '동전 우표'], ['xp', '책 우표'], ['afk', '모래시계 우표'],
   ].map(([k, name]) => ({ id: `stamp_${k}`, name, desc: '우표함에 넣으면 계정 전체에 효과가 생긴다.', kind: 'stamp' as const, sell: 1 })),
+  ...[['str', '힘의 조각'], ['agi', '날램의 조각'], ['wis', '슬기의 조각'], ['luk', '행운의 조각'], ['guard', '수호의 조각'], ['feast', '풍요의 조각'], ['fortune', '보물의 조각']]
+    .map(([k, name]) => ({ id: `statue_${k}`, name, desc: '석상 받침에 바치면 그 석상이 자란다(캐릭터마다).', kind: 'statue' as const, sell: 2 })),
+  { id: 'sculpt_tools', name: '조각 도구', desc: '사용하면 마을의 석상 받침을 쓸 수 있다(계정 공용).', kind: 'tool', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
@@ -134,13 +137,13 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) =
 const monsters: MonsterDef[] = [
   { id: 'mossking', name: '이끼왕', hp: 2600, atk: 26, acc: 24, defZero: 60, xp: 900, coins: [300, 400], speed: 14, motion: 'hop', radius: 20, scale: 2.6,
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
-    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }] },
+    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
-    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }] },
+    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
-    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }] },
+    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'statue_guard', chance: 0.004, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
-    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }] },
+    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }] },
 ];
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries(monsters.map((m) => [m.id, m]));
 
@@ -157,7 +160,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
-    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'tasks', x: 560, y: -48 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
+    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'tasks', x: 560, y: -48 }, { kind: 'statues', x: 136, y: -60 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
     portals: [{ x: 652, y: -48, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
@@ -320,7 +323,7 @@ export const INVENTORY_SIZE = 16;
 export const STORAGE_SIZE = 24;
 /** 가방 한 칸 기본 최대치(주머니로 늘린다). 창고는 제한 없음 */
 export const STACK_BASE = 25;
-export const MAX_CHARACTERS = 4;
+export const MAX_CHARACTERS = 6;
 export const AFK_MIN_SECONDS = 60;
 export const AFK_MAX_SECONDS = 12 * 3600;
 /** 방치 효율 기본값(전투·채집). 능력치·특성·카드로 오른다 */
@@ -351,7 +354,75 @@ export const SHOP: ShopEntry[] = [
   { item: 'stamp_chopping', price: 400, daily: 1 },
   { item: 'stamp_coins', price: 1500, daily: 1 },
   { item: 'stamp_afk', price: 4000, daily: 1 },
+  { item: 'sculpt_tools', price: 1000, daily: 1 },
 ];
+
+// ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
+export type BonusKey = 'str' | 'agi' | 'wis' | 'luk' | 'def' | 'hp' | 'hpPct' | 'drop' | 'dmg' | 'xp' | 'afk' | 'coins' | 'mining' | 'chopping' | 'acc';
+export interface StatueDef { id: string; name: string; item: string; eff: BonusKey; per: number; unit: '' | '%' | '%p'; label: string }
+export const STATUES: StatueDef[] = [
+  { id: 'str', name: '힘의 석상', item: 'statue_str', eff: 'str', per: 1, unit: '', label: '힘' },
+  { id: 'agi', name: '날램의 석상', item: 'statue_agi', eff: 'agi', per: 1, unit: '', label: '민첩' },
+  { id: 'wis', name: '슬기의 석상', item: 'statue_wis', eff: 'wis', per: 1, unit: '', label: '지혜' },
+  { id: 'luk', name: '행운의 석상', item: 'statue_luk', eff: 'luk', per: 1, unit: '', label: '행운' },
+  { id: 'guard', name: '수호의 석상', item: 'statue_guard', eff: 'def', per: 0.5, unit: '', label: '방어력' },
+  { id: 'feast', name: '풍요의 석상', item: 'statue_feast', eff: 'hp', per: 5, unit: '', label: '최대 체력' },
+  { id: 'fortune', name: '보물의 석상', item: 'statue_fortune', eff: 'drop', per: 1.5, unit: '%', label: '드롭률' },
+];
+/** 석상 다음 레벨까지 바칠 조각 수 */
+export const statueNeed = (lv: number) => Math.ceil(2 * Math.pow(1.28, lv));
+
+// ───────── 별자리 ─────────
+/** 별 지도(맵 곳곳의 숨은 조건)를 채우면 별 포인트. 별 포인트로 별자리를 열고, 캐릭터마다 하나를 정렬한다 */
+export interface SignDef { id: string; name: string; eff: BonusKey; v: number; cost: number; label: string }
+export const SIGNS: SignDef[] = [
+  { id: 'wanderer', name: '나그네자리', eff: 'luk', v: 4, cost: 1, label: '행운 +4' },
+  { id: 'miner', name: '곡괭이자리', eff: 'mining', v: 10, cost: 1, label: '채광 효율 +10%' },
+  { id: 'lumber', name: '도끼자리', eff: 'chopping', v: 10, cost: 1, label: '벌목 효율 +10%' },
+  { id: 'hunter', name: '사냥꾼자리', eff: 'dmg', v: 5, cost: 2, label: '공격력 +5%' },
+  { id: 'sage', name: '현자자리', eff: 'xp', v: 6, cost: 2, label: '경험치 +6%' },
+  { id: 'magpie', name: '까치자리', eff: 'drop', v: 7, cost: 2, label: '드롭률 +7%' },
+  { id: 'turtle', name: '거북자리', eff: 'def', v: 3, cost: 3, label: '방어력 +3' },
+  { id: 'sleeper', name: '잠꾸러기자리', eff: 'afk', v: 3, cost: 3, label: '방치 효율 +3%p' },
+];
+/** 별자리를 쓸 수 있는 캐릭터 레벨 */
+export const SIGN_LV = 10;
+
+// ───────── 업적(계정) ─────────
+export interface AchieveDef { id: string; name: string; desc: string; eff?: BonusKey; v?: number; merit?: number; label: string }
+export const ACHIEVEMENTS: AchieveDef[] = [
+  { id: 'lv10', name: '첫 고비', desc: '캐릭터 하나가 Lv.10', eff: 'dmg', v: 2, label: '공격력 +2%' },
+  { id: 'lv25', name: '숙련자', desc: '캐릭터 하나가 Lv.25', eff: 'xp', v: 3, label: '경험치 +3%' },
+  { id: 'boss1', name: '왕관을 벗기다', desc: '이끼왕 처치', eff: 'drop', v: 3, label: '드롭률 +3%' },
+  { id: 'boss10', name: '단골 손님', desc: '이끼왕 10번 처치', eff: 'dmg', v: 3, label: '공격력 +3%' },
+  { id: 'party4', name: '든든한 가족', desc: '캐릭터 4명', eff: 'afk', v: 1, label: '방치 효율 +1%p' },
+  { id: 'cards10', name: '수집의 시작', desc: '카드 합계 10장', eff: 'drop', v: 2, label: '드롭률 +2%' },
+  { id: 'stamps5', name: '우표 애호가', desc: '우표 5종 수집', eff: 'coins', v: 3, label: '코인 +3%' },
+  { id: 'forge', name: '불씨', desc: '용광로 들이기', eff: 'mining', v: 5, label: '채광 효율 +5%' },
+  { id: 'rich', name: '두둑한 금고', desc: '코인 10,000 보유', eff: 'coins', v: 2, label: '코인 +2%' },
+  { id: 'smith10', name: '망치질 십 년', desc: '대장 Lv.10', eff: 'xp', v: 2, label: '경험치 +2%' },
+  { id: 'statue10', name: '조각가', desc: '석상 하나 Lv.10', eff: 'hpPct', v: 5, label: '최대 체력 +5%' },
+  { id: 'tasks10', name: '부지런한 손', desc: '작업판 10단계', merit: 3, label: '공로 +3' },
+  { id: 'stars5', name: '별 보는 밤', desc: '별 지도 5곳', eff: 'afk', v: 1, label: '방치 효율 +1%p' },
+];
+
+// ───────── 가족(직업별 최고 레벨 → 계정 보너스, 레벨 합 → 캐릭터 칸) ─────────
+export const FAMILY: Record<ClassId, { eff: BonusKey; a: number; b: number; label: string }> = {
+  beginner: { eff: 'afk', a: 4, b: 40, label: '방치 효율' },
+  warrior: { eff: 'hpPct', a: 15, b: 50, label: '최대 체력' },
+  archer: { eff: 'dmg', a: 10, b: 50, label: '공격력' },
+  mage: { eff: 'xp', a: 12, b: 50, label: '경험치' },
+};
+/** 레벨 합이 이만큼이면 캐릭터 칸이 하나씩 늘어난다(기본 2칸) */
+export const FAMILY_SLOTS = [15, 40, 80, 140];
+
+// ───────── 카드 세트 ─────────
+/** 세트에 속한 카드의 별 합계로 세트 단계가 정해진다. 캐릭터마다 세트 하나를 켠다 */
+export interface CardSetDef { id: string; name: string; cards: string[]; tiers: number[]; eff: BonusKey; v: number[]; label: string }
+export const CARD_SETS: CardSetDef[] = [
+  { id: 'w1', name: '첫 숲 세트', cards: ['mossblob', 'pebbler', 'leafling', 'mossking', 'oak', 'redrock', 'silvertree'], tiers: [3, 8, 14, 21], eff: 'afk', v: [1, 2, 3, 5], label: '방치 효율 +%p' },
+];
+export const CARD_PRESET_LV = 15;
 
 /** 우표(계정 공용): 우표함에 넣어 모으고, 코인 + 재료로 끝없이 올린다.
  *  lin: 레벨마다 a 씩, sat: a·lv/(lv+b) 로 점점 덜 오른다(최대 a에 가까워짐) */
