@@ -456,9 +456,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/build.yml": {
-    "mtime": 1795508421.6150331,
-    "seen": 1795508557.1761937,
-    "ast_hash": "e965d7c03f6affff42ee6b8e0c061358",
+    "mtime": 1795543955.9270904,
+    "seen": 1795544031.7616515,
+    "ast_hash": "29e11cfd62391d16434e0d2e26b091b6",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "docs/DEPLOY.md": {
-    "mtime": 1795522570.399711,
-    "seen": 1795522571.5136726,
-    "ast_hash": "d7aeeae149e14c02f06079a43f4c38da",
+    "mtime": 1795544027.2438006,
+    "seen": 1795544031.7618077,
+    "ast_hash": "f0fb00e4f1cdb3b40417f1ad364155d9",
     "semantic_hash": ""
   },
   "docs/GROWTH.md": {
@@ -516,9 +516,9 @@
     "semantic_hash": ""
   },
   "deploy/oracle-cloud-init.sh": {
-    "mtime": 1795522554.5340044,
-    "seen": 1795522571.5136232,
-    "ast_hash": "0a3ae2b6c3dba9f689b6b196c641bcf4",
+    "mtime": 1795543955.9289768,
+    "seen": 1795544031.7616916,
+    "ast_hash": "3f836f8b5145858d65b3ad3fb8d9ffb9",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/BrainSettings.kt": {
