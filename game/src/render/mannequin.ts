@@ -31,12 +31,13 @@ export const CLIPS: Record<string, ClipDef> = {
     { t: 1, by: 0, armF: [0, 0], armB: [0, 0], head: 0 },
   ] },
   // 걷기: 몸은 거의 정면을 본 채 다리만 앞뒤로 딛고, 팔은 몸 옆에서 작게 흔든다
+  // 걷기(정면에 가까운 몸): 다리를 번갈아 2칸 들어 올리며 디딘다. 든 다리 반대쪽 팔을 살짝 앞으로, 다리를 들 때 몸이 1칸 오른다
   walk: { frames: 12, loop: true, keys: [
-    { t: 0, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.15, 0.05], armB: [0.15, 0.05], by: 0.5, lean: 0.04, ease: 'out' },
-    { t: 0.25, legF: [0.02, -0.05], legB: [0.12, -0.9], armF: [0, 0], armB: [0, 0], by: -1.7, lean: 0.05, ease: 'in' },
-    { t: 0.5, legF: [-0.38, -0.22], legB: [0.42, -0.08], armF: [0.15, 0.05], armB: [-0.15, -0.05], by: 0.5, lean: 0.04, ease: 'out' },
-    { t: 0.75, legF: [0.12, -0.9], legB: [0.02, -0.05], armF: [0, 0], armB: [0, 0], by: -1.7, lean: 0.05, ease: 'in' },
-    { t: 1, legF: [0.42, -0.08], legB: [-0.38, -0.22], armF: [-0.15, 0.05], armB: [0.15, 0.05], by: 0.5, lean: 0.04 },
+    { t: 0, legF: [0.1, 0], legB: [-0.1, 0], armF: [0, 0], armB: [0, 0], by: 0, ease: 'out' },
+    { t: 0.25, legF: [0.06, -1.2], legB: [-0.06, 0], armF: [-0.14, 0], armB: [0.14, 0], by: -1.7, lean: 0.03, ease: 'in' },
+    { t: 0.5, legF: [0.1, 0], legB: [-0.1, 0], armF: [0, 0], armB: [0, 0], by: 0, ease: 'out' },
+    { t: 0.75, legF: [0.06, 0], legB: [-0.06, -1.2], armF: [0.14, 0], armB: [-0.14, 0], by: -1.7, lean: 0.03, ease: 'in' },
+    { t: 1, legF: [0.1, 0], legB: [-0.1, 0], armF: [0, 0], armB: [0, 0], by: 0 },
   ] },
   jump: { frames: 3, loop: false, keys: [
     { t: 0, legF: [0.5, -1.0], legB: [0.1, -0.8], armF: [0.45, 0.3], armB: [-0.45, -0.3], lean: -0.03, by: -1, head: -0.05, wpn: 0.4, ease: 'out' },
@@ -240,11 +241,13 @@ function layout(p: Pose) {
   const lift = Math.round(p.by * 0.6); // 숨쉬기·튐: 윗몸만 위아래로
   const sway = Math.round(p.lean * 3); // 곧게 선 자세: 기울기는 1칸 정도 옮기는 것으로만
   const legLift = Math.min(0, lift);
+  const legUp = (knee: number) => Math.round(Math.max(0, -knee - 0.2) * 2);
   // 화면 회전 각: 팔·다리를 앞(+x)으로 a 만큼 들면 시계 반대 방향 = -a
   const armAng = (v: [number, number]) => -(v[0] + v[1] * 0.5);
   const placed: Record<PartName, [number, number, string][]> = {
-    legB: place(PIECES.legB, -(p.legB[0] + p.legB[1] * 0.5), 0, legLift),
-    legF: place(PIECES.legF, -(p.legF[0] + p.legF[1] * 0.5), 0, legLift),
+    // 다리: 회전은 엉덩이 각도만, 무릎을 굽히는 값(-)은 다리를 그만큼 들어 올리는 것으로(정면 몸에서 다리가 옆으로 꺾이지 않게)
+    legB: place(PIECES.legB, -p.legB[0], 0, legLift - legUp(p.legB[1])),
+    legF: place(PIECES.legF, -p.legF[0], 0, legLift - legUp(p.legF[1])),
     torso: place(PIECES.torso, 0, sway, lift),
     head: place(PIECES.head, 0, sway + Math.round(p.head * 2), lift),
     armB: place(PIECES.armB, armAng(p.armB), sway, lift),
