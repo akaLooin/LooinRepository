@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795488333.5166314,
-    "seen": 1795488378.237466,
-    "ast_hash": "a89f1c1e64e4743282f7bfbced8aaf35",
+    "mtime": 1795488908.0792499,
+    "seen": 1795488925.7498848,
+    "ast_hash": "3f001660c12455167ad03c52ddc41301",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {
@@ -1020,9 +1020,9 @@
     "semantic_hash": ""
   },
   "game/mannequin.html": {
-    "mtime": 1795276896.4224894,
-    "seen": 1795277208.646138,
-    "ast_hash": "7733705e9119a3639b83eb7b3e58a2e7",
+    "mtime": 1795488864.6876857,
+    "seen": 1795488925.7506993,
+    "ast_hash": "5677fe113cd72123dec4bccf8313a51b",
     "semantic_hash": ""
   },
   "replica/design/mannequin-base.txt": {
