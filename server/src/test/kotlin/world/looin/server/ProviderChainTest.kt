@@ -68,6 +68,19 @@ class ProviderChainTest {
     }
 
     @Test
+    fun presetsFromEnv() {
+        val ps = world.looin.server.ai.Providers.fromEnv(
+            mapOf("GROQ_API_KEY" to "g", "OPENAI_API_KEY" to "o", "MISTRAL_API_KEY" to "m", "LOOIN_PROVIDER_ORDER" to "groq,mistral"),
+        )
+        // OpenAI 는 모델을 지정하지 않으면 과금 위험 때문에 켜지지 않는다
+        assertEquals(listOf("groq", "mistral"), ps.map { it.name })
+        assertEquals(
+            "mistral-large-latest",
+            ModelPicker.pick(listOf("mistral-small-latest", "magistral-medium-latest", "codestral-latest", "mistral-large-latest"), false),
+        )
+    }
+
+    @Test
     fun thinkFilterHandlesSplitTags() {
         val f = ThinkFilter()
         val out = listOf("앞<thi", "nk>숨김</thi", "nk>뒤", "끝").joinToString("") { f.feed(it) } + f.flush()

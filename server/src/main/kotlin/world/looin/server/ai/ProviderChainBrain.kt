@@ -235,13 +235,16 @@ object ModelPicker {
     val preference = listOf(
         // 최상위 공개 모델 (무료로 풀리는 일은 드물지만, 보이면 우선)
         "kimi-k3", "deepseek-v4", "glm-5", "kimi-k2", "kimi", "deepseek-v3", "deepseek-r1", "deepseek",
-        // 최전선 회사의 공식 무료 API (Google AI Studio) — Flash 계열
-        "gemini",
+        // 최전선 회사의 공식 무료 API — Google Gemini Flash, Mistral Large/Medium
+        "gemini", "mistral-large", "mistral-medium",
         // 2026년 하반기 무료 등급의 주력: 큰 모델 우선
         "gpt-oss-120b", "nemotron-3-ultra", "nemotron", "glm-4", "llama-4-maverick", "qwen3", "qwen",
-        "gemma-4", "gemma", "gpt-oss", "llama-4", "llama-3.3-70b", "mistral-large", "llama",
+        "gemma-4", "gemma", "gpt-oss", "llama-4", "llama-3.3-70b", "mistral-small", "llama",
     )
-    private val exclude = listOf("embed", "whisper", "tts", "guard", "rerank", "audio", "image", "vision", "ocr", "moderation", "distil", "coder")
+    private val exclude = listOf(
+        "embed", "whisper", "tts", "guard", "rerank", "audio", "image", "vision", "ocr", "moderation", "distil", "coder",
+        "codestral", "devstral", "pixtral", "voxtral", "magistral",
+    )
 
     fun pick(ids: List<String>, freeOnly: Boolean): String? {
         val usable = ids.filter { id ->
@@ -312,14 +315,27 @@ class ThinkFilter {
 
 /** 환경 변수로 켜는 기본 공급자 목록. 키가 있는 것만 사슬에 들어간다. */
 object Providers {
-    private data class Preset(val name: String, val keyEnv: String, val baseUrl: String, val freeOnly: Boolean = false, val maxOut: Int = 4096)
+    private data class Preset(
+        val name: String,
+        val keyEnv: String,
+        val baseUrl: String,
+        val freeOnly: Boolean = false,
+        val maxOut: Int = 4096,
+        /** 목록 자동 선택이 위험한 곳(유료 모델이 섞인 곳)은 모델을 꼭 직접 지정해야 켜진다. */
+        val requireModel: Boolean = false,
+    )
 
     private val presets = listOf(
+        // 최전선 회사의 공식 무료/무상 제공
+        Preset("gemini", "GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai"),
+        Preset("mistral", "MISTRAL_API_KEY", "https://api.mistral.ai/v1"),
+        // OpenAI 데이터 공유 프로그램의 무상 토큰 — 하루 한도를 넘으면 충전 잔액에서 과금되므로 모델 직접 지정 필수
+        Preset("openai", "OPENAI_API_KEY", "https://api.openai.com/v1", requireModel = true),
+        // 공개 모델 무료 등급
         Preset("groq", "GROQ_API_KEY", "https://api.groq.com/openai/v1"),
         Preset("cerebras", "CEREBRAS_API_KEY", "https://api.cerebras.ai/v1"),
         Preset("openrouter", "OPENROUTER_API_KEY", "https://openrouter.ai/api/v1", freeOnly = true),
         Preset("nvidia", "NVIDIA_API_KEY", "https://integrate.api.nvidia.com/v1"),
-        Preset("gemini", "GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai"),
     )
 
     fun fromEnv(env: Map<String, String>): List<Provider> {
@@ -327,10 +343,15 @@ object Providers {
             presets.forEach { p ->
                 val key = env[p.keyEnv]?.takeIf { it.isNotBlank() } ?: return@forEach
                 val upper = p.name.uppercase()
+                val model = env["${upper}_MODEL"]?.takeIf { it.isNotBlank() }
+                if (p.requireModel && model == null) {
+                    LoggerFactory.getLogger(Providers::class.java).warn("{} 키가 있지만 {}_MODEL 이 없어 건너뜁니다.", p.name, upper)
+                    return@forEach
+                }
                 add(
                     Provider(
                         p.name, p.baseUrl, key,
-                        model = env["${upper}_MODEL"]?.takeIf { it.isNotBlank() },
+                        model = model,
                         maxOutputTokens = env["${upper}_MAX_TOKENS"]?.toIntOrNull() ?: p.maxOut,
                         freeOnly = p.freeOnly,
                     ),
