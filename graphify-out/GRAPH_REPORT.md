@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-24)
 
 ## Corpus Check
-- 74 files · ~35,154 words
+- 74 files · ~35,273 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 5, .xml 2, .properties 2)
 
 ## Summary
-- 802 nodes · 1833 edges · 68 communities (29 shown, 39 thin omitted)
+- 803 nodes · 1835 edges · 67 communities (32 shown, 35 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cbfd8f1b`
+- Built from commit: `6d05c499`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -28,14 +28,14 @@
 - steps
 - Main.kt
 - replica-recon
-- ProviderChainBrain
+- ChatService.kt
 - ProviderChainTest.kt
-- Config
 - looin
 - Recon map: {{app}} ({{platform}})
+- App.kt
 - replica-backend
 - replica-build
-- ThinkFilter
+- SpaceType
 - MainActivity.kt
 - replica-brand
 - replica-deploy
@@ -49,20 +49,19 @@
 - AppSettings
 - Architecture: {{your app}} (a rebuild of {{app}}'s core features)
 - Looin World 아키텍처
-- ApiTest.kt
+- Brain
 - Deploy checklist: {{your app}}
 - Settings.jvm.kt
 - AppController
 - Looin World 로드맵
-- MemoryService.kt
-- ConnectScreen.kt
+- ProviderChainBrain.kt
+- dp
 - AppSettings
 - Tab
 - CLAUDE.md
 - graphify-stop.sh
 - bug-report.md
 - test-plan.md
-- HomeScreen.kt
 
 ## God Nodes (most connected - your core abstractions)
 1. `Repository` - 60 edges
@@ -91,51 +90,51 @@
 ## Import Cycles
 - None detected.
 
-## Communities (68 total, 39 thin omitted)
+## Communities (67 total, 35 thin omitted)
 
 ### Community 0 - "Space"
-Cohesion: 0.08
-Nodes (24): Brain, BrainRequest, Effort, HIGH, LOW, MEDIUM, Turn, str() (+16 more)
+Cohesion: 0.09
+Nodes (16): BrainRequest, Turn, JsonExtract, str(), Prompts, Seed, GrowthService, WorldSimService (+8 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
 Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), check(), colours() (+32 more)
 
 ### Community 2 - "Repository"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (8): Db, newId(), now(), Repository, sha256(), ChatMessage, Conversation, Insight
 
 ### Community 3 - "imgdiff.py"
 Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
-### Community 5 - "Common.kt"
-Cohesion: 0.22
-Nodes (9): AgentRow(), Avatar(), label(), SectionCard(), SectionTitle(), timeAgo(), TopBar(), MeScreen() (+1 more)
-
 ### Community 7 - "ChatScreens.kt"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (5): Route, Chat, NewAgent, PostRoute, SpaceRoute
 
 ### Community 8 - "Serializable"
-Cohesion: 0.07
-Nodes (37): module(), apiRoutes(), Seed, NotFound, AddMemoryRequest, AgentKind, CHARACTER, CLONE (+29 more)
+Cohesion: 0.18
+Nodes (19): AddMemoryRequest, AgentKind, CHARACTER, CLONE, CORE, EMPLOYEE, ApiError, CreateAgentRequest (+11 more)
 
 ### Community 10 - "steps"
 Cohesion: 0.12
 Nodes (16): runs-on, steps, jobs, build, name, on, push, workflow_dispatch (+8 more)
 
+### Community 11 - "Main.kt"
+Cohesion: 0.07
+Nodes (15): 4단계 계획: 나만의 모델 만들기, Looin World 의 학습과 성장, 더 나아가기, 데이터, 운영 — 솔직한 한계, 학습 (무료 GPU), Providers, Preset (+7 more)
+
 ### Community 13 - "replica-recon"
 Cohesion: 0.15
 Nodes (12): Output, replica-recon, Step 1: scope, Step 2: list the sources, Step 3: screen inventory, Step 4: user flows, Step 5: components, Step 6: inferred data model (+4 more)
 
-### Community 14 - "ProviderChainBrain"
-Cohesion: 0.42
-Nodes (3): Provider, ProviderChainBrain, State
+### Community 14 - "ChatService.kt"
+Cohesion: 0.18
+Nodes (8): apiRoutes(), NotFound, ChatStreamEvent, Type, DELTA, DONE, ERROR, START
 
-### Community 16 - "Config"
-Cohesion: 0.22
-Nodes (4): Providers, Preset, Config, main()
+### Community 15 - "ProviderChainTest.kt"
+Cohesion: 0.10
+Nodes (6): ModelPicker, Provider, ProviderChainBrain, State, ThinkFilter, ProviderChainTest
 
 ### Community 17 - "looin"
 Cohesion: 0.25
@@ -152,6 +151,10 @@ Nodes (9): Auth, Database, Email and jobs, Integrations, Output, Payments, repli
 ### Community 21 - "replica-build"
 Cohesion: 0.20
 Nodes (9): Definition of done, per screen, Output, replica-build, Step 1: the shell, Step 2: the vertical slice, Step 3: screen by screen, Step 4: the build log, The rules (+1 more)
+
+### Community 22 - "SpaceType"
+Cohesion: 0.50
+Nodes (4): SpaceType, COMMUNITY, COMPANY, FORUM
 
 ### Community 26 - "replica-brand"
 Cohesion: 0.22
@@ -190,20 +193,28 @@ Cohesion: 0.29
 Nodes (6): API, Architecture: {{your app}} (a rebuild of {{app}}'s core features), Build order, Schema, Stack, The parts that bite
 
 ### Community 38 - "Looin World 아키텍처"
-Cohesion: 0.07
-Nodes (26): AI 수준에 대해 (솔직하게), Looin World 아키텍처, 데이터 모델, 두뇌 설정 (서버 `ProviderChainBrain`), 멀티 유저 확장 계획 (나중에), 왜 이렇게 만들었나, 한눈에 보기, 1) 서버 만들기 (+18 more)
+Cohesion: 0.08
+Nodes (20): AI 수준에 대해 (솔직하게), Looin World 아키텍처, 데이터 모델, 두뇌 설정 (서버 `ProviderChainBrain`), 멀티 유저 확장 계획 (나중에), 왜 이렇게 만들었나, 한눈에 보기, 1) 서버 만들기 (+12 more)
+
+### Community 39 - "Brain"
+Cohesion: 0.21
+Nodes (8): Brain, Effort, HIGH, LOW, MEDIUM, OfflineBrain, FakeBrain, BrainInfo
 
 ### Community 40 - "Deploy checklist: {{your app}}"
 Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
 ### Community 42 - "AppController"
-Cohesion: 0.40
-Nodes (8): App(), AppController, Bubble(), ChatHubScreen(), ChatScreen(), Feed(), Meetings(), SpaceScreen()
+Cohesion: 0.21
+Nodes (19): App(), AppController, Bubble(), ChatHubScreen(), ChatScreen(), AgentRow(), Avatar(), SectionCard() (+11 more)
 
 ### Community 43 - "Looin World 로드맵"
 Cohesion: 0.33
 Nodes (5): ✅ 0단계 — 기반 (지금), 1단계 — 실제로 매일 쓰기, 2단계 — 깊이와 콘텐츠, 3단계 — 확장, Looin World 로드맵
+
+### Community 44 - "ProviderChainBrain.kt"
+Cohesion: 0.14
+Nodes (3): ChatRole, ASSISTANT, USER
 
 ### Community 47 - "Tab"
 Cohesion: 0.40
@@ -212,22 +223,22 @@ Nodes (5): Tab, Chat, Home, Me, World
 ## Knowledge Gaps
 - **22 isolated node(s):** `NewAgent`, `PostRoute`, `HIGH`, `LOW`, `MEDIUM` (+17 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 321 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **39 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **35 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Repository` connect `Repository` to `Space`, `Serializable`, `Main.kt`, `ProviderChainBrain.kt`?**
+- **Why does `Repository` connect `Repository` to `Space`, `Main.kt`, `ProviderChainBrain.kt`, `ChatService.kt`?**
   _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **What connects `NewAgent`, `PostRoute`, `HIGH` to the rest of the system?**
   _22 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Space` be split into smaller, more focused modules?**
-  _Cohesion score 0.07958707958707958 - nodes in this community are weakly interconnected._
-- **Why does `Post` connect `Space` to `Repository`, `LooinApi`, `WorldScreens.kt`, `ApiTest.kt`, `Serializable`, `ProviderChainBrain.kt`?**
+  _Cohesion score 0.08651911468812877 - nodes in this community are weakly interconnected._
+- **Why does `Post` connect `Space` to `Repository`, `LooinApi`, `WorldScreens.kt`, `Serializable`, `ApiTest.kt`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
   _Cohesion score 0.0642243328810493 - nodes in this community are weakly interconnected._
-- **Why does `Looin World 의 학습과 성장` connect `Looin World 아키텍처` to `Space`?**
+- **Why does `Looin World 의 학습과 성장` connect `Main.kt` to `Space`, `Looin World 아키텍처`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Should `Repository` be split into smaller, more focused modules?**
-  _Cohesion score 0.08461131676361713 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08524590163934426 - nodes in this community are weakly interconnected._
