@@ -25,3 +25,19 @@ describe('mannequin frames', () => {
     }
   });
 });
+
+import { GEAR } from '../src/render/gear';
+import { ITEMS } from '../src/core/data';
+describe('gear looks', () => {
+  it('every gear grid is rectangular, uses its palette, and belongs to a hat/body item', () => {
+    for (const [id, g] of Object.entries(GEAR)) {
+      const w = g.rows[0].length;
+      for (const r of g.rows) {
+        expect(r.length).toBe(w);
+        for (const ch of r) expect(ch === '.' || ch === 'o' || ch in g.pal).toBe(true);
+      }
+      const item = ITEMS[id];
+      expect(item?.slot).toBe(g.on === 'head' ? 'hat' : 'body');
+    }
+  });
+});

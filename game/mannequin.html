@@ -3,12 +3,13 @@
 <style>body{background:#8fb08a;margin:8px;font:12px sans-serif} .row{display:flex;align-items:center;gap:6px;margin:2px 0} canvas{image-rendering:pixelated} b{width:48px}</style></head>
 <body><div id="out"></div>
 <script type="module">
-// 확인용: 동작별 프레임을 한 줄씩 그린다. ?c=동작 ?z=배율 ?w=무기키(예: wp_sword_wood) ?skin=#색
+// 확인용: 동작별 프레임을 한 줄씩 그린다. ?c=동작 ?z=배율 ?w=무기키(예: wp_sword_wood) ?skin=#색 ?hat=모자id ?armor=갑옷id
 import { CLIPS, paintClip, bakeClip, FW, FH, ROOT_X, ROOT_Y, MQ_SCALE } from '/src/render/mannequin.ts';
 import { buildAll, canvases, ART } from '/src/render/sprites.ts';
+import { GEAR, gearKey, gearPos } from '/src/render/gear.ts';
 buildAll();
 const q = new URLSearchParams(location.search), z = +(q.get('z') ?? 3), skin = q.get('skin') ?? '#f4f2ee';
-const only = q.get('c'), wkey = q.get('w');
+const only = q.get('c'), wkey = q.get('w'), gear = [q.get('armor'), q.get('hat')].filter((g) => g && GEAR[g]);
 for (const name of Object.keys(CLIPS)) {
   if (only && only !== name) continue;
   const src = paintClip(name, skin), n = src.width / FW, an = bakeClip(name).anchors;
@@ -17,6 +18,11 @@ for (const name of Object.keys(CLIPS)) {
   const cv = document.createElement('canvas'); cv.width = src.width * z; cv.height = FH * z;
   const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
   ctx.drawImage(src, 0, 0, src.width, FH, 0, 0, src.width * z, FH * z);
+  // 장비 겉모습(?hat=hat_moss&armor=armor_log)
+  for (let f = 0; f < n; f++) for (const id of gear) {
+    const [x, y] = gearPos(GEAR[id], an[f].off), g = canvases.get(gearKey(id));
+    ctx.drawImage(g, (f * FW + ROOT_X + x) * z, (ROOT_Y + y) * z, g.width * z, g.height * z);
+  }
   const wp = wkey ? canvases.get(wkey) : null;
   if (wp) for (let f = 0; f < n; f++) {
     const a = an[f], s = (ART / MQ_SCALE) * z;

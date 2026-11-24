@@ -2,6 +2,7 @@
 // 1 아트픽셀 = 1 월드 단위. 나중에 실제 스프라이트 시트로 교체할 때는 같은 key로 텍스처만 바꾸면 된다.
 import { Look } from '../core/state';
 import { CLIPS, FH, FW, MANNEQUIN_WHITE, ROOT_X, ROOT_Y, paintClip } from './mannequin';
+import { GEAR, gearKey, paintGear } from './gear';
 
 const OUT = '#2b1d2e';
 const PAL: Record<string, string> = {
@@ -671,6 +672,8 @@ export function buildAll() {
   buildWeapons(); buildMonsters(); buildObjects(); buildItems(); buildIcons();
   (Object.keys(THEMES) as ThemeKey[]).forEach(buildTheme);
   upscaleWorld();
+  // 장비 겉모습(마네킹과 같은 1배 픽셀)
+  for (const [id, g] of Object.entries(GEAR)) canvases.set(gearKey(id), paintGear(g));
 }
 
 /** DOM UI용 아이콘 URL */

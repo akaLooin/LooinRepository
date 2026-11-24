@@ -6,6 +6,7 @@ import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEv
 import { Game } from '../game';
 import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
+import { GEAR, gearKey, gearPos } from './gear';
 import { Character, currentQuest, questProgress } from '../core/state';
 import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
@@ -28,7 +29,7 @@ type RigChar = Pick<Character, 'equipment' | 'cls'>;
 class CharRig {
   root: Phaser.GameObjects.Container;
   private body: Phaser.GameObjects.Container;
-  private back: Img; private front: Img; private weapon: Img;
+  private back: Img; private front: Img; private weapon: Img; private armor: Img; private hat: Img;
   private shadow: Img; private name: Phaser.GameObjects.Text;
   private key: string;
   private t = Math.random() * 10; private walkPh = 0; private idlePh = Math.random(); private airT = 0;
@@ -43,8 +44,10 @@ class CharRig {
     this.back = scene.add.image(0, 0, `${k}_idle`, 'b0').setOrigin(0.5, oy).setScale(MQ_SCALE);
     this.weapon = scene.add.image(0, 0, 'wp_sword_wood').setOrigin(0.5, 0.82).setScale(ART);
     this.front = scene.add.image(0, 0, `${k}_idle`, 'f0').setOrigin(0.5, oy).setScale(MQ_SCALE);
-    // 몸 → 무기 → 앞팔 순서: 손이 무기 손잡이를 감싼다
-    this.body = scene.add.container(0, 0, [this.back, this.weapon, this.front]);
+    this.armor = scene.add.image(0, 0, 'shadow').setOrigin(0, 0).setScale(MQ_SCALE).setVisible(false);
+    this.hat = scene.add.image(0, 0, 'shadow').setOrigin(0, 0).setScale(MQ_SCALE).setVisible(false);
+    // 몸 → 갑옷 → 모자 → 무기 → 앞팔 순서: 손이 무기 손잡이를 감싼다
+    this.body = scene.add.container(0, 0, [this.back, this.armor, this.hat, this.weapon, this.front]);
     this.name = label(scene, name, 6.5).setOrigin(0.5, 0).setPosition(0, 3);
     this.root = scene.add.container(0, 0, [this.shadow, this.body, this.name]).setDepth(50);
   }
@@ -90,6 +93,16 @@ class CharRig {
       this.weapon.setPosition(an.hand[0] * MQ_SCALE, an.hand[1] * MQ_SCALE).setRotation(an.wpn);
     }
 
+    // 장비 겉모습: 머리·몸통이 움직인 칸만큼 따라간다
+    for (const [img, id] of [[this.hat, c.equipment.hat], [this.armor, c.equipment.body]] as const) {
+      const g = id ? GEAR[id] : undefined;
+      img.setVisible(!!g);
+      if (!g || !id) continue;
+      if (img.texture.key !== gearKey(id)) img.setTexture(gearKey(id));
+      const [x, y] = gearPos(g, an.off);
+      img.setPosition(x * MQ_SCALE, y * MQ_SCALE);
+    }
+
     // 착지 스쿼시, 방향 전환, 쓰러짐
     if (p.onGround && !this.wasGround) this.squash = 1;
     this.wasGround = p.onGround;
@@ -103,7 +116,7 @@ class CharRig {
     // 피격: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
     const hurtK = p.hurtT > 0 ? Math.max(0, (p.hurtT - (HURT_TIME - 0.22)) / 0.22) : 0;
     const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
-    this.back.setTint(tint); this.front.setTint(tint);
+    this.back.setTint(tint); this.front.setTint(tint); this.hat.setTint(tint); this.armor.setTint(tint);
     b.setAlpha(p.hurtT > 0 && !dead && Math.sin(this.t * 38) > 0 ? 0.35 : 1);
     b.x = -p.facing * hurtK * 2.5;
 

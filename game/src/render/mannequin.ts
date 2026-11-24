@@ -178,7 +178,9 @@ const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5
 
 type V = [number, number];
 /** 붙임 지점(발 기준점으로부터 px, 화면 아래가 +y) */
-export interface Anchors { hand: V; handB: V; wpn: number; head: V; headRot: number; chest: V; lean: number }
+export interface Anchors { hand: V; handB: V; wpn: number; head: V; headRot: number; chest: V; lean: number;
+  /** 윗몸 이동 칸 [좌우, 위아래, 머리 좌우] — 장비 겉모습을 같은 만큼 옮긴다 */
+  off: [number, number, number] }
 
 /** 조각: 칸 목록(열, 줄, 글자)과 회전축 */
 type Piece = { px: [number, number, string][]; pivot: V };
@@ -278,6 +280,7 @@ function layout(p: Pose) {
   const anchors: Anchors = {
     hand: toRoot(hand[0] + sway, hand[1] + lift), handB: toRoot(handB[0] + sway, handB[1] + lift), wpn: p.wpn,
     head: toRoot(9.5 + sway, 4.5 + lift), headRot: 0, chest: toRoot(9.5 + sway, 14 + lift), lean: p.lean,
+    off: [sway, lift, Math.round(p.head * 2)],
   };
   return { placed, anchors };
 }

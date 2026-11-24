@@ -1,0 +1,76 @@
+// 장비 겉모습: 마네킹과 같은 1배 픽셀로 그린 모자·갑옷을 머리·몸통 칸에 맞춰 붙인다.
+// 머리와 몸통은 동작 중에 돌지 않고 칸 단위로만 움직이므로(layout의 sway·lift) 같은 만큼만 옮기면 어긋나지 않는다.
+import { OUTLINE } from './mannequin';
+
+export type GearOn = 'head' | 'body';
+export interface GearDef {
+  on: GearOn;
+  /** 시안 격자(BASE_PX, 21×27)에서 그림 왼쪽 위 칸 */
+  at: [number, number];
+  rows: string[];
+  pal: Record<string, string>;
+}
+
+const MOSS = { L: '#8fde5d', G: '#5fb859', D: '#3b8c4f' };
+const GOLD = { y: '#fbe48a', Y: '#f6c945', D: '#c98f2a' };
+const WOOD = { L: '#e8c08a', B: '#b9824f', D: '#8a5a3c', K: '#6e4630', Y: '#f6c945' };
+
+/** 아이템 id → 겉모습. 'o'는 검정 테두리 */
+export const GEAR: Record<string, GearDef> = {
+  // 이끼 모자: 머리 윗부분을 덮는 둥근 이끼 덮개
+  hat_moss: { on: 'head', at: [4, -3], pal: MOSS, rows: [
+    '....oooo....',
+    '..ooLLGGoo..',
+    '.oLLGGGGGGo.',
+    '.oLGGGGGGDo.',
+    'oLGGGGGGGGDo',
+    'oDDDDDDDDDDo',
+    '.oooooooooo.',
+  ] },
+  // 이끼 왕관: 세 갈래 금관에 붉은 보석과 이끼
+  moss_crown: { on: 'head', at: [5, -3], pal: { ...GOLD, R: '#e84a5a', G: MOSS.G }, rows: [
+    '.o..oo..o.',
+    'oyooyyooyo',
+    'oyYYYYYYYo',
+    'oYYRYYGYDo',
+    'oDDDDDDDDo',
+    '.oooooooo.',
+  ] },
+  // 통나무 갑옷: 가슴을 덮는 나무판과 허리띠(팔은 그대로 보이게 몸통 폭만)
+  armor_log: { on: 'body', at: [6, 10], pal: WOOD, rows: [
+    '..oooo..',
+    '.oLBBBo.',
+    '.oLBBDo.',
+    '.oLBBDo.',
+    '.oDDDDo.',
+    '.oLBBDo.',
+    '.oLBBDo.',
+    '.oDDDDo.',
+    '.oLBBDo.',
+    'oKKYKKKo',
+    'oooooooo',
+  ] },
+};
+
+/** 겉모습 텍스처 key */
+export const gearKey = (id: string) => `gear_${id}`;
+
+/** 캔버스로 그린다 */
+export function paintGear(g: GearDef): HTMLCanvasElement {
+  const w = Math.max(...g.rows.map((r) => r.length)), h = g.rows.length;
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d')!;
+  g.rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x], col = ch === 'o' ? OUTLINE : g.pal[ch];
+      if (col) { ctx.fillStyle = col; ctx.fillRect(x, y, 1, 1); }
+    }
+  });
+  return cv;
+}
+
+/** 붙일 위치(발 기준, 1배 칸): 프레임의 윗몸 이동(off)만큼 따라간다 */
+export function gearPos(g: GearDef, off: [number, number, number]): [number, number] {
+  return [g.at[0] + off[0] + (g.on === 'head' ? off[2] : 0) - 10, g.at[1] + off[1] - 26];
+}
