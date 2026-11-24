@@ -174,6 +174,11 @@ const BASE_PX = [
   '......35533553.......',
   '.......33..33........',
 ];
+/** 게임에서 쓰는 몸: 시안을 좌우로 뒤집는다(밝은 면이 앞=오른쪽에 오도록. 시안은 밝은 면이 왼쪽이라 왼쪽을 보는 듯 읽혔다).
+ *  칸 c → 19-c(가운데 축 고정), 연속 좌표 x → 20-x. 팔·다리의 앞/뒤는 자리가 바뀌므로 역할을 맞바꾼다(앞=오른쪽 유지) */
+export const MIRROR = true;
+const mx = (x: number) => (MIRROR ? 20 - x : x);
+const BODY_PX = MIRROR ? BASE_PX.map((row) => [...row.slice(0, 20)].reverse().join('') + row.slice(20)) : BASE_PX;
 const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5, a: 6 };
 
 type V = [number, number];
@@ -188,13 +193,16 @@ type PartName = 'head' | 'torso' | 'armB' | 'armF' | 'legB' | 'legF';
 /** 시안을 조각으로 나눈다. 팔(11~18줄의 바깥쪽), 다리(21줄 아래), 머리(0~9줄), 나머지는 몸통.
  *  팔을 떼어낸 자리에서 몸통 가장자리가 비지 않도록 맞닿은 칸은 테두리로 메운다(대기 자세에선 팔 조각이 그대로 덮는다). */
 const PIECES: Record<PartName, Piece> = (() => {
-  const part = (c: number, r: number): PartName =>
+  const part0 = (c: number, r: number): PartName =>
     r <= 9 ? 'head' : r >= 21 ? (c <= 9 ? 'legB' : 'legF') : r >= 11 && r <= 18 && c <= 6 ? 'armB' : r >= 11 && r <= 18 && c >= 12 ? 'armF' : 'torso';
+  const swap: Record<PartName, PartName> = { head: 'head', torso: 'torso', armB: 'armF', armF: 'armB', legB: 'legF', legF: 'legB' };
+  const part = (c: number, r: number): PartName => (MIRROR ? swap[part0(19 - c, r)] : part0(c, r));
   const out: Record<PartName, Piece> = {
-    head: { px: [], pivot: [9.5, 8] }, torso: { px: [], pivot: [9.5, 20] },
-    armB: { px: [], pivot: [6.5, 11.5] }, armF: { px: [], pivot: [12.5, 11.5] },
-    legB: { px: [], pivot: [8, 21] }, legF: { px: [], pivot: [11, 21] },
+    head: { px: [], pivot: [mx(9.5), 8] }, torso: { px: [], pivot: [mx(9.5), 20] },
+    armB: { px: [], pivot: MIRROR ? [mx(12.5), 11.5] : [6.5, 11.5] }, armF: { px: [], pivot: MIRROR ? [mx(6.5), 11.5] : [12.5, 11.5] },
+    legB: { px: [], pivot: MIRROR ? [mx(11), 21] : [8, 21] }, legF: { px: [], pivot: MIRROR ? [mx(8), 21] : [11, 21] },
   };
+  const BASE_PX = BODY_PX;
   const filled = (c: number, r: number) => BASE_PX[r]?.[c] !== undefined && BASE_PX[r][c] !== '.';
   BASE_PX.forEach((row, r) => [...row].forEach((ch, c) => { if (ch !== '.') out[part(c, r)].px.push([c, r, ch]); }));
   // 팔 자리 메우기: 팔 칸 중 몸통 칸과 맞닿은 곳 → 몸통 테두리
@@ -205,7 +213,7 @@ const PIECES: Record<PartName, Piece> = (() => {
   return out;
 })();
 // 쉬는 자세에서 손의 중심(그림 칸)
-const HAND_REST: Record<'armB' | 'armF', V> = { armB: [4.5, 16], armF: [14.5, 16] };
+const HAND_REST: Record<'armB' | 'armF', V> = MIRROR ? { armB: [mx(14.5), 16], armF: [mx(4.5), 16] } : { armB: [4.5, 16], armF: [14.5, 16] };
 const LEG_PARTS: PartName[] = ['legB', 'legF'];
 
 /** 조각을 축 기준으로 돌려(가장 가까운 칸) 옮긴 칸 목록 */
@@ -279,7 +287,7 @@ function layout(p: Pose) {
   const hand = rot(HAND_REST.armF, PIECES.armF.pivot, armAng(p.armF)), handB = rot(HAND_REST.armB, PIECES.armB.pivot, armAng(p.armB));
   const anchors: Anchors = {
     hand: toRoot(hand[0] + sway, hand[1] + lift), handB: toRoot(handB[0] + sway, handB[1] + lift), wpn: p.wpn,
-    head: toRoot(9.5 + sway, 4.5 + lift), headRot: 0, chest: toRoot(9.5 + sway, 14 + lift), lean: p.lean,
+    head: toRoot(mx(9.5) + sway, 4.5 + lift), headRot: 0, chest: toRoot(mx(9.5) + sway, 14 + lift), lean: p.lean,
     off: [sway, lift, Math.round(p.head * 2)],
   };
   return { placed, anchors };
