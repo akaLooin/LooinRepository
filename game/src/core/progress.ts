@@ -2,10 +2,11 @@
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
   ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, STAMPS, STATUES,
-  baseClass, cardTier, statueNeed,
+  PETS, baseClass, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
+import { owlValue } from './companions';
 
 export type Bonus = Record<BonusKey, number>;
 export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, acc: 0 });
@@ -136,13 +137,16 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLevel(c.statues?.[s.id] ?? 0).lv * s.per;
   const sign = c.sign ? SIGNS.find((x) => x.id === c.sign) : null;
   if (sign) b[sign.eff] += sign.v;
   for (const d of ACHIEVEMENTS) if (a.achievements?.[d.id] && d.eff) b[d.eff] += d.v!;
   if (a.characters) { const best = familyBest(a.characters); for (const k of Object.keys(FAMILY) as (keyof typeof FAMILY)[]) b[FAMILY[k].eff] += familyValue(k, best[k]); }
+  // 동료(레벨 × 효과)와 부엉이 보너스
+  for (const p of PETS) b[p.eff] += (a.pets?.[p.id] ?? 0) * p.per;
+  if (a.owl) { b.dmg += owlValue(a.owl, 'dmg'); b.xp += owlValue(a.owl, 'xp'); b.drop += owlValue(a.owl, 'drop'); b.afk += owlValue(a.owl, 'afk'); }
   const set = c.cardSet ? CARD_SETS.find((s) => s.id === c.cardSet) : null;
   if (set && a.cards) { const t = setTier({ cards: a.cards }, set); if (t > 0) b[set.eff] += set.v[t - 1]; }
   return b;

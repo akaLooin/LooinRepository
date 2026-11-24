@@ -189,3 +189,32 @@ describe('콜로세움·미니보스', () => {
     expect(minibossOpen(acc, mb.id, open + 3600_000)).toBe(true);
   });
 });
+
+import { owlCost, weekKey } from '../src/core/companions';
+describe('동료·부엉이', () => {
+  it('동료는 주 1회, 처음엔 없는 동료부터 오고 같은 주엔 다시 안 온다', () => {
+    const { acc, c } = setup();
+    const t0 = new Date('2026-11-24T12:00:00').getTime();
+    const before = derive(c, acc);
+    expect(applyAction(acc, 0, { t: 'pet' }, t0).ok).toBe(true);
+    expect(Object.keys(acc.pets)).toHaveLength(1);
+    expect(applyAction(acc, 0, { t: 'pet' }, t0 + 3600_000).ok).toBe(false);
+    const next = t0 + 7 * 86400_000;
+    expect(weekKey(next)).toBe(weekKey(t0) + 1);
+    expect(applyAction(acc, 0, { t: 'pet' }, next).ok).toBe(true);
+    expect(Object.keys(acc.pets)).toHaveLength(2);
+    const after = derive(c, acc);
+    expect(JSON.stringify(after)).not.toBe(JSON.stringify(before));
+  });
+  it('부엉이: 찾아온 뒤부터 깃털이 시간당 쌓이고, 깃털로 보너스', () => {
+    const { acc, c } = setup();
+    applyAction(acc, 0, { t: 'owl' }, 1000);
+    expect(acc.owl.t).toBe(1000);
+    const cost = owlCost(acc.owl, 'dmg');
+    expect(applyAction(acc, 0, { t: 'owl', k: 'dmg' }, 1000 + 60_000).ok).toBe(false);
+    const d0 = derive(c, acc).dmg;
+    expect(applyAction(acc, 0, { t: 'owl', k: 'dmg' }, 1000 + 5 * 3600_000).ok).toBe(true);
+    expect(acc.owl.f).toBeCloseTo(30 * 5 - cost, 5);
+    expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+  });
+});

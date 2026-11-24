@@ -78,6 +78,8 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('cardSet'), id: id.nullable() }),
   z.object({ t: z.literal('cardPreset'), i: z.number().int().min(0).max(3) }),
   z.object({ t: z.literal('arenaClaim') }),
+  z.object({ t: z.literal('pet') }),
+  z.object({ t: z.literal('owl'), k: z.enum(['rate', 'dmg', 'xp', 'drop', 'afk']).optional() }),
   z.object({ t: z.literal('talentPreset'), i: z.number().int().min(0).max(3) }),
   z.object({ t: z.literal('merit'), id: z.enum(['storage', 'afk', 'drop', 'xp', 'teleport', 'coins']) }),
   z.object({ t: z.literal('target'), activity: z.union([z.object({ k: z.literal('none') }), z.object({ k: z.literal('fight') }), z.object({ k: z.literal('gather'), node: id })]) }),

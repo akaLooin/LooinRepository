@@ -1,6 +1,7 @@
 // 플레이어 행동. 기기(낙관적 적용)와 서버(권위)가 같은 함수로 적용한다.
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
-import { ClassId, EquipSlot, MAPS, NODES, StatKey } from './data';
+import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
+import { claimPet, owlSettle, owlUpgrade } from './companions';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
   equipItem, learnTalent, switchTalentPreset, portalLock, arenaClaim, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
@@ -58,7 +59,9 @@ export type Action =
   | { t: 'cardSet'; id: string | null }
   | { t: 'cardPreset'; i: number }
   | { t: 'talentPreset'; i: number }
-  | { t: 'arenaClaim' };
+  | { t: 'arenaClaim' }
+  | { t: 'pet' }
+  | { t: 'owl'; k?: OwlUp };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -129,6 +132,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'cardSet': return res(toggleCardSet(c, a.id));
     case 'cardPreset': return res(switchCardPreset(acc, c, a.i));
     case 'talentPreset': return res(switchTalentPreset(c, a.i));
+    case 'pet': return res(claimPet(acc, now));
+    case 'owl': if (!a.k) { owlSettle(acc, now); return ok(); } return res(owlUpgrade(acc, a.k, now));
     case 'arenaClaim': { const r = arenaClaim(acc, c); return typeof r === 'string' ? fail(r) : ok(r.waves); }
     case 'target': {
       const t = a.activity;

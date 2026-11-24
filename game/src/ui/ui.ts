@@ -4,7 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, PETS, PET_MAX_LV, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -13,6 +13,7 @@ import {
   minibossOpen,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
+import { owlCost, owlPerHour, owlSettle, petOfWeek, petReady } from '../core/companions';
 import { STARS, achieveReady, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
@@ -22,11 +23,13 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
 const ui = (key: string, cls = 'ic') => `<img class="px ${cls}" src="${iconUrl(key)}" alt="">`;
+const iconHtml = (key: string) => `<img class="px tic" src="${iconUrl(key)}" alt="">`;
+const PET_BONUS_NAMES: Record<string, string> = { hpPct: '최대 체력', drop: '드롭률', xp: '경험치', mining: '채광 효율', chopping: '벌목 효율', def: '방어력', coins: '코인 획득', afk: '방치 효율' };
 /** 아이콘 칸 + 숫자 배지(글자 대신). tone: ok(초록) / bad(빨강) */
 const tile = (src: string, badge: string | number, label: string, cls = '', tone = '') =>
   `<span class="ui-slot sm ${cls}" title="${label}" aria-label="${label}"><img class="px" src="${src}" alt="">${badge !== '' ? `<span class="qty ${tone}">${badge}</span>` : ''}</span>`;
@@ -167,7 +170,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
     else if (e.t === 'faint') this.toast(this.game.world?.arena ? '쓰러졌습니다! 콜로세움이 끝났습니다' : '쓰러졌습니다... 잠시 후 부활합니다');
@@ -226,7 +229,7 @@ export class UI {
       lines.push(`<b class="ui-accent">콜로세움</b> 웨이브 ${Math.min(a.wave, ARENA.waves.length)}/${ARENA.waves.length} · 남은 시간 ${Math.max(0, Math.ceil(a.t))}초`);
       lines.push(`점수 <b>${Math.round(a.score).toLocaleString()}</b>${a.mult > 1 ? ` <span class="ui-accent">×${a.mult.toFixed(1)}</span>` : ''} · 깬 웨이브 ${arenaWaves(a.kills)}`);
     }
-    const mbs = MINIBOSSES.filter((m) => minibossOpen(g.acc, m.id, Date.now()));
+    const mbs = MINIBOSSES.filter((m) => minibossOpen(g.acc, m.id, Date.now()) && mapUnlocked(c, m.map));
     if (mbs.length && !w.arena) lines.push(`<span class="ui-accent">⚔ ${mbs.map((m) => `${MONSTERS[m.id].name}(${MAPS[m.map].name})`).join(', ')} 출현 중</span>`);
     if (canSubclass(c)) lines.push(`<span class="ui-accent">★ 2차 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
     if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
@@ -529,6 +532,26 @@ export class UI {
         return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
       }
 
+      case 'pets': {
+        const acc = g.acc, now = Date.now(), ready = petReady(acc, now), next = petOfWeek(acc, now);
+        const grid = PETS.map((p) => {
+          const lv = acc.pets[p.id] ?? 0;
+          return `<div class="ui-row line ${lv ? '' : 'ui-muted'}"><span class="ui-slot sm ${lv ? 'r2' : ''}"><img class="px" style="${lv ? '' : 'filter:brightness(0) invert(.4);opacity:.6'}" src="${iconUrl(`pet_${p.id}`)}" alt=""></span>
+            <div class="ui-grow"><b>${lv ? p.name : '???'}</b> ${lv ? `<span class="ui-accent">Lv.${lv}/${PET_MAX_LV}</span>` : ''}<div class="ui-sm ${lv ? 'ui-good' : ''}">${PET_BONUS_NAMES[p.eff]} +${Math.round(Math.max(1, lv) * p.per * 10) / 10}${p.unit}${lv ? '' : ' (Lv.1)'}</div></div></div>`;
+        }).join('');
+        return win('동료 둥지 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="stack"><p class="ui-sm">일주일에 한 번 동료가 찾아옵니다. 모은 동료는 모두 계정 전체에 효과를 주고, 같은 동료가 다시 오면 레벨이 오릅니다.</p>
+          ${ready ? `<button class="ui-btn primary block" data-act="pet">${iconHtml(`pet_${next}`)} 이번 주 동료 맞이하기</button>` : '<span class="ui-sm ui-muted">이번 주 동료는 이미 왔습니다. 다음 주 월요일에 또 찾아옵니다.</span>'}</div>${grid}`);
+      }
+      case 'owl': {
+        const acc = g.acc, o = acc.owl;
+        owlSettle(acc, Date.now());
+        const rows = (Object.keys(OWL.ups) as OwlUp[]).map((k) => {
+          const u = OWL.ups[k], max = o.up[k] >= u.max, cost = owlCost(o, k);
+          return `<div class="ui-row line"><div class="ui-grow"><b>${u.name}</b> <span class="ui-xs ui-accent">${o.up[k]}/${u.max}</span><div class="ui-sm ${o.up[k] ? 'ui-good' : 'ui-muted'}">${u.desc(Math.max(1, o.up[k]) * u.per)}${o.up[k] ? '' : ' (1단계)'}</div></div>
+            <button class="ui-btn sm" data-act="owl:${k}" ${!max && o.f >= cost ? '' : 'disabled'}>${max ? '최대' : `🪶 ${cost.toLocaleString()}`}</button></div>`;
+        }).join('');
+        return win('부엉이 횃대 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row"><b class="ui-grow">깃털 <span class="ui-accent">${Math.floor(o.f).toLocaleString()}</span></b><span class="ui-sm ui-muted">시간당 ${Math.round(owlPerHour(o))}개 · 접속하지 않아도 쌓입니다</span></div>${rows}`);
+      }
       case 'arena': {
         const r = this.arenaResult ?? { waves: 0, score: 0 };
         const got = ARENA.rewards.filter((x) => r.waves >= x.waves);
@@ -928,6 +951,8 @@ export class UI {
       case 'pslot': this.prodSlot = +a; break;
       case 'fslot': this.forgeSel = +a; break;
       case 'ssel': this.stampSel = a; break;
+      case 'pet': { const id = petOfWeek(g.acc, Date.now()), r = g.act({ t: 'pet' }); if (r.ok) this.toast(`${PETS.find((p) => p.id === id)!.name}이(가) 찾아왔습니다! (Lv.${g.acc.pets[id]})`); else fail(r.err ?? null); break; }
+      case 'owl': fail(g.act({ t: 'owl', k: a as OwlUp }).err ?? null); break;
       case 'arenaclaim': {
         const r = g.act({ t: 'arenaClaim' });
         if (r.ok) { this.toast(`콜로세움 보상을 받았습니다(웨이브 ${r.n})`); this.panel = null; this.arenaResult = null; g.travelTo(); } else fail(r.err ?? null);

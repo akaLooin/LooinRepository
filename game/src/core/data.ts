@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing';
 export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer';
 export type WeaponType = 'sword' | 'bow' | 'wand';
@@ -87,7 +87,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼',
 };
@@ -219,7 +219,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
-    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'tasks', x: 560, y: -48 }, { kind: 'statues', x: 136, y: -60 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
+    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'tasks', x: 560, y: -48 }, { kind: 'statues', x: 136, y: -60 }, { kind: 'pets', x: 420, y: -48 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
     portals: [{ x: 652, y: -48, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
@@ -233,7 +233,7 @@ const maps: MapDef[] = [
     spawns: [{ monster: 'pebbler', count: 7 }, { monster: 'mossblob', count: 2 }],
     nodes: [{ node: 'redrock', x: 330 }, { node: 'redrock', x: 535 }],
     ropes: [{ x: 165, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 600, top: -48, bottom: 0 }, { x: 740, top: -96, bottom: -48 }],
-    facilities: [],
+    facilities: [{ kind: 'owl', x: 230, y: -48 }],
     portals: [{ x: 24, to: 'meadow', toX: 765 }, { x: 896, to: 'forest', toX: 50, reqKills: 40 }, { x: 700, y: -96, to: 'mine1', toX: 50, reqSkill: { skill: 'mining', lv: 5 }, label: '얕은 광산' }] },
   // 숲: 오른쪽 끝 언덕 위에 보스방 문(열쇠 필요)
   { id: 'forest', name: '속삭임 숲', width: 980, theme: 'forest',
@@ -586,6 +586,33 @@ export const CARD_SETS: CardSetDef[] = [
   { id: 'w1b', name: '깊은 숲 세트', cards: ['mudturtle', 'glowbat', 'gusthopper', 'golemite', 'shroomkin', 'willow', 'moonbirch', 'bluerock', 'goldrock'], tiers: [4, 10, 18, 27], eff: 'drop', v: [3, 6, 10, 15], label: '드롭률 +%' },
 ];
 export const CARD_PRESET_LV = 15;
+
+// ───────── 동료(계정): 주 1회 무작위로 찾아온다. 모은 동료는 모두 효과, 다시 오면 레벨업 ─────────
+export interface PetDef { id: string; name: string; eff: BonusKey; per: number; unit: '' | '%' | '%p'; color: string }
+export const PETS: PetDef[] = [
+  { id: 'pup', name: '솜뭉치 강아지', eff: 'hpPct', per: 2, unit: '%', color: '#f2e6d0' },
+  { id: 'kit', name: '얼룩 고양이', eff: 'drop', per: 2, unit: '%', color: '#e8a03a' },
+  { id: 'frog', name: '연잎 개구리', eff: 'xp', per: 2, unit: '%', color: '#5fb859' },
+  { id: 'mole', name: '두더지 광부', eff: 'mining', per: 4, unit: '%', color: '#8a6a4a' },
+  { id: 'squirrel', name: '도토리 다람쥐', eff: 'chopping', per: 4, unit: '%', color: '#c9805a' },
+  { id: 'hedgehog', name: '고슴도치', eff: 'def', per: 1, unit: '', color: '#9a8a7a' },
+  { id: 'firefly', name: '반딧불이', eff: 'coins', per: 2, unit: '%', color: '#f6e46a' },
+  { id: 'sloth', name: '느림보 나무늘보', eff: 'afk', per: 0.5, unit: '%p', color: '#a89a80' },
+];
+export const PET_MAX_LV = 5;
+
+// ───────── 부엉이 깃털(계정): 시간이 흐르면 깃털이 쌓이고, 깃털로 생산·보너스를 올린다 ─────────
+export type OwlUp = 'rate' | 'dmg' | 'xp' | 'drop' | 'afk';
+export const OWL = {
+  basePerHour: 30,
+  ups: {
+    rate: { name: '깃털 고르기', per: 0.25, cost: 40, grow: 1.5, max: 20, desc: (v: number) => `깃털 생산 +${Math.round(v * 100)}%` },
+    dmg: { name: '날카로운 발톱', per: 1, cost: 60, grow: 1.45, max: 30, desc: (v: number) => `공격력 +${v}%` },
+    xp: { name: '밤의 지혜', per: 1, cost: 60, grow: 1.45, max: 30, desc: (v: number) => `경험치 +${v}%` },
+    drop: { name: '반짝이는 눈', per: 1, cost: 80, grow: 1.45, max: 30, desc: (v: number) => `드롭률 +${v}%` },
+    afk: { name: '부엉이 낮잠', per: 0.3, cost: 120, grow: 1.5, max: 20, desc: (v: number) => `방치 효율 +${(Math.round(v * 10) / 10)}%p` },
+  } as Record<OwlUp, { name: string; per: number; cost: number; grow: number; max: number; desc: (v: number) => string }>,
+};
 
 // ───────── 콜로세움 ─────────
 /** 5분 동안 웨이브가 차례로 나온다(앞 웨이브를 다 잡거나 시간이 지나면 다음). 보상은 깬 웨이브 수 */

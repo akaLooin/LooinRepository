@@ -516,6 +516,26 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 동료 둥지: 짚 둥지 + 작은 나무 집
+  p = new Paint(32, 26);
+  p.rect(6, 6, 20, 12, '#c9805a'); for (let i = 0; i < 12; i++) p.rect(4 + i, 6 - Math.min(i, 11 - i) / 2, 24 - i * 2, 1, '#d9574a');
+  p.rect(13, 10, 6, 8, '#5a3a2a'); p.disc(16, 9, 3, 2, '#5a3a2a');
+  p.disc(16, 21, 15, 5, '#e8c08a'); p.disc(16, 20, 12, 3, '#f6dca8'); for (const x of [5, 11, 20, 27]) p.line(x, 22, x + 3, 19, '#c9a46a');
+  p.outline().save('obj_pets');
+  // 부엉이 횃대: 기둥 + 가로대 위 부엉이
+  p = new Paint(26, 40);
+  p.rect(11, 14, 4, 26, '#8a5a3c'); p.rect(3, 22, 20, 3, '#8a5a3c'); p.rect(3, 22, 20, 1, '#b9824f');
+  p.disc(13, 12, 8, 9, '#9a7a5a'); p.disc(13, 15, 5, 5, '#e8d4b0'); p.disc(10, 9, 2.6, 2.6, '#ffffff'); p.disc(16, 9, 2.6, 2.6, '#ffffff');
+  p.disc(10, 9, 1.2, 1.2, '#1e1420'); p.disc(16, 9, 1.2, 1.2, '#1e1420'); p.rect(12, 11, 2, 2, '#f6c945'); p.rect(6, 2, 2, 4, '#9a7a5a'); p.rect(18, 2, 2, 4, '#9a7a5a');
+  p.outline().save('obj_owl');
+  // 동료 아이콘(동그란 얼굴 + 귀)
+  for (const [id, col] of [['pup', '#f2e6d0'], ['kit', '#e8a03a'], ['frog', '#5fb859'], ['mole', '#8a6a4a'], ['squirrel', '#c9805a'], ['hedgehog', '#9a8a7a'], ['firefly', '#f6e46a'], ['sloth', '#a89a80']] as const) {
+    p = new Paint(14, 13);
+    p.disc(7, 7.5, 5.5, 4.8, col); p.disc(3, 3, 1.8, 1.8, col); p.disc(11, 3, 1.8, 1.8, col);
+    p.set(5, 7, '#1e1420'); p.set(9, 7, '#1e1420'); p.rect(6, 9, 2, 1, '#8a3a3a'); p.set(3, 6, '#ffffff');
+    p.outline().save(`pet_${id}`);
+  }
+
   // 석상 받침: 돌 받침대 위 작은 석상 셋
   p = new Paint(34, 26);
   p.rect(1, 18, 32, 8, '#8d97a3'); p.rect(1, 18, 32, 2, '#b4bcc6'); p.rect(3, 23, 28, 1, '#6a7480');
