@@ -397,7 +397,7 @@ export class UI {
         refillTeleports(g.acc, Date.now());
         const nodes = WORLD1.map((id) => {
           const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id);
-          const gate = m.portals.find((p) => p.reqKills && WORLD1.includes(p.to));
+          const gate = m.portals.find((p) => p.reqKills && !p.key && WORLD1.includes(p.to));
           const sub = here ? '현재 위치' : !open ? '잠김' : m.spawns.length ? `처치 ${(c.kills[id] ?? 0).toLocaleString()}${gate ? `/${gate.reqKills}` : ''}` : '무료';
           const art = m.spawns.length ? iconUrl(`mob_${m.spawns[0].monster}`) : iconUrl('ui_teleport');
           return `<button class="mapnode ${here ? 'here' : ''} ${open ? '' : 'locked'}" data-act="tp:${id}" ${open && !here ? '' : 'disabled'} aria-label="${m.name}로 순간이동">
@@ -601,7 +601,7 @@ export class UI {
       const stars = setStars(acc, s), t = setTier(acc, s), on = c.cardSet === s.id;
       const next = s.tiers[t];
       return `<div class="ui-row line"><div class="ui-grow"><b>${s.name}</b> <span class="ui-accent">${t}단계</span>
-        <div class="ui-sm ${on && t ? 'ui-good' : 'ui-muted'}">${t ? s.label.replace('+%p', `+${s.v[t - 1]}%p`) : '세트 효과 없음'}${on ? ' (켜짐)' : ''}</div>
+        <div class="ui-sm ${on && t ? 'ui-good' : 'ui-muted'}">${t ? s.label.replace(/\+%(p?)/, `+${s.v[t - 1]}%$1`) : '세트 효과 없음'}${on ? ' (켜짐)' : ''}</div>
         <div class="ui-xs ui-muted">세트 카드 별 ${stars}${next ? ` / 다음 단계 ${next}` : ' · 최고 단계'}</div></div>
         <button class="ui-btn sm ${on ? '' : 'primary'}" data-act="cset:${on ? '' : s.id}">${on ? '끄기' : '켜기'}</button></div>`;
     }).join('');

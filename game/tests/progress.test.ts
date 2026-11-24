@@ -133,3 +133,21 @@ describe('특성 프리셋', () => {
     expect(c.talents.smash).toBe(2); expect(c.talentPoints).toBe(3); expect(c.attackBars[0][0]).toBe('smash');
   });
 });
+
+import { mapUnlocked } from '../src/core/state';
+describe('1월드 확장 맵', () => {
+  it('숲 다음 다섯 사냥터는 처치 수로, 광산은 채광 레벨로 열린다', () => {
+    const { acc, c } = setup();
+    c.kills = { meadow: 15, hills: 40, forest: 120 };
+    expect(mapUnlocked(c, 'swamp')).toBe(true);
+    expect(mapUnlocked(c, 'cave')).toBe(false);
+    expect(mapUnlocked(c, 'mine1')).toBe(false);
+    c.skills.mining.lv = 5;
+    expect(mapUnlocked(c, 'mine1')).toBe(true);
+    expect(mapUnlocked(c, 'mine2')).toBe(false);
+    c.mapId = 'hills';
+    expect(applyAction(acc, 0, { t: 'travel', portal: 2 }, 0).ok).toBe(true);
+    expect(c.mapId).toBe('mine1');
+    expect(applyAction(acc, 0, { t: 'travel', portal: 1 }, 0).err).toMatch(/채광 Lv/);
+  });
+});

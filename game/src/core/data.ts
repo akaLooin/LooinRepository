@@ -53,11 +53,13 @@ export interface NodeDef {
 }
 /** solid: 아래가 흙으로 꽉 찬 언덕. 지면에서는 옆으로 지나갈 수 없다(맵 가장자리에 붙여 쓴다) */
 export interface Platform { x: number; y: number; w: number; solid?: boolean }
-export interface PortalDef { x: number; y?: number; to: string; toX: number; toY?: number; reqKills?: number; key?: string; label?: string }
+export interface PortalDef { x: number; y?: number; to: string; toX: number; toY?: number; reqKills?: number; key?: string; label?: string;
+  /** 기술 레벨로 여는 문(광산) */
+  reqSkill?: { skill: GatherSkill; lv: number } }
 export interface FacilityDef { kind: FacilityKind; x: number; y: number; /** NPC 시설이면 어느 NPC인지 */ npc?: string }
 export interface MapDef {
   id: string; name: string; width: number;
-  theme: 'town' | 'meadow' | 'hills' | 'forest';
+  theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine';
   /** 지면(y=0)을 제외한 발판. y는 위쪽이 음수. */
   platforms: Platform[];
   spawns: { monster: string; count: number }[];
@@ -121,6 +123,31 @@ const items: ItemDef[] = [
   { id: 'pants_red', name: '붉은쇠 다리 갑옷', desc: '무릎까지 덮는 쇠판.', kind: 'equip', slot: 'legs', stats: { def: 5, hp: 20 }, reqLv: 10, sell: 60 },
   { id: 'boots_red', name: '붉은쇠 장화', desc: '쿵쿵 울리는 장화.', kind: 'equip', slot: 'shoes', stats: { def: 3, str: 2 }, reqLv: 10, sell: 60 },
   { id: 'trophy_moss', name: '이끼왕 트로피', desc: '이끼왕을 쓰러뜨린 증표.', kind: 'equip', slot: 'trophy', stats: { str: 2, agi: 2, wis: 2, luk: 2 }, sell: 0 },
+  { id: 'ore_blue', name: '푸른돌 광석', desc: '차갑게 빛나는 광석.', kind: 'material', sell: 10 },
+  { id: 'ore_gold', name: '금빛돌 광석', desc: '묵직하게 반짝이는 광석.', kind: 'material', sell: 24 },
+  { id: 'bar_blue', name: '푸른쇠 주괴', desc: '용광로에서 푸른돌 광석을 녹였다.', kind: 'material', sell: 40 },
+  { id: 'bar_gold', name: '금빛 주괴', desc: '용광로에서 금빛돌 광석을 녹였다.', kind: 'material', sell: 90 },
+  { id: 'willowlog', name: '버드나무 통나무', desc: '물기를 머금은 낭창한 목재.', kind: 'material', sell: 14 },
+  { id: 'moonlog', name: '달빛자작 통나무', desc: '밤에 은은히 빛나는 목재.', kind: 'material', sell: 30 },
+  { id: 'shell', name: '진흙 등딱지', desc: '단단하고 가볍다.', kind: 'material', sell: 12 },
+  { id: 'glowdust', name: '반딧가루', desc: '손에 묻으면 한참 빛난다.', kind: 'material', sell: 16 },
+  { id: 'feather', name: '바람 깃털', desc: '바람을 타는 가벼운 깃털.', kind: 'material', sell: 20 },
+  { id: 'runestone', name: '룬 조각', desc: '희미한 무늬가 새겨진 돌.', kind: 'material', sell: 28 },
+  { id: 'sporecap', name: '포자 갓', desc: '톡 건드리면 포자가 날린다.', kind: 'material', sell: 36 },
+  { id: 'stew', name: '늪 스튜', desc: '먹으면 체력 120 회복.', kind: 'food', heal: 120, sell: 10 },
+  { id: 'moonpie', name: '달빛 파이', desc: '먹으면 체력 300 회복.', kind: 'food', heal: 300, sell: 25 },
+  { id: 'anvil_exp2', name: '모루 확장 II', desc: '만들면 모루 3단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
+  ...([['blue', '푸른쇠', 1], ['gold', '금빛', 2]] as const).flatMap(([k, n, t]) => [
+    { id: `sword_${k}`, name: `${n} 검`, desc: '날이 잘 선 검.', kind: 'equip' as const, slot: 'weapon' as const, wtype: 'sword' as const, stats: { dmg: t === 1 ? 30 : 60, str: t === 1 ? 4 : 8 }, reqLv: t === 1 ? 20 : 35, sell: t === 1 ? 200 : 600 },
+    { id: `bow_${k}`, name: `${n} 활`, desc: '시위가 팽팽하다.', kind: 'equip' as const, slot: 'weapon' as const, wtype: 'bow' as const, stats: { dmg: t === 1 ? 28 : 56, agi: t === 1 ? 5 : 9 }, reqLv: t === 1 ? 20 : 35, sell: t === 1 ? 200 : 600 },
+    { id: `wand_${k}`, name: `${n} 지팡이`, desc: '끝에 결정이 박혀 있다.', kind: 'equip' as const, slot: 'weapon' as const, wtype: 'wand' as const, stats: { dmg: t === 1 ? 28 : 56, wis: t === 1 ? 5 : 9 }, reqLv: t === 1 ? 20 : 35, sell: t === 1 ? 200 : 600 },
+    { id: `pick_${k}`, name: `${n} 곡괭이`, desc: `채광 효율 +${t === 1 ? 10 : 18}`, kind: 'equip' as const, slot: 'pickaxe' as const, stats: { mining: t === 1 ? 10 : 18 }, reqLv: t === 1 ? 15 : 28, sell: t === 1 ? 150 : 450 },
+    { id: `axe_${k}`, name: `${n} 도끼`, desc: `벌목 효율 +${t === 1 ? 10 : 18}`, kind: 'equip' as const, slot: 'axe' as const, stats: { chopping: t === 1 ? 10 : 18 }, reqLv: t === 1 ? 15 : 28, sell: t === 1 ? 150 : 450 },
+    { id: `helm_${k}`, name: `${n} 투구`, desc: '머리를 단단히 지킨다.', kind: 'equip' as const, slot: 'hat' as const, stats: { def: t === 1 ? 8 : 16, hp: t === 1 ? 40 : 90 }, reqLv: t === 1 ? 18 : 33, sell: t === 1 ? 160 : 480 },
+    { id: `plate_${k}`, name: `${n} 갑옷`, desc: '판금을 이어 붙였다.', kind: 'equip' as const, slot: 'body' as const, stats: { def: t === 1 ? 12 : 24, hp: t === 1 ? 60 : 140 }, reqLv: t === 1 ? 20 : 35, sell: t === 1 ? 220 : 650 },
+    { id: `legs_${k}`, name: `${n} 다리 갑옷`, desc: '무릎을 지킨다.', kind: 'equip' as const, slot: 'legs' as const, stats: { def: t === 1 ? 8 : 16, hp: t === 1 ? 40 : 90 }, reqLv: t === 1 ? 19 : 34, sell: t === 1 ? 180 : 520 },
+    { id: `boots_${k}`, name: `${n} 장화`, desc: '발걸음이 묵직하다.', kind: 'equip' as const, slot: 'shoes' as const, stats: { def: t === 1 ? 6 : 12, agi: t === 1 ? 3 : 6 }, reqLv: t === 1 ? 18 : 33, sell: t === 1 ? 160 : 480 },
+  ]),
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
@@ -150,6 +177,17 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'statue_guard', chance: 0.004, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
     drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }] },
+  // 1월드 후반(숲 오른쪽에서 이어지는 다섯 사냥터)
+  { id: 'mudturtle', name: '진흙거북', hp: 300, atk: 26, acc: 34, defZero: 50, xp: 60, coins: [12, 22], speed: 12, motion: 'waddle', radius: 9,
+    drops: [{ item: 'shell', chance: 0.4, qty: [1, 2] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_guard', chance: 0.006, qty: [1, 1] }, { item: 'stamp_mining', chance: 0.002, qty: [1, 1] }] },
+  { id: 'glowbat', name: '반딧박쥐', hp: 480, atk: 36, acc: 46, defZero: 66, xp: 92, coins: [16, 30], speed: 30, motion: 'float', radius: 8,
+    drops: [{ item: 'glowdust', chance: 0.4, qty: [1, 2] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
+  { id: 'gusthopper', name: '바람메뚜기', hp: 740, atk: 48, acc: 60, defZero: 84, xp: 135, coins: [22, 40], speed: 34, motion: 'hop', radius: 8,
+    drops: [{ item: 'feather', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.03, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }, { item: 'stamp_xp', chance: 0.002, qty: [1, 1] }] },
+  { id: 'golemite', name: '돌골렘', hp: 1150, atk: 62, acc: 76, defZero: 108, xp: 195, coins: [30, 55], speed: 14, motion: 'waddle', radius: 10,
+    drops: [{ item: 'runestone', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.04, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'stamp_chopping', chance: 0.002, qty: [1, 1] }] },
+  { id: 'shroomkin', name: '버섯도깨비', hp: 1700, atk: 80, acc: 94, defZero: 132, xp: 280, coins: [40, 75], speed: 22, motion: 'hop', radius: 9,
+    drops: [{ item: 'sporecap', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.004, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
 ];
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries(monsters.map((m) => [m.id, m]));
 
@@ -157,6 +195,10 @@ const nodes: NodeDef[] = [
   { id: 'oak', name: '참나무', skill: 'chopping', reqLv: 1, hp: 6, xp: 3, item: 'log' },
   { id: 'redrock', name: '붉은돌 광맥', skill: 'mining', reqLv: 1, hp: 8, xp: 4, item: 'ore' },
   { id: 'silvertree', name: '은빛나무', skill: 'chopping', reqLv: 5, hp: 22, xp: 11, item: 'silverlog' },
+  { id: 'willow', name: '버드나무', skill: 'chopping', reqLv: 12, hp: 50, xp: 26, item: 'willowlog' },
+  { id: 'moonbirch', name: '달빛자작', skill: 'chopping', reqLv: 22, hp: 110, xp: 60, item: 'moonlog' },
+  { id: 'bluerock', name: '푸른돌 광맥', skill: 'mining', reqLv: 10, hp: 40, xp: 20, item: 'ore_blue' },
+  { id: 'goldrock', name: '금빛돌 광맥', skill: 'mining', reqLv: 20, hp: 95, xp: 50, item: 'ore_gold' },
 ];
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
@@ -181,7 +223,7 @@ const maps: MapDef[] = [
     nodes: [{ node: 'redrock', x: 330 }, { node: 'redrock', x: 535 }],
     ropes: [{ x: 165, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 600, top: -48, bottom: 0 }, { x: 740, top: -96, bottom: -48 }],
     facilities: [],
-    portals: [{ x: 24, to: 'meadow', toX: 765 }, { x: 896, to: 'forest', toX: 50, reqKills: 40 }] },
+    portals: [{ x: 24, to: 'meadow', toX: 765 }, { x: 896, to: 'forest', toX: 50, reqKills: 40 }, { x: 700, y: -96, to: 'mine1', toX: 50, reqSkill: { skill: 'mining', lv: 5 }, label: '얕은 광산' }] },
   // 숲: 오른쪽 끝 언덕 위에 보스방 문(열쇠 필요)
   { id: 'forest', name: '속삭임 숲', width: 980, theme: 'forest',
     platforms: [{ x: 90, y: -48, w: 220 }, { x: 180, y: -96, w: 110 }, { x: 430, y: -48, w: 160 }, { x: 660, y: -48, w: 150 }, { x: 860, y: -48, w: 120, solid: true }],
@@ -189,10 +231,46 @@ const maps: MapDef[] = [
     nodes: [{ node: 'silvertree', x: 380 }, { node: 'oak', x: 620 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 510, top: -48, bottom: 0 }, { x: 760, top: -48, bottom: 0 }, { x: 866, top: -48, bottom: 0 }],
     facilities: [],
-    portals: [{ x: 24, to: 'hills', toX: 865 }, { x: 950, y: -48, to: 'lair', toX: 60, reqKills: 60, key: 'forest_key', label: '이끼왕의 둥지' }] },
+    portals: [{ x: 24, to: 'hills', toX: 865 }, { x: 950, y: -48, to: 'lair', toX: 60, reqKills: 60, key: 'forest_key', label: '이끼왕의 둥지' }, { x: 888, y: -48, to: 'swamp', toX: 50, reqKills: 120, label: '안개 늪' }] },
   { id: 'lair', name: '이끼왕의 둥지', width: 560, theme: 'forest', boss: 'mossking',
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'forest', toX: 940, toY: -48 }] },
+  { id: 'swamp', name: '안개 늪', width: 940, theme: 'swamp',
+    platforms: [{ x: 140, y: -48, w: 200 }, { x: 420, y: -48, w: 180 }, { x: 470, y: -96, w: 120 }, { x: 690, y: -48, w: 190 }],
+    spawns: [{ monster: 'mudturtle', count: 8 }], nodes: [{ node: 'willow', x: 90 }, { node: 'willow', x: 640 }],
+    ropes: [{ x: 170, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'forest', toX: 880, toY: -48 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
+  { id: 'cave', name: '그늘 동굴', width: 900, theme: 'cave',
+    platforms: [{ x: 110, y: -48, w: 160 }, { x: 330, y: -48, w: 240 }, { x: 380, y: -96, w: 140 }, { x: 650, y: -48, w: 180 }],
+    spawns: [{ monster: 'glowbat', count: 8 }], nodes: [{ node: 'bluerock', x: 300 }, { node: 'willow', x: 620 }],
+    ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 350, top: -48, bottom: 0 }, { x: 460, top: -96, bottom: -48 }, { x: 800, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'swamp', toX: 890 }, { x: 876, to: 'ridge', toX: 50, reqKills: 180 }] },
+  { id: 'ridge', name: '바람 능선', width: 960, theme: 'ridge',
+    platforms: [{ x: 120, y: -48, w: 180 }, { x: 160, y: -96, w: 120 }, { x: 420, y: -48, w: 200 }, { x: 700, y: -48, w: 200 }, { x: 740, y: -96, w: 130 }],
+    spawns: [{ monster: 'gusthopper', count: 9 }], nodes: [{ node: 'moonbirch', x: 640 }],
+    ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 220, top: -96, bottom: -48 }, { x: 600, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 810, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'cave', toX: 850 }, { x: 936, to: 'ruins', toX: 50, reqKills: 220 }] },
+  { id: 'ruins', name: '잊힌 유적', width: 960, theme: 'ruins',
+    platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 160 }, { x: 690, y: -48, w: 220 }, { x: 720, y: -96, w: 150 }],
+    spawns: [{ monster: 'golemite', count: 8 }], nodes: [{ node: 'bluerock', x: 420 }, { node: 'goldrock', x: 650 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 710, top: -48, bottom: 0 }, { x: 800, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'ridge', toX: 910 }, { x: 936, to: 'grove', toX: 50, reqKills: 260 }] },
+  { id: 'grove', name: '달빛 숲', width: 980, theme: 'grove',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 400, y: -48, w: 220 }, { x: 450, y: -96, w: 130 }, { x: 720, y: -48, w: 200 }],
+    spawns: [{ monster: 'shroomkin', count: 9 }], nodes: [{ node: 'moonbirch', x: 90 }, { node: 'moonbirch', x: 660 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 420, top: -48, bottom: 0 }, { x: 520, top: -96, bottom: -48 }, { x: 900, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'ruins', toX: 910 }] },
+  // 광산(언덕에서 갈라짐): 몬스터 없이 광맥만, 채광 레벨로 열린다
+  { id: 'mine1', name: '얕은 광산', width: 700, theme: 'mine',
+    platforms: [{ x: 160, y: -48, w: 200 }, { x: 440, y: -48, w: 200 }],
+    spawns: [], nodes: [{ node: 'redrock', x: 120 }, { node: 'redrock', x: 260 }, { node: 'bluerock', x: 420 }, { node: 'bluerock', x: 600 }],
+    ropes: [{ x: 180, top: -48, bottom: 0 }, { x: 620, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'hills', toX: 700, toY: -96 }, { x: 676, to: 'mine2', toX: 50, reqSkill: { skill: 'mining', lv: 15 } }] },
+  { id: 'mine2', name: '깊은 광산', width: 700, theme: 'mine',
+    platforms: [{ x: 180, y: -48, w: 180 }, { x: 430, y: -48, w: 200 }],
+    spawns: [], nodes: [{ node: 'bluerock', x: 130 }, { node: 'goldrock', x: 300 }, { node: 'goldrock', x: 520 }, { node: 'bluerock', x: 640 }],
+    ropes: [{ x: 200, top: -48, bottom: 0 }, { x: 610, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'mine1', toX: 650 }] },
 ];
 export const MAPS: Record<string, MapDef> = Object.fromEntries(maps.map((m) => [m.id, m]));
 
@@ -214,6 +292,21 @@ export const RECIPES: RecipeDef[] = [
   { item: 'axe_red', coins: 120, mats: [['bar_red', 6], ['log', 6], ['nail', 4]] },
   { item: 'sword_red', coins: 150, mats: [['bar_red', 8], ['plank', 3], ['nail', 5]] },
   { item: 'anvil_exp', coins: 500, mats: [['plank', 15], ['nail', 25], ['ore', 20]], unlock: 2, smithLv: 5 },
+  { item: 'anvil_exp2', coins: 3000, mats: [['bar_blue', 20], ['runestone', 15], ['plank', 30]], unlock: 3, smithLv: 15, tier: 2 },
+  ...([['blue', 2, 'bar_blue', 'willowlog', 'shell', 'glowdust'], ['gold', 3, 'bar_gold', 'moonlog', 'runestone', 'sporecap']] as const).flatMap(([k, tier, bar, log, m1, m2]) => {
+    const c = tier === 2 ? 1 : 3;
+    return [
+      { item: `sword_${k}`, coins: 600 * c, mats: [[bar, 12], [m1, 10], ['plank', 6]] as [string, number][], tier },
+      { item: `bow_${k}`, coins: 600 * c, mats: [[bar, 8], [log, 15], [m2, 10]] as [string, number][], tier },
+      { item: `wand_${k}`, coins: 600 * c, mats: [[bar, 8], [log, 12], [m2, 12]] as [string, number][], tier },
+      { item: `pick_${k}`, coins: 450 * c, mats: [[bar, 10], [log, 10], ['nail', 15]] as [string, number][], tier },
+      { item: `axe_${k}`, coins: 450 * c, mats: [[bar, 10], [log, 10], ['nail', 15]] as [string, number][], tier },
+      { item: `helm_${k}`, coins: 500 * c, mats: [[bar, 10], [m1, 12]] as [string, number][], tier },
+      { item: `plate_${k}`, coins: 700 * c, mats: [[bar, 16], [m1, 15], ['twine', 20]] as [string, number][], tier },
+      { item: `legs_${k}`, coins: 550 * c, mats: [[bar, 12], [m2, 10]] as [string, number][], tier },
+      { item: `boots_${k}`, coins: 500 * c, mats: [[bar, 8], [m2, 8], ['twine', 10]] as [string, number][], tier },
+    ];
+  }),
   { item: 'sword_leaf', coins: 250, mats: [['leaf', 15], ['ore', 10], ['plank', 4]], tier: 2 },
   { item: 'bow_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8], ['twine', 10]], tier: 2 },
   { item: 'wand_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8], ['nail', 6]], tier: 2 },
@@ -259,7 +352,7 @@ export const ATTACK_SLOTS = 6;
 export const TELEPORTS_PER_DAY = 5;
 export const TELEPORTS_MAX = 50;
 /** 1월드 맵 순서(앞 맵의 처치 조건을 채우면 다음 맵이 열린다) */
-export const WORLD1 = ['town', 'meadow', 'hills', 'forest'];
+export const WORLD1 = ['town', 'meadow', 'hills', 'forest', 'swamp', 'cave', 'ridge', 'ruins', 'grove', 'mine1', 'mine2'];
 export const ATTACK_BARS = 2;
 export const smashMult = (lv: number) => 1.8 + lv * 0.2;
 export const healPct = (lv: number) => 0.25 + lv * 0.05;
@@ -309,6 +402,15 @@ export const CARDS: CardDef[] = [
   { id: 'oak', from: 'node', bonus: 'chopping', per: 0.06, label: '벌목 효율' },
   { id: 'redrock', from: 'node', bonus: 'mining', per: 0.06, label: '채광 효율' },
   { id: 'silvertree', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
+  { id: 'mudturtle', from: 'monster', bonus: 'hp', per: 0.04, label: '최대 체력' },
+  { id: 'glowbat', from: 'monster', bonus: 'drop', per: 0.04, label: '드롭률' },
+  { id: 'gusthopper', from: 'monster', bonus: 'dmg', per: 0.04, label: '공격력' },
+  { id: 'golemite', from: 'monster', bonus: 'hp', per: 0.05, label: '최대 체력' },
+  { id: 'shroomkin', from: 'monster', bonus: 'afk', per: 0.03, label: '방치 효율' },
+  { id: 'willow', from: 'node', bonus: 'chopping', per: 0.06, label: '벌목 효율' },
+  { id: 'moonbirch', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
+  { id: 'bluerock', from: 'node', bonus: 'mining', per: 0.06, label: '채광 효율' },
+  { id: 'goldrock', from: 'node', bonus: 'mining', per: 0.08, label: '채광 효율' },
 ];
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
@@ -465,6 +567,7 @@ export const FAMILY_SLOTS = [15, 40, 80, 140];
 export interface CardSetDef { id: string; name: string; cards: string[]; tiers: number[]; eff: BonusKey; v: number[]; label: string }
 export const CARD_SETS: CardSetDef[] = [
   { id: 'w1', name: '첫 숲 세트', cards: ['mossblob', 'pebbler', 'leafling', 'mossking', 'oak', 'redrock', 'silvertree'], tiers: [3, 8, 14, 21], eff: 'afk', v: [1, 2, 3, 5], label: '방치 효율 +%p' },
+  { id: 'w1b', name: '깊은 숲 세트', cards: ['mudturtle', 'glowbat', 'gusthopper', 'golemite', 'shroomkin', 'willow', 'moonbirch', 'bluerock', 'goldrock'], tiers: [4, 10, 18, 27], eff: 'drop', v: [3, 6, 10, 15], label: '드롭률 +%' },
 ];
 export const CARD_PRESET_LV = 15;
 /** 특성 프리셋(특성 배분 + 공격 바 두 벌)을 쓰는 레벨 */
@@ -509,6 +612,8 @@ export const BRIBES: BribeDef[] = [
 export interface SmeltDef { ore: string; bar: string; need: number; secs: number }
 export const SMELTS: SmeltDef[] = [
   { ore: 'ore', bar: 'bar_red', need: 3, secs: 40 },
+  { ore: 'ore_blue', bar: 'bar_blue', need: 4, secs: 90 },
+  { ore: 'ore_gold', bar: 'bar_gold', need: 5, secs: 180 },
 ];
 /** 용광로 값: 사는 값, 칸·용량 기본값, 업그레이드(코인, 단계마다 upGrow 배) */
 export const FORGE = {
@@ -517,13 +622,14 @@ export const FORGE = {
   upMax: { slots: 4, cap: 20, speed: 20, bonus: 10 },
 };
 
+const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'ore', 'ore_blue', 'ore_gold', 'bar_red', 'bar_blue', 'bar_gold'];
 /** 아이템이 속한 묶음 */
 export function stackGroup(id: string): StackGroup {
   const it = ITEMS[id];
   if (!it) return 'misc';
   if (it.kind === 'food') return 'food';
   if (it.kind === 'equip') return 'equip';
-  if (it.kind === 'material') return ['log', 'silverlog', 'ore', 'bar_red'].includes(id) ? 'resource' : 'material';
+  if (it.kind === 'material') return RESOURCE_IDS.includes(id) ? 'resource' : 'material';
   return 'misc';
 }
 export const GROUP_NAMES: Record<StackGroup, string> = { material: '재료', resource: '통나무·광석', food: '음식', equip: '장비', misc: '기타' };

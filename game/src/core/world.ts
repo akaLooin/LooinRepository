@@ -4,7 +4,7 @@ import {
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
+import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill, portalReady } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -149,10 +149,20 @@ export class World {
     }
     return [lo, hi];
   }
+  /** 몬스터가 다니는 구간: 걸을 수 있는 구간에서 끝쪽 문 앞은 뺀다(문 너머 맵 끝에 숨지 않게) */
+  private mobRange(q: Platform): [number, number] {
+    let [lo, hi] = this.walkRange(q);
+    for (const p of this.map.portals) {
+      if ((p.y ?? 0) !== q.y) continue;
+      if (p.x < lo + 40) lo = Math.max(lo, p.x + 30);
+      if (p.x > hi - 40) hi = Math.min(hi, p.x - 30);
+    }
+    return [lo, hi];
+  }
   private groundX(x: number) { const [lo, hi] = this.walkRange(this.platforms[0]); return clamp(x, lo, hi); }
 
   private placeMob(m: Mob) {
-    const [lo0, hi0] = this.walkRange(m.plat), lo = lo0 + 4, hi = hi0 - 4;
+    const [lo0, hi0] = this.mobRange(m.plat), lo = lo0 + 4, hi = hi0 - 4;
     for (let i = 0; i < 6; i++) {
       m.x = this.rng.range(lo, hi);
       // 포탈 근처와 플레이어 바로 위에는 스폰하지 않는다
@@ -161,7 +171,7 @@ export class World {
     }
   }
 
-  portalOpen(q: PortalDef) { return (this.char.kills[this.map.id] ?? 0) >= (q.reqKills ?? 0); }
+  portalOpen(q: PortalDef) { return portalReady(this.char, this.map.id, q); }
   private canUse(n: NodeInst) { return this.char.skills[n.def.skill].lv >= n.def.reqLv; }
 
   /** 화면을 터치한 월드 좌표를 명령으로 바꾼다. 대상이 있으면 그 대상, 없으면 그 지점으로 이동 */
@@ -477,7 +487,7 @@ export class World {
       if (m.def.boss) this.stepBoss(m, dt, d);
       if (m.moving && m.hitT <= 0 && m.windup <= 0) {
         m.x += m.dir * m.def.speed * dt;
-        const [lo, hi] = this.walkRange(m.plat);
+        const [lo, hi] = this.mobRange(m.plat);
         if (m.x < lo) { m.x = lo; m.dir = 1; } else if (m.x > hi) { m.x = hi; m.dir = -1; }
       }
       if (p.dead <= 0 && m.contactCd <= 0 && m.spawnAge > 0.8

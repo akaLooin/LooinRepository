@@ -3,7 +3,7 @@
 import { ClassId, EquipSlot, MAPS, NODES, StatKey } from './data';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnTalent, switchTalentPreset, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, learnTalent, switchTalentPreset, portalLock, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
@@ -93,7 +93,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       // 처치 수는 서버에 동기화된 값으로 판단한다(기기는 이동 전에 먼저 동기화한다)
       const q = MAPS[c.mapId]?.portals[a.portal];
       if (!q || !MAPS[q.to]) return fail('없는 포탈');
-      if ((c.kills[c.mapId] ?? 0) < (q.reqKills ?? 0)) return fail(`이 맵에서 ${q.reqKills}마리를 처치해야 열립니다`);
+      const lock = portalLock(c, c.mapId, q);
+      if (lock) return fail(`아직 열리지 않았습니다(${lock})`);
       if (q.key) {
         if (countItem(c, q.key) < 1) return fail('열쇠가 필요합니다');
         removeItem(c, q.key, 1);

@@ -72,9 +72,11 @@ describe('월드 시뮬레이션', () => {
       if (!map.spawns.length) continue;
       const { acc, c } = setup();
       c.mapId = map.id; c.auto = true; c.level = 60; c.stats.luk = 200; // 초보자는 행운이 공격력
+      acc.stamps.stamp_def = 300; // 강한 맵에서도 쓰러지지 않게(도달 가능성만 본다)
       const w = new World(acc, c, new Rng(3));
       const seen = new Set<number>();
-      for (let i = 0; i < 180 * 60; i++) {
+      // 가까운 몬스터부터 잡으므로 먼 발판까지 가려면 시간이 걸린다
+      for (let i = 0; i < 900 * 60 && seen.size < w.mobs.length; i++) {
         w.step(1 / 60, { move: 0, climb: 0 });
         for (const e of w.events) if (e.t === 'kill') seen.add(e.uid);
         w.events.length = 0;

@@ -3,7 +3,7 @@ import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
 import { charSlots, progressBonus, useSculptTools } from './progress';
 import {
-  AFK_BASE, FOOD_SLOTS, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  AFK_BASE, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -615,13 +615,26 @@ export function collectAnvil(acc: Account, c: Character, toStorage: boolean, slo
 // ───────── 지도 순간이동 ─────────
 /** 이 캐릭터가 열어 둔 맵: 앞 맵에서 다음 맵 포탈 조건을 채웠으면 열림 */
 export function mapUnlocked(c: Character, id: string): boolean {
-  const i = WORLD1.indexOf(id);
-  if (i < 0) return false;
-  for (let k = 1; k <= i; k++) {
-    const prev = MAPS[WORLD1[k - 1]], gate = prev.portals.find((p) => p.to === WORLD1[k]);
-    if ((c.kills[prev.id] ?? 0) < (gate?.reqKills ?? 0)) return false;
+  if (!WORLD1.includes(id)) return false;
+  // 마을에서 시작해 조건을 채운 문으로만 이어서 닿을 수 있는 맵(열쇠 문·보스방은 제외)
+  const seen = new Set(['town']), q = ['town'];
+  while (q.length) {
+    const m = MAPS[q.shift()!];
+    for (const p of m.portals) if (!p.key && WORLD1.includes(p.to) && !seen.has(p.to) && portalReady(c, m.id, p)) { seen.add(p.to); q.push(p.to); }
   }
+  return seen.has(id);
+}
+/** 문 조건(그 맵 처치 수, 기술 레벨) */
+export function portalReady(c: Character, mapId: string, p: PortalDef): boolean {
+  if ((c.kills[mapId] ?? 0) < (p.reqKills ?? 0)) return false;
+  if (p.reqSkill && c.skills[p.reqSkill.skill].lv < p.reqSkill.lv) return false;
   return true;
+}
+/** 문이 잠긴 이유(열려 있으면 null) */
+export function portalLock(c: Character, mapId: string, p: PortalDef): string | null {
+  if ((c.kills[mapId] ?? 0) < (p.reqKills ?? 0)) return `처치 ${c.kills[mapId] ?? 0}/${p.reqKills}`;
+  if (p.reqSkill && c.skills[p.reqSkill.skill].lv < p.reqSkill.lv) return `${SKILL_NAMES[p.reqSkill.skill]} Lv.${p.reqSkill.lv}`;
+  return null;
 }
 /** 날이 바뀌었으면 무료 횟수를 채운다(쌓이되 최대치까지) */
 export function refillTeleports(acc: Account, now: number) {

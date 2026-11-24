@@ -7,7 +7,7 @@ import { Game } from '../game';
 import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
 import { GEAR, gearKey, gearPos, remoteGear } from './gear';
-import { Character, currentQuest, questProgress } from '../core/state';
+import { Character, currentQuest, portalLock, questProgress } from '../core/state';
 import { canSubclass, CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
@@ -137,7 +137,8 @@ class MobView {
     this.spr = scene.add.image(0, 0, `mob_${m.def.id}`).setOrigin(0.5, 1);
     const parts: Phaser.GameObjects.GameObject[] = [this.shadow];
     if (m.def.motion === 'float') {
-      this.wings = [scene.add.image(-4, -12, 'mob_leafling_wing').setOrigin(1, 0.5).setScale(ART), scene.add.image(4, -12, 'mob_leafling_wing').setOrigin(1, 0.5).setFlipX(true).setOrigin(0, 0.5).setScale(ART)];
+      const wk = scene.textures.exists(`mob_${m.def.id}_wing`) ? `mob_${m.def.id}_wing` : 'mob_leafling_wing';
+      this.wings = [scene.add.image(-4, -12, wk).setOrigin(1, 0.5).setScale(ART), scene.add.image(4, -12, wk).setOrigin(1, 0.5).setFlipX(true).setOrigin(0, 0.5).setScale(ART)];
       parts.push(...this.wings);
     }
     this.bar = scene.add.graphics();
@@ -314,7 +315,7 @@ export class GameScene extends Phaser.Scene {
     }
     keep(this.add.rectangle(-600, -6, map.width + 1200, 12, Phaser.Display.Color.HexStringToColor(th.mid).color).setOrigin(0, 0).setDepth(3));
     for (let i = 0; i < 6; i++) {
-      const img = keep(this.add.image(0, 0, 'cloud').setDepth(2).setAlpha(map.theme === 'forest' ? 0.25 : 0.8).setScale(0.7 + hash(i + 3) * 0.8));
+      const img = keep(this.add.image(0, 0, 'cloud').setDepth(2).setAlpha(map.theme === 'cave' || map.theme === 'mine' ? 0 : map.theme === 'forest' || map.theme === 'grove' ? 0.25 : 0.8).setScale(0.7 + hash(i + 3) * 0.8));
       this.clouds.push({ img, x: hash(i + 11) * 700, y: -95 - hash(i + 20) * 90, sp: 3 + hash(i + 40) * 5 });
     }
     // 지면과 발판
@@ -344,7 +345,8 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < Math.floor(map.width / 14); i++) {
       const s = surfaces[Math.floor(hash(seed + i * 3) * surfaces.length)];
       const x = s.x + 6 + hash(seed + i * 7) * (s.w - 12);
-      const flower = hash(seed + i * 5) > 0.72;
+      // 동굴·광산에는 꽃이 피지 않는다
+      const flower = hash(seed + i * 5) > 0.72 && map.theme !== 'cave' && map.theme !== 'mine';
       const key = flower ? `deco_flower${Math.floor(hash(seed + i) * 3)}` : 'deco_grass';
       const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70).setScale(ART));
       this.swayers.push({ img, ph: hash(i) * 6 });
@@ -506,7 +508,7 @@ export class GameScene extends Phaser.Scene {
       pv.ring.setVisible(open); pv.glow.setVisible(open); pv.lock.setVisible(!open);
       pv.glow.setScale((0.9 + Math.sin(this.time0 * 3 + pv.idx) * 0.1) * ART, ART).setAlpha(0.75 + Math.sin(this.time0 * 4) * 0.2);
       pv.ring.setY((q.y ?? 0) - 22 + Math.sin(this.time0 * 2 + pv.idx) * 1);
-      const txt = !open ? `처치 ${w.char.kills[w.map.id] ?? 0}/${q.reqKills}` : q.label ? `${q.label}${q.key ? ` (${ITEMS[q.key].name})` : ''}` : MAPS[q.to].name;
+      const txt = !open ? portalLock(w.char, w.map.id, q) ?? '' : q.label ? `${q.label}${q.key ? ` (${ITEMS[q.key].name})` : ''}` : MAPS[q.to].name;
       if (pv.text.text !== txt) pv.text.setText(txt);
     }
 
