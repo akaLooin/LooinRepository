@@ -50,7 +50,7 @@ class ProviderChainTest {
         assertEquals("안녕하세요!", out)
         val status = brain.info.providers
         assertFalse(status.first { it.name == "a" }.available)
-        assertEquals("qwen3-32b", status.first { it.name == "b" }.model)
+        assertEquals("gpt-oss-120b", status.first { it.name == "b" }.model)
         assertTrue(calls.any { it.startsWith("b.test") && it.endsWith("/chat/completions") })
     }
 

@@ -231,9 +231,11 @@ class ProviderChainBrain(
 object ModelPicker {
     /** 앞에 있을수록 선호. 공개 모델 순위가 바뀌면 이 목록만 고치면 된다 (또는 *_MODEL 환경 변수로 고정). */
     val preference = listOf(
-        "kimi-k3", "kimi-k2", "kimi", "deepseek-v4", "deepseek-v3", "deepseek-r1", "deepseek", "glm-5", "glm-4",
-        "qwen3.5", "qwen3", "qwen", "gpt-oss-120b", "llama-4-maverick", "gpt-oss", "llama-4", "llama-3.3-70b",
-        "mistral-large", "gemma-3", "gemma", "llama",
+        // 최상위 공개 모델 (무료로 풀리는 일은 드물지만, 보이면 우선)
+        "kimi-k3", "deepseek-v4", "glm-5", "kimi-k2", "kimi", "deepseek-v3", "deepseek-r1", "deepseek",
+        // 2026년 하반기 무료 등급의 주력: 큰 모델 우선
+        "gpt-oss-120b", "nemotron-3-ultra", "nemotron", "glm-4", "llama-4-maverick", "qwen3", "qwen",
+        "gemma-4", "gemma", "gpt-oss", "llama-4", "llama-3.3-70b", "mistral-large", "llama",
     )
     private val exclude = listOf("embed", "whisper", "tts", "guard", "rerank", "audio", "image", "vision", "ocr", "moderation", "distil", "coder")
 
