@@ -38,7 +38,7 @@ fun ConnectScreen(c: AppController) {
         Column(Modifier.widthIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AkaelLogo(120)
             Text("아카엘", fontSize = 36.sp, fontWeight = FontWeight.Black)
-            Text("aka L", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.secondary)
+            Text("aka eL", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.secondary)
             Text(
                 "나를 중심으로 돌아가는 세계, Looin World 에 접속합니다.\n서버 주소와 접속 토큰을 입력하세요.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

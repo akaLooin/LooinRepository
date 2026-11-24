@@ -12,7 +12,14 @@ object Seed {
         val userId = repo.userIdForToken(ownerToken)
             ?: repo.anyUserId()?.also { repo.updateUserToken(it, ownerToken) } // 토큰을 바꾼 경우
             ?: repo.createUser("owner", ownerToken)
-        repo.worldForUser(userId)?.let { return it }
+        repo.worldForUser(userId)?.let { w ->
+            // 이름 표기 변경(akaL → aka eL)을 이미 만들어진 세계에도 반영
+            repo.db.exec(
+                "UPDATE agents SET role = REPLACE(role, '(akaL)', '(aka eL)'), persona = REPLACE(persona, '아카엘(akaL)', '아카엘(aka eL)') WHERE world_id = ? AND kind = 'CORE'",
+                w.id,
+            )
+            return w
+        }
 
         val world = repo.createWorld(
             userId,
@@ -24,8 +31,8 @@ object Seed {
         repo.saveProfile(w, OwnerProfile(nickname = "루인"))
 
         val core = repo.createAgent(
-            w, AgentKind.CORE, "아카엘", "중심 AI · 파트너 (akaL)",
-            "아카엘(akaL). 루인만을 위한 AI. 따뜻하지만 솔직한 파트너. 깊이 생각하고, 핵심을 짚고, 필요하면 반대 의견도 낸다. 루인의 성장을 가장 바란다.",
+            w, AgentKind.CORE, "아카엘", "중심 AI · 파트너 (aka eL)",
+            "아카엘(aka eL). 루인만을 위한 AI. 따뜻하지만 솔직한 파트너. 깊이 생각하고, 핵심을 짚고, 필요하면 반대 의견도 낸다. 루인의 성장을 가장 바란다.",
             "✨",
         )
         val clone = repo.createAgent(
