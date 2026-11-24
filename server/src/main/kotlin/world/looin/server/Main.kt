@@ -44,7 +44,7 @@ class App(val config: Config, brainOverride: Brain? = null) {
     val brain: Brain = brainOverride ?: buildList<Brain> {
         // 1순위: Claude (Max 요금제의 월 API 크레딧, 예산·고르게 쓰기 적용)
         config.claude?.let { c ->
-            add(ClaudeBrain(c.apiKey, c.model, ClaudeBudget(c.monthlyBudgetUsd, c.cycleStartDay, c.pacing), repo, c.fallbacks))
+            add(ClaudeBrain(c.apiKey, c.models, ClaudeBudget(c.monthlyBudgetUsd, c.cycleStartDay, c.pacing), repo, c.fallbacks))
         }
         // 2순위: 무료 두뇌 사슬
         config.providers.takeIf { it.isNotEmpty() }?.let { add(ProviderChainBrain(it)) }

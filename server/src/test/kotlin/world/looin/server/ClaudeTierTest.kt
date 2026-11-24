@@ -57,6 +57,21 @@ class ClaudeTierTest {
     }
 
     @Test
+    fun routesTasksToModels() {
+        val m = world.looin.server.ai.ClaudeModels()
+        assertEquals("claude-haiku-5-5", m.route(world.looin.server.ai.Task.MEMORY).model)
+        assertEquals("claude-haiku-5-5", m.route(world.looin.server.ai.Task.COMMUNITY).model)
+        assertEquals("claude-sonnet-5-5", m.route(world.looin.server.ai.Task.CHAT).model)
+        assertEquals("claude-sonnet-5-5", m.route(world.looin.server.ai.Task.MEETING).model)
+        assertEquals("claude-opus-5-5", m.route(world.looin.server.ai.Task.REFLECTION).model)
+        assertEquals("claude-fable-5-2", m.route(world.looin.server.ai.Task.CHAT_BEST).model)
+        assertTrue(!m.supportsFallbacks("claude-haiku-5-5"))
+        assertEquals(world.looin.server.ai.Task.CHAT_DEEP, world.looin.server.service.routerToTask("DEEP"))
+        assertEquals(world.looin.server.ai.Task.CHAT_LIGHT, world.looin.server.service.routerToTask(" light\n"))
+        assertEquals(world.looin.server.ai.Task.CHAT, world.looin.server.service.routerToTask("음..."))
+    }
+
+    @Test
     fun budgetPacing() {
         // 결제 주기 시작일 10일, 11월(10일~12월 10일 = 30일) 중 15일째 → 6일 경과 → 100 * 6/30 = 20
         val b = ClaudeBudget(100.0, 10, pacing = true, today = { LocalDate.of(2026, 11, 15) })

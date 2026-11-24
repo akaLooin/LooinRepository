@@ -8,6 +8,12 @@ import world.looin.shared.ChatRole
 /** 생각의 깊이. 잡담·배경 활동은 LOW, 대화는 MEDIUM~HIGH. */
 enum class Effort { LOW, MEDIUM, HIGH }
 
+/** 무슨 일인지 — 두뇌가 이걸 보고 알맞은 모델을 고른다 (예: 기억 정리는 가벼운 모델, 성찰은 깊은 모델). */
+enum class Task {
+    CHAT_LIGHT, CHAT, CHAT_DEEP, CHAT_BEST,
+    ROUTER, MEMORY, REFLECTION, MEETING, MEETING_SUMMARY, COMMUNITY, GENERAL,
+}
+
 data class Turn(val role: ChatRole, val text: String)
 
 data class BrainRequest(
@@ -18,6 +24,7 @@ data class BrainRequest(
     val turns: List<Turn>,
     val effort: Effort = Effort.MEDIUM,
     val maxTokens: Long = 16_000,
+    val task: Task = Task.GENERAL,
     /** false 면 비싼(유료/한정) 두뇌는 건너뛴다 — 커뮤니티 잡담 같은 배경 활동용. */
     val premium: Boolean = true,
     /** 실제로 답한 두뇌 이름을 알려준다 (기록·학습 데이터 출처 표시용). */

@@ -13,6 +13,7 @@ import world.looin.server.ai.Brain
 import world.looin.server.ai.BrainRequest
 import world.looin.server.ai.Effort
 import world.looin.server.ai.Prompts
+import world.looin.server.ai.Task
 import world.looin.server.ai.Turn
 import world.looin.server.db.Repository
 import world.looin.shared.ChatRole
@@ -73,6 +74,7 @@ class GrowthService(
                 turns = listOf(Turn(ChatRole.USER, material)),
                 effort = Effort.HIGH,
                 maxTokens = 4_000,
+                task = Task.REFLECTION,
             ),
         ).trim()
         require(text.isNotEmpty()) { "성찰 결과가 비어 있습니다" }

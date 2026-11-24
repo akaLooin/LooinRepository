@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -37,6 +38,7 @@ import kotlinx.coroutines.launch
 import world.looin.app.AppController
 import world.looin.app.Route
 import world.looin.shared.ChatMessage
+import world.looin.shared.ChatMode
 import world.looin.shared.ChatRole
 import world.looin.shared.ChatStreamEvent
 import world.looin.shared.Conversation
@@ -63,6 +65,7 @@ fun ChatScreen(c: AppController, route: Route.Chat) {
     var input by remember { mutableStateOf("") }
     var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
     var menu by remember { mutableStateOf(false) }
+    var mode by remember { mutableStateOf(ChatMode.AUTO) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -90,7 +93,7 @@ fun ChatScreen(c: AppController, route: Route.Chat) {
         streaming = ""
         scope.launch {
             try {
-                api.chatStream(SendMessageRequest(agent.id, text, conversationId)).collect { ev ->
+                api.chatStream(SendMessageRequest(agent.id, text, conversationId, mode)).collect { ev ->
                     when (ev.type) {
                         ChatStreamEvent.Type.START -> conversationId = ev.conversationId
                         ChatStreamEvent.Type.DELTA -> streaming = (streaming ?: "") + (ev.text ?: "")
@@ -131,8 +134,13 @@ fun ChatScreen(c: AppController, route: Route.Chat) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp),
                 )
             }
-            items(messages, key = { it.id + it.createdAt }) { m -> Bubble(m.role, m.content) }
+            items(messages, key = { it.id + it.createdAt }) { m -> Bubble(m.role, m.content, m.brain) }
             streaming?.let { s -> item { Bubble(ChatRole.ASSISTANT, s.ifEmpty { "생각 중…" }) } }
+        }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(ChatMode.AUTO to "자동", ChatMode.FAST to "빠르게", ChatMode.DEEP to "깊게", ChatMode.BEST to "최고").forEach { (m, label) ->
+                FilterChip(selected = mode == m, onClick = { mode = m }, label = { Text(label) })
+            }
         }
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(input, { input = it }, modifier = Modifier.weight(1f), placeholder = { Text("메시지") }, maxLines = 6)
@@ -141,9 +149,23 @@ fun ChatScreen(c: AppController, route: Route.Chat) {
     }
 }
 
+/** "claude:claude-sonnet-5-5" → "Sonnet 5.5", "groq:openai/gpt-oss-120b" → "gpt-oss-120b (groq)" */
+fun brainLabel(brain: String?): String? {
+    if (brain.isNullOrBlank()) return null
+    val provider = brain.substringBefore(':')
+    val model = brain.substringAfter(':')
+    if (provider == "claude") {
+        val m = Regex("claude-([a-z]+)-(\\d+)(?:-(\\d+))?").find(model) ?: return model
+        val name = m.groupValues[1].replaceFirstChar { it.uppercase() }
+        return "$name ${m.groupValues[2]}" + (m.groupValues[3].takeIf { it.isNotEmpty() }?.let { ".$it" } ?: "")
+    }
+    return "${model.substringAfterLast('/')} ($provider)"
+}
+
 @Composable
-private fun Bubble(role: ChatRole, text: String) {
+private fun Bubble(role: ChatRole, text: String, brain: String? = null) {
     val mine = role == ChatRole.USER
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = if (mine) Arrangement.End else Arrangement.Start) {
         Box(
             Modifier.widthIn(max = 560.dp)
@@ -157,5 +179,9 @@ private fun Bubble(role: ChatRole, text: String) {
                 Text(text, color = if (mine) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
             }
         }
+    }
+    brainLabel(brain)?.let {
+        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 6.dp))
+    }
     }
 }

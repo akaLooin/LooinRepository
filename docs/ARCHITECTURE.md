@@ -53,7 +53,19 @@
      이 크레딧은 구독의 주간 사용 한도와 **별개**라 Claude 앱/Claude Code 사용량에 영향을 주지 않는다.
    - 월 예산 + 고르게 쓰기(pacing): 주기 시작일부터 지난 날짜 비율만큼만 사용. 사용량은 `brain_usage` 테이블에 토큰·비용으로 기록.
    - 예산 도달 / 크레딧 소진("credit balance is too low") / 오류 → 답을 시작하기 전이면 다음 두뇌로 넘김.
-   - 커뮤니티 활동(`premium = false`)에는 쓰지 않음. 대화·기억 정리·성찰·회의에만.
+   - 일의 종류(`Task`)별로 모델을 나눠 쓴다 (`ClaudeModels.route`):
+
+     | 일 | 모델 | effort |
+     |---|---|---|
+     | 질문 난이도 판단, 기억 정리, 커뮤니티 활동 | Haiku 5.5 | low |
+     | 가벼운 대화 ("빠르게", 자동→LIGHT) | Haiku 5.5 | medium |
+     | 평소 대화 (자동→NORMAL), 아이디어 회의 | Sonnet 5.5 | medium |
+     | 회의록 요약 | Sonnet 5.5 | high |
+     | 깊은 대화 ("깊게", 자동→DEEP), 하루 한 번의 성찰 | Opus 5.5 | high |
+     | "최고" 모드 | Fable 5.2 | high |
+
+   - 대화 모드 "자동": Haiku 가 새 메시지를 LIGHT/NORMAL/DEEP 로 분류 → 모델 선택. Claude 를 못 쓰는 동안은 분류를 건너뜀.
+   - 앱의 말풍선 아래에 실제로 답한 모델이 표시된다.
 2. **ProviderChainBrain** — 무료 두뇌 사슬 (아래).
 
 각 답변이 어느 두뇌에서 나왔는지 `messages.brain` 에 기록한다. 상용 모델(Claude, OpenAI, Gemini, Mistral)이 쓴 글은

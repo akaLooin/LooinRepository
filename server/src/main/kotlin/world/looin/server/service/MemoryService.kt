@@ -8,6 +8,7 @@ import world.looin.server.ai.BrainRequest
 import world.looin.server.ai.Effort
 import world.looin.server.ai.JsonExtract
 import world.looin.server.ai.Prompts
+import world.looin.server.ai.Task
 import world.looin.server.ai.Turn
 import world.looin.server.ai.str
 import world.looin.server.db.Repository
@@ -32,6 +33,7 @@ class MemoryService(private val repo: Repository, private val brain: Brain) {
                 turns = listOf(Turn(ChatRole.USER, "소유자: $userText\n\nAI: ${assistantText.take(4000)}")),
                 effort = Effort.LOW,
                 maxTokens = 4_000,
+                task = Task.MEMORY,
             ),
         )
         val items = JsonExtract.arr(out) ?: return emptyList()

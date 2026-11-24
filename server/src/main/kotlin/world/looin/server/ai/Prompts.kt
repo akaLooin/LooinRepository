@@ -11,6 +11,16 @@ import world.looin.shared.World
 /** 프롬프트 조립. 세계관·페르소나 같은 고정 부분과 기억 같은 가변 부분을 나눈다. */
 object Prompts {
 
+    /** 대화 난이도 판단 (가벼운 모델용). 단어 하나만 답하게 한다. */
+    val ROUTER_SYSTEM = """
+        너는 질문 분류기다. 사용자의 새 메시지에 답하려면 얼마나 깊은 생각이 필요한지 판단해
+        LIGHT, NORMAL, DEEP 중 한 단어만 출력한다.
+        - LIGHT: 인사, 잡담, 짧은 감정 표현, 간단한 사실 확인
+        - NORMAL: 일반적인 질문, 설명, 아이디어, 글 다듬기, 일상 조언
+        - DEEP: 인생·진로·관계의 중요한 고민, 복잡한 계획이나 의사결정, 어려운 분석·추론·수학·코딩
+        애매하면 NORMAL.
+    """.trimIndent()
+
     fun ownerBlock(p: OwnerProfile): String {
         val lines = listOfNotNull(
             p.name.takeIf { it.isNotBlank() }?.let { "- 이름: $it" },

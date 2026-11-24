@@ -19,7 +19,7 @@ data class Config(
 ) {
     data class ClaudeConfig(
         val apiKey: String,
-        val model: String,
+        val models: world.looin.server.ai.ClaudeModels,
         val monthlyBudgetUsd: Double,
         val cycleStartDay: Int,
         val pacing: Boolean,
@@ -38,7 +38,15 @@ data class Config(
                 claude = env["ANTHROPIC_API_KEY"]?.takeIf { it.isNotBlank() }?.let { key ->
                     ClaudeConfig(
                         apiKey = key,
-                        model = env["CLAUDE_MODEL"]?.takeIf { it.isNotBlank() } ?: "claude-opus-5-5",
+                        models = world.looin.server.ai.ClaudeModels().let { d ->
+                            fun e(k: String, def: String) = env[k]?.takeIf { it.isNotBlank() } ?: def
+                            world.looin.server.ai.ClaudeModels(
+                                fast = e("CLAUDE_MODEL_FAST", d.fast),
+                                chat = e("CLAUDE_MODEL_CHAT", d.chat),
+                                deep = e("CLAUDE_MODEL_DEEP", d.deep),
+                                best = e("CLAUDE_MODEL_BEST", d.best),
+                            )
+                        },
                         monthlyBudgetUsd = env["CLAUDE_MONTHLY_BUDGET_USD"]?.toDoubleOrNull() ?: 100.0,
                         cycleStartDay = env["CLAUDE_CYCLE_START_DAY"]?.toIntOrNull()?.coerceIn(1, 31) ?: 1,
                         pacing = env["CLAUDE_PACING"]?.lowercase() != "off",

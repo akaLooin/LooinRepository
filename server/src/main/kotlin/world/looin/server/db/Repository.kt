@@ -167,7 +167,7 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         db.query("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at, rowid", conversationId) { it.message() }
 
     fun addMessage(conversationId: String, role: ChatRole, content: String, brain: String? = null): ChatMessage {
-        val m = ChatMessage(newId(), conversationId, role, content, now())
+        val m = ChatMessage(newId(), conversationId, role, content, now(), brain)
         db.tx {
             exec(
                 "INSERT INTO messages(id, conversation_id, role, content, created_at, brain) VALUES (?,?,?,?,?,?)",
@@ -273,7 +273,10 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
     )
     private fun ResultSet.comment() = Comment(getString("id"), getString("post_id"), getString("author_agent_id"), getString("author_name"), getString("body"), getLong("created_at"))
     private fun ResultSet.conversation() = Conversation(getString("id"), getString("agent_id"), getString("title"), getLong("updated_at"))
-    private fun ResultSet.message() = ChatMessage(getString("id"), getString("conversation_id"), ChatRole.valueOf(getString("role")), getString("content"), getLong("created_at"))
+    private fun ResultSet.message() = ChatMessage(
+        getString("id"), getString("conversation_id"), ChatRole.valueOf(getString("role")), getString("content"), getLong("created_at"),
+        getString("brain"),
+    )
     private fun ResultSet.memory() = Memory(getString("id"), getString("category"), getString("content"), getString("source"), getInt("importance"), getLong("created_at"))
     private fun ResultSet.insight() =
         Insight(getString("id"), getInt("version"), getString("content"), getInt("based_on_memories"), getLong("created_at"))

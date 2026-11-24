@@ -33,6 +33,8 @@ data class Price(val input: Double, val output: Double, val cacheRead: Double, v
 
     companion object {
         fun forModel(model: String): Price = when {
+            "fable-5-2" in model || "mythos-5-2" in model -> Price(8.0, 40.0, 0.20, 10.0)
+            "fable" in model || "mythos" in model -> Price(10.0, 50.0, 1.0, 12.5)
             "opus-5-5" in model -> Price(4.0, 20.0, 0.20, 5.0)
             "sonnet-5-5" in model -> Price(2.0, 10.0, 0.10, 2.5)
             "haiku-5-5" in model -> Price(0.10, 0.50, 0.01, 0.125)
@@ -73,6 +75,36 @@ class ClaudeBudget(
 }
 
 /**
+ * 일의 종류별로 Claude 모델을 나눠 쓴다. 같은 크레딧으로 훨씬 오래 쓰기 위해서.
+ *  - fast (Haiku)  : 기억 정리, 커뮤니티 활동, 질문 난이도 판단, 가벼운 대화
+ *  - chat (Sonnet) : 평소 대화, 아이디어 회의, 회의록
+ *  - deep (Opus)   : 깊은 고민, 하루 한 번의 성찰 (오래 남는 "노트"라 좋은 모델로)
+ *  - best (Fable)  : 직접 "최고"를 골랐을 때만
+ */
+data class ClaudeModels(
+    val fast: String = "claude-haiku-5-5",
+    val chat: String = "claude-sonnet-5-5",
+    val deep: String = "claude-opus-5-5",
+    val best: String = "claude-fable-5-2",
+) {
+    data class Route(val model: String, val effort: Effort)
+
+    fun route(task: Task): Route = when (task) {
+        Task.ROUTER, Task.MEMORY, Task.COMMUNITY -> Route(fast, Effort.LOW)
+        Task.CHAT_LIGHT -> Route(fast, Effort.MEDIUM)
+        Task.CHAT, Task.GENERAL, Task.MEETING -> Route(chat, Effort.MEDIUM)
+        Task.MEETING_SUMMARY -> Route(chat, Effort.HIGH)
+        Task.CHAT_DEEP, Task.REFLECTION -> Route(deep, Effort.HIGH)
+        Task.CHAT_BEST -> Route(best, Effort.HIGH)
+    }
+
+    /** 서버 측 거절 대비(fallbacks)를 지원하는 모델인가 (Haiku 5.5 는 미지원). */
+    fun supportsFallbacks(model: String) = "haiku" !in model
+
+    fun all() = listOf(fast, chat, deep, best)
+}
+
+/**
  * Claude 두뇌 — Claude Max/Ultra/Team 요금제에 포함된 **월 API 크레딧**으로 쓴다.
  * (구독 로그인을 앱에 연결하는 것은 Anthropic 약관상 허용되지 않으므로, 요금제에 연결한
  *  Claude Console 조직의 API 키를 쓴다. 구독의 주간 사용 한도와는 별개의 크레딧이다.)
@@ -81,14 +113,13 @@ class ClaudeBudget(
  */
 class ClaudeBrain(
     apiKey: String,
-    private val model: String,
+    private val models: ClaudeModels,
     private val budget: ClaudeBudget,
     private val ledger: UsageLedger,
     private val useFallbacks: Boolean = true,
 ) : Brain {
     private val log = LoggerFactory.getLogger(ClaudeBrain::class.java)
     private val client: AnthropicClient = AnthropicOkHttpClient.builder().apiKey(apiKey).build()
-    private val price = Price.forModel(model)
     @Volatile private var cooldownUntil = 0L
     @Volatile private var lastError: String? = null
 
@@ -101,10 +132,10 @@ class ClaudeBrain(
             val spent = spent()
             val available = cooldownUntil <= System.currentTimeMillis() && spent < budget.allowedSoFar()
             return BrainInfo(
-                provider = "claude", model = model, online = true,
+                provider = "claude", model = models.chat, online = true,
                 providers = listOf(
                     ProviderStatus(
-                        name = "claude", model = model, available = available, requestsToday = 0, lastError = lastError,
+                        name = "claude", model = "자동(Haiku·Sonnet·Opus·Fable)", available = available, requestsToday = 0, lastError = lastError,
                         note = "이번 주기 $%.2f / $%.0f (오늘까지 $%.2f 허용)".format(spent, budget.monthlyUsd, budget.allowedSoFar()),
                     ),
                 ),
@@ -116,12 +147,15 @@ class ClaudeBrain(
         val spent = spent()
         if (spent >= budget.allowedSoFar()) throw BrainUnavailable("claude 예산 도달 ($%.2f)".format(spent))
 
+        val route = models.route(req.task)
+        val model = route.model
+        val price = Price.forModel(model)
         val pending = ArrayDeque<String>()
         var stop: StopReason? = null
         var inTok = 0L; var outTok = 0L; var cacheRead = 0L; var cacheWrite = 0L
         var emitted = false
         try {
-            client.messages().createStreaming(buildParams(req)).use { response ->
+            client.messages().createStreaming(buildParams(req, route)).use { response ->
                 val it = response.stream().iterator()
                 while (it.hasNext()) {
                     val event = it.next()
@@ -167,7 +201,8 @@ class ClaudeBrain(
         }
     }.flowOn(Dispatchers.IO)
 
-    private fun buildParams(req: BrainRequest): MessageCreateParams {
+    private fun buildParams(req: BrainRequest, route: ClaudeModels.Route): MessageCreateParams {
+        val model = route.model
         val systemBlocks = buildList {
             add(TextBlockParam.builder().text(req.stableSystem).cacheControl(CacheControlEphemeral.builder().build()).build())
             if (req.dynamicSystem.isNotBlank()) add(TextBlockParam.builder().text(req.dynamicSystem).build())
@@ -178,14 +213,14 @@ class ClaudeBrain(
             .systemOfTextBlockParams(systemBlocks)
             .outputConfig(
                 OutputConfig.builder().effort(
-                    when (req.effort) {
+                    when (route.effort) {
                         Effort.LOW -> OutputConfig.Effort.LOW
                         Effort.MEDIUM -> OutputConfig.Effort.MEDIUM
                         Effort.HIGH -> OutputConfig.Effort.HIGH
                     },
                 ).build(),
             )
-        if (useFallbacks) {
+        if (useFallbacks && models.supportsFallbacks(model)) {
             // 안전 분류기가 거절하면 서버에서 다른 모델로 이어서 답하게 한다.
             b.putAdditionalHeader("anthropic-beta", "server-side-fallback-2026-07-01")
             b.putAdditionalBodyProperty("fallbacks", JsonValue.from("default"))

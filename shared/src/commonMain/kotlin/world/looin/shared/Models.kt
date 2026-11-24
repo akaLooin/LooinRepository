@@ -108,7 +108,13 @@ data class ChatMessage(
     val role: ChatRole,
     val content: String,
     val createdAt: Long,
+    /** 이 답을 쓴 두뇌 (예: "claude:claude-sonnet-5-5") */
+    val brain: String? = null,
 )
+
+/** 대화할 때 얼마나 깊이 생각할지. AUTO 는 질문을 보고 알아서 고른다. */
+@Serializable
+enum class ChatMode { AUTO, FAST, DEEP, BEST }
 
 /** 나(소유자)에 대한 기본 프로필. 모든 AI 가 "나"를 이해하는 출발점. */
 @Serializable
@@ -205,7 +211,12 @@ data class GrowthStatus(
 // ---------- 요청 ----------
 
 @Serializable
-data class SendMessageRequest(val agentId: String, val text: String, val conversationId: String? = null)
+data class SendMessageRequest(
+    val agentId: String,
+    val text: String,
+    val conversationId: String? = null,
+    val mode: ChatMode = ChatMode.AUTO,
+)
 
 @Serializable
 data class CreateAgentRequest(
