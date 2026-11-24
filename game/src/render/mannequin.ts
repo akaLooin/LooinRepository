@@ -186,10 +186,35 @@ const HAND_REST: Record<'armB' | 'armF', V> = { armB: [4.5, 16], armF: [14.5, 16
 const LEG_PARTS: PartName[] = ['legB', 'legF'];
 
 /** 조각을 축 기준으로 돌려(가장 가까운 칸) 옮긴 칸 목록 */
+/** Scale2x: 계단을 매끄럽게 하며 2배로 키운다(글자 격자) */
+function scale2x(g: string[][]): string[][] {
+  const h = g.length, w = g[0].length, at = (c: number, r: number) => (r >= 0 && r < h && c >= 0 && c < w ? g[r][c] : '.');
+  const o: string[][] = Array.from({ length: h * 2 }, () => new Array(w * 2).fill('.'));
+  for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) {
+    const E = at(c, r), B = at(c, r - 1), D = at(c - 1, r), F = at(c + 1, r), H = at(c, r + 1);
+    o[r * 2][c * 2] = D === B && B !== F && D !== H ? D : E;
+    o[r * 2][c * 2 + 1] = B === F && B !== D && F !== H ? F : E;
+    o[r * 2 + 1][c * 2] = D === H && D !== B && H !== F ? D : E;
+    o[r * 2 + 1][c * 2 + 1] = H === F && D !== H && B !== F ? F : E;
+  }
+  return o;
+}
+/** 조각을 축 기준으로 돌려 옮긴 칸 목록.
+ *  픽셀 그림을 그냥 돌리면 가장자리가 들쭉날쭉하므로, 8배로 매끄럽게 키운 뒤 돌려서 칸 중심을 샘플한다(RotSprite 방식). */
+const BIG = new Map<Piece, { g: string[][]; x0: number; y0: number }>();
 function place(pc: Piece, ang: number, dx: number, dy: number): [number, number, string][] {
   if (Math.abs(ang) < 0.04) return pc.px.map(([c, r, ch]) => [c + dx, r + dy, ch]);
+  let big = BIG.get(pc);
+  if (!big) {
+    const xs = pc.px.map((p) => p[0]), ys = pc.px.map((p) => p[1]);
+    const x0 = Math.min(...xs) - 1, y0 = Math.min(...ys) - 1, w = Math.max(...xs) - x0 + 2, h = Math.max(...ys) - y0 + 2;
+    let g: string[][] = Array.from({ length: h }, () => new Array(w).fill('.'));
+    for (const [c, r, ch] of pc.px) g[r - y0][c - x0] = ch;
+    g = scale2x(scale2x(scale2x(g)));
+    big = { g, x0, y0 };
+    BIG.set(pc, big);
+  }
   const cs = Math.cos(ang), sn = Math.sin(ang), [px, py] = pc.pivot;
-  const src = new Map(pc.px.map(([c, r, ch]) => [`${c},${r}`, ch]));
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const [c, r] of pc.px) {
     const ox = c + 0.5 - px, oy = r + 0.5 - py, nx = px + ox * cs - oy * sn, ny = py + ox * sn + oy * cs;
@@ -197,10 +222,11 @@ function place(pc: Piece, ang: number, dx: number, dy: number): [number, number,
   }
   const res: [number, number, string][] = [];
   for (let y = Math.floor(y0 - 1); y <= Math.ceil(y1 + 1); y++) for (let x = Math.floor(x0 - 1); x <= Math.ceil(x1 + 1); x++) {
-    // 거꾸로 돌려 원래 칸을 찾는다
+    // 칸 중심을 거꾸로 돌려 8배 그림에서 찾는다
     const ox = x + 0.5 - px, oy = y + 0.5 - py, sx = px + ox * cs + oy * sn, sy = py - ox * sn + oy * cs;
-    const ch = src.get(`${Math.floor(sx)},${Math.floor(sy)}`);
-    if (ch) res.push([x + dx, y + dy, ch]);
+    const bx = Math.floor((sx - big.x0) * 8), by = Math.floor((sy - big.y0) * 8);
+    const ch = big.g[by]?.[bx];
+    if (ch && ch !== '.') res.push([x + dx, y + dy, ch]);
   }
   return res;
 }
@@ -263,8 +289,32 @@ function bake(p: Pose): { body: Int8Array; front: Int8Array; anchors: Anchors } 
     }
   };
   // 시안과 같은 겹침 순서: 다리 → 몸통 → 머리 → 뒷팔 / 앞팔은 따로(무기 위에 그린다)
-  for (const k of [...LEG_PARTS, 'torso', 'head', 'armB'] as PartName[]) draw(body, placed[k]);
-  draw(front, placed.armF);
+  for (const k of [...LEG_PARTS, 'torso', 'head'] as PartName[]) draw(body, placed[k]);
+  // 팔이 쉬는 자세에서 벗어나 머리·몸 위로 겹치면 같은 흰색이라 경계가 사라진다 → 겹친 가장자리에 테두리
+  const overlay = (dst: Int8Array, cells: [number, number, string][], moved: boolean) => {
+    const own = new Int8Array(N).fill(-1);
+    draw(own, cells);
+    for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+      const i = y * FW + x;
+      if (own[i] < 0) continue;
+      let t = own[i];
+      if (moved && t !== CH_TONE['3']) {
+        const under = (j: number) => own[j] < 0 && (body[j] >= 0 || dst[j] >= 0);
+        if ((x > 0 && under(i - 1)) || (x < FW - 1 && under(i + 1)) || (y > 0 && under(i - FW)) || (y < FH - 1 && under(i + FW))) t = CH_TONE['3'];
+      }
+      dst[i] = t;
+    }
+  };
+  overlay(body, placed.armB, Math.abs(p.armB[0] + p.armB[1] * 0.5) > 0.3);
+  overlay(front, placed.armF, Math.abs(p.armF[0] + p.armF[1] * 0.5) > 0.3);
+  // 돌린 팔다리는 몸에 붙어 있던 쪽이 바깥으로 드러난다 → 합친 윤곽에서 빈 칸과 닿은 칸은 테두리로 닫는다(대기 자세는 그대로)
+  const filled = (i: number) => body[i] >= 0 || front[i] >= 0;
+  const edge: number[] = [];
+  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
+    const i = y * FW + x;
+    if (filled(i) && ((x > 0 && !filled(i - 1)) || (x < FW - 1 && !filled(i + 1)) || (y > 0 && !filled(i - FW)) || (y < FH - 1 && !filled(i + FW)))) edge.push(i);
+  }
+  for (const i of edge) { if (front[i] >= 0) front[i] = CH_TONE['3']; else body[i] = CH_TONE['3']; }
   return { body, front, anchors };
 }
 
