@@ -27,8 +27,8 @@ class ChatService(
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
 
-    /** 최근 대화 몇 턴까지 모델에 보낼지. (Opus 5.5 는 1M 컨텍스트지만 비용·속도를 위해 제한) */
-    private val historyLimit = 60
+    /** 최근 대화 몇 개까지 모델에 보낼지. 무료 등급은 분당 토큰 한도가 작아 짧게 유지한다. */
+    private val historyLimit = 20
 
     fun stream(world: World, req: SendMessageRequest): Flow<ChatStreamEvent> = flow {
         val agent = repo.agent(world.id, req.agentId) ?: throw NotFound("agent not found")
@@ -42,10 +42,10 @@ class ChatService(
         val history = repo.messages(conv.id).takeLast(historyLimit).map { Turn(it.role, it.content) }
         val brainReq = BrainRequest(
             stableSystem = Prompts.chatSystem(world, owner, agent),
-            dynamicSystem = Prompts.memoryBlock(repo.memories(world.id)),
+            dynamicSystem = Prompts.understandingBlock(repo.latestInsight(world.id), repo.memories(world.id).take(40)),
             turns = history,
             effort = Effort.MEDIUM,
-            maxTokens = 32_000,
+            maxTokens = 4_096,
         )
 
         val sb = StringBuilder()

@@ -143,6 +143,26 @@ object Prompts {
         4. 다음 행동 (담당자 포함)
     """.trimIndent()
 
+    /** 최신 성찰 결과 + 기억 — 대화할 때마다 들어가는 가변 맥락. */
+    fun understandingBlock(insight: world.looin.shared.Insight?, memories: List<Memory>): String =
+        listOfNotNull(
+            insight?.let { "## 지금까지 이해한 소유자 (성찰 v${it.version})\n${it.content}" },
+            memoryBlock(memories).takeIf { it.isNotBlank() },
+        ).joinToString("\n\n")
+
+    fun reflectionSystem(owner: OwnerProfile) = """
+        너는 "${ownerName(owner)}" 를 가장 깊이 이해하려는 AI 들의 대표 서기다.
+        주어진 프로필·기억·최근 발화·이전 버전의 이해를 바탕으로 "지금의 ${ownerName(owner)}" 에 대한 이해를 새로 쓴다.
+        한국어로, 아래 제목을 그대로 쓴 마크다운 문서 하나만 출력한다 (전체 1500자 이내):
+        ### 핵심 정체성
+        ### 가치관과 기준
+        ### 요즘의 관심과 고민
+        ### 말투와 표현 습관
+        ### 지난 이해 이후 달라진 점
+        ### 아직 모르는 것 (다음 대화에서 알아갈 질문 2~3개)
+        근거 없는 내용은 쓰지 말고, 추측은 추측이라고 표시한다.
+    """.trimIndent()
+
     fun memoryExtractionSystem(owner: OwnerProfile) = """
         너는 "${ownerName(owner)}" 의 개인 기억 관리자다.
         주어진 대화에서 소유자 본인에 대해 앞으로도 기억할 가치가 있는 새 사실만 뽑는다

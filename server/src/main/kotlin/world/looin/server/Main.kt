@@ -21,11 +21,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.slf4j.LoggerFactory
 import world.looin.server.ai.Brain
-import world.looin.server.ai.ClaudeBrain
+import world.looin.server.ai.ProviderChainBrain
 import world.looin.server.ai.OfflineBrain
 import world.looin.server.db.Db
 import world.looin.server.db.Repository
 import world.looin.server.service.ChatService
+import world.looin.server.service.GrowthService
 import world.looin.server.service.MemoryService
 import world.looin.server.service.NotFound
 import world.looin.server.service.WorldSimService
@@ -38,12 +39,13 @@ class App(val config: Config, brainOverride: Brain? = null) {
     val db = Db(File(config.dataDir, "looin.db")).apply { migrate() }
     val repo = Repository(db)
     val brain: Brain = brainOverride
-        ?: config.anthropicApiKey?.let { ClaudeBrain(it, config.model, config.useFallbacks) }
+        ?: config.providers.takeIf { it.isNotEmpty() }?.let { ProviderChainBrain(it) }
         ?: OfflineBrain()
     val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val memory = MemoryService(repo, brain)
     val chat = ChatService(repo, brain, memory, background)
     val sim = WorldSimService(repo, brain)
+    val growth = GrowthService(repo, brain, sim, if (brain.info.online) config.autoWorldHours else 0.0)
 
     init {
         Seed.ensure(repo, config.ownerToken)
@@ -58,7 +60,8 @@ fun main() {
     if (System.getenv("LOOIN_OWNER_TOKEN").isNullOrBlank()) {
         log.info("앱 접속 토큰은 {} 파일에 있습니다.", File(config.dataDir, "owner_token.txt").absolutePath)
     }
-    if (!app.brain.info.online) log.warn("ANTHROPIC_API_KEY 가 없어 오프라인 모드로 실행합니다.")
+    if (!app.brain.info.online) log.warn("두뇌 공급자 키(GROQ_API_KEY 등)가 하나도 없어 오프라인 모드로 실행합니다.")
+    app.growth.startAutoWorld(app.background)
     embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(app) }.start(wait = true)
 }
 

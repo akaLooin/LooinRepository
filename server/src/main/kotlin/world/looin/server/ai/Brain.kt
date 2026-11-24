@@ -21,8 +21,8 @@ data class BrainRequest(
 )
 
 /**
- * "두뇌" 추상화. 지금은 Claude(Opus 5.5)를 쓰지만, 나중에 다른 모델/로컬 모델로
- * 바꾸거나 여러 모델을 섞어 쓸 수 있도록 이 인터페이스 뒤에 숨긴다.
+ * "두뇌" 추상화. 지금은 무료 공개 모델 공급자 사슬(ProviderChainBrain)을 쓰고,
+ * 나중에 내가 파인튜닝한 모델이나 로컬 모델로 바꿔도 나머지 코드는 그대로 둔다.
  */
 interface Brain {
     val info: BrainInfo

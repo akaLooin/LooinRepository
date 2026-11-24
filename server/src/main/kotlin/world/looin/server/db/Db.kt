@@ -94,7 +94,10 @@ class Db(file: File) {
               created_at INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS meetings (
               id TEXT PRIMARY KEY, space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
-              topic TEXT NOT NULL, turns_json TEXT NOT NULL, summary TEXT NOT NULL, created_at INTEGER NOT NULL)
+              topic TEXT NOT NULL, turns_json TEXT NOT NULL, summary TEXT NOT NULL, created_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS insights (
+              id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+              version INTEGER NOT NULL, content TEXT NOT NULL, based_on_memories INTEGER NOT NULL, created_at INTEGER NOT NULL)
         """.trimIndent()
     }
 }

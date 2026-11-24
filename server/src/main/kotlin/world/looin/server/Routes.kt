@@ -8,6 +8,7 @@ import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -106,6 +107,14 @@ fun Route.apiRoutes(app: App) {
                         flush()
                     }
                 }
+            }
+
+            // ---- 성장 ----
+            get("/growth") { call.respond(app.growth.status(call.world())) }
+            get("/growth/insights") { call.respond(repo.insights(call.world().id)) }
+            post("/growth/reflect") { call.respond(app.growth.reflect(call.world())) }
+            get("/growth/training.jsonl") {
+                call.respondText(app.growth.exportTrainingJsonl(call.world()), ContentType.parse("application/jsonl"))
             }
 
             // ---- 공간 ----

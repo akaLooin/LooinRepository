@@ -1,0 +1,10 @@
+# 사용법: cp .env.example .env  →  .env 에 키 입력  →  docker compose up -d --build
+services:
+  looin:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data

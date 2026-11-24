@@ -35,6 +35,8 @@ import world.looin.app.Route
 import world.looin.shared.AddMemoryRequest
 import world.looin.shared.AgentKind
 import world.looin.shared.CreateAgentRequest
+import world.looin.shared.GrowthStatus
+import world.looin.shared.Insight
 import world.looin.shared.Memory
 import world.looin.shared.OwnerProfile
 
@@ -45,13 +47,54 @@ fun MeScreen(c: AppController) {
     var memories by remember { mutableStateOf<List<Memory>>(emptyList()) }
     var newMemory by remember { mutableStateOf("") }
     var saved by remember { mutableStateOf(false) }
+    var growth by remember { mutableStateOf<GrowthStatus?>(null) }
+    var insights by remember { mutableStateOf<List<Insight>>(emptyList()) }
+    var reflecting by remember { mutableStateOf(false) }
+    var showHistory by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         c.run({ it.profile() }) { profile = it }
         c.run({ it.memories() }) { memories = it }
+        c.run({ it.growth() }) { growth = it }
     }
 
     LazyColumn(Modifier.fillMaxSize()) {
         item { TopBar("나") { TextButton(onClick = { c.disconnect() }) { Text("로그아웃") } } }
+        item { SectionTitle("🌱 성장 — AI 들이 이해한 나") }
+        item {
+            val g = growth
+            SectionCard {
+                val latest = g?.latest
+                if (latest == null) {
+                    Text("아직 성찰 기록이 없어요. 대화로 기억이 쌓이면 자동으로, 또는 아래 버튼으로 지금 성찰할 수 있어요.")
+                } else {
+                    Text("v${latest.version} · 기억 ${latest.basedOnMemories}개 기반 · ${timeAgo(latest.createdAt)}", style = MaterialTheme.typography.labelSmall)
+                    Spacer(Modifier.height(6.dp))
+                    androidx.compose.foundation.text.selection.SelectionContainer { Text(latest.content) }
+                }
+                Spacer(Modifier.height(8.dp))
+                if (g != null) Text(
+                    "기억 ${g.memories} · 성찰 ${g.versions}회 · 학습 예문 ${g.trainingExamples}개" +
+                        if (g.autoWorld) " · 자동 세계 켜짐" else "",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        reflecting = true
+                        c.run({ it.reflect() }) { c.run({ api -> api.growth() }) { s -> growth = s; reflecting = false } }
+                    }, enabled = !reflecting) { Text(if (reflecting) "성찰 중…" else "지금 성찰하기") }
+                    if ((g?.versions ?: 0) > 1) OutlinedButton(onClick = {
+                        showHistory = !showHistory
+                        if (showHistory) c.run({ it.insights() }) { insights = it }
+                    }) { Text(if (showHistory) "기록 닫기" else "성장 기록") }
+                }
+            }
+        }
+        if (showHistory) items(insights.drop(1), key = { "i" + it.id }) { ins ->
+            SectionCard {
+                Text("v${ins.version} · ${timeAgo(ins.createdAt)}", fontWeight = FontWeight.SemiBold)
+                Text(ins.content, style = MaterialTheme.typography.bodySmall)
+            }
+        }
         item { SectionTitle("프로필 — 모든 AI 가 나를 이해하는 출발점") }
         item {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

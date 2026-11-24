@@ -1,0 +1,10 @@
+**/build
+.gradle
+.kotlin
+.idea
+graphify-out
+Logo
+site
+data
+.env
+local.properties

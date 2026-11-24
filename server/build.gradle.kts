@@ -30,11 +30,11 @@ dependencies {
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.serialization.kotlinx.json)
-    implementation(libs.anthropic.java)
     implementation(libs.sqlite.jdbc)
     implementation(libs.logback)
 
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.kotlin.test)
 }
 

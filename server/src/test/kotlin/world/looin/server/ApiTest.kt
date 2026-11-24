@@ -46,7 +46,7 @@ class ApiTest {
 
     private fun newApp(): App {
         val dir = Files.createTempDirectory("looin").toFile()
-        return App(Config(0, dir, token, null, "fake", false), FakeBrain())
+        return App(Config(0, dir, token, emptyList(), 0.0), FakeBrain())
     }
 
     @Test
@@ -102,5 +102,12 @@ class ApiTest {
         )
         assertEquals(company.memberAgentIds.size, meeting.turns.size)
         assertTrue(meeting.summary.isNotBlank())
+
+        // 성장: 성찰하면 새 버전의 "이해"가 생기고, 학습 데이터를 내보낼 수 있다
+        val insight = client.post("/api/growth/reflect") { bearerAuth(token) }.bodyAsText()
+        assertTrue(insight.contains("\"version\":1"))
+        val growth = client.get("/api/growth") { bearerAuth(token) }.bodyAsText()
+        assertTrue(growth.contains("\"versions\":1"))
+        assertEquals(HttpStatusCode.OK, client.get("/api/growth/training.jsonl") { bearerAuth(token) }.status)
     }
 }

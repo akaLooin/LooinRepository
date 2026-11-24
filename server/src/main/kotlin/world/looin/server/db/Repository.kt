@@ -7,6 +7,7 @@ import world.looin.shared.ChatMessage
 import world.looin.shared.ChatRole
 import world.looin.shared.Comment
 import world.looin.shared.Conversation
+import world.looin.shared.Insight
 import world.looin.shared.LooinJson
 import world.looin.shared.Meeting
 import world.looin.shared.MeetingTurn
@@ -200,6 +201,44 @@ class Repository(val db: Db) {
         return m
     }
 
+    // ---------- insights (성장 기록) ----------
+    fun latestInsight(worldId: String): Insight? =
+        db.one("SELECT * FROM insights WHERE world_id = ? ORDER BY version DESC LIMIT 1", worldId) { it.insight() }
+
+    fun insights(worldId: String): List<Insight> =
+        db.query("SELECT * FROM insights WHERE world_id = ? ORDER BY version DESC", worldId) { it.insight() }
+
+    fun addInsight(worldId: String, content: String, basedOnMemories: Int): Insight {
+        val version = (db.one("SELECT MAX(version) FROM insights WHERE world_id = ?", worldId) { it.getInt(1) } ?: 0) + 1
+        val i = Insight(newId(), version, content, basedOnMemories, now())
+        db.exec("INSERT INTO insights VALUES (?,?,?,?,?,?)", i.id, worldId, i.version, i.content, i.basedOnMemories, i.createdAt)
+        return i
+    }
+
+    /** 내가 보낸 메시지와 그 직전 AI 메시지 쌍 — 나중에 "나처럼 말하는 모델"을 학습시킬 재료. */
+    fun ownerReplyPairs(worldId: String, limit: Int = 5000): List<Pair<String, String>> = db.query(
+        """SELECT prev.content AS prompt, m.content AS reply
+           FROM messages m
+           JOIN conversations c ON m.conversation_id = c.id
+           JOIN messages prev ON prev.conversation_id = m.conversation_id AND prev.role = 'ASSISTANT'
+             AND prev.created_at = (SELECT MAX(p2.created_at) FROM messages p2
+                                    WHERE p2.conversation_id = m.conversation_id AND p2.role = 'ASSISTANT' AND p2.created_at < m.created_at)
+           WHERE c.world_id = ? AND m.role = 'USER' ORDER BY m.created_at LIMIT ?""",
+        worldId, limit,
+    ) { it.getString("prompt") to it.getString("reply") }
+
+    fun conversationsWithMessages(worldId: String): List<Pair<Conversation, List<ChatMessage>>> =
+        db.query("SELECT * FROM conversations WHERE world_id = ? ORDER BY updated_at", worldId) { it.conversation() }
+            .map { it to messages(it.id) }
+
+    fun recentOwnerMessages(worldId: String, limit: Int): List<String> = db.query(
+        """SELECT m.content FROM messages m JOIN conversations c ON m.conversation_id = c.id
+           WHERE c.world_id = ? AND m.role = 'USER' ORDER BY m.created_at DESC LIMIT ?""",
+        worldId, limit,
+    ) { it.getString(1) }
+
+    fun allWorlds(): List<World> = db.query("SELECT * FROM worlds") { it.world() }
+
     // ---------- row mappers ----------
     private fun ResultSet.world() = World(getString("id"), getString("owner_id"), getString("name"), getString("description"), getLong("created_at"))
     private fun ResultSet.agent() = Agent(
@@ -215,6 +254,8 @@ class Repository(val db: Db) {
     private fun ResultSet.conversation() = Conversation(getString("id"), getString("agent_id"), getString("title"), getLong("updated_at"))
     private fun ResultSet.message() = ChatMessage(getString("id"), getString("conversation_id"), ChatRole.valueOf(getString("role")), getString("content"), getLong("created_at"))
     private fun ResultSet.memory() = Memory(getString("id"), getString("category"), getString("content"), getString("source"), getInt("importance"), getLong("created_at"))
+    private fun ResultSet.insight() =
+        Insight(getString("id"), getInt("version"), getString("content"), getInt("based_on_memories"), getLong("created_at"))
     private fun ResultSet.meeting() = Meeting(
         getString("id"), getString("space_id"), getString("topic"),
         LooinJson.decodeFromString(turnsSer, getString("turns_json")), getString("summary"), getLong("created_at"),

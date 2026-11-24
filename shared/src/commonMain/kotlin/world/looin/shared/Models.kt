@@ -160,7 +160,45 @@ data class WorldOverview(
 data class WorldStats(val posts: Int, val comments: Int, val memories: Int, val conversations: Int, val meetings: Int)
 
 @Serializable
-data class BrainInfo(val provider: String, val model: String, val online: Boolean)
+data class BrainInfo(
+    val provider: String,
+    val model: String,
+    val online: Boolean,
+    val providers: List<ProviderStatus> = emptyList(),
+)
+
+/** 두뇌 사슬을 이루는 무료 공급자 하나의 상태. */
+@Serializable
+data class ProviderStatus(
+    val name: String,
+    val model: String,
+    val available: Boolean,
+    val requestsToday: Int,
+    val lastError: String? = null,
+)
+
+/**
+ * 성찰(reflection)의 결과 — "AI 들이 이해한 나".
+ * 기억과 대화를 주기적으로 되돌아보며 새 버전을 쓴다. 버전이 쌓이는 것 자체가 성장 기록이다.
+ */
+@Serializable
+data class Insight(
+    val id: String,
+    val version: Int,
+    val content: String,
+    val basedOnMemories: Int,
+    val createdAt: Long,
+)
+
+@Serializable
+data class GrowthStatus(
+    val latest: Insight?,
+    val versions: Int,
+    val memories: Int,
+    val trainingExamples: Int,
+    val autoWorld: Boolean,
+    val nextAutoRunAt: Long?,
+)
 
 // ---------- 요청 ----------
 

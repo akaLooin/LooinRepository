@@ -1,5 +1,7 @@
 package world.looin.server
 
+import world.looin.server.ai.Provider
+import world.looin.server.ai.Providers
 import java.io.File
 import java.security.SecureRandom
 
@@ -8,9 +10,10 @@ data class Config(
     val port: Int,
     val dataDir: File,
     val ownerToken: String,
-    val anthropicApiKey: String?,
-    val model: String,
-    val useFallbacks: Boolean,
+    /** 두뇌 공급자 사슬 (앞에서부터 시도). 비어 있으면 오프라인 모드. */
+    val providers: List<Provider>,
+    /** 세계가 스스로 움직이는 간격(시간). 0 이면 끔. */
+    val autoWorldHours: Double,
 ) {
     companion object {
         fun fromEnv(env: Map<String, String> = System.getenv()): Config {
@@ -19,9 +22,8 @@ data class Config(
                 port = env["PORT"]?.toIntOrNull() ?: 8080,
                 dataDir = dataDir,
                 ownerToken = env["LOOIN_OWNER_TOKEN"]?.takeIf { it.isNotBlank() } ?: loadOrCreateToken(dataDir),
-                anthropicApiKey = env["ANTHROPIC_API_KEY"]?.takeIf { it.isNotBlank() },
-                model = env["LOOIN_MODEL"]?.takeIf { it.isNotBlank() } ?: "claude-opus-5-5",
-                useFallbacks = env["LOOIN_FALLBACKS"]?.lowercase() != "off",
+                providers = Providers.fromEnv(env),
+                autoWorldHours = env["LOOIN_AUTO_WORLD_HOURS"]?.toDoubleOrNull() ?: 6.0,
             )
         }
 

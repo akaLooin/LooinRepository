@@ -116,5 +116,10 @@ class LooinApi(baseUrl: String, private val token: String) {
     suspend fun holdMeeting(spaceId: String, r: MeetingRequest): Meeting =
         http.post(url("/spaces/$spaceId/meetings")) { auth(); setBody(r) }.ok()
 
+    // --- 성장 ---
+    suspend fun growth(): GrowthStatus = http.get(url("/growth")) { auth() }.ok()
+    suspend fun insights(): List<Insight> = http.get(url("/growth/insights")) { auth() }.ok()
+    suspend fun reflect(): Insight = http.post(url("/growth/reflect")) { auth() }.ok()
+
     fun close() = http.close()
 }
