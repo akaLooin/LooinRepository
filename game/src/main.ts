@@ -51,6 +51,6 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) { game.suspend(); audio.suspend(); } else { game.resume(); audio.resume(); } });
   addEventListener('pagehide', () => game.save());
   // 개발/테스트용 핸들
-  Object.assign(window, { __game: game, __scene: scene });
+  Object.assign(window, { __game: game, __scene: scene, __uiRef: ui });
 }
 boot();

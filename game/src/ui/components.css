@@ -101,3 +101,21 @@
 .ui-bubble.done { background: var(--c-accent); }
 .ui-input { font: inherit; width: 100%; min-height: var(--touch); padding: var(--sp-2) var(--sp-4); color: var(--c-text); background: var(--c-surface-inset); border: var(--sp-1) solid var(--c-border-input); border-radius: var(--r-md); }
 .ui-input::placeholder { color: var(--c-text-muted); }
+
+/* 아이콘 칸 + 배지 줄(퀘스트 목표·보상, 제작 재료) */
+.ui-slot.sm { width: calc(var(--slot) * .82); height: calc(var(--slot) * .82); cursor: default; }
+.ui-slot .qty.ok { color: var(--c-text-good); }
+.ui-slot .qty.bad { color: var(--c-text-bad); }
+.qline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.qline .mi { width: 1.4em; height: 1.4em; }
+.qarrow { color: var(--c-text-muted); font-size: var(--fs-xs); }
+/* 도감 퀘스트 사슬 */
+.qnpc { display: flex; gap: var(--sp-3); align-items: center; padding: var(--sp-2) 0; border-bottom: 1px dashed var(--c-border); }
+.qface { flex: none; width: 2.6em; height: 2.6em; overflow: hidden; background: var(--c-surface-inset); border-radius: var(--r-md); }
+.qface img { width: 150%; margin: -10% 0 0 -25%; display: block; }
+.qchain { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin-top: var(--sp-1); }
+.qlink { width: var(--sp-2); height: 2px; background: var(--c-border); }
+.ui-slot.done::before { content: '✓'; position: absolute; top: 0; right: .2em; font-size: var(--fs-xs); color: var(--c-text-good); text-shadow: 0 1px 0 #000; }
+.ui-slot.done .qty { display: none; }
+.ui-slot.cur { border-color: var(--c-accent); box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
+.ui-slot.new::before { content: '!'; position: absolute; top: -.1em; left: .25em; font-weight: bold; color: var(--c-accent); text-shadow: 0 1px 0 #000; }

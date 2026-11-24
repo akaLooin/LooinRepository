@@ -4,7 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -22,6 +22,22 @@ type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anv
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
 const ui = (key: string, cls = 'ic') => `<img class="px ${cls}" src="${iconUrl(key)}" alt="">`;
+/** 아이콘 칸 + 숫자 배지(글자 대신). tone: ok(초록) / bad(빨강) */
+const tile = (src: string, badge: string | number, label: string, cls = '', tone = '') =>
+  `<span class="ui-slot sm ${cls}" title="${label}" aria-label="${label}"><img class="px" src="${src}" alt="">${badge !== '' ? `<span class="qty ${tone}">${badge}</span>` : ''}</span>`;
+/** 퀘스트 목표 아이콘 칸(진행도 배지) */
+const goalTile = (q: QuestDef, have: number | null, cls = '') => {
+  const g = q.goal, kill = 'kill' in g;
+  const src = kill ? iconUrl(`mob_${g.kill}`) : iconUrl(ITEM_ICON[g.item]);
+  const label = kill ? `${MONSTERS[g.kill].name} ${g.n}마리 처치` : `${ITEMS[g.item].name} ${g.n}개`;
+  return tile(src, have === null ? `×${g.n}` : `${Math.min(have, g.n)}/${g.n}`, label, cls, have === null ? '' : have >= g.n ? 'ok' : '');
+};
+/** 퀘스트 보상 아이콘 칸들 */
+const rewardTiles = (r: QuestDef['reward']) => [
+  r.coins ? tile(iconUrl(ITEM_ICON.coin), r.coins, `코인 ${r.coins}`) : '',
+  r.xp ? tile(iconUrl('ui_xp'), r.xp, `경험치 ${r.xp}`) : '',
+  r.item ? tile(iconUrl(ITEM_ICON[r.item]), '', ITEMS[r.item].name, 'r2') : '',
+].join('');
 const icon = (id: string) => `<img class="px" src="${iconUrl(ITEM_ICON[id])}" alt="">`;
 const pct = (a: number, b: number) => `${Math.max(0, Math.min(100, (a / b) * 100)).toFixed(1)}%`;
 const dur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.floor((s % 3600) / 60)}분` : `${Math.floor(s / 60)}분`);
@@ -341,13 +357,16 @@ export class UI {
               <div class="ui-xs ui-muted">${next ? `보유 ${n} / 다음 단계 ${next}` : `보유 ${n} · 최고 단계`}</div></div>${btn}</div>`;
           }).join('') + '<p class="ui-xs ui-muted">몬스터 카드는 사냥할 때, 자원 카드는 나무·광맥을 캘 때 드물게 나옵니다. 모은 카드는 모든 캐릭터가 함께 쓰고, 장착은 캐릭터마다 따로 합니다.</p>';
         } else {
+          // NPC마다 퀘스트 사슬을 아이콘 칸으로: 끝낸 것 ✓, 지금 것 진행도, 남은 것 잠금
           body = Object.values(NPCS).map((n) => {
             const st = c.quests[n.id] ?? { idx: 0, accepted: false, prog: 0 };
-            return `<h3>${n.name}</h3>` + n.quests.map((q, i) => {
-              const pr = questProgress(c, n.id);
-              const s2 = i < st.idx ? '<span class="ui-good">완료</span>' : i === st.idx ? (st.accepted ? `<span class="ui-accent">진행 중 ${pr!.have}/${pr!.need}</span>` : '<span class="ui-muted">수락 가능</span>') : '<span class="ui-muted">잠김</span>';
-              return `<div class="ui-row line"><b class="ui-grow">${i <= st.idx ? q.name : '???'}</b><span class="ui-sm">${s2}</span></div>`;
-            }).join('');
+            const pr = questProgress(c, n.id), cur = n.quests[st.idx];
+            const chain = n.quests.map((q, i) => i < st.idx ? goalTile(q, q.goal.n, 'ready done')
+              : i === st.idx ? goalTile(q, st.accepted ? pr!.have : null, st.accepted ? 'cur' : 'cur new')
+              : '<span class="ui-slot sm locked" aria-label="잠긴 퀘스트"></span>').join('<span class="qlink" aria-hidden="true"></span>');
+            const now = cur ? `<b>${cur.name}</b> ${st.accepted ? '' : '<span class="ui-xs ui-accent">!</span>'}` : '<span class="ui-good">모두 완료</span>';
+            return `<div class="qnpc"><span class="qface"><img class="px" src="${portraitUrl(n.look)}" alt=""></span><div class="ui-grow"><div class="ui-sm">${n.name} <span class="ui-xs ui-muted">${Math.min(st.idx, n.quests.length)}/${n.quests.length}</span> · ${now}</div>
+              <div class="qchain">${chain}</div></div></div>`;
           }).join('');
         }
         if (tab === 2) body = this.quickRefHtml();
@@ -402,14 +421,10 @@ export class UI {
         }
         const q = currentQuest(c, npc.id), p = questProgress(c, npc.id), st = c.quests[npc.id] ?? { idx: 0, accepted: false };
         if (!q || !p) return speaker('<p>“고맙네! 지금은 부탁할 일이 없다네.”</p>');
-        const goal = 'kill' in q.goal ? `${MONSTERS[q.goal.kill].name} ${q.goal.n}마리 처치` : `${ITEMS[q.goal.item].name} ${q.goal.n}개 가져오기`;
-        const r = q.reward;
-        const rew = [r.coins ? `${icon('coin')} ${r.coins}` : '', r.xp ? `경험치 ${r.xp}` : '', r.item ? `${icon(r.item)} ${ITEMS[r.item].name}` : ''].filter(Boolean).join(' · ');
         const btn = !st.accepted ? `<button class="ui-btn primary" data-act="qaccept:${npc.id}">수락</button>`
           : `<button class="ui-btn success" data-act="qdone:${npc.id}" ${p.done ? '' : 'disabled'}>완료</button>`;
         return speaker(`<div><b class="ui-accent">${q.name}</b> <span class="ui-xs ui-muted">${st.idx + 1}/${npc.quests.length}</span></div><p>“${q.text}”</p>
-          <div class="ui-sm">목표: ${goal}${st.accepted ? ` <b class="${p.done ? 'ui-good' : 'ui-accent'}">(${p.have}/${p.need})</b>` : ''}</div>
-          <div class="ui-sm ui-muted">보상: ${rew}</div><div class="ui-row"><span class="ui-grow"></span>${btn}</div>`);
+          <div class="qline">${ui('ui_quest', 'mi')}${goalTile(q, st.accepted ? p.have : null, st.accepted && p.done ? 'ready' : '')}<span class="qarrow" aria-hidden="true">▶</span>${rewardTiles(q.reward)}<span class="ui-grow"></span>${btn}</div>`);
       }
 
       case 'anvil': {
@@ -432,16 +447,17 @@ export class UI {
         if (r) {
           const it = ITEMS[r.item];
           const who = it.wtype ? ` · ${Object.values(CLASSES).filter((k) => k.weapon === it.wtype && k.id !== 'beginner').map((k) => k.name).join('/')}` : '';
+          // 재료: 아이콘 칸에 가진 수/필요 수(가방 + 창고)
           const mats = r.mats.map(([id, n]) => {
             const have = haveMat(g.acc, c, id), st = storageCount(g.acc, id);
-            return `<span>${icon(id)} ${ITEMS[id].name}${st ? ` <span class="ui-xs ui-muted">(창고 ${st})</span>` : ''}</span><span class="${have >= n ? 'ui-good' : 'ui-bad'}">${have}/${n}</span>`;
-          }).join('');
+            return tile(iconUrl(ITEM_ICON[id]), `${have}/${n}`, `${ITEMS[id].name} ${have}/${n}${st ? ` (창고 ${st})` : ''}`, '', have >= n ? 'ok' : 'bad');
+          }).join('') + tile(iconUrl(ITEM_ICON.coin), r.coins.toLocaleString(), `코인 ${g.acc.coins}/${r.coins}`, '', g.acc.coins >= r.coins ? 'ok' : 'bad');
           detail = `<div class="ui-row"><span class="ui-slot">${icon(r.item)}</span><div><b>${it.name}</b><div class="ui-xs ui-muted">${it.slot ? SLOT_NAMES[it.slot] : r.unlock ? `모루 ${r.unlock}단계 열기` : '소모품'}${r.tier && r.tier > 1 ? ` · ${r.tier}단계` : ''}${r.smithLv ? ` · 대장 Lv.${r.smithLv}` : ''}${it.reqLv ? ` · Lv.${it.reqLv}` : ''}${who}</div></div></div>
             <span class="ui-sm ${it.stats ? 'ui-good' : ''}">${it.stats ? statLine(it.id) : it.desc}</span>
-            <div class="ui-kv mats">${mats}<span>${icon('coin')} 코인</span><span class="${g.acc.coins >= r.coins ? 'ui-good' : 'ui-bad'}">${g.acc.coins}/${r.coins}</span></div>
+            <div class="qline mats">${mats}</div>
             ${recipeLock(g.acc, c, this.craftSel) ? `<span class="ui-sm ui-bad">${recipeLock(g.acc, c, this.craftSel)}${(r.tier ?? 1) > g.acc.anvilTier ? ' — 기타 탭의 모루 확장으로 열립니다' : ''}</span>` : ''}
             <button class="ui-btn primary block" data-act="craft:${this.craftSel}" ${canCraft(g.acc, c, this.craftSel) ? '' : 'disabled'}>${r.unlock ? '확장' : '제작'}</button>
-            <span class="ui-xs ui-muted">재료는 가방에서 먼저, 모자라면 창고에서 씁니다.</span>`;
+`;
         }
         return win('모루', `${tabs(names, tab, tabAct)}<div class="ui-tabpanel split"><div class="ui-grid c4">${cells}</div><div class="ui-detail">${detail}</div></div>`);
       }
