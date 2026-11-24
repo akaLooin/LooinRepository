@@ -202,6 +202,7 @@ function buildWeapons() {
   sword('sword_wood', '#c9925a', '#8a5a3c');
   sword('sword_stone', '#c9d1d9', '#b9824f');
   sword('sword_leaf', '#8fde5d', '#f6c945');
+  sword('sword_red', '#e8836a', '#6a7480');
   // 활(세로로 쥔다)
   for (const [id, a] of [['bow_wood', '#b9824f'], ['bow_leaf', '#7ccf52']] as const) {
     const p = new Paint(16, 36);
@@ -236,6 +237,7 @@ function buildWeapons() {
   };
   tool('wp_pick', '#a9b2bd', false); tool('wp_axe', '#a9b2bd', true);
   tool('wp_pick_stone', '#e0d2b8', false); tool('wp_axe_stone', '#e0d2b8', true);
+  tool('wp_pick_red', '#d9674f', false); tool('wp_axe_red', '#d9674f', true);
   // 발사체
   let p = new Paint(11, 5);
   p.rect(1, 2, 8, 1, '#b9824f'); p.set(9, 2, '#c9d1d9'); p.set(8, 1, '#c9d1d9'); p.set(8, 3, '#c9d1d9'); p.set(1, 1, '#e9e4f0'); p.set(1, 3, '#e9e4f0');
@@ -439,6 +441,16 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 용광로: 돌로 쌓은 화로 + 굴뚝 + 불빛 창
+  p = new Paint(30, 34);
+  p.rect(18, 0, 7, 12, '#7d8590'); p.rect(18, 0, 7, 2, '#9aa3ad');
+  p.disc(14.5, 22, 13, 12, '#8d97a3'); p.rect(2, 22, 26, 12, '#8d97a3');
+  for (const [x, y] of [[5, 15], [12, 12], [20, 14], [4, 25], [24, 24], [14, 30]]) p.rect(x, y, 4, 1, '#6a7480');
+  p.disc(14.5, 24, 6, 5, '#3a2a2a'); p.rect(8.5, 24, 12, 6, '#3a2a2a');
+  p.disc(14.5, 27, 4.5, 3.2, '#e8833a'); p.disc(14.5, 28, 2.6, 1.8, '#ffd84a');
+  p.rect(1, 31, 28, 3, '#5d636e');
+  p.outline().save('obj_forge');
+
   // 창고 상자
   p = new Paint(24, 18);
   p.rect(1, 5, 22, 12, '#a8744e'); p.rect(1, 1, 22, 5, '#c98a5e'); p.rect(1, 5, 22, 1, '#74492f');
@@ -521,6 +533,16 @@ function buildItems() {
   p = new Paint(12, 12);
   p.rect(2, 2, 8, 9, '#b9824f'); p.rect(4, 2, 4, 2, null); p.rect(2, 8, 8, 1, '#8a5a3c'); p.rect(2, 5, 8, 1, '#8a5a3c'); p.rect(5, 4, 1, 7, '#8a5a3c');
   p.outline().save('it_armor_log');
+  // 주괴: 사다리꼴 쇳덩이
+  p = new Paint(13, 10);
+  p.rect(1, 4, 11, 5, '#c9573f'); p.rect(3, 2, 7, 2, '#e8836a'); p.rect(2, 3, 9, 1, '#d9674f');
+  p.rect(3, 2, 4, 1, '#ffc0a8'); p.rect(1, 8, 11, 1, '#8a3328');
+  p.outline().save('it_bar_red');
+  // 기름 단지
+  p = new Paint(11, 13);
+  p.disc(5, 8, 4.5, 4.5, '#5a4a3a'); p.rect(3, 1, 5, 4, '#5a4a3a'); p.rect(3, 1, 5, 1, '#c9a46a');
+  p.disc(3.5, 7, 1.2, 1.8, '#8a7660'); p.rect(2, 9, 7, 2, '#f6c945');
+  p.outline().save('it_oil');
   // 장신구
   p = new Paint(12, 12); p.disc(5.5, 6.5, 4, 4, '#f6c945'); p.disc(5.5, 6.5, 2.4, 2.4, null); p.disc(5.5, 2.5, 2, 1.6, '#5fb859'); p.set(5, 2, '#b4f08a'); p.outline().save('it_ring');
   p = new Paint(12, 12); p.line(2, 0, 5, 4, '#8a5a3c'); p.line(9, 0, 6, 4, '#8a5a3c'); p.disc(5.5, 7, 3.6, 3.6, '#9aa3ad'); p.disc(5, 6, 1.6, 1.6, '#c9d1d9'); p.outline().save('it_charm');
@@ -552,6 +574,7 @@ export const ITEM_ICON: Record<string, string> = {
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
   twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
+  bar_red: 'it_bar_red', forge_oil: 'it_oil', sword_red: 'wp_sword_red', pick_red: 'wp_pick_red', axe_red: 'wp_axe_red',
 };
 
 // ───────── 아이콘 세트 ─────────

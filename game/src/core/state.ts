@@ -1,3 +1,4 @@
+import { Forge, newForge } from './forge';
 import {
   AFK_BASE, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
@@ -63,6 +64,8 @@ export interface Account {
   options: { autoAttacks: boolean };
   /** 지도 순간이동 남은 횟수와 마지막으로 채운 날 */
   teleports: { n: number; day: string };
+  /** 용광로(계정 공용) */
+  forge: Forge;
   characters: Character[];
   active: number;
   nextId: number;
@@ -71,7 +74,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -591,6 +594,7 @@ export function deserialize(json: string | null): Account | null {
     a.anvilTier ??= 1;
     a.options ??= { autoAttacks: true };
     a.teleports ??= { n: 5, day: '' };
+    a.forge ??= newForge();
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];

@@ -4,7 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef, SMELTS, FORGE,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -12,12 +12,13 @@ import {
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
+import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
 import { Game } from '../game';
 import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -63,6 +64,7 @@ export class UI {
   private sel: string | null = null;      // 가방에서 선택한 아이템
   private afk: AfkReport | null = null;
   private craftSel = -1;
+  private forgeSel = 0;
   /** 대화 중인 NPC, 생산 칸 선택 */
   private npcId = 'elder';
   /** 하단 바가 공격 바로 바뀌어 있는지, 공격 바에 놓으려고 고른 특성, 특성 화면에서 고른 특성 */
@@ -493,6 +495,8 @@ export class UI {
         return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
       }
 
+      case 'forge': return win('용광로 <span class="ui-sm ui-muted">계정 공용</span>', this.forgeHtml(c));
+
       case 'afkinfo': {
         const r = afkRates(g.acc, c);
         const f = (n: number) => Math.round(n).toLocaleString();
@@ -513,6 +517,51 @@ export class UI {
       }
     }
     return '';
+  }
+
+  private forgeHtml(c: Character): string {
+    const acc = this.game.acc, f = acc.forge, now = Date.now();
+    const sm = SMELTS[0];
+    if (!f.owned) {
+      return `<div class="stack"><p class="ui-sm">광석을 넣어 두면 시간이 흘러 주괴가 됩니다. 한 번 들이면 모든 캐릭터가 함께 씁니다.</p>
+        <div class="qline">${tile(iconUrl(ITEM_ICON[sm.ore]), `×${sm.need}`, `${ITEMS[sm.ore].name} ${sm.need}개`)}<span class="qarrow">▶</span>${tile(iconUrl(ITEM_ICON[sm.bar]), '×1', ITEMS[sm.bar].name)}</div>
+        <button class="ui-btn primary" data-act="forgebuy" ${acc.coins >= FORGE.price ? '' : 'disabled'}>${icon('coin')} ${FORGE.price.toLocaleString()} 들이기</button></div>`;
+    }
+    forgeSettle(acc, now);
+    if (this.forgeSel >= f.slots.length) this.forgeSel = 0;
+    const cap = forgeCap(f);
+    const slotRow = f.slots.map((s, i) => {
+      const p = forgeProgress(acc, s, now);
+      return `<button class="prodslot" data-act="fslot:${i}" aria-selected="${i === this.forgeSel}">
+        <span class="ui-slot">${s.ore ? `<img class="px" src="${iconUrl(ITEM_ICON[s.ore])}" alt=""><span class="qty">${s.qty}</span>` : ''}</span>
+        ${s.ore ? bar('skill', p, 1, s.bars ? `주괴 ${s.bars}` : '') : '<span class="ui-xs ui-muted">비어 있음</span>'}</button>`;
+    }).join('') + (forgeUpMaxed(f, 'slots') ? '' : `<div class="prodslot locked"><span class="ui-xs ui-muted">칸 늘리기로 열림</span></div>`);
+    const s = f.slots[this.forgeSel], d = SMELTS.find((x) => x.ore === s.ore);
+    let detail: string;
+    if (s.ore && d) {
+      const sec = smeltSeconds(f, s), left = s.qty >= d.need ? Math.ceil(sec * (1 - forgeProgress(acc, s, now))) : 0;
+      const total = Math.floor(s.qty / d.need);
+      detail = `<div class="qline">${tile(iconUrl(ITEM_ICON[s.ore]), `${s.qty}/${cap}`, `${ITEMS[s.ore].name} ${s.qty}/${cap}`)}<span class="qarrow">▶</span>${tile(iconUrl(ITEM_ICON[d.bar]), s.bars, `${ITEMS[d.bar].name} ${s.bars}개`, s.bars ? 'ready' : '')}</div>
+        <span class="ui-xs ui-muted">${total ? `다음 주괴까지 ${left}초 · 남은 광석으로 ${total}개 더 · 주괴 1개에 ${sec.toFixed(1)}초` : '광석이 모자라 멈췄습니다'}${s.oil ? ' · <span class="ui-accent">기름 효과 중</span>' : ''}</span>
+        <div class="ui-row"><button class="ui-btn primary" data-act="fcollect:bag" ${s.bars ? '' : 'disabled'}>가방으로</button><button class="ui-btn" data-act="fcollect:store" ${s.bars ? '' : 'disabled'}>창고로</button>
+        <button class="ui-btn sm" data-act="foil" ${!s.oil && countItem(c, FORGE.oilItem) && total ? '' : 'disabled'} title="${ITEMS[FORGE.oilItem].desc}">${icon(FORGE.oilItem)} 기름 ${countItem(c, FORGE.oilItem)}</button></div>`;
+    } else detail = '<span class="ui-sm ui-muted">아래에서 넣을 광석을 고르세요. 가방에서 먼저, 모자라면 창고에서 칸 용량만큼 넣습니다.</span>';
+    // 넣을 수 있는 광석(가방 + 창고)
+    const ores = SMELTS.map((x) => ({ x, have: haveMat(acc, c, x.ore) })).filter(({ have }) => have > 0);
+    const load = ores.length
+      ? ores.map(({ x, have }) => `<button class="ui-slot" data-act="fload:${x.ore}" ${s.ore && s.ore !== x.ore ? 'disabled' : ''} aria-label="${ITEMS[x.ore].name} 넣기 (${have}개)"><img class="px" src="${iconUrl(ITEM_ICON[x.ore])}" alt=""><span class="qty">${have}</span></button>`).join('')
+      : '<span class="ui-xs ui-muted">녹일 광석이 없습니다. 광맥을 캐 보세요.</span>';
+    const ups: [ForgeUp, string, string][] = [
+      ['slots', '칸 늘리기', `칸 ${forgeSlotsOpen(f)}개`], ['cap', '용량', `칸당 ${cap}개`],
+      ['speed', '속도', `+${Math.round(f.up.speed * FORGE.speedPer * 100)}%`], ['bonus', '추가 주괴', `${Math.round(forgeBonus(f) * 100)}%`],
+    ];
+    const upRows = ups.map(([k, name, eff]) => {
+      const max = forgeUpMaxed(f, k), cost = forgeUpCost(f, k);
+      return `<div class="ui-row line"><b class="ui-grow">${name} <span class="ui-xs ui-accent">${f.up[k]}/${FORGE.upMax[k]}</span></b><span class="ui-xs ui-muted">${eff}</span>
+        <button class="ui-btn sm" data-act="fup:${k}" ${!max && acc.coins >= cost ? '' : 'disabled'}>${max ? '최대' : `${icon('coin')} ${cost.toLocaleString()}`}</button></div>`;
+    }).join('');
+    return `<div class="prodslots">${slotRow}</div><div class="split"><div><h3 style="margin-top:0">${this.forgeSel + 1}번 칸</h3><div class="stack">${detail}</div>
+      <h3>넣기</h3><div class="qline">${load}</div></div><div class="ui-detail"><h3 style="margin-top:0">강화</h3>${upRows}</div></div>`;
   }
 
   private productionHtml(c: Character): string {
@@ -693,6 +742,17 @@ export class UI {
       case 'tab': this.tab[a as Exclude<Panel, null>] = +b; this.craftSel = -1; break;
       case 'csel': this.craftSel = +a; break;
       case 'pslot': this.prodSlot = +a; break;
+      case 'fslot': this.forgeSel = +a; break;
+      case 'forgebuy': { const r = g.act({ t: 'forgeBuy' }); if (r.ok) this.toast('용광로를 들였습니다'); else fail(r.err ?? null); break; }
+      case 'fload': fail(g.act({ t: 'forgeLoad', slot: this.forgeSel, ore: a }).err ?? null); break;
+      case 'foil': fail(g.act({ t: 'forgeOil', slot: this.forgeSel }).err ?? null); break;
+      case 'fup': fail(g.act({ t: 'forgeUp', k: a as ForgeUp }).err ?? null); break;
+      case 'fcollect': {
+        const sl = g.acc.forge.slots[this.forgeSel], bar = SMELTS.find((x) => x.ore === sl?.ore)?.bar;
+        const r = g.act({ t: 'forgeCollect', slot: this.forgeSel, toStorage: a === 'store', n: Math.max(1, sl?.bars ?? 0) });
+        if (r.ok && bar) this.toast(`${ITEMS[bar].name} ${r.n}개를 ${a === 'store' ? '창고' : '가방'}로`, bar); else fail(r.err ?? null);
+        break;
+      }
       case 'atk': this.attackMode = !(this.attackMode || this.assigning); this.assigning = null; break;
       case 'bpage': if (c) g.act({ t: 'barPage', page: (c.attackPage + 1) % c.attackBars.length }); break;
       case 'flag': this.attackMode = !this.attackMode; this.assigning = this.attackMode && this.talentSel && TALENT[this.talentSel]?.active && c?.talents[this.talentSel] ? this.talentSel : null; break;

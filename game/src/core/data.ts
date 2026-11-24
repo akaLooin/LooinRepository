@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing';
 export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge';
 export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'ring' | 'pickaxe' | 'axe';
@@ -80,7 +80,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', ring: '장신구', pickaxe: '곡괭이', axe: '도끼',
 };
@@ -107,6 +107,11 @@ const items: ItemDef[] = [
   { id: 'log', name: '참나무 통나무', desc: '튼튼한 목재.', kind: 'material', sell: 2 },
   { id: 'ore', name: '붉은돌 광석', desc: '붉은 빛이 도는 광석.', kind: 'material', sell: 4 },
   { id: 'silverlog', name: '은빛 통나무', desc: '은은하게 빛나는 목재.', kind: 'material', sell: 9 },
+  { id: 'bar_red', name: '붉은쇠 주괴', desc: '용광로에서 붉은돌 광석을 녹여 만든 쇳덩이.', kind: 'material', sell: 15 },
+  { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
+  { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
+  { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
+  { id: 'axe_red', name: '붉은쇠 도끼', desc: '벌목 효율 +5', kind: 'equip', slot: 'axe', stats: { chopping: 5 }, reqLv: 6, sell: 45 },
   { id: 'sword_wood', name: '나무 검', desc: '초보자의 친구.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 3 }, sell: 2 },
   { id: 'sword_stone', name: '돌날 검', desc: '묵직한 한 방.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 9, str: 1 }, reqLv: 5, sell: 20 },
   { id: 'sword_leaf', name: '잎새 칼', desc: '바람처럼 가볍다.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 18, agi: 3 }, reqLv: 12, sell: 120 },
@@ -148,7 +153,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
-    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
+    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
     portals: [{ x: 652, y: -48, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
@@ -188,6 +193,9 @@ export const RECIPES: RecipeDef[] = [
   { item: 'pouch_mat', coins: 80, mats: [['twine', 20], ['moss', 15]] },
   { item: 'pouch_res', coins: 80, mats: [['twine', 20], ['log', 15]] },
   { item: 'moss_ring', coins: 150, mats: [['moss', 30], ['twine', 10], ['pebble', 5]] },
+  { item: 'pick_red', coins: 120, mats: [['bar_red', 6], ['log', 6], ['nail', 4]] },
+  { item: 'axe_red', coins: 120, mats: [['bar_red', 6], ['log', 6], ['nail', 4]] },
+  { item: 'sword_red', coins: 150, mats: [['bar_red', 8], ['plank', 3], ['nail', 5]] },
   { item: 'anvil_exp', coins: 500, mats: [['plank', 15], ['nail', 25], ['ore', 20]], unlock: 2, smithLv: 5 },
   { item: 'sword_leaf', coins: 250, mats: [['leaf', 15], ['ore', 10], ['plank', 4]], tier: 2 },
   { item: 'bow_leaf', coins: 250, mats: [['leaf', 15], ['silverlog', 8], ['twine', 10]], tier: 2 },
@@ -333,7 +341,20 @@ export const SHOP: ShopEntry[] = [
   { item: 'bag_small', price: 400, daily: 1 },
   { item: 'pouch_food', price: 300, daily: 1 },
   { item: 'chest_small', price: 900, daily: 1 },
+  { item: 'forge_oil', price: 60, daily: 10 },
 ];
+
+/** 용광로: 광석 need 개 → 주괴 1개, secs 초(업그레이드·기름 전) */
+export interface SmeltDef { ore: string; bar: string; need: number; secs: number }
+export const SMELTS: SmeltDef[] = [
+  { ore: 'ore', bar: 'bar_red', need: 3, secs: 40 },
+];
+/** 용광로 값: 사는 값, 칸·용량 기본값, 업그레이드(코인, 단계마다 upGrow 배) */
+export const FORGE = {
+  price: 300, slotsBase: 2, capBase: 60, capPer: 30, speedPer: 0.1, bonusPer: 0.04, oilSpeed: 1.5, oilItem: 'forge_oil',
+  upCost: { slots: 800, cap: 150, speed: 200, bonus: 250 }, upGrow: 1.6,
+  upMax: { slots: 4, cap: 20, speed: 20, bonus: 10 },
+};
 
 /** 아이템이 속한 묶음 */
 export function stackGroup(id: string): StackGroup {
@@ -341,7 +362,7 @@ export function stackGroup(id: string): StackGroup {
   if (!it) return 'misc';
   if (it.kind === 'food') return 'food';
   if (it.kind === 'equip') return 'equip';
-  if (it.kind === 'material') return ['log', 'silverlog', 'ore'].includes(id) ? 'resource' : 'material';
+  if (it.kind === 'material') return ['log', 'silverlog', 'ore', 'bar_red'].includes(id) ? 'resource' : 'material';
   return 'misc';
 }
 export const GROUP_NAMES: Record<StackGroup, string> = { material: '재료', resource: '통나무·광석', food: '음식', equip: '장비', misc: '기타' };

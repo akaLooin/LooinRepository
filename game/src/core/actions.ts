@@ -6,6 +6,7 @@ import {
   equipItem, learnTalent, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
+import { ForgeUp, buyForge, forgeCollect, forgeLoad, forgeOil, forgeUpgrade } from './forge';
 
 export type Action =
   | { t: 'stat'; stat: StatKey }
@@ -35,7 +36,12 @@ export type Action =
   | { t: 'barSet'; bar: number; slot: number; id: string | null }
   | { t: 'barPage'; page: number }
   | { t: 'option'; autoAttacks: boolean }
-  | { t: 'teleport'; map: string };
+  | { t: 'teleport'; map: string }
+  | { t: 'forgeBuy' }
+  | { t: 'forgeLoad'; slot: number; ore: string }
+  | { t: 'forgeOil'; slot: number }
+  | { t: 'forgeCollect'; slot: number; toStorage: boolean; n: number }
+  | { t: 'forgeUp'; k: ForgeUp };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -85,6 +91,11 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'barPage': if (a.page < 0 || a.page >= c.attackBars.length) return fail('없는 장'); c.attackPage = a.page; return ok();
     case 'option': acc.options.autoAttacks = a.autoAttacks; return ok();
     case 'teleport': return res(teleport(acc, c, a.map, now));
+    case 'forgeBuy': return res(buyForge(acc));
+    case 'forgeLoad': return res(forgeLoad(acc, c, a.slot, a.ore, now));
+    case 'forgeOil': return res(forgeOil(acc, c, a.slot, now));
+    case 'forgeCollect': { const n = forgeCollect(acc, c, a.slot, a.toStorage, now, a.n); return n ? ok(n) : fail('꺼낼 주괴가 없거나 자리가 없습니다'); }
+    case 'forgeUp': return res(forgeUpgrade(acc, a.k, now));
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

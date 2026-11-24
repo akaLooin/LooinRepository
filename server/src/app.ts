@@ -60,6 +60,11 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('barPage'), page: z.number().int().min(0).max(9) }),
   z.object({ t: z.literal('option'), autoAttacks: z.boolean() }),
   z.object({ t: z.literal('teleport'), map: id }),
+  z.object({ t: z.literal('forgeBuy') }),
+  z.object({ t: z.literal('forgeLoad'), slot: z.number().int().min(0).max(15), ore: id }),
+  z.object({ t: z.literal('forgeOil'), slot: z.number().int().min(0).max(15) }),
+  z.object({ t: z.literal('forgeCollect'), slot: z.number().int().min(0).max(15), toStorage: z.boolean(), n: z.number().int().min(1).max(1e6) }),
+  z.object({ t: z.literal('forgeUp'), k: z.enum(['slots', 'cap', 'speed', 'bonus']) }),
   z.object({ t: z.literal('target'), activity: z.union([z.object({ k: z.literal('none') }), z.object({ k: z.literal('fight') }), z.object({ k: z.literal('gather'), node: id })]) }),
 ]) as z.ZodType<Action>;
 // 캐릭터 상태는 모양만 대강 확인하고, 의미 검증은 checkSync 가 한다
