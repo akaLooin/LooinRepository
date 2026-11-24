@@ -1,0 +1,464 @@
+{
+  ".claude/hooks/graphify-stop.sh": {
+    "mtime": 1795506333.9349487,
+    "seen": 1795507810.682552,
+    "ast_hash": "673b496dfe672cdb8e78fedc230fadc3",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1795506333.9349487,
+    "seen": 1795507810.6825597,
+    "ast_hash": "e4566ed31fd6e146ad998dc0bd467e51",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/sweep.py": {
+    "mtime": 1795506333.9353197,
+    "seen": 1795507810.6825624,
+    "ast_hash": "6e72239d135e70b85f5eb029560645e7",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/contrast.py": {
+    "mtime": 1795506333.935567,
+    "seen": 1795507810.6825635,
+    "ast_hash": "be1cc9f80abcff530e3047e43cc7418b",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/imgdiff.py": {
+    "mtime": 1795506333.9356842,
+    "seen": 1795507810.6825645,
+    "ast_hash": "89423d275a22901d45d1dded2bbf0a89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/parity.py": {
+    "mtime": 1795506333.9356842,
+    "seen": 1795507810.682566,
+    "ast_hash": "b038abcd7358f9267f243cf25e337f79",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/reviews.py": {
+    "mtime": 1795506333.9358974,
+    "seen": 1795507810.682567,
+    "ast_hash": "30484811d165ea8e8f26ea27b468e258",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/themes.json": {
+    "mtime": 1795506333.9358974,
+    "seen": 1795507810.6825678,
+    "ast_hash": "2f131b47a08b6f829a3a7b9b310c0d89",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.example.json": {
+    "mtime": 1795506333.9360545,
+    "seen": 1795507810.6825693,
+    "ast_hash": "7f333f8243827641e47a0afaebf858dc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/listing.py": {
+    "mtime": 1795506333.9360545,
+    "seen": 1795507810.6825702,
+    "ast_hash": "af4d4a7b06701afb767de7ef763ddda8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/e2e.example.spec.ts": {
+    "mtime": 1795506333.9362912,
+    "seen": 1795507810.6825712,
+    "ast_hash": "1a6d12fef3cbe97dfa1b0dc42c3a8881",
+    "semantic_hash": ""
+  },
+  "build.gradle.kts": {
+    "mtime": 1795506887.4823287,
+    "seen": 1795507810.6825728,
+    "ast_hash": "d4ee1715b9cf1902a1fa5f8a24bb4348",
+    "semantic_hash": ""
+  },
+  "composeApp/build.gradle.kts": {
+    "mtime": 1795507438.9760315,
+    "seen": 1795507810.6825738,
+    "ast_hash": "050c6ecba3f9b3b069489c27c5bc4e10",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/kotlin/world/looin/app/MainActivity.kt": {
+    "mtime": 1795507595.231128,
+    "seen": 1795507810.6825747,
+    "ast_hash": "b89201f659c8bd1f6fbcd29e10729df5",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/kotlin/world/looin/app/Settings.android.kt": {
+    "mtime": 1795507485.7490585,
+    "seen": 1795507810.682576,
+    "ast_hash": "e9089db3284e620aaeefddb9ede5da69",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/App.kt": {
+    "mtime": 1795507481.3086874,
+    "seen": 1795507810.6825771,
+    "ast_hash": "3b0457db1ab8818b28fd3e78476ae8a3",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/AppController.kt": {
+    "mtime": 1795507458.5204725,
+    "seen": 1795507810.6825788,
+    "ast_hash": "700bb01dc8b947dac0a308d5cbe3c39a",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/Settings.kt": {
+    "mtime": 1795507485.7476156,
+    "seen": 1795507810.6825798,
+    "ast_hash": "4a12ef344d30605f26d48bc176fb0494",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/ChatScreens.kt": {
+    "mtime": 1795507528.31706,
+    "seen": 1795507810.6825807,
+    "ast_hash": "94a19e7fdb265e2184d35a5fe8987a53",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/Common.kt": {
+    "mtime": 1795507485.7476156,
+    "seen": 1795507810.682582,
+    "ast_hash": "5892eba40887a198e010325ecbdc49dc",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/ConnectScreen.kt": {
+    "mtime": 1795507528.3151488,
+    "seen": 1795507810.6825829,
+    "ast_hash": "e5b6a44b464bcd324aab2014b29c1d74",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/HomeScreen.kt": {
+    "mtime": 1795507528.316505,
+    "seen": 1795507810.6825852,
+    "ast_hash": "6b4595e0f0e368553bc5108f9abf4fea",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/MeScreens.kt": {
+    "mtime": 1795507587.4265857,
+    "seen": 1795507810.6825867,
+    "ast_hash": "a9c58cb1e55c7a213a9d23c8f5229d34",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/Theme.kt": {
+    "mtime": 1795507458.5170577,
+    "seen": 1795507810.6825876,
+    "ast_hash": "d050f905648fa7b7def161c8da96be79",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/WorldScreens.kt": {
+    "mtime": 1795507587.4252722,
+    "seen": 1795507810.6825886,
+    "ast_hash": "7fc01b56b658ce6453054cd786ed4788",
+    "semantic_hash": ""
+  },
+  "composeApp/src/jvmMain/kotlin/world/looin/app/Settings.jvm.kt": {
+    "mtime": 1795507485.7490585,
+    "seen": 1795507810.6825898,
+    "ast_hash": "6fcc810c0c7a17c8e0cfb27345b9e581",
+    "semantic_hash": ""
+  },
+  "composeApp/src/jvmMain/kotlin/world/looin/app/main.kt": {
+    "mtime": 1795507587.4278898,
+    "seen": 1795507810.6825907,
+    "ast_hash": "7468145dd8f2c6165f84004c4e0e49ef",
+    "semantic_hash": ""
+  },
+  "gradlew": {
+    "mtime": 1795506949.4170394,
+    "seen": 1795507810.6825917,
+    "ast_hash": "794669d78aef1dd5c7d889ef618b311a",
+    "semantic_hash": ""
+  },
+  "server/build.gradle.kts": {
+    "mtime": 1795507253.49348,
+    "seen": 1795507810.6825929,
+    "ast_hash": "7fe7787c7a738e7a4b3c2fd1a743dab0",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/Config.kt": {
+    "mtime": 1795507042.3188744,
+    "seen": 1795507810.682594,
+    "ast_hash": "220a3a99621ba416dd806a90b84192a6",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/Main.kt": {
+    "mtime": 1795507232.381285,
+    "seen": 1795507810.6825962,
+    "ast_hash": "e857b51ecda8570b33f88796a0fa38ab",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/Routes.kt": {
+    "mtime": 1795507357.1147826,
+    "seen": 1795507810.6825972,
+    "ast_hash": "21b9afdade3eaeaa9b3aacdeabece1bb",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/Seed.kt": {
+    "mtime": 1795507214.972942,
+    "seen": 1795507810.682599,
+    "ast_hash": "917d5d5f4eb1b8b193711f487654e0d8",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/ai/Brain.kt": {
+    "mtime": 1795507100.713045,
+    "seen": 1795507810.682601,
+    "ast_hash": "85e80e76c41e9c0940f2163db71b50e3",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/ai/ClaudeBrain.kt": {
+    "mtime": 1795507106.043709,
+    "seen": 1795507810.682602,
+    "ast_hash": "edce79ae859ad1baaea6cd4de26ca6b0",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/ai/JsonExtract.kt": {
+    "mtime": 1795507137.8726485,
+    "seen": 1795507810.682605,
+    "ast_hash": "7e412ac39f0ed9258717ecbba604958b",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/ai/OfflineBrain.kt": {
+    "mtime": 1795507100.7172647,
+    "seen": 1795507810.682606,
+    "ast_hash": "a07cfc5a72247e653a2865b6b924dcf6",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/ai/Prompts.kt": {
+    "mtime": 1795507137.8711815,
+    "seen": 1795507810.6826086,
+    "ast_hash": "1bf740bea17371348863f829dc398089",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/db/Db.kt": {
+    "mtime": 1795507042.320002,
+    "seen": 1795507810.68261,
+    "ast_hash": "45c600db0979d1e79c0fcbf4daca5f9c",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/db/Repository.kt": {
+    "mtime": 1795507075.5129101,
+    "seen": 1795507810.6826112,
+    "ast_hash": "06c70ea1487f35088c36e73315015926",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/service/ChatService.kt": {
+    "mtime": 1795507173.8746152,
+    "seen": 1795507810.682612,
+    "ast_hash": "73e4199fdb1b5a5e34072937fcbdf13e",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/service/MemoryService.kt": {
+    "mtime": 1795507173.8758547,
+    "seen": 1795507810.6826131,
+    "ast_hash": "3e010bfbc81c223a2934c6b33b7c3f85",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/service/WorldSimService.kt": {
+    "mtime": 1795507232.3784244,
+    "seen": 1795507810.682614,
+    "ast_hash": "75383b7c9f5ae9dd7b8c0488a61628c8",
+    "semantic_hash": ""
+  },
+  "server/src/test/kotlin/world/looin/server/ApiTest.kt": {
+    "mtime": 1795507377.3326967,
+    "seen": 1795507810.6826172,
+    "ast_hash": "ee78ab6dca5f4c3e524f66b647844382",
+    "semantic_hash": ""
+  },
+  "settings.gradle.kts": {
+    "mtime": 1795507042.3159947,
+    "seen": 1795507810.682618,
+    "ast_hash": "c2166d3d62b13c4a77e62aea0c7ec98f",
+    "semantic_hash": ""
+  },
+  "shared/build.gradle.kts": {
+    "mtime": 1795507253.4937348,
+    "seen": 1795507810.6826186,
+    "ast_hash": "90ecb014316182c0510a42766522fbe8",
+    "semantic_hash": ""
+  },
+  "shared/src/commonMain/kotlin/world/looin/shared/LooinApi.kt": {
+    "mtime": 1795506988.7934506,
+    "seen": 1795507810.6826193,
+    "ast_hash": "8eb0d71ccc45010cfc60311130374833",
+    "semantic_hash": ""
+  },
+  "shared/src/commonMain/kotlin/world/looin/shared/Models.kt": {
+    "mtime": 1795506988.792159,
+    "seen": 1795507810.6826205,
+    "ast_hash": "014a2222e8741cd9eaf20e979e6dda34",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/SKILL.md": {
+    "mtime": 1795506333.9351385,
+    "seen": 1795507810.6826212,
+    "ast_hash": "68b9b40ecc837f79cd8a1f9f55bb69e9",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-architect/architecture.md": {
+    "mtime": 1795506333.9351988,
+    "seen": 1795507810.6826222,
+    "ast_hash": "0da9e8d3bb2bcfaaca00da1d7652b3f8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-backend/SKILL.md": {
+    "mtime": 1795506333.9351988,
+    "seen": 1795507810.6826231,
+    "ast_hash": "6cf582652afdfa7a4d93be9c0b678acc",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-brand/SKILL.md": {
+    "mtime": 1795506333.9351988,
+    "seen": 1795507810.6826243,
+    "ast_hash": "52f8859b2bd72803f0f22f6504ceb5d2",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-build/SKILL.md": {
+    "mtime": 1795506333.9353197,
+    "seen": 1795507810.6826255,
+    "ast_hash": "5ff1211352611a1b0ca4261bbf802914",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/SKILL.md": {
+    "mtime": 1795506333.9353197,
+    "seen": 1795507810.6826267,
+    "ast_hash": "68ca163f75008916d771db003e9e9d2f",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-deploy/preflight.md": {
+    "mtime": 1795506333.9354913,
+    "seen": 1795507810.6826282,
+    "ast_hash": "e08376a3e4b2137083d9cac67e5213d8",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-design/SKILL.md": {
+    "mtime": 1795506333.9354913,
+    "seen": 1795507810.682629,
+    "ast_hash": "6cb2089c8fef9f8ff7cfdb437beb4335",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-diff/SKILL.md": {
+    "mtime": 1795506333.935567,
+    "seen": 1795507810.682631,
+    "ast_hash": "4388136945068abb2403b78f646f1ff4",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-entrepreneur/SKILL.md": {
+    "mtime": 1795506333.9356842,
+    "seen": 1795507810.6826327,
+    "ast_hash": "f8991e2948128c6b7747c5a54984c763",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-launch/SKILL.md": {
+    "mtime": 1795506333.9358974,
+    "seen": 1795507810.6826344,
+    "ast_hash": "45df2bb5bc5cea98a442026a8ff9f948",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/SKILL.md": {
+    "mtime": 1795506333.9360545,
+    "seen": 1795507810.682636,
+    "ast_hash": "6d9392e82e61935f37ac1bb95ef909c5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-recon/recon-map.md": {
+    "mtime": 1795506333.9361908,
+    "seen": 1795507810.682638,
+    "ast_hash": "d23e672474a29ec1ea49ec43ddfff8b5",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/SKILL.md": {
+    "mtime": 1795506333.9361908,
+    "seen": 1795507810.682639,
+    "ast_hash": "c9a62a0d332c47e75f43f0b30a4a8af1",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/bug-report.md": {
+    "mtime": 1795506333.9362912,
+    "seen": 1795507810.6826406,
+    "ast_hash": "96a2f82bee687b61cdcab4cae30f3b74",
+    "semantic_hash": ""
+  },
+  ".claude/skills/replica-test/test-plan.md": {
+    "mtime": 1795506333.9362912,
+    "seen": 1795507810.6826425,
+    "ast_hash": "63d7dea8bd03011a3cd8b62c78e0c762",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1795506333.9362912,
+    "seen": 1795507810.6826441,
+    "ast_hash": "0082dfb26d459e9bafa72031729e3693",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1795507797.160493,
+    "seen": 1795507810.6826453,
+    "ast_hash": "8c49f80953cf28623932053508d6da34",
+    "semantic_hash": ""
+  },
+  "docs/ARCHITECTURE.md": {
+    "mtime": 1795507780.2730691,
+    "seen": 1795507810.6826463,
+    "ast_hash": "d46ab9a37080e6f8160f72d2ccc9f3d2",
+    "semantic_hash": ""
+  },
+  "docs/ROADMAP.md": {
+    "mtime": 1795507780.2755697,
+    "seen": 1795507810.6826472,
+    "ast_hash": "0c982bb3669fa6845e07415bc10136dd",
+    "semantic_hash": ""
+  },
+  "site/index.html": {
+    "mtime": 1795507780.269069,
+    "seen": 1795507810.6826484,
+    "ast_hash": "3506760356b223580cbfc6d8c35d46a7",
+    "semantic_hash": ""
+  },
+  "Logo/LooinLogo.png": {
+    "mtime": 1795506333.9362912,
+    "seen": 1795507810.6826494,
+    "ast_hash": "cecee7e00251e27ba618aa679eaa3d56",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/res/mipmap-hdpi/ic_launcher.png": {
+    "mtime": 1795507439.2389517,
+    "seen": 1795507810.6826506,
+    "ast_hash": "823a554ef3e43d5cc4808ab13a31c54e",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/res/mipmap-mdpi/ic_launcher.png": {
+    "mtime": 1795507439.1851923,
+    "seen": 1795507810.6826522,
+    "ast_hash": "fc9ed1b1e17de16c568fffb1f26b731d",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/res/mipmap-xhdpi/ic_launcher.png": {
+    "mtime": 1795507439.2952616,
+    "seen": 1795507810.6826534,
+    "ast_hash": "b424f3178999aae913a84660f62d10c5",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/res/mipmap-xxhdpi/ic_launcher.png": {
+    "mtime": 1795507439.3510525,
+    "seen": 1795507810.6826544,
+    "ast_hash": "ff1528963862cd394354d8ece774b576",
+    "semantic_hash": ""
+  },
+  "composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "mtime": 1795507439.4086857,
+    "seen": 1795507810.6826556,
+    "ast_hash": "33d9d5c2c226aa250ad0cbeae2c7d448",
+    "semantic_hash": ""
+  },
+  "composeApp/src/jvmMain/resources/looin_icon.png": {
+    "mtime": 1795507439.4690568,
+    "seen": 1795507810.6826563,
+    "ast_hash": "1c68944cdaacce99050c3d0205b920f1",
+    "semantic_hash": ""
+  },
+  "site/assets/logo.png": {
+    "mtime": 1795507439.553057,
+    "seen": 1795507810.6826572,
+    "ast_hash": "642114dab445e7a54fd099118499c192",
+    "semantic_hash": ""
+  }
+}
