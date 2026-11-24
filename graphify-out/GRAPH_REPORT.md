@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-24)
 
 ## Corpus Check
-- 74 files · ~35,134 words
+- 74 files · ~35,154 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 14 file(s) not represented in the graph (top: (none) 5, .xml 2, .properties 2)
 
 ## Summary
-- 801 nodes · 1833 edges · 65 communities (30 shown, 35 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.85)
+- 802 nodes · 1833 edges · 68 communities (29 shown, 39 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4136e31c`
+- Built from commit: `cbfd8f1b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -22,16 +22,17 @@
 - imgdiff.py
 - LooinApi
 - Common.kt
+- WorldScreens.kt
 - ChatScreens.kt
 - Serializable
 - steps
+- Main.kt
 - replica-recon
 - ProviderChainBrain
 - ProviderChainTest.kt
 - Config
 - looin
 - Recon map: {{app}} ({{platform}})
-- App.kt
 - replica-backend
 - replica-build
 - ThinkFilter
@@ -48,17 +49,20 @@
 - AppSettings
 - Architecture: {{your app}} (a rebuild of {{app}}'s core features)
 - Looin World 아키텍처
+- ApiTest.kt
 - Deploy checklist: {{your app}}
 - Settings.jvm.kt
-- WorldScreens.kt
+- AppController
 - Looin World 로드맵
 - MemoryService.kt
+- ConnectScreen.kt
 - AppSettings
 - Tab
 - CLAUDE.md
 - graphify-stop.sh
 - bug-report.md
 - test-plan.md
+- HomeScreen.kt
 
 ## God Nodes (most connected - your core abstractions)
 1. `Repository` - 60 edges
@@ -69,29 +73,29 @@
 6. `OwnerProfile` - 22 edges
 7. `Agent` - 20 edges
 8. `Post` - 20 edges
-9. `AppController` - 19 edges
-10. `Brain` - 19 edges
+9. `Brain` - 19 edges
+10. `AppController` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `왜 이렇게 만들었나` --references--> `Brain`  [INFERRED]
   docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/Brain.kt
 - `두뇌 설정 (서버 `ProviderChainBrain`)` --references--> `ProviderChainBrain`  [INFERRED]
   docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/ProviderChainBrain.kt
-- `Looin World 의 학습과 성장` --references--> `MemoryService`  [INFERRED]
-  docs/GROWTH.md → server/src/main/kotlin/world/looin/server/service/MemoryService.kt
 - `두뇌 설정 (서버 `ProviderChainBrain`)` --references--> `OfflineBrain`  [INFERRED]
   docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/OfflineBrain.kt
+- `Looin World 의 학습과 성장` --references--> `MemoryService`  [INFERRED]
+  docs/GROWTH.md → server/src/main/kotlin/world/looin/server/service/MemoryService.kt
 - `Chat` --references--> `Agent`  [EXTRACTED]
   composeApp/src/commonMain/kotlin/world/looin/app/AppController.kt → shared/src/commonMain/kotlin/world/looin/shared/Models.kt
 
 ## Import Cycles
 - None detected.
 
-## Communities (65 total, 35 thin omitted)
+## Communities (68 total, 39 thin omitted)
 
 ### Community 0 - "Space"
-Cohesion: 0.07
-Nodes (23): Brain, BrainRequest, Effort, HIGH, LOW, MEDIUM, Turn, OfflineBrain (+15 more)
+Cohesion: 0.08
+Nodes (24): Brain, BrainRequest, Effort, HIGH, LOW, MEDIUM, Turn, str() (+16 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
@@ -106,16 +110,16 @@ Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
 ### Community 5 - "Common.kt"
-Cohesion: 0.16
-Nodes (4): AgentRow(), Avatar(), label(), SectionCard()
+Cohesion: 0.22
+Nodes (9): AgentRow(), Avatar(), label(), SectionCard(), SectionTitle(), timeAgo(), TopBar(), MeScreen() (+1 more)
 
 ### Community 7 - "ChatScreens.kt"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (5): Route, Chat, NewAgent, PostRoute, SpaceRoute
 
 ### Community 8 - "Serializable"
 Cohesion: 0.07
-Nodes (34): module(), apiRoutes(), NotFound, AddMemoryRequest, AgentKind, CHARACTER, CLONE, CORE (+26 more)
+Nodes (37): module(), apiRoutes(), Seed, NotFound, AddMemoryRequest, AgentKind, CHARACTER, CLONE (+29 more)
 
 ### Community 10 - "steps"
 Cohesion: 0.12
@@ -130,8 +134,8 @@ Cohesion: 0.42
 Nodes (3): Provider, ProviderChainBrain, State
 
 ### Community 16 - "Config"
-Cohesion: 0.15
-Nodes (6): Providers, Preset, Config, main(), ApiTest, FakeBrain
+Cohesion: 0.22
+Nodes (4): Providers, Preset, Config, main()
 
 ### Community 17 - "looin"
 Cohesion: 0.25
@@ -140,10 +144,6 @@ Nodes (7): build, env_file, ports, restart, volumes, services, looin
 ### Community 18 - "Recon map: {{app}} ({{platform}})"
 Cohesion: 0.18
 Nodes (10): Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: {{app}} ({{platform}}), Screens (+2 more)
-
-### Community 19 - "App.kt"
-Cohesion: 0.11
-Nodes (13): App(), Bubble(), ChatHubScreen(), ChatScreen(), SectionTitle(), timeAgo(), TopBar(), ConnectScreen() (+5 more)
 
 ### Community 20 - "replica-backend"
 Cohesion: 0.20
@@ -197,9 +197,9 @@ Nodes (26): AI 수준에 대해 (솔직하게), Looin World 아키텍처, 데이
 Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
-### Community 42 - "WorldScreens.kt"
-Cohesion: 0.35
-Nodes (8): AppController, Feed(), Meetings(), SpaceScreen(), WorldScreen(), CreatePostRequest, Space, TickRequest
+### Community 42 - "AppController"
+Cohesion: 0.40
+Nodes (8): App(), AppController, Bubble(), ChatHubScreen(), ChatScreen(), Feed(), Meetings(), SpaceScreen()
 
 ### Community 43 - "Looin World 로드맵"
 Cohesion: 0.33
@@ -211,19 +211,19 @@ Nodes (5): Tab, Chat, Home, Me, World
 
 ## Knowledge Gaps
 - **22 isolated node(s):** `NewAgent`, `PostRoute`, `HIGH`, `LOW`, `MEDIUM` (+17 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 320 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **35 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 321 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **39 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Repository` connect `Repository` to `Space`, `Serializable`, `Main.kt`, `MemoryService.kt`?**
+- **Why does `Repository` connect `Repository` to `Space`, `Serializable`, `Main.kt`, `ProviderChainBrain.kt`?**
   _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **What connects `NewAgent`, `PostRoute`, `HIGH` to the rest of the system?**
   _22 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Space` be split into smaller, more focused modules?**
-  _Cohesion score 0.06935057302380253 - nodes in this community are weakly interconnected._
-- **Why does `Post` connect `Serializable` to `Space`, `Repository`, `LooinApi`, `ProviderChainBrain.kt`, `WorldScreens.kt`?**
+  _Cohesion score 0.07958707958707958 - nodes in this community are weakly interconnected._
+- **Why does `Post` connect `Space` to `Repository`, `LooinApi`, `WorldScreens.kt`, `ApiTest.kt`, `Serializable`, `ProviderChainBrain.kt`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
   _Cohesion score 0.0642243328810493 - nodes in this community are weakly interconnected._
