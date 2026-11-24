@@ -1,7 +1,7 @@
-# Graph Report - LooinRepository  (2026-11-22)
+# Graph Report - LooinRepository  (2026-11-24)
 
 ## Corpus Check
-- 82 files · ~75,881 words
+- 82 files · ~76,260 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d25c647f`
+- Built from commit: `1ee85a3d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -83,16 +83,16 @@
 7. `buildApp()` - 21 edges
 8. `Live` - 19 edges
 9. `computeAfk()` - 18 edges
-10. `GameScene` - 17 edges
+10. `Paint` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `권한 모델 (이 게임에서 가장 중요한 결정)` --references--> `computeAfk()`  [INFERRED]
   replica/architecture.md → game/src/core/afk.ts
 - `구조` --references--> `computeAfk()`  [INFERRED]
   replica/backend.md → game/src/core/afk.ts
-- `색` --references--> `lineOf()`  [INFERRED]
-  replica/design/art-spec.md → game/src/render/sprites.ts
 - `색` --references--> `ramp()`  [INFERRED]
+  replica/design/art-spec.md → game/src/render/sprites.ts
+- `색` --references--> `lineOf()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/sprites.ts
 - `멀티 전환을 위한 설계` --references--> `SaveBackend`  [INFERRED]
   game/README.md → game/src/game.ts

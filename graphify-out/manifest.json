@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1795307846.2917588,
-    "seen": 1795307862.3486006,
-    "ast_hash": "50b43d71e740638b92eb6270441684e4",
+    "mtime": 1795486790.829798,
+    "seen": 1795486902.8119774,
+    "ast_hash": "96b8ceca3b8a9d9bb42a8824d1254941",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795307846.2902946,
-    "seen": 1795307862.3485773,
-    "ast_hash": "1bdd00896e877a6cae15a794ae31cd12",
+    "mtime": 1795486833.3260672,
+    "seen": 1795486902.811947,
+    "ast_hash": "f3aac5d52535272620922d48975368e3",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {
