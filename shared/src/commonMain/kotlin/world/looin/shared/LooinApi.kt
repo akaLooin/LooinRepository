@@ -52,7 +52,14 @@ class LooinApi(baseUrl: String, private val token: String) {
         expectSuccess = false
     }
 
-    private fun HttpRequestBuilder.auth() = bearerAuth(token)
+    /**
+     * 비밀번호에 특수문자·한글·공백이 있어도 HTTP 헤더에 안전하게 실리도록 base64url 로 감싸 보낸다.
+     * 서버는 "b64." 로 시작하면 풀어서 비교한다.
+     */
+    @OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
+    private val headerToken: String = "b64." + kotlin.io.encoding.Base64.UrlSafe.encode(token.encodeToByteArray())
+
+    private fun HttpRequestBuilder.auth() = bearerAuth(headerToken)
     private fun url(path: String) = "$base/api$path"
 
     private suspend inline fun <reified T> HttpResponse.ok(): T {

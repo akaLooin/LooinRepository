@@ -43,6 +43,17 @@ private class FakeBrain : Brain {
 }
 
 class ApiTest {
+    @Test
+    fun specialCharacterPasswords() = testApplication {
+        val pw = "Looin!2026@아카엘 #pw"
+        val app = App(Config(0, Files.createTempDirectory("looin3").toFile(), pw, emptyList(), 0.0, null), FakeBrain())
+        application { module(app) }
+        val wrapped = "b64." + java.util.Base64.getUrlEncoder().encodeToString(pw.toByteArray())
+        assertEquals(HttpStatusCode.OK, client.get("/api/world") { bearerAuth(wrapped) }.status)
+        val wrong = "b64." + java.util.Base64.getUrlEncoder().encodeToString("nope".toByteArray())
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/world") { bearerAuth(wrong) }.status)
+    }
+
     private val token = "test-token"
 
     private fun newApp(): App {
@@ -56,6 +67,9 @@ class ApiTest {
         application { module(app) }
 
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/world").status)
+        // 앱은 비밀번호를 base64url 로 감싸 보낸다
+        val wrapped = "b64." + java.util.Base64.getUrlEncoder().encodeToString(token.toByteArray())
+        assertEquals(HttpStatusCode.OK, client.get("/api/world") { bearerAuth(wrapped) }.status)
 
         val ov = LooinJson.decodeFromString(WorldOverview.serializer(), client.get("/api/world") { bearerAuth(token) }.bodyAsText())
         assertEquals("Looin World", ov.world.name)

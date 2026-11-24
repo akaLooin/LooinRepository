@@ -80,12 +80,17 @@ fun main() {
     embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(app) }.start(wait = true)
 }
 
+/** 앱은 비밀번호를 "b64.<base64url>" 로 감싸 보낸다 (특수문자·한글 대응). 예전 방식(그대로)도 받는다. */
+fun decodeToken(header: String): String? =
+    if (header.startsWith("b64.")) runCatching { String(java.util.Base64.getUrlDecoder().decode(header.removePrefix("b64.")), Charsets.UTF_8) }.getOrNull()
+    else header
+
 fun Application.module(app: App) {
     install(ContentNegotiation) { json(LooinJson) }
     install(CallLogging)
     install(Authentication) {
         bearer("owner") {
-            authenticate { cred -> app.repo.userIdForToken(cred.token)?.let { UserIdPrincipal(it) } }
+            authenticate { cred -> decodeToken(cred.token)?.let { app.repo.userIdForToken(it) }?.let { UserIdPrincipal(it) } }
         }
     }
     install(StatusPages) {

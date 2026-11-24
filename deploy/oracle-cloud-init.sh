@@ -37,16 +37,21 @@ iptables -I INPUT "$POS" -p tcp -m state --state NEW --dport 80 -j ACCEPT
 if command -v netfilter-persistent >/dev/null; then netfilter-persistent save; fi
 
 # 서버 프로그램 설치/업데이트 명령 (GitHub 가 미리 만들어 둔 배포본을 내려받는다)
+# 바뀐 게 없으면 아무것도 하지 않는다. --force 로 강제 재설치.
 cat > /usr/local/bin/looin-update <<UPD
 #!/bin/bash
 set -e
 tmp=\$(mktemp -d)
+trap 'rm -rf "\$tmp"' EXIT
 curl -fsSL -o "\$tmp/s.zip" "$SERVER_ZIP"
+new=\$(sha256sum "\$tmp/s.zip" | cut -d' ' -f1)
+old=\$(cat /opt/looin-server/.zip-sha256 2>/dev/null || true)
+if [ "\$new" = "\$old" ] && [ "\${1:-}" != "--force" ]; then echo "이미 최신"; exit 0; fi
 unzip -q "\$tmp/s.zip" -d "\$tmp"
 rm -rf /opt/looin-server.old
 [ -d /opt/looin-server ] && mv /opt/looin-server /opt/looin-server.old
 mv "\$tmp"/server-* /opt/looin-server
-rm -rf "\$tmp"
+echo "\$new" > /opt/looin-server/.zip-sha256
 systemctl restart looin 2>/dev/null || true
 echo "Looin 서버 업데이트 완료"
 UPD
@@ -83,8 +88,28 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 UNIT
+# 매일 새벽(한국 시간 4~5시) 새 버전이 있으면 자동 업데이트
+cat > /etc/systemd/system/looin-update.service <<'UNIT'
+[Unit]
+Description=Update Looin World server
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/looin-update
+UNIT
+cat > /etc/systemd/system/looin-update.timer <<'UNIT'
+[Unit]
+Description=Daily Looin World update
+[Timer]
+OnCalendar=*-*-* 19:00:00 UTC
+RandomizedDelaySec=1h
+Persistent=true
+[Install]
+WantedBy=timers.target
+UNIT
+
 systemctl daemon-reload
 systemctl enable --now looin
+systemctl enable --now looin-update.timer
 
 # 서버의 공인 IP → 무료 HTTPS 도메인 (예: 140.238.1.2 → 140-238-1-2.sslip.io), Caddy 가 인증서 자동 발급
 IP=$(curl -fsS https://api.ipify.org || curl -fsS https://ifconfig.me)
