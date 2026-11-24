@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText, Calendar, CalendarHeader, CategoryPill, ChevronLeft, ChevronRight, Heart, ProfileHeader, StoredImage, TodoRow, useToast, MoodMark } from "../../components";
+import { AppText, Calendar, CalendarHeader, CategoryPill, ChevronLeft, ChevronRight, Heart, Megaphone, ProfileHeader, StoredImage, TodoRow, useToast, MoodMark } from "../../components";
 import type { Diary } from "../../data/types";
-import { friendMonth, react, type FriendView, type Reaction } from "../../data/social";
+import { cheer, friendMonth, react, type FriendView, type Reaction } from "../../data/social";
 import { isVirtual, todosForDay } from "../../data/store";
 import { usePrefs } from "../../data/prefs";
 import { nextReaction } from "../../lib/friend";
@@ -38,6 +38,7 @@ export function FriendHome({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<{ id: string; target: "todo" | "diary" } | null>(null); // whose reaction panel is open
   const [diaryOpen, setDiaryOpen] = useState(false);
+  const [cheered, setCheered] = useState<Set<string>>(() => new Set()); // 독려 sent this visit
   const [toast, notice] = useToast();
   const loading = useRef(new Set<number>());
   const sundayFirst = prefs.weekStartsSunday;
@@ -94,6 +95,13 @@ export function FriendHome({ id }: { id: string }) {
   }
 
   const p = anyView.person;
+  // 친구 (following each other, 2026-11-24): reactions and 독려; a one-way follower only looks
+  const friend = p.isFriend;
+  const sendCheer = (id: string, title: string) => {
+    setCheered((x) => new Set(x).add(id));
+    cheer(id).then((r) => notice(r === "already" ? "오늘은 이미 응원했어요" : `'${title}' 할 일을 응원했어요`))
+      .catch((e) => { setCheered((x) => { const n = new Set(x); n.delete(id); return n; }); notice(e instanceof Error ? e.message : "잠시 뒤에 다시 해 주세요"); });
+  };
   const cats = [...anyView.db.categories].sort((a, b) => a.sortOrder - b.sortOrder);
   const fdb = current?.db;
   const dayTodos = fdb ? todosForDay(fdb, selected).sort((a, b) => a.sortOrder - b.sortOrder) : [];
@@ -200,6 +208,11 @@ export function FriendHome({ id }: { id: string }) {
           <AppText variant="helper" color="textMuted">{`${parseDay(selected).m}월 ${parseDay(selected).d}일 ${"일월화수목금토"[weekday(selected)]}요일`}</AppText>
         ) : null}
         {current === undefined ? <ActivityIndicator style={{ paddingVertical: 16 }} color={c.textMuted} /> : null}
+        {!friend ? (
+          <AppText variant="small" color="textMuted" style={{ paddingVertical: 4 }}>
+            {p.followsMe === "accepted" ? "나를 팔로우하는 사람이에요. 나도 팔로우하면 친구가 돼서 반응하고 응원할 수 있어요" : "서로 팔로우하면 친구가 돼요. 친구에게만 반응하고 응원할 수 있어요"}
+          </AppText>
+        ) : null}
         {current && shown.length === 0 ? <AppText variant="body" color="textMuted" style={{ paddingVertical: 16 }}>이날 보이는 할 일이 없어요</AppText> : null}
         {shown.map((cat) => (
           <View key={cat.id} style={{ gap: 2 }}>
@@ -215,7 +228,9 @@ export function FriendHome({ id }: { id: string }) {
               const list = listFor(t.id, "todo");
               const mine = list.some((r) => r.mine);
               // a routine's day that nobody has touched has no to-do of its own yet, so it cannot take a reaction
-              const canReact = !isVirtual(t.id);
+              const canReact = friend && !isVirtual(t.id);
+              // 독려: a friend's to-do not done yet, today or before
+              const canCheer = canReact && !t.isDone && selected <= now;
               return (
                 <TodoRow
                   key={t.id}
@@ -229,10 +244,18 @@ export function FriendHome({ id }: { id: string }) {
                   smallPhoto={prefs.smallTodoPhoto}
                   below={<ReactionLine list={list} />}
                   right={canReact ? (
-                    <Pressable onPress={() => setPicking({ id: t.id, target: "todo" })} hitSlop={10} accessibilityRole="button" accessibilityLabel={mine ? `${t.title} 반응 바꾸기` : `${t.title}에 반응하기`}
-                      style={{ paddingTop: 2 }}>
-                      <Heart size={24} color={mine ? c.sunday : c.textMuted} fill={mine ? c.sunday : "transparent"} />
-                    </Pressable>
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
+                      {canCheer ? (
+                        <Pressable onPress={() => sendCheer(t.id, t.title)} disabled={cheered.has(t.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`${t.title} 응원하기`}
+                          style={{ paddingTop: 2, opacity: cheered.has(t.id) ? 0.4 : 1 }}>
+                          <Megaphone size={22} color={cheered.has(t.id) ? c.textMuted : c.accent} />
+                        </Pressable>
+                      ) : null}
+                      <Pressable onPress={() => setPicking({ id: t.id, target: "todo" })} hitSlop={10} accessibilityRole="button" accessibilityLabel={mine ? `${t.title} 반응 바꾸기` : `${t.title}에 반응하기`}
+                        style={{ paddingTop: 2 }}>
+                        <Heart size={24} color={mine ? c.sunday : c.textMuted} fill={mine ? c.sunday : "transparent"} />
+                      </Pressable>
+                    </View>
                   ) : null}
                 />
               );
@@ -252,7 +275,7 @@ export function FriendHome({ id }: { id: string }) {
         diary={diaryOpen ? diary ?? null : null}
         person={p}
         reactions={diary ? current?.diaryReactions[diary.id] ?? [] : []}
-        onReact={() => diary && setPicking({ id: diary.id, target: "diary" })}
+        onReact={friend ? () => diary && setPicking({ id: diary.id, target: "diary" }) : undefined}
         onClose={() => setDiaryOpen(false)}
       />
       <ReactionSheet visible={!!picking} current={pickingMine} onPick={(v, k) => picking && onPick(picking.id, picking.target, v, k)} onClose={() => setPicking(null)} />

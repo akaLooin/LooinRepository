@@ -6,6 +6,8 @@ export type FollowState = "pending" | "accepted" | null;
 export type Person = {
   id: string; nickname: string; handle?: string; bio: string; avatarUri?: string; statusEmoji?: string;
   iFollow: FollowState; followsMe: FollowState; blockedByMe: boolean; followers?: number; following?: number;
+  /** 친구 = following each other (2026-11-24): only friends react and cheer; a one-way follower only looks */
+  isFriend: boolean;
 };
 export type Reaction = { kind: "emoji" | "sticker"; value: string; mine?: boolean; nickname?: string };
 /** A friend's month as the app uses it: their visible things in the same shape as mine, plus reactions per to-do. */
@@ -20,6 +22,7 @@ export function toPerson(r: R): Person {
     id: String(r.id), nickname: String(r.nickname ?? ""), handle: r.handle ?? undefined, bio: r.bio ?? "",
     avatarUri: r.avatar_path ?? undefined, statusEmoji: r.status_emoji ?? undefined,
     iFollow: st(r.i_follow), followsMe: st(r.follows_me), blockedByMe: !!r.blocked_by_me,
+    isFriend: r.is_friend === true || (st(r.i_follow) === "accepted" && st(r.follows_me) === "accepted"),
     followers: r.followers == null ? undefined : Number(r.followers), following: r.following == null ? undefined : Number(r.following),
   };
 }
@@ -75,6 +78,7 @@ export function noticeText(n: NoticeLike): string {
   if (n.type === "follow_accepted") return `${who}이 팔로우 요청을 수락했어요`;
   if (n.type === "crew_request") return `${who}이 '${n.crewName ?? "크루"}' 크루에 참가 신청했어요`;
   if (n.type === "crew_accepted") return `'${n.crewName ?? "크루"}' 크루 참가가 수락됐어요`;
+  if (n.type === "cheer") return n.todoTitle ? `${who}이 '${n.todoTitle}' 할 일을 응원해요` : `${who}이 할 일을 응원해요`;
   const what = n.value?.startsWith("clover.") ? "스티커로" : (n.value ?? "");
   return n.todoTitle ? `${who}이 '${n.todoTitle}'에 ${what} 반응했어요` : `${who}이 ${what} 반응했어요`;
 }

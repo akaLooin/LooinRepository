@@ -22,6 +22,7 @@ export function noticeBody(type: string, actor: string, value?: string | null, t
   if (type === "follow_request") return `${who}이 팔로우를 요청했어요`;
   if (type === "follow") return `${who}이 나를 팔로우해요`;
   if (type === "follow_accepted") return `${who}이 팔로우 요청을 수락했어요`;
+  if (type === "cheer") return todoTitle ? `${who}이 '${todoTitle}' 할 일을 응원해요` : `${who}이 할 일을 응원해요`;
   if (type === "reaction") {
     const what = value?.startsWith("clover.") ? "스티커로" : value ?? "";
     return todoTitle ? `${who}이 '${todoTitle}'에 ${what} 반응했어요` : `${who}이 ${what} 반응했어요`;
@@ -34,7 +35,7 @@ export function wants(kind: "chat" | "likes" | "following", s: Settings): boolea
   const v = kind === "chat" ? s?.notify_chat : kind === "likes" ? s?.notify_likes : s?.notify_following;
   return v !== false;
 }
-export const noticeKind = (type: string): "likes" | "following" => (type === "reaction" ? "likes" : "following"); // crew news counts as 팔로잉 소식
+export const noticeKind = (type: string): "likes" | "following" => (type === "reaction" || type === "cheer" ? "likes" : "following"); // crew news counts as 팔로잉 소식
 
 /** One push per phone; Expo takes up to 100 per request. */
 export function expoBatches(tokens: string[], title: string, body: string, url: string, channelId: string): PushMessage[][] {

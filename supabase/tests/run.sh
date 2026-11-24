@@ -18,7 +18,7 @@ for m in "$here"/../migrations/*.sql; do
   sed 's/^create extension if not exists pg_cron;//' "$m" | db -f - >/dev/null || { echo "FAILED migration $(basename "$m")"; exit 1; }
 done
 # the friends migration must be safe to run twice (the SQL editor can fail halfway and be re-run)
-for m in 20261108000000_friends 20261108000100_reaction_lists 20261108000200_chat 20261108000300_push 20261109000000_feed 20261109000100_diary_mood 20261109000200_crews 20261109000300_crews2 20261112000000_my_features 20261118000000_events 20261120000000_important 20261121000000_admin 20261122000000_admin_live 20261124000000_event_repeat_categories 20261125000000_google_calendar 20261126000000_event_details 20261127000000_google_more; do
+for m in 20261108000000_friends 20261108000100_reaction_lists 20261108000200_chat 20261108000300_push 20261109000000_feed 20261109000100_diary_mood 20261109000200_crews 20261109000300_crews2 20261112000000_my_features 20261118000000_events 20261120000000_important 20261121000000_admin 20261122000000_admin_live 20261124000000_event_repeat_categories 20261125000000_google_calendar 20261126000000_event_details 20261127000000_google_more 20261128000000_friends_mutual; do
   db -f "$here/../migrations/$m.sql" >/dev/null || { echo "FAILED re-running $m"; exit 1; }
 done
 echo "ok migrations (friends twice)"

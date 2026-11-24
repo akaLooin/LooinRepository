@@ -36,6 +36,9 @@ begin
   assert f->0->'person'->>'nickname' = 'Feeder' and f->0->'category'->>'title' = 'open', 'who and which category';
   assert jsonb_array_length(friend_feed(null, 1)) = 1, 'page size';
   assert (select array_agg(e->>'title') from jsonb_array_elements(friend_feed('2026-11-08 09:30+00')) e where e->>'kind' = 'todo') = array['older'], 'more: older ones only';
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000f8', false);
+  perform follow('00000000-0000-0000-0000-0000000000e8');  -- friends (reactions are between friends)
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e8', false);
   perform react('todo', '28000000-0000-0000-0000-000000000002', 'sticker', 'clover.best');
   assert friend_feed()->0->'reactions'->0->>'value' = 'clover.best', 'reactions come along';
 end $$;

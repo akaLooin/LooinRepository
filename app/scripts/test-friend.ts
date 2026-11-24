@@ -51,6 +51,8 @@ t("reactions on my to-dos and diaries are grouped by id", () => {
 });
 t("odd follow states are ignored", () => {
   assert.equal(toPerson({ id: 1, nickname: "x", i_follow: "maybe" }).iFollow, null);
+  assert.equal(toPerson({ id: 1, nickname: "x", i_follow: "accepted", follows_me: "accepted" }).isFriend, true, "following each other = friends");
+  assert.equal(toPerson({ id: 1, nickname: "x", i_follow: "accepted", follows_me: null }).isFriend, false, "one way = follower only");
 });
 t("notice wording", () => {
   assert.equal(noticeText({ type: "follow_request", actor: { nickname: "토끼" } }), "토끼님이 팔로우를 요청했어요");

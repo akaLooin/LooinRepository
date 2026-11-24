@@ -7,27 +7,27 @@ import { tokens, useInsets, useTheme } from "../../theme";
 import { PersonRow } from "./PersonRow";
 import { PersonSheet } from "./PersonSheet";
 
-type Tab = "following" | "followers" | "requests";
-const TABS: { key: Tab; label: string }[] = [{ key: "following", label: "팔로잉" }, { key: "followers", label: "팔로워" }, { key: "requests", label: "요청" }];
+type Tab = "friends" | "following" | "followers" | "requests";
+const TABS: { key: Tab; label: string }[] = [{ key: "friends", label: "친구" }, { key: "following", label: "팔로잉" }, { key: "followers", label: "팔로워" }, { key: "requests", label: "요청" }];
 
 /** 팔로잉 / 팔로워 / 받은 요청, from the home people button and 마이's counts. (Layout guessed: not in the recordings.) */
 export function PeopleScreen() {
   const { c } = useTheme();
   const insets = useInsets();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const [tab, setTab] = useState<Tab>(TABS.some((t) => t.key === params.tab) ? (params.tab as Tab) : "following");
+  const [tab, setTab] = useState<Tab>(TABS.some((t) => t.key === params.tab) ? (params.tab as Tab) : "friends");
   const [list, setList] = useState<Person[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Person | null>(null);
   const [toast, notice] = useToast();
   const load = useCallback(() => {
     setList(null);
-    followList(tab).then((l) => { setList(l); setError(null); }).catch((e) => setError(e instanceof Error ? e.message : "불러오지 못했어요"));
+    (tab === "friends" ? followList("following").then((l) => l.filter((p) => p.isFriend)) : followList(tab)).then((l) => { setList(l); setError(null); }).catch((e) => setError(e instanceof Error ? e.message : "불러오지 못했어요"));
   }, [tab]);
   useEffect(load, [load]);
   const act = (f: () => Promise<unknown>, done: string) => f().then(() => { notice(done); load(); refreshFollowing(); }).catch((e) => notice(e instanceof Error ? e.message : "잠시 뒤에 다시 해 주세요"));
   const actions = (p: Person) =>
-    tab === "following" ? [{ label: "팔로잉", onPress: () => act(() => unfollow(p.id), `${p.nickname}님 팔로우를 취소했어요`) }]
+    tab === "following" || tab === "friends" ? [{ label: "팔로잉", onPress: () => act(() => unfollow(p.id), `${p.nickname}님 팔로우를 취소했어요`) }]
     : tab === "followers" ? [{ label: "삭제", onPress: () => act(() => removeFollower(p.id), `${p.nickname}님을 팔로워에서 삭제했어요`) }]
     : [{ label: "수락", strong: true, onPress: () => act(() => respondFollow(p.id, true), "요청을 수락했어요") }, { label: "거절", onPress: () => act(() => respondFollow(p.id, false), "요청을 거절했어요") }];
   const G = tokens.layout.gutter;

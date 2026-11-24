@@ -12,6 +12,8 @@ t("chat message lines", () => {
 t("follow and reaction lines match the 알림 tab", () => {
   assert.equal(noticeBody("follow_request", "토끼"), "토끼님이 팔로우를 요청했어요");
   assert.equal(noticeBody("reaction", "토끼", "clover.best", "산책"), "토끼님이 '산책'에 스티커로 반응했어요");
+  assert.equal(noticeBody("cheer", "토끼", null, "운동"), "토끼님이 '운동' 할 일을 응원해요");
+  assert.equal(noticeKind("cheer"), "likes");
   assert.equal(noticeBody("reaction", "토끼", "🔥", null), "토끼님이 🔥 반응했어요");
   assert.equal(noticeBody("weird", "토끼"), null);
   assert.equal(noticeBody("crew_request", "토끼", null, null, "아침 운동"), "토끼님이 '아침 운동' 크루에 참가 신청했어요");

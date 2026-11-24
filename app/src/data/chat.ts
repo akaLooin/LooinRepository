@@ -18,7 +18,7 @@ export type Thread = { other: Person; canSend: boolean; otherReadAt?: string; me
 
 /** A crew shown where a person would be (room list, chat header). */
 const crewAsPerson = (id: string, name: string, image?: string): Person =>
-  ({ id, nickname: name, bio: "", avatarUri: image, iFollow: null, followsMe: null, blockedByMe: false });
+  ({ id, nickname: name, bio: "", avatarUri: image, iFollow: null, followsMe: null, blockedByMe: false, isFriend: false });
 
 const isDemo = () => sessionUserId() === null;
 async function rpc<T>(fn: string, args: Record<string, unknown> = {}): Promise<T> {

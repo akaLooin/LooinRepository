@@ -51,6 +51,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 18. [ ] (11-23) 립마크에서 바꾼 색이 구글에 늦게 감 → 빠른 올리기(립마크 변경만 바로, 캘린더 목록·당겨오기는 건너뜀): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` → 폰 지금 업데이트 → 색 바꿔서 몇 초 걸리는지 확인
 19. [ ] (11-23, 급하지 않음: 앱이 이미 모든 캘린더를 연동으로 바꿈) 계정의 캘린더 전부 연동(새로 생긴 캘린더도 처음부터): `git pull` → `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (18과 한 번에)
 20. [ ] (11-24 새벽: 복사본이 계속 늘어나 폰에서 `update google_accounts set sync_lock = '2099-01-01';`로 맞추기를 멈춰 둠 → **서버 올린 뒤** `update google_accounts set sync_lock = null;`로 다시 켜기) (11-23, **가장 먼저**) 저장하면 구글 일정이 하나 더 생김(원인: 서버가 일정·연결을 1000개까지만 읽음 → 연결을 못 읽은 일정을 새로 올림) → `git pull` → 서버 올리기(18·19도 같이 됨) → SQL로 복사본 세기 `remove-copies` + `"dry":true` → 숫자를 Claude에게 → 괜찮으면 `"dry":false`로 한 번(같은 캘린더·제목·날짜·시간·반복인 일정 중 가장 오래된 것만 남기고 립마크·구글에서 지움)
+21. [ ] (11-24) 친구 = 서로 팔로우, 반응·응원(독려)은 친구만: **SQL** `supabase\migrations\20261128000000_friends_mutual.sql` → 푸시 함수 다시 올리기(응원 알림 문구) `npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <ref>` → 친구 화면에서 안 끝난 할 일의 확성기 버튼 확인
 
 ## E. 나중에 (선택)
 - [ ] 구글 앱 인증(검증) 신청: 지금은 연결할 때 "확인되지 않은 앱" 경고가 한 번 뜸(혼자·100명 이하는 그대로 써도 됨). 없애려면 내 도메인, 그 도메인의 홈페이지·개인정보처리방침, 사용 영상 등을 내고 구글 심사(몇 주)를 받아야 함. 다른 사람에게 앱을 공개할 때 진행

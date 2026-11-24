@@ -84,6 +84,13 @@ begin
   assert (r->'person'->>'i_follow') = 'accepted' and (r->'person'->>'followers')::int = 1, 'person shows the follow';
   assert (select count(*) from storage.objects where name like '%p1.jpg') = 1, 'B can read the followers todo photo';
   assert (select count(*) from storage.objects where name like '%p2.jpg') = 0, 'but not the private one';
+  -- a follower only (one way) sees, but cannot react (20261128000000: reactions are between friends)
+  assert pg_temp.fails($q$ select react('todo', '20000000-0000-0000-0000-000000000002', 'emoji', '👍') $q$), 'a one-way follower cannot react';
+  assert (r->'person'->>'is_friend') = 'false', 'not friends yet';
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+  perform follow('00000000-0000-0000-0000-00000000000b');  -- A follows B back: friends
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', false);
+  assert (friend_range('00000000-0000-0000-0000-00000000000a', '2026-11-01', '2026-11-30')->'person'->>'is_friend') = 'true', 'now friends';
   perform react('todo', '20000000-0000-0000-0000-000000000002', 'emoji', '👍');
   perform react('todo', '20000000-0000-0000-0000-000000000002', 'emoji', '🔥');  -- changing it keeps one reaction
   assert (select count(*) from reactions) = 1 and (select value from reactions) = '🔥', 'one reaction per person per todo';
@@ -94,7 +101,7 @@ begin
     'friend_range lists the reactions on each todo';
   assert r->'diaries'->0->'reactions'->0->>'value' = '❤️', 'and on the diary';
   assert pg_temp.fails($q$ select react('diary', '40000000-0000-0000-0000-000000000002', 'emoji', '👍') $q$), 'no reaction on a private diary';
-  assert (select count(*) from notifications) = 0, 'B cannot read A''s notifications';
+  assert (select count(*) from notifications where user_id <> auth.uid()) = 0, 'B cannot read A''s notifications';
 end $$;
 reset role;
 \echo ok follower B sees followers things, reacts, nothing private
@@ -112,8 +119,7 @@ begin
   assert (select count(*) from storage.objects) = 0, 'C reads no photos';
   assert pg_temp.fails($q$ select react('todo', '20000000-0000-0000-0000-000000000002', 'emoji', '👍') $q$), 'C cannot react to a followers todo';
   assert (select count(*) from reactions) = 0, 'C cannot read B''s reaction to A';
-  perform react('todo', '20000000-0000-0000-0000-000000000001', 'emoji', '🙂');
-  assert (select count(*) from reactions) = 1, 'C can react to a public todo and sees only their own reaction';
+  assert pg_temp.fails($q$ select react('todo', '20000000-0000-0000-0000-000000000001', 'emoji', '🙂') $q$), 'a stranger cannot react, even to a public todo';
   assert jsonb_array_length(search_people('ali')) = 1, 'search by name';
   assert search_people('bob_')->0->>'handle' = 'bob_1', 'search by ID prefix, _ is literal';
   assert jsonb_array_length(search_people('%')) = 0, 'a bare wildcard finds nobody';
@@ -128,10 +134,10 @@ set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
 update user_settings set follow_approval = true, likes_todo = 'followers' where user_id = auth.uid();
 do $$ begin
-  assert (select count(*) from notifications where type = 'reaction') = 3, 'A got three reaction notifications (changing one did not add one)';
-  assert my_notifications()->0->'actor'->>'nickname' = 'Carol', 'notifications carry the actor';
-  assert (select count(*) from reactions) = 3, 'A sees reactions on their things';
-  assert jsonb_array_length(reactions_on_mine('2026-11-01', '2026-11-30')) = 3, 'A gets the to-do and diary reactions';
+  assert (select count(*) from notifications where type = 'reaction') = 2, 'A got two reaction notifications from friend B (changing one did not add one; stranger C cannot react)';
+  assert my_notifications()->0->'actor'->>'nickname' is not null, 'notifications carry the actor';
+  assert (select count(*) from reactions) = 2, 'A sees reactions on their things';
+  assert jsonb_array_length(reactions_on_mine('2026-11-01', '2026-11-30')) = 2, 'A gets the to-do and diary reactions';
   assert (select count(*) from jsonb_array_elements(reactions_on_mine('2026-11-08', '2026-11-08')) e where e->>'diary_id' is not null) = 1, 'the diary one is marked';
   assert reactions_on_mine('2026-11-01', '2026-11-30')->0->>'nickname' = 'Bob', 'with who sent them';
 end $$;

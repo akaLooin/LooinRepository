@@ -122,6 +122,15 @@ export async function follow(id: string): Promise<"pending" | "accepted"> {
   refreshFollowing();
   return res;
 }
+/** 독려 (friends, 2026-11-24): a nudge on a friend's unfinished to-do; "already" when sent today. */
+export async function cheer(todoId: string): Promise<"sent" | "already"> {
+  if (isDemo()) return "sent";
+  if (!supabase) throw new Error("서버가 설정되지 않았어요");
+  const { data, error } = await supabase.rpc("cheer", { target: todoId });
+  if (error) throw new Error(/function|schema cache/i.test(error.message) ? "서버 준비 중이에요 (PC에서 할 일)" : "친구의 아직 안 끝난 할 일만 응원할 수 있어요");
+  return data === "already" ? "already" : "sent";
+}
+
 export async function unfollow(id: string) {
   if (isDemo()) { const p = demo.people.find((x) => x.id === id); if (p) p.follow = null; }
   else await rpc("unfollow", { target: id });

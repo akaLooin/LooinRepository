@@ -22,7 +22,10 @@ const SHOWN = 5;
 export function TogetherScreen() {
   const { c } = useTheme();
   const insets = useInsets();
-  const following = useFollowing();
+  const followingAll = useFollowing();
+  // 친구 = following each other (2026-11-24); the ones I only follow are listed apart
+  const following = followingAll.filter((p) => p.isFriend);
+  const oneWay = followingAll.length - following.length;
   const config = useAppConfig();
   const crews = useMyCrews();
   const unread = useUnreadConversations();
@@ -78,8 +81,13 @@ export function TogetherScreen() {
           )) : (
             <AppText variant="helper" color="textMuted" style={{ paddingVertical: 12 }}>친구를 추가하면 서로의 하루를 보고 응원할 수 있어요</AppText>
           )}
+          {oneWay ? (
+            <Pressable onPress={() => router.push("/people?tab=following" as never)} accessibilityRole="button" style={{ minHeight: 36, justifyContent: "center" }}>
+              <AppText variant="small" color="textMuted">{`팔로우만 하는 사람 ${oneWay}명 · 서로 팔로우하면 친구가 돼요`}</AppText>
+            </Pressable>
+          ) : null}
           {following.length > SHOWN ? (
-            <Pressable onPress={() => router.push("/people?tab=following" as never)} accessibilityRole="button" style={{ height: 40, justifyContent: "center", alignItems: "center" }}>
+            <Pressable onPress={() => router.push("/people?tab=friends" as never)} accessibilityRole="button" style={{ height: 40, justifyContent: "center", alignItems: "center" }}>
               <AppText variant="small" color="textMuted">{`친구 ${following.length}명 모두 보기`}</AppText>
             </Pressable>
           ) : null}
