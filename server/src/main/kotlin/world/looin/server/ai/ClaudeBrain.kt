@@ -178,12 +178,19 @@ class ClaudeBrain(
             }
         } catch (e: AnthropicServiceException) {
             val msg = e.message.orEmpty()
+            val code = e.statusCode()
             lastError = when {
                 "credit balance" in msg.lowercase() -> "이번 달 크레딧 소진"
-                e.statusCode() == 429 -> "요청 한도(429)"
-                else -> "HTTP ${e.statusCode()}"
+                code == 401 -> "API 키가 만료됐거나 잘못됨 — Console 에서 새 키를 만들어 서버에 넣어주세요"
+                code == 403 -> "API 키 권한 없음"
+                code == 429 -> "요청 한도(429)"
+                else -> "HTTP $code"
             }
-            cooldownUntil = System.currentTimeMillis() + if ("크레딧" in lastError!!) 6 * 3_600_000L else 60_000L
+            cooldownUntil = System.currentTimeMillis() + when {
+                "크레딧" in lastError!! -> 6 * 3_600_000L
+                code == 401 || code == 403 -> 30 * 60_000L
+                else -> 60_000L
+            }
             log.warn("claude failed: {}", msg.take(200))
             if (!emitted) throw BrainUnavailable(lastError!!) else throw e
         } catch (e: Exception) {

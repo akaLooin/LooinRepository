@@ -34,13 +34,19 @@ fun HomeScreen(c: AppController) {
                 Spacer(Modifier.height(6.dp))
                 val b = ov.brain
                 Text(
-                    if (!b.online) "⚠️ 오프라인 모드 — 서버에 무료 두뇌 키(GROQ_API_KEY 등)를 설정하세요"
+                    if (!b.online) "⚠️ 오프라인 모드 — 서버에 두뇌 키(ANTHROPIC_API_KEY, GEMINI_API_KEY 등)를 설정하세요"
                     else "🧠 두뇌: " + b.providers.joinToString(" → ") { p ->
                         (if (p.available) "" else "⏸") + "${p.name}(${p.model}" + (p.note?.let { " · $it" } ?: "") + ")"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (b.online) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                 )
+                b.providers.filter { !it.available && it.lastError != null }.forEach { p ->
+                    Text(
+                        "⚠️ ${p.name}: ${p.lastError}",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
         item {
