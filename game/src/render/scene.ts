@@ -134,10 +134,11 @@ class MobView {
   private ph = Math.random() * 6; private flip = 1; private scale = 0; private hpShown = 1; private wasAlive = true;
   constructor(private scene: GameScene, readonly m: Mob) {
     this.shadow = scene.add.image(0, 0, 'shadow').setAlpha(0.2);
-    this.spr = scene.add.image(0, 0, `mob_${m.def.id}`).setOrigin(0.5, 1);
+    this.spr = scene.add.image(0, 0, `mob_${m.def.art ?? m.def.id}`).setOrigin(0.5, 1);
+    if (m.def.tint) this.spr.setTint(m.def.tint);
     const parts: Phaser.GameObjects.GameObject[] = [this.shadow];
     if (m.def.motion === 'float') {
-      const wk = scene.textures.exists(`mob_${m.def.id}_wing`) ? `mob_${m.def.id}_wing` : 'mob_leafling_wing';
+      const art = m.def.art ?? m.def.id, wk = scene.textures.exists(`mob_${art}_wing`) ? `mob_${art}_wing` : 'mob_leafling_wing';
       this.wings = [scene.add.image(-4, -12, wk).setOrigin(1, 0.5).setScale(ART), scene.add.image(4, -12, wk).setOrigin(1, 0.5).setFlipX(true).setOrigin(0, 0.5).setScale(ART)];
       parts.push(...this.wings);
     }
@@ -175,7 +176,7 @@ class MobView {
       this.wings[0].setRotation(flap + 0.2).setY(y - 10); this.wings[1].setRotation(-flap - 0.2).setY(y - 10);
     }
     if (m.hitT > 0) { const k = m.hitT / 0.22; sx *= 1 + k * 0.22; sy *= 1 - k * 0.2; }
-    if (m.hitT > 0.12) this.spr.setTintFill(0xffffff); else this.spr.clearTint();
+    if (m.hitT > 0.12) this.spr.setTintFill(0xffffff); else if (m.def.tint) this.spr.setTint(m.def.tint); else this.spr.clearTint();
     const k = (m.def.scale ?? 1) * ART;
     // 보스 내려찍기 예고: 몸을 움츠렸다가 내려찍는다
     if (m.windup > 0) { const t = 1 - m.windup / m.def.boss!.slamWindup; sy *= 1 - Math.sin(t * Math.PI * 0.5) * 0.28; sx *= 1 + Math.sin(t * Math.PI * 0.5) * 0.18; }
@@ -482,6 +483,8 @@ export class GameScene extends Phaser.Scene {
     if (!w || w !== g.world) return;
     this.rig?.update(dt, w.player, w.char);
     this.updateOthers(dt, w);
+    // 콜로세움 웨이브·미니보스처럼 나중에 생긴 몬스터도 그린다
+    if (this.mobs.length < w.mobs.length) for (const m of w.mobs.slice(this.mobs.length)) this.mobs.push(new MobView(this, m));
     for (const v of this.mobs) v.update(dt);
     for (const v of this.nodeViews) v.update(dt);
     this.syncDrops(w);

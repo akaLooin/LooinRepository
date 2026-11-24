@@ -4,7 +4,7 @@ import { Action, ActionResult, applyAction } from './core/actions';
 import { AfkReport, computeAfk } from './core/afk';
 import { MAPS } from './core/data';
 import { Rng } from './core/rng';
-import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize } from './core/state';
+import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize, portalLock } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
 import { ChatLine, Gear, Live, Net, RemoteInfo, SyncBody } from './net';
 
@@ -232,6 +232,7 @@ export class Game {
       const evs = w.events.splice(0);
       for (const e of evs) {
         this.onEvent(e);
+        if (e.t === 'respawn' && w.arena) continue; // 콜로세움에서는 결과 창에서 보상을 받고 나간다
         if (e.t === 'respawn') {
           // 원작처럼 쓰러지면 마을에서 다시 시작한다
           this.act({ t: 'respawn' });
@@ -240,7 +241,7 @@ export class Game {
         }
         if (e.t === 'arrive' && e.what === 'portal') {
           const q = w.map.portals[e.idx];
-          if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `이 맵에서 ${q.reqKills}마리를 처치해야 열립니다` }); continue; }
+          if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `아직 열리지 않았습니다(${portalLock(w.char, w.map.id, q)})` }); continue; }
           if (!MAPS[q.to]) continue;
           this.travel(e.idx);
           return;

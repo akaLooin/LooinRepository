@@ -46,6 +46,8 @@ export interface MonsterDef {
   boss?: { slamEvery: number; slamWindup: number; slamRadius: number; slamDmg: number; card: string };
   /** 그림 배율 */
   scale?: number;
+  /** 다른 몬스터 그림을 빌려 쓸 때 그 id, 그리고 물들일 색 */
+  art?: string; tint?: number;
 }
 export interface NodeDef {
   id: string; name: string; skill: GatherSkill; reqLv: number;
@@ -59,7 +61,9 @@ export interface PortalDef { x: number; y?: number; to: string; toX: number; toY
 export interface FacilityDef { kind: FacilityKind; x: number; y: number; /** NPC 시설이면 어느 NPC인지 */ npc?: string }
 export interface MapDef {
   id: string; name: string; width: number;
-  theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine';
+  theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena';
+  /** 콜로세움(웨이브 전투) */
+  arena?: boolean;
   /** 지면(y=0)을 제외한 발판. y는 위쪽이 음수. */
   platforms: Platform[];
   spawns: { monster: string; count: number }[];
@@ -148,6 +152,7 @@ const items: ItemDef[] = [
     { id: `legs_${k}`, name: `${n} 다리 갑옷`, desc: '무릎을 지킨다.', kind: 'equip' as const, slot: 'legs' as const, stats: { def: t === 1 ? 8 : 16, hp: t === 1 ? 40 : 90 }, reqLv: t === 1 ? 19 : 34, sell: t === 1 ? 180 : 520 },
     { id: `boots_${k}`, name: `${n} 장화`, desc: '발걸음이 묵직하다.', kind: 'equip' as const, slot: 'shoes' as const, stats: { def: t === 1 ? 6 : 12, agi: t === 1 ? 3 : 6 }, reqLv: t === 1 ? 18 : 33, sell: t === 1 ? 160 : 480 },
   ]),
+  { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
@@ -177,6 +182,12 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'statue_guard', chance: 0.004, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
     drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }] },
+  // 미니보스(정해진 시간에만 나타난다)·콜로세움 챔피언: 다른 몬스터 그림을 크게, 물들여 쓴다
+  { id: 'stumpelder', name: '숲의 장로', hp: 4200, atk: 30, acc: 30, defZero: 60, xp: 1200, coins: [600, 900], speed: 10, motion: 'float', radius: 18, scale: 2.2, art: 'leafling', tint: 0x9fffa0,
+    drops: [{ item: 'statue_wis', chance: 0.6, qty: [1, 3] }, { item: 'stamp_drop', chance: 0.15, qty: [1, 1] }, { item: 'arena_ticket', chance: 0.5, qty: [1, 2] }, { item: 'mushroom', chance: 1, qty: [5, 10] }] },
+  { id: 'ruinwarden', name: '유적 수호자', hp: 16000, atk: 70, acc: 80, defZero: 120, xp: 5000, coins: [2500, 4000], speed: 8, motion: 'waddle', radius: 20, scale: 2.4, art: 'golemite', tint: 0xffd27a,
+    drops: [{ item: 'statue_fortune', chance: 0.8, qty: [1, 3] }, { item: 'stamp_xp', chance: 0.2, qty: [1, 1] }, { item: 'chest_small', chance: 0.3, qty: [1, 1] }, { item: 'moonpie', chance: 1, qty: [3, 6] }] },
+  { id: 'champion', name: '콜로세움 챔피언', hp: 9000, atk: 55, acc: 60, defZero: 95, xp: 2500, coins: [0, 0], speed: 18, motion: 'waddle', radius: 18, scale: 2.2, art: 'pebbler', tint: 0xffa0a0, drops: [] },
   // 1월드 후반(숲 오른쪽에서 이어지는 다섯 사냥터)
   { id: 'mudturtle', name: '진흙거북', hp: 300, atk: 26, acc: 34, defZero: 50, xp: 60, coins: [12, 22], speed: 12, motion: 'waddle', radius: 9,
     drops: [{ item: 'shell', chance: 0.4, qty: [1, 2] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_guard', chance: 0.006, qty: [1, 1] }, { item: 'stamp_mining', chance: 0.002, qty: [1, 1] }] },
@@ -216,7 +227,7 @@ const maps: MapDef[] = [
     nodes: [{ node: 'oak', x: 95 }, { node: 'oak', x: 705 }],
     ropes: [{ x: 205, top: -48, bottom: 0 }, { x: 445, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }],
     facilities: [],
-    portals: [{ x: 24, to: 'town', toX: 620, toY: -48 }, { x: 796, to: 'hills', toX: 50, reqKills: 15 }] },
+    portals: [{ x: 24, to: 'town', toX: 620, toY: -48 }, { x: 796, to: 'hills', toX: 50, reqKills: 15 }, { x: 590, y: -96, to: 'arena', toX: 60, key: 'arena_ticket', label: '콜로세움' }] },
   { id: 'hills', name: '자갈 언덕', width: 920, theme: 'hills',
     platforms: [{ x: 110, y: -48, w: 180 }, { x: 370, y: -48, w: 140 }, { x: 570, y: -48, w: 230 }, { x: 630, y: -96, w: 140 }],
     spawns: [{ monster: 'pebbler', count: 7 }, { monster: 'mossblob', count: 2 }],
@@ -260,6 +271,10 @@ const maps: MapDef[] = [
     spawns: [{ monster: 'shroomkin', count: 9 }], nodes: [{ node: 'moonbirch', x: 90 }, { node: 'moonbirch', x: 660 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 420, top: -48, bottom: 0 }, { x: 520, top: -96, bottom: -48 }, { x: 900, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'ruins', toX: 910 }] },
+  { id: 'arena', name: '이슬 콜로세움', width: 640, theme: 'arena', arena: true,
+    platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
+    spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'meadow', toX: 560, toY: -96 }] },
   // 광산(언덕에서 갈라짐): 몬스터 없이 광맥만, 채광 레벨로 열린다
   { id: 'mine1', name: '얕은 광산', width: 700, theme: 'mine',
     platforms: [{ x: 160, y: -48, w: 200 }, { x: 440, y: -48, w: 200 }],
@@ -501,6 +516,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stamp_coins', price: 1500, daily: 1 },
   { item: 'stamp_afk', price: 4000, daily: 1 },
   { item: 'sculpt_tools', price: 1000, daily: 1 },
+  { item: 'arena_ticket', price: 250, daily: 2 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
@@ -570,6 +586,36 @@ export const CARD_SETS: CardSetDef[] = [
   { id: 'w1b', name: '깊은 숲 세트', cards: ['mudturtle', 'glowbat', 'gusthopper', 'golemite', 'shroomkin', 'willow', 'moonbirch', 'bluerock', 'goldrock'], tiers: [4, 10, 18, 27], eff: 'drop', v: [3, 6, 10, 15], label: '드롭률 +%' },
 ];
 export const CARD_PRESET_LV = 15;
+
+// ───────── 콜로세움 ─────────
+/** 5분 동안 웨이브가 차례로 나온다(앞 웨이브를 다 잡거나 시간이 지나면 다음). 보상은 깬 웨이브 수 */
+export const ARENA = {
+  seconds: 300, waveGap: 25,
+  waves: [
+    ['mossblob', 6], ['mossblob', 8], ['pebbler', 6], ['pebbler', 8], ['leafling', 6], ['leafling', 8], ['mudturtle', 6], ['mudturtle', 8],
+    ['glowbat', 6], ['glowbat', 8], ['gusthopper', 6], ['gusthopper', 8], ['golemite', 6], ['shroomkin', 6], ['champion', 1],
+  ] as [string, number][],
+  /** 깬 웨이브 수에 따른 보상(도달한 단계까지 모두 받는다) */
+  rewards: [
+    { waves: 3, coins: 150, items: [['stew', 2]] },
+    { waves: 6, coins: 400, items: [['forge_oil', 3], ['statue_luk', 2]] },
+    { waves: 10, coins: 1200, items: [['moonpie', 3], ['statue_fortune', 2]] },
+    { waves: 15, coins: 3000, items: [['stamp_crit', 1], ['chest_small', 1]] },
+  ] as { waves: number; coins: number; items: [string, number][] }[],
+};
+/** 처치 수 → 깬 웨이브 수(웨이브 순서대로 센다) */
+export function arenaWaves(kills: number): number {
+  let n = 0, sum = 0;
+  for (const [, cnt] of ARENA.waves) { sum += cnt; if (kills >= sum) n++; else break; }
+  return n;
+}
+
+// ───────── 미니보스 ─────────
+/** hourly: 매시 정각부터 window 분 동안, daily: 하루 한 번 */
+export const MINIBOSSES: { id: string; map: string; x: number; when: 'hourly' | 'daily'; window: number }[] = [
+  { id: 'stumpelder', map: 'forest', x: 560, when: 'hourly', window: 15 },
+  { id: 'ruinwarden', map: 'ruins', x: 580, when: 'daily', window: 0 },
+];
 /** 특성 프리셋(특성 배분 + 공격 바 두 벌)을 쓰는 레벨 */
 export const TALENT_PRESET_LV = 15;
 

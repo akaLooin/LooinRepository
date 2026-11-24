@@ -151,3 +151,41 @@ describe('1월드 확장 맵', () => {
     expect(applyAction(acc, 0, { t: 'travel', portal: 1 }, 0).err).toMatch(/채광 Lv/);
   });
 });
+
+import { ARENA, MAPS, MINIBOSSES, arenaWaves } from '../src/core/data';
+import { minibossKey, minibossOpen } from '../src/core/state';
+import { Rng } from '../src/core/rng';
+import { World } from '../src/core/world';
+describe('콜로세움·미니보스', () => {
+  it('입장권으로 들어가 웨이브를 깨고, 깬 웨이브만큼 보상을 받고 풀밭으로', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow'; c.level = 60; c.stats.luk = 300; acc.stamps.stamp_def = 400;
+    const portal = MAPS.meadow.portals.findIndex((p) => p.to === 'arena');
+    expect(applyAction(acc, 0, { t: 'travel', portal }, 0).err).toMatch(/열쇠/);
+    addItem(c, 'arena_ticket', 1);
+    expect(applyAction(acc, 0, { t: 'travel', portal }, 0).ok).toBe(true);
+    expect(c.arenaStart).toBe(0);
+    const w = new World(acc, c, new Rng(2));
+    let end: { waves: number; score: number } | null = null;
+    c.auto = true;
+    for (let i = 0; i < (ARENA.seconds + 5) * 60 && !end; i++) { w.step(1 / 60, { move: 0, climb: 0 }); for (const e of w.events) if (e.t === 'arenaEnd') end = e; w.events.length = 0; }
+    expect(end).not.toBeNull();
+    expect(end!.waves).toBe(arenaWaves(c.kills.arena));
+    expect(end!.waves).toBeGreaterThanOrEqual(3);
+    const coins = acc.coins;
+    expect(applyAction(acc, 0, { t: 'arenaClaim' }, 0).n).toBe(end!.waves);
+    expect(acc.coins).toBeGreaterThan(coins);
+    expect(c.mapId).toBe('meadow');
+    expect(applyAction(acc, 0, { t: 'arenaClaim' }, 0).ok).toBe(false); // 두 번은 안 된다
+  });
+  it('미니보스: 매시 정각부터 정해진 분까지, 잡으면 그 회차에는 다시 안 나온다', () => {
+    const { acc } = setup();
+    const mb = MINIBOSSES.find((m) => m.when === 'hourly')!;
+    const open = new Date('2026-11-24T10:05:00').getTime(), late = new Date('2026-11-24T10:40:00').getTime();
+    expect(minibossOpen(acc, mb.id, open)).toBe(true);
+    expect(minibossOpen(acc, mb.id, late)).toBe(false);
+    acc.miniKills[mb.id] = minibossKey(mb.id, open);
+    expect(minibossOpen(acc, mb.id, open + 60_000)).toBe(false);
+    expect(minibossOpen(acc, mb.id, open + 3600_000)).toBe(true);
+  });
+});

@@ -385,6 +385,7 @@ export const THEMES = {
   ridge: { sky: ['#a8d8ff', '#fff4e0'], far: '#c9d9e9', mid: '#a9b9cc', grass: ['#c9e08a', '#a3c066', '#7a9a4a'], dirt: ['#b0a08a', '#8f806c', '#6e6252'] },
   ruins: { sky: ['#e0b48a', '#f6e2c4'], far: '#c9a888', mid: '#a88868', grass: ['#a8b46a', '#86924e', '#66703a'], dirt: ['#a89880', '#887a64', '#6a5e4c'] },
   grove: { sky: ['#1e2450', '#5a5a9a'], far: '#3a3f7a', mid: '#2c3062', grass: ['#7ab8c8', '#5a96aa', '#3e7488'], dirt: ['#4a4466', '#3a3452', '#2a263e'] },
+  arena: { sky: ['#f0c49a', '#fff0d8'], far: '#d8b08a', mid: '#b88a62', grass: ['#d8c49a', '#b8a47a', '#98845a'], dirt: ['#b89a7a', '#987a5a', '#7a5e44'] },
   mine: { sky: ['#2a2622', '#5a4e42'], far: '#4a4036', mid: '#3a322a', grass: ['#8a8a8a', '#6a6a6a', '#4e4e4e'], dirt: ['#6a5a4a', '#54463a', '#40352c'] },
 } as const;
 export type ThemeKey = keyof typeof THEMES;
@@ -670,6 +671,9 @@ function buildItems() {
     p = new Paint(13, 11); p.rect(2, 3, 9, 6, a); p.rect(2, 7, 9, 2, b); p.disc(10.5, 5.5, 2, 3, c2); p.set(10, 5, b); p.rect(4, 4, 3, 1, c2);
     p.outline().save(`it_${k}`);
   }
+  // 콜로세움 입장권
+  p = new Paint(13, 10); p.rect(1, 1, 11, 8, '#f6c945'); p.rect(4, 1, 1, 8, '#c98f2a'); p.disc(8.5, 5, 1.8, 1.8, '#d9574a'); p.set(0, 5, null); p.set(12, 5, null); p.rect(2, 2, 1, 6, '#fff1a8');
+  p.outline().save('it_ticket');
   // 몬스터 재료·음식
   p = new Paint(12, 12); p.disc(6, 7, 5, 4, '#7a6a48'); for (const [x, y] of [[4, 5], [8, 5], [6, 8]]) p.disc(x, y, 1.4, 1.2, '#a89a70'); p.outline().save('it_shell');
   p = new Paint(12, 12); for (const [x, y, r] of [[5, 6, 2.6], [8, 4, 1.6], [8, 8, 1.8], [3, 9, 1.2]] as const) p.disc(x, y, r, r, '#f6e46a'); p.set(5, 5, '#ffffff'); p.outline('#7a6a20').save('it_glowdust');
@@ -761,6 +765,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
+  arena_ticket: 'it_ticket',
   anvil_exp2: 'obj_craft',
   ...Object.fromEntries(['blue', 'gold'].flatMap((k) => [[`sword_${k}`, `wp_sword_${k}`], [`bow_${k}`, `wp_bow_${k}`], [`wand_${k}`, `wp_wand_${k}`], [`pick_${k}`, `wp_pick_${k}`], [`axe_${k}`, `wp_axe_${k}`],
     [`helm_${k}`, `it_helm_${k}`], [`plate_${k}`, `it_plate_${k}`], [`legs_${k}`, `it_legs_${k}`], [`boots_${k}`, `it_boots_${k}`]])),

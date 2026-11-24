@@ -3,7 +3,7 @@
 import { ClassId, EquipSlot, MAPS, NODES, StatKey } from './data';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnTalent, switchTalentPreset, portalLock, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, learnTalent, switchTalentPreset, portalLock, arenaClaim, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
@@ -57,7 +57,8 @@ export type Action =
   | { t: 'achieve'; id: string }
   | { t: 'cardSet'; id: string | null }
   | { t: 'cardPreset'; i: number }
-  | { t: 'talentPreset'; i: number };
+  | { t: 'talentPreset'; i: number }
+  | { t: 'arenaClaim' };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -99,6 +100,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
         if (countItem(c, q.key) < 1) return fail('열쇠가 필요합니다');
         removeItem(c, q.key, 1);
       }
+      // 콜로세움: 들어갈 때 처치 수를 기억(보상은 이번 회차분), 중간에 나가면 보상 없음
+      if (MAPS[q.to].arena) c.arenaStart = c.kills[q.to] ?? 0; else c.arenaStart = null;
       c.mapId = q.to; c.x = q.toX; c.y = q.toY ?? 0;
       return ok();
     }
@@ -126,6 +129,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'cardSet': return res(toggleCardSet(c, a.id));
     case 'cardPreset': return res(switchCardPreset(acc, c, a.i));
     case 'talentPreset': return res(switchTalentPreset(c, a.i));
+    case 'arenaClaim': { const r = arenaClaim(acc, c); return typeof r === 'string' ? fail(r) : ok(r.waves); }
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

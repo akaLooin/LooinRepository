@@ -1,10 +1,10 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  ARENA, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill, portalReady } from './state';
+import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -56,6 +56,8 @@ export type WorldEvent =
   | { t: 'telegraph'; x: number; y: number; r: number; time: number }
   | { t: 'slam'; x: number; y: number; r: number }
   | { t: 'boss'; name: string }
+  | { t: 'arenaEnd'; waves: number; score: number }
+  | { t: 'miniboss'; name: string }
   | { t: 'faint' }
   /** 쓰러진 뒤 마을에서 부활: 게임이 마을로 옮긴다 */
   | { t: 'respawn' };
@@ -93,6 +95,9 @@ export class World {
   private engaged = -1;
   /** 길 찾기가 고른 로프 진행 방향 */
   private climbDir = 0;
+  /** 콜로세움 진행: 남은 시간, 나온 웨이브 수, 다음 웨이브까지, 점수·배율(연속 처치) */
+  arena: { t: number; wave: number; next: number; kills: number; score: number; mult: number; comboT: number; done: boolean } | null = null;
+  private miniT = 0;
 
   constructor(readonly acc: Account, readonly char: Character, readonly rng: Rng) {
     this.map = MAPS[char.mapId] ?? MAPS.town;
@@ -133,6 +138,50 @@ export class World {
     }
     for (const n of this.map.nodes) {
       this.nodes.push({ uid: this.uid++, def: NODES[n.node], x: n.x, y: 0, progress: 0, shakeT: 0 });
+    }
+    if (this.map.arena) { this.arena = { t: ARENA.seconds, wave: 0, next: 0, kills: 0, score: 0, mult: 1, comboT: 0, done: false }; }
+    this.checkMinibosses();
+  }
+
+  /** 지금 나와 있어야 할 미니보스를 맵에 놓는다(이미 있거나 이번 회차에 잡았으면 건너뜀) */
+  private checkMinibosses() {
+    const now = Date.now();
+    for (const mb of MINIBOSSES) {
+      if (mb.map !== this.map.id || this.mobs.some((m) => m.def.id === mb.id)) continue;
+      if (!minibossOpen(this.acc, mb.id, now)) continue;
+      const def = MONSTERS[mb.id], plat = this.platforms[0];
+      this.mobs.push({ uid: this.uid++, def, plat, x: mb.x, y: 0, dir: -1, hp: def.hp, alive: true, t: 0, moving: true,
+        hitT: 0, contactCd: 0, respawnT: 0, spawnAge: 0, slamT: 0, windup: 0 });
+      this.events.push({ t: 'loot', text: `${def.name}이(가) 나타났습니다!` });
+    }
+  }
+
+  /** 콜로세움: 다음 웨이브를 내보낸다 */
+  private spawnWave() {
+    const a = this.arena!, [id, n] = ARENA.waves[a.wave];
+    const def = MONSTERS[id];
+    for (let i = 0; i < n; i++) {
+      const plat = this.platforms[i % this.platforms.length];
+      const m: Mob = { uid: this.uid++, def, plat, x: 0, y: plat.y, dir: this.rng.chance(0.5) ? 1 : -1, hp: def.hp, alive: true, t: this.rng.range(0, 2), moving: true,
+        hitT: 0, contactCd: 0, respawnT: 0, spawnAge: 0, slamT: 0, windup: 0 };
+      this.placeMob(m);
+      this.mobs.push(m);
+    }
+    a.wave++; a.next = ARENA.waveGap;
+  }
+  private stepArena(dt: number) {
+    const a = this.arena!;
+    if (a.done) return;
+    a.t -= dt; a.next -= dt; a.comboT -= dt;
+    if (a.comboT <= 0) a.mult = 1;
+    const alive = this.mobs.some((m) => m.alive);
+    if (a.wave < ARENA.waves.length && (a.wave === 0 || !alive || a.next <= 0)) this.spawnWave();
+    const cleared = a.wave >= ARENA.waves.length && !alive;
+    if (cleared || a.t <= 0 || this.player.dead > 0) {
+      a.done = true;
+      // 일찍 다 깨면 남은 시간만큼 점수 보너스
+      if (cleared) a.score += Math.round(a.t * 20);
+      this.events.push({ t: 'arenaEnd', waves: arenaWaves(a.kills), score: Math.round(a.score) });
     }
   }
 
@@ -295,6 +344,9 @@ export class World {
     if (anvil.levels) this.events.push({ t: 'skill', name: SKILL_NAMES.smithing, level: c.skills.smithing.lv });
 
     for (const n of this.nodes) n.shakeT = Math.max(0, n.shakeT - dt);
+    if (this.arena) this.stepArena(dt);
+    this.miniT -= dt;
+    if (this.miniT <= 0) { this.miniT = 5; this.checkMinibosses(); }
     this.stepMobs(dt, d);
     this.stepDrops(dt);
     this.stepShots(dt, d);
@@ -440,7 +492,18 @@ export class World {
 
   private kill(m: Mob, d: Derived) {
     const c = this.char;
-    m.alive = false; m.respawnT = m.def.boss ? Infinity : this.rng.range(3.5, 5.5);
+    m.alive = false; m.respawnT = m.def.boss || this.arena || MINIBOSS_IDS.has(m.def.id) ? Infinity : this.rng.range(3.5, 5.5);
+    if (this.arena) {
+      // 콜로세움: 드롭·코인·카드 없이 경험치와 점수만(연속 처치로 배율이 오른다)
+      const a = this.arena;
+      a.kills++; a.score += m.def.xp * a.mult; a.mult = Math.min(5, a.mult + 0.1); a.comboT = 2.5;
+      c.kills[this.map.id] = (c.kills[this.map.id] ?? 0) + 1;
+      this.events.push({ t: 'kill', uid: m.uid, x: m.x, y: m.y });
+      if (gainXp(c, Math.max(1, Math.round(m.def.xp * d.xpMult)))) this.events.push({ t: 'level', level: c.level });
+      if (this.aiTarget === m) this.aiTarget = null;
+      return;
+    }
+    if (MINIBOSS_IDS.has(m.def.id)) { this.acc.miniKills[m.def.id] = minibossKey(m.def.id, Date.now()); this.events.push({ t: 'miniboss', name: m.def.name }); }
     if (m.def.boss) {
       this.acc.bosses[m.def.id] = (this.acc.bosses[m.def.id] ?? 0) + 1;
       this.events.push({ t: 'boss', name: m.def.name });

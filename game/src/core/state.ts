@@ -3,7 +3,7 @@ import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
 import { charSlots, progressBonus, useSculptTools } from './progress';
 import {
-  AFK_BASE, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  AFK_BASE, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -44,6 +44,8 @@ export interface Character {
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
   talentPresets: { talents: Record<string, number>; bars: (string | null)[][] }[];
   talentPreset: number;
+  /** 콜로세움에 들어갈 때의 콜로세움 처치 수(보상은 이번 회차 처치 수로) */
+  arenaStart?: number | null;
   auto: boolean; activity: Activity;
   inventory: Stack[];
   equipment: Partial<Record<EquipSlot, string>>;
@@ -96,6 +98,9 @@ export interface Account {
   signs: string[];
   /** 받은 업적 */
   achievements: Record<string, true>;
+  /** 미니보스를 마지막으로 잡은 회차(시간 키), 콜로세움 최고 웨이브 */
+  miniKills: Record<string, string>;
+  arenaBest: number;
   characters: Character[];
   active: number;
   nextId: number;
@@ -104,7 +109,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -624,6 +629,37 @@ export function mapUnlocked(c: Character, id: string): boolean {
   }
   return seen.has(id);
 }
+// ───────── 미니보스·콜로세움 ─────────
+export const MINIBOSS_IDS = new Set(MINIBOSSES.map((m) => m.id));
+/** 미니보스 회차 키: 시간마다 / 날마다 */
+export function minibossKey(id: string, now: number): string {
+  const mb = MINIBOSSES.find((m) => m.id === id)!, d = new Date(now);
+  return mb.when === 'hourly' ? `${today(now)}T${d.getHours()}` : today(now);
+}
+/** 지금 나와 있는가(시간 창 안이고 이번 회차에 아직 안 잡음) */
+export function minibossOpen(acc: Pick<Account, 'miniKills'>, id: string, now: number): boolean {
+  const mb = MINIBOSSES.find((m) => m.id === id);
+  if (!mb) return false;
+  if (mb.when === 'hourly' && new Date(now).getMinutes() >= mb.window) return false;
+  return acc.miniKills?.[id] !== minibossKey(id, now);
+}
+/** 콜로세움 보상 받기: 이번 회차 처치 수로 깬 웨이브를 세고, 단계 보상을 모두 주고 풀밭으로 돌아간다 */
+export function arenaClaim(acc: Account, c: Character): { waves: number; coins: number; items: [string, number][] } | string {
+  if (c.mapId !== 'arena' || c.arenaStart == null) return '콜로세움에 있지 않습니다';
+  const waves = arenaWaves((c.kills.arena ?? 0) - c.arenaStart);
+  const out = { waves, coins: 0, items: [] as [string, number][] };
+  for (const r of ARENA.rewards) {
+    if (waves < r.waves) break;
+    out.coins += r.coins;
+    for (const [id, n] of r.items) { const got = addItemSome(c, id, n); if (got) out.items.push([id, got]); }
+  }
+  acc.coins += out.coins;
+  acc.arenaBest = Math.max(acc.arenaBest, waves);
+  c.arenaStart = null;
+  c.mapId = 'meadow'; c.x = 560; c.y = -96;
+  return out;
+}
+
 /** 문 조건(그 맵 처치 수, 기술 레벨) */
 export function portalReady(c: Character, mapId: string, p: PortalDef): boolean {
   if ((c.kills[mapId] ?? 0) < (p.reqKills ?? 0)) return false;
@@ -692,7 +728,7 @@ export function deserialize(json: string | null): Account | null {
     a.stamps ??= {};
     a.bribes ??= 0;
     a.tasks ??= {}; a.merit ??= 0; a.meritShop ??= {};
-    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {};
+    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0;
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
