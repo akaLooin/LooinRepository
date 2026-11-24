@@ -1,28 +1,28 @@
 # Graph Report - LooinRepository  (2026-11-24)
 
 ## Corpus Check
-- 82 files · ~76,856 words
+- 83 files · ~77,555 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
 ## Summary
-- 995 nodes · 2227 edges · 57 communities (40 shown, 17 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 101 edges (avg confidence: 0.86)
+- 1006 nodes · 2255 edges · 61 communities (44 shown, 17 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 101 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2019b93e`
+- Built from commit: `48aa5baf`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - core.test.ts
 - reviews.py
-- SqlStore
+- .panelHtml
 - game/package.json
 - devDependencies
 - imgdiff.py
-- world.ts
+- .setWorld
 - state.ts
 - replica-recon
 - ExampleInstrumentedTest.java
@@ -51,18 +51,22 @@
 - build-log.md
 - components.md
 - ui.ts
-- afk.ts
+- world.ts
 - Account
 - app.ts
 - app.ts
+- scene.ts
 - live.ts
 - api.test.ts
 - .panelHtml
 - compilerOptions
 - 백엔드 (Looin Idle 서버)
-- World
-- mannequin.ts
 - sprites.ts
+- World
+- gear.ts
+- mannequin.ts
+- Paint
+- 그림 규칙 (art spec)
 - completeQuest
 
 ## God Nodes (most connected - your core abstractions)
@@ -82,9 +86,9 @@
   replica/architecture.md → game/src/core/afk.ts
 - `구조` --references--> `computeAfk()`  [INFERRED]
   replica/backend.md → game/src/core/afk.ts
-- `색` --references--> `lineOf()`  [INFERRED]
-  replica/design/art-spec.md → game/src/render/sprites.ts
 - `색` --references--> `ramp()`  [INFERRED]
+  replica/design/art-spec.md → game/src/render/sprites.ts
+- `색` --references--> `lineOf()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/sprites.ts
 - `멀티 전환을 위한 설계` --references--> `SaveBackend`  [INFERRED]
   game/README.md → game/src/game.ts
@@ -92,19 +96,19 @@
 ## Import Cycles
 - None detected.
 
-## Communities (57 total, 17 thin omitted)
+## Communities (61 total, 17 thin omitted)
 
 ### Community 0 - "core.test.ts"
-Cohesion: 0.21
-Nodes (30): applyAction(), fail(), ok(), res(), addItem(), addItemSome(), advanceClass(), buy() (+22 more)
+Cohesion: 0.18
+Nodes (32): applyAction(), fail(), ok(), res(), addItem(), addItemSome(), advanceClass(), buy() (+24 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
 Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), check(), colours() (+32 more)
 
-### Community 2 - "SqlStore"
-Cohesion: 0.22
-Nodes (3): Sql, SqlStore, toRow()
+### Community 2 - ".panelHtml"
+Cohesion: 0.16
+Nodes (13): anvilCap(), anvilRate(), iconUrl(), portraitUrl(), bar(), dur(), esc(), icon() (+5 more)
 
 ### Community 3 - "game/package.json"
 Cohesion: 0.07
@@ -118,13 +122,13 @@ Nodes (32): @electric-sql/pglite, tsx, @types/node, @types/pg, @types/ws, ws, au
 Cohesion: 0.12
 Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
 
-### Community 6 - "world.ts"
-Cohesion: 0.06
-Nodes (35): CARD_BOSS_CHANCE, CLEAVE_RANGE, FACILITY_NAMES, healPct(), MapDef, MonsterDef, NodeDef, NOVA_RADIUS (+27 more)
+### Community 6 - ".setWorld"
+Cohesion: 0.13
+Nodes (10): MonsterDef, Mob, WorldEvent, CharRig, ensureTextures(), label(), MobView, NodeView (+2 more)
 
 ### Community 7 - "state.ts"
-Cohesion: 0.10
-Nodes (30): AFK_BASE, cardNext(), cardTier(), CLASSES, ItemStats, NPCS, stackGroup(), TALENT (+22 more)
+Cohesion: 0.11
+Nodes (21): ATTACK_BARS, CLASSES, INVENTORY_SIZE, RECIPES, SHOP, TELEPORTS_PER_DAY, Activity, anvilPointsFree() (+13 more)
 
 ### Community 8 - "replica-recon"
 Cohesion: 0.15
@@ -200,35 +204,39 @@ Nodes (8): API, 구현 순서, 권한 모델 (이 게임에서 가장 중요한 
 
 ### Community 43 - "ui.ts"
 Cohesion: 0.06
-Nodes (52): AfkReport, AFK_MAX_SECONDS, AFK_MIN_SECONDS, ANVIL, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CardDef (+44 more)
+Nodes (51): AFK_BASE, ANVIL, ATTACK_SLOTS, CARD_SLOTS, CardDef, cardNext(), CLASS_LEVEL, CLASS_NPC (+43 more)
 
-### Community 44 - "afk.ts"
-Cohesion: 0.13
-Nodes (26): AfkRates, afkRates(), computeAfk(), CARD_CHANCE, CARD_UNOWNED_MULT, CARDS, GatherSkill, ITEMS (+18 more)
+### Community 44 - "world.ts"
+Cohesion: 0.08
+Nodes (47): AfkRates, afkRates(), computeAfk(), settle(), AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_BOSS_CHANCE, CARD_CHANCE (+39 more)
 
 ### Community 45 - "Account"
-Cohesion: 0.15
-Nodes (6): Account, AppOptions, AccountRow, MemoryStore, Row, Store
+Cohesion: 0.13
+Nodes (8): Account, AppOptions, AccountRow, Row, Sql, SqlStore, Store, toRow()
 
 ### Community 46 - "app.ts"
-Cohesion: 0.11
-Nodes (20): SyncAccount, fastify, @fastify/cors, @fastify/websocket, jose, zod, dependencies, fastify@^5.12.8 (+12 more)
+Cohesion: 0.12
+Nodes (18): fastify, @fastify/cors, @fastify/websocket, jose, zod, dependencies, fastify@^5.12.8, @fastify/cors@^11.4.3 (+10 more)
 
 ### Community 47 - "app.ts"
-Cohesion: 0.14
-Nodes (20): Rng, createCharacter(), deserialize(), emptyBars(), newAccount(), serialize(), acceptSync(), checkSync() (+12 more)
+Cohesion: 0.13
+Nodes (18): Rng, createCharacter(), deserialize(), emptyBars(), newAccount(), serialize(), acceptSync(), setup() (+10 more)
+
+### Community 48 - "scene.ts"
+Cohesion: 0.10
+Nodes (20): FACILITY_NAMES, SMASH_RANGE, HURT_TIME, Player, SWING_TIME, SwingKind, GEAR, CLIPS (+12 more)
 
 ### Community 49 - "live.ts"
 Cohesion: 0.16
 Nodes (10): ChatLine, cleanText(), colour, Join, Msg, PlayerInfo, Pos, registerLive() (+2 more)
 
 ### Community 50 - "api.test.ts"
-Cohesion: 0.21
-Nodes (8): pg, dir, pool, app, migrate(), look, makeStores(), setup()
+Cohesion: 0.14
+Nodes (8): pg, dir, pool, app, MemoryStore, migrate(), look, makeStores()
 
 ### Community 51 - ".panelHtml"
-Cohesion: 0.07
-Nodes (16): Audio, Sfx, iconUrl(), portraitUrl(), bar, colors, menu, ART (+8 more)
+Cohesion: 0.10
+Nodes (8): Audio, Sfx, bar, colors, menu, ART, FILL, pixelIcon()
 
 ### Community 52 - "compilerOptions"
 Cohesion: 0.18
@@ -238,21 +246,33 @@ Nodes (10): compilerOptions, lib, module, moduleResolution, noEmit, skipLibCheck
 Cohesion: 0.22
 Nodes (8): API, 구조, 배포 (사용자가 할 일), 백엔드 (Looin Idle 서버), 보안 점검표, 설계에서 바꾼 점 (architecture.md 대비), 아직 없는 것, 환경 변수
 
+### Community 54 - "sprites.ts"
+Cohesion: 0.17
+Nodes (18): C, grid(), HI, hslToHex(), lineOf(), mixHex(), mk(), PAL (+10 more)
+
 ### Community 55 - "World"
-Cohesion: 0.15
-Nodes (5): settle(), Derived, clamp(), World, run()
+Cohesion: 0.11
+Nodes (7): Platform, PortalDef, Derived, clamp(), World, GameScene, run()
+
+### Community 56 - "gear.ts"
+Cohesion: 0.18
+Nodes (9): GearDef, gearKey(), GearOn, gearPos(), GOLD, MOSS, paintGear(), WOOD (+1 more)
 
 ### Community 57 - "mannequin.ts"
-Cohesion: 0.07
-Nodes (38): Anchors, bake(), bakeClip(), BakedClip, BASE, BASE_PX, BIG, cache (+30 more)
+Cohesion: 0.09
+Nodes (32): Anchors, bake(), bakeClip(), BakedClip, BASE, BASE_PX, BIG, cache (+24 more)
 
-### Community 58 - "sprites.ts"
-Cohesion: 0.10
-Nodes (39): ART, bigEye(), buildAll(), buildIcons(), buildItems(), buildMonsters(), buildObjects(), buildTheme() (+31 more)
+### Community 58 - "Paint"
+Cohesion: 0.31
+Nodes (11): bigEye(), buildAll(), buildIcons(), buildItems(), buildMonsters(), buildObjects(), buildTheme(), buildWeapons() (+3 more)
+
+### Community 59 - "그림 규칙 (art spec)"
+Cohesion: 0.29
+Nodes (6): 그림 규칙 (art spec), 몬스터, 장비 겉모습 (game/src/render/gear.ts), 지형, 캐릭터: 기본 마네킹 + 동작 프레임 + 붙임 지점, 해상도
 
 ### Community 63 - "completeQuest"
-Cohesion: 0.70
-Nodes (5): acceptQuest(), currentQuest(), noteKill(), qs(), questProgress()
+Cohesion: 0.67
+Nodes (6): acceptQuest(), completeQuest(), currentQuest(), noteKill(), qs(), questProgress()
 
 ## Knowledge Gaps
 - **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
@@ -260,16 +280,16 @@ Nodes (5): acceptQuest(), currentQuest(), noteKill(), qs(), questProgress()
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Game` connect `Game` to `world.ts`, `ui.ts`, `Account`, `app.ts`, `.panelHtml`, `World`?**
-  _High betweenness centrality (0.046) - this node is a cross-community bridge._
+- **Why does `phaser` connect `game/package.json` to `scene.ts`, `.panelHtml`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
   _Cohesion score 0.05875251509054326 - nodes in this community are weakly interconnected._
-- **Why does `World` connect `World` to `core.test.ts`, `Game`, `world.ts`, `app.ts`, `api.test.ts`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
+- **Why does `Game` connect `Game` to `.setWorld`, `ui.ts`, `world.ts`, `Account`, `app.ts`, `scene.ts`, `.panelHtml`, `World`?**
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Should `game/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07308377896613191 - nodes in this community are weakly interconnected._
-- **Why does `phaser` connect `game/package.json` to `.panelHtml`, `world.ts`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Why does `World` connect `World` to `core.test.ts`, `Game`, `.setWorld`, `world.ts`, `app.ts`, `scene.ts`, `api.test.ts`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **Should `devDependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.07575757575757576 - nodes in this community are weakly interconnected._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
