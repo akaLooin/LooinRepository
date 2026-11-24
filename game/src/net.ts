@@ -58,8 +58,10 @@ export class Net {
 }
 
 // ───────── 실시간(같은 맵 플레이어·채팅) ─────────
+/** 겉으로 보이는 장비(무기·모자·갑옷 id) */
+export interface Gear { weapon?: string; hat?: string; body?: string }
 export interface RemoteInfo {
-  id: string; map: string; name: string; look: Look; cls: string; level: number;
+  id: string; map: string; name: string; look: Look; cls: string; level: number; gear?: Gear;
   x: number; y: number; f: 1 | -1; m: boolean; g: boolean; r: boolean; s: number; k: string;
 }
 export interface ChatLine { id?: string; from: string; text: string; at: number; map?: string }
@@ -74,6 +76,7 @@ export class Live {
   onJoin: (p: RemoteInfo) => void = () => {};
   onPos: (p: Partial<RemoteInfo> & { id: string }) => void = () => {};
   onLeft: (id: string) => void = () => {};
+  onGear: (id: string, gear: Gear) => void = () => {};
   onChat: (l: ChatLine) => void = () => {};
   onHistory: (l: ChatLine[]) => void = () => {};
   onNotice: (msg: string) => void = () => {};
@@ -91,6 +94,7 @@ export class Live {
       else if (m.t === 'state') this.onState(m.players as RemoteInfo[]);
       else if (m.t === 'join') this.onJoin(m.player as RemoteInfo);
       else if (m.t === 'pos') this.onPos(m as unknown as RemoteInfo);
+      else if (m.t === 'gear') this.onGear(String(m.id), (m.gear as Gear) ?? {});
       else if (m.t === 'left') this.onLeft(String(m.id));
       else if (m.t === 'chat') this.onChat(m as unknown as ChatLine);
       else if (m.t === 'slow') this.onNotice('채팅은 조금 천천히 보내 주세요');
@@ -104,7 +108,12 @@ export class Live {
   }
   close() { this.closed = true; this.ws?.close(); this.ws = null; }
   private send(m: unknown) { if (this.ws?.readyState === 1) this.ws.send(JSON.stringify(m)); }
-  join(info: { map: string; name: string; look: Look; cls: string; level: number }) { this.joinMsg = { t: 'join', ...info }; this.send(this.joinMsg); }
+  join(info: { map: string; name: string; look: Look; cls: string; level: number; gear: Gear }) { this.joinMsg = { t: 'join', ...info }; this.send(this.joinMsg); }
+  /** 장비를 바꿨을 때(다시 연결할 때도 바뀐 장비로 들어가게 join 내용도 고친다) */
+  gear(g: Gear) {
+    if (this.joinMsg) this.joinMsg = { ...(this.joinMsg as object), gear: g };
+    this.send({ t: 'gear', gear: g });
+  }
   pos(p: { x: number; y: number; f: 1 | -1; m: boolean; g: boolean; r: boolean; s: number; k: string }) { this.send({ t: 'pos', ...p }); }
   say(text: string) { this.send({ t: 'say', text }); }
   get connected() { return this.ws?.readyState === 1; }

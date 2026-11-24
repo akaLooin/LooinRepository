@@ -41,3 +41,12 @@ describe('gear looks', () => {
     }
   });
 });
+
+import { remoteGear } from '../src/render/gear';
+describe('remote gear', () => {
+  it('keeps known gear in the right slot and falls back to the class weapon', () => {
+    expect(remoteGear({ weapon: 'sword_stone', hat: 'moss_crown', body: 'armor_log' }, 'beginner')).toEqual({ weapon: 'sword_stone', hat: 'moss_crown', body: 'armor_log' });
+    expect(remoteGear({ weapon: 'hat_moss', hat: 'sword_wood', body: 'nope' }, 'archer')).toEqual({ weapon: 'bow_wood' });
+    expect(remoteGear(undefined, 'mage')).toEqual({ weapon: 'wand_wood' });
+  });
+});

@@ -6,7 +6,7 @@ import { MAPS } from './core/data';
 import { Rng } from './core/rng';
 import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
-import { ChatLine, Live, Net, RemoteInfo, SyncBody } from './net';
+import { ChatLine, Gear, Live, Net, RemoteInfo, SyncBody } from './net';
 
 export interface SaveBackend { load(): string | null; save(data: string): void }
 const store = (key: string): SaveBackend => ({
@@ -73,6 +73,7 @@ export class Game {
     live.onJoin = (p) => this.others.set(p.id, { ...p, seen: t() });
     live.onPos = (p) => { const o = this.others.get(p.id); if (o) Object.assign(o, p, { seen: t() }); };
     live.onLeft = (id) => this.others.delete(id);
+    live.onGear = (id, gear) => { const o = this.others.get(id); if (o) o.gear = gear; };
     live.onHistory = (ls) => { this.chat = ls.slice(-50); };
     live.onChat = (l) => { this.chat.push(l); if (this.chat.length > 50) this.chat.shift(); this.onChat(l); };
     live.onNotice = (m) => this.onEvent({ t: 'loot', text: m });
@@ -83,8 +84,18 @@ export class Game {
     const c = this.char;
     if (!c || !this.live) return;
     this.others.clear();
-    this.live.join({ map: c.mapId, name: c.name, look: c.look, cls: c.cls, level: c.level });
+    this.lastGear = JSON.stringify(this.gearOf(c));
+    this.live.join({ map: c.mapId, name: c.name, look: c.look, cls: c.cls, level: c.level, gear: this.gearOf(c) });
   }
+  /** 다른 사람에게 보이는 장비만 */
+  private gearOf(c: Character): Gear {
+    const e = c.equipment, g: Gear = {};
+    if (e.weapon) g.weapon = e.weapon;
+    if (e.hat) g.hat = e.hat;
+    if (e.body) g.body = e.body;
+    return g;
+  }
+  private lastGear = '';
   say(text: string) { this.live?.say(text); }
   get liveId() { return this.live?.myId ?? ''; }
   get liveOn() { return !!this.live?.connected; }
@@ -248,6 +259,9 @@ export class Game {
       const msg = { x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10, f: p.facing, m: Math.abs(p.vx) > 6, g: p.onGround, r: p.rope >= 0, s: p.swingId, k: p.swingKind };
       const key = JSON.stringify(msg);
       if (key !== this.lastPos) { this.lastPos = key; this.live.pos(msg); }
+      // 장비를 바꾸면 같은 맵 사람들에게 알린다
+      const g = this.gearOf(this.char!), gk = JSON.stringify(g);
+      if (gk !== this.lastGear) { this.lastGear = gk; this.live.gear(g); }
     }
   }
 

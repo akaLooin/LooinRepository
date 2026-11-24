@@ -6,7 +6,7 @@ import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEv
 import { Game } from '../game';
 import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
-import { GEAR, gearKey, gearPos } from './gear';
+import { GEAR, gearKey, gearPos, remoteGear } from './gear';
 import { Character, currentQuest, questProgress } from '../core/state';
 import { CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
@@ -547,7 +547,7 @@ export class GameScene extends Phaser.Scene {
       p.facing = o.f; p.onGround = o.g; p.rope = o.r ? 0 : -1; p.vy = o.g ? 0 : o.y < p.y ? -1 : 1;
       if (o.s !== r.lastSwing) { r.lastSwing = o.s; p.swingT = SWING_TIME; p.swingKind = o.k as SwingKind; }
       p.swingT = Math.max(0, p.swingT - dt);
-      r.rig.update(dt, p, { equipment: { weapon: o.cls === 'archer' ? 'bow_wood' : o.cls === 'mage' ? 'wand_wood' : 'sword_wood' }, cls: o.cls as Character['cls'] });
+      r.rig.update(dt, p, { equipment: remoteGear(o.gear, o.cls), cls: o.cls as Character['cls'] });
     }
     // 말풍선: 말한 사람 머리 위에 4초
     for (const [id, b] of this.bubbles) {

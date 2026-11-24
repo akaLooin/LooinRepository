@@ -48,6 +48,22 @@ describe('실시간', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(ic.got.some((m) => m.t === 'pos')).toBe(false); // 다른 맵에는 가지 않는다
 
+    // 장비 겉모습: 들어올 때 함께, 바꾸면 같은 맵에만
+    a.send(JSON.stringify({ t: 'gear', gear: { weapon: 'sword_stone', hat: 'hat_moss' } }));
+    const gear = await ib.wait((m) => m.t === 'gear');
+    expect(gear.gear).toEqual({ weapon: 'sword_stone', hat: 'hat_moss' });
+    a.send(JSON.stringify({ t: 'gear', gear: { hat: '../evil' } }));
+    await new Promise((r) => setTimeout(r, 100));
+    expect(ib.got.filter((m) => m.t === 'gear')).toHaveLength(1); // 이상한 id 는 버린다
+    expect(ic.got.some((m) => m.t === 'gear')).toBe(false);
+    const id = inbox();
+    const d = await app.injectWS(`/live?token=${await tok()}`, {}, { onInit: id.onInit });
+    await id.wait((m) => m.t === 'hello');
+    d.send(JSON.stringify({ t: 'join', map: 'meadow', name: '디', look, cls: 'beginner', level: 1 }));
+    const late = await id.wait((m) => m.t === 'state');
+    expect((late.players as { name: string; gear: unknown }[]).find((p) => p.name === '에이')?.gear).toEqual({ weapon: 'sword_stone', hat: 'hat_moss' });
+    d.terminate();
+
     a.send(JSON.stringify({ t: 'say', text: '  안녕\u0007 하세요  ' }));
     const chat = await ic.wait((m) => m.t === 'chat');
     expect(chat.text).toBe('안녕 하세요');
