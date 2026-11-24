@@ -1002,15 +1002,15 @@
     "semantic_hash": ""
   },
   "replica/design/art-spec.md": {
-    "mtime": 1795560755.958793,
-    "seen": 1795560757.8361037,
-    "ast_hash": "b28bc885c20d24ddfc2473e6acc69b37",
+    "mtime": 1795564632.5488894,
+    "seen": 1795564637.1523318,
+    "ast_hash": "0e9cf0ec1d4d2757fb6e6bccd9093fa4",
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795560287.1802998,
-    "seen": 1795560373.7088008,
-    "ast_hash": "6513e1b68c33c9a347218f7439736d47",
+    "mtime": 1795564579.9682946,
+    "seen": 1795564637.1514046,
+    "ast_hash": "8e717c07a464dfdd72382be8f579bd35",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "game/src/render/gear.ts": {
-    "mtime": 1795563825.2548163,
-    "seen": 1795563893.9069176,
-    "ast_hash": "dcbf5e1c8f90cbd43713e198b4e517cf",
+    "mtime": 1795564579.9687612,
+    "seen": 1795564637.151402,
+    "ast_hash": "60c93c0f03b2fdae6829d852916384e7",
     "semantic_hash": ""
   },
   "game/src/core/forge.ts": {
