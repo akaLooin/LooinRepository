@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "docs/DEPLOY.md": {
-    "mtime": 1795522521.6357307,
-    "seen": 1795522536.6039433,
-    "ast_hash": "e97e4455bd5af693df7460941b2dfc42",
+    "mtime": 1795522570.399711,
+    "seen": 1795522571.5136726,
+    "ast_hash": "d7aeeae149e14c02f06079a43f4c38da",
     "semantic_hash": ""
   },
   "docs/GROWTH.md": {
@@ -516,15 +516,21 @@
     "semantic_hash": ""
   },
   "deploy/oracle-cloud-init.sh": {
-    "mtime": 1795522450.5105324,
-    "seen": 1795522536.6038995,
-    "ast_hash": "67509e0abe293ab572716015e5d9297d",
+    "mtime": 1795522554.5340044,
+    "seen": 1795522571.5136232,
+    "ast_hash": "0a3ae2b6c3dba9f689b6b196c641bcf4",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/BrainSettings.kt": {
     "mtime": 1795522328.3650925,
     "seen": 1795522536.603903,
     "ast_hash": "a78c5a0554eb45b2ab3533ea026668b3",
+    "semantic_hash": ""
+  },
+  "deploy/oracle-cloud-init-short.sh": {
+    "mtime": 1795522554.5372021,
+    "seen": 1795522571.5136216,
+    "ast_hash": "6395fa92ec65a561f51a108dc891f96c",
     "semantic_hash": ""
   }
 }
