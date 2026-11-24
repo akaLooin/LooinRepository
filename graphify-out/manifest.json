@@ -1008,9 +1008,9 @@
     "semantic_hash": ""
   },
   "game/src/render/mannequin.ts": {
-    "mtime": 1795488235.9715765,
-    "seen": 1795488241.586494,
-    "ast_hash": "04463854b8c47b288a9c64cd34d3212e",
+    "mtime": 1795488333.5166314,
+    "seen": 1795488378.237466,
+    "ast_hash": "a89f1c1e64e4743282f7bfbced8aaf35",
     "semantic_hash": ""
   },
   "game/tests/mannequin.test.ts": {

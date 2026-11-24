@@ -1,7 +1,7 @@
 # Graph Report - LooinRepository  (2026-11-24)
 
 ## Corpus Check
-- 82 files · ~76,497 words
+- 82 files · ~76,539 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c1e73dc5`
+- Built from commit: `819b3714`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
