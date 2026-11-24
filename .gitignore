@@ -3,3 +3,19 @@ graphify-out/.graphify_*
 !graphify-out/.graphify_labels.json
 graphify-out/.needs_update
 graphify-out/cache/stat-index.json
+
+# Gradle / IDE / 빌드 산출물
+.gradle/
+build/
+.kotlin/
+.idea/
+*.iml
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# 서버 런타임 데이터 / 비밀
+server/data/
+*.db
+.env
