@@ -3,17 +3,29 @@
 <style>body{background:#8fb08a;margin:8px;font:12px sans-serif} .row{display:flex;align-items:center;gap:6px;margin:2px 0} canvas{image-rendering:pixelated} b{width:48px}</style></head>
 <body><div id="out"></div>
 <script type="module">
-import { CLIPS, paintClip, FW, FH } from '/src/render/mannequin.ts';
+// 확인용: 동작별 프레임을 한 줄씩 그린다. ?c=동작 ?z=배율 ?w=무기키(예: wp_sword_wood) ?skin=#색
+import { CLIPS, paintClip, bakeClip, FW, FH, ROOT_X, ROOT_Y, MQ_SCALE } from '/src/render/mannequin.ts';
+import { buildAll, canvases, ART } from '/src/render/sprites.ts';
+buildAll();
 const q = new URLSearchParams(location.search), z = +(q.get('z') ?? 3), skin = q.get('skin') ?? '#f4f2ee';
-const only = q.get('c');
+const only = q.get('c'), wkey = q.get('w');
 for (const name of Object.keys(CLIPS)) {
   if (only && only !== name) continue;
-  const src = paintClip(name, skin), n = src.width / FW;
+  const src = paintClip(name, skin), n = src.width / FW, an = bakeClip(name).anchors;
   const row = document.createElement('div'); row.className = 'row';
   row.innerHTML = `<b>${name}</b>`;
   const cv = document.createElement('canvas'); cv.width = src.width * z; cv.height = FH * z;
   const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
   ctx.drawImage(src, 0, 0, src.width, FH, 0, 0, src.width * z, FH * z);
+  const wp = wkey ? canvases.get(wkey) : null;
+  if (wp) for (let f = 0; f < n; f++) {
+    const a = an[f], s = (ART / MQ_SCALE) * z;
+    ctx.save();
+    ctx.translate((f * FW + ROOT_X + a.hand[0]) * z, (ROOT_Y + a.hand[1]) * z);
+    ctx.rotate(a.wpn);
+    ctx.drawImage(wp, -wp.width * 0.5 * s, -wp.height * (wkey.includes('bow') ? 0.5 : 0.82) * s, wp.width * s, wp.height * s);
+    ctx.restore();
+  }
   ctx.drawImage(src, 0, FH, src.width, FH, 0, 0, src.width * z, FH * z);
   row.appendChild(cv); document.getElementById('out').appendChild(row);
 }

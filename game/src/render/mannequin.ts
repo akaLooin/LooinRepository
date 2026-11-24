@@ -49,10 +49,14 @@ export const CLIPS: Record<string, ClipDef> = {
   ] },
   // 휘두르기: 무게를 뒤로 실었다가(와인드업) 앞발을 디디며 내려친 뒤 천천히 돌아온다
   swing: { frames: 10, loop: false, keys: [
-    { t: 0, armF: [0.3, 0.5], wpn: 0.6, ease: 'out' },
-    { t: 0.3, armF: [2.85, 0.35], armB: [0, 0], wpn: -0.7, lean: -0.14, head: -0.1, legF: [0.2, -0.1], legB: [-0.2, -0.1], by: -0.5, ease: 'in' },
-    { t: 0.55, armF: [0.95, 0.05], armB: [0, 0], wpn: 2.15, lean: 0.2, head: 0.1, legF: [0.45, -0.25], legB: [-0.45, -0.15], by: 1, ease: 'out' },
-    { t: 1, armF: [0.45, 0.4], armB: [0, 0], wpn: 1.1, lean: 0.06, head: 0.02, legF: [0.25, -0.15], legB: [-0.25, -0.1], by: 0.3 },
+    { t: 0, armF: [0.3, 0], wpn: 0.6, ease: 'out' },
+    // 와인드업: 팔을 머리 오른쪽 위로, 칼은 머리 뒤로 젖힌다
+    { t: 0.3, armF: [2.2, 0], wpn: -0.8, lean: -0.1, legF: [0.05, 0], legB: [-0.05, 0], by: -0.5, ease: 'in' },
+    // 내려치기(타격 판정 시점): 앞발을 살짝 내딛으며 앞쪽 아래로
+    { t: 0.48, armF: [1.0, 0], wpn: 2.2, lean: 0.15, legF: [0.18, 0], legB: [-0.12, 0], by: 0.8, ease: 'out' },
+    // 마무리: 칼끝이 아래로 따라 내려간 뒤 쉬는 자세로
+    { t: 0.7, armF: [0.7, 0], wpn: 2.6, lean: 0.08, legF: [0.15, 0], legB: [-0.1, 0], by: 0.5, ease: 'inout' },
+    { t: 1, armF: [0.2, 0], wpn: 0.8, lean: 0, legF: [0.05, 0], legB: [-0.05, 0], by: 0 },
   ] },
   // 활: 앞팔을 뻗어 활을 세우고 뒷손으로 시위를 당겼다가 놓는다
   shoot: { frames: 8, loop: false, keys: [
@@ -71,17 +75,21 @@ export const CLIPS: Record<string, ClipDef> = {
   ] },
   // 곡괭이: 머리 위에서 아래로 크게 찍는다
   mine: { frames: 10, loop: false, keys: [
-    { t: 0, armF: [0.4, 0.5], wpn: 0.6, ease: 'out' },
-    { t: 0.32, armF: [3.0, 0.25], armB: [0, 0], wpn: -1.1, lean: -0.16, head: -0.12, by: -0.5, ease: 'in' },
-    { t: 0.55, armF: [0.85, 0.3], armB: [0, 0], wpn: 1.95, lean: 0.28, head: 0.12, legF: [0.4, -0.35], legB: [-0.4, -0.2], by: 1.5, ease: 'out' },
-    { t: 1, armF: [0.55, 0.45], armB: [0, 0], wpn: 1.2, lean: 0.1, legF: [0.2, -0.15], legB: [-0.2, -0.1], by: 0.5 },
+    { t: 0, armF: [0.3, 0], wpn: 0.6, ease: 'out' },
+    // 곡괭이: 머리 위로 높이 들었다가 바로 앞 땅을 찍는다
+    { t: 0.32, armF: [2.6, 0], wpn: -1.1, lean: -0.12, by: -0.8, ease: 'in' },
+    { t: 0.48, armF: [0.9, 0], wpn: 1.95, lean: 0.2, legF: [0.15, 0], legB: [-0.1, 0], by: 1.2, ease: 'out' },
+    { t: 0.7, armF: [0.75, 0], wpn: 2.1, lean: 0.12, legF: [0.12, 0], legB: [-0.08, 0], by: 0.8, ease: 'inout' },
+    { t: 1, armF: [0.2, 0], wpn: 0.8, lean: 0, by: 0 },
   ] },
   // 도끼: 옆으로 크게 돌려 벤다
   chop: { frames: 10, loop: false, keys: [
-    { t: 0, armF: [0.4, 0.5], wpn: 0.6, ease: 'out' },
-    { t: 0.32, armF: [2.0, 0.6], armB: [0, 0], wpn: -1.2, lean: -0.18, head: -0.06, legF: [0.15, -0.1], legB: [-0.3, -0.2], ease: 'in' },
-    { t: 0.55, armF: [1.45, 0.0], armB: [0, 0], wpn: 1.7, lean: 0.16, head: 0.06, legF: [0.4, -0.25], legB: [-0.4, -0.15], by: 1, ease: 'out' },
-    { t: 1, armF: [0.6, 0.4], armB: [0, 0], wpn: 1.0, lean: 0.05, by: 0.3 },
+    { t: 0, armF: [0.3, 0], wpn: 0.6, ease: 'out' },
+    // 도끼: 어깨 높이로 뒤로 젖혔다가 옆으로 크게 벤다
+    { t: 0.32, armF: [1.7, 0], wpn: -1.0, lean: -0.12, legF: [0.05, 0], legB: [-0.08, 0], ease: 'in' },
+    { t: 0.48, armF: [1.35, 0], wpn: 1.75, lean: 0.14, legF: [0.15, 0], legB: [-0.1, 0], by: 0.8, ease: 'out' },
+    { t: 0.7, armF: [1.0, 0], wpn: 2.1, lean: 0.08, legF: [0.12, 0], legB: [-0.08, 0], by: 0.4, ease: 'inout' },
+    { t: 1, armF: [0.2, 0], wpn: 0.8, lean: 0, by: 0 },
   ] },
   climb: { frames: 8, loop: true, keys: [
     { t: 0, armF: [2.6, 0.2], armB: [-2.1, -0.5], legF: [0.55, -1.1], legB: [0.1, -0.3], by: -0.5, wpn: 0.4, ease: 'inout' },
