@@ -6,6 +6,7 @@ import {
   equipItem, learnTalent, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
+import { buyBribe, collectStamp, upgradeStamp } from './stamps';
 import { ForgeUp, buyForge, forgeCollect, forgeLoad, forgeOil, forgeUpgrade } from './forge';
 
 export type Action =
@@ -41,7 +42,10 @@ export type Action =
   | { t: 'forgeLoad'; slot: number; ore: string }
   | { t: 'forgeOil'; slot: number }
   | { t: 'forgeCollect'; slot: number; toStorage: boolean; n: number }
-  | { t: 'forgeUp'; k: ForgeUp };
+  | { t: 'forgeUp'; k: ForgeUp }
+  | { t: 'stampIn'; id: string }
+  | { t: 'stampUp'; id: string }
+  | { t: 'bribe' };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -96,6 +100,9 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'forgeOil': return res(forgeOil(acc, c, a.slot, now));
     case 'forgeCollect': { const n = forgeCollect(acc, c, a.slot, a.toStorage, now, a.n); return n ? ok(n) : fail('꺼낼 주괴가 없거나 자리가 없습니다'); }
     case 'forgeUp': return res(forgeUpgrade(acc, a.k, now));
+    case 'stampIn': return res(collectStamp(acc, c, a.id));
+    case 'stampUp': return res(upgradeStamp(acc, c, a.id));
+    case 'bribe': return res(buyBribe(acc));
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

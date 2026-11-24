@@ -17,7 +17,7 @@ describe('용광로', () => {
     addItem(c, 'ore', 20);
     expect(applyAction(acc, 0, { t: 'forgeLoad', slot: 0, ore: 'ore' }, 0).ok).toBe(true);
     expect(countItem(c, 'ore')).toBe(0);
-    const sec = smeltSeconds(acc.forge, acc.forge.slots[0]);
+    const sec = smeltSeconds(acc, acc.forge.slots[0]);
     forgeSettle(acc, sec * 1000 * 3 + 10);
     expect(acc.forge.slots[0].bars).toBe(3);
     expect(acc.forge.slots[0].qty).toBe(20 - 3 * sm.need);
@@ -41,10 +41,10 @@ describe('용광로', () => {
     applyAction(acc, 0, { t: 'forgeBuy' }, 0);
     addItem(c, 'ore', 24); addItem(c, 'forge_oil', 1);
     applyAction(acc, 0, { t: 'forgeLoad', slot: 0, ore: 'ore' }, 0);
-    const base = smeltSeconds(acc.forge, acc.forge.slots[0]);
+    const base = smeltSeconds(acc, acc.forge.slots[0]);
     const half = base * 500;
     expect(applyAction(acc, 0, { t: 'forgeOil', slot: 0 }, half).err).toBeUndefined();
-    expect(smeltSeconds(acc.forge, acc.forge.slots[0])).toBeCloseTo(base / FORGE.oilSpeed);
+    expect(smeltSeconds(acc, acc.forge.slots[0])).toBeCloseTo(base / FORGE.oilSpeed);
     // 남은 절반은 빨라진 속도로
     forgeSettle(acc, half + (base / FORGE.oilSpeed) * 500 + 5);
     expect(acc.forge.slots[0].bars).toBe(1);

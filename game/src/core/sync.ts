@@ -38,13 +38,13 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
 
   // 2) 이 시간 동안 가능한 최대치
   const map = MAPS[s.mapId];
-  const d = derive(s, acc.cards);
+  const d = derive(s, acc);
   const boss = map.boss ? MONSTERS[map.boss] : null;
   const killCap = map.spawns.reduce((n, x) => n + x.count, 0) * (3600 / 5);
   const maxKills = Math.floor((killCap * t) / 3600 * SLACK) + PAD_KILLS + (boss ? 1 : 0);
   const mobs = [...map.spawns.map((x) => MONSTERS[x.monster]), ...(boss ? [boss] : [])];
   const maxXpKill = Math.max(0, ...mobs.map((m) => m.xp)) * d.xpMult * 1.05;
-  const maxCoinKill = Math.max(0, ...mobs.map((m) => m.coins[1]));
+  const maxCoinKill = Math.max(0, ...mobs.map((m) => m.coins[1])) * d.coinMult + 1;
   const swings = t / GATHER_INTERVAL * SLACK + 3;
 
   // 처치

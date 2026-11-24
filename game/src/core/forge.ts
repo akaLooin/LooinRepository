@@ -2,6 +2,7 @@
 // 진행은 시각(t0)으로 계산하므로 접속하지 않아도, 서버에서도 같은 식으로 흐른다.
 import { FORGE, ITEMS, SMELTS } from './data';
 import type { Account, Character } from './state';
+import { bribeBonus } from './stamps';
 import { addItemSome, countItem, removeItem, storageSize } from './state';
 
 export interface ForgeSlot {
@@ -28,10 +29,10 @@ export const forgeSlotsOpen = (f: Forge) => FORGE.slotsBase + f.up.slots;
 export const forgeCap = (f: Forge) => FORGE.capBase + f.up.cap * FORGE.capPer;
 export const forgeBonus = (f: Forge) => f.up.bonus * FORGE.bonusPer;
 /** 주괴 하나 녹이는 시간(초) */
-export function smeltSeconds(f: Forge, s: ForgeSlot): number {
+export function smeltSeconds(acc: Pick<Account, 'forge' | 'bribes'>, s: ForgeSlot): number {
   const d = SMELTS.find((x) => x.ore === s.ore);
   if (!d) return Infinity;
-  return d.secs / (1 + f.up.speed * FORGE.speedPer) / (s.oil ? FORGE.oilSpeed : 1);
+  return d.secs / (1 + acc.forge.up.speed * FORGE.speedPer + bribeBonus(acc).forgeSpeed) / (s.oil ? FORGE.oilSpeed : 1);
 }
 /** 업그레이드 값(코인) */
 export const forgeUpCost = (f: Forge, k: ForgeUp) => Math.round(FORGE.upCost[k] * Math.pow(FORGE.upGrow, f.up[k]));
@@ -44,7 +45,7 @@ export function forgeSettle(acc: Account, now: number) {
   for (const s of f.slots) {
     const d = SMELTS.find((x) => x.ore === s.ore);
     if (!d || s.qty < d.need) continue;
-    const sec = smeltSeconds(f, s);
+    const sec = smeltSeconds(acc, s);
     const made = Math.max(0, Math.min(Math.floor(s.qty / d.need), Math.floor((now - s.t0) / 1000 / sec)));
     if (!made) continue;
     s.qty -= made * d.need;
@@ -61,7 +62,7 @@ export function forgeSettle(acc: Account, now: number) {
 export function forgeProgress(acc: Account, s: ForgeSlot, now: number): number {
   const d = SMELTS.find((x) => x.ore === s.ore);
   if (!d || s.qty < d.need) return 0;
-  return Math.min(1, (now - s.t0) / 1000 / smeltSeconds(acc.forge, s));
+  return Math.min(1, (now - s.t0) / 1000 / smeltSeconds(acc, s));
 }
 
 export function buyForge(acc: Account): string | null {
@@ -101,10 +102,10 @@ export function forgeOil(acc: Account, c: Character, slot: number, now: number):
   if (s.oil) return '이미 기름을 부었습니다';
   if (countItem(c, FORGE.oilItem) < 1) return `${ITEMS[FORGE.oilItem].name}이 없습니다`;
   // 지금까지 진행한 몫은 그대로 두고 남은 시간만 줄인다
-  const sec = smeltSeconds(f, s), done = Math.min(1, (now - s.t0) / 1000 / sec);
+  const sec = smeltSeconds(acc, s), done = Math.min(1, (now - s.t0) / 1000 / sec);
   removeItem(c, FORGE.oilItem, 1);
   s.oil = true;
-  s.t0 = now - done * smeltSeconds(f, s) * 1000;
+  s.t0 = now - done * smeltSeconds(acc, s) * 1000;
   return null;
 }
 
@@ -143,7 +144,7 @@ export function forgeUpgrade(acc: Account, k: ForgeUp, now: number): string | nu
   const frac = f.slots.map((s) => forgeProgress(acc, s, now));
   acc.coins -= cost;
   f.up[k]++;
-  f.slots.forEach((s, i) => { if (s.ore) s.t0 = now - frac[i] * smeltSeconds(f, s) * 1000; });
+  f.slots.forEach((s, i) => { if (s.ore) s.t0 = now - frac[i] * smeltSeconds(acc, s) * 1000; });
   forgeSettle(acc, now);
   return null;
 }

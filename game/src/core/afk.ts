@@ -55,7 +55,7 @@ const MOB_RESPAWN = 4.5 + 0.5; // 몬스터 재생성 평균(초) + 등장 연�
 
 export function afkRates(acc: Account, c: Character): AfkRates {
   const map = MAPS[c.mapId];
-  const d = derive(c, acc.cards);
+  const d = derive(c, acc);
   const base: AfkRates = { mode: 'rest', target: '휴식', rate: 0, killsPerHour: 0, killCap: 0, xpPerHour: 0, coinsPerHour: 0, hit: 0,
     survival: 1, dps: 0, regen: d.regen, foodPerHour: 0, drops: [], cards: [] };
 
@@ -105,7 +105,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   for (const s of map.spawns) {
     const m = MONSTERS[s.monster], k = kph * (s.count / total);
     r.xpPerHour += k * m.xp * d.xpMult;
-    r.coinsPerHour += k * (m.coins[0] + m.coins[1]) / 2;
+    r.coinsPerHour += k * (m.coins[0] + m.coins[1]) / 2 * d.coinMult;
     for (const dr of m.drops) {
       // 같은 아이템은 한 줄로 합친다
       const per = k * Math.min(1, dr.chance * d.dropMult) * (dr.qty[0] + dr.qty[1]) / 2;
@@ -168,7 +168,7 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
   // 모루 생산은 방치 효율과 무관하게 흐른 시간 그대로
   const a = anvilTick(c, elapsed);
   if (a.made) rep.anvil = { items: a.bySlot, levels: a.levels };
-  const d = derive(c, acc.cards);
+  const d = derive(c, acc);
   c.hp = d.maxHp; c.mp = d.maxMp;
   return rep;
 }

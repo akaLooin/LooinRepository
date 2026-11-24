@@ -280,12 +280,12 @@ describe('전직과 카드', () => {
   });
   it('카드는 계정 전체 능력치를 올린다', () => {
     const { acc, c } = setup();
-    const base = derive(c, acc.cards).maxHp;
+    const base = derive(c, acc).maxHp;
     acc.cards.mossblob = 3;
     // 장착해야 효과가 있다
-    expect(derive(c, acc.cards).maxHp).toBe(base);
+    expect(derive(c, acc).maxHp).toBe(base);
     expect(equipCard(acc, c, 'mossblob', 0)).toBeNull();
-    expect(derive(c, acc.cards).maxHp).toBeGreaterThan(base);
+    expect(derive(c, acc).maxHp).toBeGreaterThan(base);
     expect(equipCard(acc, c, 'pebbler', 1)).toMatch(/없는/);
     c.mapId = 'meadow'; c.auto = true;
     const r = computeAfk(acc, c, 12 * 3600_000, new Rng(1))!;
@@ -457,9 +457,9 @@ describe('방치 정보와 보상', () => {
     const rep = computeAfk(acc, c, 24 * 3600_000, new Rng(5))!;
     expect(rep.cards.some((x) => x.name === '참나무')).toBe(true);
     expect(acc.cards.oak).toBeGreaterThan(0);
-    const before = derive(c, acc.cards).chopping;
+    const before = derive(c, acc).chopping;
     expect(equipCard(acc, c, 'oak', 0)).toBeNull();
-    expect(derive(c, acc.cards).chopping).toBeGreaterThan(before);
+    expect(derive(c, acc).chopping).toBeGreaterThan(before);
   });
   it('카드는 드물게: 12시간 사냥해도 수십 장이 나오지 않는다', () => {
     const { acc, c } = setup();
@@ -521,7 +521,7 @@ describe('1월드 마무리', () => {
     c.hp = 1; w.player.dead = 0.01; c.hp = 0;
     w.step(1 / 60, { move: 0, climb: 0 });
     expect(w.events.some((e) => e.t === 'respawn')).toBe(true);
-    expect(c.hp).toBe(derive(c, acc.cards).maxHp);
+    expect(c.hp).toBe(derive(c, acc).maxHp);
   });
   it('장신구 칸', () => {
     const { c } = setup();

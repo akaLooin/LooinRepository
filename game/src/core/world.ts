@@ -98,7 +98,7 @@ export class World {
     this.map = MAPS[char.mapId] ?? MAPS.town;
     char.mapId = this.map.id;
     this.platforms = [{ x: 0, y: 0, w: this.map.width }, ...this.map.platforms];
-    this.d = derive(char, acc.cards);
+    this.d = derive(char, acc);
     const sx = clamp(char.x, 10, this.map.width - 10);
     // 저장된 높이에 발판이 있으면 그 위에, 아니면 지면에 선다
     const sy = this.platforms.some((q) => q.y === char.y && sx >= q.x && sx <= q.x + q.w) ? char.y! : 0;
@@ -278,7 +278,7 @@ export class World {
   step(dt: number, manual: Input) {
     dt = Math.min(dt, 0.05);
     const p = this.player, c = this.char;
-    const d = (this.d = derive(c, this.acc.cards));
+    const d = (this.d = derive(c, this.acc));
     c.x = p.x; c.y = p.onGround ? p.y : c.y;
     // 모루 생산은 플레이 중에도 계속된다
     const anvil = anvilTick(c, dt);
@@ -439,7 +439,7 @@ export class World {
     noteKill(c, m.def.id);
     this.events.push({ t: 'kill', uid: m.uid, x: m.x, y: m.y });
     if (gainXp(c, Math.max(1, Math.round(m.def.xp * d.xpMult)))) this.events.push({ t: 'level', level: c.level });
-    this.spawnDrop(true, 'coin', this.rng.int(m.def.coins[0], m.def.coins[1]), m.x, m.y - 10, m.y);
+    this.spawnDrop(true, 'coin', Math.round(this.rng.int(m.def.coins[0], m.def.coins[1]) * d.coinMult), m.x, m.y - 10, m.y);
     for (const dr of m.def.drops) {
       if (this.rng.chance(dr.chance * d.dropMult)) this.spawnDrop(false, dr.item, this.rng.int(dr.qty[0], dr.qty[1]), m.x, m.y - 10, m.y);
     }

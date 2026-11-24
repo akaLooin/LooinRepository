@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing';
 export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps';
 export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'ring' | 'pickaxe' | 'axe';
@@ -18,7 +18,7 @@ export interface ItemStats {
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
-  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock';
+  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp';
   /** 가방 확장: 사용하면 이 캐릭터의 가방 칸 +n (종류마다 한 번) */
   bagSlots?: number;
   /** 소지 한도 주머니: 이 묶음의 한 칸 최대치를 cap 으로 */
@@ -80,7 +80,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', ring: '장신구', pickaxe: '곡괭이', axe: '도끼',
 };
@@ -108,6 +108,10 @@ const items: ItemDef[] = [
   { id: 'ore', name: '붉은돌 광석', desc: '붉은 빛이 도는 광석.', kind: 'material', sell: 4 },
   { id: 'silverlog', name: '은빛 통나무', desc: '은은하게 빛나는 목재.', kind: 'material', sell: 9 },
   { id: 'bar_red', name: '붉은쇠 주괴', desc: '용광로에서 붉은돌 광석을 녹여 만든 쇳덩이.', kind: 'material', sell: 15 },
+  ...[
+    ['dmg', '칼날 우표'], ['hp', '심장 우표'], ['def', '방패 우표'], ['acc', '과녁 우표'], ['crit', '별똥 우표'],
+    ['mining', '곡괭이 우표'], ['chopping', '도끼 우표'], ['drop', '주머니 우표'], ['coins', '동전 우표'], ['xp', '책 우표'], ['afk', '모래시계 우표'],
+  ].map(([k, name]) => ({ id: `stamp_${k}`, name, desc: '우표함에 넣으면 계정 전체에 효과가 생긴다.', kind: 'stamp' as const, sell: 1 })),
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
@@ -130,13 +134,13 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) =
 const monsters: MonsterDef[] = [
   { id: 'mossking', name: '이끼왕', hp: 2600, atk: 26, acc: 24, defZero: 60, xp: 900, coins: [300, 400], speed: 14, motion: 'hop', radius: 20, scale: 2.6,
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
-    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }] },
+    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
-    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }] },
+    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
-    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }] },
+    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
-    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }] },
+    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }] },
 ];
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries(monsters.map((m) => [m.id, m]));
 
@@ -153,7 +157,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
-    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
+    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
     portals: [{ x: 652, y: -48, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],
@@ -342,6 +346,46 @@ export const SHOP: ShopEntry[] = [
   { item: 'pouch_food', price: 300, daily: 1 },
   { item: 'chest_small', price: 900, daily: 1 },
   { item: 'forge_oil', price: 60, daily: 10 },
+  { item: 'stamp_dmg', price: 400, daily: 1 },
+  { item: 'stamp_mining', price: 400, daily: 1 },
+  { item: 'stamp_chopping', price: 400, daily: 1 },
+  { item: 'stamp_coins', price: 1500, daily: 1 },
+  { item: 'stamp_afk', price: 4000, daily: 1 },
+];
+
+/** 우표(계정 공용): 우표함에 넣어 모으고, 코인 + 재료로 끝없이 올린다.
+ *  lin: 레벨마다 a 씩, sat: a·lv/(lv+b) 로 점점 덜 오른다(최대 a에 가까워짐) */
+export type StampCat = 'combat' | 'skill' | 'misc';
+export type StampEff = 'dmg' | 'hp' | 'def' | 'acc' | 'crit' | 'mining' | 'chopping' | 'drop' | 'coins' | 'xp' | 'afk';
+export interface StampDef { id: string; eff: StampEff; cat: StampCat; kind: 'lin' | 'sat'; a: number; b?: number; unit: '%' | '%p' | ''; label: string; cost: number; mat: string; matBase: number }
+export const STAMPS: StampDef[] = [
+  { id: 'stamp_dmg', eff: 'dmg', cat: 'combat', kind: 'sat', a: 60, b: 40, unit: '%', label: '공격력', cost: 30, mat: 'pebble', matBase: 4 },
+  { id: 'stamp_hp', eff: 'hp', cat: 'combat', kind: 'lin', a: 4, unit: '', label: '최대 체력', cost: 25, mat: 'moss', matBase: 4 },
+  { id: 'stamp_def', eff: 'def', cat: 'combat', kind: 'lin', a: 0.6, unit: '', label: '방어력', cost: 40, mat: 'pebble', matBase: 5 },
+  { id: 'stamp_acc', eff: 'acc', cat: 'combat', kind: 'lin', a: 0.8, unit: '', label: '명중', cost: 50, mat: 'leaf', matBase: 3 },
+  { id: 'stamp_crit', eff: 'crit', cat: 'combat', kind: 'sat', a: 12, b: 30, unit: '%p', label: '치명타 확률', cost: 120, mat: 'leaf', matBase: 4 },
+  { id: 'stamp_mining', eff: 'mining', cat: 'skill', kind: 'sat', a: 80, b: 35, unit: '%', label: '채광 효율', cost: 35, mat: 'ore', matBase: 4 },
+  { id: 'stamp_chopping', eff: 'chopping', cat: 'skill', kind: 'sat', a: 80, b: 35, unit: '%', label: '벌목 효율', cost: 35, mat: 'log', matBase: 4 },
+  { id: 'stamp_drop', eff: 'drop', cat: 'misc', kind: 'sat', a: 40, b: 50, unit: '%', label: '드롭률', cost: 150, mat: 'twine', matBase: 6 },
+  { id: 'stamp_coins', eff: 'coins', cat: 'misc', kind: 'sat', a: 50, b: 40, unit: '%', label: '코인 획득', cost: 100, mat: 'nail', matBase: 4 },
+  { id: 'stamp_xp', eff: 'xp', cat: 'misc', kind: 'sat', a: 40, b: 50, unit: '%', label: '경험치', cost: 150, mat: 'plank', matBase: 2 },
+  { id: 'stamp_afk', eff: 'afk', cat: 'misc', kind: 'sat', a: 10, b: 60, unit: '%p', label: '방치 효율', cost: 300, mat: 'bar_red', matBase: 2 },
+];
+export const STAMP_NAMES: Record<StampCat, string> = { combat: '전투', skill: '기술', misc: '기타' };
+/** 우표함을 쓸 수 있는 캐릭터 레벨 */
+export const STAMP_LV = 12;
+export const STAMP_GROW = { coins: 1.17, mats: 1.11 };
+
+/** 후원 계약(원작의 뇌물에 해당): 코인으로 한 번 사는 고정 효과, 앞의 것을 사야 다음이 열린다 */
+export type BribeEff = 'stampCost' | 'drop' | 'forgeSpeed' | 'coins' | 'afk' | 'xp';
+export interface BribeDef { name: string; eff: BribeEff; v: number; price: number; desc: string }
+export const BRIBES: BribeDef[] = [
+  { name: '우표 장인 소개장', eff: 'stampCost', v: 0.1, price: 300, desc: '우표 올리는 코인 -10%' },
+  { name: '잃어버린 물건 지도', eff: 'drop', v: 0.05, price: 1200, desc: '드롭률 +5%' },
+  { name: '풀무 수리 계약', eff: 'forgeSpeed', v: 0.15, price: 2500, desc: '용광로 속도 +15%' },
+  { name: '상인 조합 회원증', eff: 'coins', v: 0.05, price: 5000, desc: '코인 획득 +5%' },
+  { name: '낮잠 보험', eff: 'afk', v: 0.02, price: 9000, desc: '방치 효율 +2%p' },
+  { name: '도서관 출입증', eff: 'xp', v: 0.05, price: 15000, desc: '경험치 +5%' },
 ];
 
 /** 용광로: 광석 need 개 → 주괴 1개, secs 초(업그레이드·기름 전) */

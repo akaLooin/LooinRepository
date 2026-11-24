@@ -4,7 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef, SMELTS, FORGE,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, cardNext, cardTier, QuestDef, SMELTS, FORGE, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -12,13 +12,14 @@ import {
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
+import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
 import { Game } from '../game';
 import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -65,6 +66,7 @@ export class UI {
   private afk: AfkReport | null = null;
   private craftSel = -1;
   private forgeSel = 0;
+  private stampSel = '';
   /** 대화 중인 NPC, 생산 칸 선택 */
   private npcId = 'elder';
   /** 하단 바가 공격 바로 바뀌어 있는지, 공격 바에 놓으려고 고른 특성, 특성 화면에서 고른 특성 */
@@ -495,6 +497,12 @@ export class UI {
         return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
       }
 
+      case 'stamps': {
+        const names = [...(['combat', 'skill', 'misc'] as StampCat[]).map((k) => STAMP_NAMES[k]), '후원'];
+        const body = !stampsOpen(c) ? `<p class="ui-muted">우표함은 Lv.${STAMP_LV} 이상 캐릭터만 쓸 수 있습니다. 모은 우표는 모든 캐릭터에게 효과가 있습니다.</p>`
+          : tab === 3 ? this.bribesHtml() : this.stampsHtml(c, (['combat', 'skill', 'misc'] as StampCat[])[tab]);
+        return win('우표함 <span class="ui-sm ui-muted">계정 공용</span>', `${tabs(names, tab, tabAct)}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'forge': return win('용광로 <span class="ui-sm ui-muted">계정 공용</span>', this.forgeHtml(c));
 
       case 'afkinfo': {
@@ -519,6 +527,38 @@ export class UI {
     return '';
   }
 
+  private stampsHtml(c: Character, cat: StampCat): string {
+    const acc = this.game.acc;
+    const list = STAMPS.filter((s) => s.cat === cat);
+    if (!list.some((s) => s.id === this.stampSel)) this.stampSel = list[0].id;
+    const fmt = (s: StampDef, lv: number) => `+${(Math.round(stampValue(s, lv) * 10) / 10).toLocaleString()}${s.unit}`;
+    const cells = list.map((s) => {
+      const lv = acc.stamps[s.id] ?? 0, inBag = countItem(c, s.id) > 0;
+      return `<button class="ui-slot ${lv ? 'r2' : inBag ? 'ready' : ''}" data-act="ssel:${s.id}" aria-selected="${s.id === this.stampSel}" aria-label="${ITEMS[s.id].name}${lv ? ` Lv.${lv}` : inBag ? ' (가방에 있음)' : ' (아직 없음)'}">
+        <img class="px" style="${lv || inBag ? '' : 'filter:brightness(0) invert(.4);opacity:.6'}" src="${iconUrl(ITEM_ICON[s.id])}" alt="">${lv ? `<span class="lv">Lv.${lv}</span>` : inBag ? '<span class="qty ok">!</span>' : ''}</button>`;
+    }).join('');
+    const s = STAMP_BY_ID[this.stampSel], lv = acc.stamps[s.id] ?? 0;
+    let detail = `<div class="ui-row"><span class="ui-slot">${icon(s.id)}</span><div><b>${ITEMS[s.id].name}</b> ${lv ? `<span class="ui-accent">Lv.${lv}</span>` : ''}<div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${s.label} ${fmt(s, Math.max(1, lv))}${lv ? ` → ${fmt(s, lv + 1)}` : ''}</div></div></div>`;
+    if (!lv) {
+      detail += countItem(c, s.id) ? `<button class="ui-btn primary block" data-act="sin:${s.id}">우표함에 넣기</button>`
+        : `<span class="ui-xs ui-muted">아직 이 우표가 없습니다. ${SHOP.some((e) => e.item === s.id) ? '잡화점에서 팝니다.' : '몬스터가 드물게 떨어뜨립니다.'}</span>`;
+    } else {
+      const cost = stampCost(acc, s), mats = haveMat(acc, c, cost.mat);
+      detail += `<div class="qline">${tile(iconUrl(ITEM_ICON.coin), cost.coins.toLocaleString(), `코인 ${acc.coins}/${cost.coins}`, '', acc.coins >= cost.coins ? 'ok' : 'bad')}${tile(iconUrl(ITEM_ICON[cost.mat]), `${mats}/${cost.qty}`, `${ITEMS[cost.mat].name} ${mats}/${cost.qty}`, '', mats >= cost.qty ? 'ok' : 'bad')}</div>
+        <button class="ui-btn primary block" data-act="sup:${s.id}" ${acc.coins >= cost.coins && mats >= cost.qty ? '' : 'disabled'}>올리기</button>`;
+    }
+    return `<div class="split"><div class="ui-grid c4">${cells}</div><div class="ui-detail">${detail}</div></div>`;
+  }
+
+  private bribesHtml(): string {
+    const acc = this.game.acc;
+    return BRIBES.map((b, i) => {
+      const got = i < acc.bribes, next = i === acc.bribes;
+      return `<div class="ui-row line ${got || next ? '' : 'ui-muted'}"><div class="ui-grow"><b>${next || got ? b.name : '???'}</b><div class="ui-sm ${got ? 'ui-good' : ''}">${next || got ? b.desc : '앞의 계약을 맺으면 열립니다'}</div></div>
+        ${got ? '<span class="ui-good">✓</span>' : next ? `<button class="ui-btn primary sm" data-act="bribe" ${acc.coins >= b.price ? '' : 'disabled'}>${icon('coin')} ${b.price.toLocaleString()}</button>` : ''}</div>`;
+    }).join('') + '<p class="ui-xs ui-muted">후원 계약은 한 번 맺으면 계정 전체에 계속 효과가 있습니다. 차례대로 맺을 수 있습니다.</p>';
+  }
+
   private forgeHtml(c: Character): string {
     const acc = this.game.acc, f = acc.forge, now = Date.now();
     const sm = SMELTS[0];
@@ -539,7 +579,7 @@ export class UI {
     const s = f.slots[this.forgeSel], d = SMELTS.find((x) => x.ore === s.ore);
     let detail: string;
     if (s.ore && d) {
-      const sec = smeltSeconds(f, s), left = s.qty >= d.need ? Math.ceil(sec * (1 - forgeProgress(acc, s, now))) : 0;
+      const sec = smeltSeconds(acc, s), left = s.qty >= d.need ? Math.ceil(sec * (1 - forgeProgress(acc, s, now))) : 0;
       const total = Math.floor(s.qty / d.need);
       detail = `<div class="qline">${tile(iconUrl(ITEM_ICON[s.ore]), `${s.qty}/${cap}`, `${ITEMS[s.ore].name} ${s.qty}/${cap}`)}<span class="qarrow">▶</span>${tile(iconUrl(ITEM_ICON[d.bar]), s.bars, `${ITEMS[d.bar].name} ${s.bars}개`, s.bars ? 'ready' : '')}</div>
         <span class="ui-xs ui-muted">${total ? `다음 주괴까지 ${left}초 · 남은 광석으로 ${total}개 더 · 주괴 1개에 ${sec.toFixed(1)}초` : '광석이 모자라 멈췄습니다'}${s.oil ? ' · <span class="ui-accent">기름 효과 중</span>' : ''}</span>
@@ -601,7 +641,7 @@ export class UI {
   }
 
   private statsHtml(c: Character): string {
-    const d = derive(c, this.game.acc.cards);
+    const d = derive(c, this.game.acc);
     const stats = (Object.keys(STAT_NAMES) as StatKey[]).map((k) => `<div class="ui-row line"><b class="stat-name">${STAT_NAMES[k]}</b><span class="ui-accent stat-val">${d[k]}</span>
       <span class="ui-grow ui-xs ui-muted">${STAT_DESC[k]}</span><button class="ui-btn sm" data-act="stat:${k}" aria-label="${STAT_NAMES[k]} 올리기" ${c.statPoints ? '' : 'disabled'}>＋</button></div>`).join('');
     const skills = (Object.keys(SKILL_NAMES) as SkillKey[]).map((k) => {
@@ -743,6 +783,10 @@ export class UI {
       case 'csel': this.craftSel = +a; break;
       case 'pslot': this.prodSlot = +a; break;
       case 'fslot': this.forgeSel = +a; break;
+      case 'ssel': this.stampSel = a; break;
+      case 'sin': { const r = g.act({ t: 'stampIn', id: a }); if (r.ok) this.toast(`${ITEMS[a].name}을(를) 우표함에 넣었습니다`, a); else fail(r.err ?? null); break; }
+      case 'sup': fail(g.act({ t: 'stampUp', id: a }).err ?? null); break;
+      case 'bribe': { const r = g.act({ t: 'bribe' }); if (r.ok) this.toast('후원 계약을 맺었습니다'); else fail(r.err ?? null); break; }
       case 'forgebuy': { const r = g.act({ t: 'forgeBuy' }); if (r.ok) this.toast('용광로를 들였습니다'); else fail(r.err ?? null); break; }
       case 'fload': fail(g.act({ t: 'forgeLoad', slot: this.forgeSel, ore: a }).err ?? null); break;
       case 'foil': fail(g.act({ t: 'forgeOil', slot: this.forgeSel }).err ?? null); break;

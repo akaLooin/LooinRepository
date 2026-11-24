@@ -1,4 +1,5 @@
 import { Forge, newForge } from './forge';
+import { bribeBonus, stampBonus } from './stamps';
 import {
   AFK_BASE, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
@@ -66,6 +67,10 @@ export interface Account {
   teleports: { n: number; day: string };
   /** 용광로(계정 공용) */
   forge: Forge;
+  /** 우표 레벨(모은 것만, 계정 공용) */
+  stamps: Record<string, number>;
+  /** 산 후원 계약 수(차례대로 산다) */
+  bribes: number;
   characters: Character[];
   active: number;
   nextId: number;
@@ -74,7 +79,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -110,6 +115,8 @@ export interface Derived {
   afkFight: number; afkSkill: number;
   atkInterval: number; speed: number; crit: number; critMult: number;
   xpMult: number; dropMult: number; regen: number;
+  /** 코인 획득 배수 */
+  coinMult: number;
   mining: number; chopping: number;
   /** 공격 사거리. 원거리 직업은 발사체를 쏜다 */
   range: number; ranged: boolean;
@@ -125,36 +132,43 @@ export function equipStats(c: Character): Required<ItemStats> {
 }
 
 export type Cards = Record<string, number>;
-const NO_CARDS: Cards = {};
+/** 능력치 계산에 쓰는 계정 공용 보너스 출처(카드·우표·뇌물 …) */
+export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes'>>;
+const NO_ACC: AccBonus = { cards: {} };
 
-export function derive(c: Character, cards: Cards = NO_CARDS): Derived {
+export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
+  const cards = a.cards;
   const e = equipStats(c);
   const str = c.stats.str + e.str, agi = c.stats.agi + e.agi;
   const wis = c.stats.wis + e.wis, luk = c.stats.luk + e.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
   const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, afkSkill: 0 };
+  // 우표(효과 값은 % 단위)·후원 계약
+  const sb = stampBonus(a), bb = bribeBonus(a);
+  const afkAcc = sb.afk / 100 + bb.afk;
   // 카드는 장착한 것만 효과가 있다
   for (const cd of CARDS) if (c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
   const maxMp = Math.floor(8 + wis * 1.5 + c.level);
   const work = 1 + tl('worker') * 0.05;
-  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
+  const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (c.cls === 'warrior' ? 1.15 : 1));
   return {
     str, agi, wis, luk, maxHp, maxMp, mpRegen: 0.5 + maxMp * 0.02,
-    acc: 2 + accStat + c.level,
-    afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk),
-    afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill),
-    dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg),
-    def: e.def + c.level * 0.3 + tl('ironskin') * 1.5,
+    acc: 2 + accStat + c.level + sb.acc,
+    afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk + afkAcc),
+    afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill + afkAcc),
+    dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg) * (1 + sb.dmg / 100),
+    def: e.def + c.level * 0.3 + tl('ironskin') * 1.5 + sb.def,
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
     speed: 80 + Math.min(40, agi * 0.6),
-    crit: Math.min(0.6, 0.04 + luk * 0.004), critMult: 1.6,
-    xpMult: 1 + wis * 0.005 + tl('insight') * 0.03, dropMult: (1 + luk * 0.004) * (1 + cb.drop),
+    crit: Math.min(0.75, 0.04 + luk * 0.004 + sb.crit / 100), critMult: 1.6,
+    xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop),
+    coinMult: 1 + sb.coins / 100 + bb.coins,
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
-    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining),
-    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping),
+    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100),
+    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100),
   };
 }
 
@@ -295,12 +309,12 @@ export function equipCard(acc: Account, c: Character, card: string, slot: number
   const prev = c.cardSlots.indexOf(card);
   if (prev >= 0) c.cardSlots[prev] = null;
   c.cardSlots[slot] = card;
-  c.hp = Math.min(c.hp, derive(c, acc.cards).maxHp);
+  c.hp = Math.min(c.hp, derive(c, acc).maxHp);
   return null;
 }
 export function unequipCard(acc: Account, c: Character, slot: number) {
   if (slot >= 0 && slot < c.cardSlots.length) c.cardSlots[slot] = null;
-  c.hp = Math.min(c.hp, derive(c, acc.cards).maxHp);
+  c.hp = Math.min(c.hp, derive(c, acc).maxHp);
 }
 
 // ───────── 인벤토리 ─────────
@@ -595,6 +609,8 @@ export function deserialize(json: string | null): Account | null {
     a.options ??= { autoAttacks: true };
     a.teleports ??= { n: 5, day: '' };
     a.forge ??= newForge();
+    a.stamps ??= {};
+    a.bribes ??= 0;
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
@@ -618,7 +634,7 @@ export function deserialize(json: string | null): Account | null {
       }
       c.skills.smithing ??= { lv: 1, xp: 0 };
       c.food ??= null;
-      c.mp ??= derive(c, a.cards).maxMp;
+      c.mp ??= derive(c, a).maxMp;
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};

@@ -441,6 +441,15 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 우표함: 둥근 지붕의 우체통 + 투입구 + 작은 깃발
+  p = new Paint(20, 30);
+  p.rect(8, 20, 4, 10, '#6e4630');
+  p.disc(10, 7, 8, 6, '#4e8de2'); p.rect(2, 7, 16, 13, '#4e8de2');
+  p.rect(5, 9, 10, 2, '#1e2a44'); p.rect(4, 14, 12, 4, '#e9e4f0'); p.rect(6, 15, 8, 2, '#d9574a');
+  p.rect(17, 3, 1, 8, '#6a7480'); p.rect(18, 3, 2, 3, '#f6c945');
+  p.rect(3, 6, 2, 10, '#7fb4ff');
+  p.outline().save('obj_stamps');
+
   // 용광로: 돌로 쌓은 화로 + 굴뚝 + 불빛 창
   p = new Paint(30, 34);
   p.rect(18, 0, 7, 12, '#7d8590'); p.rect(18, 0, 7, 2, '#9aa3ad');
@@ -533,6 +542,28 @@ function buildItems() {
   p = new Paint(12, 12);
   p.rect(2, 2, 8, 9, '#b9824f'); p.rect(4, 2, 4, 2, null); p.rect(2, 8, 8, 1, '#8a5a3c'); p.rect(2, 5, 8, 1, '#8a5a3c'); p.rect(5, 4, 1, 7, '#8a5a3c');
   p.outline().save('it_armor_log');
+  // 우표: 톱니 모양 가장자리의 종이 + 효과별 색과 작은 무늬
+  const stampArt: [string, string, (p: Paint) => void][] = [
+    ['dmg', '#d9574a', (q) => { q.line(4, 9, 8, 5, '#f2f0e6'); q.set(4, 10, '#f6c945'); }],
+    ['hp', '#e25d7a', (q) => { q.disc(5, 6.5, 1.3, 1.3, '#f2f0e6'); q.disc(7.5, 6.5, 1.3, 1.3, '#f2f0e6'); q.rect(5, 7, 3, 2, '#f2f0e6'); q.set(6, 9, '#f2f0e6'); }],
+    ['def', '#6a7480', (q) => { q.rect(4, 4, 5, 4, '#c9d1d9'); q.rect(5, 8, 3, 1, '#c9d1d9'); q.set(6, 9, '#c9d1d9'); }],
+    ['acc', '#e8833a', (q) => { q.disc(6.5, 6.5, 2.6, 2.6, '#f2f0e6'); q.disc(6.5, 6.5, 1.4, 1.4, '#d9574a'); }],
+    ['crit', '#8a6fd1', (q) => { q.line(6, 3, 6, 9, '#f6c945'); q.line(3, 6, 9, 6, '#f6c945'); q.set(6, 6, '#ffffff'); }],
+    ['mining', '#8d97a3', (q) => { q.line(3, 5, 9, 5, '#f2f0e6'); q.line(6, 5, 6, 10, '#b9824f'); }],
+    ['chopping', '#5fb859', (q) => { q.rect(6, 4, 1, 6, '#b9824f'); q.rect(7, 4, 2, 3, '#f2f0e6'); }],
+    ['drop', '#b9824f', (q) => { q.disc(6.5, 7, 2.6, 2.4, '#e8c08a'); q.rect(5, 3, 3, 2, '#e8c08a'); }],
+    ['coins', '#c98f2a', (q) => { q.disc(6.5, 6.5, 2.6, 2.6, '#f6c945'); q.rect(6, 5, 1, 3, '#c98f2a'); }],
+    ['xp', '#4e8de2', (q) => { q.rect(3, 4, 7, 5, '#f2f0e6'); q.rect(6, 4, 1, 5, '#4e8de2'); }],
+    ['afk', '#3a9a8a', (q) => { q.rect(4, 3, 5, 1, '#f2f0e6'); q.rect(4, 9, 5, 1, '#f2f0e6'); q.line(4, 4, 8, 8, '#f6c945'); q.line(8, 4, 4, 8, '#f6c945'); }],
+  ];
+  for (const [k, col, art] of stampArt) {
+    p = new Paint(13, 13);
+    p.rect(1, 1, 11, 11, '#f2f0e6');
+    for (let i = 1; i < 12; i += 2) { p.set(i, 0, '#f2f0e6'); p.set(i, 12, '#f2f0e6'); p.set(0, i, '#f2f0e6'); p.set(12, i, '#f2f0e6'); }
+    p.rect(2, 2, 9, 9, col);
+    art(p);
+    p.outline().save(`it_stamp_${k}`);
+  }
   // 주괴: 사다리꼴 쇳덩이
   p = new Paint(13, 10);
   p.rect(1, 4, 11, 5, '#c9573f'); p.rect(3, 2, 7, 2, '#e8836a'); p.rect(2, 3, 9, 1, '#d9674f');
@@ -574,6 +605,7 @@ export const ITEM_ICON: Record<string, string> = {
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
   twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
+  ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   bar_red: 'it_bar_red', forge_oil: 'it_oil', sword_red: 'wp_sword_red', pick_red: 'wp_pick_red', axe_red: 'wp_axe_red',
 };
 
