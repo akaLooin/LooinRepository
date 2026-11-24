@@ -10,9 +10,14 @@ Oracle Cloud "Always Free" 서버에 Looin World 를 설치합니다. **명령�
 4. **Shape**: **Ampere → VM.Standard.A1.Flex**, OCPU **2** / 메모리 **12GB** ("항상 무료 적격" 표시 확인. 안 되면 1 / 6)
 5. **네트워킹**: 새 VCN 생성(기본값), **공용 IPv4 주소 자동 할당 켜기**
 6. **SSH 키**: "개인 키 저장"으로 내려받아 보관 (나중에 직접 들어갈 일이 생길 때만 필요)
-7. **고급 옵션 → 관리(Management) → cloud-init 스크립트 붙여넣기**:
-   [`deploy/oracle-cloud-init.sh`](../deploy/oracle-cloud-init.sh) 내용을 통째로 붙여넣고,
-   맨 위 `LOOIN_OWNER_TOKEN="…"` 의 따옴표 안을 **나만 아는 긴 비밀번호**로 바꾸기
+7. **고급 옵션 → 관리(Management) → cloud-init 스크립트 붙여넣기**에 아래 3줄을 붙여넣고,
+   2번째 줄 따옴표 안을 **나만 아는 긴 비밀번호**(12자 이상)로 바꾸기
+   ```bash
+   #!/bin/bash
+   export LOOIN_OWNER_TOKEN="여기에-나만-아는-긴-비밀번호"
+   curl -fsSL https://raw.githubusercontent.com/akaLooin/LooinRepository/claude/personal-ai-world-platform-0vh9be/deploy/oracle-cloud-init.sh | bash
+   ```
+   (전체 스크립트: [`deploy/oracle-cloud-init.sh`](../deploy/oracle-cloud-init.sh). 비밀번호를 안 바꾸면 설치가 멈춰요)
 8. **생성** → 상태가 "실행 중"이 되면 **공용 IP 주소**를 메모
 
 ## 2) 문 열기 (80, 443 포트)
