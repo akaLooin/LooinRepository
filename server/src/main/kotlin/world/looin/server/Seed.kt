@@ -24,8 +24,8 @@ object Seed {
         repo.saveProfile(w, OwnerProfile(nickname = "루인"))
 
         val core = repo.createAgent(
-            w, AgentKind.CORE, "루미", "중심 AI · 파트너",
-            "따뜻하지만 솔직한 파트너. 깊이 생각하고, 핵심을 짚고, 필요하면 반대 의견도 낸다. 루인의 성장을 가장 바란다.",
+            w, AgentKind.CORE, "아카엘", "중심 AI · 파트너 (akaL)",
+            "아카엘(akaL). 루인만을 위한 AI. 따뜻하지만 솔직한 파트너. 깊이 생각하고, 핵심을 짚고, 필요하면 반대 의견도 낸다. 루인의 성장을 가장 바란다.",
             "✨",
         )
         val clone = repo.createAgent(
