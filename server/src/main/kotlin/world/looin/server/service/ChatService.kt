@@ -36,6 +36,7 @@ class ChatService(
     private val brain: Brain,
     private val memory: MemoryService,
     private val background: CoroutineScope,
+    private val files: FileService,
 ) {
     private val log = LoggerFactory.getLogger(ChatService::class.java)
 
@@ -51,7 +52,11 @@ class ChatService(
         ChatMode.DEEP -> Task.CHAT_DEEP
         ChatMode.BEST -> Task.CHAT_BEST
         // Claude 를 지금 못 쓰면(예산·크레딧) 모델 선택이 의미 없으니 판단을 건너뛴다 — 무료 한도 절약.
-        ChatMode.AUTO -> if (brain.info.providers.none { it.name == "claude" && it.available }) Task.CHAT else runCatching {
+        // 파일이 붙어 있으면 가벼운 모델 대신 최소 Sonnet 급으로
+        ChatMode.AUTO -> if (req.attachmentIds.isNotEmpty()) {
+            if (brain.info.providers.none { it.name == "claude" && it.available }) Task.CHAT
+            else runCatching { routerToTask(routerAsk(req, history)) }.getOrDefault(Task.CHAT).let { if (it == Task.CHAT_LIGHT) Task.CHAT else it }
+        } else if (brain.info.providers.none { it.name == "claude" && it.available }) Task.CHAT else runCatching {
             val context = history.dropLast(1).takeLast(2).joinToString("\n") { "${it.role}: ${it.text.take(300)}" }
             val out = brain.complete(
                 BrainRequest(
@@ -64,16 +69,34 @@ class ChatService(
         }.getOrDefault(Task.CHAT)
     }
 
+    private suspend fun routerAsk(req: SendMessageRequest, history: List<Turn>): String {
+        val context = history.dropLast(1).takeLast(2).joinToString("\n") { "${it.role}: ${it.text.take(300)}" }
+        return brain.complete(
+            BrainRequest(
+                stableSystem = Prompts.ROUTER_SYSTEM,
+                turns = listOf(Turn(ChatRole.USER, (if (context.isBlank()) "" else "이전 맥락:\n$context\n\n") + "새 메시지 (파일 첨부됨):\n${req.text.take(2000)}")),
+                effort = Effort.LOW, maxTokens = 1_000, task = Task.ROUTER,
+            ),
+        )
+    }
+
     fun stream(world: World, req: SendMessageRequest): Flow<ChatStreamEvent> = flow {
         val agent = repo.agent(world.id, req.agentId) ?: throw NotFound("agent not found")
         val conv = req.conversationId?.let { repo.conversation(world.id, it) ?: throw NotFound("conversation not found") }
             ?: repo.createConversation(world.id, agent.id, req.text.take(30).replace('\n', ' '))
 
-        repo.addMessage(conv.id, ChatRole.USER, req.text)
+        val attached = req.attachmentIds.distinct().take(10).mapNotNull { files.info(world, it) }
+        repo.addMessage(conv.id, ChatRole.USER, req.text, attachments = attached)
         emit(ChatStreamEvent(ChatStreamEvent.Type.START, conversationId = conv.id))
 
         val owner = repo.profile(world.id)
-        val history = repo.messages(conv.id).takeLast(historyLimit).map { Turn(it.role, it.content) }
+        val recent = repo.messages(conv.id).takeLast(historyLimit)
+        // 첨부 파일은 최근 6개 메시지 안의 것만 실제로 넘기고, 그보다 오래된 건 이름만 남긴다 (비용 절약)
+        val history = recent.mapIndexed { i, m ->
+            if (m.attachments.isEmpty()) Turn(m.role, m.content)
+            else if (i >= recent.size - 6) Turn(m.role, m.content, m.attachments.mapNotNull { files.load(world, it.id) })
+            else Turn(m.role, m.content + "\n\n[첨부했던 파일: " + m.attachments.joinToString { it.name } + "]")
+        }
         var usedBrain: String? = null
         val task = chooseTask(req, history)
         val brainReq = BrainRequest(
@@ -102,7 +125,8 @@ class ChatService(
         emit(ChatStreamEvent(ChatStreamEvent.Type.DONE, conversationId = conv.id, message = saved))
 
         background.launch {
-            runCatching { memory.extractFromExchange(world, req.text, sb.toString()) }
+            val note = if (attached.isEmpty()) "" else "\n(첨부한 파일: " + attached.joinToString { it.name } + ")"
+            runCatching { memory.extractFromExchange(world, req.text + note, sb.toString()) }
                 .onFailure { log.warn("memory extraction failed: {}", it.message) }
         }
     }

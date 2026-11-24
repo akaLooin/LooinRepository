@@ -27,6 +27,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import org.slf4j.LoggerFactory
 import world.looin.shared.BrainInfo
 import world.looin.shared.ChatRole
@@ -168,7 +169,22 @@ class ProviderChainBrain(
             normalizeTurns(req.turns).forEach { t ->
                 addJsonObject {
                     put("role", if (t.role == ChatRole.USER) "user" else "assistant")
-                    put("content", t.text)
+                    if (t.attachments.isEmpty()) put("content", t.text)
+                    else putJsonArray("content") {
+                        // 무료 두뇌: 사진은 이미지로(읽을 수 있는 모델만), PDF·텍스트는 뽑아둔 글자로 넘긴다
+                        t.attachments.forEach { a ->
+                            if (a.bytes != null && a.mime.startsWith("image/")) addJsonObject {
+                                put("type", "image_url")
+                                putJsonObject("image_url") {
+                                    put("url", "data:${a.mime};base64," + java.util.Base64.getEncoder().encodeToString(a.bytes))
+                                }
+                            } else addJsonObject {
+                                put("type", "text")
+                                put("text", "<file name=\"${a.name}\">\n${(a.text ?: "(내용을 읽을 수 없음)").take(60_000)}\n</file>")
+                            }
+                        }
+                        addJsonObject { put("type", "text"); put("text", t.text) }
+                    }
                 }
             }
         }
@@ -218,10 +234,11 @@ class ProviderChainBrain(
         /** API 규칙: system 다음은 user 로 시작, user/assistant 가 번갈아. 연속된 같은 역할은 합친다. */
         fun normalizeTurns(turns: List<Turn>): List<Turn> {
             val merged = mutableListOf<Turn>()
-            for (t in turns.filter { it.text.isNotBlank() }) {
+            for (t in turns.filter { it.text.isNotBlank() || it.attachments.isNotEmpty() }) {
                 val last = merged.lastOrNull()
-                if (last != null && last.role == t.role) merged[merged.lastIndex] = last.copy(text = last.text + "\n\n" + t.text)
-                else merged += t
+                if (last != null && last.role == t.role) {
+                    merged[merged.lastIndex] = last.copy(text = last.text + "\n\n" + t.text, attachments = last.attachments + t.attachments)
+                } else merged += t
             }
             while (merged.firstOrNull()?.role == ChatRole.ASSISTANT) merged.removeAt(0)
             if (merged.isEmpty()) merged += Turn(ChatRole.USER, "(시작)")

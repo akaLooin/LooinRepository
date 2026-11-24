@@ -59,6 +59,8 @@ class Db(file: File) {
         private val ADDED_COLUMNS = listOf(
             // 이 답을 쓴 두뇌 (예: "claude:claude-opus-5-5", "groq:openai/gpt-oss-120b")
             "ALTER TABLE messages ADD COLUMN brain TEXT",
+            // 이 메시지에 첨부된 파일 id 들 (쉼표로 구분)
+            "ALTER TABLE messages ADD COLUMN attachments TEXT",
         )
         private val SCHEMA = """
             CREATE TABLE IF NOT EXISTS users (
@@ -109,7 +111,10 @@ class Db(file: File) {
             CREATE TABLE IF NOT EXISTS brain_usage (
               provider TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL,
               cache_read INTEGER NOT NULL, cache_write INTEGER NOT NULL, cost_usd REAL NOT NULL, created_at INTEGER NOT NULL);
-            CREATE INDEX IF NOT EXISTS idx_usage ON brain_usage(provider, created_at)
+            CREATE INDEX IF NOT EXISTS idx_usage ON brain_usage(provider, created_at);
+            CREATE TABLE IF NOT EXISTS attachments (
+              id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+              name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, text TEXT, created_at INTEGER NOT NULL)
         """.trimIndent()
     }
 }

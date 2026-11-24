@@ -4,7 +4,13 @@ import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonValue
 import com.anthropic.errors.AnthropicServiceException
+import com.anthropic.models.messages.Base64ImageSource
+import com.anthropic.models.messages.Base64PdfSource
 import com.anthropic.models.messages.CacheControlEphemeral
+import com.anthropic.models.messages.ContentBlockParam
+import com.anthropic.models.messages.DocumentBlockParam
+import com.anthropic.models.messages.ImageBlockParam
+import com.anthropic.models.messages.PlainTextSource
 import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.OutputConfig
 import com.anthropic.models.messages.StopReason
@@ -208,7 +214,26 @@ class ClaudeBrain(
         }
     }.flowOn(Dispatchers.IO)
 
-    private fun buildParams(req: BrainRequest, route: ClaudeModels.Route): MessageCreateParams {
+    /** 사진은 이미지 블록, PDF 는 문서 블록(Claude 가 페이지를 직접 읽음), 텍스트 파일은 글자 문서 블록. */
+    private fun attachmentBlocks(t: Turn): List<ContentBlockParam> = t.attachments.mapNotNull { a ->
+        val b64 = a.bytes?.let { java.util.Base64.getEncoder().encodeToString(it) }
+        when {
+            b64 != null && a.mime in setOf("image/jpeg", "image/png", "image/gif", "image/webp") -> ContentBlockParam.ofImage(
+                ImageBlockParam.builder().source(
+                    Base64ImageSource.builder().data(b64).mediaType(Base64ImageSource.MediaType.of(a.mime)).build(),
+                ).build(),
+            )
+            b64 != null && a.mime == "application/pdf" -> ContentBlockParam.ofDocument(
+                DocumentBlockParam.builder().source(Base64PdfSource.builder().data(b64).build()).title(a.name).build(),
+            )
+            a.text != null -> ContentBlockParam.ofDocument(
+                DocumentBlockParam.builder().source(PlainTextSource.builder().data(a.text).build()).title(a.name).build(),
+            )
+            else -> null
+        }
+    }
+
+    internal fun buildParams(req: BrainRequest, route: ClaudeModels.Route): MessageCreateParams {
         val model = route.model
         val systemBlocks = buildList {
             add(TextBlockParam.builder().text(req.stableSystem).cacheControl(CacheControlEphemeral.builder().build()).build())
@@ -233,8 +258,14 @@ class ClaudeBrain(
             b.putAdditionalBodyProperty("fallbacks", JsonValue.from("default"))
         }
         ProviderChainBrain.normalizeTurns(req.turns).forEach { t ->
-            if (t.role == ChatRole.USER) b.addUserMessage(t.text) else b.addAssistantMessage(t.text)
+            when {
+                t.role != ChatRole.USER -> b.addAssistantMessage(t.text)
+                t.attachments.isEmpty() -> b.addUserMessage(t.text)
+                else -> b.addUserMessageOfContentBlockParams(attachmentBlocks(t) + ContentBlockParam.ofText(TextBlockParam.builder().text(t.text.ifBlank { "(첨부 파일)" }).build()))
+            }
         }
+        // 대화 앞부분(첨부 파일 포함)을 캐시해 다음 턴 비용을 줄인다
+        b.cacheControl(CacheControlEphemeral.builder().build())
         return b.build()
     }
 }

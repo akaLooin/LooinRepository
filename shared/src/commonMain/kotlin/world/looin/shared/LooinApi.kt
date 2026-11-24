@@ -123,6 +123,16 @@ class LooinApi(baseUrl: String, private val token: String) {
     suspend fun holdMeeting(spaceId: String, r: MeetingRequest): Meeting =
         http.post(url("/spaces/$spaceId/meetings")) { auth(); setBody(r) }.ok()
 
+    // --- 파일 ---
+    /** 파일을 서버에 올린다 (최대 25MB). 돌려받은 id 를 SendMessageRequest.attachmentIds 에 넣는다. */
+    suspend fun uploadFile(name: String, mime: String, bytes: ByteArray): AttachmentInfo =
+        http.post(url("/files")) {
+            auth()
+            url { parameters.append("name", name); parameters.append("mime", mime) }
+            contentType(ContentType.Application.OctetStream)
+            setBody(bytes)
+        }.ok()
+
     // --- 두뇌 설정 ---
     suspend fun brainSettings(): BrainSettingsView = http.get(url("/settings/brain")) { auth() }.ok()
     suspend fun updateBrainSettings(u: BrainSettingsUpdate): BrainSettingsView =

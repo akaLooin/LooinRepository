@@ -110,6 +110,16 @@ data class ChatMessage(
     val createdAt: Long,
     /** 이 답을 쓴 두뇌 (예: "claude:claude-sonnet-5-5") */
     val brain: String? = null,
+    val attachments: List<AttachmentInfo> = emptyList(),
+)
+
+/** 채팅에 첨부한 파일 (사진, PDF, 텍스트/코드). 파일 자체는 서버에 저장된다. */
+@Serializable
+data class AttachmentInfo(
+    val id: String,
+    val name: String,
+    val mime: String,
+    val size: Long,
 )
 
 /** 대화할 때 얼마나 깊이 생각할지. AUTO 는 질문을 보고 알아서 고른다. */
@@ -238,6 +248,7 @@ data class SendMessageRequest(
     val text: String,
     val conversationId: String? = null,
     val mode: ChatMode = ChatMode.AUTO,
+    val attachmentIds: List<String> = emptyList(),
 )
 
 @Serializable

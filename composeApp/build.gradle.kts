@@ -41,8 +41,8 @@ android {
         applicationId = "world.looin.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.4.0"
     }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1,INDEX.LIST,io.netty.versions.properties}" } }
     buildTypes { getByName("release") { isMinifyEnabled = false } }
@@ -66,4 +66,13 @@ compose.desktop {
             windows { menuGroup = "Akael"; upgradeUuid = "6f1f6c1e-5b8a-4a8e-9d1e-1c0a8f5b7a21" }
         }
     }
+}
+
+// 채팅 화면을 이미지로 그려보는 개발용 작업: ./gradlew :composeApp:showcase
+tasks.register<JavaExec>("showcase") {
+    val jvmCompilation = kotlin.jvm().compilations["main"]
+    classpath(jvmCompilation.output.allOutputs, jvmCompilation.runtimeDependencyFiles)
+    mainClass.set("world.looin.app.debug.ShowcaseKt")
+    args(layout.buildDirectory.dir("showcase").get().asFile.absolutePath)
+    dependsOn(jvmCompilation.compileTaskProvider)
 }

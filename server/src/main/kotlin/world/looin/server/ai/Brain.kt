@@ -14,7 +14,10 @@ enum class Task {
     ROUTER, MEMORY, REFLECTION, MEETING, MEETING_SUMMARY, COMMUNITY, GENERAL,
 }
 
-data class Turn(val role: ChatRole, val text: String)
+/** 두뇌에 넘기는 첨부 파일. bytes: 사진·PDF 원본, text: 뽑아둔 글자 (텍스트 파일·PDF). */
+class TurnAttachment(val name: String, val mime: String, val bytes: ByteArray?, val text: String?)
+
+data class Turn(val role: ChatRole, val text: String, val attachments: List<TurnAttachment> = emptyList())
 
 data class BrainRequest(
     /** 자주 바뀌지 않는 시스템 지시 (페르소나 등) — 프롬프트 캐시 대상. */

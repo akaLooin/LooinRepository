@@ -24,6 +24,7 @@ import world.looin.server.ai.Brain
 import world.looin.server.db.Db
 import world.looin.server.db.Repository
 import world.looin.server.service.ChatService
+import world.looin.server.service.FileService
 import world.looin.server.service.GrowthService
 import world.looin.server.service.MemoryService
 import world.looin.server.service.NotFound
@@ -46,7 +47,8 @@ class App(
     val brain: Brain = switchable
     val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val memory = MemoryService(repo, brain)
-    val chat = ChatService(repo, brain, memory, background)
+    val files = FileService(repo, File(config.dataDir, "files"))
+    val chat = ChatService(repo, brain, memory, background, files)
     val sim = WorldSimService(repo, brain)
     val growth = GrowthService(repo, brain, sim, config.autoWorldHours)
 

@@ -6,6 +6,8 @@ import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveChannel
+import io.ktor.utils.io.toByteArray
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytesWriter
 import io.ktor.server.response.respondText
@@ -16,6 +18,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
 import io.ktor.utils.io.writeStringUtf8
+import world.looin.server.service.FileService
 import world.looin.server.service.NotFound
 import world.looin.shared.AddMemoryRequest
 import world.looin.shared.BrainSettingsUpdate
@@ -109,6 +112,17 @@ fun Route.apiRoutes(app: App) {
                         flush()
                     }
                 }
+            }
+
+            // ---- 첨부 파일 ----
+            post("/files") {
+                val w = call.world()
+                val name = call.request.queryParameters["name"] ?: "file"
+                val mime = call.request.queryParameters["mime"] ?: ""
+                val len = call.request.headers["Content-Length"]?.toLongOrNull()
+                require(len == null || len <= FileService.MAX_BYTES) { "파일이 너무 커요 (최대 25MB)" }
+                val bytes = call.receiveChannel().toByteArray()
+                call.respond(app.files.save(w, name, mime, bytes))
             }
 
             // ---- 두뇌 설정 (앱에서 API 키 입력) ----

@@ -7,6 +7,7 @@ coroutines = "1.10.2"
 serialization = "1.9.0"
 sqlite = "3.50.3.0"
 anthropic = "3.13.0"
+pdfbox = "3.0.6"
 logback = "1.5.18"
 activity-compose = "1.10.1"
 android-compileSdk = "35"
@@ -35,6 +36,7 @@ ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 

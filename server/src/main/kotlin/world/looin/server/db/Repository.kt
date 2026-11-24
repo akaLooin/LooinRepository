@@ -2,6 +2,7 @@ package world.looin.server.db
 
 import kotlinx.serialization.builtins.ListSerializer
 import world.looin.shared.Agent
+import world.looin.shared.AttachmentInfo
 import world.looin.shared.AgentKind
 import world.looin.shared.ChatMessage
 import world.looin.shared.ChatRole
@@ -166,12 +167,16 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
     fun messages(conversationId: String): List<ChatMessage> =
         db.query("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at, rowid", conversationId) { it.message() }
 
-    fun addMessage(conversationId: String, role: ChatRole, content: String, brain: String? = null): ChatMessage {
-        val m = ChatMessage(newId(), conversationId, role, content, now(), brain)
+    fun addMessage(
+        conversationId: String, role: ChatRole, content: String, brain: String? = null,
+        attachments: List<AttachmentInfo> = emptyList(),
+    ): ChatMessage {
+        val m = ChatMessage(newId(), conversationId, role, content, now(), brain, attachments)
         db.tx {
             exec(
-                "INSERT INTO messages(id, conversation_id, role, content, created_at, brain) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO messages(id, conversation_id, role, content, created_at, brain, attachments) VALUES (?,?,?,?,?,?,?)",
                 m.id, m.conversationId, m.role.name, m.content, m.createdAt, brain,
+                attachments.takeIf { it.isNotEmpty() }?.joinToString(",") { it.id },
             )
             exec("UPDATE conversations SET updated_at = ? WHERE id = ?", m.createdAt, conversationId)
         }
@@ -238,6 +243,25 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         worldId, if (excludeCommercial) 1 else 0, limit,
     ) { it.getString("prompt") to it.getString("reply") }
 
+    // ---------- 첨부 파일 ----------
+    fun saveAttachment(worldId: String, name: String, mime: String, size: Long, text: String?): AttachmentInfo {
+        val a = AttachmentInfo(newId(), name, mime, size)
+        db.exec("INSERT INTO attachments VALUES (?,?,?,?,?,?,?)", a.id, worldId, a.name, a.mime, a.size, text, now())
+        return a
+    }
+
+    /** 첨부 정보 + 뽑아둔 글자 (PDF·텍스트). */
+    fun attachment(worldId: String, id: String): Pair<AttachmentInfo, String?>? =
+        db.one("SELECT * FROM attachments WHERE world_id = ? AND id = ?", worldId, id) {
+            AttachmentInfo(it.getString("id"), it.getString("name"), it.getString("mime"), it.getLong("size")) to it.getString("text")
+        }
+
+    private fun attachmentInfos(ids: List<String>): List<AttachmentInfo> = ids.mapNotNull { id ->
+        db.one("SELECT id, name, mime, size FROM attachments WHERE id = ?", id) {
+            AttachmentInfo(it.getString("id"), it.getString("name"), it.getString("mime"), it.getLong("size"))
+        }
+    }
+
     // ---------- 두뇌 사용량 (유료 크레딧 예산 관리) ----------
     override fun recordUsage(provider: String, inputTokens: Long, outputTokens: Long, cacheRead: Long, cacheWrite: Long, costUsd: Double) {
         db.exec("INSERT INTO brain_usage VALUES (?,?,?,?,?,?,?)", provider, inputTokens, outputTokens, cacheRead, cacheWrite, costUsd, now())
@@ -276,6 +300,7 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
     private fun ResultSet.message() = ChatMessage(
         getString("id"), getString("conversation_id"), ChatRole.valueOf(getString("role")), getString("content"), getLong("created_at"),
         getString("brain"),
+        getString("attachments")?.split(',')?.filter { it.isNotBlank() }?.let { ids -> attachmentInfos(ids) } ?: emptyList(),
     )
     private fun ResultSet.memory() = Memory(getString("id"), getString("category"), getString("content"), getString("source"), getInt("importance"), getLong("created_at"))
     private fun ResultSet.insight() =

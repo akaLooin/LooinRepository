@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.sqlite.jdbc)
     implementation(libs.anthropic.java)
+    implementation(libs.pdfbox)
     implementation(libs.logback)
 
     testImplementation(libs.ktor.server.test.host)
