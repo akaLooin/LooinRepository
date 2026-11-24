@@ -60,18 +60,23 @@ export const CLIPS: Record<string, ClipDef> = {
   ] },
   // 활: 앞팔을 뻗어 활을 세우고 뒷손으로 시위를 당겼다가 놓는다
   shoot: { frames: 8, loop: false, keys: [
-    { t: 0, armF: [0.9, 0.2], armB: [0, 0], wpn: 0.3, ease: 'out' },
-    { t: 0.35, armF: [1.58, 0.0], armB: [0, 0], wpn: 0, lean: -0.04, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'lin' },
-    { t: 0.5, armF: [1.58, 0.0], armB: [0, 0], wpn: 0, lean: -0.06, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'out' },
-    { t: 0.6, armF: [1.55, 0.05], armB: [0, 0], wpn: 0, lean: -0.02, legF: [0.3, -0.1], legB: [-0.3, -0.1], ease: 'inout' },
-    { t: 1, armF: [0.8, 0.3], armB: [0, 0], wpn: 0.2, legF: [0.15, -0.08], legB: [-0.15, -0.06] },
+    { t: 0, armF: [0.6, 0], armB: [0, 0], wpn: 0.2, ease: 'out' },
+    // 겨누기: 앞팔로 활을 세워 든다(뒷팔은 몸을 가로지르지 않게 옆에서 살짝만 당긴다)
+    { t: 0.3, armF: [1.55, 0], armB: [0.3, 0], wpn: 0, legF: [0.12, 0], legB: [-0.12, 0], ease: 'inout' },
+    { t: 0.45, armF: [1.5, 0], armB: [-0.15, 0], wpn: 0.03, lean: -0.05, legF: [0.12, 0], legB: [-0.12, 0], ease: 'out' },
+    // 놓은 뒤 반동: 활이 위로 살짝 튄다
+    { t: 0.6, armF: [1.75, 0], armB: [0, 0], wpn: -0.12, lean: -0.02, legF: [0.1, 0], legB: [-0.1, 0], ease: 'inout' },
+    { t: 1, armF: [0.3, 0], armB: [0, 0], wpn: 0.3, legF: [0, 0], legB: [0, 0] },
   ] },
   // 지팡이: 머리 위로 들어 기를 모았다가 앞으로 찌르듯 뻗는다
   cast: { frames: 8, loop: false, keys: [
-    { t: 0, armF: [0.5, 0.4], wpn: 0.5, ease: 'out' },
-    { t: 0.4, armF: [2.6, 0.1], armB: [0, 0], wpn: 0.1, lean: -0.1, head: -0.1, by: -1, ease: 'in' },
-    { t: 0.6, armF: [1.5, -0.05], armB: [0, 0], wpn: 1.45, lean: 0.12, head: 0.05, legF: [0.35, -0.2], legB: [-0.35, -0.1], ease: 'out' },
-    { t: 1, armF: [0.7, 0.3], armB: [0, 0], wpn: 0.8, lean: 0.04 },
+    { t: 0, armF: [0.3, 0], wpn: 0.5, ease: 'out' },
+    // 기 모으기: 머리를 가리지 않게 머리 오른쪽 앞 위로 든다(뒷팔은 살짝 벌림)
+    { t: 0.35, armF: [1.9, 0], armB: [-0.4, 0], wpn: -0.2, lean: -0.06, by: -0.8, ease: 'in' },
+    // 뻗기(마법이 나가는 시점): 앞으로 찌르듯
+    { t: 0.5, armF: [1.45, 0], armB: [0, 0], wpn: 1.4, lean: 0.12, legF: [0.15, 0], legB: [-0.1, 0], by: 0.5, ease: 'out' },
+    { t: 0.7, armF: [1.4, 0], wpn: 1.5, lean: 0.06, legF: [0.12, 0], legB: [-0.08, 0], by: 0.3, ease: 'inout' },
+    { t: 1, armF: [0.3, 0], armB: [0, 0], wpn: 0.6, lean: 0, legF: [0, 0], legB: [0, 0], by: 0 },
   ] },
   // 곡괭이: 머리 위에서 아래로 크게 찍는다
   mine: { frames: 10, loop: false, keys: [
