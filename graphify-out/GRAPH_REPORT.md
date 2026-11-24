@@ -1,34 +1,34 @@
 # Graph Report - LooinRepository  (2026-11-24)
 
 ## Corpus Check
-- 80 files · ~40,417 words
+- 81 files · ~41,612 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 15 file(s) not represented in the graph (top: (none) 6, .xml 2, .properties 2)
+- Unclassified: 17 file(s) not represented in the graph (top: (none) 6, .xml 4, .properties 2)
 
 ## Summary
-- 936 nodes · 2178 edges · 75 communities (35 shown, 40 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 57 edges (avg confidence: 0.84)
+- 957 nodes · 2217 edges · 72 communities (34 shown, 38 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 58 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0b5d2ad7`
+- Built from commit: `068cf109`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- MemoryService.kt
+- WorldSimService.kt
 - reviews.py
 - Repository
 - imgdiff.py
 - Serializable
 - Brain
 - ChatScreens.kt
-- Brain
+- Config
 - steps
 - Main.kt
 - replica-recon
-- ConnectScreen.kt
-- .pick
+- BrainSettingsStore
+- App
 - Common.kt
 - caddy
 - Recon map: {{app}} ({{platform}})
@@ -60,9 +60,7 @@
 - graphify-stop.sh
 - bug-report.md
 - test-plan.md
-- Effort
 - BrainRequest
-- 4단계 계획: 나만의 모델 만들기
 - oracle-cloud-init-short.sh
 
 ## God Nodes (most connected - your core abstractions)
@@ -80,67 +78,71 @@
 ## Surprising Connections (you probably didn't know these)
 - `왜 이렇게 만들었나` --references--> `Brain`  [INFERRED]
   docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/Brain.kt
-- `두뇌 계층 (`TieredBrain`)` --references--> `Task`  [INFERRED]
-  docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/Brain.kt
 - `무료 두뇌 사슬 (`ProviderChainBrain`)` --references--> `ProviderChainBrain`  [INFERRED]
   docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/ProviderChainBrain.kt
-- `무료 두뇌 사슬 (`ProviderChainBrain`)` --references--> `OfflineBrain`  [INFERRED]
-  docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/OfflineBrain.kt
 - `Looin World 의 학습과 성장` --references--> `MemoryService`  [INFERRED]
   docs/GROWTH.md → server/src/main/kotlin/world/looin/server/service/MemoryService.kt
+- `두뇌 계층 (`TieredBrain`)` --references--> `TieredBrain`  [INFERRED]
+  docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/Brain.kt
+- `무료 두뇌 사슬 (`ProviderChainBrain`)` --references--> `OfflineBrain`  [INFERRED]
+  docs/ARCHITECTURE.md → server/src/main/kotlin/world/looin/server/ai/OfflineBrain.kt
 
 ## Import Cycles
 - None detected.
 
-## Communities (75 total, 40 thin omitted)
+## Communities (72 total, 38 thin omitted)
+
+### Community 0 - "WorldSimService.kt"
+Cohesion: 0.11
+Nodes (9): Effort, HIGH, LOW, MEDIUM, JsonExtract, str(), ChatRole, ASSISTANT (+1 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
 Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), check(), colours() (+32 more)
 
 ### Community 2 - "Repository"
-Cohesion: 0.06
-Nodes (24): Chat, SpaceRoute, Looin World 의 학습과 성장, Turn, Prompts, Db, newId(), now() (+16 more)
+Cohesion: 0.07
+Nodes (14): Prompts, Db, newId(), now(), Repository, sha256(), Seed, WorldSimService (+6 more)
 
 ### Community 3 - "imgdiff.py"
-Cohesion: 0.12
-Nodes (17): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+9 more)
+Cohesion: 0.07
+Nodes (27): compare(), edges(), gray(), main(), _over_white(), _paeth(), PngError, read_png() (+19 more)
 
 ### Community 4 - "Serializable"
-Cohesion: 0.06
-Nodes (49): apiRoutes(), LooinApi, LooinApiException, AddMemoryRequest, AgentKind, CHARACTER, CLONE, CORE (+41 more)
+Cohesion: 0.05
+Nodes (46): apiRoutes(), NotFound, LooinApi, LooinApiException, AddMemoryRequest, AgentKind, CHARACTER, CLONE (+38 more)
 
 ### Community 5 - "Brain"
-Cohesion: 0.19
-Nodes (10): AI 수준에 대해 (솔직하게), 두뇌 계층 (`TieredBrain`), 무료 두뇌 사슬 (`ProviderChainBrain`), Brain, TieredBrain, OfflineBrain, buildBrain(), SwitchableBrain (+2 more)
+Cohesion: 0.15
+Nodes (10): Brain, TieredBrain, OfflineBrain, buildBrain(), SwitchableBrain, FakeBrain, ClaudeTierTest, Free (+2 more)
 
 ### Community 7 - "ChatScreens.kt"
-Cohesion: 0.13
-Nodes (6): Route, BrainSettings, NewAgent, PostRoute, brainLabel(), Bubble()
+Cohesion: 0.11
+Nodes (8): Route, BrainSettings, Chat, NewAgent, PostRoute, SpaceRoute, brainLabel(), Bubble()
 
-### Community 8 - "Brain"
-Cohesion: 0.50
-Nodes (3): ClaudeTierTest, Free, Premium
+### Community 8 - "Config"
+Cohesion: 0.31
+Nodes (3): Config, ClaudeConfig, ApiTest
 
 ### Community 10 - "steps"
 Cohesion: 0.08
 Nodes (23): runs-on, steps, jobs, build, name, on, push, workflow_dispatch (+15 more)
 
 ### Community 11 - "Main.kt"
-Cohesion: 0.06
-Nodes (9): main(), BrainSettingsStore, Field, Config, ClaudeConfig, decodeToken(), main(), module() (+1 more)
+Cohesion: 0.14
+Nodes (4): decodeToken(), main(), module(), ApiError
 
 ### Community 13 - "replica-recon"
 Cohesion: 0.15
 Nodes (12): Output, replica-recon, Step 1: scope, Step 2: list the sources, Step 3: screen inventory, Step 4: user flows, Step 5: components, Step 6: inferred data model (+4 more)
 
-### Community 15 - ".pick"
-Cohesion: 0.18
-Nodes (4): ModelPicker, Providers, Preset, ProviderChainTest
+### Community 15 - "App"
+Cohesion: 0.29
+Nodes (4): App, ChatService, GrowthService, MemoryService
 
 ### Community 16 - "Common.kt"
 Cohesion: 0.15
-Nodes (5): AgentRow(), Avatar(), label(), HomeScreen(), Stat()
+Nodes (5): AgentRow(), AkaelLogo(), Avatar(), label(), ConnectScreen()
 
 ### Community 17 - "caddy"
 Cohesion: 0.11
@@ -151,8 +153,8 @@ Cohesion: 0.18
 Nodes (10): Components, Core loop, Feature matrix, Flows, Inferred data model, Out of scope (cannot or should not be cloned), Recon map: {{app}} ({{platform}}), Screens (+2 more)
 
 ### Community 19 - "ProviderChainBrain"
-Cohesion: 0.24
-Nodes (4): Provider, ProviderChainBrain, State, ThinkFilter
+Cohesion: 0.14
+Nodes (9): Turn, ModelPicker, Provider, ProviderChainBrain, State, Providers, Preset, ThinkFilter (+1 more)
 
 ### Community 20 - "replica-backend"
 Cohesion: 0.20
@@ -163,12 +165,12 @@ Cohesion: 0.20
 Nodes (9): Definition of done, per screen, Output, replica-build, Step 1: the shell, Step 2: the vertical slice, Step 3: screen by screen, Step 4: the build log, The rules (+1 more)
 
 ### Community 22 - "Task"
-Cohesion: 0.17
-Nodes (12): Task, CHAT, CHAT_BEST, CHAT_DEEP, CHAT_LIGHT, COMMUNITY, GENERAL, MEETING (+4 more)
+Cohesion: 0.12
+Nodes (16): AI 수준에 대해 (솔직하게), 두뇌 계층 (`TieredBrain`), 무료 두뇌 사슬 (`ProviderChainBrain`), Task, CHAT, CHAT_BEST, CHAT_DEEP, CHAT_LIGHT (+8 more)
 
 ### Community 23 - "ClaudeBrain.kt"
-Cohesion: 0.10
-Nodes (5): ClaudeBrain, ClaudeBudget, ClaudeModels, Price, UsageLedger
+Cohesion: 0.09
+Nodes (6): ClaudeBrain, ClaudeBudget, ClaudeModels, Route, Price, UsageLedger
 
 ### Community 26 - "replica-brand"
 Cohesion: 0.22
@@ -207,16 +209,16 @@ Cohesion: 0.29
 Nodes (6): API, Architecture: {{your app}} (a rebuild of {{app}}'s core features), Build order, Schema, Stack, The parts that bite
 
 ### Community 38 - "Looin World 아키텍처"
-Cohesion: 0.08
-Nodes (20): DEBIAN_FRONTEND, oracle-cloud-init.sh script, Looin World 아키텍처, 데이터 모델, 멀티 유저 확장 계획 (나중에), 왜 이렇게 만들었나, 한눈에 보기, 1) 서버 만들기 (Oracle 콘솔) (+12 more)
+Cohesion: 0.06
+Nodes (26): DEBIAN_FRONTEND, oracle-cloud-init.sh script, Looin World 아키텍처, 데이터 모델, 멀티 유저 확장 계획 (나중에), 왜 이렇게 만들었나, 한눈에 보기, 1) 서버 만들기 (Oracle 콘솔) (+18 more)
 
 ### Community 40 - "Deploy checklist: {{your app}}"
 Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
 ### Community 42 - "App.kt"
-Cohesion: 0.30
-Nodes (15): App(), AppController, BrainSettingsScreen(), ChatHubScreen(), ChatScreen(), SectionCard(), SectionTitle(), timeAgo() (+7 more)
+Cohesion: 0.14
+Nodes (17): App(), AppController, BrainSettingsScreen(), ChatHubScreen(), ChatScreen(), SectionCard(), SectionTitle(), timeAgo() (+9 more)
 
 ### Community 43 - "Looin World 로드맵"
 Cohesion: 0.33
@@ -226,33 +228,25 @@ Nodes (5): ✅ 0단계 — 기반 (지금), 1단계 — 실제로 매일 쓰기,
 Cohesion: 0.40
 Nodes (5): Tab, Chat, Home, Me, World
 
-### Community 65 - "Effort"
-Cohesion: 0.40
-Nodes (5): Effort, HIGH, LOW, MEDIUM, Route
-
-### Community 73 - "4단계 계획: 나만의 모델 만들기"
-Cohesion: 0.40
-Nodes (5): 4단계 계획: 나만의 모델 만들기, 더 나아가기, 데이터, 운영 — 솔직한 한계, 학습 (무료 GPU)
-
 ## Knowledge Gaps
-- **40 isolated node(s):** `DEBIAN_FRONTEND`, `BrainSettings`, `NewAgent`, `PostRoute`, `HIGH` (+35 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 373 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **40 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **40 isolated node(s):** `BrainSettings`, `NewAgent`, `PostRoute`, `CHAT`, `CHAT_BEST` (+35 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 382 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Repository` connect `Repository` to `MemoryService.kt`, `Serializable`, `WorldSimService.kt`, `Main.kt`, `ClaudeBrain.kt`, `GrowthService.kt`?**
-  _High betweenness centrality (0.058) - this node is a cross-community bridge._
-- **What connects `DEBIAN_FRONTEND`, `BrainSettings`, `NewAgent` to the rest of the system?**
+- **Why does `Repository` connect `Repository` to `WorldSimService.kt`, `Serializable`, `ApiTest.kt`, `Main.kt`, `App`, `ClaudeBrain.kt`?**
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
+- **What connects `BrainSettings`, `NewAgent`, `PostRoute` to the rest of the system?**
   _40 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `WorldSimService.kt` be split into smaller, more focused modules?**
+  _Cohesion score 0.1076923076923077 - nodes in this community are weakly interconnected._
+- **Why does `Post` connect `Repository` to `WorldSimService.kt`, `ApiTest.kt`, `Serializable`, `WorldScreens.kt`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
   _Cohesion score 0.0642243328810493 - nodes in this community are weakly interconnected._
-- **Why does `ChatRole` connect `Serializable` to `MemoryService.kt`, `Repository`, `Brain`, `ChatScreens.kt`, `WorldSimService.kt`, `ApiTest.kt`, `ProviderChainTest.kt`, `ClaudeBrain.kt`, `GrowthService.kt`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **Should `Repository` be split into smaller, more focused modules?**
-  _Cohesion score 0.056978730010867874 - nodes in this community are weakly interconnected._
-- **Why does `Post` connect `Serializable` to `Repository`, `WorldScreens.kt`, `WorldSimService.kt`, `ApiTest.kt`, `ProviderChainTest.kt`?**
+- **Why does `ChatRole` connect `WorldSimService.kt` to `Repository`, `Serializable`, `BrainRequest`, `ChatScreens.kt`, `ApiTest.kt`, `ProviderChainTest.kt`, `ProviderChainBrain`, `ClaudeBrain.kt`?**
   _High betweenness centrality (0.040) - this node is a cross-community bridge._
-- **Should `imgdiff.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
+- **Should `Repository` be split into smaller, more focused modules?**
+  _Cohesion score 0.06907894736842106 - nodes in this community are weakly interconnected._
