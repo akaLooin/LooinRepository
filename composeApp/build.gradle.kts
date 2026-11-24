@@ -41,8 +41,8 @@ android {
         applicationId = "world.looin.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1,INDEX.LIST,io.netty.versions.properties}" } }
     buildTypes { getByName("release") { isMinifyEnabled = false } }
@@ -52,14 +52,18 @@ android {
     }
 }
 
+compose.resources {
+    packageOfResClass = "world.looin.app.generated.resources"
+}
+
 compose.desktop {
     application {
         mainClass = "world.looin.app.MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Dmg, TargetFormat.Deb)
-            packageName = "LooinWorld"
+            packageName = "Akael"
             packageVersion = "1.0.0"
-            windows { menuGroup = "Looin World"; upgradeUuid = "6f1f6c1e-5b8a-4a8e-9d1e-1c0a8f5b7a21" }
+            windows { menuGroup = "Akael"; upgradeUuid = "6f1f6c1e-5b8a-4a8e-9d1e-1c0a8f5b7a21" }
         }
     }
 }

@@ -29,9 +29,13 @@ fun HomeScreen(c: AppController) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
             Column(Modifier.padding(20.dp)) {
-                Text(ov.world.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-                Spacer(Modifier.height(4.dp))
-                Text("$ownerName 님의 세계", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AkaelLogo(52)
+                    Column {
+                        Text(ov.world.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                        Text("$ownerName 님의 세계", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 Spacer(Modifier.height(6.dp))
                 val b = ov.brain
                 Text(

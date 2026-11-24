@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import world.looin.app.generated.resources.Res
+import world.looin.app.generated.resources.akael_logo
 import world.looin.shared.Agent
 import world.looin.shared.AgentKind
 
@@ -100,4 +102,14 @@ fun timeAgo(ts: Long, now: Long = world.looin.app.nowMillis()): String {
         s < 86400 -> "${s / 3600}시간 전"
         else -> "${s / 86400}일 전"
     }
+}
+
+/** 아카엘 로고 (금빛 L 과 후광). */
+@Composable
+fun AkaelLogo(size: Int = 96) {
+    androidx.compose.foundation.Image(
+        painter = org.jetbrains.compose.resources.painterResource(Res.drawable.akael_logo),
+        contentDescription = "아카엘",
+        modifier = Modifier.size(size.dp),
+    )
 }

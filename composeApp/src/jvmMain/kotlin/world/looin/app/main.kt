@@ -9,8 +9,8 @@ import androidx.compose.ui.window.rememberWindowState
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Looin World",
-        icon = painterResource("looin_icon.png"),
+        title = "아카엘 (aka L)",
+        icon = painterResource("akael_icon.png"),
         state = rememberWindowState(width = 1100.dp, height = 800.dp),
     ) {
         App()
