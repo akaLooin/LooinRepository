@@ -28,7 +28,7 @@ import world.looin.app.AppController
 
 @Composable
 fun ConnectScreen(c: AppController) {
-    var url by remember { mutableStateOf(c.serverUrl.ifBlank { "http://192.168.0.2:8080" }) }
+    var url by remember { mutableStateOf(c.serverUrl) }
     var token by remember { mutableStateOf(c.token) }
     Column(
         Modifier.fillMaxSize().padding(24.dp),
@@ -42,7 +42,8 @@ fun ConnectScreen(c: AppController) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedTextField(
-                url, { url = it }, label = { Text("서버 주소") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                url, { url = it }, label = { Text("서버 주소 또는 IP") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("예: 140.238.12.34") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             )
             OutlinedTextField(
@@ -57,7 +58,7 @@ fun ConnectScreen(c: AppController) {
                 if (c.loading) CircularProgressIndicator(Modifier.padding(2.dp), strokeWidth = 2.dp) else Text("입장하기")
             }
             Text(
-                "토큰은 서버의 data/owner_token.txt 에 있습니다 (또는 LOOIN_OWNER_TOKEN 환경 변수).",
+                "IP 만 넣으면 안전한 HTTPS 주소로 자동 연결해요. 토큰은 서버 설치 때 정한 비밀번호예요.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -1,0 +1,8 @@
+# 서버 IP 로 만든 무료 도메인(예: 140-238-1-2.sslip.io)에 HTTPS 인증서를 자동으로 받아
+# Looin 서버(looin:8080) 앞에서 암호화된 연결을 제공한다.
+{$LOOIN_DOMAIN} {
+	reverse_proxy looin:8080 {
+		# 채팅 답변이 실시간으로 흘러가도록 버퍼링하지 않는다
+		flush_interval -1
+	}
+}

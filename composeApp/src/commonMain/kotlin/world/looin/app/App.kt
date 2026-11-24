@@ -67,6 +67,7 @@ fun App(onBackAvailable: (Boolean) -> Unit = {}, controllerOut: (AppController) 
                     is Route.SpaceRoute -> SpaceScreen(c, top.space)
                     is Route.PostRoute -> PostScreen(c, top.postId)
                     Route.NewAgent -> NewAgentScreen(c)
+                    Route.BrainSettings -> world.looin.app.ui.BrainSettingsScreen(c)
                     null -> when (c.tab) {
                         Tab.Home -> HomeScreen(c)
                         Tab.Chat -> ChatHubScreen(c)

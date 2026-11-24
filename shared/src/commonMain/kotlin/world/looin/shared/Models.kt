@@ -208,6 +208,28 @@ data class GrowthStatus(
     val nextAutoRunAt: Long?,
 )
 
+// ---------- 두뇌 설정 (앱에서 API 키 입력) ----------
+
+/** 설정 항목 하나. 비밀 값은 끝 4자리만 보여준다. */
+@Serializable
+data class BrainSetting(
+    val key: String,
+    val label: String,
+    val help: String,
+    val secret: Boolean,
+    val isSet: Boolean,
+    val preview: String? = null,
+    /** "app" = 앱에서 입력, "env" = 서버 환경 변수, null = 없음 */
+    val source: String? = null,
+)
+
+@Serializable
+data class BrainSettingsView(val settings: List<BrainSetting>, val brain: BrainInfo)
+
+/** 바꿀 항목만 담는다. 빈 문자열이면 지운다. */
+@Serializable
+data class BrainSettingsUpdate(val values: Map<String, String>)
+
 // ---------- 요청 ----------
 
 @Serializable

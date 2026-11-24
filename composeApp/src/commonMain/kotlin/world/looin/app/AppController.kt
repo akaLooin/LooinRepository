@@ -17,10 +17,26 @@ sealed interface Route {
     data class SpaceRoute(val space: Space) : Route
     data class PostRoute(val postId: String) : Route
     data object NewAgent : Route
+    data object BrainSettings : Route
 }
 
 enum class Tab(val label: String, val icon: String) {
     Home("홈", "🏠"), Chat("대화", "💬"), World("세계", "🌐"), Me("나", "🪞")
+}
+
+/**
+ * 서버 주소 정리. IP 만 넣으면(예: 140.238.1.2) 그 서버의 무료 HTTPS 주소
+ * (https://140-238-1-2.sslip.io)로 바꿔준다 — 서버의 Caddy 가 이 주소로 인증서를 받는다.
+ */
+fun normalizeServerUrl(input: String): String {
+    val t = input.trim().removeSuffix("/")
+    val ip = Regex("^(?:https?://)?(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$").find(t)
+    if (ip != null) {
+        val (a, b, c, d) = ip.destructured
+        val private = a == "10" || a == "127" || (a == "192" && b == "168") || (a == "172" && b.toInt() in 16..31) || a == "100"
+        return if (private) "http://$a.$b.$c.$d:8080" else "https://$a-$b-$c-$d.sslip.io"
+    }
+    return if (t.startsWith("http://") || t.startsWith("https://")) t else "https://$t"
 }
 
 /** 앱 전체 상태. */
@@ -40,12 +56,13 @@ class AppController(private val scope: CoroutineScope) {
     }
 
     fun connect(url: String, token: String, onDone: (Boolean) -> Unit = {}) {
-        val candidate = LooinApi(url.trim(), token.trim())
+        val normalized = normalizeServerUrl(url)
+        val candidate = LooinApi(normalized, token.trim())
         loading = true
         scope.launch {
             try {
                 val ov = candidate.overview()
-                AppSettings.set(KEY_URL, url.trim())
+                AppSettings.set(KEY_URL, normalized)
                 AppSettings.set(KEY_TOKEN, token.trim())
                 api?.close()
                 api = candidate

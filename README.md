@@ -28,17 +28,13 @@ AI 는 기억 → 성찰 → (나중엔) 파인튜닝으로 계속 자라요 —
 | `site/` | 공식 사이트 (정적 HTML) |
 | `docs/` | 아키텍처, 로드맵 |
 
-## 시작하기 (내 PC 를 켜둘 필요 없음)
+## 시작하기 (폰만으로, 내 PC 를 켜둘 필요 없음)
 
-1. **무료 두뇌 키 받기** — 아래 중 1개 이상 (많을수록 무료 한도가 커짐). 가입만 하면 되고 카드 불필요한 곳이 대부분이에요.
-   [Groq](https://console.groq.com/keys) · [Cerebras](https://cloud.cerebras.ai) · [NVIDIA](https://build.nvidia.com) ·
-   [OpenRouter](https://openrouter.ai/settings/keys) · [Google AI Studio](https://aistudio.google.com/apikey)
-2. **서버를 무료 클라우드에 올리기** — Oracle Cloud 무료 서버에 한 번만 설치하면 24시간 알아서 돌아가요.
-   단계별 안내: [docs/DEPLOY.md](docs/DEPLOY.md)
-3. **Android 앱 받기** — GitHub 저장소의 *Actions* 탭 → 최신 "Build" 실행 → *Artifacts* 의 `LooinWorld-android-apk` 를 폰에서 받아 설치.
-4. 앱에서 서버 주소와 토큰(`.env` 의 `LOOIN_OWNER_TOKEN`)을 입력하면 끝.
+1. **두뇌 키 준비** — Claude(Max 월 크레딧이 연결된 Console 조직의 API 키) + 예비 무료 키(Gemini 등)
+2. **Oracle 무료 서버 만들기** — 만들 때 설치 스크립트를 붙여넣으면 자동 설치 + HTTPS 까지: [docs/DEPLOY.md](docs/DEPLOY.md)
+3. **Android 앱 설치** → 서버 IP 와 비밀번호 입력 → **나 → 🧠 두뇌 설정**에서 키 입력
 
-### 서버 설정 (`.env`)
+### 서버 설정 (`.env` — 두뇌 키는 앱의 "두뇌 설정"에서 넣는 것을 추천)
 
 | 환경 변수 | 기본값 | 설명 |
 |---|---|---|

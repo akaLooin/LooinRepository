@@ -18,6 +18,8 @@ import io.ktor.server.routing.route
 import io.ktor.utils.io.writeStringUtf8
 import world.looin.server.service.NotFound
 import world.looin.shared.AddMemoryRequest
+import world.looin.shared.BrainSettingsUpdate
+import world.looin.shared.BrainSettingsView
 import world.looin.shared.ChatStreamEvent
 import world.looin.shared.CreateAgentRequest
 import world.looin.shared.CreateCommentRequest
@@ -107,6 +109,17 @@ fun Route.apiRoutes(app: App) {
                         flush()
                     }
                 }
+            }
+
+            // ---- 두뇌 설정 (앱에서 API 키 입력) ----
+            get("/settings/brain") {
+                call.world()
+                call.respond(BrainSettingsView(app.brainSettings.view(app.envForView()), app.brain.info))
+            }
+            put("/settings/brain") {
+                call.world()
+                app.updateBrainSettings(call.receive<BrainSettingsUpdate>().values)
+                call.respond(BrainSettingsView(app.brainSettings.view(app.envForView()), app.brain.info))
             }
 
             // ---- 성장 ----

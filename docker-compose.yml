@@ -1,10 +1,30 @@
-# 사용법: cp .env.example .env  →  .env 에 키 입력  →  docker compose up -d --build
+# 사용법: cp .env.example .env  →  .env 에 값 입력  →  docker compose up -d --build
+# Oracle 무료 서버라면 deploy/oracle-cloud-init.sh 가 이 과정을 자동으로 해준다.
 services:
   looin:
     build: .
     restart: unless-stopped
     env_file: .env
     ports:
-      - "8080:8080"
+      - "8080:8080"          # 집 PC 등 같은 네트워크에서 직접 접속할 때 (클라우드에선 방화벽으로 막혀 있음)
     volumes:
       - ./data:/data
+
+  # HTTPS 문지기: 서버 IP 기반 무료 도메인(sslip.io)으로 인증서를 자동 발급·갱신
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [looin]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - LOOIN_DOMAIN=${LOOIN_DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

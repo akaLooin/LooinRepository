@@ -46,7 +46,7 @@ class GrowthService(
         versions = repo.insights(world.id).size,
         memories = repo.memories(world.id).size,
         trainingExamples = repo.ownerReplyPairs(world.id).size,
-        autoWorld = autoHours > 0,
+        autoWorld = autoHours > 0 && brain.info.online,
         nextAutoRunAt = nextAutoRunAt,
     )
 
@@ -113,7 +113,8 @@ class GrowthService(
         scope.launch {
             delay(60_000) // 서버 시작 직후는 피한다
             while (true) {
-                for (world in repo.allWorlds()) {
+                // 두뇌 키가 아직 없으면(오프라인) 이번 회차는 쉰다 — 앱에서 키를 넣으면 다음 회차부터 움직인다.
+                if (brain.info.online) for (world in repo.allWorlds()) {
                     runCatching {
                         repo.spaces(world.id).filter { it.type == SpaceType.COMMUNITY }.forEach { sim.tick(world, it, 2) }
                         if (needsReflection(world)) reflect(world)

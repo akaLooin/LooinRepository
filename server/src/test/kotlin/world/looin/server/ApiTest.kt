@@ -3,6 +3,7 @@ package world.looin.server
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -102,6 +103,22 @@ class ApiTest {
         )
         assertEquals(company.memberAgentIds.size, meeting.turns.size)
         assertTrue(meeting.summary.isNotBlank())
+
+        // 두뇌 설정: 앱에서 키를 넣으면 끝 4자리만 보이고, 두뇌가 바로 교체된다
+        val settingsApp = App(Config(0, Files.createTempDirectory("looin2").toFile(), token, emptyList(), 0.0, null), baseEnv = mapOf("X" to "y"))
+        assertTrue(!settingsApp.brain.info.online)
+        settingsApp.updateBrainSettings(mapOf("GROQ_API_KEY" to "gsk_secret1234", "NOT_ALLOWED" to "x"))
+        val groq = settingsApp.brainSettings.view(emptyMap()).first { it.key == "GROQ_API_KEY" }
+        assertEquals("…1234", groq.preview)
+        assertEquals("app", groq.source)
+        assertTrue(settingsApp.brain.info.online)
+        assertEquals("groq", settingsApp.brain.info.providers.single().name)
+        settingsApp.updateBrainSettings(mapOf("GROQ_API_KEY" to ""))
+        assertTrue(!settingsApp.brain.info.online)
+        val put = client.put("/api/settings/brain") {
+            bearerAuth(token); contentType(ContentType.Application.Json); setBody("""{"values":{"CLAUDE_CYCLE_START_DAY":"25"}}""")
+        }.bodyAsText()
+        assertTrue(put.contains("\"preview\":\"25\""))
 
         // 성장: 성찰하면 새 버전의 "이해"가 생기고, 학습 데이터를 내보낼 수 있다
         val insight = client.post("/api/growth/reflect") { bearerAuth(token) }.bodyAsText()

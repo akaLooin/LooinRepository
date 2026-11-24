@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,13 +35,14 @@ fun HomeScreen(c: AppController) {
                 Spacer(Modifier.height(6.dp))
                 val b = ov.brain
                 Text(
-                    if (!b.online) "⚠️ 오프라인 모드 — 서버에 두뇌 키(ANTHROPIC_API_KEY, GEMINI_API_KEY 등)를 설정하세요"
+                    if (!b.online) "⚠️ 아직 두뇌 키가 없어요"
                     else "🧠 두뇌: " + b.providers.joinToString(" → ") { p ->
                         (if (p.available) "" else "⏸") + "${p.name}(${p.model}" + (p.note?.let { " · $it" } ?: "") + ")"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (b.online) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                 )
+                if (!b.online) TextButton(onClick = { c.push(Route.BrainSettings) }) { Text("→ 두뇌 설정에서 키 넣기") }
                 b.providers.filter { !it.available && it.lastError != null }.forEach { p ->
                     Text(
                         "⚠️ ${p.name}: ${p.lastError}",

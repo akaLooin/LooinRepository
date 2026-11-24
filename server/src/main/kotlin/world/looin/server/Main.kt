@@ -21,11 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.slf4j.LoggerFactory
 import world.looin.server.ai.Brain
-import world.looin.server.ai.ClaudeBrain
-import world.looin.server.ai.ClaudeBudget
-import world.looin.server.ai.ProviderChainBrain
-import world.looin.server.ai.TieredBrain
-import world.looin.server.ai.OfflineBrain
 import world.looin.server.db.Db
 import world.looin.server.db.Repository
 import world.looin.server.service.ChatService
@@ -38,43 +33,49 @@ import world.looin.shared.LooinJson
 import java.io.File
 
 /** 서버 전체에서 공유하는 구성 요소 묶음. */
-class App(val config: Config, brainOverride: Brain? = null) {
+class App(
+    val config: Config,
+    brainOverride: Brain? = null,
+    /** 서버 환경 변수 (앱에서 입력한 두뇌 설정이 이 위에 덮어써진다). */
+    private val baseEnv: Map<String, String> = emptyMap(),
+) {
     val db = Db(File(config.dataDir, "looin.db")).apply { migrate() }
     val repo = Repository(db)
-    val brain: Brain = brainOverride ?: buildList<Brain> {
-        // 1순위: Claude (Max 요금제의 월 API 크레딧, 예산·고르게 쓰기 적용)
-        config.claude?.let { c ->
-            add(ClaudeBrain(c.apiKey, c.models, ClaudeBudget(c.monthlyBudgetUsd, c.cycleStartDay, c.pacing), repo, c.fallbacks))
-        }
-        // 2순위: 무료 두뇌 사슬
-        config.providers.takeIf { it.isNotEmpty() }?.let { add(ProviderChainBrain(it)) }
-    }.let { tiers ->
-        when (tiers.size) {
-            0 -> OfflineBrain()
-            1 -> tiers.single().let { if (it.premiumOnly) TieredBrain(tiers) else it }
-            else -> TieredBrain(tiers)
-        }
-    }
+    val brainSettings = BrainSettingsStore(File(config.dataDir, "brain-settings.json"))
+    private val switchable = SwitchableBrain(brainOverride ?: buildBrain(brainConfig(), repo))
+    val brain: Brain = switchable
     val background = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val memory = MemoryService(repo, brain)
     val chat = ChatService(repo, brain, memory, background)
     val sim = WorldSimService(repo, brain)
-    val growth = GrowthService(repo, brain, sim, if (brain.info.online) config.autoWorldHours else 0.0)
+    val growth = GrowthService(repo, brain, sim, config.autoWorldHours)
 
     init {
         Seed.ensure(repo, config.ownerToken)
+    }
+
+    private fun brainConfig(): Config =
+        if (baseEnv.isEmpty() && brainSettings.values().isEmpty()) config
+        else Config.fromEnv(brainSettings.effectiveEnv(baseEnv))
+
+    fun envForView(): Map<String, String> = baseEnv
+
+    /** 앱에서 두뇌 설정을 바꾸면 호출 — 서버 재시작 없이 새 두뇌로 교체. */
+    fun updateBrainSettings(changes: Map<String, String>) {
+        brainSettings.update(changes)
+        switchable.current = buildBrain(Config.fromEnv(brainSettings.effectiveEnv(baseEnv)), repo)
     }
 }
 
 fun main() {
     val log = LoggerFactory.getLogger("LooinWorld")
     val config = Config.fromEnv()
-    val app = App(config)
+    val app = App(config, baseEnv = System.getenv())
     log.info("Looin World 서버 시작 — port={}, brain={} ({})", config.port, app.brain.info.provider, app.brain.info.model)
     if (System.getenv("LOOIN_OWNER_TOKEN").isNullOrBlank()) {
         log.info("앱 접속 토큰은 {} 파일에 있습니다.", File(config.dataDir, "owner_token.txt").absolutePath)
     }
-    if (!app.brain.info.online) log.warn("두뇌 키(ANTHROPIC_API_KEY, GROQ_API_KEY 등)가 하나도 없어 오프라인 모드로 실행합니다.")
+    if (!app.brain.info.online) log.warn("두뇌 키가 아직 없어 오프라인 모드로 시작합니다. 앱의 '나 → 두뇌 설정'에서 키를 넣으면 바로 켜집니다.")
     app.growth.startAutoWorld(app.background)
     embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(app) }.start(wait = true)
 }

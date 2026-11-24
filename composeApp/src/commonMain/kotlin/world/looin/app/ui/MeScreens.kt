@@ -58,7 +58,12 @@ fun MeScreen(c: AppController) {
     }
 
     LazyColumn(Modifier.fillMaxSize()) {
-        item { TopBar("나") { TextButton(onClick = { c.disconnect() }) { Text("로그아웃") } } }
+        item {
+            TopBar("나") {
+                TextButton(onClick = { c.push(Route.BrainSettings) }) { Text("🧠 두뇌 설정") }
+                TextButton(onClick = { c.disconnect() }) { Text("로그아웃") }
+            }
+        }
         item { SectionTitle("🌱 성장 — AI 들이 이해한 나") }
         item {
             val g = growth
