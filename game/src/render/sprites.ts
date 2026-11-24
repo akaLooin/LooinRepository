@@ -441,6 +441,16 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 작업판: 나무 게시판 + 붙은 종이들
+  p = new Paint(34, 30);
+  p.rect(4, 14, 3, 16, '#8a5a3c'); p.rect(27, 14, 3, 16, '#8a5a3c');
+  p.rect(1, 1, 32, 20, '#b9824f'); p.rect(1, 1, 32, 2, '#d9a066'); p.rect(1, 19, 32, 2, '#8a5a3c');
+  for (const [x, y, w, h, col] of [[4, 5, 8, 9, '#f2f0e6'], [14, 4, 7, 7, '#f6e6a0'], [23, 6, 7, 10, '#f2f0e6'], [14, 13, 7, 5, '#cfe6ff']] as const) {
+    p.rect(x, y, w, h, col); p.rect(x + 1, y + 2, w - 2, 1, '#9d96b3'); if (h > 6) p.rect(x + 1, y + 4, w - 3, 1, '#9d96b3');
+    p.set(x + Math.floor(w / 2), y, '#d9574a');
+  }
+  p.outline().save('obj_tasks');
+
   // 우표함: 둥근 지붕의 우체통 + 투입구 + 작은 깃발
   p = new Paint(20, 30);
   p.rect(8, 20, 4, 10, '#6e4630');

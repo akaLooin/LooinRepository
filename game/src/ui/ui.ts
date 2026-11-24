@@ -12,6 +12,7 @@ import {
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
+import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
 import { Game } from '../game';
@@ -19,7 +20,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -497,6 +498,13 @@ export class UI {
         return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
       }
 
+      case 'tasks': {
+        const groups = Object.keys(TASK_GROUP_NAMES) as TaskGroup[];
+        const names = [...groups.map((k) => TASK_GROUP_NAMES[k]), '공로 상점'];
+        const ready = (k: TaskGroup) => TASKS.some((t) => t.group === k && taskDone(g.acc, t.id) < t.tiers.length && t.value(g.acc) >= t.tiers[taskDone(g.acc, t.id)]);
+        const body = tab === 3 ? this.meritHtml() : this.tasksHtml(groups[tab]);
+        return win(`작업판 <span class="ui-sm ui-muted">계정 공용 · 공로</span> <b class="ui-accent">${g.acc.merit}</b>`, `${tabs(names.map((n, i) => (i < 3 && ready(groups[i]) ? `${n} !` : n)), tab, tabAct)}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'stamps': {
         const names = [...(['combat', 'skill', 'misc'] as StampCat[]).map((k) => STAMP_NAMES[k]), '후원'];
         const body = !stampsOpen(c) ? `<p class="ui-muted">우표함은 Lv.${STAMP_LV} 이상 캐릭터만 쓸 수 있습니다. 모은 우표는 모든 캐릭터에게 효과가 있습니다.</p>`
@@ -548,6 +556,29 @@ export class UI {
         <button class="ui-btn primary block" data-act="sup:${s.id}" ${acc.coins >= cost.coins && mats >= cost.qty ? '' : 'disabled'}>올리기</button>`;
     }
     return `<div class="split"><div class="ui-grid c4">${cells}</div><div class="ui-detail">${detail}</div></div>`;
+  }
+
+  private tasksHtml(group: TaskGroup): string {
+    const acc = this.game.acc;
+    return TASKS.filter((t) => t.group === group).map((t) => {
+      const done = taskDone(acc, t.id), all = done >= t.tiers.length, v = t.value(acc), goal = t.tiers[Math.min(done, t.tiers.length - 1)];
+      const can = !all && v >= goal;
+      const pips = t.tiers.map((_, i) => `<span class="${i < done ? 'ui-accent' : 'ui-muted'}">${i < done ? '★' : '☆'}</span>`).join('');
+      const unlock = !all ? t.recipes?.[done + 1] : undefined;
+      const reward = all ? '' : `${tile(iconUrl('ui_up'), `+${t.merit[done]}`, `공로 +${t.merit[done]}`)}${unlock ? tile(iconUrl(ITEM_ICON[unlock]), '', `${ITEMS[unlock].name} 레시피`, 'r3') : ''}`;
+      return `<div class="ui-row line"><div class="ui-grow"><b>${t.name}</b> ${pips}
+          ${all ? '<div class="ui-sm ui-good">모두 마침</div>' : bar(can ? 'hp' : 'skill', Math.min(v, goal), goal, `${Math.min(v, goal).toLocaleString()} / ${goal.toLocaleString()} ${t.unit}`)}</div>
+        <div class="qline">${reward}</div>${all ? '' : `<button class="ui-btn ${can ? 'success' : ''} sm" data-act="tclaim:${t.id}" ${can ? '' : 'disabled'}>받기</button>`}</div>`;
+    }).join('') + '<p class="ui-xs ui-muted">모든 캐릭터의 기록을 합쳐 셉니다. 보상으로 공로 포인트와 새 제작 레시피를 얻습니다.</p>';
+  }
+
+  private meritHtml(): string {
+    const acc = this.game.acc;
+    return MERITS.map((m) => {
+      const lv = meritLv(acc, m.id), max = lv >= m.max, cost = meritCost(acc, m.id);
+      return `<div class="ui-row line"><div class="ui-grow"><b>${m.name}</b> <span class="ui-xs ui-accent">${lv}/${m.max}</span><div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${m.desc(Math.max(lv, 1) * m.per)}${lv ? '' : ' (1단계)'}</div></div>
+        <button class="ui-btn sm" data-act="merit:${m.id}" ${!max && acc.merit >= cost ? '' : 'disabled'}>${max ? '최대' : `공로 ${cost}`}</button></div>`;
+    }).join('') + `<p class="ui-xs ui-muted">공로 포인트 ${acc.merit}. 작업판 과제를 마치면 얻습니다.</p>`;
   }
 
   private bribesHtml(): string {
@@ -784,6 +815,12 @@ export class UI {
       case 'pslot': this.prodSlot = +a; break;
       case 'fslot': this.forgeSel = +a; break;
       case 'ssel': this.stampSel = a; break;
+      case 'tclaim': {
+        const t = TASK_BY_ID[a], tier = taskDone(g.acc, a) + 1, r = g.act({ t: 'task', id: a });
+        if (r.ok) { const it = t.recipes?.[tier]; this.toast(`${t.name} ${tier}단계 완료! 공로 +${t.merit[tier - 1]}${it ? ` · ${ITEMS[it].name} 레시피` : ''}`, it); } else fail(r.err ?? null);
+        break;
+      }
+      case 'merit': fail(g.act({ t: 'merit', id: a as MeritEff }).err ?? null); break;
       case 'sin': { const r = g.act({ t: 'stampIn', id: a }); if (r.ok) this.toast(`${ITEMS[a].name}을(를) 우표함에 넣었습니다`, a); else fail(r.err ?? null); break; }
       case 'sup': fail(g.act({ t: 'stampUp', id: a }).err ?? null); break;
       case 'bribe': { const r = g.act({ t: 'bribe' }); if (r.ok) this.toast('후원 계약을 맺었습니다'); else fail(r.err ?? null); break; }

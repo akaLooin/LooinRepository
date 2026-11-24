@@ -68,6 +68,8 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('stampIn'), id }),
   z.object({ t: z.literal('stampUp'), id }),
   z.object({ t: z.literal('bribe') }),
+  z.object({ t: z.literal('task'), id }),
+  z.object({ t: z.literal('merit'), id: z.enum(['storage', 'afk', 'drop', 'xp', 'teleport', 'coins']) }),
   z.object({ t: z.literal('target'), activity: z.union([z.object({ k: z.literal('none') }), z.object({ k: z.literal('fight') }), z.object({ k: z.literal('gather'), node: id })]) }),
 ]) as z.ZodType<Action>;
 // 캐릭터 상태는 모양만 대강 확인하고, 의미 검증은 checkSync 가 한다

@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing';
 export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks';
 export type ClassId = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'ring' | 'pickaxe' | 'axe';
@@ -80,7 +80,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', ring: '장신구', pickaxe: '곡괭이', axe: '도끼',
 };
@@ -157,7 +157,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
-    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
+    facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'tasks', x: 560, y: -48 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
     portals: [{ x: 652, y: -48, to: 'meadow', toX: 50 }] },
   { id: 'meadow', name: '이슬 풀밭', width: 820, theme: 'meadow',
     platforms: [{ x: 150, y: -48, w: 170 }, { x: 420, y: -48, w: 210 }, { x: 490, y: -96, w: 130 }],

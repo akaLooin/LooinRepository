@@ -7,6 +7,7 @@ import {
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
+import { MeritEff, buyMerit, claimTask } from './tasks';
 import { ForgeUp, buyForge, forgeCollect, forgeLoad, forgeOil, forgeUpgrade } from './forge';
 
 export type Action =
@@ -45,7 +46,9 @@ export type Action =
   | { t: 'forgeUp'; k: ForgeUp }
   | { t: 'stampIn'; id: string }
   | { t: 'stampUp'; id: string }
-  | { t: 'bribe' };
+  | { t: 'bribe' }
+  | { t: 'task'; id: string }
+  | { t: 'merit'; id: MeritEff };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -103,6 +106,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'stampIn': return res(collectStamp(acc, c, a.id));
     case 'stampUp': return res(upgradeStamp(acc, c, a.id));
     case 'bribe': return res(buyBribe(acc));
+    case 'task': return res(claimTask(acc, a.id));
+    case 'merit': return res(buyMerit(acc, a.id));
     case 'target': {
       const t = a.activity;
       if (t.k === 'gather' && !(NODES[t.node] && MAPS[c.mapId].nodes.some((n) => n.node === t.node))) return fail('이 맵에 없는 자원');

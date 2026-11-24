@@ -1,5 +1,6 @@
 import { Forge, newForge } from './forge';
 import { bribeBonus, stampBonus } from './stamps';
+import { meritValue, recipeTaskLock } from './tasks';
 import {
   AFK_BASE, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
@@ -71,6 +72,10 @@ export interface Account {
   stamps: Record<string, number>;
   /** 산 후원 계약 수(차례대로 산다) */
   bribes: number;
+  /** 작업판: 과제별 받은 단계, 공로 포인트, 공로 상점 단계 */
+  tasks: Record<string, number>;
+  merit: number;
+  meritShop: Record<string, number>;
   characters: Character[];
   active: number;
   nextId: number;
@@ -79,7 +84,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -133,7 +138,7 @@ export function equipStats(c: Character): Required<ItemStats> {
 
 export type Cards = Record<string, number>;
 /** 능력치 계산에 쓰는 계정 공용 보너스 출처(카드·우표·뇌물 …) */
-export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes'>>;
+export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop'>>;
 const NO_ACC: AccBonus = { cards: {} };
 
 export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
@@ -146,7 +151,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, afkSkill: 0 };
   // 우표(효과 값은 % 단위)·후원 계약
   const sb = stampBonus(a), bb = bribeBonus(a);
-  const afkAcc = sb.afk / 100 + bb.afk;
+  const afkAcc = sb.afk / 100 + bb.afk + meritValue(a, 'afk');
   // 카드는 장착한 것만 효과가 있다
   for (const cd of CARDS) if (c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
@@ -163,8 +168,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
     speed: 80 + Math.min(40, agi * 0.6),
     crit: Math.min(0.75, 0.04 + luk * 0.004 + sb.crit / 100), critMult: 1.6,
-    xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop),
-    coinMult: 1 + sb.coins / 100 + bb.coins,
+    xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp')), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop')),
+    coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins'),
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
     mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100),
@@ -374,7 +379,7 @@ export function useItem(acc: Account, c: Character, id: string): string | null {
 }
 
 // ───────── 계정 창고 ─────────
-export const storageSize = (acc: Account) => STORAGE_SIZE + acc.chests.reduce((n, id) => n + (ITEMS[id]?.chestSlots ?? 0), 0);
+export const storageSize = (acc: Account) => STORAGE_SIZE + acc.chests.reduce((n, id) => n + (ITEMS[id]?.chestSlots ?? 0), 0) + meritValue(acc, 'storage');
 export const storageCount = (acc: Account, id: string) => acc.storage.find((s) => s.id === id)?.qty ?? 0;
 /** 가방 → 창고. 넣은 개수 */
 export function deposit(acc: Account, c: Character, id: string, qty = Infinity): number {
@@ -446,7 +451,7 @@ export function recipeLock(acc: Account, c: Character, idx: number): string | nu
   if ((r.tier ?? 1) > acc.anvilTier) return `모루 ${r.tier}단계 필요`;
   if (r.unlock && acc.anvilTier >= r.unlock) return '이미 확장했습니다';
   if (r.smithLv && c.skills.smithing.lv < r.smithLv) return `대장 Lv.${r.smithLv} 필요`;
-  return null;
+  return recipeTaskLock(acc, r.item);
 }
 export function canCraft(acc: Account, c: Character, idx: number): boolean {
   const r = RECIPES[idx];
@@ -561,7 +566,7 @@ export function refillTeleports(acc: Account, now: number) {
   const d = today(now);
   if (acc.teleports.day === d) return;
   const days = acc.teleports.day ? Math.max(1, Math.round((new Date(d).getTime() - new Date(acc.teleports.day).getTime()) / 864e5)) : 1;
-  acc.teleports = { n: Math.min(TELEPORTS_MAX, acc.teleports.n + days * TELEPORTS_PER_DAY), day: d };
+  acc.teleports = { n: Math.min(TELEPORTS_MAX, acc.teleports.n + days * (TELEPORTS_PER_DAY + meritValue(acc, 'teleport'))), day: d };
 }
 export function teleport(acc: Account, c: Character, id: string, now: number): string | null {
   if (!MAPS[id] || !mapUnlocked(c, id)) return '아직 열리지 않은 맵';
@@ -611,6 +616,7 @@ export function deserialize(json: string | null): Account | null {
     a.forge ??= newForge();
     a.stamps ??= {};
     a.bribes ??= 0;
+    a.tasks ??= {}; a.merit ??= 0; a.meritShop ??= {};
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
