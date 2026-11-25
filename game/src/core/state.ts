@@ -5,11 +5,12 @@ import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
-export interface Stack { id: string; qty: number }
+/** up: 강화한 장비(항상 1개, 다른 칸과 합치지 않는다) */
+export interface Stack { id: string; qty: number; up?: Upg }
 /** 마지막으로 지정한 대상. AUTO와 방치 보상이 이 활동을 이어간다 */
 export type Activity = { k: 'none' } | { k: 'fight' } | { k: 'gather'; node: string };
 
@@ -48,6 +49,8 @@ export interface Character {
   talentPreset: number;
   /** 홀로웨어(스킨): 겉모습만 바꾸는 칸. 능력치는 실제 장비를 따른다 */
   skins: Partial<Record<SkinSlot, string>>;
+  /** 장착한 장비의 강화 기록 */
+  equipUp: Partial<Record<EquipSlot, Upg>>;
   /** 콜로세움에 들어갈 때의 콜로세움 처치 수(보상은 이번 회차 처치 수로) */
   arenaStart?: number | null;
   auto: boolean; activity: Activity;
@@ -113,6 +116,8 @@ export interface Account {
   petPulls: number;
   petDaily: string;
   petPity: { rare: number; epic: number };
+  /** 강화석을 쓴 횟수(성공 여부를 정하는 씨앗) */
+  upTries: number;
   owl: Owl;
   /** 미니게임 기록(오늘 판수·최고 점수), 토템 디펜스(영혼·축복) */
   mini: MiniState;
@@ -125,7 +130,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, owl: newOwl(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, upTries: 0, owl: newOwl(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -136,7 +141,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {},
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {},
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -172,9 +177,11 @@ export interface Derived {
 
 export function equipStats(c: Character): Required<ItemStats> {
   const t: Required<ItemStats> = { dmg: 0, def: 0, hp: 0, str: 0, agi: 0, wis: 0, luk: 0, mining: 0, chopping: 0 };
-  for (const id of Object.values(c.equipment)) {
-    const s = id && ITEMS[id]?.stats;
-    if (s) for (const k in s) t[k as keyof ItemStats] += s[k as keyof ItemStats]!;
+  const add = (s?: ItemStats) => { if (s) for (const k in s) t[k as keyof ItemStats] += s[k as keyof ItemStats]!; };
+  for (const [slot, id] of Object.entries(c.equipment)) {
+    if (!id) continue;
+    add(ITEMS[id]?.stats);
+    add(c.equipUp?.[slot as EquipSlot]?.s);
   }
   return t;
 }
@@ -459,7 +466,7 @@ export const countItem = (c: Character, id: string) => c.inventory.reduce((n, s)
 /** 이 아이템을 더 넣을 수 있는 개수: 덜 찬 칸의 남은 자리 + 빈 칸마다 한 칸 최대치 */
 export function itemRoom(c: Character, id: string): number {
   const cap = stackCap(c, id);
-  const part = c.inventory.reduce((n, s) => n + (s.id === id ? Math.max(0, cap - s.qty) : 0), 0);
+  const part = c.inventory.reduce((n, s) => n + (s.id === id && !s.up ? Math.max(0, cap - s.qty) : 0), 0);
   return part + Math.max(0, invSize(c) - c.inventory.length) * cap;
 }
 
@@ -469,7 +476,7 @@ export function addItemSome(c: Character, id: string, qty = 1): number {
   const cap = stackCap(c, id);
   let left = qty;
   for (const s of c.inventory) {
-    if (s.id !== id || s.qty >= cap) continue;
+    if (s.id !== id || s.up || s.qty >= cap) continue;
     const n = Math.min(left, cap - s.qty);
     s.qty += n; left -= n;
     if (!left) return qty;
@@ -492,9 +499,10 @@ export function removeItem(c: Character, id: string, qty = 1): boolean {
   if (qty <= 0) return true;
   if (countItem(c, id) < qty) return false;
   let left = qty;
-  for (let i = c.inventory.length - 1; i >= 0 && left > 0; i--) {
+  // 강화하지 않은 칸부터 쓰고, 모자랄 때만 강화한 장비를 쓴다
+  for (const upg of [false, true]) for (let i = c.inventory.length - 1; i >= 0 && left > 0; i--) {
     const s = c.inventory[i];
-    if (s.id !== id) continue;
+    if (s.id !== id || !!s.up !== upg) continue;
     const n = Math.min(left, s.qty);
     s.qty -= n; left -= n;
     if (s.qty === 0) c.inventory.splice(i, 1);
@@ -520,7 +528,8 @@ export const storageSize = (acc: Account) => STORAGE_SIZE + acc.chests.reduce((n
 export const storageCount = (acc: Account, id: string) => acc.storage.find((s) => s.id === id)?.qty ?? 0;
 /** 가방 → 창고. 넣은 개수 */
 export function deposit(acc: Account, c: Character, id: string, qty = Infinity): number {
-  qty = Math.min(qty, countItem(c, id));
+  // 강화한 장비는 창고에 넣지 않는다(창고는 개수만 기억한다)
+  qty = Math.min(qty, c.inventory.reduce((n, s) => n + (s.id === id && !s.up ? s.qty : 0), 0));
   if (qty <= 0) return 0;
   let s = acc.storage.find((x) => x.id === id);
   if (!s) {
@@ -551,23 +560,37 @@ export function depositAll(acc: Account, c: Character): number {
   return kinds;
 }
 
-export function equipItem(c: Character, id: string): string | null {
+/** 장착한 장비를 가방에 돌려놓을 수 있는지(강화한 장비는 빈 칸이 따로 있어야 한다) */
+const canReturn = (c: Character, id: string, up: Upg | undefined, freed: boolean) =>
+  up ? freed || c.inventory.length < invSize(c) : freed || itemRoom(c, id) >= 1;
+function putBack(c: Character, id: string, up: Upg | undefined) {
+  if (up) c.inventory.push({ id, qty: 1, up }); else addItem(c, id, 1);
+}
+/** at: 가방 칸 번호(강화한 장비를 골라 낄 때). 없으면 강화하지 않은 것부터 */
+export function equipItem(c: Character, id: string, at?: number): string | null {
   const def = ITEMS[id];
   if (!def?.slot || countItem(c, id) < 1) return '장착할 수 없는 아이템';
   if ((def.reqLv ?? 1) > c.level) return `레벨 ${def.reqLv} 필요`;
   if (def.wtype && def.wtype !== CLASSES[c.cls].weapon) return '이 직업은 쓸 수 없는 무기';
-  const prev = c.equipment[def.slot];
-  removeItem(c, id, 1);
+  let i = at !== undefined && c.inventory[at]?.id === id ? at : c.inventory.findIndex((s) => s.id === id && !s.up);
+  if (i < 0) i = c.inventory.findIndex((s) => s.id === id);
+  const st = c.inventory[i];
+  const prev = c.equipment[def.slot], prevUp = c.equipUp[def.slot];
+  if (prev && !canReturn(c, prev, prevUp, st.qty === 1)) return '가방이 가득 찼습니다';
+  if (st.qty > 1) st.qty--; else c.inventory.splice(i, 1);
   c.equipment[def.slot] = id;
-  if (prev) addItem(c, prev, 1); // 방금 한 칸을 비웠으므로 항상 성공
+  if (st.up) c.equipUp[def.slot] = st.up; else delete c.equipUp[def.slot];
+  if (prev) putBack(c, prev, prevUp);
   c.hp = Math.min(c.hp, derive(c).maxHp);
   return null;
 }
 export function unequipItem(c: Character, slot: EquipSlot): string | null {
   const id = c.equipment[slot];
   if (!id) return null;
-  if (!addItem(c, id, 1)) return '가방이 가득 찼습니다';
-  delete c.equipment[slot];
+  const up = c.equipUp[slot];
+  if (!canReturn(c, id, up, false)) return '가방이 가득 찼습니다';
+  putBack(c, id, up);
+  delete c.equipment[slot]; delete c.equipUp[slot];
   c.hp = Math.min(c.hp, derive(c).maxHp);
   return null;
 }
@@ -816,7 +839,7 @@ export function deserialize(json: string | null): Account | null {
     a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {};
     // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
     if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
-    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.owl ??= newOwl(); a.mini ??= newMini(); a.totem ??= newTotem();
+    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.mini ??= newMini(); a.totem ??= newTotem();
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
@@ -847,7 +870,7 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
-      c.skins ??= {};
+      c.skins ??= {}; c.equipUp ??= {};
       c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];

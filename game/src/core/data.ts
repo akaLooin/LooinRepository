@@ -19,7 +19,7 @@ export interface ItemStats {
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
-  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp' | 'statue' | 'tool';
+  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp' | 'statue' | 'tool' | 'stone';
   /** 가방 확장: 사용하면 이 캐릭터의 가방 칸 +n (종류마다 한 번) */
   bagSlots?: number;
   /** 소지 한도 주머니: 이 묶음의 한 칸 최대치를 cap 으로 */
@@ -153,6 +153,11 @@ const items: ItemDef[] = [
     { id: `boots_${k}`, name: `${n} 장화`, desc: '발걸음이 묵직하다.', kind: 'equip' as const, slot: 'shoes' as const, stats: { def: t === 1 ? 6 : 12, agi: t === 1 ? 3 : 6 }, reqLv: t === 1 ? 18 : 33, sell: t === 1 ? 160 : 480 },
   ]),
   { id: 'tp_ticket', name: '순간이동 티켓', desc: '지도에서 마을이 아닌 맵으로 순간이동할 때 1장을 쓴다.', kind: 'key', sell: 1 },
+  { id: 'stone_atk', name: '날카로움 강화석', desc: '무기에 붙이면 공격력 +3. 성공률 80%.', kind: 'stone', sell: 20 },
+  { id: 'stone_guard', name: '단단함 강화석', desc: '모자·갑옷·바지·신발에 붙이면 방어력 +2, 체력 +15. 성공률 80%.', kind: 'stone', sell: 20 },
+  { id: 'stone_stat', name: '네 갈래 강화석', desc: '무기·옷·장신구에 붙이면 힘·민첩·지혜·행운 +1. 성공률 60%.', kind: 'stone', sell: 30 },
+  { id: 'stone_mine', name: '광맥 강화석', desc: '곡괭이에 붙이면 채광력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
+  { id: 'stone_chop', name: '나뭇결 강화석', desc: '도끼에 붙이면 벌목력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
@@ -177,26 +182,26 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) =
 const monsters: MonsterDef[] = [
   { id: 'mossking', name: '이끼왕', hp: 2600, atk: 26, acc: 24, defZero: 60, xp: 900, coins: [300, 400], speed: 14, motion: 'hop', radius: 20, scale: 2.6,
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
-    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3, 5] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
+    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3, 5] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
     drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
-    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'statue_guard', chance: 0.004, qty: [1, 1] }] },
+    drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stone_mine', chance: 0.003, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'statue_guard', chance: 0.004, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
-    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }] },
+    drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stone_chop', chance: 0.003, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }] },
   // 미니보스(정해진 시간에만 나타난다)·콜로세움 챔피언: 다른 몬스터 그림을 크게, 물들여 쓴다
   { id: 'stumpelder', name: '숲의 장로', hp: 4200, atk: 30, acc: 30, defZero: 60, xp: 1200, coins: [600, 900], speed: 10, motion: 'float', radius: 18, scale: 2.2, art: 'leafling', tint: 0x9fffa0,
-    drops: [{ item: 'statue_wis', chance: 0.6, qty: [1, 3] }, { item: 'stamp_drop', chance: 0.15, qty: [1, 1] }, { item: 'arena_ticket', chance: 0.5, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [2, 4] }, { item: 'mushroom', chance: 1, qty: [5, 10] }] },
+    drops: [{ item: 'statue_wis', chance: 0.6, qty: [1, 3] }, { item: 'stone_atk', chance: 0.4, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.15, qty: [1, 1] }, { item: 'arena_ticket', chance: 0.5, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [2, 4] }, { item: 'mushroom', chance: 1, qty: [5, 10] }] },
   { id: 'ruinwarden', name: '유적 수호자', hp: 16000, atk: 70, acc: 80, defZero: 120, xp: 5000, coins: [2500, 4000], speed: 8, motion: 'waddle', radius: 20, scale: 2.4, art: 'golemite', tint: 0xffd27a,
-    drops: [{ item: 'statue_fortune', chance: 0.8, qty: [1, 3] }, { item: 'stamp_xp', chance: 0.2, qty: [1, 1] }, { item: 'chest_small', chance: 0.3, qty: [1, 1] }, { item: 'moonpie', chance: 1, qty: [3, 6] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }] },
+    drops: [{ item: 'statue_fortune', chance: 0.8, qty: [1, 3] }, { item: 'stone_stat', chance: 0.5, qty: [1, 2] }, { item: 'stamp_xp', chance: 0.2, qty: [1, 1] }, { item: 'chest_small', chance: 0.3, qty: [1, 1] }, { item: 'moonpie', chance: 1, qty: [3, 6] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }] },
   { id: 'champion', name: '콜로세움 챔피언', hp: 9000, atk: 55, acc: 60, defZero: 95, xp: 2500, coins: [0, 0], speed: 18, motion: 'waddle', radius: 18, scale: 2.2, art: 'pebbler', tint: 0xffa0a0, drops: [] },
   // 1월드 후반(숲 오른쪽에서 이어지는 다섯 사냥터)
   { id: 'mudturtle', name: '진흙거북', hp: 300, atk: 26, acc: 34, defZero: 50, xp: 60, coins: [12, 22], speed: 12, motion: 'waddle', radius: 9,
-    drops: [{ item: 'shell', chance: 0.4, qty: [1, 2] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_guard', chance: 0.006, qty: [1, 1] }, { item: 'stamp_mining', chance: 0.002, qty: [1, 1] }] },
+    drops: [{ item: 'shell', chance: 0.4, qty: [1, 2] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_guard', chance: 0.006, qty: [1, 1] }, { item: 'stamp_mining', chance: 0.002, qty: [1, 1] }] },
   { id: 'glowbat', name: '반딧박쥐', hp: 480, atk: 36, acc: 46, defZero: 66, xp: 92, coins: [16, 30], speed: 30, motion: 'float', radius: 8,
-    drops: [{ item: 'glowdust', chance: 0.4, qty: [1, 2] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
+    drops: [{ item: 'glowdust', chance: 0.4, qty: [1, 2] }, { item: 'stone_atk', chance: 0.003, qty: [1, 1] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
   { id: 'gusthopper', name: '바람메뚜기', hp: 740, atk: 48, acc: 60, defZero: 84, xp: 135, coins: [22, 40], speed: 34, motion: 'hop', radius: 8,
-    drops: [{ item: 'feather', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.03, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }, { item: 'stamp_xp', chance: 0.002, qty: [1, 1] }] },
+    drops: [{ item: 'feather', chance: 0.4, qty: [1, 2] }, { item: 'stone_stat', chance: 0.002, qty: [1, 1] }, { item: 'moonpie', chance: 0.03, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }, { item: 'stamp_xp', chance: 0.002, qty: [1, 1] }] },
   { id: 'golemite', name: '돌골렘', hp: 1150, atk: 62, acc: 76, defZero: 108, xp: 195, coins: [30, 55], speed: 14, motion: 'waddle', radius: 10,
     drops: [{ item: 'runestone', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.04, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'stamp_chopping', chance: 0.002, qty: [1, 1] }] },
   { id: 'shroomkin', name: '버섯도깨비', hp: 1700, atk: 80, acc: 94, defZero: 132, xp: 280, coins: [40, 75], speed: 22, motion: 'hop', radius: 9,
@@ -488,6 +493,23 @@ export const INVENTORY_SIZE = 16;
 export const STORAGE_SIZE = 24;
 /** 가방 한 칸 기본 최대치(주머니로 늘린다). 창고는 제한 없음 */
 export const STACK_BASE = 25;
+
+// ───────── 장비 강화석: 장비마다 정해진 강화 칸을 쓴다(실패해도 칸은 쓰인다) ─────────
+/** 한 장비에 붙은 강화 기록: 쓴 칸 수와 더해진 능력치 */
+export interface Upg { n: number; s: ItemStats }
+export interface StoneDef { item: string; stats: ItemStats; chance: number; slots: EquipSlot[] }
+const WEAR: EquipSlot[] = ['hat', 'body', 'legs', 'shoes'];
+export const STONES: StoneDef[] = [
+  { item: 'stone_atk', stats: { dmg: 3 }, chance: 0.8, slots: ['weapon'] },
+  { item: 'stone_guard', stats: { def: 2, hp: 15 }, chance: 0.8, slots: WEAR },
+  { item: 'stone_stat', stats: { str: 1, agi: 1, wis: 1, luk: 1 }, chance: 0.6, slots: ['weapon', ...WEAR, 'ring'] },
+  { item: 'stone_mine', stats: { mining: 3 }, chance: 0.7, slots: ['pickaxe'] },
+  { item: 'stone_chop', stats: { chopping: 3 }, chance: 0.7, slots: ['axe'] },
+];
+export const STONE_BY_ID: Record<string, StoneDef> = Object.fromEntries(STONES.map((s) => [s.item, s]));
+/** 부위별 강화 칸 수 */
+export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, trophy: 0, pickaxe: 3, axe: 3 };
+export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ? UP_SLOTS[s] : 0; };
 export const MAX_CHARACTERS = 6;
 /** 음식 칸 수: 위 칸부터 먹는다 */
 export const FOOD_SLOTS = 3;
@@ -525,6 +547,9 @@ export const SHOP: ShopEntry[] = [
   { item: 'arena_ticket', price: 250, daily: 2 },
   { item: 'tp_ticket', price: 60, daily: 8 },
   { item: 'pet_shard', price: 300, daily: 2 },
+  { item: 'stone_mine', price: 500, daily: 1 },
+  { item: 'stone_chop', price: 500, daily: 1 },
+  { item: 'stone_guard', price: 900, daily: 1 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
@@ -652,8 +677,8 @@ export const ARENA = {
   /** 깬 웨이브 수에 따른 보상(도달한 단계까지 모두 받는다) */
   rewards: [
     { waves: 3, coins: 150, items: [['stew', 2]] },
-    { waves: 6, coins: 400, items: [['forge_oil', 3], ['statue_luk', 2]] },
-    { waves: 10, coins: 1200, items: [['moonpie', 3], ['statue_fortune', 2], ['pet_shard', 2]] },
+    { waves: 6, coins: 400, items: [['forge_oil', 3], ['statue_luk', 2], ['stone_guard', 1]] },
+    { waves: 10, coins: 1200, items: [['moonpie', 3], ['statue_fortune', 2], ['pet_shard', 2], ['stone_atk', 1]] },
     { waves: 15, coins: 3000, items: [['stamp_crit', 1], ['chest_small', 1], ['pet_shard', 5]] },
   ] as { waves: number; coins: number; items: [string, number][] }[],
 };

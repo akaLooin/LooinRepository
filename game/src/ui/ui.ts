@@ -1,10 +1,12 @@
 // DOM 기반 UI. 게임 상태를 읽어 HTML을 만들고, data-act 속성으로 동작을 위임 처리한다.
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
+import { upLeft } from '../core/upgrade';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -91,7 +93,15 @@ const icon = (id: string) => `<img class="px" src="${iconUrl(ITEM_ICON[id])}" al
 const pct = (a: number, b: number) => `${Math.max(0, Math.min(100, (a / b) * 100)).toFixed(1)}%`;
 const dur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.floor((s % 3600) / 60)}분` : `${Math.floor(s / 60)}분`);
 const STAT_LABEL: Record<string, string> = { dmg: '공격력', def: '방어력', hp: '체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광', chopping: '벌목' };
-const statLine = (id: string) => Object.entries(ITEMS[id].stats ?? {}).map(([k, v]) => `${STAT_LABEL[k]} +${v}`).join(', ');
+const statsText = (s: ItemStats | undefined) => Object.entries(s ?? {}).map(([k, v]) => `${STAT_LABEL[k]} +${v}`).join(', ');
+const statLine = (id: string) => statsText(ITEMS[id].stats);
+/** 강화 기록 한 줄 */
+const upLine = (id: string, up: Upg | undefined) => {
+  const max = upSlotsOf(id);
+  if (!max) return '';
+  return `<span class="ui-xs ${up?.n ? 'ui-accent' : 'ui-muted'}">강화 칸 ${up?.n ?? 0}/${max}${up && Object.keys(up.s).length ? ` · 강화 ${statsText(up.s)}` : ''}</span>`;
+};
+const upBadge = (up: Upg | undefined) => (up?.n ? `<span class="upn">+${up.n}</span>` : '');
 
 /** 게이지 */
 const bar = (kind: string, value: number, max: number, text: string) =>
@@ -156,7 +166,11 @@ export class UI {
     this.root.addEventListener('pointerdown', (e) => {
       const sk = (e.target as HTMLElement).closest<HTMLElement>('[data-bslot]');
       if (sk) { e.preventDefault(); this.pressSlot(+sk.dataset.bslot!); return; }
+      // 제작 버튼을 길게 누르면 계속 만든다
+      const hold = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-hold]');
+      if (hold && !hold.disabled) this.startHold(+hold.dataset.hold!);
     });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) this.root.addEventListener(ev, () => this.stopHold());
     this.root.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
       if (t.id === 'cname') this.draft.name = t.value;
@@ -400,13 +414,14 @@ export class UI {
       case 'items': {
         const eq = (Object.keys(SLOT_NAMES) as EquipSlot[]).map((s) => {
           const id = c.equipment[s];
-          return `<button class="ui-slot eqslot" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) : ui(`eq_${s}`, 'sil')}</button>`;
+          return `<button class="ui-slot eqslot" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) + upBadge(c.equipUp[s]) : ui(`eq_${s}`, 'sil')}</button>`;
         }).join('');
         const food = c.foods.map((f, i) => `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food:${i}" aria-selected="${this.sel === `food:${i}`}" aria-label="음식 칸 ${i + 1}${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>` : ui('eq_food', 'sil')}</button>`).join('');
         let cells = '';
         for (let i = 0; i < Math.max(invSize(c), c.inventory.length); i++) {
           const s = c.inventory[i];
-          cells += s ? `<button class="ui-slot ${s.qty >= stackCap(c, s.id) ? 'r4' : ''}" data-act="pick:${s.id}" aria-selected="${this.sel === s.id}" aria-label="${ITEMS[s.id].name} ${s.qty}개">${icon(s.id)}${s.qty > 1 ? `<span class="qty">${s.qty}</span>` : ''}</button>`
+          const key = s?.up ? `${s.id}@${i}` : s?.id;
+          cells += s ? `<button class="ui-slot ${s.up ? 'r2' : s.qty >= stackCap(c, s.id) ? 'r4' : ''}" data-act="pick:${key}" aria-selected="${this.sel === key}" aria-label="${ITEMS[s.id].name}${s.up ? ` 강화 ${s.up.n}칸` : ''} ${s.qty}개">${icon(s.id)}${upBadge(s.up)}${s.qty > 1 ? `<span class="qty">${s.qty}</span>` : ''}</button>`
             : '<div class="ui-slot empty"></div>';
         }
         let detail = `${ui('ui_items', 'bigic')}<span class="ui-sm ui-muted">칸을 누르면 정보와 할 수 있는 일이 나옵니다.</span>`;
@@ -422,17 +437,32 @@ export class UI {
             <button class="ui-btn" data-act="skinoff:${slot}">가방으로</button>` : '<span class="ui-sm ui-muted">가방의 모자·갑옷을 골라 \'홀로웨어로\'를 누르면 능력치는 그대로 두고 겉모습만 바꿉니다.</span>';
         } else if (this.sel?.startsWith('eq:')) {
           const slot = this.sel.slice(3) as EquipSlot, id = c.equipment[slot];
-          if (id) detail = `<div class="ui-row"><span class="ui-slot">${icon(id)}</span><div><b>${ITEMS[id].name}</b><div class="ui-xs ui-muted">${SLOT_NAMES[slot]} · 장착 중</div></div></div>
-            <span class="ui-sm">${ITEMS[id].desc}</span><span class="ui-sm ui-good">${statLine(id)}</span>
+          if (id) {
+            const left = upLeft(c, slot);
+            const stones = STONES.filter((st) => st.slots.includes(slot) && countItem(c, st.item) > 0);
+            const stoneBtns = !upSlotsOf(id) ? '' : left <= 0 ? '<span class="ui-xs ui-muted">강화 칸을 모두 썼습니다.</span>'
+              : stones.length ? `<div class="stonebtns">${stones.map((st) => `<button class="ui-btn sm iconbtn" data-act="upg:${st.item}:${slot}" aria-label="${ITEMS[st.item].name} 붙이기">${icon(st.item)} ${Math.round(st.chance * 100)}% <span class="ui-xs">×${countItem(c, st.item)}</span></button>`).join('')}</div>`
+              : '<span class="ui-xs ui-muted">이 부위에 쓸 강화석이 가방에 없습니다.</span>';
+            detail = `<div class="ui-row"><span class="ui-slot">${icon(id)}${upBadge(c.equipUp[slot])}</span><div><b>${ITEMS[id].name}</b><div class="ui-xs ui-muted">${SLOT_NAMES[slot]} · 장착 중</div></div></div>
+            <span class="ui-sm ui-good">${statLine(id)}</span>${upLine(id, c.equipUp[slot])}${stoneBtns}
             <button class="ui-btn" data-act="unequip:${slot}">해제</button>`;
+          }
+        } else if (this.sel?.includes('@') && c.inventory[+this.sel.split('@')[1]]?.up) {
+          const at = +this.sel.split('@')[1], st = c.inventory[at], it = ITEMS[st.id];
+          detail = `<div class="ui-row"><span class="ui-slot r2">${icon(it.id)}${upBadge(st.up)}</span><div><b>${it.name}</b><div class="ui-xs ui-muted">${SLOT_NAMES[it.slot!]} · 강화한 장비</div></div></div>
+            <span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, st.up)}
+            ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
+            <button class="ui-btn success iconbtn" data-act="equip:${it.id}:${at}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>
+            <span class="ui-xs ui-muted">강화한 장비는 창고에 넣거나 팔 수 없습니다.</span>`;
         } else if (this.sel && countItem(c, this.sel)) {
-          const it = ITEMS[this.sel], n = countItem(c, this.sel);
+          const it = ITEMS[this.sel], n = c.inventory.reduce((k, s) => k + (s.id === it.id && !s.up ? s.qty : 0), 0);
           detail = `<div class="ui-row"><span class="ui-slot">${icon(it.id)}</span><div><b>${it.name}</b><div class="ui-xs ui-muted">${it.slot ? SLOT_NAMES[it.slot] : GROUP_NAMES[stackGroup(it.id)]} · ${n} / ${stackCap(c, it.id)}개</div></div></div>
             <span class="ui-sm">${it.desc}</span>
-            ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>` : ''}
+            ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, undefined)}` : ''}
+            ${STONE_BY_ID[it.id] ? `<span class="ui-xs ui-muted">장비 탭에서 장착한 장비를 누르면 붙일 수 있습니다. 실패해도 강화 칸 하나를 씁니다.</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
             <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
-              <button class="ui-btn sm iconbtn" data-act="sell:${it.id}:1">${ui('ui_coin', 'tic')} ${it.sell}</button>
+              ${n ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:1">${ui('ui_coin', 'tic')} ${it.sell}</button>` : ''}
               ${n > 1 ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:${n}">${ui('ui_coin', 'tic')} 전부 ${it.sell * n}</button>` : ''}</div>`;
         }
         // 왼쪽: 장비 / 홀로웨어(스킨) 탭, 오른쪽: 가방과 상세
@@ -596,7 +626,8 @@ export class UI {
             <span class="ui-sm ${it.stats ? 'ui-good' : ''}">${it.stats ? statLine(it.id) : it.desc}</span>
             <div class="qline mats">${mats}</div>
             ${recipeLock(g.acc, c, this.craftSel) ? `<span class="ui-sm ui-bad">${recipeLock(g.acc, c, this.craftSel)}${(r.tier ?? 1) > g.acc.anvilTier ? ' — 기타 탭의 모루 확장으로 열립니다' : ''}</span>` : ''}
-            <button class="ui-btn primary block" data-act="craft:${this.craftSel}" ${canCraft(g.acc, c, this.craftSel) ? '' : 'disabled'}>${r.unlock ? '확장' : '제작'}</button>
+            <button class="ui-btn primary block" data-act="craft:${this.craftSel}" ${r.unlock ? '' : `data-hold="${this.craftSel}"`} ${canCraft(g.acc, c, this.craftSel) ? '' : 'disabled'}>${r.unlock ? '확장' : '제작'}</button>
+            ${r.unlock ? '' : '<span class="ui-xs ui-muted">길게 누르면 재료가 떨어질 때까지 계속 만듭니다.</span>'}
 `;
         }
         return win('모루', `${tabs(names, tab, tabAct)}<div class="ui-tabpanel split"><div class="ui-grid c4">${cells}</div><div class="ui-detail">${detail}</div></div>`);
@@ -1074,8 +1105,36 @@ export class UI {
   }
 
   // ───────── 입력 ─────────  // ───────── 입력 ─────────
+  /** 길게 눌러 연속 제작: 0.45초 뒤부터 0.14초마다 하나씩, 못 만들게 되면 멈춘다 */
+  private hold: { timer: number; made: number; idx: number } | null = null;
+  private holdUsed = false;
+  private startHold(idx: number) {
+    this.stopHold();
+    this.holdUsed = false;
+    const h = { timer: 0, made: 0, idx };
+    const step = () => {
+      const r = this.game.act({ t: 'craft', idx });
+      if (!r.ok) { this.stopHold(); return; }
+      h.made++; this.holdUsed = true;
+      this.audio?.play('craft');
+      this.refresh();
+      h.timer = window.setTimeout(step, 140);
+    };
+    h.timer = window.setTimeout(step, 450);
+    this.hold = h;
+  }
+  private stopHold() {
+    const h = this.hold;
+    if (!h) return;
+    clearTimeout(h.timer);
+    this.hold = null;
+    if (h.made) this.toast(`${ITEMS[RECIPES[h.idx].item].name} ${h.made}개 연속 제작!`, RECIPES[h.idx].item);
+  }
+
   private onClick(e: Event) {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
+    // 길게 눌러 이미 만들었으면 손을 뗄 때의 한 번은 건너뛴다
+    if (this.holdUsed && el?.dataset.hold !== undefined) { this.holdUsed = false; return; }
     if (!el) {
       if ((e.target as HTMLElement).id === 'modal' && this.panel !== 'afk') { this.panel = null; this.refresh(); }
       return;
@@ -1233,7 +1292,14 @@ export class UI {
         break;
       }
       case 'class': { const r = g.act({ t: 'class', cls: a as ClassId }); fail(r.err ?? null); if (r.ok && c) { this.toast(`${CLASSES[c.cls].name}(으)로 전직했습니다!`); this.panel = 'char'; this.tab.char = CLASSES[c.cls].base ? 3 : 2; } break; }
-      case 'equip': fail(g.act({ t: 'equip', id: a }).err ?? null); this.sel = null; break;
+      case 'equip': fail(g.act({ t: 'equip', id: a, ...(b ? { at: +b } : {}) }).err ?? null); this.sel = null; break;
+      case 'upg': {
+        const r = g.act({ t: 'upgrade', stone: a, slot: b as EquipSlot });
+        if (!r.ok) fail(r.err ?? null);
+        else if (r.n) this.toast(`강화 성공! ${statsText(STONE_BY_ID[a].stats)}`, a);
+        else this.toast('강화 실패… 강화 칸 하나를 썼습니다', a);
+        break;
+      }
       case 'food': {
         // 넣기: 같은 음식 칸 → 빈 칸 → 첫 칸 순서로. 빼기: 고른 칸
         const slot = b !== undefined ? +b : Math.max(0, c!.foods.findIndex((f) => f?.id === a), c!.foods.findIndex((f) => f?.id === a) >= 0 ? 0 : c!.foods.indexOf(null));

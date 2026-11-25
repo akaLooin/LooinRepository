@@ -5,7 +5,7 @@ import { countItem, removeItem, today } from './state';
 
 // ───────── 동료(원작의 펫) ─────────
 // 결과는 계정의 씨앗값 + 뽑은 횟수로 정한다 → 기기와 서버가 같은 동료를 뽑는다
-const hash = (n: number) => { let x = (n * 2654435761) >>> 0; x ^= x >>> 15; x = Math.imul(x, 2246822519) >>> 0; x ^= x >>> 13; x = Math.imul(x, 3266489917) >>> 0; x ^= x >>> 16; return x >>> 0; };
+export const hash = (n: number) => { let x = (n * 2654435761) >>> 0; x ^= x >>> 15; x = Math.imul(x, 2246822519) >>> 0; x ^= x >>> 13; x = Math.imul(x, 3266489917) >>> 0; x ^= x >>> 16; return x >>> 0; };
 const rand = (acc: Pick<Account, 'petSeed' | 'petPulls'>, salt: number) => hash((acc.petSeed ^ (acc.petPulls * 7919 + salt * 104729)) >>> 0) / 4294967296;
 
 export const petFreeReady = (acc: Pick<Account, 'petDaily'>, now: number) => acc.petDaily !== today(now);

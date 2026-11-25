@@ -160,3 +160,63 @@ describe('지도 순간이동', () => {
   });
 
 });
+
+describe('장비 강화석', () => {
+  const prep = () => {
+    const acc = setup(), c = acc.characters[0];
+    c.level = 10;
+    addItem(c, 'stone_atk', 6); addItem(c, 'stone_guard', 1); addItem(c, 'sword_stone', 2);
+    return { acc, c };
+  };
+  it('성공·실패와 상관없이 칸을 쓰고, 같은 씨앗이면 기기와 서버가 같은 결과', () => {
+    const { acc } = prep();
+    const twin = clone(acc);
+    let wins = 0;
+    for (let i = 0; i < 4; i++) {
+      const r = applyAction(acc, 0, { t: 'upgrade', stone: 'stone_atk', slot: 'weapon' }, 0);
+      expect(applyAction(twin, 0, { t: 'upgrade', stone: 'stone_atk', slot: 'weapon' }, 0)).toEqual(r);
+      wins += r.n!;
+    }
+    const c = acc.characters[0];
+    expect(c.equipUp.weapon!.n).toBe(4);
+    expect(c.equipUp.weapon!.s.dmg ?? 0).toBe(wins * 3);
+    expect(countItem(c, 'stone_atk')).toBe(2);
+    // 칸이 다 차면, 그리고 맞지 않는 부위에는 못 쓴다
+    expect(applyAction(acc, 0, { t: 'upgrade', stone: 'stone_atk', slot: 'weapon' }, 0).err).toMatch(/칸/);
+    expect(applyAction(acc, 0, { t: 'upgrade', stone: 'stone_guard', slot: 'weapon' }, 0).err).toMatch(/쓸 수 없는/);
+  });
+  it('강화한 장비는 빼고 다시 껴도 기록이 따라다니고, 창고에는 안 들어간다', () => {
+    const { acc, c } = prep();
+    c.equipment.weapon = 'sword_stone';
+    for (let i = 0; i < 3; i++) applyAction(acc, 0, { t: 'upgrade', stone: 'stone_atk', slot: 'weapon' }, 0);
+    const up = clone(c.equipUp.weapon);
+    expect(applyAction(acc, 0, { t: 'unequip', slot: 'weapon' }, 0).ok).toBe(true);
+    expect(c.equipUp.weapon).toBeUndefined();
+    const at = c.inventory.findIndex((s) => s.up);
+    expect(c.inventory[at]).toMatchObject({ id: 'sword_stone', qty: 1, up });
+    expect(countItem(c, 'sword_stone')).toBe(3);
+    // 강화 안 한 것과 합쳐지지 않는다
+    addItem(c, 'sword_stone', 1);
+    expect(c.inventory.filter((s) => s.id === 'sword_stone').length).toBe(2);
+    // 칸 번호로 골라 끼면 강화 기록이 돌아온다
+    expect(applyAction(acc, 0, { t: 'equip', id: 'sword_stone', at: c.inventory.findIndex((s) => s.up) }, 0).ok).toBe(true);
+    expect(c.equipUp.weapon).toEqual(up);
+    // 강화 안 한 것을 끼면 강화한 것은 가방으로
+    expect(applyAction(acc, 0, { t: 'equip', id: 'sword_stone' }, 0).ok).toBe(true);
+    expect(c.equipUp.weapon).toBeUndefined();
+    expect(c.inventory.find((s) => s.up)?.up).toEqual(up);
+    // 창고에는 강화 안 한 것만
+    applyAction(acc, 0, { t: 'deposit', id: 'sword_stone' }, 0);
+    expect(c.inventory.some((s) => s.up)).toBe(true);
+  });
+  it('기기가 지어낸 강화 기록은 거절한다', () => {
+    const { server, c, ca } = play('meadow', 30);
+    expect(checkSync(server, 0, c, ca, 30)).toBeNull();
+    const fake = clone(c);
+    fake.inventory.push({ id: 'sword_stone', qty: 1, up: { n: 1, s: { dmg: 99 } } });
+    expect(checkSync(server, 0, fake, ca, 30)).toMatch(/강화|많습니다/);
+    const fake2 = clone(c);
+    fake2.equipUp = { weapon: { n: 1, s: { dmg: 99 } } };
+    expect(checkSync(server, 0, fake2, ca, 30)).toMatch(/equipUp/);
+  });
+});

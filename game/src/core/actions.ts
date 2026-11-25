@@ -1,5 +1,6 @@
 // 플레이어 행동. 기기(낙관적 적용)와 서버(권위)가 같은 함수로 적용한다.
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
+import { applyStone } from './upgrade';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
 import { BlessKey, GameKind, buyBless, finishGame, finishTotem } from './minigames';
@@ -16,7 +17,8 @@ import { ForgeUp, buyForge, forgeCollect, forgeLoad, forgeOil, forgeUpgrade } fr
 export type Action =
   | { t: 'stat'; stat: StatKey }
   | { t: 'talent'; id: string }
-  | { t: 'equip'; id: string }
+  | { t: 'equip'; id: string; at?: number }
+  | { t: 'upgrade'; stone: string; slot: EquipSlot }
   | { t: 'unequip'; slot: EquipSlot }
   | { t: 'food'; id: string | null; slot?: number }
   | { t: 'use'; id: string }
@@ -83,7 +85,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
   switch (a.t) {
     case 'stat': return spendStat(c, a.stat) ? ok() : fail('포인트가 없습니다');
     case 'talent': return learnTalent(c, a.id) ? ok() : fail('특성을 올릴 수 없습니다');
-    case 'equip': return res(equipItem(c, a.id));
+    case 'equip': return res(equipItem(c, a.id, a.at));
+    case 'upgrade': { const r = applyStone(acc, c, a.stone, a.slot); return typeof r === 'string' ? fail(r) : ok(r.ok ? 1 : 0); }
     case 'unequip': return res(unequipItem(c, a.slot));
     case 'food': return res(setFood(c, a.id, a.slot ?? 0));
     case 'use': return res(useItem(acc, c, a.id));

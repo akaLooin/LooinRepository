@@ -709,6 +709,17 @@ function buildItems() {
   // 펫 크리스탈 조각: 분홍빛 결정
   p = new Paint(11, 13); p.line(5, 0, 1, 6, '#f29ad8'); p.line(5, 0, 9, 6, '#f29ad8'); p.rect(2, 5, 7, 4, '#f29ad8'); p.line(1, 7, 5, 12, '#d96ab8'); p.line(9, 7, 5, 12, '#d96ab8'); p.rect(3, 8, 5, 2, '#d96ab8'); p.rect(4, 2, 2, 4, '#ffffff');
   p.outline().save('it_petshard');
+  // 강화석: 둥근 돌에 색 무늬
+  for (const [k, base, dark, mark] of [['atk', '#b8bcc8', '#7c8090', '#e2574a'], ['guard', '#b8bcc8', '#7c8090', '#4a8fe2'], ['stat', '#c8bca8', '#8c7c68', '#f6c945'], ['mine', '#a8a4a0', '#6c6864', '#7fd4ff'], ['chop', '#b4a88c', '#786c50', '#6fcf5a']] as const) {
+    p = new Paint(12, 11); p.disc(6, 5.5, 5.5, 5, base); p.rect(1, 6, 10, 4, dark); p.disc(6, 5, 4.5, 4, base);
+    p.rect(3, 2, 2, 1, '#ffffff');
+    if (k === 'atk') { p.line(4, 8, 8, 3, mark); p.set(8, 3, '#ffd0c8'); }
+    else if (k === 'guard') { p.rect(4, 3, 4, 3, mark); p.rect(5, 6, 2, 2, mark); }
+    else if (k === 'stat') { p.rect(5, 3, 2, 6, mark); p.rect(3, 5, 6, 2, mark); }
+    else if (k === 'mine') { p.line(3, 4, 8, 7, mark); p.line(4, 7, 8, 4, mark); }
+    else { p.line(4, 3, 4, 8, mark); p.line(6, 3, 6, 8, mark); p.line(8, 4, 8, 7, mark); }
+    p.outline().save(`it_stone_${k}`);
+  }
   // 순간이동 티켓: 보라 표 + 소용돌이
   p = new Paint(13, 10); p.rect(1, 1, 11, 8, '#8a6fd1'); p.rect(4, 1, 1, 8, '#5a4a9a'); p.disc(8.5, 5, 2.2, 2.2, '#a5d8ff'); p.disc(8.5, 5, 1, 1, '#ffffff'); p.set(0, 5, null); p.set(12, 5, null); p.rect(2, 2, 1, 6, '#c4b4f0');
   p.outline().save('it_tpticket');
@@ -803,7 +814,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
-  arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard',
+  arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
   anvil_exp2: 'obj_craft',
   ...Object.fromEntries(['blue', 'gold'].flatMap((k) => [[`sword_${k}`, `wp_sword_${k}`], [`bow_${k}`, `wp_bow_${k}`], [`wand_${k}`, `wp_wand_${k}`], [`pick_${k}`, `wp_pick_${k}`], [`axe_${k}`, `wp_axe_${k}`],
     [`helm_${k}`, `it_helm_${k}`], [`plate_${k}`, `it_plate_${k}`], [`legs_${k}`, `it_legs_${k}`], [`boots_${k}`, `it_boots_${k}`]])),

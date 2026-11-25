@@ -28,7 +28,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const t = Math.max(0, elapsedSec);
 
   // 1) 행동으로만 바뀌는 값
-  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins'];
+  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp'];
   for (const k of fixed) if (!same(s[k], claimed[k])) return `바뀌면 안 되는 값: ${String(k)}`;
   if (!same(s.anvil.pts, claimed.anvil.pts)) return '바뀌면 안 되는 값: 모루 포인트';
   if (!same(s.anvil.slots.map((x) => x.prod), claimed.anvil.slots.map((x) => x.prod).slice(0, s.anvil.slots.length))) return '바뀌면 안 되는 값: 모루 품목';
@@ -94,6 +94,14 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
     if (gain > (allow[id] ?? 0)) return `${ITEMS[id].name}이(가) 너무 많습니다(+${gain})`;
   }
   if (claimed.inventory.some((x) => x.qty <= 0 || !Number.isInteger(x.qty))) return '잘못된 아이템 수량';
+  // 강화한 장비는 행동으로만 생긴다: 서버에 없던 강화 기록이 가방에 나타나면 거절
+  const ups = new Map<string, number>();
+  for (const x of s.inventory) if (x.up) { const k = x.id + JSON.stringify(x.up); ups.set(k, (ups.get(k) ?? 0) + 1); }
+  for (const x of claimed.inventory) if (x.up) {
+    const k = x.id + JSON.stringify(x.up), n = ups.get(k) ?? 0;
+    if (x.qty !== 1 || n <= 0) return '강화 기록이 맞지 않습니다';
+    ups.set(k, n - 1);
+  }
 
   // 계정 값: 코인·카드·보스
   const dc = ca.coins - acc.coins;
