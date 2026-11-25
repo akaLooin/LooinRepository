@@ -514,10 +514,12 @@ describe('히든 계열 4단계: 낭만가 → 워커 → 테일러 → 라이�
     // 1차 특성부터 4차 특성까지 배울 수 있다
     c.talentPoints = 4;
     for (const id of ['fortune', 'destiny', 'talestorm', 'lifesong']) expect(applyAction(acc, 0, { t: 'talent', id }, 0).ok).toBe(true);
-    // 일반 직업은 여전히 2차까지
+    // 일반 직업은 3차(Lv.70)까지
     const { acc: a2, c: c2 } = setup();
     c2.level = 80; applyAction(a2, 0, { t: 'class', cls: 'warrior' }, 0); applyAction(a2, 0, { t: 'class', cls: 'guardian' }, 0);
-    expect(c2.cls).toBe('guardian'); expect(canSub(c2)).toBe(false);
+    expect(c2.cls).toBe('guardian'); expect(canSub(c2)).toBe(true);
+    expect(applyAction(a2, 0, { t: 'class', cls: 'bastion' }, 0).ok).toBe(true);
+    expect(canSub(c2)).toBe(false);
   });
 });
 
@@ -558,3 +560,53 @@ describe('우체국', () => {
     expect(derive(c, acc).str).toBe(str0 + BOX_BY_ID.x_str.per);
   });
 });
+
+import { WORLD3, WORLD_GATES, ITEMS as IT, MONSTERS as MON, NODES as ND, RECIPES as RC, CLASSES as CL3, TALENT as TL3, nextClasses as nextC, maxTierOf as maxT, CARD_BY_ID as CB } from '../src/core/data';
+import { orderPool } from '../src/core/post';
+describe('3월드: 서리 고원', () => {
+  it('사막 거상 토벌·Lv.60·해탑 처치를 채우면 해탑 끝 문으로 눈꽃 마을에 간다', () => {
+    const { acc, c } = setup();
+    c.maxWorld = 2; c.mapId = 'sunspire'; c.level = 60;
+    const gi = ALLMAPS.sunspire.portals.findIndex((p) => p.gate);
+    expect(ALLMAPS.sunspire.portals[gi].to).toBe('snowtown');
+    expect(gateChecks(acc, c, 3).map((x) => x.ok)).toEqual([false, true, false]);
+    expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(false);
+    acc.bosses.sandlord = 1; c.kills.sunspire = WORLD_GATES[1].kills;
+    expect(gateOpen(acc, c, 3)).toBe(true);
+    // 2월드 문 조건(이끼왕)은 3월드 문과 상관없다
+    expect(gateOpen(acc, c, 2)).toBe(false);
+    expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(true);
+    expect(c.mapId).toBe('snowtown'); expect(c.maxWorld).toBe(3);
+    expect(mapUnlocked(c, 'snowfield')).toBe(true); expect(mapUnlocked(c, 'pinewood')).toBe(false);
+    c.mapId = 'snowfield'; applyAction(acc, 0, { t: 'respawn' }, 0);
+    expect(c.mapId).toBe('snowtown');
+    expect(canTeleportTo(c, 'oasis')).toBe(true);
+    // 3월드 재료가 우체국 주문에 나온다
+    expect(orderPool(c)).toContain('snow_tuft');
+  });
+  it('맵·몬스터·자원·제작법이 모두 이어져 있다', () => {
+    for (const id of WORLD3) { expect(ALLMAPS[id]).toBeTruthy(); expect(worldOf(id)).toBe(3); }
+    expect(worldOf('frostlair')).toBe(3);
+    expect(ALLMAPS.frostlair.boss).toBe('frostlord');
+    for (const id of WORLD3) for (const s of ALLMAPS[id].spawns) { expect(MON[s.monster]).toBeTruthy(); expect(CB[s.monster]).toBeTruthy(); for (const d of MON[s.monster].drops) expect(IT[d.item], d.item).toBeTruthy(); }
+    for (const id of WORLD3) for (const n of ALLMAPS[id].nodes) { expect(ND[n.node]).toBeTruthy(); expect(IT[ND[n.node].item]).toBeTruthy(); }
+    for (const r of RC.filter((r) => r.tier === 5)) for (const [m] of r.mats) expect(IT[m], m).toBeTruthy();
+  });
+  it('일반 직업 6갈래 모두 Lv.70에 3차 전직이 있고, 3차 특성이 효과를 낸다', () => {
+    for (const sub of ['guardian', 'berserker', 'sharpshooter', 'ranger', 'elementalist', 'hexer'] as const) {
+      const n = nextC(sub);
+      expect(n.length).toBe(1);
+      expect(TALENTS_OF(n[0]).some((t) => t.active)).toBe(true);
+    }
+    expect(maxT('warrior')).toBe(3);
+    const { acc, c } = setup();
+    c.level = 70; applyAction(acc, 0, { t: 'class', cls: 'archer' }, 0); applyAction(acc, 0, { t: 'class', cls: 'ranger' }, 0);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'pathfinder' }, 0).ok).toBe(true);
+    expect(CL3[c.cls].name).toBe('개척자');
+    const d0 = derive(c, acc).dropMult;
+    c.talents.scout = 5;
+    expect(derive(c, acc).dropMult).toBeGreaterThan(d0);
+    expect(TL3.arrowrain.cls).toBe('pathfinder');
+  });
+});
+const TALENTS_OF = (cls: string) => Object.values(TL3).filter((t) => t.cls === cls);

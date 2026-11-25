@@ -119,7 +119,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (lock) return fail(`아직 열리지 않았습니다(${lock})`);
       // 세계의 문: 앞으로(더 높은 월드로) 갈 때만 조건을 본다
       if (q.gate && worldOf(q.to) > worldOf(c.mapId)) {
-        if (!gateOpen(acc, c)) return fail('세계의 문 조건을 아직 채우지 못했습니다');
+        if (!gateOpen(acc, c, worldOf(q.to))) return fail('세계의 문 조건을 아직 채우지 못했습니다');
         c.maxWorld = Math.max(c.maxWorld ?? 1, worldOf(q.to));
       }
       if (q.key) {

@@ -262,7 +262,7 @@ export class Game {
           const q = w.map.portals[e.idx];
           if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `아직 열리지 않았습니다(${portalLock(w.char, w.map.id, q)})` }); continue; }
           // 세계의 문: 조건을 못 채웠으면 조건 창, 채웠으면 그대로 지난다
-          if (q.gate && worldOf(q.to) > worldOf(w.map.id) && !gateOpen(this.acc, w.char)) { this.onEvent({ t: 'gate' }); continue; }
+          if (q.gate && worldOf(q.to) > worldOf(w.map.id) && !gateOpen(this.acc, w.char, worldOf(q.to))) { this.onEvent({ t: 'gate', to: worldOf(q.to) }); continue; }
           if (!MAPS[q.to]) continue;
           this.travel(e.idx);
           return;

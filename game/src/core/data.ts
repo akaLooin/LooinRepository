@@ -8,7 +8,8 @@ export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
 export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
-export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller';
+export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
+  | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe' | 'rod' | 'net';
 
@@ -66,7 +67,8 @@ export interface FacilityDef { kind: FacilityKind; x: number; y: number; /** NPC
 export interface MapDef {
   id: string; name: string; width: number;
   theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena'
-    | 'oasis' | 'dunes' | 'canyon' | 'mirage' | 'tomb' | 'saltlake' | 'starfield' | 'sunspire';
+    | 'oasis' | 'dunes' | 'canyon' | 'mirage' | 'tomb' | 'saltlake' | 'starfield' | 'sunspire'
+    | 'snowtown' | 'snowfield' | 'pinewood' | 'frostlake' | 'icecave' | 'glacier' | 'aurora' | 'frostpeak';
   /** 콜로세움(웨이브 전투) */
   arena?: boolean;
   /** 지면(y=0)을 제외한 발판. y는 위쪽이 음수. */
@@ -203,6 +205,36 @@ const items: ItemDef[] = [
   { id: 'net_palm', name: '야자 잠자리채', desc: '곤충 채집 효율 +10', kind: 'equip', slot: 'net', stats: { catching: 10 }, reqLv: 30, sell: 600 },
   { id: 'rod_amber', name: '호박 낚싯대', desc: '낚시 효율 +22', kind: 'equip', slot: 'rod', stats: { fishing: 22 }, reqLv: 42, sell: 1400 },
   { id: 'net_amber', name: '호박 잠자리채', desc: '곤충 채집 효율 +22', kind: 'equip', slot: 'net', stats: { catching: 22 }, reqLv: 42, sell: 1400 },
+  // ───── 3월드: 서리 고원 ─────
+  { id: 'snow_tuft', name: '눈송이 솜', desc: '손바닥 위에서도 녹지 않는다.', kind: 'material', sell: 120 },
+  { id: 'pine_cone', name: '솔방울 비늘', desc: '송진 냄새가 은은하다.', kind: 'material', sell: 136 },
+  { id: 'peng_feather', name: '펭귄 깃털', desc: '물이 스며들지 않는 촘촘한 깃털.', kind: 'material', sell: 152 },
+  { id: 'icicle_shard', name: '고드름 조각', desc: '끝이 바늘처럼 날카로운 얼음.', kind: 'material', sell: 170 },
+  { id: 'yeti_fur', name: '설인 털', desc: '복슬복슬하고 아주 따뜻하다.', kind: 'material', sell: 190 },
+  { id: 'aurora_dust', name: '오로라 가루', desc: '보는 각도마다 빛의 색이 바뀐다.', kind: 'material', sell: 212 },
+  { id: 'frost_core', name: '서리 핵', desc: '쥐면 손끝이 얼얼해지는 푸른 핵.', kind: 'material', sell: 236 },
+  { id: 'pinelog', name: '전나무 통나무', desc: '곧고 단단한 북쪽 목재.', kind: 'material', sell: 90 },
+  { id: 'ore_frost', name: '서리 광석', desc: '안쪽에 얼음 결이 갇혀 있다.', kind: 'material', sell: 84 },
+  { id: 'bar_frost', name: '서리 주괴', desc: '용광로에서 서리 광석을 녹였다. 그래도 차갑다.', kind: 'material', sell: 340 },
+  { id: 'fish_ice', name: '얼음 송어', desc: '얼음 구멍 아래에서 반짝이는 물고기.', kind: 'material', sell: 110 },
+  { id: 'bug_frost', name: '서리 나방', desc: '날갯가루가 눈처럼 흩날린다.', kind: 'material', sell: 110 },
+  { id: 'hot_cocoa', name: '따끈한 코코아', desc: '먹으면 체력 1400 회복. 재사용 12초.', kind: 'food', heal: 1400, cd: 12, sell: 80 },
+  { id: 'pine_soup', name: '솔잎 수프', desc: '먹으면 체력 2400 회복. 재사용 15초.', kind: 'food', heal: 2400, cd: 15, sell: 130 },
+  { id: 'frost_key', name: '서리 열쇠', desc: '서리 봉우리 꼭대기, 눈보라 군주의 옥좌 문을 연다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
+  { id: 'trophy_frost', name: '눈보라 군주 트로피', desc: '눈보라 군주를 쓰러뜨린 증표.', kind: 'equip', slot: 'trophy', stats: { str: 9, agi: 9, wis: 9, luk: 9, def: 12 }, sell: 0 },
+  { id: 'frost_crown', name: '얼음 왕관', desc: '녹지 않는 얼음을 깎아 만든 왕관.', kind: 'equip', slot: 'hat', stats: { def: 48, hp: 420, str: 12, luk: 12 }, reqLv: 75, sell: 5000 },
+  { id: 'anvil_exp4', name: '모루 확장 IV', desc: '만들면 모루 5단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
+  { id: 'sword_frost', name: '서리 검', desc: '휘두르면 칼날에서 눈가루가 흩날린다.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 170, str: 24 }, reqLv: 80, sell: 6000 },
+  { id: 'bow_frost', name: '서리 활', desc: '얼음 시위가 맑게 운다.', kind: 'equip', slot: 'weapon', wtype: 'bow', stats: { dmg: 160, agi: 26 }, reqLv: 80, sell: 6000 },
+  { id: 'wand_frost', name: '서리 지팡이', desc: '끝의 얼음 결정 속에 눈보라가 갇혀 있다.', kind: 'equip', slot: 'weapon', wtype: 'wand', stats: { dmg: 160, wis: 26 }, reqLv: 80, sell: 6000 },
+  { id: 'pick_frost', name: '서리 곡괭이', desc: '채광 효율 +46', kind: 'equip', slot: 'pickaxe', stats: { mining: 46 }, reqLv: 70, sell: 3600 },
+  { id: 'axe_frost', name: '서리 도끼', desc: '벌목 효율 +46', kind: 'equip', slot: 'axe', stats: { chopping: 46 }, reqLv: 70, sell: 3600 },
+  { id: 'rod_frost', name: '서리 낚싯대', desc: '낚시 효율 +40', kind: 'equip', slot: 'rod', stats: { fishing: 40 }, reqLv: 70, sell: 3600 },
+  { id: 'net_frost', name: '서리 잠자리채', desc: '곤충 채집 효율 +40', kind: 'equip', slot: 'net', stats: { catching: 40 }, reqLv: 70, sell: 3600 },
+  { id: 'helm_frost', name: '서리 투구', desc: '얼음 결이 빛나는 투구.', kind: 'equip', slot: 'hat', stats: { def: 48, hp: 360 }, reqLv: 78, sell: 4200 },
+  { id: 'plate_frost', name: '서리 갑옷', desc: '눈보라 속에서도 몸이 따뜻하다.', kind: 'equip', slot: 'body', stats: { def: 70, hp: 520 }, reqLv: 80, sell: 5200 },
+  { id: 'legs_frost', name: '서리 다리 갑옷', desc: '빙판 위에서도 미끄러지지 않는다.', kind: 'equip', slot: 'legs', stats: { def: 48, hp: 360 }, reqLv: 79, sell: 4400 },
+  { id: 'boots_frost', name: '서리 장화', desc: '눈에 빠지지 않는 넓은 바닥.', kind: 'equip', slot: 'shoes', stats: { def: 36, agi: 18 }, reqLv: 78, sell: 4200 },
   { id: 'four_leaf', name: '네잎 클로버', desc: '풀밭에서 아주 드물게 발견된다. 누군가 이걸 찾고 있다는 소문이 있다.', kind: 'key', sell: 0 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
@@ -270,6 +302,24 @@ const monsters: MonsterDef[] = [
   { id: 'sandlord', name: '사막 거상', hp: 90000, atk: 210, acc: 250, defZero: 330, xp: 30000, coins: [8000, 12000], speed: 10, motion: 'waddle', radius: 22, scale: 2.8,
     boss: { slamEvery: 4.5, slamWindup: 1.0, slamRadius: 64, slamDmg: 170, card: 'sandlord' },
     drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }] },
+  // ───── 3월드: 서리 고원 ─────
+  { id: 'snowpuff', name: '눈뭉치', hp: 20000, atk: 232, acc: 280, defZero: 330, xp: 2200, coins: [190, 340], speed: 18, motion: 'hop', radius: 9,
+    drops: [{ item: 'snow_tuft', chance: 0.4, qty: [1, 2] }, { item: 'hot_cocoa', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
+  { id: 'pinekin', name: '솔방울이', hp: 27000, atk: 258, acc: 312, defZero: 362, xp: 2850, coins: [220, 400], speed: 24, motion: 'hop', radius: 9,
+    drops: [{ item: 'pine_cone', chance: 0.4, qty: [1, 2] }, { item: 'hot_cocoa', chance: 0.05, qty: [1, 1] }, { item: 'statue_str', chance: 0.005, qty: [1, 1] }, { item: 'stone_chop', chance: 0.004, qty: [1, 1] }] },
+  { id: 'penglet', name: '꼬마펭귄', hp: 36000, atk: 286, acc: 346, defZero: 396, xp: 3650, coins: [260, 470], speed: 20, motion: 'waddle', radius: 9,
+    drops: [{ item: 'peng_feather', chance: 0.4, qty: [1, 2] }, { item: 'hot_cocoa', chance: 0.06, qty: [1, 1] }, { item: 'statue_agi', chance: 0.005, qty: [1, 1] }, { item: 'stone_lure', chance: 0.004, qty: [1, 1] }] },
+  { id: 'icicle', name: '고드름이', hp: 48000, atk: 316, acc: 384, defZero: 432, xp: 4700, coins: [300, 550], speed: 28, motion: 'float', radius: 8,
+    drops: [{ item: 'icicle_shard', chance: 0.4, qty: [1, 2] }, { item: 'pine_soup', chance: 0.04, qty: [1, 1] }, { item: 'statue_wis', chance: 0.005, qty: [1, 1] }, { item: 'stone_atk', chance: 0.004, qty: [1, 1] }] },
+  { id: 'yetiling', name: '아기 설인', hp: 64000, atk: 350, acc: 424, defZero: 472, xp: 6000, coins: [350, 640], speed: 16, motion: 'waddle', radius: 10,
+    drops: [{ item: 'yeti_fur', chance: 0.4, qty: [1, 2] }, { item: 'pine_soup', chance: 0.05, qty: [1, 1] }, { item: 'statue_guard', chance: 0.005, qty: [1, 1] }, { item: 'stone_stat', chance: 0.003, qty: [1, 1] }] },
+  { id: 'aurowisp', name: '오로라나비', hp: 85000, atk: 386, acc: 468, defZero: 514, xp: 7700, coins: [410, 750], speed: 32, motion: 'float', radius: 8,
+    drops: [{ item: 'aurora_dust', chance: 0.4, qty: [1, 2] }, { item: 'pine_soup', chance: 0.05, qty: [1, 1] }, { item: 'statue_luk', chance: 0.005, qty: [1, 1] }, { item: 'stamp_xp', chance: 0.002, qty: [1, 1] }] },
+  { id: 'frostgolem', name: '서리 골렘', hp: 112000, atk: 424, acc: 516, defZero: 560, xp: 9800, coins: [480, 880], speed: 12, motion: 'waddle', radius: 11,
+    drops: [{ item: 'frost_core', chance: 0.4, qty: [1, 2] }, { item: 'frost_key', chance: 0.004, qty: [1, 1] }, { item: 'pine_soup', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
+  { id: 'frostlord', name: '눈보라 군주', hp: 700000, atk: 430, acc: 520, defZero: 600, xp: 250000, coins: [60000, 90000], speed: 10, motion: 'float', radius: 24, scale: 2.8,
+    boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 70, slamDmg: 360, card: 'frostlord' },
+    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
 for (const m of monsters) if (!m.boss && !m.scale) m.drops.push({ item: 'tp_ticket', chance: 0.006, qty: [1, 1] });
@@ -294,6 +344,11 @@ const nodes: NodeDef[] = [
   { id: 'antbush', name: '개미 덤불', skill: 'catching', reqLv: 1, hp: 8, xp: 5, item: 'bug_ant' },
   { id: 'glowbush', name: '반딧불 덤불', skill: 'catching', reqLv: 10, hp: 40, xp: 22, item: 'bug_firefly' },
   { id: 'goldbush', name: '풍뎅이 덤불', skill: 'catching', reqLv: 22, hp: 100, xp: 55, item: 'bug_beetle' },
+  // 3월드
+  { id: 'pine', name: '전나무', skill: 'chopping', reqLv: 45, hp: 420, xp: 230, item: 'pinelog' },
+  { id: 'frostrock', name: '서리 광맥', skill: 'mining', reqLv: 45, hp: 380, xp: 210, item: 'ore_frost' },
+  { id: 'icehole', name: '얼음 구멍', skill: 'fishing', reqLv: 35, hp: 200, xp: 110, item: 'fish_ice' },
+  { id: 'frostbush', name: '서리 덤불', skill: 'catching', reqLv: 35, hp: 200, xp: 110, item: 'bug_frost' },
 ];
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
@@ -412,10 +467,56 @@ const maps: MapDef[] = [
     platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
     spawns: [{ monster: 'sunwisp', count: 9 }], nodes: [{ node: 'starpool', x: 230 }, { node: 'amberrock', x: 380 }, { node: 'goldbush', x: 660 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
-    facilities: [], portals: [{ x: 24, to: 'starfield', toX: 930 }, { x: 952, y: -96, to: 'sandlair', toX: 60, reqKills: 300, key: 'sun_key', label: '거상의 방' }] },
+    facilities: [], portals: [{ x: 24, to: 'starfield', toX: 930 }, { x: 952, y: -96, to: 'sandlair', toX: 60, reqKills: 300, key: 'sun_key', label: '거상의 방' }, { x: 956, to: 'snowtown', toX: 60, label: '세계의 문', gate: true }] },
   { id: 'sandlair', name: '거상의 방', width: 600, theme: 'sunspire', boss: 'sandlord',
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'sunspire', toX: 930, toY: -96 }] },
+  // ───── 3월드: 서리 고원(눈꽃 마을에서 동쪽으로 이어진다) ─────
+  { id: 'snowtown', name: '눈꽃 마을', width: 700, theme: 'snowtown',
+    platforms: [{ x: 400, y: -48, w: 300 }],
+    ropes: [{ x: 410, top: -48, bottom: 0 }],
+    spawns: [], nodes: [{ node: 'icehole', x: 330 }], campfireX: 250,
+    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'anvil', x: 470, y: -48 }, { kind: 'npc', npc: 'elder3', x: 560, y: -48 }],
+    portals: [{ x: 24, to: 'sunspire', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'snowfield', toX: 50 }] },
+  { id: 'snowfield', name: '눈송이 벌판', width: 940, theme: 'snowfield',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
+    spawns: [{ monster: 'snowpuff', count: 9 }], nodes: [{ node: 'pine', x: 90 }, { node: 'pine', x: 650 }, { node: 'frostbush', x: 300 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'snowtown', toX: 650, toY: -48 }, { x: 916, to: 'pinewood', toX: 50, reqKills: 600 }] },
+  { id: 'pinewood', name: '전나무 숲', width: 960, theme: 'pinewood',
+    platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
+    spawns: [{ monster: 'pinekin', count: 9 }], nodes: [{ node: 'pine', x: 410 }, { node: 'pine', x: 660 }, { node: 'frostbush', x: 900 }],
+    ropes: [{ x: 130, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 850, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'snowfield', toX: 890 }, { x: 936, to: 'frostlake', toX: 50, reqKills: 650 }] },
+  { id: 'frostlake', name: '얼어붙은 호수', width: 960, theme: 'frostlake',
+    platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
+    spawns: [{ monster: 'penglet', count: 9 }], nodes: [{ node: 'icehole', x: 380 }, { node: 'icehole', x: 680 }, { node: 'frostrock', x: 800 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'pinewood', toX: 910 }, { x: 936, to: 'icecave', toX: 50, reqKills: 700 }] },
+  { id: 'icecave', name: '고드름 동굴', width: 940, theme: 'icecave',
+    platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
+    spawns: [{ monster: 'icicle', count: 9 }], nodes: [{ node: 'frostrock', x: 420 }, { node: 'frostrock', x: 660 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'frostlake', toX: 910 }, { x: 916, to: 'glacier', toX: 50, reqKills: 750 }] },
+  { id: 'glacier', name: '빙하 절벽', width: 960, theme: 'glacier',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
+    spawns: [{ monster: 'yetiling', count: 9 }], nodes: [{ node: 'pine', x: 90 }, { node: 'frostrock', x: 380 }, { node: 'icehole', x: 700 }],
+    ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'icecave', toX: 890 }, { x: 936, to: 'aurora', toX: 50, reqKills: 800 }] },
+  { id: 'aurora', name: '오로라 언덕', width: 980, theme: 'aurora',
+    platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
+    spawns: [{ monster: 'aurowisp', count: 9 }], nodes: [{ node: 'frostbush', x: 250 }, { node: 'pine', x: 410 }, { node: 'frostrock', x: 690 }, { node: 'icehole', x: 880 }],
+    ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 750, top: -48, bottom: 0 }, { x: 880, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'glacier', toX: 910 }, { x: 956, to: 'frostpeak', toX: 50, reqKills: 850 }] },
+  // 서리 봉우리: 오른쪽 위 발판 끝에 눈보라 군주의 옥좌(열쇠)
+  { id: 'frostpeak', name: '서리 봉우리', width: 980, theme: 'frostpeak',
+    platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
+    spawns: [{ monster: 'frostgolem', count: 9 }], nodes: [{ node: 'icehole', x: 230 }, { node: 'frostrock', x: 380 }, { node: 'frostbush', x: 660 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'aurora', toX: 930 }, { x: 952, y: -96, to: 'frostlair', toX: 60, reqKills: 400, key: 'frost_key', label: '눈보라 옥좌' }] },
+  { id: 'frostlair', name: '눈보라 옥좌', width: 600, theme: 'frostpeak', boss: 'frostlord',
+    platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
+    portals: [{ x: 24, to: 'frostpeak', toX: 930, toY: -96 }] },
 ];
 export const MAPS: Record<string, MapDef> = Object.fromEntries(maps.map((m) => [m.id, m]));
 
@@ -452,6 +553,18 @@ export const RECIPES: RecipeDef[] = [
   { item: 'plate_amber', coins: 10000, mats: [['bar_amber', 18], ['salt_crystal', 20], ['old_bandage', 20]], tier: 4 },
   { item: 'legs_amber', coins: 8000, mats: [['bar_amber', 14], ['worm_scale', 16]], tier: 4 },
   { item: 'boots_amber', coins: 7000, mats: [['bar_amber', 10], ['worm_scale', 12], ['twine', 40]], tier: 4 },
+  { item: 'anvil_exp4', coins: 60000, mats: [['bar_frost', 25], ['pinelog', 80], ['snow_tuft', 60]], unlock: 5, smithLv: 45, tier: 4 },
+  { item: 'rod_frost', coins: 15000, mats: [['bar_frost', 10], ['pinelog', 30], ['fish_ice', 50]], tier: 5 },
+  { item: 'net_frost', coins: 15000, mats: [['bar_frost', 10], ['pinelog', 30], ['bug_frost', 50]], tier: 5 },
+  { item: 'sword_frost', coins: 24000, mats: [['bar_frost', 16], ['icicle_shard', 24], ['frost_core', 8]], tier: 5 },
+  { item: 'bow_frost', coins: 24000, mats: [['bar_frost', 12], ['pinelog', 40], ['peng_feather', 24]], tier: 5 },
+  { item: 'wand_frost', coins: 24000, mats: [['bar_frost', 12], ['pinelog', 30], ['aurora_dust', 16]], tier: 5 },
+  { item: 'pick_frost', coins: 15000, mats: [['bar_frost', 14], ['pinelog', 30], ['nail', 60]], tier: 5 },
+  { item: 'axe_frost', coins: 15000, mats: [['bar_frost', 14], ['pinelog', 30], ['nail', 60]], tier: 5 },
+  { item: 'helm_frost', coins: 18000, mats: [['bar_frost', 14], ['yeti_fur', 20]], tier: 5 },
+  { item: 'plate_frost', coins: 26000, mats: [['bar_frost', 20], ['yeti_fur', 24], ['pine_cone', 30]], tier: 5 },
+  { item: 'legs_frost', coins: 20000, mats: [['bar_frost', 16], ['peng_feather', 24]], tier: 5 },
+  { item: 'boots_frost', coins: 18000, mats: [['bar_frost', 12], ['snow_tuft', 30], ['twine', 80]], tier: 5 },
   ...([['blue', 2, 'bar_blue', 'willowlog', 'shell', 'glowdust'], ['gold', 3, 'bar_gold', 'moonlog', 'runestone', 'sporecap']] as const).flatMap(([k, tier, bar, log, m1, m2]) => {
     const c = tier === 2 ? 1 : 3;
     return [
@@ -515,6 +628,25 @@ export const TALENTS: TalentDef[] = [
   { id: 'lifesong', name: '생명의 노래', max: 10, cls: 'lifeteller', active: { cooldown: 30, mana: 25 }, desc: (lv) => `체력 ${40 + lv * 3}% 회복 + 넓은 범위의 적에게 ${500 + lv * 50}% 피해` },
   { id: 'chronicle', name: '연대기', max: 10, cls: 'lifeteller', desc: (lv) => `채집 효율(채광·벌목·낚시·곤충) +${lv * 5}%` },
   { id: 'legacy', name: '유산', max: 10, cls: 'lifeteller', desc: (lv) => `드롭률·코인 획득 +${lv * 3}%` },
+  // 3차 전직(Lv.70)
+  { id: 'quake', name: '대지 울림', max: 10, cls: 'bastion', active: { cooldown: 12, mana: 14 }, desc: (lv) => `넓은 범위의 모든 적에게 ${400 + lv * 40}% 피해` },
+  { id: 'aegis', name: '성채의 방패', max: 10, cls: 'bastion', desc: (lv) => `방어력 +${lv * 2}` },
+  { id: 'stalwart', name: '굳센 뿌리', max: 10, cls: 'bastion', desc: (lv) => `최대 체력 +${lv * 4}%` },
+  { id: 'rampage', name: '폭주 난타', max: 10, cls: 'warlord', active: { cooldown: 10, mana: 12 }, desc: (lv) => `주변의 모든 적에게 ${500 + lv * 50}% 피해` },
+  { id: 'warcry', name: '함성', max: 10, cls: 'warlord', desc: (lv) => `공격력 +${lv * 4}%` },
+  { id: 'carnage', name: '난도질', max: 10, cls: 'warlord', desc: (lv) => `치명타 피해 +${lv * 5}%` },
+  { id: 'pierce', name: '관통 화살', max: 10, cls: 'hawkeye', active: { cooldown: 9, mana: 10 }, desc: (lv) => `가까운 적 최대 6마리에게 ${300 + lv * 30}% 피해` },
+  { id: 'eagle', name: '독수리 눈', max: 10, cls: 'hawkeye', desc: (lv) => `치명타 확률 +${(lv * 1.2).toFixed(1)}%p` },
+  { id: 'focus', name: '집중', max: 10, cls: 'hawkeye', desc: (lv) => `명중 +${lv * 3}` },
+  { id: 'arrowrain', name: '화살비', max: 10, cls: 'pathfinder', active: { cooldown: 12, mana: 12 }, desc: (lv) => `사거리 안 모든 적에게 ${250 + lv * 25}% 피해` },
+  { id: 'scout', name: '정찰', max: 10, cls: 'pathfinder', desc: (lv) => `드롭률 +${lv * 3}%` },
+  { id: 'harvest', name: '수확의 손', max: 10, cls: 'pathfinder', desc: (lv) => `채집 효율(채광·벌목·낚시·곤충) +${lv * 4}%` },
+  { id: 'meteor', name: '운석', max: 10, cls: 'archmage', active: { cooldown: 14, mana: 18 }, desc: (lv) => `대상 주변 넓은 범위에 ${450 + lv * 45}% 피해` },
+  { id: 'arcana', name: '비전', max: 10, cls: 'archmage', desc: (lv) => `공격력 +${lv * 4}%` },
+  { id: 'manawell', name: '마나 샘', max: 10, cls: 'archmage', desc: (lv) => `최대 마나 +${lv * 6}%, 마나 회복 +${lv * 6}%` },
+  { id: 'starfall', name: '별똥비', max: 10, cls: 'oracle', active: { cooldown: 12, mana: 14 }, desc: (lv) => `대상 주변의 모든 적에게 ${350 + lv * 35}% 피해` },
+  { id: 'prophecy', name: '예언', max: 10, cls: 'oracle', desc: (lv) => `경험치 +${lv * 3}%` },
+  { id: 'dreamwalk', name: '꿈길', max: 10, cls: 'oracle', desc: (lv) => `방치 효율 +${(lv * 0.8).toFixed(1)}%p` },
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
@@ -527,12 +659,20 @@ export const TELEPORTS_MAX = 50;
 export const WORLD1 = ['town', 'meadow', 'hills', 'mine1', 'mine2', 'forest', 'swamp', 'cave', 'ridge', 'ruins', 'grove'];
 export const WORLD2 = ['oasis', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire'];
 /** 월드마다 순간이동 지도에 오르는 맵(보스방·콜로세움 제외)과 시작 마을 */
-export const WORLDS = [{ n: 1, name: '1월드 · 이끼 들판', town: 'town', maps: WORLD1 }, { n: 2, name: '2월드 · 노을 사막', town: 'oasis', maps: WORLD2 }];
+export const WORLD3 = ['snowtown', 'snowfield', 'pinewood', 'frostlake', 'icecave', 'glacier', 'aurora', 'frostpeak'];
+/** spawnX: 마을에서 다시 시작하는 자리 */
+export const WORLDS = [
+  { n: 1, name: '1월드 · 이끼 들판', town: 'town', spawnX: 120, maps: WORLD1 },
+  { n: 2, name: '2월드 · 노을 사막', town: 'oasis', spawnX: 300, maps: WORLD2 },
+  { n: 3, name: '3월드 · 서리 고원', town: 'snowtown', spawnX: 300, maps: WORLD3 },
+];
+/** 보스방·콜로세움처럼 순간이동 지도에 오르지 않는 맵이 속한 월드 */
+const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, sandlair: 2, frostlair: 3 };
 export const TOWNS = WORLDS.map((w) => w.town);
 /** 이 맵이 속한 월드(보스방·콜로세움은 이어진 맵을 따라간다) */
 export function worldOf(id: string): number {
   for (const w of WORLDS) if (w.maps.includes(id)) return w.n;
-  return id === 'sandlair' ? 2 : 1;
+  return EXTRA_WORLD[id] ?? 1;
 }
 export const ATTACK_BARS = 2;
 export const smashMult = (lv: number) => 1.8 + lv * 0.2;
@@ -565,6 +705,13 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   fateweaver: { id: 'fateweaver', base: 'wanderer', name: '워커', desc: '세상을 걸으며 운을 모은다. 드롭률 +12%, 방치 효율 +3%p, 치명타 +4%p.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 12, afk: 3, crit: 4 } },
   taler: { id: 'taler', base: 'fateweaver', name: '테일러', desc: '걸어온 길을 이야기로 엮는다. 드롭률 +16%, 방치 효율 +4%p, 치명타 +6%p, 경험치 +6%.', main: 'luk', acc: 'luk', range: 34, weapon: 'sword', perk: { drop: 16, afk: 4, crit: 6, xp: 6 } },
   lifeteller: { id: 'lifeteller', base: 'taler', name: '라이프텔러', desc: '삶 전체를 이야기하는 자. 드롭률 +22%, 방치 효율 +6%p, 치명타 +8%p, 경험치 +10%, 최대 체력 +10%.', main: 'luk', acc: 'luk', range: 38, weapon: 'sword', perk: { drop: 22, afk: 6, crit: 8, xp: 10, hpPct: 10 } },
+  // 3차 전직(Lv.70, 마을 촌장)
+  bastion: { id: 'bastion', base: 'guardian', name: '성채기사', desc: '무너지지 않는 성채. 최대 체력 +30%, 방어력 +8.', main: 'str', acc: 'wis', range: 30, weapon: 'sword', perk: { hpPct: 30, def: 8 } },
+  warlord: { id: 'warlord', base: 'berserker', name: '전쟁군주', desc: '전장을 휩쓴다. 공격력 +20%, 치명타 +8%p.', main: 'str', acc: 'wis', range: 30, weapon: 'sword', perk: { dmg: 20, crit: 8 } },
+  hawkeye: { id: 'hawkeye', base: 'sharpshooter', name: '매사수', desc: '보이는 곳은 모두 사거리. 치명타 +12%p, 공격력 +10%.', main: 'agi', acc: 'str', range: 135, weapon: 'bow', perk: { crit: 12, dmg: 10 } },
+  pathfinder: { id: 'pathfinder', base: 'ranger', name: '개척자', desc: '아무도 모르는 길을 낸다. 드롭률 +18%, 이동 속도 +12.', main: 'agi', acc: 'str', range: 120, weapon: 'bow', perk: { drop: 18, speed: 12 } },
+  archmage: { id: 'archmage', base: 'elementalist', name: '대마법사', desc: '원소를 넘어선 힘. 공격력 +22%.', main: 'wis', acc: 'agi', range: 105, weapon: 'wand', perk: { dmg: 22 } },
+  oracle: { id: 'oracle', base: 'hexer', name: '예언자', desc: '앞날을 내다보고 기다린다. 경험치 +16%, 방치 효율 +5%p.', main: 'wis', acc: 'agi', range: 100, weapon: 'wand', perk: { xp: 16, afk: 5 } },
   hexer: { id: 'hexer', base: 'mage', name: '주술사', desc: '느긋하게 쌓는다. 경험치 +10%, 방치 효율 +3%p.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', perk: { xp: 10, afk: 3 } },
 };
 export const CLASS_LEVEL = 10;
@@ -630,6 +777,18 @@ export const CARDS: CardDef[] = [
   { id: 'antbush', from: 'node', bonus: 'catching', per: 0.06, label: '곤충 채집 효율' },
   { id: 'glowbush', from: 'node', bonus: 'catching', per: 0.08, label: '곤충 채집 효율' },
   { id: 'goldbush', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
+  { id: 'snowpuff', from: 'monster', bonus: 'hp', per: 0.07, label: '최대 체력' },
+  { id: 'pinekin', from: 'monster', bonus: 'dmg', per: 0.07, label: '공격력' },
+  { id: 'penglet', from: 'monster', bonus: 'drop', per: 0.07, label: '드롭률' },
+  { id: 'icicle', from: 'monster', bonus: 'dmg', per: 0.08, label: '공격력' },
+  { id: 'yetiling', from: 'monster', bonus: 'hp', per: 0.08, label: '최대 체력' },
+  { id: 'aurowisp', from: 'monster', bonus: 'afk', per: 0.04, label: '방치 효율' },
+  { id: 'frostgolem', from: 'monster', bonus: 'drop', per: 0.08, label: '드롭률' },
+  { id: 'frostlord', from: 'monster', bonus: 'afk', per: 0.05, label: '방치 효율' },
+  { id: 'pine', from: 'node', bonus: 'chopping', per: 0.1, label: '벌목 효율' },
+  { id: 'frostrock', from: 'node', bonus: 'mining', per: 0.12, label: '채광 효율' },
+  { id: 'icehole', from: 'node', bonus: 'fishing', per: 0.1, label: '낚시 효율' },
+  { id: 'frostbush', from: 'node', bonus: 'catching', per: 0.1, label: '곤충 채집 효율' },
 ];
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
@@ -670,17 +829,30 @@ const CARAVAN_QUESTS: QuestDef[] = [
   { name: '해탑의 불씨', text: '해탑 꼭대기에 거상이 산다더군. 불씨를 모으다 보면 열쇠를 얻을지도 몰라.', goal: { item: 'sun_ember', n: 20 }, reward: { item: 'sun_key', xp: 30000 } },
 ];
 
+const SLEDDER_QUESTS: QuestDef[] = [
+  { name: '눈길 치우기', text: '사막에서 왔다고? 얼어 죽기 전에 일이나 하자고! 벌판의 눈뭉치들이 썰매 길을 막았어.', goal: { kill: 'snowpuff', n: 50 }, reward: { coins: 15000, xp: 40000 } },
+  { name: '불쏘시개', text: '전나무 통나무를 넉넉히 가져다주면 마을 난로에 불을 지필 수 있겠어.', goal: { item: 'pinelog', n: 40 }, reward: { item: 'hot_cocoa', xp: 60000 } },
+  { name: '호수의 소동', text: '얼어붙은 호수에서 꼬마펭귄들이 낚시꾼 물고기를 훔쳐 가.', goal: { kill: 'penglet', n: 100 }, reward: { coins: 40000, xp: 120000 } },
+  { name: '차가운 쇳덩이', text: '서리 광석을 녹인 주괴는 녹슬지 않아. 썰매 날로 딱이지.', goal: { item: 'bar_frost', n: 15 }, reward: { item: 'chest_small', xp: 200000 } },
+  { name: '봉우리의 군주', text: '서리 봉우리에 눈보라를 부르는 군주가 있대. 골렘의 핵을 모으면 옥좌 열쇠가 나온다던데.', goal: { item: 'frost_core', n: 30 }, reward: { item: 'frost_key', xp: 400000 } },
+];
+
 export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
 export const NPCS: Record<string, NpcDef> = {
   elder: { id: 'elder', name: '촌장 바루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
   smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#d9c3ad', outfit: '#d9574a' }, quests: SMITH_QUESTS },
   stranger: { id: 'stranger', name: '수상한 나그네', look: { hair: 1, hairColor: '#5a4a6a', skin: '#d8c8b8', outfit: '#3a5a4a' }, quests: [] },
+  sledder: { id: 'sledder', name: '썰매꾼 노라', look: { hair: 0, hairColor: '#e8b24a', skin: '#f6e6d6', outfit: '#4e8de2' }, quests: SLEDDER_QUESTS },
+  // 3월드에도 전직을 맡는 촌장이 있다(3·4차 전직)
+  elder3: { id: 'elder3', name: '설원 장로 하윤', look: { hair: 2, hairColor: '#e9eef6', skin: '#e9eef6', outfit: '#6a9ae8' }, quests: [] },
   caravan: { id: 'caravan', name: '대상 카림', look: { hair: 2, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
 };
 /** 히든 직업 조건: 초보자로 이 레벨 이상, 이 아이템 1개, 숨은 NPC가 있는 맵에서 */
 export const HIDDEN_CLASS = { cls: 'wanderer' as ClassId, npc: 'stranger', map: 'hills', level: 15, item: 'four_leaf' };
 /** 전직을 맡는 NPC */
 export const CLASS_NPC = 'elder';
+/** 전직을 맡는 NPC들(월드마다 한 명) */
+export const CLASS_NPCS = ['elder', 'elder3'];
 export const NPC_NAME = NPCS.elder.name;
 export const NPC_LOOK = NPCS.elder.look;
 /** 카드 장착 칸 수(캐릭터마다) */
@@ -720,7 +892,14 @@ export const MAX_CHARACTERS = 6;
 /** 음식 칸 수: 위 칸부터 먹는다 */
 export const FOOD_SLOTS = 3;
 /** 2월드로 가는 세계의 문(달빛 숲 끝): 계정이 이끼왕을 토벌하고, 이 캐릭터가 레벨·달빛 숲 처치를 채워야 한다 */
-export const WORLD_GATE = { boss: 'mossking', bossKills: 1, level: 30, map: 'grove', kills: 400 };
+export interface GateDef { to: number; boss: string; bossKills: number; level: number; map: string; kills: number; text: string }
+export const WORLD_GATES: GateDef[] = [
+  { to: 2, boss: 'mossking', bossKills: 1, level: 30, map: 'grove', kills: 400, text: '달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.' },
+  { to: 3, boss: 'sandlord', bossKills: 1, level: 60, map: 'sunspire', kills: 600, text: '해탑 유적 끝, 모래에 반쯤 묻힌 문 너머로 차가운 눈바람이 새어 나온다.' },
+];
+export const WORLD_GATE = WORLD_GATES[0];
+/** n월드로 가는 문 */
+export const gateTo = (n: number) => WORLD_GATES.find((g) => g.to === n) ?? WORLD_GATE;
 
 // ───────── 별빛 특성(캐릭터마다, 직업과 상관없는 공용 특성 탭) ─────────
 // 포인트: 레벨 2마다 1 + 받은 업적마다 1. 쓴 만큼 빠진다(따로 저장하지 않고 계산)
@@ -782,6 +961,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stone_mine', price: 500, daily: 1 },
   { item: 'stone_chop', price: 500, daily: 1 },
   { item: 'stone_guard', price: 900, daily: 1 },
+  { item: 'hot_cocoa', price: 360, daily: 30 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
@@ -973,6 +1153,7 @@ export const SMELTS: SmeltDef[] = [
   { ore: 'ore_blue', bar: 'bar_blue', need: 4, secs: 90 },
   { ore: 'ore_gold', bar: 'bar_gold', need: 5, secs: 180 },
   { ore: 'ore_amber', bar: 'bar_amber', need: 6, secs: 300 },
+  { ore: 'ore_frost', bar: 'bar_frost', need: 7, secs: 480 },
 ];
 /** 용광로 값: 사는 값, 칸·용량 기본값, 업그레이드(코인, 단계마다 upGrow 배) */
 export const FORGE = {
@@ -981,7 +1162,7 @@ export const FORGE = {
   upMax: { slots: 4, cap: 20, speed: 20, bonus: 10 },
 };
 
-const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'palmlog', 'ore', 'ore_blue', 'ore_gold', 'ore_amber', 'bar_red', 'bar_blue', 'bar_gold', 'bar_amber'];
+const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'palmlog', 'ore', 'ore_blue', 'ore_gold', 'ore_amber', 'bar_red', 'bar_blue', 'bar_gold', 'bar_amber', 'pinelog', 'ore_frost', 'bar_frost'];
 /** 아이템이 속한 묶음 */
 export function stackGroup(id: string): StackGroup {
   const it = ITEMS[id];

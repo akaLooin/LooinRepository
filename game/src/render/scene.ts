@@ -8,7 +8,7 @@ import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portr
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
 import { GEAR, gearKey, gearPos, remoteGear } from './gear';
 import { Character, currentQuest, lookOf, portalLock, questProgress } from '../core/state';
-import { canSubclass, CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
+import { canSubclass, CLASS_LEVEL, CLASS_NPCS, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
 const FONT = 'Galmuri11';
@@ -245,7 +245,8 @@ function ensureTextures(scene: Phaser.Scene) {
   texturesReady = true;
 }
 
-const NO_FLOWERS = new Set(['cave', 'mine', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire']);
+const SNOWY: string[] = ['snowtown', 'snowfield', 'pinewood', 'frostlake', 'icecave', 'glacier', 'aurora', 'frostpeak'];
+const NO_FLOWERS = new Set(['cave', 'mine', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire', ...SNOWY]);
 export class GameScene extends Phaser.Scene {
   private world: World | null = null;
   private rig: CharRig | null = null;
@@ -259,6 +260,8 @@ export class GameScene extends Phaser.Scene {
   private statics: Phaser.GameObjects.GameObject[] = [];
   private hills: { ts: Phaser.GameObjects.TileSprite; f: number }[] = [];
   private clouds: { img: Img; x: number; y: number; sp: number }[] = [];
+  /** 3월드: 내리는 눈송이(화면 기준으로 감싸 돈다) */
+  private snow: { img: Img; x: number; y: number; sp: number; ph: number }[] = [];
   private swayers: { img: Img; ph: number }[] = [];
   private portals: { ring: Img; glow: Img; lock: Img; text: Phaser.GameObjects.Text; idx: number }[] = [];
   private flames: Img[] = [];
@@ -325,7 +328,7 @@ export class GameScene extends Phaser.Scene {
     for (const d of this.shotViews.values()) d.destroy();
     this.shotViews.clear();
     this.statics = []; this.mobs = []; this.nodeViews = []; this.dropViews.clear();
-    this.hills = []; this.clouds = []; this.swayers = []; this.portals = []; this.flames = []; this.npcs = [];
+    this.hills = []; this.clouds = []; this.snow = []; this.swayers = []; this.portals = []; this.flames = []; this.npcs = [];
     const sky = document.getElementById('sky')!;
     if (!w) { sky.style.background = 'linear-gradient(#3b3355, #6a5a8a)'; return; }
 
@@ -341,8 +344,16 @@ export class GameScene extends Phaser.Scene {
     }
     keep(this.add.rectangle(-600, -6, map.width + 1200, 12, Phaser.Display.Color.HexStringToColor(th.mid).color).setOrigin(0, 0).setDepth(3));
     for (let i = 0; i < 6; i++) {
-      const img = keep(this.add.image(0, 0, 'cloud').setDepth(2).setAlpha(map.theme === 'cave' || map.theme === 'mine' ? 0 : map.theme === 'forest' || map.theme === 'grove' ? 0.25 : 0.8).setScale(0.7 + hash(i + 3) * 0.8));
+      const img = keep(this.add.image(0, 0, 'cloud').setDepth(2).setAlpha(map.theme === 'cave' || map.theme === 'mine' || map.theme === 'icecave' ? 0 : map.theme === 'forest' || map.theme === 'grove' || map.theme === 'aurora' ? 0.25 : 0.8).setScale(0.7 + hash(i + 3) * 0.8));
       this.clouds.push({ img, x: hash(i + 11) * 700, y: -95 - hash(i + 20) * 90, sp: 3 + hash(i + 40) * 5 });
+    }
+    // 오로라 언덕: 하늘에 일렁이는 빛의 띠(먼 배경과 함께 천천히 흐른다)
+    if (map.theme === 'aurora') for (const [y, col, a] of [[-112, 0x7affc8, 0.22], [-92, 0xff9ae0, 0.14], [-132, 0x9ad8ff, 0.16]] as const) {
+      keep(this.add.tileSprite(-600, y, map.width + 1200, 40, 'fx_aurora').setOrigin(0, 0.5).setDepth(0.5).setTint(col).setAlpha(a * 2.2).setTilePosition(y * 3, 0));
+    }
+    if (SNOWY.includes(map.theme)) for (let i = 0; i < 46; i++) {
+      const img = keep(this.add.image(0, 0, 'fx_px').setDepth(90).setAlpha(0.55 + hash(i + 70) * 0.4).setScale(0.5 + hash(i + 90) * 0.7));
+      this.snow.push({ img, x: hash(i + 31) * 1000, y: hash(i + 51) * 1000, sp: 10 + hash(i + 61) * 16, ph: hash(i + 81) * 6 });
     }
     // 지면과 발판
     keep(this.add.tileSprite(-600, 0, map.width + 1200, 48, `tile_${map.theme}`).setOrigin(0, 0).setDepth(10).setTileScale(ART));
@@ -375,6 +386,7 @@ export class GameScene extends Phaser.Scene {
       const flower = hash(seed + i * 5) > 0.72 && !NO_FLOWERS.has(map.theme);
       const key = flower ? `deco_flower${Math.floor(hash(seed + i) * 3)}` : 'deco_grass';
       const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70).setScale(ART));
+      if (SNOWY.includes(map.theme)) img.setTintFill(0xe4f0fa); // 눈 덮인 풀
       this.swayers.push({ img, ph: hash(i) * 6 });
     }
     // 모닥불
@@ -456,7 +468,24 @@ export class GameScene extends Phaser.Scene {
       const t = label(this, `${e.name} 처치!`, 14, '#ffe98a').setPosition(p.x, p.y - 50).setDepth(95);
       this.tweens.add({ targets: t, y: p.y - 76, alpha: 0, delay: 1400, duration: 900, onComplete: () => t.destroy() });
     } else if (e.t === 'cast') {
-      if (e.id === 'nova') {
+      if (e.id === 'meteor' || e.id === 'starfall') {
+        // 하늘에서 떨어지는 불덩이·별 + 넓은 고리
+        const col = e.id === 'meteor' ? 0xff8a3a : 0xfff0a8;
+        const rock = this.add.circle(e.x - 30, e.y - 110, 7, col).setStrokeStyle(2, 0xffffff).setDepth(86);
+        this.tweens.add({ targets: rock, x: e.x, y: e.y - 8, duration: 220, ease: 'Quad.easeIn', onComplete: () => {
+          rock.destroy();
+          const ring = this.add.circle(e.x, e.y - 8, 8, col, 0.45).setStrokeStyle(2, 0xffffff).setDepth(86);
+          this.tweens.add({ targets: ring, scale: 10, alpha: 0, duration: 420, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+          this.puff(e.x, e.y - 8, col, 14);
+        } });
+      } else if (e.id === 'quake' || e.id === 'rampage') {
+        const ring = this.add.ellipse(e.x, e.y - 3, 10, 4).setStrokeStyle(3, e.id === 'quake' ? 0xc8a46a : 0xff6a4a).setDepth(86);
+        this.tweens.add({ targets: ring, width: (e.id === 'quake' ? 90 : 60) * 2, height: 18, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onUpdate: () => ring.setSize(ring.width, ring.height), onComplete: () => ring.destroy() });
+        this.puff(e.x, e.y - 4, e.id === 'quake' ? 0xc8a46a : 0xff6a4a, 14);
+        this.cameras.main.shake(140, 0.004);
+      } else if (e.id === 'pierce' || e.id === 'arrowrain') {
+        this.puff(e.x, e.y - 16, 0xffffff, 6);
+      } else if (e.id === 'nova') {
         const ring = this.add.circle(e.x, e.y - 10, 6, 0xa5d8ff, 0.5).setStrokeStyle(2, 0xffffff).setDepth(86);
         this.tweens.add({ targets: ring, scale: 9, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
         this.puff(e.x, e.y - 10, 0xa5d8ff, 12);
@@ -523,7 +552,7 @@ export class GameScene extends Phaser.Scene {
     // NPC 머리 위: 새 퀘스트 ! / 완료 가능 ? (전직 가능하면 촌장에게 ★)
     for (const n of this.npcs) {
       const c = w.char, q = currentQuest(c, n.id), qp = questProgress(c, n.id);
-      const promo = n.id === CLASS_NPC && ((c.cls === 'beginner' && c.level >= CLASS_LEVEL) || canSubclass(c));
+      const promo = CLASS_NPCS.includes(n.id) && ((c.cls === 'beginner' && c.level >= CLASS_LEVEL) || canSubclass(c));
       const m = promo ? '★' : !q ? '' : !c.quests[n.id]?.accepted ? '!' : qp?.done ? '?' : '';
       if (n.mark.text !== m) n.mark.setText(m);
       n.mark.setPosition(n.x, n.y - 45 + Math.sin(this.time0 * 4) * 1.5);
@@ -559,6 +588,11 @@ export class GameScene extends Phaser.Scene {
       const span = halfW * 2 + 120;
       const x = (((c.x + this.time0 * c.sp - left * 0.08) % span) + span) % span;
       c.img.setPosition(left - 60 + x, c.y);
+    }
+    const spanX = halfW * 2 + 20, spanY = halfH * 2 + 20, top = this.camY - halfH - 10;
+    for (const f of this.snow) {
+      const x = (((f.x + Math.sin(this.time0 * 0.8 + f.ph) * 6 + this.time0 * 4) % spanX) + spanX) % spanX, y = (f.y + this.time0 * f.sp) % spanY;
+      f.img.setPosition(left - 10 + x, top + y);
     }
   }
 

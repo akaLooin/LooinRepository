@@ -7,10 +7,10 @@ import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, 
 /** 연금술 효과 이름 */
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중' };
 import {
-  ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
+  ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, WORLD2, WORLDS, TOWNS, worldOf, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, WORLD2, WORLD3, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -136,6 +136,8 @@ export class UI {
   private refBack = false;
   /** 지도 창에서 보고 있는 월드(없으면 지금 있는 월드) */
   private mapWorld: number | null = null;
+  /** 조건 창에 띄울 세계의 문(가는 월드) */
+  private gateWorld = 2;
   private petSel: string | null = null;
   /** 지도에서 고른 맵(한 번 더 누르면 이동) */
   private mapSel: string | null = null;
@@ -263,7 +265,7 @@ export class UI {
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
     else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
-    else if (e.t === 'gate') { this.open('gate'); this.refresh(true); }
+    else if (e.t === 'gate') { this.gateWorld = e.to; this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
     else if (e.t === 'faint') this.toast(this.game.world?.arena ? '쓰러졌습니다! 콜로세움이 끝났습니다' : '쓰러졌습니다... 잠시 후 부활합니다');
     else if (e.t === 'miniboss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -323,8 +325,10 @@ export class UI {
     }
     const mbs = MINIBOSSES.filter((m) => minibossOpen(g.acc, m.id, Date.now()) && mapUnlocked(c, m.map));
     if (mbs.length && !w.arena) lines.push(`<span class="ui-accent">⚔ ${mbs.map((m) => `${MONSTERS[m.id].name}(${MAPS[m.map].name})`).join(', ')} 출현 중</span>`);
-    if (canSubclass(c)) lines.push(`<span class="ui-accent">★ ${classTier(c.cls) + 1}차 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
-    if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
+    // 3월드에서는 눈꽃 마을의 장로에게서도 전직한다
+    const promoNpc = NPCS[worldOf(c.mapId) === 3 ? 'elder3' : CLASS_NPC].name;
+    if (canSubclass(c)) lines.push(`<span class="ui-accent">★ ${classTier(c.cls) + 1}차 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
+    if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
     for (const n of Object.values(NPCS)) {
       const q = currentQuest(c, n.id), qp = questProgress(c, n.id);
       if (q && qp && c.quests[n.id]?.accepted) lines.push(`<span class="${qp.done ? 'ui-good' : ''}">${q.name} ${qp.done ? `— 완료! ${n.name}에게` : `${qp.have}/${qp.need}`}</span>`);
@@ -556,9 +560,11 @@ export class UI {
         const tickets = countItem(c, TP_TICKET) + storageCount(g.acc, TP_TICKET);
         // 월드 탭: 열어 둔 월드만 고를 수 있다
         const mw = c.maxWorld ?? 1, wn = Math.min(this.mapWorld ?? worldOf(c.mapId), mw);
-        const ids = wn === 2 ? [...WORLD2, 'sandlair', 'gate1'] : [...WORLD1, 'arena', 'lair', 'gate'];
+        const ids = wn === 3 ? [...WORLD3, 'frostlair', 'gate2'] : wn === 2 ? [...WORLD2, 'sandlair', 'gate1', 'gate3'] : [...WORLD1, 'arena', 'lair', 'gate'];
         const regions: MapRegion[] = ids.map((id) => {
-          if (id === 'gate1') return { id, name: '세계의 문', state: 'mark', sel: false, sub: '1월드로' } as MapRegion;
+          if (id === 'gate1' || id === 'gate2') return { id, name: '세계의 문', state: 'mark', sel: false, sub: `${id.slice(4)}월드로` } as MapRegion;
+          if (id === 'gate3') { const ok = gateOpen(g.acc, c, 3); return { id, name: '세계의 문', state: mapUnlocked(c, 'sunspire') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 3월드로' : '조건 확인' } as MapRegion; }
+          if (id === 'frostlair') { const here = c.mapId === id; return { id, name: MAPS.frostlair.name, state: here ? 'here' : mapUnlocked(c, 'frostpeak') ? 'mark' : 'locked', sel: false, sub: here ? '현재 위치' : g.acc.bosses.frostlord ? `토벌 ${g.acc.bosses.frostlord}회` : '봉우리 위 · 열쇠' } as MapRegion; }
           if (id === 'sandlair') { const here = c.mapId === id; return { id, name: MAPS.sandlair.name, state: here ? 'here' : mapUnlocked(c, 'sunspire') ? 'mark' : 'locked', sel: false, sub: here ? '현재 위치' : g.acc.bosses.sandlord ? `토벌 ${g.acc.bosses.sandlord}회` : '해탑 위 · 열쇠' } as MapRegion; }
           if (id === 'gate') { const ok = gateOpen(g.acc, c); return { id, name: '세계의 문', state: mapUnlocked(c, 'grove') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 2월드로' : '조건 확인' } as MapRegion; }
           const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id), q = mapQuota(id), k = c.kills[id] ?? 0;
@@ -580,13 +586,13 @@ export class UI {
 
       case 'gate': {
         // 세계의 문: 조건을 다 채우면 2월드로 갈 수 있다(2월드는 아직 짓는 중)
-        const checks = gateChecks(g.acc, c), open = checks.every((x) => x.ok);
+        const gw = gateTo(this.gateWorld), checks = gateChecks(g.acc, c, gw.to), open = checks.every((x) => x.ok), town = MAPS[WORLDS.find((x) => x.n === gw.to)!.town].name;
         const rows = checks.map((x) => `<div class="ui-row line"><span class="gchk ${x.ok ? 'ok' : ''}">${x.ok ? '✓' : ''}</span><span class="ui-grow">${x.label}</span>
           <span class="ui-sm ${x.ok ? 'ui-good' : 'ui-bad'}">${Math.min(x.have, x.need).toLocaleString()} / ${x.need.toLocaleString()}</span></div>
           ${bar(x.ok ? 'xp' : 'hp', Math.min(x.have, x.need), x.need, '')}`).join('');
         return win('세계의 문', `<div class="gatebox"><div class="gateart" aria-hidden="true"></div><div class="ui-grow">
-          <p class="ui-sm" style="margin-top:0">달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.</p>${rows}
-          <p class="ui-sm ${open ? 'ui-good' : 'ui-muted'}">${open ? '문이 열렸습니다! 문으로 들어가면 2월드 오아시스 마을로 건너갑니다. 한 번 건너가면 지도에서 2월드로 순간이동할 수 있습니다.' : '모든 조건을 채우면 이 캐릭터가 문을 지날 수 있습니다. 이끼왕 토벌은 계정 공용입니다.'}</p></div></div>`);
+          <p class="ui-sm" style="margin-top:0">${gw.text}</p>${rows}
+          <p class="ui-sm ${open ? 'ui-good' : 'ui-muted'}">${open ? `문이 열렸습니다! 문으로 들어가면 ${gw.to}월드 ${town}로 건너갑니다. 한 번 건너가면 지도에서 ${gw.to}월드로 순간이동할 수 있습니다.` : `모든 조건을 채우면 이 캐릭터가 문을 지날 수 있습니다. ${MONSTERS[gw.boss].name} 토벌은 계정 공용입니다.`}</p></div></div>`);
       }
 
       case 'chat':
@@ -615,18 +621,18 @@ export class UI {
         const speaker = (body: string) => `<div class="ui-dialog" role="dialog" aria-label="${npc.name}"><div class="speaker"><div class="face"><img class="px" src="${portraitUrl(npc.look)}" alt=""></div>${npc.name}</div>
           <div class="ui-grow stack">${body}</div><button class="ui-btn sm close" data-act="close" aria-label="닫기">✕</button></div>`;
         const subs = c.cls === 'beginner' ? [] : nextClasses(c.cls);
-        if (npc.id === CLASS_NPC && subs.length && canSubclass(c)) {
+        if (CLASS_NPCS.includes(npc.id) && subs.length && canSubclass(c)) {
           return speaker(`<p>“${CLASSES[c.cls].name}의 길을 꽤 걸었구먼. 이제 ${classTier(c.cls) + 1}차의 길로 나아갈 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
             ${subs.map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
         }
-        if (npc.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
+        if (CLASS_NPCS.includes(npc.id) && c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
           return speaker(`<p>“많이 강해졌구먼! 이제 자네의 길을 정할 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
             ${(['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
         }
         // 수상한 나그네: 히든 직업. 조건을 대놓고 알려 주지 않고 수수께끼로만
         if (npc.id === HIDDEN_CLASS.npc) {
           const h = HIDDEN_CLASS, ready = c.cls === 'beginner' && c.level >= h.level && countItem(c, h.item) > 0;
-          if (c.cls === h.cls || CLASSES[c.cls]?.base === h.cls) return speaker('<p>“길 위에서 또 만나는군. 바람이 부는 쪽으로 걷게, 동료여.”</p>');
+          if (classLine(c.cls).includes(h.cls)) return speaker('<p>“길 위에서 또 만나는군. 바람이 부는 쪽으로 걷게, 동료여.”</p>');
           if (c.cls !== 'beginner') return speaker('<p>“이미 길을 정했군… 아쉽네. 정해진 길만 있는 건 아니었는데.”</p>');
           if (!ready) return speaker(`<p>“흠… 아무 길에도 서지 않은 자로구먼.”</p><p class="ui-sm ui-muted">“${c.level < h.level ? '조금 더 오래, 아무 길에도 서지 말고 걸어 보게.' : '풀밭에서 아주 드물게 잎이 넷 달린 것을 찾으면… 그때 다시 오게.'}”</p>`);
           const w = CLASSES[h.cls];

@@ -7,7 +7,7 @@ import { Alch, newAlch } from './alchemy';
 import { PostState, newPost } from './post';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  TIER_LEVEL, classTier, HIDDEN_CLASS, WORLDS, TOWNS, worldOf, WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TIER_LEVEL, classTier, HIDDEN_CLASS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -208,22 +208,22 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const pb = progressBonus(c, a);
   // 2차 직업 고유 보정과 2차 직업 특성(모두 패시브)
   const pk = CLASSES[c.cls]?.perk ?? {}, t2 = (id: string) => c.talents[id] ?? 0;
-  pb.hpPct += (pk.hpPct ?? 0) + t2('bulwark') * 3;
-  pb.def += (pk.def ?? 0) + t2('vigil');
-  pb.dmg += (pk.dmg ?? 0) + t2('frenzy') * 3 + t2('attune') * 3;
-  pb.acc += t2('steady') * 2;
-  pb.drop += (pk.drop ?? 0) + t2('forager') * 2;
-  pb.afk += (pk.afk ?? 0) + t2('patience') * 0.5;
-  pb.xp += (pk.xp ?? 0) + t2('omen') * 2;
+  pb.hpPct += (pk.hpPct ?? 0) + t2('bulwark') * 3 + t2('stalwart') * 4;
+  pb.def += (pk.def ?? 0) + t2('vigil') + t2('aegis') * 2;
+  pb.dmg += (pk.dmg ?? 0) + t2('frenzy') * 3 + t2('attune') * 3 + t2('warcry') * 4 + t2('arcana') * 4;
+  pb.acc += t2('steady') * 2 + t2('focus') * 3;
+  pb.drop += (pk.drop ?? 0) + t2('forager') * 2 + t2('scout') * 3;
+  pb.afk += (pk.afk ?? 0) + t2('patience') * 0.5 + t2('dreamwalk') * 0.8;
+  pb.xp += (pk.xp ?? 0) + t2('omen') * 2 + t2('prophecy') * 3;
   pb.mining += t2('trailblazer') * 4; pb.chopping += t2('trailblazer') * 4;
   // 히든 계열 패시브
   pb.drop += t2('treasure') * 3 + t2('legacy') * 3; pb.afk += t2('roam') + t2('plot'); pb.coins += t2('jackpot') * 4 + t2('legacy') * 3; pb.xp += t2('narrate') * 3;
-  for (const k of ['mining', 'chopping', 'fishing', 'catching'] as const) pb[k] += t2('gatherluck') * 4 + t2('chronicle') * 5;
+  for (const k of ['mining', 'chopping', 'fishing', 'catching'] as const) pb[k] += t2('gatherluck') * 4 + t2('chronicle') * 5 + t2('harvest') * 4;
   // 별빛 특성
   const sl = (id: string) => c.starTal?.[id] ?? 0;
   pb.mining += sl('sl_mine') * 4; pb.chopping += sl('sl_chop') * 4; pb.coins += sl('sl_coins') * 2; pb.xp += sl('sl_xp') * 1.5;
   pb.afk += sl('sl_afk'); pb.drop += sl('sl_drop') * 2;
-  const critAdd = ((pk.crit ?? 0) + t2('bloodlust') + sl('sl_crit') * 0.5) / 100, mpMult = 1 + t2('overflow') * 0.05;
+  const critAdd = ((pk.crit ?? 0) + t2('bloodlust') + t2('eagle') * 1.2 + sl('sl_crit') * 0.5) / 100, mpMult = 1 + t2('overflow') * 0.05 + t2('manawell') * 0.06;
   const str = c.stats.str + e.str + pb.str, agi = c.stats.agi + e.agi + pb.agi;
   const wis = c.stats.wis + e.wis + pb.wis, luk = c.stats.luk + e.luk + pb.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
@@ -249,7 +249,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     atkInterval: Math.max(0.3, 0.72 * (1 - tl('swift') * 0.02)),
     speed: (80 + Math.min(40, agi * 0.6) + (pk.speed ?? 0)) * (1 + sl('sl_speed') * 0.015),
     // 치명타 확률은 민첩, 치명타 피해는 힘
-    crit: Math.min(0.75, 0.04 + agi * 0.004 + sb.crit / 100 + critAdd), critMult: 1.5 + str * 0.004 + t2('deadeye') * 0.04,
+    crit: Math.min(0.75, 0.04 + agi * 0.004 + sb.crit / 100 + critAdd), critMult: 1.5 + str * 0.004 + t2('deadeye') * 0.04 + t2('carnage') * 0.05,
     bossMult: 1 + wis * 0.004,
     xpMult: (1 + luk * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
     coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins') + pb.coins / 100,
@@ -763,7 +763,7 @@ export function mapUnlocked(c: Character, id: string): boolean {
   return seen.has(id);
 }
 /** 맵이 속한 월드의 마을과 부활 자리 */
-export const townOf = (mapId: string) => (worldOf(mapId) === 2 ? { id: 'oasis', x: 300 } : { id: 'town', x: 120 });
+export const townOf = (mapId: string) => { const w = WORLDS.find((x) => x.n === worldOf(mapId)) ?? WORLDS[0]; return { id: w.town, x: w.spawnX }; };
 // ───────── 미니보스·콜로세움 ─────────
 export const MINIBOSS_IDS = new Set(MINIBOSSES.map((m) => m.id));
 /** 미니보스 회차 키: 시간마다 / 날마다 */
@@ -943,12 +943,12 @@ export const foodWait = (c: Character, id: string) => foodCd(id) * (1 - (c.starT
 
 // ───────── 세계의 문(2월드) ─────────
 export interface GateCheck { label: string; have: number; need: number; ok: boolean }
-export function gateChecks(acc: Pick<Account, 'bosses'>, c: Character): GateCheck[] {
-  const g = WORLD_GATE, boss = acc.bosses[g.boss] ?? 0, kills = c.kills[g.map] ?? 0;
+export function gateChecks(acc: Pick<Account, 'bosses'>, c: Character, to = 2): GateCheck[] {
+  const g = gateTo(to), boss = acc.bosses[g.boss] ?? 0, kills = c.kills[g.map] ?? 0;
   return [
     { label: `${MONSTERS[g.boss].name} 토벌(계정)`, have: boss, need: g.bossKills, ok: boss >= g.bossKills },
     { label: '캐릭터 레벨', have: c.level, need: g.level, ok: c.level >= g.level },
     { label: `${MAPS[g.map].name} 처치`, have: kills, need: g.kills, ok: kills >= g.kills },
   ];
 }
-export const gateOpen = (acc: Pick<Account, 'bosses'>, c: Character) => gateChecks(acc, c).every((x) => x.ok);
+export const gateOpen = (acc: Pick<Account, 'bosses'>, c: Character, to = 2) => gateChecks(acc, c, to).every((x) => x.ok);

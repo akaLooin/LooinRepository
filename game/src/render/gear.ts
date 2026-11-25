@@ -105,6 +105,37 @@ export const GEAR: Record<string, GearDef> = {
     'oDDGDDDo',
     'oooooooo',
   ] },
+  helm_frost: { on: 'head', at: [4, -2], pal: { L: '#e0f6ff', M: '#8ad0f0', D: '#3a7ab0', G: '#4a8ae8' }, rows: [
+    '...oooooo...',
+    '..oLMMMMMo..',
+    '.oLMMMMMMDo.',
+    '.oLMMGMMMDo.',
+    'oLMMMMMMMMDo',
+    'oDDDDDDDDDDo',
+    '.oooooooooo.',
+  ] },
+  plate_frost: { on: 'body', at: [6, 10], pal: { L: '#e0f6ff', M: '#8ad0f0', D: '#3a7ab0', G: '#4a8ae8' }, rows: [
+    '..oooo..',
+    '.oLMMMo.',
+    '.oLMMDo.',
+    '.oLGMDo.',
+    '.oDDDDo.',
+    '.oLMMDo.',
+    '.oLMMDo.',
+    '.oDDDDo.',
+    '.oLMMDo.',
+    'oDDGDDDo',
+    'oooooooo',
+  ] },
+  // 얼음 왕관: 다섯 갈래 얼음 가시
+  frost_crown: { on: 'head', at: [4, -3], pal: { L: '#e0faff', M: '#a8e8ff', D: '#4a7ab8', G: '#4a8ae8' }, rows: [
+    '.o.o.oo.o.o.',
+    'oLoLoLLoLoLo',
+    'oLMLMMMMLMMo',
+    'oMMMMGMMMMDo',
+    'oDDDDDDDDDDo',
+    '.oooooooooo.',
+  ] },
   // 통나무 갑옷: 가슴을 덮는 나무판과 허리띠(팔은 그대로 보이게 몸통 폭만)
   armor_log: { on: 'body', at: [6, 10], pal: WOOD, rows: [
     '..oooo..',

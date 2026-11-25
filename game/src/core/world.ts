@@ -47,7 +47,7 @@ export interface NodeInst { uid: number; def: NodeDef; x: number; y: number; pro
 export interface Shot { uid: number; kind: 'arrow' | 'orb'; x: number; y: number; target: Mob; mult: number; angle: number }
 
 export type WorldEvent =
-  | { t: 'gate' }
+  | { t: 'gate'; to: number }
   | { t: 'dmg'; x: number; y: number; amount: number; crit: boolean; onPlayer: boolean; miss?: boolean }
   | { t: 'heal'; x: number; y: number; amount: number; food?: string }
   | { t: 'kill'; uid: number; x: number; y: number }
@@ -328,6 +328,28 @@ export class World {
       } else if (!hit.length) return false;
       pose('attack');
       for (const m of hit) this.damageMob(m, d, id === 'talestorm' ? 4 + lv * 0.4 : 5 + lv * 0.5, m.x >= p.x ? 1 : -1);
+    } else if (id === 'quake' || id === 'rampage') {
+      // 3차 전사: 넓은 충격파 / 주변 난타
+      const hit = live(id === 'quake' ? 90 : CLEAVE_RANGE);
+      if (!hit.length) return false;
+      pose('attack');
+      for (const m of hit) this.damageMob(m, d, id === 'quake' ? 4 + lv * 0.4 : 5 + lv * 0.5, m.x >= p.x ? 1 : -1);
+    } else if (id === 'pierce' || id === 'arrowrain') {
+      // 3차 궁수: 가까운 여섯 / 사거리 안 모두에게 화살
+      const all = live(d.range + 20).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x));
+      const hit = id === 'pierce' ? all.slice(0, 6) : all;
+      if (!hit.length) return false;
+      p.facing = hit[0].x >= p.x ? 1 : -1;
+      pose('shoot');
+      for (const m of hit) this.fire(m, id === 'pierce' ? 3 + lv * 0.3 : 2.5 + lv * 0.25);
+    } else if (id === 'meteor' || id === 'starfall') {
+      // 3차 마법사: 대상 주변 넓은 폭발
+      const tgt = live(d.range + 20).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
+      if (!tgt) return false;
+      p.facing = tgt.x >= p.x ? 1 : -1;
+      pose('cast');
+      fx = tgt.x; fy = tgt.y;
+      for (const m of live(id === 'meteor' ? 80 : NOVA_RADIUS + 10, tgt.x, tgt.y)) this.damageMob(m, d, id === 'meteor' ? 4.5 + lv * 0.45 : 3.5 + lv * 0.35, m.x >= tgt.x ? 1 : -1);
     } else if (id === 'heal') {
       if (c.hp >= d.maxHp) return false;
       const before = c.hp;

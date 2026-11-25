@@ -1,6 +1,6 @@
 // 우체국(2월드, 캐릭터마다): 하루 3건의 배달 주문을 채워 배달 포인트를 모으고, 택배 상자를 올린다.
 // 주문은 계정 씨앗값 + 캐릭터 + 날짜로 정해진다 → 기기와 서버가 같은 주문을 본다.
-import { BonusKey, ITEMS, WORLD1, WORLD2, MAPS, MONSTERS, NODES } from './data';
+import { BonusKey, ITEMS, WORLDS, MAPS, MONSTERS, NODES } from './data';
 import { hash } from './companions';
 import type { Account, Character } from './state';
 import { haveMat, mapUnlocked, spendMat, today } from './state';
@@ -29,7 +29,7 @@ export const boxCost = (lv: number) => 1 + Math.floor(lv / 5);
 /** 이 캐릭터가 모을 수 있는 재료: 열어 둔 맵의 몬스터 재료(첫 드롭)와 자원 */
 export function orderPool(c: Character): string[] {
   const out = new Set<string>();
-  for (const id of [...WORLD1, ...WORLD2]) {
+  for (const id of WORLDS.flatMap((w) => w.maps)) {
     if (!mapUnlocked(c, id)) continue;
     const m = MAPS[id];
     for (const s of m.spawns) { const it = MONSTERS[s.monster]?.drops[0]?.item; if (it && ITEMS[it]?.kind === 'material') out.add(it); }
