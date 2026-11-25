@@ -1,18 +1,18 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 41 files · ~26,609 words
+- 42 files · ~26,876 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 54 file(s) not represented in the graph (top: .gd 21, .uid 21, (none) 4)
-- WARNING: 54 of 99 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- WARNING: 54 of 100 files seen (54%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 310 nodes · 413 edges · 32 communities (25 shown, 7 thin omitted)
+- 314 nodes · 416 edges · 32 communities (26 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `81c1a34e`
+- Built from commit: `f38730d9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,7 +32,7 @@
 - replica-deploy
 - replica-entrepreneur
 - replica-test
-- listing.py
+- 캐릭터 슬롯 시트 — 원작 역할 → 테일즈토피아 등장인물
 - replica-architect
 - replica-design
 - replica-diff
@@ -47,7 +47,7 @@
 - test-plan.md
 - build-log.md
 - Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)
-- sys
+- sweep.py
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
@@ -68,7 +68,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (32 total, 7 thin omitted)
+## Communities (32 total, 6 thin omitted)
 
 ### Community 0 - "reviews.py"
 Cohesion: 0.20
@@ -87,8 +87,8 @@ Cohesion: 0.26
 Nodes (9): check(), colours(), default_pairs(), flatten(), luminance(), main(), parse_hex(), ratio() (+1 more)
 
 ### Community 4 - "json"
-Cohesion: 0.17
-Nodes (13): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+5 more)
+Cohesion: 0.15
+Nodes (13): combine(), load(), main(), MatrixError, render(), score(), visual_scores(), has_emoji() (+5 more)
 
 ### Community 5 - "replica-recon"
 Cohesion: 0.15
@@ -130,9 +130,9 @@ Nodes (8): Output, replica-entrepreneur, Step 1: collect, Step 2: rank, Step 3: 
 Cohesion: 0.22
 Nodes (8): Output, replica-test, Step 1: the plan, Step 2: automate what you can, Step 3: click through the rest, Step 4: report bugs, Step 5: fix loop, The rule
 
-### Community 15 - "listing.py"
-Cohesion: 0.33
-Nodes (6): has_emoji(), length(), lint(), main(), render(), words()
+### Community 15 - "캐릭터 슬롯 시트 — 원작 역할 → 테일즈토피아 등장인물"
+Cohesion: 0.50
+Nodes (3): 슬롯 (원작 초기 출시 순서 기준, 역할만 요약), 캐릭터 슬롯 시트 — 원작 역할 → 테일즈토피아 등장인물, 확정 시트 (템플릿)
 
 ### Community 16 - "replica-architect"
 Cohesion: 0.25
@@ -170,14 +170,18 @@ Nodes (5): 구조, 빌드, 실행, 자동 검증, 테일즈토피아 RPG (프로
 Cohesion: 0.22
 Nodes (8): 1. Stack, 2. 폴더 구조, 3. 데이터 구조 ("스키마"), 4. 시스템 인터페이스 ("API"), 5. 까다로운 부분 (The parts that bite), 6. Build order, Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성), 요약
 
+### Community 31 - "sweep.py"
+Cohesion: 0.18
+Nodes (8): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), px(), sprite()
+
 ## Knowledge Gaps
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `load()` connect `json` to `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
 - **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
