@@ -32,8 +32,8 @@ export function trapLock(c: Character, critter: string): string | null {
   if (!mapUnlocked(c, cr.map)) return '아직 못 간 곳';
   return null;
 }
-export function setTrap(c: Character, idx: number, critter: string, time: number, now: number, box = 'tb_card'): string | null {
-  if (!Number.isInteger(idx) || idx < 0 || idx >= trapSlots(c.skills.trapping?.lv ?? 1)) return '아직 열리지 않은 덫 칸입니다';
+export function setTrap(c: Character, idx: number, critter: string, time: number, now: number, box = 'tb_card', drone = 0): string | null {
+  if (!Number.isInteger(idx) || idx < 0 || idx >= trapSlots(c.skills.trapping?.lv ?? 1, drone)) return '아직 열리지 않은 덫 칸입니다';
   if (!TRAP_TIMES[time]) return '없는 시간';
   const b = TRAP_BOX[box];
   if (!b) return '없는 덫 상자';

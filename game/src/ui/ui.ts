@@ -10,10 +10,11 @@ import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, 
 import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, labRange, labSettle, labState } from '../core/lab';
 import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
-import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
+import { SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
 import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID_BY, LiquidId, LiquidUp, VIALS, VIAL_COST, VIAL_FIND, VIAL_MAX, alchSettle, bigSlots, brewNeed, brewRate, bubbleCost, bubbleFound, bubbleLv, bubbleValue, liquidCap, liquidOpen, liquidRate, liquidUpCost, vialValue, workPower } from '../core/alchemy';
 /** 연금술 효과 이름 */
+const SPECIAL_DESC: Record<string, string> = { b_refinery: '소금을 정제(레벨마다 소금 한 가지)', b_printer: '자원 복사(레벨 + 1칸)', b_library: '특성 최대 레벨을 늘리는 책', b_drone: '모든 캐릭터의 덫 칸 +1(레벨마다)', b_collider: '입자를 모아 원자 올리기', b_tower: '기도 토템이 혼령을 더 자주 쏘고 영혼 +4%(레벨마다)' };
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중', hp: '최대 체력', card: '카드 드롭률' };
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
@@ -26,7 +27,7 @@ import {
   mapUnlocked, refillTeleports, anvilCap, anvilPointsFree, anvilRate, anvilSlotsOpen, equipCard, recipeLock, unequipCard, buy, collectAnvil, deposit, depositAll, haveMat, invSize, setProduct, shopLeft, spendAnvilPoint,
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
   minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot, starTalPoints, foodWait, gateChecks, gateOpen,
-  anyTalentFree, tabFree,
+  anyTalentFree, tabFree, talentMax,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { GAMES, GameKind, SPIKE_WINDOW, gameReward, playsLeft, spikeOpen } from '../core/minigames';
@@ -160,6 +161,7 @@ export class UI {
   private trapIdx = -1;
   private trapBox = 'tb_card';
   private cauldron = 'power';
+  private cogSel = -1;
   private kitIdx = -1;
   private sellArm: string | null = null;
   private lootHinted = false;
@@ -1031,7 +1033,7 @@ export class UI {
       case 'build': {
         const acc = g.acc, b = acc.build, now = Date.now();
         buildSettle(acc, now);
-        const rate = buildRate(b), need = buildXpToNext(b.lv);
+        const rate = buildRate(b, acc), need = buildXpToNext(b.lv), staffHere = b.staff.includes(c.id);
         const hm = (h: number) => (h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.max(1, Math.ceil(h * 60))}분`);
         const head = `<div class="ui-row alchhead">${ui('obj_build', 'mi')}<b class="ui-grow">건설 Lv.<span class="ui-accent">${b.lv}</span> <span class="ui-xs ui-muted">시간당 건설 포인트 ${Math.round(rate).toLocaleString()} · 계정 공용</span></b><div style="width:28%">${bar('skill', b.xp, need, `${b.xp} / ${need}`)}</div></div>`;
         let body = '';
@@ -1050,11 +1052,40 @@ export class UI {
             const mats = max ? '' : cost.mats.map(([m, n]) => `<span class="ui-xs ${haveMat(acc, c, m) >= n ? '' : 'ui-bad'}">${icon(m)}${n.toLocaleString()}</span>`).join(' ') + ` <span class="ui-xs ui-muted">· ${cost.need.toLocaleString()}점(${hm(cost.need / rate)})</span>`;
             const val = (x: number) => Math.round(x * d.per * 100) / 100;
             return `<div class="ui-row line ${max ? 'done' : ''}">${ui(`bld_${d.id}`, 'mi')}<div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${lv}/${d.max}</span>
-              <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[d.eff]} +${val(lv)}${d.unit}${max ? '' : ` → +${val(lv + 1)}${d.unit}`}</div><div class="costrow">${mats}</div></div>
+              <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${SPECIAL.has(d.id) ? SPECIAL_DESC[d.id] : `${ALCH_LABEL[d.eff]} +${val(lv)}${d.unit}${max ? '' : ` → +${val(lv + 1)}${d.unit}`}`}</div><div class="costrow">${mats}</div></div>
               <button class="ui-btn sm primary" data-act="build:start:${d.id}" ${!max && !busy && free && enough ? '' : 'disabled'}>${max ? '최대' : busy ? '공사 중' : '짓기'}</button></div>`;
           }).join('');
           body = `${jobs}<h3>건물</h3>${list}<p class="ui-xs ui-muted">재료는 가방과 창고에서 함께 씁니다. 공사는 접속하지 않아도 진행되고, 다 지어지면 계정의 모든 캐릭터에게 효과가 생깁니다.</p>`;
         } else if (tab === 2) {
+          // 톱니판
+          const board = Array.from({ length: COG_SLOTS }, (_, i) => { const p = b.cogs[i]; return `<button class="ui-slot ${p ? 'r2' : 'empty'} ${this.cogSel >= 0 ? 'ready' : ''}" data-act="cogput:${i}" aria-label="${i + 1}번 칸${p ? ` 힘 ${p}` : ''}">${p ? `<b class="ui-accent">${p}</b>` : '<span class="ui-xs ui-muted">+</span>'}</button>`; }).join('');
+          const bag = b.cogBag.map((p, i) => `<button class="ui-slot sm ${this.cogSel === i ? 'r3' : ''}" data-act="cogsel:${i}" aria-label="톱니 힘 ${p}"><b>${p}</b></button>`).join('') || '<span class="ui-xs ui-muted">아직 톱니가 없습니다. 일꾼이 4시간마다 하나씩 만듭니다.</span>';
+          body = `<p class="ui-sm" style="margin-top:0">톱니판의 톱니 힘 합 <b class="ui-accent">${cogPower(b)}</b> → 건설 속도 +${cogPower(b) * 2}%</p><div class="ui-grid" style="grid-template-columns:repeat(6,auto);justify-content:start">${board}</div>
+            <h3>만든 톱니 <span class="ui-xs ui-muted">${b.cogBag.length}/30 · 고른 뒤 판의 칸을 누르세요</span></h3><div class="ui-row" style="flex-wrap:wrap;gap:3px">${bag}</div>
+            ${this.cogSel >= 0 && b.cogBag[this.cogSel] !== undefined ? `<button class="ui-btn sm" data-act="cogtrash">고른 톱니 버리기</button>` : ''}`;
+        } else if (tab === 3) {
+          // 정제소
+          const open = refineSlots(b);
+          body = (b.levels.b_refinery ? '' : '<p class="ui-sm ui-bad" style="margin-top:0">정제소를 먼저 지으세요(건물 탭).</p>') + SALTS.map((d, i) => {
+            const r = b.refine[d.id], has = b.salts[d.id] ?? 0, lock = i >= open, cost = rankCost(r?.rank ?? 0);
+            return `<div class="ui-row line ${lock ? 'locked' : ''}"><span class="ui-slot sm" style="background:${d.color}"></span><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${short(has)}개 · 등급 ${r?.rank ?? 0}</span>
+              <div class="ui-xs ui-muted">${d.hours}시간마다 ${ITEMS[d.item].name} ${d.per}개${d.need ? ` + ${SALT[d.need].name} 1개` : ''} → ${(r?.rank ?? 0) + 1}개 · 재료는 창고에서</div>${r?.on ? bar('xp', Math.floor((r.prog % 1) * 100), 100, '정제 중') : ''}</div>
+              ${lock ? `<span class="ui-xs ui-muted">정제소 Lv.${i + 1}</span>` : `<button class="ui-btn sm ${r?.on ? 'primary' : ''}" data-act="build:refine:${d.id}">${r?.on ? '멈추기' : '정제'}</button><button class="ui-btn sm" data-act="build:rank:${d.id}" ${r && has >= cost ? '' : 'disabled'}>등급 ↑ ${cost}</button>`}</div>`;
+          }).join('') + '<p class="ui-xs ui-muted">소금은 원자 충돌기의 입자를 빨리 모으게 하고, 등급이 오르면 한 번에 더 많이 만듭니다.</p>';
+        } else if (tab === 4) {
+          // 3D 프린터 · 특성 도서관 · 원자 충돌기
+          const ps = printerSlots(b);
+          const printer = ps ? Array.from({ length: ps }, (_, i) => {
+            const p = b.printer[i];
+            const opts = PRINTABLE.filter((id) => haveMat(acc, c, id) > 0 || p?.item === id).map((id) => `<button class="ui-btn sm ${p?.item === id ? 'primary' : ''}" data-act="print:${i}:${id}">${icon(id)}</button>`).join('');
+            return `<div class="ui-row line">${ui('obj_build', 'mi')}<div class="ui-grow"><b>${i + 1}번 프린터</b> <span class="ui-xs ${p ? 'ui-good' : 'ui-muted'}">${p ? `${ITEMS[p.item].name} 시간당 ${printRate(acc, p.item)}개 → 창고` : '쉬는 중'}</span><div class="ui-row" style="flex-wrap:wrap;gap:2px">${opts || '<span class="ui-xs ui-muted">가방이나 창고에 채집 자원이 있어야 고를 수 있습니다</span>'}</div></div>${p ? `<button class="ui-btn sm" data-act="print:${i}:">멈추기</button>` : ''}</div>`;
+          }).join('') : '<p class="ui-xs ui-muted">3D 프린터를 지으면 자원을 시간마다 복사합니다(많이 가진 자원일수록 많이).</p>';
+          const lib = b.levels.b_library ? `<p class="ui-sm">책 <b class="ui-accent">${b.books}</b>권 · ${bookHours(b)}시간마다 1권. 특성 창에서 특성을 고르고 '책 쓰기'를 누르면 그 특성의 최대 레벨이 1 오릅니다(최대 +${LIBRARY_MAX}).</p>` : '<p class="ui-xs ui-muted">특성 도서관을 지으면 특성 최대 레벨을 늘리는 책이 쌓입니다.</p>';
+          const atoms = b.levels.b_collider ? ATOMS.map((d) => { const lv = b.atoms[d.id] ?? 0, cost = atomCost(d, lv); return `<div class="ui-row line"><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${lv}/${ATOM_MAX}</span> <span class="ui-xs ui-good">${ALCH_LABEL[d.eff]} +${Math.round(lv * d.per * 10) / 10}${d.unit}</span></div><button class="ui-btn sm" data-act="build:atom:${d.id}" ${lv < ATOM_MAX && b.particles >= cost ? '' : 'disabled'}>입자 ${cost}</button></div>`; }).join('')
+            : '<p class="ui-xs ui-muted">원자 충돌기를 지으면 입자를 모아 원자를 올립니다.</p>';
+          body = `<h3 style="margin-top:0">3D 프린터</h3>${printer}<h3>특성 도서관</h3>${lib}<h3>원자 충돌기 <span class="ui-xs ui-muted">입자 ${Math.floor(b.particles)}</span></h3>${atoms}
+            <p class="ui-xs ui-muted">덫 드론은 레벨마다 모든 캐릭터의 덫 칸을 하나 늘리고, 기도 탑은 레벨마다 기도 토템이 혼령을 더 자주 쏘고 영혼을 4% 더 줍니다.</p>`;
+        } else if (tab === 5) {
           shrineSettle(acc, now);
           const here = MAPS[c.mapId], canHere = !TOWNS.includes(c.mapId) && here.spawns.length > 0;
           body = `<p class="ui-sm" style="margin-top:0">사당은 놓인 맵에 있는 캐릭터에게만 효과를 줍니다. 놓여 있는 동안 자라고, 그 맵에 캐릭터가 많을수록 빨리 자랍니다. 지금 <b>${esc(c.name)}</b>은(는) <b>${here.name}</b>에 있습니다${canHere ? '' : '(사냥터에만 놓을 수 있습니다)'}.</p>` + SHRINES.map((d) => {
@@ -1071,13 +1102,17 @@ export class UI {
           }).join('') + '<p class="ui-xs ui-muted">어느 맵에서든 메뉴의 시설 바로가기로 이 창을 열어, 지금 서 있는 맵에 사당을 놓을 수 있습니다.</p>';
         } else {
           const rc = rateUpCost(b), sc = BUILD.slotCost[b.up.slots];
-          body = `<div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>튼튼한 비계</b> <span class="ui-xs ui-accent">${b.up.rate}/${BUILD.rateUpMax}</span><div class="ui-sm ui-muted">건설 속도 +${b.up.rate * BUILD.rateUp * 100}%${b.up.rate < BUILD.rateUpMax ? ` → +${(b.up.rate + 1) * BUILD.rateUp * 100}%` : ''}</div></div>
+          const staff = acc.characters.filter((x) => b.staff.includes(x.id));
+          body = `<div class="ui-row line">${ui('ui_family', 'mi')}<div class="ui-grow"><b>일꾼</b> <span class="ui-xs ui-muted">${staff.length ? staff.map((x) => `${esc(x.name)}(건설 Lv.${x.skills.construction?.lv ?? 1}${x.mapId === 'snowtown' ? '' : ', 자리 비움'})`).join(', ') : '없음'}</span>
+              <div class="ui-xs ui-muted">눈꽃 마을에 머무는 일꾼은 건설 레벨만큼 건설 속도를 올리고, 건설 경험치와 톱니를 얻습니다.</div></div>
+              <button class="ui-btn sm ${staffHere ? 'primary' : ''}" data-act="build:staff">${staffHere ? '일꾼에서 빼기' : `${esc(c.name)} 일꾼으로`}</button></div>
+            <div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>튼튼한 비계</b> <span class="ui-xs ui-accent">${b.up.rate}/${BUILD.rateUpMax}</span><div class="ui-sm ui-muted">건설 속도 +${b.up.rate * BUILD.rateUp * 100}%${b.up.rate < BUILD.rateUpMax ? ` → +${(b.up.rate + 1) * BUILD.rateUp * 100}%` : ''}</div></div>
               <button class="ui-btn sm" data-act="build:rate" ${b.up.rate < BUILD.rateUpMax && acc.coins >= rc ? '' : 'disabled'}>${b.up.rate < BUILD.rateUpMax ? `${ui('ui_coin', 'tic')} ${rc.toLocaleString()}` : '최대'}</button></div>
             <div class="ui-row line">${ui('obj_build', 'mi')}<div class="ui-grow"><b>공사 칸 늘리기</b> <span class="ui-xs ui-accent">${buildSlots(b)}칸</span><div class="ui-sm ui-muted">여러 건물을 동시에 짓습니다(칸마다 같은 속도)</div></div>
               <button class="ui-btn sm" data-act="build:slots" ${sc !== undefined && acc.coins >= sc ? '' : 'disabled'}>${sc !== undefined ? `${ui('ui_coin', 'tic')} ${sc.toLocaleString()}` : '최대'}</button></div>
             <p class="ui-xs ui-muted">건설 레벨은 건물이 완성될 때마다 오르고, 레벨마다 건설 속도가 ${BUILD.ratePerLv * 100}%씩 빨라집니다.</p>`;
         }
-        return win('공방 마당', `${head}${tabs(['건물', '작업장', '사당'], tab, tabAct, ['obj_build', 'ui_up', 'obj_shrine'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('공방 마당', `${head}${tabs(['건물', '작업장', '톱니판', '정제소', '특수', '사당'], tab, tabAct, ['obj_build', 'ui_up', 'ui_quick', 'ui_up', 'obj_build', 'obj_shrine'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'traps': {
         const tr = c.traps, sk = c.skills.trapping, open = trapSlots(sk.lv), now = Date.now(), need = skillXpToNext(sk.lv);
@@ -1511,22 +1546,23 @@ export class UI {
   }
 
   private talentsHtml(c: Character, cls: string): string {
+    const g = this.game;
     const list = TALENTS.filter((t) => (cls === 'beginner' ? !t.cls : t.cls === cls));
     if (!list.some((t) => t.id === this.talentSel)) this.talentSel = list[0]?.id ?? null;
     const tiles = list.map((t) => {
       const lv = c.talents[t.id] ?? 0, onBar = c.attackBars.some((b) => b.includes(t.id));
       return `<button class="tal ${t.id === this.talentSel ? 'sel' : ''} ${lv ? '' : 'zero'} ${t.active ? 'act' : ''}" data-act="tsel:${t.id}" data-tal="${t.id}" aria-label="${t.name} 레벨 ${lv}">
-        ${ui(`tl_${t.id}`, 'tic')}<span class="lvp">${lv >= t.max ? 'MAX' : `LV ${lv}`}</span>${onBar ? '<i class="onbar"></i>' : ''}</button>`;
+        ${ui(`tl_${t.id}`, 'tic')}<span class="lvp">${lv >= talentMax(t, g.acc.build?.talentMax) ? 'MAX' : `LV ${lv}`}</span>${onBar ? '<i class="onbar"></i>' : ''}</button>`;
     }).join('');
     const t = this.talentSel ? TALENT[this.talentSel] : null;
     let detail = '';
     if (t) {
       const lv = c.talents[t.id] ?? 0;
       detail = `<div class="ui-row">${ui(`tl_${t.id}`, 'bigic')}<div><b>${t.name}</b><div class="ui-xs ui-muted">${t.active ? `액티브 · 마나 ${t.active.mana} · ${t.active.cooldown}초` : '패시브'}</div>
-        <div class="ui-accent">LV ${lv} / ${t.max}</div></div></div>
+        <div class="ui-accent">LV ${lv} / ${talentMax(t, g.acc.build?.talentMax)}</div></div></div>
         <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${t.desc(Math.max(1, lv))}</div>
-        ${lv < t.max ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}
-        <div class="talbtns"><button class="ui-btn primary iconbtn block" data-act="talent:${t.id}" ${tabFree(c, talentTab(t)) > 0 && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
+        ${lv < talentMax(t, g.acc.build?.talentMax) ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}
+        <div class="talbtns">${(g.acc.build?.books ?? 0) > 0 ? `<button class="ui-btn sm" data-act="book:${t.id}" title="특성 도서관의 책 한 권으로 최대 레벨 +1">책 쓰기 (${g.acc.build.books})</button>` : ''}<button class="ui-btn primary iconbtn block" data-act="talent:${t.id}" ${tabFree(c, talentTab(t)) > 0 && lv < talentMax(t, g.acc.build?.talentMax) ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
         ${t.active ? `<button class="ui-btn iconbtn block ${this.assigning === t.id ? 'success' : ''}" data-act="quick:${t.id}" ${lv ? '' : 'disabled'}>${ui('ui_assign', 'tic')} ${this.assigning === t.id ? '지정 취소' : '퀵슬롯에 지정하기'}</button>` : ''}</div>
         ${t.active && !lv ? '<span class="ui-xs ui-muted">1레벨 이상 올리면 퀵슬롯에 지정할 수 있습니다.</span>' : ''}
         ${t.active && lv && this.assigning === t.id ? `<div class="quickhint">${ui('ui_assign', 'tic')} 아래 깜빡이는 퀵슬롯 칸을 누르세요</div>` : ''}`;
@@ -1755,13 +1791,19 @@ export class UI {
       }
       case 'wup': { const r = g.act({ t: 'worship', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'wtog': fail(g.act({ t: 'worship', op: 'toggle', id: a }).err ?? null); break;
+      case 'cogsel': this.cogSel = this.cogSel === +a ? -1 : +a; break;
+      case 'cogput': { if (this.cogSel < 0) break; const r = g.act({ t: 'build', op: 'cog', idx: this.cogSel, slot: +a }); if (r.ok) { this.audio?.play('craft'); this.cogSel = -1; } else fail(r.err ?? null); break; }
+      case 'cogtrash': { const r = g.act({ t: 'build', op: 'trash', idx: this.cogSel }); if (r.ok) this.cogSel = -1; else fail(r.err ?? null); break; }
+      case 'print': fail(g.act({ t: 'build', op: 'print', slot: +a, id: b ?? '' }).err ?? null); break;
+      case 'book': { const r = g.act({ t: 'build', op: 'book', id: a }); if (r.ok) this.toast(`${TALENT[a].name} 최대 레벨 +1`); else fail(r.err ?? null); break; }
       case 'shrine': {
         const r = g.act({ t: 'shrine', op: a as 'build' | 'place' | 'pick', id: b });
         if (r.ok) { this.audio?.play('craft'); this.toast(a === 'build' ? `${SHRINE[b].name}을(를) 지었습니다` : a === 'place' ? `${SHRINE[b].name}을(를) 이 맵에 놓았습니다` : `${SHRINE[b].name}을(를) 거뒀습니다`); } else fail(r.err ?? null);
         break;
       }
       case 'build': {
-        const r = a === 'start' ? g.act({ t: 'build', op: 'start', id: b }) : a === 'cancel' ? g.act({ t: 'build', op: 'cancel', idx: +b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' });
+        const r = a === 'start' ? g.act({ t: 'build', op: 'start', id: b }) : a === 'cancel' ? g.act({ t: 'build', op: 'cancel', idx: +b })
+          : ['refine', 'rank', 'atom'].includes(a) ? g.act({ t: 'build', op: a as 'refine', id: b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' | 'staff' });
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
         break;
       }

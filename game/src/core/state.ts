@@ -13,6 +13,7 @@ import { Alch, newAlch } from './alchemy';
 import { PostOffice, PostState, newPost, newPostOffice } from './post';
 import { Shrines, newShrines } from './shrines';
 import { fixAlch } from './alchemy';
+import { fixBuild } from './build';
 import { MiniState, TotemState, legacyTotemSouls, newMini, newTotem } from './minigames';
 import {
   TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
@@ -188,7 +189,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
     anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, aligned: [], obols: [], birth: BIRTH_SIGNS.includes(sign ?? '') ? sign! : null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(), traps: newTraps(), worship: newWorshipChar(),
-    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 }, trapping: { lv: 1, xp: 0 }, worship: { lv: 1, xp: 0 }, cooking: { lv: 1, xp: 0 }, lab: { lv: 1, xp: 0 }, alchemy: { lv: 1, xp: 0 } },
+    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 }, trapping: { lv: 1, xp: 0 }, worship: { lv: 1, xp: 0 }, cooking: { lv: 1, xp: 0 }, lab: { lv: 1, xp: 0 }, alchemy: { lv: 1, xp: 0 }, construction: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
     attackBars: emptyBars(), attackPage: 0,
@@ -371,9 +372,11 @@ export const tabSpent = (talents: Record<string, number>, tab: number) => Object
 export const tabFree = (c: Pick<Character, 'cls' | 'level' | 'talents'>, tab: number) => tabEarned(c, tab) - tabSpent(c.talents, tab);
 /** 쓸 수 있는 탭 포인트가 남아 있는가(메뉴 알림) */
 export const anyTalentFree = (c: Character) => classLine(c.cls).some((_, k) => tabFree(c, k) > 0);
-export function learnTalent(c: Character, id: string): boolean {
+/** 특성 최대 레벨(특성 도서관의 책으로 늘린 만큼 더) */
+export const talentMax = (t: { id: string; max: number }, extra?: Record<string, number>) => t.max + (extra?.[t.id] ?? 0);
+export function learnTalent(c: Character, id: string, extra?: Record<string, number>): boolean {
   const t = TALENT[id], lv = c.talents[id] ?? 0;
-  if (!t || lv >= t.max || (t.cls && !classLine(c.cls).includes(t.cls))) return false;
+  if (!t || lv >= talentMax(t, extra) || (t.cls && !classLine(c.cls).includes(t.cls))) return false;
   if (tabFree(c, talentTab(t)) <= 0) return false;
   c.talents[id] = lv + 1;
   // 액티브를 처음 배우면 지금 공격 바의 빈 칸에 놓아 준다(옮기는 것은 특성 화면에서)
@@ -936,7 +939,7 @@ export function deserialize(json: string | null): Account | null {
     a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {};
     // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
     if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
-    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.build ??= newBuild(); a.cook ??= newCook(); a.breed ??= newBreed(Math.floor(Math.random() * 2 ** 31)); a.lab ??= newLab(); a.worship ??= newWorshipAcc(); a.mini ??= newMini(); a.totem ??= newTotem(); a.postOff ??= newPostOffice(); fixAlch(a.alch); a.cook.tries ??= 0; a.cook.ladles ??= 0; a.cook.ladleFrac ??= 0; a.shrines ??= newShrines();
+    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.build ??= newBuild(); a.cook ??= newCook(); a.breed ??= newBreed(Math.floor(Math.random() * 2 ** 31)); a.lab ??= newLab(); a.worship ??= newWorshipAcc(); a.mini ??= newMini(); a.totem ??= newTotem(); a.postOff ??= newPostOffice(); fixAlch(a.alch); fixBuild(a.build); a.cook.tries ??= 0; a.cook.ladles ??= 0; a.cook.ladleFrac ??= 0; a.shrines ??= newShrines();
     a.worship.souls = { ...newWorshipAcc().souls, ...a.worship.souls };
     { const moved = legacyTotemSouls(a.totem); if (moved > 0) { a.worship.souls.moss += moved; a.totem = newTotem(); } }
     for (const c of a.characters) {
@@ -969,7 +972,7 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
-      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost(); { const op = c.post as PostState & { orders?: unknown; day?: unknown }; delete op.orders; delete op.day; } c.traps ??= newTraps(); c.skills.trapping ??= { lv: 1, xp: 0 }; c.worship ??= newWorshipChar(); c.skills.worship ??= { lv: 1, xp: 0 }; c.skills.cooking ??= { lv: 1, xp: 0 }; c.skills.lab ??= { lv: 1, xp: 0 }; c.skills.alchemy ??= { lv: 1, xp: 0 };
+      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost(); { const op = c.post as PostState & { orders?: unknown; day?: unknown }; delete op.orders; delete op.day; } c.traps ??= newTraps(); c.skills.trapping ??= { lv: 1, xp: 0 }; c.worship ??= newWorshipChar(); c.skills.worship ??= { lv: 1, xp: 0 }; c.skills.cooking ??= { lv: 1, xp: 0 }; c.skills.lab ??= { lv: 1, xp: 0 }; c.skills.alchemy ??= { lv: 1, xp: 0 }; c.skills.construction ??= { lv: 1, xp: 0 };
       c.skills.fishing ??= { lv: 1, xp: 0 }; c.skills.catching ??= { lv: 1, xp: 0 };
       c.statues ??= {}; c.talentPreset ??= 0; c.obols ??= [];
       { const o = c as Character & { sign?: string | null }; c.aligned ??= o.sign ? [o.sign] : []; c.birth ??= null; delete o.sign; }

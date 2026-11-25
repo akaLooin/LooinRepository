@@ -62,9 +62,11 @@ export function chargeNow(c: Character, now: number): number {
   return Math.min(chargeCap(c), w.charge + (chargeRate(c) * Math.max(0, now - w.t)) / 3_600_000);
 }
 /** 토템이 스스로 혼령을 쏘는 간격(초). 0이면 쏘지 않는다 */
-export const boltEvery = (c: Character) => (lvOf(c) < 5 ? 0 : Math.max(0.8, 4 - lvOf(c) * 0.05));
+/** 기도 탑이 있으면 기도 레벨이 낮아도 쏘고, 더 자주 쏜다 */
+export const boltEvery = (c: Character, towers = 0) => (lvOf(c) < 5 && !towers ? 0 : Math.max(0.5, (4 - lvOf(c) * 0.05) * (1 - Math.min(0.5, towers * 0.03))));
 /** 잡은 혼령 → 영혼(끝까지 지키면 절반 더, 기도 레벨마다 1%) */
-export const runSouls = (c: Character, kills: number, survived: boolean) => Math.floor((kills / 2) * (survived ? 1.5 : 1) * (1 + lvOf(c) * 0.01) * classSkillMult(c, 'worship'));
+/** 기도 탑(건설)마다 영혼 +4% */
+export const runSouls = (c: Character, kills: number, survived: boolean, towers = 0) => Math.floor((kills / 2) * (survived ? 1.5 : 1) * (1 + lvOf(c) * 0.01) * classSkillMult(c, 'worship') * (1 + towers * 0.04));
 
 export function worshipLock(c: Character, id: string): string | null {
   const t = WTOTEM[id];
@@ -82,7 +84,7 @@ export function finishWorship(acc: Account, c: Character, id: string, kills: num
   if (ch < t.cost) return '기도력이 부족합니다';
   c.worship.charge = ch - t.cost; c.worship.t = now;
   const k = Math.min(t.maxKills, Math.max(0, Math.floor(kills)));
-  const souls = runSouls(c, k, survived);
+  const souls = runSouls(c, k, survived, acc.build?.levels.b_tower ?? 0);
   acc.worship.souls[t.soul] += souls;
   gainSkillXp(c, 'worship', k * t.xp * (survived ? 1.5 : 1));
   return souls;

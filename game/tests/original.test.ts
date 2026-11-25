@@ -204,3 +204,36 @@ describe('오볼', () => {
     expect(Object.values(MONSTERS).some((m) => m.drops.some((d) => d.item === circ.id))).toBe(true);
   });
 });
+
+import { BUILDING as BLD, COG_HOURS, SALTS as SLT, buildRate as bRate2 } from '../src/core/build';
+describe('건설(원작에 맞춤)', () => {
+  it('눈꽃 마을의 일꾼이 건설 속도·건설 경험치·톱니를 내고, 톱니판이 속도를 올리며, 특수 건물이 기능을 연다', () => {
+    const { acc, c } = setup();
+    c.maxWorld = 3; c.mapId = 'snowtown';
+    const H = 3_600_000;
+    applyAction(acc, 0, { t: 'build', op: 'visit' }, H);
+    const r0 = bRate2(acc.build, acc);
+    expect(applyAction(acc, 0, { t: 'build', op: 'staff' }, H).ok).toBe(true);
+    expect(bRate2(acc.build, acc)).toBeGreaterThan(r0);
+    applyAction(acc, 0, { t: 'build', op: 'visit' }, H + COG_HOURS * 3 * H);
+    expect(acc.build.cogBag.length).toBe(3);
+    expect(c.skills.construction.lv > 1 || c.skills.construction.xp > 0).toBe(true);
+    const r1 = bRate2(acc.build, acc);
+    expect(applyAction(acc, 0, { t: 'build', op: 'cog', idx: 0, slot: 0 }, H + COG_HOURS * 3 * H).ok).toBe(true);
+    expect(bRate2(acc.build, acc)).toBeGreaterThan(r1);
+    // 자리를 비우면 일꾼 몫이 빠진다
+    c.mapId = 'snowfield';
+    expect(bRate2(acc.build, acc)).toBeLessThan(r1 * 1.5);
+    // 정제소: 창고의 재료로 소금
+    acc.build.levels.b_refinery = 1; c.mapId = 'snowtown';
+    acc.storage.push({ id: SLT[0].item, qty: 1000 });
+    expect(applyAction(acc, 0, { t: 'build', op: 'refine', id: SLT[0].id }, H * 20).ok).toBe(true);
+    applyAction(acc, 0, { t: 'build', op: 'visit' }, H * 20 + SLT[0].hours * 2 * H);
+    expect(acc.build.salts[SLT[0].id]).toBe(2);
+    // 특성 도서관: 책으로 특성 최대 레벨 +1
+    acc.build.books = 1;
+    expect(applyAction(acc, 0, { t: 'build', op: 'book', id: 'smash' }, H * 40).ok).toBe(true);
+    expect(acc.build.talentMax.smash).toBe(1);
+    expect(BLD.b_collider && BLD.b_printer && BLD.b_drone && BLD.b_tower).toBeTruthy();
+  });
+});

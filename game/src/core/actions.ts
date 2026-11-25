@@ -3,7 +3,7 @@
 import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
-import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook } from './build';
 import { placeObol, takeObol } from './obols';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
 import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
@@ -11,7 +11,7 @@ import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, up
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen, useLadle } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
 import { LiquidUp, alchSettle, assignAlch, toggleBig, upBubble, upLiquid, upVial } from './alchemy';
-import { worldOf } from './data';
+import { TALENT, classLine, worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
 import { GameKind, finishGame } from './minigames';
@@ -83,7 +83,7 @@ export type Action =
   | { t: 'owl'; k?: OwlUp }
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
-  | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
+  | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit' | 'staff' | 'cog' | 'trash' | 'refine' | 'rank' | 'print' | 'book' | 'atom'; id?: string; idx?: number; slot?: number }
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
@@ -108,7 +108,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
   }
   switch (a.t) {
     case 'stat': return spendStat(c, a.stat) ? ok() : fail('포인트가 없습니다');
-    case 'talent': return learnTalent(c, a.id) ? ok() : fail('특성을 올릴 수 없습니다');
+    case 'talent': return learnTalent(c, a.id, acc.build?.talentMax) ? ok() : fail('특성을 올릴 수 없습니다');
     case 'starTal': return res(learnStarTal(acc, c, a.id));
     case 'equip': return res(equipItem(c, a.id, a.at));
     case 'upgrade': { const r = applyStone(acc, c, a.stone, a.slot); return typeof r === 'string' ? fail(r) : ok(r.ok ? 1 : 0); }
@@ -242,11 +242,19 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'visit') { buildSettle(acc, now); return ok(); }
       if (a.op === 'start') return res(startBuild(acc, c, a.id ?? '', now));
       if (a.op === 'cancel') return res(cancelBuild(acc, a.idx ?? -1, now));
+      if (a.op === 'staff') return res(toggleStaff(acc, c, now));
+      if (a.op === 'cog') { buildSettle(acc, now); return res(placeCog(acc, a.idx ?? -1, a.slot ?? -1)); }
+      if (a.op === 'trash') { buildSettle(acc, now); return res(trashCog(acc, a.idx ?? -1)); }
+      if (a.op === 'refine') return res(toggleRefine(acc, a.id ?? '', now));
+      if (a.op === 'rank') return res(rankUpSalt(acc, a.id ?? '', now));
+      if (a.op === 'print') return res(setPrint(acc, a.slot ?? -1, a.id ?? '', now));
+      if (a.op === 'book') { buildSettle(acc, now); const t = TALENT[a.id ?? '']; return res(useBook(acc, a.id ?? '', !!t && (!t.cls || classLine(c.cls).includes(t.cls)))); }
+      if (a.op === 'atom') return res(upAtom(acc, a.id ?? '', now));
       return res(upBuild(acc, a.op, now));
     }
     case 'trap': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 덫 오두막에서 할 수 있습니다');
-      if (a.op === 'set') return res(setTrap(c, a.idx, a.critter ?? '', a.time ?? 0, now, a.box ?? 'tb_card'));
+      if (a.op === 'set') return res(setTrap(c, a.idx, a.critter ?? '', a.time ?? 0, now, a.box ?? 'tb_card', acc.build?.levels.b_drone ?? 0));
       if (a.op === 'collect') return res(collectTrap(acc, c, a.idx, now));
       return res(cancelTrap(c, a.idx));
     }
