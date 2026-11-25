@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "game/capacitor.config.json": {
-    "mtime": 1794885213.2215917,
-    "seen": 1794885259.7176933,
-    "ast_hash": "d22a72af7559d5296374477b1af0ac9e",
+    "mtime": 1795567136.2100897,
+    "seen": 1795567384.1796205,
+    "ast_hash": "232d256c6e87e4c2f3a8e68912d9329d",
     "semantic_hash": ""
   },
   "game/package.json": {
@@ -138,15 +138,15 @@
     "semantic_hash": ""
   },
   "game/src/core/afk.ts": {
-    "mtime": 1795563182.8802311,
-    "seen": 1795563429.9396684,
-    "ast_hash": "d06c3afb3fb35978fb1e9e548c2caaf1",
+    "mtime": 1795567019.0021007,
+    "seen": 1795567384.1796768,
+    "ast_hash": "9fa94346af351b7116802127e49ccd71",
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1795565285.2134817,
-    "seen": 1795565385.178524,
-    "ast_hash": "0f30163db2e7e821e59866a2e72eb276",
+    "mtime": 1795567077.4309468,
+    "seen": 1795567384.1796978,
+    "ast_hash": "b43039baef6bf428f9017fd06eb89e82",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -156,15 +156,15 @@
     "semantic_hash": ""
   },
   "game/src/core/state.ts": {
-    "mtime": 1795565809.3323894,
-    "seen": 1795565866.615939,
-    "ast_hash": "7e4aae2b1a10503dfdf8b8f706462ed7",
+    "mtime": 1795567077.43181,
+    "seen": 1795567384.1797893,
+    "ast_hash": "765a6732fd026873eb3a2024481d2ca8",
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1795564770.757022,
-    "seen": 1795565078.6372128,
-    "ast_hash": "c35bc2e1579d2c670cf63d8c74ccc5cd",
+    "mtime": 1795566935.328109,
+    "seen": 1795567384.1798096,
+    "ast_hash": "775fd4e2bb08b1f77f255f296f12a346",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
@@ -180,27 +180,27 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1795565185.3631556,
-    "seen": 1795565385.1787674,
-    "ast_hash": "97e28c8d298690a515b76862c1f469dd",
+    "mtime": 1795567004.3626466,
+    "seen": 1795567384.179914,
+    "ast_hash": "cde9df78933b5cf2b65d8f5b8f4af561",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1795565185.3636508,
-    "seen": 1795565385.1787689,
-    "ast_hash": "2893d92e60cc2a366db01615859445d5",
+    "mtime": 1795567132.3078773,
+    "seen": 1795567384.1799152,
+    "ast_hash": "24db48a3bf9da1f2e90d294d6557cee6",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1795565962.8892853,
-    "seen": 1795566021.0722296,
-    "ast_hash": "267196a5a4b3bf2940ab113f624f410b",
+    "mtime": 1795567342.2868223,
+    "seen": 1795567384.179971,
+    "ast_hash": "c4f5d35948d37cb45ee53352aa99daa7",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
-    "mtime": 1795564898.5734167,
-    "seen": 1795565078.6373503,
-    "ast_hash": "bc638f3d501e164b7c69fc79246dead9",
+    "mtime": 1795567026.514251,
+    "seen": 1795567384.1799724,
+    "ast_hash": "1af4cc295d71b5bf6fd52ba305020f19",
     "semantic_hash": ""
   },
   "game/tsconfig.json": {
@@ -324,9 +324,9 @@
     "semantic_hash": ""
   },
   "game/index.html": {
-    "mtime": 1794880894.9871576,
-    "seen": 1794885259.7177308,
-    "ast_hash": "9dba7153eacf0d4aae63ed8772c6da98",
+    "mtime": 1795567136.2076223,
+    "seen": 1795567384.1805763,
+    "ast_hash": "16ea31849162c06dc81f1ccbd841e05f",
     "semantic_hash": ""
   },
   "Logo/LooinLogo.png": {
@@ -402,93 +402,93 @@
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.717752,
-    "ast_hash": "1956941339dd5fe36d5c66601c89a08d",
+    "mtime": 1795567231.7113519,
+    "seen": 1795567384.1810124,
+    "ast_hash": "bf7486194384d85e12ce7d5f25c74641",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177532,
-    "ast_hash": "73b1e06d769fa08a9c3b8328cc15fd75",
+    "mtime": 1795567248.0356987,
+    "seen": 1795567384.1810157,
+    "ast_hash": "ff4af7068492a6243f75353998d8880e",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177541,
-    "ast_hash": "f43e5674865a00186dd76183cf1f2f8e",
+    "mtime": 1795567231.7131145,
+    "seen": 1795567384.1810172,
+    "ast_hash": "56ef21c10e048cc14c30430fc4895dd7",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.717755,
-    "ast_hash": "7ed1b3739b83215d0c4a0b4a7f2dcab4",
+    "mtime": 1795567231.7037103,
+    "seen": 1795567384.1810186,
+    "ast_hash": "9b495f0d5627b2716b985c11508c0089",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177558,
-    "ast_hash": "5b77e8aec8b17eed320a97567c7cb8bf",
+    "mtime": 1795567248.025045,
+    "seen": 1795567384.1810217,
+    "ast_hash": "fcc0f457b9d3d0ef2e9dd34e59649fc3",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.717757,
-    "ast_hash": "a49547a32c7d9b529af607b033811d81",
+    "mtime": 1795567231.7049122,
+    "seen": 1795567384.181023,
+    "ast_hash": "032c678927896e514e20a06fb97389f6",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177582,
-    "ast_hash": "5689511ee4e41a367d0342f37ac48bdf",
+    "mtime": 1795567231.719489,
+    "seen": 1795567384.1810243,
+    "ast_hash": "bc8c61584f7ef349f9e4413a8652dac8",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177591,
-    "ast_hash": "15cdded29b9877ac98c5931024c5da5d",
+    "mtime": 1795567248.045045,
+    "seen": 1795567384.1810274,
+    "ast_hash": "5ded490ff32bfeb3c0c957657ae9cfe9",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.71776,
-    "ast_hash": "c890fa4af62a63486d5dea62441ce7ab",
+    "mtime": 1795567231.721044,
+    "seen": 1795567384.1810284,
+    "ast_hash": "39292a30cf886c5a00fb0f485213dec2",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.717761,
-    "ast_hash": "a3285eeaedda8201f04e7737b9df8421",
+    "mtime": 1795567231.729044,
+    "seen": 1795567384.1810296,
+    "ast_hash": "5375c9b5c2464d3c7e42c52661e1a2c5",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.717762,
-    "ast_hash": "4e9584ecc16d1fc75afb798688ce576f",
+    "mtime": 1795567248.061045,
+    "seen": 1795567384.181032,
+    "ast_hash": "3621b09d24a89e8931130f0a7e62eed1",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177632,
-    "ast_hash": "14cde87848553e24d7106f56eb8ceb6f",
+    "mtime": 1795567231.737044,
+    "seen": 1795567384.1810331,
+    "ast_hash": "7bc2e50c8fc8fd43bbd09dbfbf406f2f",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177644,
-    "ast_hash": "9e029293ab1ae8e3a6a7b7d0b7177e46",
+    "mtime": 1795567231.749044,
+    "seen": 1795567384.1810346,
+    "ast_hash": "70d8c78338f0f7fd949bbe2ff3e1e47d",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177653,
-    "ast_hash": "ed3696b7c52d9747411a475dbe3fa34a",
+    "mtime": 1795567248.073045,
+    "seen": 1795567384.1810367,
+    "ast_hash": "9ea8abdb3bac4325209f356d8c04178a",
     "semantic_hash": ""
   },
   "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png": {
-    "mtime": 1793204306.0,
-    "seen": 1794885259.7177663,
-    "ast_hash": "85addb4159ecd3f76f02fbacd5ec86de",
+    "mtime": 1795567231.757044,
+    "seen": 1795567384.1810377,
+    "ast_hash": "edf2647ea466ce33d2db17943ae1eb4b",
     "semantic_hash": ""
   },
   "replica/recon.md": {
@@ -822,9 +822,9 @@
     "semantic_hash": ""
   },
   "game/tests/server-rules.test.ts": {
-    "mtime": 1795560974.4247296,
-    "seen": 1795561024.6532285,
-    "ast_hash": "09e650ddc576f5c8ad2df6ed4594dc15",
+    "mtime": 1795567123.3406293,
+    "seen": 1795567384.1800086,
+    "ast_hash": "f57f23078bafbe94296f65b2d7976a81",
     "semantic_hash": ""
   },
   "server/package.json": {
@@ -858,9 +858,9 @@
     "semantic_hash": ""
   },
   "server/tests/api.test.ts": {
-    "mtime": 1795565834.3855357,
-    "seen": 1795565866.6164322,
-    "ast_hash": "b099ce81121a960e10d8f9d2e9609da6",
+    "mtime": 1795567296.172759,
+    "seen": 1795567384.1801722,
+    "ast_hash": "7351e657cfbdd9add58cbbde69eb961b",
     "semantic_hash": ""
   },
   "server/tsconfig.json": {
@@ -1062,15 +1062,15 @@
     "semantic_hash": ""
   },
   "game/src/core/tasks.ts": {
-    "mtime": 1795562343.2850218,
-    "seen": 1795562434.6700025,
-    "ast_hash": "b534aa916ecd1629e0eaeb7296373888",
+    "mtime": 1795567077.4313915,
+    "seen": 1795567384.1798081,
+    "ast_hash": "515ccea7df50f8898a7a0b4cab131483",
     "semantic_hash": ""
   },
   "game/tests/tasks.test.ts": {
-    "mtime": 1795562391.7276056,
-    "seen": 1795562434.670236,
-    "ast_hash": "27de3935133cf77aef8a2d9fb7de76ba",
+    "mtime": 1795567123.3438542,
+    "seen": 1795567384.1800268,
+    "ast_hash": "daaa6dca71e653cf659000a67c3669d0",
     "semantic_hash": ""
   },
   "game/src/core/progress.ts": {
@@ -1080,9 +1080,9 @@
     "semantic_hash": ""
   },
   "game/tests/progress.test.ts": {
-    "mtime": 1795565266.1649272,
-    "seen": 1795565385.178873,
-    "ast_hash": "c1aa2735e1e18e0d52db36f240b1e2dd",
+    "mtime": 1795567281.513194,
+    "seen": 1795567384.1800077,
+    "ast_hash": "47e7cf9889da0c4b007a27835a6e09f0",
     "semantic_hash": ""
   },
   "game/src/core/companions.ts": {
@@ -1107,6 +1107,42 @@
     "mtime": 1795565934.3486948,
     "seen": 1795566021.0720813,
     "ast_hash": "ff5128d2f23d4493da581ef604528a6d",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png": {
+    "mtime": 1795567248.0406575,
+    "seen": 1795567384.1810143,
+    "ast_hash": "1ee03be850ad88e6ba8ffd7076688335",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png": {
+    "mtime": 1795567248.0290449,
+    "seen": 1795567384.1810203,
+    "ast_hash": "bb1756ff6798986451fb5477dd1ad125",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png": {
+    "mtime": 1795567248.0536942,
+    "seen": 1795567384.1810255,
+    "ast_hash": "2544ba24fc689bb3c4aca4f13e39a62a",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png": {
+    "mtime": 1795567248.069045,
+    "seen": 1795567384.1810308,
+    "ast_hash": "7782a80a065af72c8dc70693eb434d19",
+    "semantic_hash": ""
+  },
+  "game/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png": {
+    "mtime": 1795567248.077045,
+    "seen": 1795567384.1810355,
+    "ast_hash": "f433bd55e5bd809c1a85a2cfa3e961da",
+    "semantic_hash": ""
+  },
+  "replica/design/app-icon-64.png": {
+    "mtime": 1795567378.6680272,
+    "seen": 1795567384.1820998,
+    "ast_hash": "acba2e5b80001de03059661f419ccb56",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
