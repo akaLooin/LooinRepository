@@ -13,7 +13,7 @@ import { ARENA_COOLDOWN, ARENA_TEAM, BPet, BREED, BreedUp, GENES, RAR_NAMES, SPE
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
 import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
-import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID_BY, LiquidId, LiquidUp, VIALS, VIAL_COST, VIAL_FIND, VIAL_MAX, alchSettle, bigSlots, brewNeed, brewRate, bubbleCost, bubbleFound, bubbleLv, bubbleValue, liquidCap, liquidOpen, liquidRate, liquidUpCost, vialValue, workPower } from '../core/alchemy';
+import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID_BY, LiquidId, LiquidUp, SIGIL, SIGILS, sigilLv, VIALS, VIAL_COST, VIAL_FIND, VIAL_MAX, alchSettle, bigSlots, brewNeed, brewRate, bubbleCost, bubbleFound, bubbleLv, bubbleValue, liquidCap, liquidOpen, liquidRate, liquidUpCost, vialValue, workPower } from '../core/alchemy';
 /** 연금술 효과 이름 */
 const SPECIAL_DESC: Record<string, string> = { b_refinery: '소금을 정제(레벨마다 소금 한 가지)', b_printer: '자원 복사(레벨 + 1칸)', b_library: '특성 최대 레벨을 늘리는 책', b_drone: '모든 캐릭터의 덫 칸 +1(레벨마다)', b_collider: '입자를 모아 원자 올리기', b_tower: '기도 토템이 혼령을 더 자주 쏘고 영혼 +4%(레벨마다)' };
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중', hp: '최대 체력', card: '카드 드롭률' };
@@ -1192,7 +1192,7 @@ export class UI {
         const acc = g.acc, a = acc.alch;
         alchSettle(acc, Date.now());
         const mine = a.assign[c.id];
-        const where = (sl?: string) => (!sl ? '쉬는 중' : sl.startsWith('c:') ? CAULDRONS.find((x) => `c:${x.id}` === sl)!.name : `${LIQUID_BY[sl.slice(2) as LiquidId].name} 액체`);
+        const where = (sl?: string) => (!sl ? '쉬는 중' : sl.startsWith('c:') ? CAULDRONS.find((x) => `c:${x.id}` === sl)!.name : sl.startsWith('g:') ? `${SIGIL[sl.slice(2)]?.name ?? '시길'} 충전` : `${LIQUID_BY[sl.slice(2) as LiquidId].name} 액체`);
         const liqs = LIQUIDS.filter((l) => liquidOpen(acc, l)).map((l) => `<span class="ui-xs">${ui(`liq_${l.id}`, 'tic')}${Math.floor(a.liquids[l.id])}/${liquidCap(a, l)}</span>`).join(' ');
         const head = `<div class="ui-row alchhead">${ui('bub_wise', 'mi')}<b class="ui-grow">연금 Lv.<span class="ui-accent">${c.skills.alchemy.lv}</span> <span class="ui-xs ui-muted">${esc(c.name)} · ${where(mine)}</span></b><span>${liqs}</span></div>`;
         let body = '';
@@ -1239,11 +1239,18 @@ export class UI {
               ${lv < VIAL_MAX ? tile(iconUrl(ITEM_ICON[v.item]), `${have}/${n}`, `${ITEMS[v.item].name} ${have}/${n}`, '', have >= n ? 'ok' : 'bad') : ''}
               <button class="ui-btn sm" data-act="alch:vial:${v.id}" ${lv < VIAL_MAX && have >= n ? '' : 'disabled'}>${lv >= VIAL_MAX ? '최대' : lv ? '붓기' : '주사위'}</button></div>`;
           }).join('') + '<p class="ui-xs ui-muted">처음엔 재료를 넣고 주사위를 굴려 약병을 발견해야 합니다(실패하면 재료만 씁니다). 발견한 뒤에는 재료를 부어 단계를 올립니다.</p>';
+        } else if (tab === 3) {
+          body = SIGILS.map((d) => {
+            const ch = a.sigils[d.id] ?? 0, lv = sigilLv(a, d.id), next = d.need[lv], team = acc.characters.filter((x) => a.assign[x.id] === `g:${d.id}`), mineHere = mine === `g:${d.id}`;
+            return `<div class="ui-row line">${ui('bub_wise', 'mi')}<div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${['', 'Ⅰ', 'Ⅱ', 'Ⅲ'][lv]}</span> <span class="ui-xs ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[d.eff]} +${lv ? d.v[lv - 1] : d.v[0]}${d.unit}${lv ? '' : '(Ⅰ단계)'}</span>
+              ${next ? bar('xp', Math.floor(ch), next, `${Math.floor(ch).toLocaleString()} / ${next.toLocaleString()}${team.length ? ` · ${team.map((x) => esc(x.name)).join(', ')}` : ''}`) : '<div class="ui-xs ui-good">최고 단계</div>'}</div>
+              <button class="ui-btn sm ${mineHere ? 'primary' : ''}" data-act="alch:assign:g:${d.id}" ${next || mineHere ? '' : 'disabled'}>${mineHere ? '그만두기' : `${esc(c.name)} 맡기기`}</button></div>`;
+          }).join('') + '<p class="ui-xs ui-muted">시길을 맡은 캐릭터는 연금 레벨만큼 시간마다 기운을 모읍니다. 기운이 정해진 양에 닿으면 시길이 Ⅰ·Ⅱ·Ⅲ단계로 오릅니다(계정 공용).</p>';
         } else {
           body = acc.characters.map((x) => `<div class="ui-row line ${x.id === c.id ? 'sel' : ''}"><img class="px" src="${portraitUrl(x.look)}" alt="" style="height:2em"><div class="ui-grow"><b>${esc(x.name)}</b> <span class="ui-xs ui-muted">연금 Lv.${x.skills.alchemy?.lv ?? 1} · 일하는 힘 ×${workPower(x).toFixed(2)}</span><div class="ui-xs ${a.assign[x.id] ? 'ui-good' : 'ui-muted'}">${where(a.assign[x.id])}${(a.big[x.id] ?? []).length ? ` · 큰 거품 ${(a.big[x.id] ?? []).map((id) => BUBBLES[id].name).join(', ')}` : ''}</div></div></div>`).join('')
             + '<p class="ui-xs ui-muted">캐릭터는 어디에 있든 솥이나 액체를 맡을 수 있습니다(한 곳만). 맡은 캐릭터는 시간마다 연금 경험치를 얻고, 연금 레벨이 오를수록 더 잘 끓입니다. 큰 거품 칸은 연금 Lv.30마다 하나씩 늘어납니다. 그 캐릭터로 접속해 맡기세요.</p>';
         }
-        return win('연금 솥 <span class="ui-sm ui-muted">계정 공용</span>', `${head}${tabs(['거품', '액체', '약병', '배치'], tab, tabAct, ['bub_power', 'liq_water', 'vial_v_star', 'ui_family'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('연금 솥 <span class="ui-sm ui-muted">계정 공용</span>', `${head}${tabs(['거품', '액체', '약병', '시길', '배치'], tab, tabAct, ['bub_power', 'liq_water', 'vial_v_star', 'bub_wise', 'ui_family'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'arcade': {
         const acc = g.acc, a = acc.arcade;

@@ -4,6 +4,7 @@
 //  · 큰 거품: 몇몇 거품은 크다. 캐릭터마다 장착한 큰 거품만 효과가 있고, 대신 효과가 크다.
 //  · 액체 4종: 물방울(2월드) · 질소 거품(3월드) · 심해수(3월드) · 수은(4월드). 시간에 따라 쌓이고, 맡긴 캐릭터가 많을수록 빨리 찬다.
 //  · 약병: 처음엔 주사위를 굴려 발견해야 한다(실패하면 재료만 쓴다). 발견한 뒤엔 재료를 부어 단계를 올린다.
+//  · 시길: 캐릭터를 시길에 맡기면 그 시길에 기운이 모이고, 기운이 정해진 양에 닿으면 시길 단계가 오른다(단계마다 보너스).
 import { BonusKey, ITEMS, classSkillMult } from './data';
 import type { Account, Character } from './state';
 import { gainSkillXp, haveMat, spendMat } from './state';
@@ -105,14 +106,34 @@ export interface Alch {
   big: Record<number, string[]>;
   /** 약병 주사위 횟수(결과를 정하는 씨앗) */
   tries: number; xpFrac: Record<number, number>;
+  /** 시길마다 모인 기운 */
+  sigils: Record<string, number>;
 }
 const zeroC = () => ({ power: 4, quick: 4, wise: 4, luck: 4 });
+// ───────── 시길 ─────────
+export interface SigilDef { id: string; name: string; eff: BonusKey; v: [number, number, number]; unit: string; need: [number, number, number] }
+export const SIGILS: SigilDef[] = [
+  { id: 'sg_dmg', name: '칼날 시길', eff: 'dmg', v: [3, 7, 12], unit: '%', need: [20, 400, 8000] },
+  { id: 'sg_hp', name: '심장 시길', eff: 'hpPct', v: [3, 7, 12], unit: '%', need: [20, 400, 8000] },
+  { id: 'sg_xp', name: '책장 시길', eff: 'xp', v: [3, 6, 10], unit: '%', need: [30, 600, 12000] },
+  { id: 'sg_drop', name: '눈동자 시길', eff: 'drop', v: [2, 5, 9], unit: '%', need: [40, 800, 16000] },
+  { id: 'sg_coins', name: '동전 시길', eff: 'coins', v: [4, 9, 15], unit: '%', need: [30, 600, 12000] },
+  { id: 'sg_card', name: '카드 시길', eff: 'card', v: [3, 6, 10], unit: '%', need: [50, 1000, 20000] },
+  { id: 'sg_afk', name: '모래시계 시길', eff: 'afk', v: [1, 2, 4], unit: '%p', need: [60, 1200, 24000] },
+  { id: 'sg_luk', name: '클로버 시길', eff: 'luk', v: [10, 25, 50], unit: '', need: [40, 800, 16000] },
+  { id: 'sg_mine', name: '곡괭이 시길', eff: 'mining', v: [5, 12, 20], unit: '%', need: [25, 500, 10000] },
+  { id: 'sg_chop', name: '도끼 시길', eff: 'chopping', v: [5, 12, 20], unit: '%', need: [25, 500, 10000] },
+  { id: 'sg_fish', name: '낚싯바늘 시길', eff: 'fishing', v: [5, 12, 20], unit: '%', need: [25, 500, 10000] },
+  { id: 'sg_bug', name: '날개 시길', eff: 'catching', v: [5, 12, 20], unit: '%', need: [25, 500, 10000] },
+];
+export const SIGIL: Record<string, SigilDef> = Object.fromEntries(SIGILS.map((x) => [x.id, x]));
+export const sigilLv = (a: Alch, id: string) => { const d = SIGIL[id], ch = a.sigils?.[id] ?? 0; return d ? d.need.filter((n) => ch >= n).length : 0; };
 export const newAlch = (): Alch => ({ liquid: 0, t: 0, bubbles: {}, vials: {}, up: { rate: 0, cap: 0 }, liquids: { water: 0, nitro: 0, trench: 0, mercury: 0 },
-  found: zeroC(), brew: { power: 0, quick: 0, wise: 0, luck: 0 }, assign: {}, big: {}, tries: 0, xpFrac: {} });
+  found: zeroC(), brew: { power: 0, quick: 0, wise: 0, luck: 0 }, assign: {}, big: {}, tries: 0, xpFrac: {}, sigils: {} });
 /** 예전 저장을 새 구조로 */
 export function fixAlch(a: Alch) {
   a.liquids ??= { water: a.liquid ?? 0, nitro: 0, trench: 0, mercury: 0 };
-  a.found ??= zeroC(); a.brew ??= { power: 0, quick: 0, wise: 0, luck: 0 }; a.assign ??= {}; a.big ??= {}; a.tries ??= 0; a.xpFrac ??= {};
+  a.found ??= zeroC(); a.brew ??= { power: 0, quick: 0, wise: 0, luck: 0 }; a.assign ??= {}; a.big ??= {}; a.tries ??= 0; a.xpFrac ??= {}; a.sigils ??= {};
 }
 
 type AlchAcc = Pick<Account, 'alch' | 'characters'>;
@@ -146,6 +167,8 @@ export function alchSettle(acc: AlchAcc, now: number) {
     while (a.found[cd.id] < BUBBLES_PER && a.brew[cd.id] >= brewNeed(a.found[cd.id])) { a.brew[cd.id] -= brewNeed(a.found[cd.id]); a.found[cd.id]++; }
     if (a.found[cd.id] >= BUBBLES_PER) a.brew[cd.id] = 0;
   }
+  // 시길: 맡은 캐릭터가 시간마다 그 시길에 기운을 모은다
+  for (const c of acc.characters) { const sl = a.assign[c.id]; if (sl?.startsWith('g:') && SIGIL[sl.slice(2)]) a.sigils[sl.slice(2)] = (a.sigils[sl.slice(2)] ?? 0) + h * workPower(c); }
   for (const c of acc.characters) {
     if (!a.assign[c.id]) continue;
     const x = h * 12 * classSkillMult(c, 'alchemy') + (a.xpFrac[c.id] ?? 0), whole = Math.floor(x);
@@ -213,7 +236,8 @@ export function assignAlch(acc: Account, c: Character, slot: string, now: number
   const [k, id] = slot.split(':');
   if (k === 'c' && !CAULDRONS.some((x) => x.id === id)) return '없는 솥';
   if (k === 'l') { const l = LIQUID_BY[id as LiquidId]; if (!l) return '없는 액체'; if (!liquidOpen(acc, l)) return `${l.w}월드에 가야 쓸 수 있는 액체입니다`; }
-  if (k !== 'c' && k !== 'l') return '없는 자리';
+  if (k === 'g' && !SIGIL[id]) return '없는 시길';
+  if (k !== 'c' && k !== 'l' && k !== 'g') return '없는 자리';
   a.assign[c.id] = slot;
   return null;
 }
@@ -235,4 +259,5 @@ export function alchBonus(a: Alch | undefined, add: (k: BonusKey, v: number) => 
   const mine = c ? a.big?.[c.id] ?? [] : [];
   for (const b of Object.values(BUBBLES)) if (!b.big || mine.includes(b.id)) add(b.eff, bubbleValue(b, bubbleLv(a, b.id)));
   for (const v of VIALS) add(v.eff, vialValue(v, a.vials[v.id] ?? 0));
+  for (const d of SIGILS) { const lv = sigilLv(a, d.id); if (lv) add(d.eff, d.v[lv - 1]); }
 }

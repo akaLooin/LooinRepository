@@ -275,7 +275,7 @@ import { ARENAS } from '../src/core/data';
 import { arcadeSettle as aSet, poppySettle as pSet } from '../src/core/arcade';
 describe('2·3월드 콜로세움·오락실·포피', () => {
   it('월드마다 콜로세움, 오락실 공은 30분마다, 공을 쏘면 보너스나 코인, 포피는 물고기를 낚아 보너스', () => {
-    expect(Object.keys(ARENAS)).toEqual(['arena', 'arena2', 'arena3']);
+    expect(Object.keys(ARENAS)).toEqual(['arena', 'arena2', 'arena3', 'rift']);
     const { acc, c } = setup();
     c.maxWorld = 2;
     const H = 3_600_000;
@@ -291,5 +291,22 @@ describe('2·3월드 콜로세움·오락실·포피', () => {
     expect(acc.poppy.fish).toBeCloseTo(60, 5);
     expect(applyAction(acc, 0, { t: 'poppy', op: 'up', id: 'pp_tales' }, H * 11).ok).toBe(true);
     expect(derive(c, acc).xpMult).toBeGreaterThan(1);
+  });
+});
+
+import { RIFT_BONUS, ARENAS as AR2 } from '../src/core/data';
+import { SIGILS as SG, sigilLv as sLv } from '../src/core/alchemy';
+describe('균열·시길', () => {
+  it('균열 최고 기록으로 영구 보너스, 시길은 맡은 캐릭터가 기운을 모아 단계가 오른다', () => {
+    const { acc, c } = setup();
+    expect(AR2.rift.waves.length).toBe(15);
+    const d0 = derive(c, acc).xpMult;
+    acc.riftBest = RIFT_BONUS[1].waves;
+    expect(derive(c, acc).xpMult).toBeGreaterThan(d0);
+    c.maxWorld = 2;
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1);
+    expect(applyAction(acc, 0, { t: 'alch', op: 'assign', id: `g:${SG[0].id}` }, 1).ok).toBe(true);
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1 + 30 * 3_600_000);
+    expect(sLv(acc.alch, SG[0].id)).toBe(1);
   });
 });

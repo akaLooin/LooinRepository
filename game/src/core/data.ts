@@ -513,6 +513,11 @@ const maps: MapDef[] = [
     platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
     spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'dunes', toX: 525, toY: -96 }] },
+  // 4월드 균열: 웨이브를 깰 때마다 균열 단계가 오르고, 단계마다 영구 보너스
+  { id: 'rift', name: '별의 균열', width: 640, theme: 'arena', arena: true,
+    platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
+    spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'nebtown', toX: 640, toY: 0 }] },
   { id: 'arena3', name: '얼음 투기장', width: 640, theme: 'arena', arena: true,
     platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
     spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
@@ -626,7 +631,7 @@ const maps: MapDef[] = [
     ropes: [{ x: 410, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'nebpool', x: 370 }],
     facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'astro', x: 220, y: 0 }, { kind: 'kitchen', x: 292, y: 0 }, { kind: 'anvil', x: 440, y: -48 }, { kind: 'lab', x: 515, y: -48 }, { kind: 'nest', x: 594, y: -48 }],
-    portals: [{ x: 24, to: 'frostpeak', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'moondust', toX: 50 }] },
+    portals: [{ x: 24, to: 'frostpeak', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'moondust', toX: 50 }, { x: 640, to: 'rift', toX: 60, label: '별의 균열' }] },
   { id: 'moondust', name: '달먼지 평원', width: 940, theme: 'moondust',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
     spawns: [{ monster: 'starling', count: 9 }], nodes: [{ node: 'startree', x: 90 }, { node: 'startree', x: 650 }, { node: 'cometbush', x: 300 }],
@@ -836,7 +841,7 @@ export const WORLDS = [
   { n: 4, name: '4월드 · 별빛 성운', town: 'nebtown', spawnX: 300, maps: WORLD4 },
 ];
 /** 보스방·콜로세움처럼 순간이동 지도에 오르지 않는 맵이 속한 월드 */
-const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, arena2: 2, arena3: 3, sandlair: 2, frostlair: 3, voidlair: 4 };
+const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, arena2: 2, arena3: 3, rift: 4, sandlair: 2, frostlair: 3, voidlair: 4 };
 export const TOWNS = WORLDS.map((w) => w.town);
 /** 이 맵이 속한 월드(보스방·콜로세움은 이어진 맵을 따라간다) */
 export function worldOf(id: string): number {
@@ -1489,8 +1494,29 @@ export const ARENAS: Record<string, ArenaDef> = {
     ],
     exit: { map: 'snowfield', x: 525, y: -96 },
   },
+  rift: {
+    seconds: 360, waveGap: 22,
+    waves: [['starling', 6], ['starling', 8], ['cratermite', 6], ['cratermite', 8], ['nebjelly', 6], ['nebjelly', 8], ['meteorite', 6], ['meteorite', 8], ['ringowl', 6], ['ringowl', 8], ['cometfox', 6], ['cometfox', 8], ['voidimp', 6], ['voidimp', 8], ['nebtitan', 1]],
+    rewards: [
+      { waves: 3, coins: 300000, items: [['moon_cake', 3]] },
+      { waves: 6, coins: 800000, items: [['stone_stat', 2], ['pet_shard', 8]] },
+      { waves: 10, coins: 2500000, items: [['obol_star_circle_luk', 1], ['pet_shard', 12]] },
+      { waves: 15, coins: 6000000, items: [['obol_star_square_dmg', 1], ['gstatue_fortune', 1]] },
+    ],
+    exit: { map: 'nebtown', x: 640, y: 0 },
+  },
 };
 export const arenaOf = (map: string) => ARENAS[map] ?? ARENA;
+/** 균열 단계 보너스: 균열에서 깬 웨이브 최고 기록이 이만큼이면 영구히 */
+export const RIFT_BONUS: { waves: number; eff: BonusKey; v: number; label: string }[] = [
+  { waves: 2, eff: 'afk', v: 2, label: '방치 효율 +2%p' },
+  { waves: 4, eff: 'xp', v: 5, label: '경험치 +5%' },
+  { waves: 6, eff: 'drop', v: 5, label: '드롭률 +5%' },
+  { waves: 8, eff: 'dmg', v: 6, label: '공격력 +6%' },
+  { waves: 10, eff: 'card', v: 6, label: '카드 드롭률 +6%' },
+  { waves: 12, eff: 'hpPct', v: 8, label: '최대 체력 +8%' },
+  { waves: 15, eff: 'luk', v: 50, label: '행운 +50' },
+];
 export function arenaWaves(kills: number, def: ArenaDef = ARENA): number {
   let n = 0, sum = 0;
   for (const [, cnt] of def.waves) { sum += cnt; if (kills >= sum) n++; else break; }

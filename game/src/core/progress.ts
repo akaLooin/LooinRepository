@@ -2,7 +2,7 @@
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
   ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_MIN, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, signSlots, STAMPS, STATUES,
-  MAPS, PETS, baseClass, classLine, cardTier, statueNeed,
+  MAPS, PETS, RIFT_BONUS, baseClass, classLine, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
@@ -188,7 +188,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'shinies' | 'shrines' | 'famObols' | 'arcade' | 'poppy' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'shinies' | 'shrines' | 'famObols' | 'arcade' | 'poppy' | 'riftBest' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLv(a, c, s.id) * s.per;
   for (const id of new Set([...(c.aligned ?? []), ...(c.birth ? [c.birth] : [])])) { const sg = SIGNS.find((x) => x.id === id); if (sg) b[sg.eff] += sg.v; }
@@ -203,6 +203,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   { const m = labMult(a, 'shrines'); shrineBonus(c, a, (k, v) => { b[k] += v * m; }); }
   chipBonus(c, a, (k, v) => { b[k] += v; });
   arcadeBonus(a.arcade, (k, v) => { b[k] += v; });
+  for (const r of RIFT_BONUS) if ((a.riftBest ?? 0) >= r.waves) b[r.eff] += r.v;
   poppyBonus(a.poppy, (k, v) => { b[k] += v; });
   b.dmg += deathBonus(a);
   obolBonus(c, a, (k, v) => { b[k] += v; });

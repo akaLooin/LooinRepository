@@ -136,6 +136,8 @@ export interface Account {
   shinies?: Record<string, number>;
   /** 가족 오볼판(계정 공용) */
   famObols?: (string | null)[];
+  /** 별의 균열 최고 기록(웨이브) */
+  riftBest?: number;
   /** 찾은 별 지도, 남은 별 포인트, 연 별자리 */
   stars: Record<string, true>;
   starPoints: number;
@@ -853,6 +855,7 @@ export function arenaClaim(acc: Account, c: Character): { waves: number; coins: 
   }
   acc.coins += out.coins;
   acc.arenaBest = Math.max(acc.arenaBest, waves);
+  if (c.mapId === 'rift') acc.riftBest = Math.max(acc.riftBest ?? 0, waves);
   c.arenaStart = null;
   c.mapId = def.exit.map; c.x = def.exit.x; c.y = def.exit.y;
   return out;
