@@ -1,18 +1,18 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 49 files · ~31,514 words
+- 53 files · ~34,030 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 94 file(s) not represented in the graph (top: .gd 30, .uid 30, .import 24)
-- WARNING: 94 of 169 files seen (56%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- Unclassified: 130 file(s) not represented in the graph (top: .import 52, .gd 34, .uid 34)
+- WARNING: 130 of 237 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 343 nodes · 474 edges · 34 communities (27 shown, 7 thin omitted)
+- 365 nodes · 502 edges · 35 communities (29 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `71712b5f`
+- Built from commit: `6d46b5e2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -50,17 +50,18 @@
 - 테일즈토피아 RPG — 캐릭터 제작 의뢰서
 - gen_audio.py
 - sys
+- 아트 규격서 — 테일즈토피아 RPG
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
 2. `replica-recon` - 12 edges
 3. `render_song()` - 11 edges
-4. `sfx()` - 10 edges
-5. `compare()` - 10 edges
+4. `compare()` - 10 edges
+5. `sfx()` - 10 edges
 6. `Recon map: {{app}} ({{platform}})` - 10 edges
 7. `Recon map: 그랜드체이스 (PC 원작 / Classic) → 모바일 픽셀 리디자인 (Android 우선)` - 10 edges
-8. `load_reviews()` - 9 edges
-9. `read_png()` - 9 edges
+8. `read_png()` - 9 edges
+9. `load_reviews()` - 9 edges
 10. `replica-build` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -70,7 +71,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (34 total, 7 thin omitted)
+## Communities (35 total, 6 thin omitted)
 
 ### Community 0 - "listing.py"
 Cohesion: 0.33
@@ -180,19 +181,29 @@ Nodes (9): 1. 기본 정보  (필수), 2. 게임 속 역할  (필수: 하나 이
 Cohesion: 0.27
 Nodes (12): env(), f_of(), lowpass(), music(), noise(), render_song(), save(), sfx() (+4 more)
 
+### Community 33 - "sys"
+Cohesion: 0.14
+Nodes (6): blob(), hero_down(), hero_frame(), stamp(), px(), sprite()
+
+### Community 34 - "아트 규격서 — 테일즈토피아 RPG"
+Cohesion: 0.20
+Nodes (9): 1. 공통 규칙, 2. 스프라이트 시트 구조, 3. 게임에 연결하기, 4. UI 그림, 5. 지금 들어 있는 시범 그림, 보스 (칸 96×96 ~ 160×160), 아트 규격서 — 테일즈토피아 RPG, 일반 몬스터 (칸 24×20 / 32×32 / 48×48 중 몸집에 맞게) (+1 more)
+
 ## Knowledge Gaps
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `load()` connect `json` to `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)`?**
-  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
 - **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Should `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
   _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
+- **Should `sys` be split into smaller, more focused modules?**
+  _Cohesion score 0.14035087719298245 - nodes in this community are weakly interconnected._
