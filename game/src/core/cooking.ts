@@ -270,6 +270,7 @@ export function toggleChef(acc: Account, charId: number, now: number): string | 
   k.chefs.push(charId);
   // 한 캐릭터는 한 곳에서만 일한다: 식탁에 서면 연구실에서 물러난다
   if (acc.lab) acc.lab.members = acc.lab.members.filter((m) => m.id !== charId);
+  if (acc.breed?.keepers) acc.breed.keepers = acc.breed.keepers.filter((x) => x !== charId);
   return null;
 }
 export function cookBonus(k: Cook | undefined, add: (key: BonusKey, v: number) => void) {

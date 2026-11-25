@@ -35,6 +35,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   if (!same(s.skills.lab, claimed.skills.lab)) return '바뀌면 안 되는 값: 연구';
   if (!same(s.skills.alchemy, claimed.skills.alchemy)) return '바뀌면 안 되는 값: 연금';
   if (!same(s.skills.construction, claimed.skills.construction)) return '바뀌면 안 되는 값: 건설';
+  if (!same(s.skills.breeding, claimed.skills.breeding)) return '바뀌면 안 되는 값: 번식';
   if (!same(s.skills.trapping, claimed.skills.trapping)) return '바뀌면 안 되는 값: 덫 사냥';
   for (const k of fixed) if (!same(s[k], claimed[k])) return `바뀌면 안 되는 값: ${String(k)}`;
   if (!same(s.anvil.pts, claimed.anvil.pts)) return '바뀌면 안 되는 값: 모루 포인트';

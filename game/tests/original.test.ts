@@ -237,3 +237,21 @@ describe('건설(원작에 맞춤)', () => {
     expect(BLD.b_collider && BLD.b_printer && BLD.b_drone && BLD.b_tower).toBeTruthy();
   });
 });
+
+import { BREED as BR2, RARITY_MULT as RM, arenaWave as aWave } from '../src/core/breeding';
+describe('번식(원작에 맞춤)', () => {
+  it('알 등급 11가지, 알은 2시간마다, 펫 아레나 기록이 보너스가 된다', () => {
+    expect(RM.length).toBe(11); expect(BR2.eggSecs).toBe(7200);
+    const { acc, c } = setup();
+    c.maxWorld = 4; c.mapId = 'nebtown';
+    applyAction(acc, 0, { t: 'breed', op: 'visit' }, 1000);
+    acc.breed.pets.push({ uid: 1, sp: 'b_puff', power: aWave(5), gene: 'fighter', rar: 0 });
+    expect(applyAction(acc, 0, { t: 'breed', op: 'fight' }, 1000).ok).toBe(false); // 팀 없음
+    expect(applyAction(acc, 0, { t: 'breed', op: 'arena', uid: 1 }, 1000).ok).toBe(true);
+    const d0 = derive(c, acc).dmg;
+    const r = applyAction(acc, 0, { t: 'breed', op: 'fight' }, 1000);
+    expect(r.ok).toBe(true); expect(r.n).toBeGreaterThan(3);
+    expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+    expect(applyAction(acc, 0, { t: 'breed', op: 'fight' }, 2000).ok).toBe(false); // 한 시간에 한 번
+  });
+});

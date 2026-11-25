@@ -2,7 +2,7 @@
 // 이 폴더(core)는 DOM/Phaser에 의존하지 않는다 → 추후 서버에서 그대로 재사용.
 
 export type StatKey = 'str' | 'agi' | 'wis' | 'luk';
-export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping' | 'worship' | 'cooking' | 'lab' | 'alchemy' | 'construction';
+export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping' | 'worship' | 'cooking' | 'lab' | 'alchemy' | 'construction' | 'breeding';
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
@@ -96,7 +96,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   str: '최대 체력·치명타 피해·채광. 전사 공격력, 궁수 명중', agi: '이동 속도·치명타 확률·모루 생산. 궁수 공격력, 마법사 명중',
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
-export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', alchemy: '연금', construction: '건설' };
+export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', alchemy: '연금', construction: '건설', breeding: '번식' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
@@ -878,7 +878,7 @@ export const CLASS_SKILLS: Partial<Record<ClassId, LinkedSkill>> = {
   mage: 'worship', elementalist: 'worship', hexer: 'alchemy', archmage: 'worship', oracle: 'alchemy',
   wanderer: 'cooking', fateweaver: 'lab', taler: 'cooking', lifeteller: 'lab',
 };
-export const LINKED_NAMES: Record<LinkedSkill, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', construction: '건설', build: '건설', alchemy: '연금', breed: '번식' };
+export const LINKED_NAMES: Record<LinkedSkill, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', construction: '건설', breeding: '번식', build: '건설', alchemy: '연금', breed: '번식' };
 /** 이 캐릭터의 기술 배율: 계보에서 그 기술을 맡은 직업 하나마다 +25%, 그리고 레벨마다 +0.5% */
 export function classSkillMult(c: { cls: ClassId; level: number; talents?: Record<string, number> }, k: LinkedSkill): number {
   let n = 0, mast = 0;

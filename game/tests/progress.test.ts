@@ -930,6 +930,7 @@ describe('번식(번식 둥지)', () => {
   it('영역에 보낸 팀은 힘만큼 돌며 향신료와 번식 경험치를 가져온다(한 펫은 한 곳에만)', () => {
     const { acc } = ready();
     applyAction(acc, 0, { t: 'breed', op: 'visit' }, H);
+    expect(applyAction(acc, 0, { t: 'breed', op: 'keeper' }, H).ok).toBe(true); // 사육사가 번식 경험치를 받는다
     acc.breed.pets.push({ uid: 1, sp: 'b_puff', power: 30, gene: 'fighter', rar: 0 }, { uid: 2, sp: 'b_puff', power: 15, gene: 'forager', rar: 0 });
     expect(applyAction(acc, 0, { t: 'breed', op: 'team', uid: 1, terr: 't_crater' }, H).ok).toBe(false); // 번식 Lv.5 필요
     expect(applyAction(acc, 0, { t: 'breed', op: 'team', uid: 1, terr: 't_dust' }, H).ok).toBe(true);
@@ -940,20 +941,23 @@ describe('번식(번식 둥지)', () => {
     // 힘 15 / 요구 30 → 한 바퀴 1시간
     applyAction(acc, 0, { t: 'breed', op: 'visit' }, H + H * 3 + 10);
     expect(acc.breed.terr.t_dust.laps).toBe(3);
-    expect(acc.cook.spices[TER.t_dust.spice]).toBe(3 * 2 * 5); // 채집꾼 ×2, 영역에서만 나므로 ×5
-    expect(acc.breed.lv > 1 || acc.breed.xp > 0).toBe(true);
+    // 원작처럼 영역은 싸움: 이긴 판만 향신료(채집꾼 ×2, 영역에서만 나므로 ×5)
+    expect(acc.cook.spices[TER.t_dust.spice]).toBe((acc.breed.terr.t_dust.wins ?? 0) * 2 * 5);
+    expect(acc.characters[0].skills.breeding.lv > 1 || acc.characters[0].skills.breeding.xp > 0).toBe(true);
   });
-  it('개량은 코인으로, 펫을 놓아주면 자리가 빈다', () => {
+  it('원작처럼 개량은 DNA(놓아준 펫)와 요리로, 펫을 놓아주면 자리가 비고 DNA를 얻는다', () => {
     const { acc } = ready();
     applyAction(acc, 0, { t: 'breed', op: 'visit' }, H);
-    expect(applyAction(acc, 0, { t: 'breed', op: 'up', k: 'nest' }, H).ok).toBe(false);
-    acc.coins = BRD.up.nest.cost;
-    expect(applyAction(acc, 0, { t: 'breed', op: 'up', k: 'nest' }, H).ok).toBe(true);
-    expect(nCap(acc.breed)).toBe(BRD.nestBase + 1);
-    acc.breed.pets.push({ uid: 5, sp: 'b_puff', power: 10, gene: 'shiny', rar: 0 });
+    acc.coins = 1e12;
+    expect(applyAction(acc, 0, { t: 'breed', op: 'up', k: 'nest' }, H).ok).toBe(false); // 코인으로는 안 된다
+    acc.breed.pets.push({ uid: 5, sp: 'b_puff', power: 1000, gene: 'shiny', rar: 0 });
     applyAction(acc, 0, { t: 'breed', op: 'fence', uid: 5 }, H);
     expect(applyAction(acc, 0, { t: 'breed', op: 'release', uid: 5 }, H).ok).toBe(true);
     expect(acc.breed.pets.length).toBe(0); expect(acc.breed.fence).toEqual([]);
+    expect(acc.breed.dna).toBe(100);
+    acc.cook.meals[BRD.up.nest.meal] = { lv: 0, n: 10 };
+    expect(applyAction(acc, 0, { t: 'breed', op: 'up', k: 'nest' }, H).ok).toBe(true);
+    expect(nCap(acc.breed)).toBe(BRD.nestBase + 1);
   });
 });
 

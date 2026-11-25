@@ -117,6 +117,7 @@ export function placeInLab(acc: Account, c: Character, spot: number, now: number
   // 한 캐릭터는 한 곳에서만 일한다: 연구실에 서면 식탁에서 물러난다
   const ci = acc.cook.chefs.indexOf(c.id);
   if (ci >= 0) acc.cook.chefs.splice(ci, 1);
+  if (acc.breed?.keepers) acc.breed.keepers = acc.breed.keepers.filter((x) => x !== c.id);
   return null;
 }
 export function leaveLab(acc: Account, c: Character, now: number): string | null {

@@ -7,7 +7,7 @@ import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, s
 import { placeObol, takeObol } from './obols';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
 import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
-import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
+import { BreedUp, breedSettle, fightArena, hatchEgg, releasePet, toggleArena, toggleFence, toggleKeeper, toggleTeam, upBreed } from './breeding';
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen, useLadle } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
 import { LiquidUp, alchSettle, assignAlch, toggleBig, upBubble, upLiquid, upVial } from './alchemy';
@@ -87,7 +87,7 @@ export type Action =
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
-  | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
+  | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up' | 'keeper' | 'arena' | 'fight'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef' | 'ladle'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number; box?: string }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid' | 'assign' | 'big'; id?: string }
@@ -206,7 +206,10 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if ((c.maxWorld ?? 1) < 4) return fail('4월드 성운 정거장의 번식 둥지에서 할 수 있습니다');
       switch (a.op) {
         case 'visit': breedSettle(acc, now); return ok();
-        case 'hatch': return res(hatchEgg(acc, now));
+        case 'hatch': return res(hatchEgg(acc, now, c));
+        case 'keeper': return res(toggleKeeper(acc, c, now));
+        case 'arena': return res(toggleArena(acc, a.uid ?? -1, now));
+        case 'fight': { const r = fightArena(acc, now); return typeof r === 'number' ? ok(r) : fail(r); }
         case 'release': return res(releasePet(acc, a.uid ?? -1, now));
         case 'fence': return res(toggleFence(acc, a.uid ?? -1, now));
         case 'team': return res(toggleTeam(acc, a.uid ?? -1, a.terr ?? '', now));

@@ -8,7 +8,7 @@ import { BOXES, COMPANIES, STREAK_MAX, boxCost, boxValue, orderReward, streakNow
 import { boxLock, openBoxes, trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
 import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, labRange, labSettle, labState } from '../core/lab';
-import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
+import { ARENA_COOLDOWN, ARENA_TEAM, BPet, BREED, BreedUp, GENES, RAR_NAMES, SPEC, SPECIES, TERR, TERRITORIES, arenaPower, arenaWave, breedLevel, breedSettle, dnaOf, eggRate, fenceCap, keeperMult, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCost as breedUpCost, winChance } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
 import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
@@ -919,25 +919,26 @@ export class UI {
       case 'nest': {
         const acc = g.acc, b = acc.breed, now = Date.now();
         breedSettle(acc, now);
-        const need = breedXpToNext(b.lv);
-        const head = `<div class="ui-row alchhead">${ui('obj_nest', 'mi')}<b class="ui-grow">번식 Lv.<span class="ui-accent">${b.lv}</span> <span class="ui-xs ui-muted">펫 ${b.pets.length}/${BREED.petMax} · 계정 공용</span></b><div style="width:28%">${bar('skill', b.xp, need, `${b.xp} / ${need}`)}</div></div>`;
-        const RAR = ['일반', '희귀', '영웅', '전설'], RCLS = ['', 'ui-good', 'ui-accent', 'ui-bad'];
+        const sk = c.skills.breeding, need = skillXpToNext(sk.lv), blv = breedLevel(acc), keeper = b.keepers.includes(c.id);
+        const head = `<div class="ui-row alchhead">${ui('obj_nest', 'mi')}<b class="ui-grow">번식 Lv.<span class="ui-accent">${sk.lv}</span> <span class="ui-xs ui-muted">${esc(c.name)} · 펫 ${b.pets.length}/${BREED.petMax} · DNA ${b.dna} · 알 속도 ×${keeperMult(acc).toFixed(2)}</span></b><div style="width:22%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div>
+          <button class="ui-btn sm ${keeper ? 'primary' : ''}" data-act="bkeeper" title="성운 정거장에 머무는 사육사는 번식 레벨만큼 알을 빨리 낳게 하고 번식 경험치를 얻습니다. 요리사·연구원과 겸하지 못합니다">${keeper ? '사육사 그만두기' : '사육사로 서기'}</button></div>`;
+        const RAR = RAR_NAMES, RCLS = ['', 'ui-good', 'ui-good', 'ui-accent', 'ui-accent', 'ui-accent', 'ui-bad', 'ui-bad', 'ui-bad', 'ui-bad', 'ui-bad'];
         const petLine = (p: BPet, btns: string) => { const s = SPEC[p.sp], at = placeOf(b, p.uid);
           return `<div class="ui-row line">${ui(`bp_${p.sp}`, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ${RCLS[p.rar]}">${RAR[p.rar]}</span> <span class="ui-xs ui-accent">힘 ${p.power}</span>
             <div class="ui-xs ui-muted">${GENES[p.gene].name}: ${GENES[p.gene].desc}${at ? ` · ${at === 'fence' ? '울타리' : TERR[at].name}에 있음` : ''}</div></div>${btns}</div>`; };
         let body = '';
         if (tab === 0) {
-          const eggs = Array.from({ length: nestCap(b) }, (_, i) => i < b.eggs.length ? `<span class="ui-slot" title="${RAR[[...b.eggs].sort((x, y) => y - x)[i]]} 알">${ui(`egg_${[...b.eggs].sort((x, y) => y - x)[i]}`, 'mi')}</span>` : `<span class="ui-slot ui-muted"></span>`).join('');
-          const nextMin = Math.ceil((1 - (b.eggFrac % 1)) * 60 / eggRate(b));
+          const eggs = Array.from({ length: nestCap(b) }, (_, i) => i < b.eggs.length ? `<span class="ui-slot" title="${RAR[[...b.eggs].sort((x, y) => y - x)[i]]} 알">${ui(`egg_${Math.min(3, [...b.eggs].sort((x, y) => y - x)[i])}`, 'mi')}</span>` : `<span class="ui-slot ui-muted"></span>`).join('');
+          const nextMin = Math.ceil((1 - (b.eggFrac % 1)) * 60 / (eggRate(b) * keeperMult(acc)));
           body = `<div class="ui-row" style="gap:6px;flex-wrap:wrap">${eggs}<span class="ui-grow ui-xs ui-muted">${b.eggs.length >= nestCap(b) ? '둥지가 가득 찼습니다' : `다음 알까지 약 ${nextMin}분`}</span>
             <button class="ui-btn sm primary" data-act="bhatch" ${b.eggs.length && b.pets.length < BREED.petMax ? '' : 'disabled'}>알 깨기</button></div>
-            <h3>펫</h3>${b.pets.map((p) => petLine(p, `<button class="ui-btn sm ${placeOf(b, p.uid) === 'fence' ? 'primary' : ''}" data-act="bfence:${p.uid}">울타리</button><button class="ui-btn sm" data-act="brel:${p.uid}" title="놓아주면 사라집니다(번식 경험치 조금)">놓아주기</button>`)).join('') || '<p class="ui-sm ui-muted">아직 펫이 없습니다. 알을 깨 보세요.</p>'}
-            <p class="ui-xs ui-muted">좋은 알부터 깹니다. 어떤 종이 나올지는 번식 레벨로 열린 종 가운데서 정해집니다.</p>`;
+            <h3>펫</h3>${b.pets.map((p) => petLine(p, `<button class="ui-btn sm ${placeOf(b, p.uid) === 'fence' ? 'primary' : ''}" data-act="bfence:${p.uid}">울타리</button><button class="ui-btn sm" data-act="brel:${p.uid}" title="놓아주면 사라지고 DNA ${dnaOf(p)}을 얻습니다">놓아주기 +${dnaOf(p)}</button>`)).join('') || '<p class="ui-sm ui-muted">아직 펫이 없습니다. 알을 깨 보세요.</p>'}
+            <p class="ui-xs ui-muted">좋은 알부터 깹니다(등급 11가지). 어떤 종이 나올지는 가장 높은 번식 레벨로 열린 종 가운데서 정해집니다. 놓아준 펫은 DNA가 되어 둥지 개량에 씁니다.</p>`;
         } else if (tab === 1) {
           const inF = b.fence.map((u) => b.pets.find((p) => p.uid === u)).filter((p): p is BPet => !!p);
           body = `<div class="ui-row"><b class="ui-grow">울타리 ${inF.length}/${fenceCap(b)}</b><span class="ui-xs ui-muted">울타리에 있는 펫의 종마다 반짝임이 오릅니다</span></div>${inF.map((p) => petLine(p, `<button class="ui-btn sm" data-act="bfence:${p.uid}">빼기</button>`)).join('')}
             <h3>반짝임(계정 보너스)</h3>` + SPECIES.map((s) => {
-            const sh = b.shiny[s.id] ?? { lv: 0, h: 0 }, open = s.lv <= b.lv, max = sh.lv >= BREED.shinyMax, nd = shinyNeed(sh.lv);
+            const sh = b.shiny[s.id] ?? { lv: 0, h: 0 }, open = s.lv <= blv, max = sh.lv >= BREED.shinyMax, nd = shinyNeed(sh.lv);
             const v = (x: number) => Math.round(x * s.per * 100) / 100;
             if (!open) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<div class="ui-grow"><b>???</b><div class="ui-xs ui-muted">번식 Lv.${s.lv}에 열리는 종</div></div></div>`;
             return `<div class="ui-row line">${ui(`bp_${s.id}`, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ui-accent">반짝임 ${sh.lv}/${BREED.shinyMax}</span>
@@ -953,23 +954,33 @@ export class UI {
               + `<h3>보낼 펫</h3>` + (free.map((p) => petLine(p, `<button class="ui-btn sm" data-act="bteam:${p.uid}:${tp}" ${team.length < BREED.teamMax ? '' : 'disabled'}>보내기</button>`)).join('') || '<p class="ui-sm ui-muted">보낼 펫이 없습니다.</p>');
           } else {
             body = TERRITORIES.map((t) => {
-              const open = b.lv >= t.lv, st = b.terr[t.id], pw = teamPower(b, t.id), n = st?.team.length ?? 0;
+              const open = blv >= t.lv, st = b.terr[t.id], pw = teamPower(b, t.id), n = st?.team.length ?? 0;
               if (!open) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<div class="ui-grow"><b>${t.name}</b><div class="ui-xs ui-muted">번식 Lv.${t.lv}에 열림</div></div></div>`;
               const lapH = pw ? (BREED.lapSecs * t.need) / pw / 3600 : 0;
               return `<div class="ui-row line">${ui(t.spice, 'mi')}<div class="ui-grow"><b>${t.name}</b> <span class="ui-xs ui-accent">팀 ${n}/${BREED.teamMax} · 힘 ${Math.round(pw)} / ${t.need}</span>
-                ${n ? bar('xp', Math.floor(st!.prog), BREED.lapSecs, `한 바퀴 ${lapH >= 1 ? `${lapH.toFixed(1)}시간` : `${Math.ceil(lapH * 60)}분`} · 향신료 ${spicePerLap(b, t.id)}개 · ${st!.laps}바퀴 돌았음`) : '<div class="ui-xs ui-muted">펫을 보내면 영역을 돌며 향신료를 가져옵니다</div>'}</div>
+                ${n ? bar('xp', Math.floor(st!.prog), BREED.lapSecs, `한 판 ${lapH >= 1 ? `${lapH.toFixed(1)}시간` : `${Math.ceil(lapH * 60)}분`} · 승률 ${Math.round(winChance(pw, t.need) * 100)}% · 이기면 향신료 ${spicePerLap(b, t.id)}개 · ${st!.wins ?? 0}승 ${st!.laps - (st!.wins ?? 0)}패`) : '<div class="ui-xs ui-muted">펫을 보내면 영역의 적과 싸워 이길 때마다 향신료를 가져옵니다</div>'}</div>
                 <button class="ui-btn sm primary" data-act="bterr:${t.id}">팀 짜기</button></div>`;
-            }).join('') + `<p class="ui-xs ui-muted">팀의 힘이 요구 힘보다 셀수록 빨리 돕니다. 가져온 향신료는 별빛 식당에 바로 들어갑니다.</p>`;
+            }).join('') + `<p class="ui-xs ui-muted">팀의 힘이 셀수록 빨리 싸우고 잘 이깁니다. 가져온 향신료는 별빛 식당에 바로 들어갑니다.</p>`;
           }
+        } else if (tab === 3) {
+          const team = b.arena.team.map((u) => b.pets.find((p) => p.uid === u)).filter((p): p is BPet => !!p), pw = arenaPower(b);
+          const left = b.arena.t ? Math.max(0, ARENA_COOLDOWN - (now - b.arena.t)) : 0;
+          body = `<div class="ui-row"><b class="ui-grow">펫 아레나 <span class="ui-xs ui-accent">최고 ${b.arena.best}웨이브</span> <span class="ui-xs ui-muted">팀 힘 ${Math.round(pw)} · 다음 적 ${arenaWave(0)}부터</span></b>
+            <button class="ui-btn sm primary" data-act="barena" ${team.length && !left ? '' : 'disabled'}>${left ? `${Math.ceil(left / 60000)}분 뒤` : '도전'}</button></div>
+            <p class="ui-xs ui-good">최고 기록 보너스: 공격력 +${b.arena.best * 0.5}%, 방어력 +${b.arena.best * 0.5}</p>
+            <h3>아레나 팀 ${team.length}/${ARENA_TEAM}</h3>${team.map((p) => petLine(p, `<button class="ui-btn sm primary" data-act="barteam:${p.uid}">빼기</button>`)).join('')}
+            <h3>펫</h3>${b.pets.filter((p) => !b.arena.team.includes(p.uid)).sort((x, y) => y.power - x.power).map((p) => petLine(p, `<button class="ui-btn sm" data-act="barteam:${p.uid}" ${team.length < ARENA_TEAM ? '' : 'disabled'}>팀에 넣기</button>`)).join('')}
+            <p class="ui-xs ui-muted">웨이브마다 적이 세지고, 운을 섞어 겨룹니다. 한 시간에 한 번 도전할 수 있습니다(아레나 팀은 울타리·영역과 겹쳐도 됩니다).</p>`;
         } else {
           const NAMES: Record<BreedUp, [string, string]> = { nest: ['둥지 넓히기', `알 칸 ${nestCap(b)}개`], speed: ['따뜻한 짚', `알 낳는 속도 +${b.up.speed * 10}%`], rarity: ['별빛 모이', `좋은 알 확률 ×${(1 + b.up.rarity * 0.1).toFixed(1)}`], fence: ['울타리 넓히기', `울타리 ${fenceCap(b)}칸`] };
           body = (Object.keys(BREED.up) as BreedUp[]).map((k) => {
-            const lv = b.up[k], max = lv >= BREED.up[k].max, cost = upCostOf(b, k);
-            return `<div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>${NAMES[k][0]}</b> <span class="ui-xs ui-accent">${lv}/${BREED.up[k].max}</span><div class="ui-sm ui-muted">${NAMES[k][1]}</div></div>
-              <button class="ui-btn sm" data-act="bup:${k}" ${!max && acc.coins >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui('ui_coin', 'tic')} ${cost.toLocaleString()}`}</button></div>`;
-          }).join('') + `<p class="ui-xs ui-muted">알 등급 확률: 희귀 ${(rarityOdds(b)[0] * 100).toFixed(1)}% · 영웅 ${(rarityOdds(b)[1] * 100).toFixed(1)}% · 전설 ${(rarityOdds(b)[2] * 100).toFixed(1)}%. 등급이 높을수록 펫의 힘이 셉니다.</p>`;
+            const lv = b.up[k], max = lv >= BREED.up[k].max, cost = breedUpCost(b, k), mealN = Math.floor(acc.cook.meals[cost.meal]?.n ?? 0);
+            return `<div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>${NAMES[k][0]}</b> <span class="ui-xs ui-accent">${lv}/${BREED.up[k].max}</span><div class="ui-sm ui-muted">${NAMES[k][1]}</div>
+              ${max ? '' : `<div class="costrow"><span class="ui-xs ${b.dna >= cost.dna ? '' : 'ui-bad'}">DNA ${cost.dna}</span> <span class="ui-xs ${mealN >= cost.n ? '' : 'ui-bad'}">${ui(`ml_${cost.meal}`, 'tic')}${MEAL[cost.meal].name} ${mealN}/${cost.n}</span></div>`}</div>
+              <button class="ui-btn sm" data-act="bup:${k}" ${!max && b.dna >= cost.dna && mealN >= cost.n ? '' : 'disabled'}>${max ? '최대' : '개량'}</button></div>`;
+          }).join('') + `<p class="ui-xs ui-muted">개량은 놓아준 펫의 DNA와 별빛 식당의 요리로 합니다. 알 등급 확률: ${rarityOdds(b).slice(0, 4).map((x, i) => `${RAR_NAMES[i + 1]} ${(x * 100).toFixed(1)}%`).join(' · ')} …</p>`;
         }
-        return win('번식 둥지', `${head}${tabs(['둥지', '울타리', '영역', '개량'], tab, tabAct, ['egg_1', 'bp_b_puff', 'sp_dust', 'ui_up'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('번식 둥지', `${head}${tabs(['둥지', '울타리', '영역', '아레나', '개량'], tab, tabAct, ['egg_1', 'bp_b_puff', 'sp_dust', 'ui_skull', 'ui_up'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'kitchen': {
         const acc = g.acc, k = acc.cook, now = Date.now();
@@ -1811,6 +1822,9 @@ export class UI {
       case 'lableave': fail(g.act({ t: 'lab', op: 'leave' }).err ?? null); break;
       case 'labjewel': { const r = g.act({ t: 'lab', op: 'jewel', id: a }); if (r.ok) { this.audio?.play('craft'); this.toast(`${LAB_NODE[a].name}을(를) 열었습니다`); } else fail(r.err ?? null); break; }
       case 'bhatch': { const n0 = g.acc.breed.pets.length; const r = g.act({ t: 'breed', op: 'hatch' }); if (r.ok) { this.audio?.play('coin'); const p = g.acc.breed.pets[n0]; this.toast(`${SPEC[p.sp].name}이(가) 태어났습니다! 힘 ${p.power}`); } else fail(r.err ?? null); break; }
+      case 'bkeeper': fail(g.act({ t: 'breed', op: 'keeper' }).err ?? null); break;
+      case 'barteam': fail(g.act({ t: 'breed', op: 'arena', uid: +a }).err ?? null); break;
+      case 'barena': { const r = g.act({ t: 'breed', op: 'fight' }); if (r.ok) { this.audio?.play('coin'); this.toast(`펫 아레나: ${r.n}웨이브까지 버텼습니다!`); } else fail(r.err ?? null); break; }
       case 'brel': fail(g.act({ t: 'breed', op: 'release', uid: +a }).err ?? null); break;
       case 'bfence': fail(g.act({ t: 'breed', op: 'fence', uid: +a }).err ?? null); break;
       case 'bteam': fail(g.act({ t: 'breed', op: 'team', uid: +a, terr: b }).err ?? null); break;
