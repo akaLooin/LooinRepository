@@ -11,7 +11,7 @@ import { computeAfk } from '../../game/src/core/afk';
 import { HAIR_STYLES } from '../../game/src/core/data';
 import { charSlots } from '../../game/src/core/progress';
 import { Rng } from '../../game/src/core/rng';
-import { Account, Character, createCharacter, deserialize, newAccount, serialize } from '../../game/src/core/state';
+import { Account, Character, createCharacter, deserialize, newAccount, serialize, deleteCharacter } from '../../game/src/core/state';
 import { SyncAccount, acceptSync, checkSync } from '../../game/src/core/sync';
 import { registerLive } from './live';
 import { Store } from './store';
@@ -206,6 +206,19 @@ export function buildApp(o: AppOptions) {
       if (acc.characters.length >= charSlots(acc)) return { body: { error: '캐릭터 칸이 가득 찼습니다' }, dirty: false };
       const c = createCharacter(acc, b.data.name, b.data.look, now());
       return { body: { index: acc.characters.length - 1, account: acc, ok: !!c }, dirty: true };
+    });
+  });
+
+  // 캐릭터 삭제(되돌릴 수 없음): 이름을 다시 받아 맞을 때만
+  app.delete('/characters/:i', async (req, rep) => {
+    const me = await auth(req, rep); if (!me) return;
+    const b = z.object({ name: z.string().min(1).max(10) }).safeParse(req.body);
+    if (!b.success) return rep.code(400).send({ error: '이름을 입력하세요' });
+    return withAccount(me, rep, (acc) => {
+      const i = charIndex(acc, (req.params as { i: string }).i);
+      if (i < 0) return { body: { error: '캐릭터가 없습니다' }, dirty: false };
+      const err = deleteCharacter(acc, i, b.data.name);
+      return err ? { body: { error: err }, dirty: false } : { body: { ok: true, account: acc }, dirty: true };
     });
   });
 

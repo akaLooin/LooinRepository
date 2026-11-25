@@ -4,7 +4,7 @@ import { Action, ActionResult, applyAction } from './core/actions';
 import { AfkReport, computeAfk } from './core/afk';
 import { MAPS } from './core/data';
 import { Rng } from './core/rng';
-import { Account, Character, Look, createCharacter, deserialize, newAccount, serialize, portalLock } from './core/state';
+import { Account, Character, Look, createCharacter, deleteCharacter, deserialize, newAccount, serialize, portalLock } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
 import { ChatLine, Gear, Live, Net, RemoteInfo, SyncBody } from './net';
 
@@ -140,6 +140,23 @@ export class Game {
     const c = createCharacter(this.acc, name, look, Date.now());
     this.save();
     return !!c;
+  }
+
+  /** 캐릭터 삭제(이름 확인). 실패하면 사유 */
+  async deleteChar(idx: number, name: string): Promise<string | null> {
+    await this.leave();
+    if (this.online) {
+      try {
+        const r = await this.net!.removeChar(idx, name);
+        if (r.error || !r.account) return r.error ?? '삭제하지 못했습니다';
+        this.adopt(r.account);
+        this.save();
+        return null;
+      } catch (e) { this.netFail(e); return (e as Error).message; }
+    }
+    const err = deleteCharacter(this.acc, idx, name);
+    if (!err) this.save();
+    return err;
   }
 
   async select(idx: number) {

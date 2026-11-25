@@ -331,6 +331,16 @@ export function switchTalentPreset(c: Character, i: number): string | null {
   return null;
 }
 
+/** 캐릭터 삭제(되돌릴 수 없음): 이름을 그대로 입력해야 지운다. 가방·장비는 함께 사라지고, 창고·카드 등 계정 공용은 남는다 */
+export function deleteCharacter(acc: Account, i: number, name: string): string | null {
+  const c = acc.characters[i];
+  if (!c) return '캐릭터가 없습니다';
+  if (name.trim() !== c.name) return '이름이 맞지 않습니다';
+  acc.characters.splice(i, 1);
+  acc.active = -1;
+  return null;
+}
+
 /** 전직. 실패 사유 또는 null */
 export function advanceClass(c: Character, cls: ClassId): string | null {
   const def = CLASSES[cls];

@@ -111,6 +111,8 @@ export class UI {
   private afk: AfkReport | null = null;
   private craftSel = -1;
   private forgeSel = 0;
+  /** 삭제 확인 중인 캐릭터 */
+  private delIdx: number | null = null;
   private statSel: StatKey | null = null;
   private shownPanel: Panel = null;
   private arenaResult: { waves: number; score: number } | null = null;
@@ -317,15 +319,26 @@ export class UI {
               <span class="ui-grow"></span><button class="ui-btn primary" data-act="create">모험 시작!</button></div>
           </div></div></div>`;
     }
+    // 삭제 확인: 이름을 그대로 써야 지운다
+    const del = this.delIdx !== null ? acc.characters[this.delIdx] : null;
+    if (del) {
+      return `<h1>LOOIN IDLE</h1><div class="ui-win delbox"><header><h2>캐릭터 삭제</h2></header><div class="body stack">
+        <div class="ui-row"><img class="px" src="${portraitUrl(del.look)}" alt="" style="height:4em"><div><b>${esc(del.name)}</b><div class="ui-sm ui-accent">Lv.${del.level} ${CLASSES[del.cls].name}</div></div></div>
+        <p class="ui-sm ui-bad">삭제하면 되돌릴 수 없습니다. 이 캐릭터의 가방·장비·레벨·특성이 모두 사라집니다. 창고와 카드·우표 등 계정 공용 기록은 남습니다.</p>
+        <label class="ui-sm ui-muted" for="delname">확인을 위해 캐릭터 이름 <b>${esc(del.name)}</b>을(를) 그대로 입력하세요</label>
+        <input id="delname" class="ui-input" maxlength="10" autocomplete="off">
+        <div class="ui-row"><button class="ui-btn" data-act="delcancel">취소</button><span class="ui-grow"></span><button class="ui-btn danger" data-act="delgo">삭제</button></div></div></div>`;
+    }
     const now = Date.now();
     const cards = acc.characters.map((c, i) => {
       const map = MAPS[c.mapId], away = Math.floor((now - c.lastActive) / 1000);
       const st = c.activity.k === 'gather' && map.nodes.some((n) => n.node === (c.activity as { node: string }).node) ? '채집 중' : map.spawns.length ? '사냥 중' : '휴식 중';
-      return `<button class="charcard" data-act="select:${i}" aria-label="${esc(c.name)} 레벨 ${c.level} 선택">
+      return `<div class="charwrap"><button class="charcard" data-act="select:${i}" aria-label="${esc(c.name)} 레벨 ${c.level} 선택">
         <img class="px" src="${portraitUrl(c.look)}" alt="">
         <b>${esc(c.name)}</b><span class="ui-sm ui-accent">Lv.${c.level} ${CLASSES[c.cls].name}</span>
         <span class="ui-xs ui-muted">${map.name}</span>
-        <span class="ui-xs ui-good">${st}${away >= 60 ? ` · ${dur(away)}` : ''}</span></button>`;
+        <span class="ui-xs ui-good">${st}${away >= 60 ? ` · ${dur(away)}` : ''}</span></button>
+        <button class="chardel" data-act="delask:${i}" aria-label="${esc(c.name)} 삭제">${ui('ui_trash', 'tic')}</button></div>`;
     }).join('');
     const slots = charSlots(acc), nextLv = FAMILY_SLOTS.find((n) => familyLevel(acc) < n);
     const add = (acc.characters.length < slots ? `<button class="charcard new" data-act="newChar"><span class="ui-xl">＋</span><span>새 캐릭터</span></button>` : '')
@@ -1015,6 +1028,14 @@ export class UI {
     const g = this.game, c = g.char;
     const fail = (msg: string | null) => { if (msg) this.toast(msg); };
     switch (act) {
+      case 'delask': this.delIdx = +a; break;
+      case 'delcancel': this.delIdx = null; break;
+      case 'delgo': {
+        const idx = this.delIdx, name = (document.getElementById('delname') as HTMLInputElement | null)?.value ?? '';
+        if (idx === null) break;
+        g.deleteChar(idx, name).then((err) => { if (err) this.toast(err); else { this.toast('캐릭터를 삭제했습니다'); this.delIdx = null; } this.refresh(true); });
+        break;
+      }
       case 'newChar': this.creating = true; this.draft = this.randomDraft(); break;
       case 'cancelCreate': this.creating = false; break;
       case 'hair': this.draft.look.hair = (this.draft.look.hair + +a + HAIR_STYLES) % HAIR_STYLES; break;

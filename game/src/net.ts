@@ -47,6 +47,7 @@ export class Net {
   health() { return this.raw<{ ok: boolean }>('GET', '/health'); }
   account() { return this.send<{ account: Account }>('GET', '/account'); }
   create(name: string, look: Look) { return this.send<{ account: Account; error?: string }>('POST', '/characters', { name, look }); }
+  removeChar(i: number, name: string) { return this.send<{ ok?: boolean; account?: Account; error?: string }>('DELETE', `/characters/${i}`, { name }); }
   enter(i: number) { return this.send<{ account: Account; report: AfkReport | null; error?: string }>('POST', `/characters/${i}/enter`); }
   sync(i: number, body: SyncBody) { return this.send<{ ok: boolean; reason?: string; account?: Account }>('POST', `/characters/${i}/sync`, { commandId: crypto.randomUUID(), ...body }); }
   action(i: number, action: Action, sync?: SyncBody) {

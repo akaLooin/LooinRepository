@@ -53,6 +53,16 @@ for (const [label, make] of await makeStores()) {
       // b 가 자기 계정의 0번 캐릭터(없음)를 건드려도 a 에는 영향이 없다
       expect((await call('POST', '/characters/0/enter', b.token)).json.error).toBeTruthy();
     });
+    it('캐릭터 삭제: 이름이 맞아야 지우고, 창고 등 계정 기록은 남는다', async () => {
+      const { call, guest } = await setup();
+      const g = await guest();
+      await call('POST', '/characters', g.token, { name: '삭제될이', look });
+      expect((await call('DELETE', '/characters/0', g.token, { name: '다른이름' })).json.error).toMatch(/이름/);
+      const r = await call('DELETE', '/characters/0', g.token, { name: '삭제될이' });
+      expect(r.json.ok).toBe(true);
+      expect(r.json.account.characters).toHaveLength(0);
+      expect((await call('DELETE', '/characters/0', g.token, { name: '삭제될이' })).json.error).toBeTruthy();
+    });
 
     it('방치 보상은 서버 시계로 서버가 계산한다', async () => {
       const { call, guest, tick } = await setup();

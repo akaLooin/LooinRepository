@@ -198,3 +198,8 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .mgbox { width: min(92vw, 720px, calc((100vh - 110px) * 1.8 + 24px)); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
 .mghead { display: flex; align-items: center; gap: var(--sp-3); } .mghead b { flex: 1; } .mgscore { color: var(--c-accent); font-weight: bold; }
 .mgbox canvas { width: 100%; aspect-ratio: 360 / 200; border-radius: var(--r-md); touch-action: none; image-rendering: pixelated; }
+/* 캐릭터 카드 삭제 버튼과 확인 창 */
+.charwrap { position: relative; }
+.chardel { position: absolute; top: var(--sp-1); right: var(--sp-1); width: 2em; height: 2em; display: flex; align-items: center; justify-content: center; padding: 0; background: var(--c-surface-inset); border: 1px solid var(--c-border); border-radius: var(--r-sm); cursor: pointer; opacity: .75; }
+.chardel:hover, .chardel:focus-visible { opacity: 1; border-color: var(--c-text-bad); }
+.delbox { width: min(90vw, 26em); }
