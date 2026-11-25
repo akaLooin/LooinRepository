@@ -770,3 +770,73 @@ describe('4월드: 별빛 성운', () => {
     for (const q of NP4.astro.quests) { const gl = q.goal as { kill?: string; item?: string }; expect(gl.kill ? MON[gl.kill] : IT[gl.item!]).toBeTruthy(); }
   });
 });
+
+import { COOK, MEAL as MEALD, mealNeed as mNeed, recipeResult as rRes, spiceRate as sRate, SPICE as SPC } from '../src/core/cooking';
+describe('요리(별빛 식당)', () => {
+  const H = 3_600_000;
+  const ready = () => { const { acc, c } = setup(); c.maxWorld = 4; c.mapId = 'nebtown'; c.level = 100; return { acc, c }; };
+  it('4월드 전에는 쓸 수 없다', () => {
+    const { acc, c } = setup();
+    expect(applyAction(acc, 0, { t: 'cook', op: 'visit' }, 0).ok).toBe(false);
+    c.maxWorld = 4; expect(applyAction(acc, 0, { t: 'cook', op: 'visit' }, 1000).ok).toBe(true);
+  });
+  it('맵을 잡은 만큼 향신료가 저장고에 모이고, 24시간치에서 멈춘다', () => {
+    const { acc, c } = ready();
+    c.kills.moondust = 49; expect(sRate(acc, SPC.sp_dust)).toBe(0);
+    c.kills.moondust = 400; expect(sRate(acc, SPC.sp_dust)).toBe(4);
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H);
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H * 100);
+    expect(acc.cook.bank.sp_dust).toBe(4 * COOK.bankHours);
+    expect(applyAction(acc, 0, { t: 'cook', op: 'claim' }, H * 100).ok).toBe(true);
+    expect(acc.cook.spices.sp_dust).toBe(96);
+    expect(applyAction(acc, 0, { t: 'cook', op: 'claim' }, H * 100).ok).toBe(false);
+  });
+  it('연구로 요리를 찾고, 주방이 계속 만들고, 접시로 레벨을 올리면 보너스가 생긴다', () => {
+    const { acc, c } = ready();
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H);
+    acc.cook.spices = { sp_dust: 100, sp_salt: 100 };
+    const want = rRes(acc.cook, ['sp_dust', 'sp_salt'])!;
+    expect(MEALD[want].tier).toBe(2);
+    expect(applyAction(acc, 0, { t: 'cook', op: 'recipe', idx: 0, sp: ['sp_dust', 'sp_honey'] }, H).ok).toBe(false); // 꿀이 없다
+    expect(applyAction(acc, 0, { t: 'cook', op: 'recipe', idx: 0, sp: ['sp_dust', 'sp_salt'] }, H).ok).toBe(true);
+    expect(acc.cook.spices.sp_dust).toBe(90);
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H + COOK.recipeSecs * 2 * 1000);
+    expect(acc.cook.found).toEqual([want]);
+    expect(acc.cook.kitchens[0].meal).toBe(want);
+    // 10시간 요리
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H * 11 + COOK.recipeSecs * 2 * 1000);
+    const n = acc.cook.meals[want].n;
+    expect(n).toBeCloseTo((3600 / COOK.secs[2]) * 10, 5);
+    const before = derive(c, acc);
+    expect(applyAction(acc, 0, { t: 'cook', op: 'lvl', id: want }, H * 12).ok).toBe(true);
+    expect(acc.cook.meals[want].lv).toBe(1);
+    expect(acc.cook.meals[want].n).toBeCloseTo(n - mNeed(0), 5);
+    const after = derive(c, acc);
+    expect(JSON.stringify(after)).not.toBe(JSON.stringify(before));
+  });
+  it('식탁에 앉은 캐릭터는 주방을 빠르게 하고 요리 경험치를 얻는다(자리는 주방 수만큼)', () => {
+    const { acc, c } = ready();
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H);
+    acc.cook.found = ['m_bun']; acc.cook.meals.m_bun = { lv: 0, n: 0 };
+    applyAction(acc, 0, { t: 'cook', op: 'meal', idx: 0, id: 'm_bun' }, H);
+    expect(applyAction(acc, 0, { t: 'cook', op: 'chef' }, H).ok).toBe(true);
+    c.skills.cooking = { lv: 10, xp: 0 };
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H * 2);
+    expect(acc.cook.meals.m_bun.n).toBeCloseTo(30 * (1 + 10 * COOK.chefPer), 5);
+    expect(c.skills.cooking.lv > 10 || c.skills.cooking.xp > 0).toBe(true);
+    // 두 번째 캐릭터는 자리가 없다
+    acc.characters.push({ ...JSON.parse(JSON.stringify(c)), id: c.id + 1 });
+    expect(applyAction(acc, 1, { t: 'cook', op: 'chef' }, H * 2).ok).toBe(false);
+    acc.coins = COOK.kitchenCost[1];
+    expect(applyAction(acc, 0, { t: 'cook', op: 'buy' }, H * 2).ok).toBe(true);
+    expect(applyAction(acc, 1, { t: 'cook', op: 'chef' }, H * 2).ok).toBe(true);
+  });
+  it('주방 단계는 정해진 향신료로 오른다', () => {
+    const { acc } = ready();
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H);
+    expect(applyAction(acc, 0, { t: 'cook', op: 'up', idx: 0, k: 'spd' }, H).ok).toBe(false);
+    acc.cook.spices.sp_dust = 8;
+    expect(applyAction(acc, 0, { t: 'cook', op: 'up', idx: 0, k: 'spd' }, H).ok).toBe(true);
+    expect(acc.cook.kitchens[0].spd).toBe(1);
+  });
+});

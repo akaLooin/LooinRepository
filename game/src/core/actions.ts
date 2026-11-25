@@ -4,6 +4,7 @@ import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
@@ -79,6 +80,7 @@ export type Action =
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
+  | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number }
@@ -182,6 +184,20 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'run') { const r = finishWorship(acc, c, a.id, a.kills ?? 0, !!a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
       if (a.op === 'up') return res(upPrayer(acc, c, a.id));
       return res(togglePrayer(acc, c, a.id));
+    }
+    case 'cook': {
+      if ((c.maxWorld ?? 1) < 4) return fail('4월드 성운 정거장의 별빛 식당에서 할 수 있습니다');
+      switch (a.op) {
+        case 'visit': cookSettle(acc, now); return ok();
+        case 'claim': return res(claimSpices(acc, now));
+        case 'meal': return res(setMeal(acc, a.idx ?? -1, a.id ?? '', now));
+        case 'recipe': return res(startRecipe(acc, a.idx ?? -1, a.sp ?? [], now));
+        case 'up': return res(upKitchen(acc, a.idx ?? -1, a.k ?? 'spd', now));
+        case 'buy': return res(buyKitchen(acc, now));
+        case 'lvl': return res(levelMeal(acc, a.id ?? '', now));
+        case 'chef': return res(toggleChef(acc, c.id, now));
+      }
+      return fail('없는 행동');
     }
     case 'build': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 공방 마당에서 할 수 있습니다');

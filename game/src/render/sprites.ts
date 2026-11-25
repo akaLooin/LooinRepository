@@ -968,6 +968,15 @@ function buildObjects() {
   p.rect(36, 2, 2, 37, '#e8a83a'); p.rect(24, 2, 16, 2, '#e8a83a'); p.line(26, 4, 26, 14, '#3a3442'); p.rect(24, 14, 5, 4, '#9aa3ad');
   p.volume();
   p.outline().save('obj_build');
+  // 별빛 식당: 은빛 화덕 + 김 나는 냄비 + 둥근 창(별)
+  p = new Paint(40, 36);
+  p.rect(4, 12, 32, 23, '#c8c4d8'); p.rect(4, 12, 32, 2, '#e8e4f0'); p.rect(4, 33, 32, 2, '#6a6488');
+  p.disc(12, 22, 5, 5, '#3a2e66'); p.disc(12, 22, 3.6, 3.6, '#5a4ab8'); p.set(11, 21, '#fff6c8'); p.set(13, 23, '#fff6c8');
+  p.rect(21, 18, 12, 9, '#3a3442'); p.rect(22, 21, 10, 5, '#ff7a3a'); p.rect(23, 22, 8, 2, '#ffd06a');
+  p.disc(27, 9, 8, 4, '#8a80a8'); p.rect(19, 9, 16, 4, '#8a80a8'); p.rect(19, 9, 16, 1, '#b4aac8'); p.rect(17, 10, 2, 2, '#6a6488'); p.rect(35, 10, 2, 2, '#6a6488');
+  for (const [x, h] of [[23, 5], [27, 7], [31, 4]] as const) p.rect(x, 7 - h, 1, h, '#f4f0fa');
+  p.volume();
+  p.outline().save('obj_kitchen');
   // 기도 토템: 얼음 결정이 박힌 흰 돌기둥 + 빛나는 눈 + 위쪽 별
   p = new Paint(24, 44);
   p.rect(6, 10, 12, 34, '#c8d4e4'); p.rect(3, 16, 18, 4, '#8aa0b8'); p.rect(3, 30, 18, 4, '#8aa0b8');
@@ -1431,6 +1440,23 @@ function buildIcons() {
   // 기도: 영혼(토템마다 색)
   for (const [k, col, hi2] of [['snow', '#e8f2fc', '#ffffff'], ['water', '#4a8ae8', '#a8d4ff'], ['ice', '#7ae0ff', '#e0faff'], ['star', '#c48aff', '#fff0a8']] as const) {
     icon(`soul_${k}`, (p) => { p.disc(8, 9, 5, 5, col); p.disc(8, 4, 3, 3.6, col); p.disc(7, 8, 2, 2, hi2); p.set(6, 8, '#1e1420'); p.set(10, 8, '#1e1420'); p.set(8, 0, hi2); });
+  }
+  // 요리: 향신료(작은 병) · 요리(접시 위 음식)
+  for (const [id, col] of [['sp_dust', '#e0dce8'], ['sp_salt', '#b4a8c4'], ['sp_honey', '#ff9ae0'], ['sp_pepper', '#7a6a64'], ['sp_cinna', '#c8864a'], ['sp_mint', '#9ad8f6'], ['sp_vanilla', '#8a5ad8']] as const) {
+    icon(id, (p) => { p.rect(5, 2, 6, 3, '#8a6a4a'); p.rect(4, 5, 8, 10, '#e8f4fa'); p.rect(5, 8, 6, 6, col); p.rect(5, 8, 6, 1, mix(col, '#ffffff', 0.5)); p.set(5, 6, '#ffffff'); });
+  }
+  for (const [i, [id, col]] of ([['m_bun', '#f4f0e6'], ['m_cookie', '#d8a86a'], ['m_soup', '#c88a4a'], ['m_pudding', '#ff9ae0'], ['m_steak', '#a8543a'], ['m_pie', '#e8b84a'], ['m_shaved', '#c8f0ff'], ['m_noodle', '#f6e08a'],
+    ['m_curry', '#e8a83a'], ['m_tart', '#6a4aa8'], ['m_cake', '#b48aff'], ['m_bento', '#8ad06a'], ['m_feast', '#ff7a3a'], ['m_macaron', '#3a2a5a'], ['m_banquet', '#f6c945'], ['m_bbq', '#8a3a2a']] as const).entries()) {
+    icon(`ml_${id}`, (p) => {
+      p.disc(8, 12, 7, 2.6, '#e8e4f0'); p.disc(8, 12, 5, 1.6, '#c8c4d8');
+      const shape = i % 4;
+      if (shape === 0) { p.disc(8, 8, 5, 4, col); p.disc(7, 6, 2, 1.4, mix(col, '#ffffff', 0.5)); }
+      else if (shape === 1) { for (const [x, y] of [[5, 9], [10, 9], [8, 6]]) p.disc(x, y, 2.6, 2, col); p.set(8, 5, '#ffffff'); }
+      else if (shape === 2) { p.rect(3, 6, 10, 5, col); p.rect(3, 6, 10, 1, mix(col, '#ffffff', 0.45)); p.set(6, 4, '#ff6a6a'); p.set(7, 4, '#ff6a6a'); }
+      else { p.disc(8, 9, 6, 3, col); p.disc(8, 8, 3, 1.4, mix(col, '#ffffff', 0.4)); p.line(4, 3, 6, 6, '#8a6a4a'); }
+      if (i >= 8) p.set(12, 3, '#fff6c8');
+      if (i >= 12) { p.set(3, 4, '#fff6c8'); p.set(13, 6, '#fff6c8'); }
+    });
   }
   // 건설: 건물 아이콘(지붕 색 + 상징)
   for (const [id, roof, sym] of [['b_woodshed', '#8a5a3c', '#e8c08a'], ['b_minehouse', '#6a7480', '#7ae0ff'], ['b_dock', '#4a8ae8', '#c8ecff'], ['b_greenhouse', '#5fb859', '#f6c945'], ['b_drill', '#d9574a', '#f2f0e6'], ['b_hearth', '#e8833a', '#ffd06a'], ['b_library', '#8a6fd1', '#f2f0e6'], ['b_market', '#f2c14e', '#a8782a'], ['b_tower', '#5a6a8a', '#fff0a8'], ['b_attic', '#3a4a7a', '#c4ccff']] as const) {

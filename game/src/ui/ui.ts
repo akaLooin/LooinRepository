@@ -5,6 +5,7 @@ import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
 import { trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
+import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
 import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
@@ -36,7 +37,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
+type Panel = 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -138,6 +139,8 @@ export class UI {
   private bubSel: string | null = null;
   /** 덫 오두막: 덫을 놓으려고 고른 칸 */
   private trapIdx = -1;
+  private kitIdx = -1;
+  private recipeSp: string[] = [];
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
   private refBack = false;
   /** 지도 창에서 보고 있는 월드(없으면 지금 있는 월드) */
@@ -269,7 +272,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.gateWorld = e.to; this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -809,6 +812,64 @@ export class UI {
         }
         return win(`기도 토템 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['토템', '기도문'], tab, tabAct, ['obj_shrine', 'soul_star'])}<div class="ui-tabpanel">${body}</div>`);
       }
+      case 'kitchen': {
+        const acc = g.acc, k = acc.cook, now = Date.now();
+        cookSettle(acc, now);
+        const sk = c.skills.cooking, need = skillXpToNext(sk.lv), seated = k.chefs.includes(c.id);
+        const head = `<div class="ui-row alchhead">${ui('obj_kitchen', 'mi')}<b class="ui-grow">요리 Lv.<span class="ui-accent">${sk.lv}</span> <span class="ui-xs ui-muted">요리사 ${k.chefs.length}/${k.kitchens.length} · 주방 속도 ×${chefMult(acc).toFixed(2)}</span></b>
+          <div style="width:24%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div><button class="ui-btn sm ${seated ? 'primary' : ''}" data-act="kchef" title="식탁에 앉은 캐릭터는 요리 레벨만큼 모든 주방을 빠르게 하고, 요리 경험치를 얻습니다">${seated ? '식탁에서 일어나기' : '식탁에 앉기'}</button></div>`;
+        const spi = (id: string, n?: number) => `${ui(id, 'tic')}${n !== undefined ? n.toLocaleString() : ''}`;
+        const hm = (s: number) => { const m = Math.ceil(s / 60); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
+        let body = '';
+        if (tab === 0) {
+          const ki = this.kitIdx;
+          if (ki >= 0 && k.kitchens[ki] && !k.kitchens[ki].recipe) {
+            // 고르기: 아는 요리 또는 새 요리 연구
+            const meals = k.found.map((id) => { const m = MEAL[id]; return `<button class="ui-btn sm ${k.kitchens[ki].meal === id ? 'primary' : ''}" data-act="kmeal:${ki}:${id}">${ui(`ml_${id}`, 'tic')} ${m.name}<br><span class="ui-xs">${mealsPerHour(acc, k.kitchens[ki], id).toFixed(1)}/시간</span></button>`; }).join('');
+            const sel = this.recipeSp, cost = recipeCost(k.found.length), res = sel.length ? recipeResult(k, sel) : null;
+            const sps = SPICES.map((s) => { const on = sel.includes(s.id), have = k.spices[s.id] ?? 0; return `<button class="ui-btn sm ${on ? 'primary' : ''}" data-act="ksp:${s.id}" ${!on && (sel.length >= 4 || have < cost) ? 'disabled' : ''} title="${s.name}">${spi(s.id, have)}</button>`; }).join('');
+            const tierTxt = sel.length ? `${sel.length}가지 → ${res ? `${MEAL[res].tier}단계 요리를 찾습니다 · ${hm(COOK.recipeSecs * sel.length / recipeRate(k.kitchens[ki]))}` : '이 단계 요리는 다 찾았습니다'}` : '향신료를 1~4가지 고르세요';
+            body = `<div class="ui-row"><b class="ui-grow">${ki + 1}번 주방에서 무엇을 할까요?</b><button class="ui-btn sm" data-act="kpick:${ki}">뒤로</button></div>
+              <h3>아는 요리 만들기</h3><div class="ui-row trapbtns" style="flex-wrap:wrap;justify-content:flex-start">${meals || '<span class="ui-sm ui-muted">아직 아는 요리가 없습니다. 아래에서 연구하세요.</span>'}${k.kitchens[ki].meal ? `<button class="ui-btn sm" data-act="kmeal:${ki}:">멈추기</button>` : ''}</div>
+              <h3>새 요리 연구 <span class="ui-xs ui-muted">가짓수마다 ${cost}개씩</span></h3><div class="ui-row trapbtns" style="flex-wrap:wrap;justify-content:flex-start">${sps}</div>
+              <div class="ui-row"><span class="ui-sm ui-grow ${res ? 'ui-good' : 'ui-muted'}">${tierTxt}</span><button class="ui-btn sm primary" data-act="krecipe:${ki}" ${res ? '' : 'disabled'}>연구 시작</button></div>`;
+          } else {
+            body = k.kitchens.map((kit, i) => {
+              let st: string;
+              if (kit.recipe) st = `<b>요리 연구 중</b> <span class="ui-xs">${kit.recipe.sp.map((s) => ui(s, 'tic')).join('')}</span>${bar('xp', Math.floor(kit.recipe.prog), kit.recipe.need, `${hm((kit.recipe.need - kit.recipe.prog) / recipeRate(kit))} 남음`)}`;
+              else if (kit.meal) st = `<b>${MEAL[kit.meal].name}</b> <span class="ui-xs ui-good">시간당 ${mealsPerHour(acc, kit, kit.meal).toFixed(1)}접시</span><div class="ui-xs ui-muted">가진 수 ${Math.floor(k.meals[kit.meal]?.n ?? 0).toLocaleString()}</div>`;
+              else st = '<span class="ui-muted">쉬는 중 · 요리를 고르거나 연구하세요</span>';
+              const ups = (['spd', 'fire', 'luck'] as KitchenUp[]).map((u) => {
+                const lv = kit[u], sp = upSpice(i, u, lv), cost = upCost(lv), max = lv >= COOK.upMax;
+                const lab = u === 'spd' ? `속도 ${lv}` : u === 'fire' ? `불 ${lv}` : `행운 ${lv}`;
+                const tip = u === 'spd' ? `요리 속도 +${Math.round(lv * COOK.spdPer * 100)}%` : u === 'fire' ? `연구 속도 +${Math.round(lv * COOK.firePer * 100)}%` : `두 배 확률 ${Math.round(lv * COOK.luckPer * 100)}%`;
+                return `<button class="ui-btn sm" data-act="kup:${i}:${u}" title="${tip}" ${!max && (k.spices[sp] ?? 0) >= cost ? '' : 'disabled'}>${lab}<br><span class="ui-xs">${max ? '최대' : spi(sp, cost)}</span></button>`;
+              }).join('');
+              return `<div class="ui-row line">${kit.meal ? ui(`ml_${kit.meal}`, 'mi') : ui('obj_kitchen', 'mi')}<div class="ui-grow">${st}</div><div class="ui-row trapbtns">${ups}</div>
+                <button class="ui-btn sm primary" data-act="kpick:${i}" ${kit.recipe ? 'disabled' : ''}>바꾸기</button></div>`;
+            }).join('');
+            const kc = COOK.kitchenCost[k.kitchens.length];
+            body += kc !== undefined ? `<div class="ui-row line">${ui('obj_kitchen', 'mi')}<span class="ui-grow"><b>주방 늘리기</b> <span class="ui-xs ui-muted">주방이 늘면 식탁 자리도 늘어납니다</span></span><button class="ui-btn sm" data-act="kbuy" ${acc.coins >= kc ? '' : 'disabled'}>${ui('ui_coin', 'tic')} ${kc.toLocaleString()}</button></div>` : '';
+            body += `<p class="ui-xs ui-muted">주방은 계정 공용이고 접속하지 않아도 요리합니다. 주방 단계는 향신료로 올리고, 단계마다 드는 향신료가 바뀝니다.</p>`;
+          }
+        } else if (tab === 1) {
+          body = MEALS.map((m) => {
+            if (!k.found.includes(m.id)) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<div class="ui-grow"><b>???</b><div class="ui-xs ui-muted">${m.tier}단계 요리 · 향신료 ${m.tier}가지로 연구</div></div></div>`;
+            const st = k.meals[m.id] ?? { lv: 0, n: 0 }, max = st.lv >= COOK.mealMax, nd = mealNeed(st.lv), v = (x: number) => Math.round(x * m.per * 100) / 100;
+            return `<div class="ui-row line">${ui(`ml_${m.id}`, 'mi')}<div class="ui-grow"><b>${m.name}</b> <span class="ui-xs ui-accent">Lv.${st.lv}/${COOK.mealMax}</span>
+              <div class="ui-sm ${st.lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[m.eff]} +${v(st.lv)}${m.unit}${max ? '' : ` → +${v(st.lv + 1)}${m.unit}`}</div>${max ? '' : bar('xp', Math.min(nd, Math.floor(st.n)), nd, `${Math.floor(st.n).toLocaleString()} / ${nd.toLocaleString()}접시`)}</div>
+              <button class="ui-btn sm primary" data-act="klvl:${m.id}" ${!max && st.n >= nd ? '' : 'disabled'}>${max ? '최대' : '레벨 업'}</button></div>`;
+          }).join('') + `<p class="ui-xs ui-muted">쌓인 접시로 요리 레벨을 올리면 계정의 모든 캐릭터에게 효과가 생깁니다.</p>`;
+        } else {
+          const bank = SPICES.reduce((s, x) => s + Math.floor(k.bank[x.id] ?? 0), 0);
+          body = SPICES.map((s) => {
+            const r = spiceRate(acc, s), have = k.spices[s.id] ?? 0, b = Math.floor(k.bank[s.id] ?? 0);
+            return `<div class="ui-row line ${r ? '' : 'locked'}">${ui(s.id, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ui-accent">${have.toLocaleString()}개</span>
+              <div class="ui-xs ${r ? 'ui-good' : 'ui-muted'}">${spiceMapName(s)} · ${r ? `시간당 ${r}개 · 저장고 ${b}/${r * COOK.bankHours}` : '그 맵에서 50마리 넘게 잡으면 모이기 시작'}</div></div></div>`;
+          }).join('') + `<div class="ui-row"><span class="ui-xs ui-muted ui-grow">맵을 많이 잡을수록(계정에서 가장 많이 잡은 캐릭터 기준) 더 빨리 모입니다. 저장고는 24시간치까지 찹니다.</span><button class="ui-btn sm primary" data-act="kclaim" ${bank ? '' : 'disabled'}>모두 거두기 (${bank})</button></div>`;
+        }
+        return win('별빛 식당', `${head}${tabs(['주방', '요리', '향신료'], tab, tabAct, ['obj_kitchen', 'ml_m_bun', 'sp_honey'])}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'build': {
         const acc = g.acc, b = acc.build, now = Date.now();
         buildSettle(acc, now);
@@ -1330,12 +1391,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && (k !== 'kitchen' || (c.maxWorld ?? 1) >= 4);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1408,7 +1469,7 @@ export class UI {
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); break;
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
@@ -1471,6 +1532,15 @@ export class UI {
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
         break;
       }
+      case 'kpick': this.kitIdx = this.kitIdx === +a ? -1 : +a; this.recipeSp = []; break;
+      case 'ksp': this.recipeSp = this.recipeSp.includes(a) ? this.recipeSp.filter((x) => x !== a) : [...this.recipeSp, a].slice(0, 4); break;
+      case 'kmeal': { const r = g.act({ t: 'cook', op: 'meal', idx: +a, id: b ?? '' }); if (r.ok) this.kitIdx = -1; else fail(r.err ?? null); break; }
+      case 'krecipe': { const r = g.act({ t: 'cook', op: 'recipe', idx: +a, sp: this.recipeSp }); if (r.ok) { this.audio?.play('craft'); this.toast('요리 연구를 시작했습니다'); this.kitIdx = -1; this.recipeSp = []; } else fail(r.err ?? null); break; }
+      case 'kup': { const r = g.act({ t: 'cook', op: 'up', idx: +a, k: b as KitchenUp }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
+      case 'kbuy': { const r = g.act({ t: 'cook', op: 'buy' }); if (r.ok) this.toast('주방이 하나 늘었습니다'); else fail(r.err ?? null); break; }
+      case 'klvl': { const r = g.act({ t: 'cook', op: 'lvl', id: a }); if (r.ok) { this.audio?.play('craft'); this.toast(`${MEAL[a].name} Lv.${g.acc.cook.meals[a].lv}!`); } else fail(r.err ?? null); break; }
+      case 'kclaim': { const r = g.act({ t: 'cook', op: 'claim' }); if (r.ok) this.audio?.play('coin'); else fail(r.err ?? null); break; }
+      case 'kchef': fail(g.act({ t: 'cook', op: 'chef' }).err ?? null); break;
       case 'trappick': this.trapIdx = this.trapIdx === +a ? -1 : +a; break;
       case 'trapset': {
         const r = g.act({ t: 'trap', op: 'set', idx: this.trapIdx, critter: a, time: +b });
