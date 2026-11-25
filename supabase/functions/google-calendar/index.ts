@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     const { data: accounts } = await db.from("google_accounts").select("user_id");
     const out: Record<string, unknown> = {};
     for (const a of accounts ?? []) {
-      try { out[a.user_id] = await removeCopies(db, a.user_id, input?.dry !== false); } catch (e) { out[a.user_id] = { error: String(e) }; }
+      try { out[a.user_id] = await removeCopies(db, a.user_id, input?.dry !== false, Math.min(300, Math.max(1, Number(input?.most) || 120))); } catch (e) { out[a.user_id] = { error: String(e) }; }
     }
     return json(out);
   }
@@ -575,8 +575,8 @@ async function every(make: () => any, key: string): Promise<Row[]> {
  * Google calendar with the same title, days, times and repeat rule are copies; the oldest stays, the others leave the app and
  * Google. {dry: true} only counts.
  */
-async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
-  await syncUser(db, uid).catch(() => {}); // first bring in what Google has (copies made there too)
+async function removeCopies(db: SupabaseClient, uid: string, dry: boolean, most = 120) {
+  // a part at a time (user, 2026-11-25: 671 at once ran out of the server's strength); run again for the rest
   const token = await accessToken(db, uid);
   const evs = await every(() => db.from("events").select("id, title, start_date, end_date, all_day, start_time, end_time, repeat, instance_of, google_calendar_id, created_at, color, memo, location, alarm_minutes, alarms, important").eq("user_id", uid).is("deleted_at", null).not("google_calendar_id", "is", null), "id");
   const links = new Map((await every(() => db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid), "event_id")).map((l) => [l.event_id, l]));
@@ -606,7 +606,7 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
       copies++;
       const l = links.get(e.id);
       if (l) inGoogle++; else appOnly++;
-      if (dry) continue;
+      if (dry || removed >= most) continue;
       if (l) {
         if (!canWrite.has(l.calendar_id)) continue;
         const r = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(l.google_id)}`, { method: "DELETE" });
@@ -617,7 +617,7 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
       removed++;
     }
   }
-  return { events: evs.length, groupsWithCopies, repeatGroups, copies, appOnly, inGoogle, removed, dry };
+  return { events: evs.length, groupsWithCopies, repeatGroups, copies, appOnly, inGoogle, removed, left: dry ? copies : copies - removed, dry };
 }
 
 /** What Google said a moment ago (colours, labels), kept while this server copy lives: a quick round asks less. */
