@@ -316,3 +316,6 @@ html, body { word-break: keep-all; overflow-wrap: anywhere; }
 
 /* 오볼판: 작은 칸 5줄 */
 .ui-grid.obgrid { grid-template-columns: repeat(5, auto); justify-content: start; gap: 3px; }
+
+/* 지도: 깊은 지역 목록 */
+.deeplist { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin: 4px 0; }

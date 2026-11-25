@@ -399,6 +399,29 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
+// ───────── 깊은 지역(원작처럼 월드마다 맵이 많다): 그 월드 마지막 사냥터에서 갈라지는 사냥터 사슬 ─────────
+// 몬스터는 그 월드 몬스터의 더 센 변종(그림은 빌려 쓰고 색을 입힌다)
+interface DeepDef { w: number; base: string[]; top: string; n: number; from: string; grow: number }
+export const DEEP: DeepDef[] = [
+  { w: 1, base: ['mossblob', 'pebbler', 'leafling', 'mudturtle', 'glowbat', 'gusthopper', 'golemite', 'shroomkin'], top: 'shroomkin', n: 19, from: 'grove', grow: 1.15 },
+  { w: 2, base: ['cactling', 'scorpip', 'mirabird', 'mumbun', 'saltcrab', 'duneworm', 'sunwisp'], top: 'sunwisp', n: 8, from: 'sunspire', grow: 1.25 },
+  { w: 3, base: ['snowpuff', 'pinekin', 'penglet', 'icicle', 'yetiling', 'aurowisp', 'frostgolem'], top: 'frostgolem', n: 8, from: 'frostpeak', grow: 1.25 },
+  { w: 4, base: ['starling', 'cratermite', 'nebjelly', 'meteorite', 'ringowl', 'cometfox', 'voidimp'], top: 'voidimp', n: 8, from: 'voidedge', grow: 1.25 },
+];
+const MOB_PRE = ['사나운', '고대', '그림자', '황혼', '안개', '불꽃', '이끼', '폭풍', '달빛', '심연', '황금', '유령', '거대한', '잿빛', '별빛', '태고의', '칠흑', '광란의', '서슬'];
+const DEEP_TINT = [0xffb0b0, 0xb0d0ff, 0xc0ffb0, 0xffe0a0, 0xe0b0ff, 0xa0fff0, 0xffc0e0, 0xd0d0d0];
+export const DEEP_MOBS: string[][] = DEEP.map((d) => Array.from({ length: d.n }, (_, k) => {
+  const b = monsters.find((m) => m.id === d.base[k % d.base.length])!, top = monsters.find((m) => m.id === d.top)!;
+  const f = (g: number) => Math.pow(g, k + 1), id = `dm${d.w}_${k + 1}`;
+  monsters.push({
+    ...b, id, name: `${MOB_PRE[k % MOB_PRE.length]} ${b.name}`,
+    hp: Math.round(top.hp * f(d.grow)), atk: Math.round(top.atk * f(1.05)), acc: Math.round(top.acc * f(1.05)), defZero: Math.round(top.defZero * f(1.05)),
+    xp: Math.round(top.xp * f(d.grow - 0.03)), coins: [Math.round(top.coins[0] * f(1.1)), Math.round(top.coins[1] * f(1.1))],
+    art: b.art ?? b.id, tint: DEEP_TINT[k % DEEP_TINT.length],
+    drops: b.drops.filter((x) => !/key|crown|trophy|charm|mask/.test(x.item)).map((x) => ({ ...x })),
+  });
+  return id;
+}));
 for (const m of monsters) if (!m.boss && !m.scale) m.drops.push({ item: 'tp_ticket', chance: 0.006, qty: [1, 1] });
 // 수정 몬스터: 일반 몬스터가 다시 나타날 때 드물게 수정으로 바뀐다. 더 단단하고, 석상 조각을 잔뜩, 아주 드물게 황금 석상을 떨어뜨린다
 export const CRYSTAL_CHANCE = 1 / 400;
@@ -671,6 +694,30 @@ const maps: MapDef[] = [
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'voidedge', toX: 930, toY: -96 }] },
 ];
+// 깊은 지역 맵: 그 월드 사냥터의 지형을 빌려 이어 붙인다
+const MAP_PRE = ['깊은', '오래된', '잊힌', '숨은', '메아리', '고요한', '험한', '안쪽', '끝없는', '버려진', '흐린', '어두운', '높은', '젖은', '마른', '뒤틀린', '빛나는', '서늘한', '마지막'];
+const WORLD_HUNT: Record<number, string[]> = {
+  1: ['meadow', 'hills', 'forest', 'swamp', 'cave', 'ridge', 'ruins', 'grove'], 2: ['dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire'],
+  3: ['snowfield', 'pinewood', 'frostlake', 'icecave', 'glacier', 'aurora', 'frostpeak'], 4: ['moondust', 'crater', 'nebula', 'asteroid', 'rings', 'comet', 'voidedge'],
+};
+export const DEEP_MAPS: string[][] = DEEP.map((d, di) => {
+  const ids = DEEP_MOBS[di].map((_, k) => `deep${d.w}_${k + 1}`);
+  ids.forEach((id, k) => {
+    const src = maps.find((m) => m.id === WORLD_HUNT[d.w][k % WORLD_HUNT[d.w].length])!;
+    const prev = k ? ids[k - 1] : d.from, next = ids[k + 1];
+    maps.push({
+      id, name: `${MAP_PRE[k % MAP_PRE.length]} ${src.name}`, width: src.width, theme: src.theme,
+      platforms: src.platforms.map((x) => ({ ...x })), ropes: src.ropes.map((x) => ({ ...x })), nodes: src.nodes.map((x) => ({ ...x })),
+      spawns: [{ monster: DEEP_MOBS[di][k], count: 9 }], facilities: [],
+      portals: [{ x: 24, to: prev, toX: k ? (maps.find((m) => m.id === prev)?.width ?? 900) - 60 : 300 }, ...(next ? [{ x: src.width - 24, to: next, toX: 50, reqKills: 300 + d.w * 150 + k * 40 }] : [])],
+    });
+  });
+  // 그 월드 마지막 사냥터의 빈 자리에 깊은 지역으로 가는 문
+  const from = maps.find((m) => m.id === d.from)!;
+  const x = [300, 360, 420, 480, 540, 240].find((cx) => ![...from.nodes.map((n) => n.x), ...from.facilities.map((f) => f.x), ...from.portals.map((p) => p.x)].some((o) => Math.abs(o - cx) < 50)) ?? 300;
+  from.portals.push({ x, to: ids[0], toX: 50, reqKills: 400 + d.w * 200, label: '깊은 지역' });
+  return ids;
+});
 export const MAPS: Record<string, MapDef> = Object.fromEntries(maps.map((m) => [m.id, m]));
 
 export const RECIPES: RecipeDef[] = [
@@ -835,10 +882,10 @@ export const WORLD3 = ['snowtown', 'snowfield', 'pinewood', 'frostlake', 'icecav
 export const WORLD4 = ['nebtown', 'moondust', 'crater', 'nebula', 'asteroid', 'rings', 'comet', 'voidedge'];
 /** spawnX: 마을에서 다시 시작하는 자리 */
 export const WORLDS = [
-  { n: 1, name: '1월드 · 이끼 들판', town: 'town', spawnX: 120, maps: WORLD1 },
-  { n: 2, name: '2월드 · 노을 사막', town: 'oasis', spawnX: 300, maps: WORLD2 },
-  { n: 3, name: '3월드 · 서리 고원', town: 'snowtown', spawnX: 300, maps: WORLD3 },
-  { n: 4, name: '4월드 · 별빛 성운', town: 'nebtown', spawnX: 300, maps: WORLD4 },
+  { n: 1, name: '1월드 · 이끼 들판', town: 'town', spawnX: 120, maps: [...WORLD1, ...DEEP_MAPS[0]] },
+  { n: 2, name: '2월드 · 노을 사막', town: 'oasis', spawnX: 300, maps: [...WORLD2, ...DEEP_MAPS[1]] },
+  { n: 3, name: '3월드 · 서리 고원', town: 'snowtown', spawnX: 300, maps: [...WORLD3, ...DEEP_MAPS[2]] },
+  { n: 4, name: '4월드 · 별빛 성운', town: 'nebtown', spawnX: 300, maps: [...WORLD4, ...DEEP_MAPS[3]] },
 ];
 /** 보스방·콜로세움처럼 순간이동 지도에 오르지 않는 맵이 속한 월드 */
 const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, arena2: 2, arena3: 3, rift: 4, sandlair: 2, frostlair: 3, voidlair: 4 };
@@ -1043,6 +1090,11 @@ export const CARDS: CardDef[] = [
 ];
 // 보스 카드는 원작처럼 패시브: 장착하지 않아도 효과가 있다
 for (const cd of CARDS) if (cd.from === 'monster' && ['mossking', 'sandlord', 'frostlord', 'nebtitan'].includes(cd.id)) cd.passive = true;
+// 깊은 지역 몬스터 카드
+{
+  const cyc: [CardBonus, string, number][] = [['hp', '최대 체력', 0.03], ['dmg', '공격력', 0.03], ['drop', '드롭률', 0.03], ['card', '카드 드롭률', 0.03], ['afk', '방치 효율', 0.015]];
+  DEEP_MOBS.forEach((list, wi) => list.forEach((id, k) => { const [bonus, label, per] = cyc[k % cyc.length]; CARDS.push({ id, from: 'monster', bonus, per: Math.round(per * (1 + wi * 0.6 + k * 0.05) * 1000) / 1000, label }); }));
+}
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
 export const NODE_CARD_CHANCE = 1 / 600;

@@ -18,7 +18,7 @@ import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID
 const SPECIAL_DESC: Record<string, string> = { b_refinery: '소금을 정제(레벨마다 소금 한 가지)', b_printer: '자원 복사(레벨 + 1칸)', b_library: '특성 최대 레벨을 늘리는 책', b_drone: '모든 캐릭터의 덫 칸 +1(레벨마다)', b_collider: '입자를 모아 원자 올리기', b_tower: '기도 토템이 혼령을 더 자주 쏘고 영혼 +4%(레벨마다)' };
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중', hp: '최대 체력', card: '카드 드롭률' };
 import {
-  ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
+  ATTACK_SLOTS, CARD_SLOTS, DEEP_MAPS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, talentTab, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaOf, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
   TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
@@ -650,7 +650,14 @@ export class UI {
             <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
           : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
         const wtabs = mw > 1 ? ` <span class="worldsw" role="tablist">${WORLDS.filter((x) => x.n <= mw).map((x) => `<button class="ui-btn sm ${x.n === wn ? 'primary' : ''}" role="tab" aria-selected="${x.n === wn}" data-act="mapworld:${x.n}" title="${x.name}">${x.n}월드</button>`).join('')}</span>` : '';
-        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox"${wn === 4 ? ' style="background:#120e2a"' : ''}>${worldMapSvg(regions, wn)}</div><div class="ui-row mapfoot">${foot}</div>`);
+        // 깊은 지역: 지도 그림 아래 목록으로(그 월드 마지막 사냥터에서 갈라진다)
+        const deep = DEEP_MAPS[wn - 1] ?? [];
+        const deepRows = deep.some((id) => mapUnlocked(c, id)) ? `<div class="deeplist"><b class="ui-xs ui-muted">깊은 지역</b>${deep.map((id) => {
+          const open = mapUnlocked(c, id), here = c.mapId === id, q = mapQuota(id), k = c.kills[id] ?? 0;
+          if (!open) return `<span class="ui-slot sm locked" title="아직 모름">${ui('ui_lock', 'tic')}</span>`;
+          return `<button class="ui-btn sm ${this.mapSel === id ? 'primary' : here ? 'success' : ''}" data-act="mapsel:${id}" title="${MAPS[id].name}${q ? ` · 처치 ${k}/${q}` : ''}">${MAPS[id].name}</button>`;
+        }).join('')}</div>` : '';
+        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox"${wn === 4 ? ' style="background:#120e2a"' : ''}>${worldMapSvg(regions, wn)}</div>${deepRows}<div class="ui-row mapfoot">${foot}</div>`);
       }
 
       case 'gate': {
