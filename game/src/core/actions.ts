@@ -4,6 +4,7 @@ import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
@@ -80,6 +81,7 @@ export type Action =
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
+  | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
@@ -184,6 +186,18 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'run') { const r = finishWorship(acc, c, a.id, a.kills ?? 0, !!a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
       if (a.op === 'up') return res(upPrayer(acc, c, a.id));
       return res(togglePrayer(acc, c, a.id));
+    }
+    case 'breed': {
+      if ((c.maxWorld ?? 1) < 4) return fail('4월드 성운 정거장의 번식 둥지에서 할 수 있습니다');
+      switch (a.op) {
+        case 'visit': breedSettle(acc, now); return ok();
+        case 'hatch': return res(hatchEgg(acc, now));
+        case 'release': return res(releasePet(acc, a.uid ?? -1, now));
+        case 'fence': return res(toggleFence(acc, a.uid ?? -1, now));
+        case 'team': return res(toggleTeam(acc, a.uid ?? -1, a.terr ?? '', now));
+        case 'up': return res(upBreed(acc, a.k ?? 'nest', now));
+      }
+      return fail('없는 행동');
     }
     case 'cook': {
       if ((c.maxWorld ?? 1) < 4) return fail('4월드 성운 정거장의 별빛 식당에서 할 수 있습니다');

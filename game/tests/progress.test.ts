@@ -840,3 +840,66 @@ describe('요리(별빛 식당)', () => {
     expect(acc.cook.kitchens[0].spd).toBe(1);
   });
 });
+
+import { BREED as BRD, SPEC as SPC2, TERR as TER, nestCap as nCap, teamPower as tPow, shinyNeed as shN, newBreed as nBreed } from '../src/core/breeding';
+describe('번식(번식 둥지)', () => {
+  const H = 3_600_000;
+  const ready = () => { const { acc, c } = setup(); acc.breed = nBreed(777); c.maxWorld = 4; c.mapId = 'nebtown'; return { acc, c }; };
+  it('4월드 전에는 쓸 수 없다', () => {
+    const { acc, c } = ready(); c.maxWorld = 3;
+    expect(applyAction(acc, 0, { t: 'breed', op: 'visit' }, H).ok).toBe(false);
+  });
+  it('둥지가 시간마다 알을 낳고 칸이 차면 멈춘다. 같은 씨앗이면 같은 펫이 나온다', () => {
+    const run = () => {
+      const { acc } = ready();
+      applyAction(acc, 0, { t: 'breed', op: 'visit' }, H);
+      applyAction(acc, 0, { t: 'breed', op: 'visit' }, H * 50);
+      expect(acc.breed.eggs.length).toBe(nCap(acc.breed));
+      expect(applyAction(acc, 0, { t: 'breed', op: 'hatch' }, H * 50).ok).toBe(true);
+      expect(acc.breed.eggs.length).toBe(nCap(acc.breed) - 1);
+      return acc.breed.pets[0];
+    };
+    const a = run(), b = run();
+    expect(a).toEqual(b);
+    expect(SPC2[a.sp].lv).toBe(1); // 번식 Lv.1에는 첫 종만
+    expect(a.power).toBeGreaterThan(0);
+  });
+  it('울타리의 펫은 그 종의 반짝임을 올리고, 반짝임이 계정 보너스가 된다', () => {
+    const { acc, c } = ready();
+    applyAction(acc, 0, { t: 'breed', op: 'visit' }, H);
+    acc.breed.pets.push({ uid: 99, sp: 'b_puff', power: 10, gene: 'fighter', rar: 0 });
+    const hp0 = derive(c, acc).maxHp;
+    expect(applyAction(acc, 0, { t: 'breed', op: 'fence', uid: 99 }, H).ok).toBe(true);
+    applyAction(acc, 0, { t: 'breed', op: 'visit' }, H + (shN(0) + shN(1)) * H + 1000);
+    expect(acc.breed.shiny.b_puff.lv).toBe(2);
+    expect(derive(c, acc).maxHp).toBeGreaterThan(hp0);
+  });
+  it('영역에 보낸 팀은 힘만큼 돌며 향신료와 번식 경험치를 가져온다(한 펫은 한 곳에만)', () => {
+    const { acc } = ready();
+    applyAction(acc, 0, { t: 'breed', op: 'visit' }, H);
+    acc.breed.pets.push({ uid: 1, sp: 'b_puff', power: 30, gene: 'fighter', rar: 0 }, { uid: 2, sp: 'b_puff', power: 15, gene: 'forager', rar: 0 });
+    expect(applyAction(acc, 0, { t: 'breed', op: 'team', uid: 1, terr: 't_crater' }, H).ok).toBe(false); // 번식 Lv.5 필요
+    expect(applyAction(acc, 0, { t: 'breed', op: 'team', uid: 1, terr: 't_dust' }, H).ok).toBe(true);
+    expect(tPow(acc.breed, 't_dust')).toBe(45);
+    applyAction(acc, 0, { t: 'breed', op: 'fence', uid: 1 }, H); // 울타리로 옮기면 영역에서 빠진다
+    expect(acc.breed.terr.t_dust.team).toEqual([]);
+    applyAction(acc, 0, { t: 'breed', op: 'team', uid: 2, terr: 't_dust' }, H);
+    // 힘 15 / 요구 30 → 한 바퀴 1시간
+    applyAction(acc, 0, { t: 'breed', op: 'visit' }, H + H * 3 + 10);
+    expect(acc.breed.terr.t_dust.laps).toBe(3);
+    expect(acc.cook.spices[TER.t_dust.spice]).toBe(3 * 2); // 채집꾼 ×2
+    expect(acc.breed.lv > 1 || acc.breed.xp > 0).toBe(true);
+  });
+  it('개량은 코인으로, 펫을 놓아주면 자리가 빈다', () => {
+    const { acc } = ready();
+    applyAction(acc, 0, { t: 'breed', op: 'visit' }, H);
+    expect(applyAction(acc, 0, { t: 'breed', op: 'up', k: 'nest' }, H).ok).toBe(false);
+    acc.coins = BRD.up.nest.cost;
+    expect(applyAction(acc, 0, { t: 'breed', op: 'up', k: 'nest' }, H).ok).toBe(true);
+    expect(nCap(acc.breed)).toBe(BRD.nestBase + 1);
+    acc.breed.pets.push({ uid: 5, sp: 'b_puff', power: 10, gene: 'shiny', rar: 0 });
+    applyAction(acc, 0, { t: 'breed', op: 'fence', uid: 5 }, H);
+    expect(applyAction(acc, 0, { t: 'breed', op: 'release', uid: 5 }, H).ok).toBe(true);
+    expect(acc.breed.pets.length).toBe(0); expect(acc.breed.fence).toEqual([]);
+  });
+});

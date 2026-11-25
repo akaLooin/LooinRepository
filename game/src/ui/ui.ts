@@ -5,6 +5,7 @@ import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
 import { trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
+import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
 import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
@@ -37,7 +38,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
+type Panel = 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -140,6 +141,7 @@ export class UI {
   /** 덫 오두막: 덫을 놓으려고 고른 칸 */
   private trapIdx = -1;
   private kitIdx = -1;
+  private terrPick: string | null = null;
   private recipeSp: string[] = [];
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
   private refBack = false;
@@ -272,7 +274,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); if (f.kind === 'nest') this.game.act({ t: 'breed', op: 'visit' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.gateWorld = e.to; this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -811,6 +813,61 @@ export class UI {
           }).join('') + `<p class="ui-xs ui-muted">기도문 레벨은 계정 공용이고, 켜는 것은 캐릭터마다입니다. 켠 기도문은 효과와 함께 저주도 걸립니다. 켤 수 있는 수는 기도 Lv.20마다 하나씩 늘어납니다(최대 4).</p>`;
         }
         return win(`기도 토템 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['토템', '기도문'], tab, tabAct, ['obj_shrine', 'soul_star'])}<div class="ui-tabpanel">${body}</div>`);
+      }
+      case 'nest': {
+        const acc = g.acc, b = acc.breed, now = Date.now();
+        breedSettle(acc, now);
+        const need = breedXpToNext(b.lv);
+        const head = `<div class="ui-row alchhead">${ui('obj_nest', 'mi')}<b class="ui-grow">번식 Lv.<span class="ui-accent">${b.lv}</span> <span class="ui-xs ui-muted">펫 ${b.pets.length}/${BREED.petMax} · 계정 공용</span></b><div style="width:28%">${bar('skill', b.xp, need, `${b.xp} / ${need}`)}</div></div>`;
+        const RAR = ['일반', '희귀', '영웅', '전설'], RCLS = ['', 'ui-good', 'ui-accent', 'ui-bad'];
+        const petLine = (p: BPet, btns: string) => { const s = SPEC[p.sp], at = placeOf(b, p.uid);
+          return `<div class="ui-row line">${ui(`bp_${p.sp}`, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ${RCLS[p.rar]}">${RAR[p.rar]}</span> <span class="ui-xs ui-accent">힘 ${p.power}</span>
+            <div class="ui-xs ui-muted">${GENES[p.gene].name}: ${GENES[p.gene].desc}${at ? ` · ${at === 'fence' ? '울타리' : TERR[at].name}에 있음` : ''}</div></div>${btns}</div>`; };
+        let body = '';
+        if (tab === 0) {
+          const eggs = Array.from({ length: nestCap(b) }, (_, i) => i < b.eggs.length ? `<span class="ui-slot" title="${RAR[[...b.eggs].sort((x, y) => y - x)[i]]} 알">${ui(`egg_${[...b.eggs].sort((x, y) => y - x)[i]}`, 'mi')}</span>` : `<span class="ui-slot ui-muted"></span>`).join('');
+          const nextMin = Math.ceil((1 - (b.eggFrac % 1)) * 60 / eggRate(b));
+          body = `<div class="ui-row" style="gap:6px;flex-wrap:wrap">${eggs}<span class="ui-grow ui-xs ui-muted">${b.eggs.length >= nestCap(b) ? '둥지가 가득 찼습니다' : `다음 알까지 약 ${nextMin}분`}</span>
+            <button class="ui-btn sm primary" data-act="bhatch" ${b.eggs.length && b.pets.length < BREED.petMax ? '' : 'disabled'}>알 깨기</button></div>
+            <h3>펫</h3>${b.pets.map((p) => petLine(p, `<button class="ui-btn sm ${placeOf(b, p.uid) === 'fence' ? 'primary' : ''}" data-act="bfence:${p.uid}">울타리</button><button class="ui-btn sm" data-act="brel:${p.uid}" title="놓아주면 사라집니다(번식 경험치 조금)">놓아주기</button>`)).join('') || '<p class="ui-sm ui-muted">아직 펫이 없습니다. 알을 깨 보세요.</p>'}
+            <p class="ui-xs ui-muted">좋은 알부터 깹니다. 어떤 종이 나올지는 번식 레벨로 열린 종 가운데서 정해집니다.</p>`;
+        } else if (tab === 1) {
+          const inF = b.fence.map((u) => b.pets.find((p) => p.uid === u)).filter((p): p is BPet => !!p);
+          body = `<div class="ui-row"><b class="ui-grow">울타리 ${inF.length}/${fenceCap(b)}</b><span class="ui-xs ui-muted">울타리에 있는 펫의 종마다 반짝임이 오릅니다</span></div>${inF.map((p) => petLine(p, `<button class="ui-btn sm" data-act="bfence:${p.uid}">빼기</button>`)).join('')}
+            <h3>반짝임(계정 보너스)</h3>` + SPECIES.map((s) => {
+            const sh = b.shiny[s.id] ?? { lv: 0, h: 0 }, open = s.lv <= b.lv, max = sh.lv >= BREED.shinyMax, nd = shinyNeed(sh.lv);
+            const v = (x: number) => Math.round(x * s.per * 100) / 100;
+            if (!open) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<div class="ui-grow"><b>???</b><div class="ui-xs ui-muted">번식 Lv.${s.lv}에 열리는 종</div></div></div>`;
+            return `<div class="ui-row line">${ui(`bp_${s.id}`, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ui-accent">반짝임 ${sh.lv}/${BREED.shinyMax}</span>
+              <div class="ui-sm ${sh.lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[s.eff]} +${v(sh.lv)}${s.unit}${max ? '' : ` → +${v(sh.lv + 1)}${s.unit}`}</div>${max ? '' : bar('xp', Math.floor(sh.h * 10), Math.ceil(nd * 10), `${sh.h.toFixed(1)} / ${nd.toFixed(1)}시간`)}</div></div>`;
+          }).join('');
+        } else if (tab === 2) {
+          const tp = this.terrPick;
+          if (tp && TERR[tp]) {
+            const free = b.pets.filter((p) => { const at = placeOf(b, p.uid); return at !== tp; }).sort((x, y) => y.power - x.power);
+            const team = b.terr[tp]?.team ?? [];
+            body = `<div class="ui-row"><b class="ui-grow">${TERR[tp].name} 팀 ${team.length}/${BREED.teamMax} <span class="ui-xs ui-muted">힘 ${Math.round(teamPower(b, tp))} / 요구 ${TERR[tp].need}</span></b><button class="ui-btn sm" data-act="bterr:${tp}">뒤로</button></div>`
+              + team.map((u) => b.pets.find((p) => p.uid === u)).filter((p): p is BPet => !!p).map((p) => petLine(p, `<button class="ui-btn sm primary" data-act="bteam:${p.uid}:${tp}">빼기</button>`)).join('')
+              + `<h3>보낼 펫</h3>` + (free.map((p) => petLine(p, `<button class="ui-btn sm" data-act="bteam:${p.uid}:${tp}" ${team.length < BREED.teamMax ? '' : 'disabled'}>보내기</button>`)).join('') || '<p class="ui-sm ui-muted">보낼 펫이 없습니다.</p>');
+          } else {
+            body = TERRITORIES.map((t) => {
+              const open = b.lv >= t.lv, st = b.terr[t.id], pw = teamPower(b, t.id), n = st?.team.length ?? 0;
+              if (!open) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<div class="ui-grow"><b>${t.name}</b><div class="ui-xs ui-muted">번식 Lv.${t.lv}에 열림</div></div></div>`;
+              const lapH = pw ? (BREED.lapSecs * t.need) / pw / 3600 : 0;
+              return `<div class="ui-row line">${ui(t.spice, 'mi')}<div class="ui-grow"><b>${t.name}</b> <span class="ui-xs ui-accent">팀 ${n}/${BREED.teamMax} · 힘 ${Math.round(pw)} / ${t.need}</span>
+                ${n ? bar('xp', Math.floor(st!.prog), BREED.lapSecs, `한 바퀴 ${lapH >= 1 ? `${lapH.toFixed(1)}시간` : `${Math.ceil(lapH * 60)}분`} · 향신료 ${spicePerLap(b, t.id)}개 · ${st!.laps}바퀴 돌았음`) : '<div class="ui-xs ui-muted">펫을 보내면 영역을 돌며 향신료를 가져옵니다</div>'}</div>
+                <button class="ui-btn sm primary" data-act="bterr:${t.id}">팀 짜기</button></div>`;
+            }).join('') + `<p class="ui-xs ui-muted">팀의 힘이 요구 힘보다 셀수록 빨리 돕니다. 가져온 향신료는 별빛 식당에 바로 들어갑니다.</p>`;
+          }
+        } else {
+          const NAMES: Record<BreedUp, [string, string]> = { nest: ['둥지 넓히기', `알 칸 ${nestCap(b)}개`], speed: ['따뜻한 짚', `알 낳는 속도 +${b.up.speed * 10}%`], rarity: ['별빛 모이', `좋은 알 확률 ×${(1 + b.up.rarity * 0.1).toFixed(1)}`], fence: ['울타리 넓히기', `울타리 ${fenceCap(b)}칸`] };
+          body = (Object.keys(BREED.up) as BreedUp[]).map((k) => {
+            const lv = b.up[k], max = lv >= BREED.up[k].max, cost = upCostOf(b, k);
+            return `<div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>${NAMES[k][0]}</b> <span class="ui-xs ui-accent">${lv}/${BREED.up[k].max}</span><div class="ui-sm ui-muted">${NAMES[k][1]}</div></div>
+              <button class="ui-btn sm" data-act="bup:${k}" ${!max && acc.coins >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui('ui_coin', 'tic')} ${cost.toLocaleString()}`}</button></div>`;
+          }).join('') + `<p class="ui-xs ui-muted">알 등급 확률: 희귀 ${(rarityOdds(b)[0] * 100).toFixed(1)}% · 영웅 ${(rarityOdds(b)[1] * 100).toFixed(1)}% · 전설 ${(rarityOdds(b)[2] * 100).toFixed(1)}%. 등급이 높을수록 펫의 힘이 셉니다.</p>`;
+        }
+        return win('번식 둥지', `${head}${tabs(['둥지', '울타리', '영역', '개량'], tab, tabAct, ['egg_1', 'bp_b_puff', 'sp_dust', 'ui_up'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'kitchen': {
         const acc = g.acc, k = acc.cook, now = Date.now();
@@ -1391,12 +1448,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen', 'nest'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && (k !== 'kitchen' || (c.maxWorld ?? 1) >= 4);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && ((k !== 'kitchen' && k !== 'nest') || (c.maxWorld ?? 1) >= 4);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1469,7 +1526,7 @@ export class UI {
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); if (a === 'nest') g.act({ t: 'breed', op: 'visit' }); break;
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
@@ -1532,6 +1589,12 @@ export class UI {
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
         break;
       }
+      case 'bhatch': { const n0 = g.acc.breed.pets.length; const r = g.act({ t: 'breed', op: 'hatch' }); if (r.ok) { this.audio?.play('coin'); const p = g.acc.breed.pets[n0]; this.toast(`${SPEC[p.sp].name}이(가) 태어났습니다! 힘 ${p.power}`); } else fail(r.err ?? null); break; }
+      case 'brel': fail(g.act({ t: 'breed', op: 'release', uid: +a }).err ?? null); break;
+      case 'bfence': fail(g.act({ t: 'breed', op: 'fence', uid: +a }).err ?? null); break;
+      case 'bteam': fail(g.act({ t: 'breed', op: 'team', uid: +a, terr: b }).err ?? null); break;
+      case 'bterr': this.terrPick = this.terrPick === a ? null : a; break;
+      case 'bup': { const r = g.act({ t: 'breed', op: 'up', k: a as BreedUp }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'kpick': this.kitIdx = this.kitIdx === +a ? -1 : +a; this.recipeSp = []; break;
       case 'ksp': this.recipeSp = this.recipeSp.includes(a) ? this.recipeSp.filter((x) => x !== a) : [...this.recipeSp, a].slice(0, 4); break;
       case 'kmeal': { const r = g.act({ t: 'cook', op: 'meal', idx: +a, id: b ?? '' }); if (r.ok) this.kitIdx = -1; else fail(r.err ?? null); break; }
