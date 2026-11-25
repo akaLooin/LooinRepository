@@ -34,6 +34,16 @@ func _ready() -> void:
 	back.position = Vector2(6, 4)
 	back.custom_minimum_size = Vector2(60, 18)
 	add_child(back)
+	# 모드 탭: 모험(던전)만 열려 있고 나머지는 이후 업데이트
+	var tabs_row := HBoxContainer.new()
+	tabs_row.position = Vector2(72, 4)
+	tabs_row.add_theme_constant_override("separation", 3)
+	add_child(tabs_row)
+	for m in [["모험", true], ["영웅 던전 (준비 중)", false], ["대전 (온라인 예정)", false]]:
+		var mb := UiKit.button(m[0], func(): pass, m[1])
+		mb.disabled = not m[1]
+		mb.focus_mode = Control.FOCUS_NONE
+		tabs_row.add_child(mb)
 	for did in NODES:
 		var p := _node_pos(did)
 		var b := Button.new()
@@ -116,7 +126,7 @@ func _fill_card() -> void:
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_card.add_child(sp)
-	var go := UiKit.button("이 장을 펼친다", func(): router.go("dungeon", { "dungeon": sel, "difficulty": diff }), true, "map")
+	var go := UiKit.button("대기실로 입장", func(): router.go("room", { "dungeon": sel, "difficulty": diff }), true, "map")
 	go.custom_minimum_size = Vector2(0, 24)
 	go.disabled = not _unlocked(sel) or not Meta.difficulty_unlocked(sel, diff)
 	_card.add_child(go)
@@ -134,7 +144,6 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, sz), Color("3e271c"))
 	for i in range(0, int(sz.y), 12):
 		draw_rect(Rect2(0, i, sz.x, 1), Color("4a3024"))
-	UiKit.text(self, Vector2(sz.x / 2.0 - 60, 16), "책 지도 — 「%s」" % BOOK, Tk.GOLD, 11, true)
 	# 펼친 책: 가죽 표지 + 양쪽 페이지 + 가운데 접힘
 	var b := _book
 	draw_rect(b.grow(5), Tk.INK)

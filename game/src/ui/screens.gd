@@ -126,7 +126,7 @@ static func result(router: Node, r: Dictionary) -> MenuScreen:
 	var btns := HBoxContainer.new()
 	btns.add_theme_constant_override("separation", 4)
 	box.add_child(btns)
-	btns.add_child(UiKit.button("다시 펼치기", func(): router.go("dungeon", { "dungeon": r["dungeon"], "difficulty": r.get("difficulty", "normal") })))
-	btns.add_child(UiKit.button("책 지도", func(): router.go("map", { "sel": r["dungeon"] })))
-	btns.add_child(UiKit.button("열람실로", func(): router.go("town"), true))
+	btns.add_child(UiKit.button("다시 펼치기", func(): router.go("loading", { "dungeon": r["dungeon"], "difficulty": r.get("difficulty", "normal") })))
+	btns.add_child(UiKit.button("대기실로", func(): router.go("room", { "dungeon": r["dungeon"], "difficulty": r.get("difficulty", "normal") }), true))
+	btns.add_child(UiKit.button("열람실로", func(): router.go("town")))
 	return s

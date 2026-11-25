@@ -80,13 +80,13 @@ func _menu_tour() -> void:
 	Meta.add_item("eq_top_03")
 	Meta.learn("cls_tbd_01", "sk_mp2")
 	Meta.learn("cls_tbd_01", "sk_mp3")
-	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map"]
+	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map", "room", "loading"]
 	if dungeon_id != "dgn_01":
 		tour = ["map"]
 		for d in ["dgn_01", "dgn_02"]:
 			GameState.data["progress"]["cleared"][d + ":normal"] = { "best_rank": "A", "best_time": 100.0 }
 	for scr in tour:
-		main.go(scr, { "sel": "i3" } if scr in ["equip", "enhance"] else {})
+		main.go(scr, { "sel": "i3" } if scr in ["equip", "enhance"] else ({ "dungeon": "dgn_01" } if scr in ["room", "loading"] else {}))
 		await _frames(20)
 		await shot("menu_" + scr)
 	main.go("dungeon", { "dungeon": dungeon_id, "seed": 7 })

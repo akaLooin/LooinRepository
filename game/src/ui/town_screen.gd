@@ -24,7 +24,38 @@ func _ready() -> void:
 			var dd: Dictionary = DataDB.tables["dungeons"][did]
 			if GameState.data["progress"]["cleared"].has(did + ":normal") and dd.has("dialogs"):
 				if DialogBox.show_once(self, dd["dialogs"]["after_first_clear"]) != null:
-					break
+					return
+		_attendance()
+
+
+## 출석 보상: 하루에 한 번, 7일째마다 부활 책갈피 추가.
+func _attendance() -> void:
+	var at: Dictionary = GameState.data["progress"]["attend"]
+	var today := Time.get_date_string_from_system()
+	if at["last"] == today:
+		return
+	at["last"] = today
+	at["count"] = int(at["count"]) + 1
+	var acc: Dictionary = GameState.data["account"]
+	var bonus := int(at["count"]) % 7 == 0
+	acc["gold"] = int(acc["gold"]) + 100
+	acc["pages"] = int(acc["pages"]) + 1
+	if bonus:
+		acc["revives"] = int(acc["revives"]) + 1
+	GameState.save_game()
+	Sfx.play("coin", 0.0)
+	var p := UiKit.paper_panel()
+	p.position = Vector2(get_viewport_rect().size.x / 2.0 - 100, 60)
+	p.custom_minimum_size = Vector2(200, 0)
+	add_child(p)
+	var v := VBoxContainer.new()
+	p.add_child(v)
+	v.add_child(UiKit.label("출석 %d일째!" % int(at["count"]), Tk.LEATHER))
+	v.add_child(UiKit.label("골드 100 · 페이지 조각 1%s" % (" · 부활 책갈피 1" if bonus else ""), Tk.INK))
+	v.add_child(UiKit.label("7일째마다 부활 책갈피를 더 받아요.", Color("5a4a3a")))
+	var ok := UiKit.button("받았어요", func(): router.go("town"), true)
+	v.add_child(ok)
+	ok.grab_focus.call_deferred()
 
 
 func _build_spots(sz: Vector2) -> void:

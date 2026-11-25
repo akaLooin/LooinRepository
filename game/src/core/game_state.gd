@@ -36,7 +36,7 @@ static func new_save() -> Dictionary:
 			"inventory": [ { "uid": "i1", "item": "eq_wpn_01", "enh": 0 }, { "uid": "i2", "item": "eq_top_01", "enh": 0 } ],
 			"next_uid": 3, "pets": [] },
 		"characters": { "cls_tbd_01": c },
-		"progress": { "cleared": {}, "missions": {}, "seen": {} },
+		"progress": { "cleared": {}, "missions": {}, "seen": {}, "attend": { "last": "", "count": 0 } },
 		"settings": { "show_touch": "auto", "show_hitboxes": false, "charge_attack": false, "layout": {}, "bgm": 0.7, "sfx": 1.0 },
 	}
 

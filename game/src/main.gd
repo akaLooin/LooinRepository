@@ -23,7 +23,17 @@ func _ready() -> void:
 	go("title")
 
 
+## 대기실에서 장비·스킬 등으로 나갔다가 '돌아가기'를 누르면 열람실 대신 여기로 돌아온다.
+var return_to: Dictionary = {}
+
+
 func go(screen: String, args: Dictionary = {}) -> void:
+	if screen in ["title", "map"]:
+		return_to = {}
+	if screen == "town" and not return_to.is_empty():
+		screen = return_to["screen"]
+		args = return_to["args"]
+		return_to = {}
 	Engine.time_scale = 1.0
 	InputRouter.clear_touch()
 	if current:
@@ -68,6 +78,13 @@ func go(screen: String, args: Dictionary = {}) -> void:
 		"result":
 			GameState.last_result = args
 			current = Screens.result(self, args)
+		"room":
+			current = RoomScreen.build(self, args)
+		"loading":
+			var ld := LoadingScreen.new()
+			ld.router = self
+			ld.args = args
+			current = ld
 		"dungeon":
 			Sfx.bgm("bgm_dungeon")
 			var run := DungeonRun.new()
