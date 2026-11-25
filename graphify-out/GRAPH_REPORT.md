@@ -1,18 +1,18 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 56 files · ~35,062 words
+- 56 files · ~35,303 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 134 file(s) not represented in the graph (top: .import 52, .gd 36, .uid 36)
 - WARNING: 134 of 245 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 380 nodes · 517 edges · 37 communities (31 shown, 6 thin omitted)
+- 381 nodes · 518 edges · 37 communities (31 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `066420ca`
+- Built from commit: `3e34a903`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -196,8 +196,8 @@ Cohesion: 0.40
 Nodes (4): 게임 진행 흐름 — 원작 방식 대응표, 로비에서 할 수 있는 것 (성장·관리), 한 판의 흐름, 화면 이동도
 
 ### Community 36 - "캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형)"
-Cohesion: 0.40
-Nodes (4): 게임 설계 제안 (1차 직업 「기사」), 의뢰 내용 요약, 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형), 확인 필요
+Cohesion: 0.33
+Nodes (5): 게임 설계 제안 (1차 직업 「기사」), 구현 메모, 의뢰 내용 요약, 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형), 확정 사항 (2026-11-26)
 
 ## Knowledge Gaps
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
@@ -210,7 +210,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
 - **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
-  _High betweenness centrality (0.018) - this node is a cross-community bridge._
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Should `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**

@@ -66,15 +66,15 @@
     "semantic_hash": ""
   },
   "game/data/attacks.json": {
-    "mtime": 1795584054.2572773,
-    "seen": 1795585951.0242138,
-    "ast_hash": "cb35ef0808ebb77d8ac84ba101525711",
+    "mtime": 1795620095.2858357,
+    "seen": 1795620568.4243622,
+    "ast_hash": "c00571431f1b748aa031072dc3882b7f",
     "semantic_hash": ""
   },
   "game/data/classes.json": {
-    "mtime": 1795599523.0183828,
-    "seen": 1795600137.0453825,
-    "ast_hash": "51631fd6ac4c1985d36d03283f1beda6",
+    "mtime": 1795620095.284973,
+    "seen": 1795620568.424364,
+    "ast_hash": "96122d5b80ea74ba4c61ae034e9c9755",
     "semantic_hash": ""
   },
   "game/data/dungeons.json": {
@@ -90,9 +90,9 @@
     "semantic_hash": ""
   },
   "game/data/skills.json": {
-    "mtime": 1795584054.259339,
-    "seen": 1795585951.0242186,
-    "ast_hash": "218cf522be9ee22152d394550cfcf1c0",
+    "mtime": 1795620095.286264,
+    "seen": 1795620568.4243765,
+    "ast_hash": "7c4c4e3130d33822df68e5e8afdb5ea9",
     "semantic_hash": ""
   },
   ".claude/skills/replica-architect/SKILL.md": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1795606438.112485,
-    "seen": 1795606439.5753388,
-    "ast_hash": "583ccf1cf2ad990b63460ae873707199",
+    "mtime": 1795620501.088311,
+    "seen": 1795620568.424417,
+    "ast_hash": "368efc6894114afa13666b5e26d2028f",
     "semantic_hash": ""
   },
   "replica/demo-plan.md": {
@@ -270,9 +270,9 @@
     "semantic_hash": ""
   },
   "replica/characters.md": {
-    "mtime": 1795597571.8273358,
-    "seen": 1795597591.2018132,
-    "ast_hash": "3de41b740f22360ed44b56cad29464c8",
+    "mtime": 1795620501.087991,
+    "seen": 1795620568.4244246,
+    "ast_hash": "7c2c3ef180513a22381cebe29f7bba44",
     "semantic_hash": ""
   },
   "game/data/items.json": {
@@ -288,15 +288,15 @@
     "semantic_hash": ""
   },
   "game/data/skill_tree.json": {
-    "mtime": 1795599522.977756,
-    "seen": 1795600137.0454016,
-    "ast_hash": "2647efe03b9d94f3379831f38f0f7838",
+    "mtime": 1795620095.2866654,
+    "seen": 1795620568.4243753,
+    "ast_hash": "dc1cec7ebae49976e2d540d67401a874",
     "semantic_hash": ""
   },
   "game/data/dialogs.json": {
-    "mtime": 1795602972.3066962,
-    "seen": 1795604387.83307,
-    "ast_hash": "d6b04a6e6076b1a7595864410d24f4f4",
+    "mtime": 1795620095.2877476,
+    "seen": 1795620568.424366,
+    "ast_hash": "00ecf96f9fd1a87e595ab5ecf49a8501",
     "semantic_hash": ""
   },
   "game/data/missions.json": {
@@ -450,15 +450,15 @@
     "semantic_hash": ""
   },
   "game/data/sprites.json": {
-    "mtime": 1795606232.1227698,
-    "seen": 1795606439.575305,
-    "ast_hash": "4d617a13e51f28eb2ba2c2db1086c251",
+    "mtime": 1795620095.2871537,
+    "seen": 1795620568.4243782,
+    "ast_hash": "78745bb8cd416725325c9f1549c3d926",
     "semantic_hash": ""
   },
   "game/tools/gen_sprites.py": {
-    "mtime": 1795606204.9638886,
-    "seen": 1795606439.5753083,
-    "ast_hash": "33b8bd08856900384bb4bdcf18be72e6",
+    "mtime": 1795620118.3151097,
+    "seen": 1795620568.424381,
+    "ast_hash": "104c7035a4b152c67139b16716d2dafc",
     "semantic_hash": ""
   },
   "game/tools/gen_ui.py": {
@@ -473,15 +473,9 @@
     "ast_hash": "acc340bfa08eb696b7979d82e46e97a9",
     "semantic_hash": ""
   },
-  "game/assets/sprites/hero_tbd_01.png": {
-    "mtime": 1795606208.7318888,
-    "seen": 1795606439.5753458,
-    "ast_hash": "051bb37291d1e6564bdc0fcc0c345082",
-    "semantic_hash": ""
-  },
   "game/assets/sprites/mon_inkblob.png": {
-    "mtime": 1795606208.741161,
-    "seen": 1795606439.575347,
+    "mtime": 1795620118.4056945,
+    "seen": 1795620568.4244347,
     "ast_hash": "23792f9405daee7d0daefd7fd0e143c9",
     "semantic_hash": ""
   },
@@ -654,15 +648,21 @@
     "semantic_hash": ""
   },
   "replica/characters/silver.md": {
-    "mtime": 1795619836.8375382,
-    "seen": 1795619874.3425617,
-    "ast_hash": "73aa977f3dd2e741fd65bdc4a8b47c2f",
+    "mtime": 1795620501.0876393,
+    "seen": 1795620568.4244263,
+    "ast_hash": "7a4bcdf8e15a8a1625cd2eaf583f1065",
     "semantic_hash": ""
   },
   "replica/concept/silver-options.png": {
     "mtime": 1795619851.4536786,
     "seen": 1795619874.3426101,
     "ast_hash": "f8cf9643b59340bb47a573f08e820de9",
+    "semantic_hash": ""
+  },
+  "game/assets/sprites/hero_silver.png": {
+    "mtime": 1795620118.4016943,
+    "seen": 1795620568.424433,
+    "ast_hash": "22dc19b51ce4e6be84b40707602d94fc",
     "semantic_hash": ""
   }
 }
