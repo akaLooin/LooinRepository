@@ -1441,6 +1441,7 @@ function buildIcons() {
   icon('ui_star', (p) => { for (let i = 0; i < 5; i++) { const t = (i / 5) * Math.PI * 2 - Math.PI / 2; p.line(7.5, 8, 7.5 + Math.cos(t) * 7, 8 + Math.sin(t) * 7, C.gold); } p.disc(7.5, 8, 3.5, 3.5, C.gold); p.disc(6.5, 7, 1.2, 1.2, '#fff1a8'); });
   icon('ui_trophy', (p) => { p.rect(4, 1, 8, 7, C.gold); p.disc(8, 7, 4, 3, C.gold); p.rect(1, 2, 3, 1, C.gold); p.rect(12, 2, 3, 1, C.gold); p.rect(1, 2, 1, 4, C.gold); p.rect(14, 2, 1, 4, C.gold); p.rect(7, 10, 2, 3, C.gold); p.rect(4, 13, 8, 2, C.wood); p.rect(5, 2, 2, 4, '#fff1a8'); });
   icon('ui_family', (p) => { p.disc(5, 5, 2.6, 2.6, C.paper); p.rect(2, 8, 6, 7, C.paper); p.disc(11, 6.5, 2.2, 2.2, '#cfe6ff'); p.rect(8, 9, 6, 6, '#cfe6ff'); });
+  icon('ui_skull', (p) => { p.disc(8, 7, 5, 4.6, C.paper); p.rect(5, 11, 6, 3, C.paper); p.disc(6, 7, 1.4, 1.6, '#2a2230'); p.disc(10, 7, 1.4, 1.6, '#2a2230'); p.set(7, 12, '#2a2230'); p.set(9, 12, '#2a2230'); });
   icon('ui_quick', (p) => { p.rect(2, 4, 12, 10, C.wood); p.rect(2, 4, 12, 3, C.woodD); p.rect(7, 6, 2, 3, C.gold); p.disc(11.5, 3.5, 3, 3, '#a7d8f0'); p.disc(11.5, 3.5, 1.6, 1.6, null); p.line(13, 6, 15, 8, C.steelD); });
   icon('ui_teleport', (p) => { p.disc(7.5, 8, 6, 7, C.purple); p.disc(7.5, 8, 4, 5, '#c8b2f0'); p.disc(7.5, 8, 2, 3, C.white); });
   icon('ui_assign', (p) => { p.rect(3, 0, 2, 16, C.woodD); p.rect(5, 1, 10, 8, C.red); p.rect(12, 3, 3, 4, null); p.rect(13, 4, 2, 2, C.red); p.line(7, 3, 9, 5, C.gold); p.line(9, 5, 7, 7, C.gold); });

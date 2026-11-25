@@ -31,7 +31,7 @@ import { GAMES, GameKind, SPIKE_WINDOW, gameReward, playsLeft, spikeOpen } from 
 import { PlayKind, runGame } from './minigames';
 import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
-import { STARS, achieveReady, achieveProgress, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel, statueLv } from '../core/progress';
+import { STARS, achieveReady, achieveProgress, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel, statueLv, DEATH_TIERS, deathBonus, deathKills, deathMaps, deathRank } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
@@ -600,8 +600,9 @@ export class UI {
         if (t === 3) body = this.achieveHtml();
         if (t === 4) body = this.familyHtml();
         if (t === 5) body = this.quickRefHtml();
+        if (t === 6) body = this.deathHtml();
         const achReady = ACHIEVEMENTS.some((d) => achieveReady(g.acc, d.id));
-        return win('목차', `${tabs(['참조', '카드', '퀘스트', '별자리', `업적${achReady ? ' !' : ''}`, '가족'], tab, tabAct, ['ui_quick', 'ui_card', 'ui_quest', 'ui_star', 'ui_trophy', 'ui_family'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('목차', `${tabs(['참조', '카드', '퀘스트', '별자리', `업적${achReady ? ' !' : ''}`, '가족', '처치 기록'], tab, tabAct, ['ui_quick', 'ui_card', 'ui_quest', 'ui_star', 'ui_trophy', 'ui_family', 'ui_skull'])}<div class="ui-tabpanel">${body}</div>`);
       }
 
       case 'map': {
@@ -1289,6 +1290,16 @@ export class UI {
       return `<div class="ui-row line ${got || ready ? '' : 'ui-muted'}"><span class="ui-slot sm ${got ? 'r3' : ''}">${ui('ui_trophy', 'mi')}</span><div class="ui-grow"><b>${d.name}</b> ${got ? '' : `<span class="ui-xs ui-accent">${Math.min(have, need).toLocaleString()} / ${need.toLocaleString()}</span>`}<div class="ui-sm">${d.desc}</div><div class="ui-xs ${got ? 'ui-good' : 'ui-muted'}">보상: ${d.label}</div></div>
         ${got ? '<span class="ui-good">✓</span>' : `<button class="ui-btn sm ${ready ? 'success' : ''}" data-act="ach:${d.id}" ${ready ? '' : 'disabled'}>받기</button>`}</div>`;
     }).join('');
+  }
+
+  private deathHtml(): string {
+    const acc = this.game.acc, c = this.game.char!, w3 = acc.characters.some((x) => (x.maxWorld ?? 1) >= 3);
+    const rows = deathMaps().filter((id) => mapUnlocked(c, id) || deathKills(acc, id) > 0).map((id) => {
+      const n = deathKills(acc, id), r = deathRank(n), next = DEATH_TIERS[r], mob = MAPS[id].spawns[0]?.monster;
+      return `<div class="ui-row line"><span class="ui-slot sm">${mob ? `<img class="px" src="${iconUrl(`mob_${MONSTERS[mob].art ?? mob}`)}" alt="">` : ''}</span><div class="ui-grow"><b>${MAPS[id].name}</b> <span class="ui-xs ui-accent">${'★'.repeat(r)}${'☆'.repeat(DEATH_TIERS.length - r)}</span>
+        ${next ? bar('xp', n, next, `${short(n)} / ${short(next)}`) : '<div class="ui-xs ui-good">최고 단계</div>'}</div>${w3 ? `<span class="ui-xs ${r ? 'ui-good' : 'ui-muted'}">멀티킬 ×${1 + r}</span>` : ''}</div>`;
+    }).join('');
+    return `<p class="ui-sm" style="margin-top:0">맵마다 계정 전체 처치 수를 모아 단계를 올립니다. 모든 맵의 단계 합마다 공격력 +0.5% (지금 <b class="ui-good">+${deathBonus(acc)}%</b>).${w3 ? ' 3월드에 간 계정은 멀티킬이 열려, 한 번 잡을 때 그 맵 처치 수가 단계만큼 더 오릅니다(포탈 조건·처치 기록이 빨라짐).' : ' 3월드에 가면 멀티킬이 열립니다.'}</p>${rows}`;
   }
 
   private familyHtml(): string {

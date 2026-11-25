@@ -7,6 +7,7 @@ import {
 import { Rng } from './rng';
 import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill, foodWait } from './state';
 import { GATHER_INTERVAL } from './world';
+import { multiKill } from './progress';
 
 export interface AfkReport {
   seconds: number; /** 상한에 걸려 버려진 시간(초) */ capped?: number; mapName: string; mode: 'fight' | 'gather' | 'rest';
@@ -141,7 +142,7 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     rep.kills = Math.floor(r.killsPerHour * hours);
     const total = map.spawns.reduce((s, x) => s + x.count, 0);
     for (const s of map.spawns) noteKill(c, s.monster, Math.floor(rep.kills * (s.count / total)));
-    c.kills[map.id] = (c.kills[map.id] ?? 0) + rep.kills;
+    c.kills[map.id] = (c.kills[map.id] ?? 0) + rep.kills * multiKill(acc, map.id);
     rep.xp = Math.floor(r.xpPerHour * hours);
     rep.coins = Math.floor(r.coinsPerHour * hours);
     acc.coins += rep.coins;

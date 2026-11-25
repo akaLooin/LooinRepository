@@ -4,6 +4,7 @@
 import { ARENA, crystalOf, MINIBOSSES, CARD_BY_ID, CARD_CHANCE, CARD_UNOWNED_MULT, NODE_CARD_CHANCE, ITEMS, MAPS, MONSTERS, NODES, PRODUCTS } from './data';
 import { Account, Character, anvilCap, anvilRate, derive, skillXpToNext, xpToNext } from './state';
 import { GATHER_INTERVAL } from './world';
+import { multiKill } from './progress';
 
 /** 기기가 보내는 계정 값(캐릭터 밖) */
 export interface SyncAccount { coins: number; cards: Record<string, number>; bosses: Record<string, number> }
@@ -58,7 +59,8 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
 
   // 처치
   const dk = (claimed.kills[s.mapId] ?? 0) - (s.kills[s.mapId] ?? 0);
-  if (dk < 0 || dk > maxKills) return `처치 수가 너무 많습니다(${dk} > ${maxKills})`;
+  const mk = multiKill(acc, s.mapId);
+  if (dk < 0 || dk > maxKills * mk) return `처치 수가 너무 많습니다(${dk} > ${maxKills * mk})`;
   for (const [m, n] of Object.entries(claimed.kills)) if (m !== s.mapId && n !== (s.kills[m] ?? 0)) return '다른 맵 처치 수가 바뀌었습니다';
   for (const [npc, q] of Object.entries(claimed.quests)) if (q.prog - (s.quests[npc]?.prog ?? 0) > dk) return '퀘스트 진행이 처치 수보다 많습니다';
 

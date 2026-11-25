@@ -147,3 +147,18 @@ describe('우표·뇌물(원작처럼 많이, 세트로)', () => {
     expect(derive(c, acc).str).toBe(s0 + 5);
   });
 });
+
+import { DEATH_TIERS as DT, deathBonus as dBonus, multiKill as mKill } from '../src/core/progress';
+describe('처치 기록·멀티킬', () => {
+  it('계정 처치 수로 단계가 오르고 공격력이 오르며, 3월드 이후 멀티킬로 처치 수가 여러 배로 센다', () => {
+    const { acc, c } = setup();
+    expect(dBonus(acc)).toBe(0);
+    c.kills.meadow = DT[1];
+    expect(dBonus(acc)).toBe(1);
+    expect(mKill(acc, 'meadow')).toBe(1);
+    c.maxWorld = 3;
+    expect(mKill(acc, 'meadow')).toBe(3);
+    const d0 = derive(c, { ...acc, characters: [] }).dmg;
+    expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+  });
+});

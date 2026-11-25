@@ -3,6 +3,7 @@ import {
   ARENA, CRYSTAL_CHANCE, crystalOf, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult } from './data';
 import { Rng } from './rng';
+import { multiKill } from './progress';
 import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady, foodWait } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
@@ -568,7 +569,8 @@ export class World {
       this.acc.bosses[m.def.id] = (this.acc.bosses[m.def.id] ?? 0) + 1;
       this.events.push({ t: 'boss', name: m.def.name });
     }
-    c.kills[this.map.id] = (c.kills[this.map.id] ?? 0) + 1;
+    // 멀티킬: 3월드에 간 계정은 처치 기록 단계만큼 한 번에 여러 마리로 센다(보스는 1)
+    c.kills[this.map.id] = (c.kills[this.map.id] ?? 0) + (m.def.boss ? 1 : multiKill(this.acc, this.map.id));
     noteKill(c, m.def.id);
     this.events.push({ t: 'kill', uid: m.uid, x: m.x, y: m.y });
     if (gainXp(c, Math.max(1, Math.round(m.def.xp * d.xpMult)))) this.events.push({ t: 'level', level: c.level });

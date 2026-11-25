@@ -2,7 +2,7 @@
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
   ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_MIN, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, signSlots, STAMPS, STATUES,
-  PETS, baseClass, classLine, cardTier, statueNeed,
+  MAPS, PETS, baseClass, classLine, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
@@ -199,6 +199,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   postBonus(c, (k, v) => { b[k] += v; });
   shinyBonus(a, (k, v) => { b[k] += v; });
   shrineBonus(c, a, (k, v) => { b[k] += v; });
+  b.dmg += deathBonus(a);
   // 연금술(거품·약병)
   alchBonus(a.alch, (k, v) => { b[k] += v; });
   buildBonus(a.build, (k, v) => { b[k] += v; });
@@ -211,4 +212,23 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   const set = c.cardSet ? CARD_SETS.find((s) => s.id === c.cardSet) : null;
   if (set && a.cards) { const t = setTier({ cards: a.cards }, set); if (t > 0) b[set.eff] += set.v[t - 1]; }
   return b;
+}
+
+// ───────── 처치 기록(데스노트)·멀티킬 ─────────
+/** 처치 기록 단계: 그 맵의 계정 전체 처치 수가 이만큼이면 한 단계씩 */
+export const DEATH_TIERS = [1000, 5000, 20000, 75000, 250000, 1000000];
+/** 처치 기록에 오르는 맵(사냥터만, 콜로세움 제외) */
+export const deathMaps = () => Object.values(MAPS).filter((m) => m.spawns.length && !m.arena).map((m) => m.id);
+export const deathKills = (a: Pick<Account, 'characters'>, map: string) => a.characters.reduce((n, c) => n + (c.kills[map] ?? 0), 0);
+export const deathRank = (n: number) => DEATH_TIERS.filter((t) => n >= t).length;
+/** 처치 기록 보너스: 모든 맵의 단계 합마다 공격력 +0.5% */
+export function deathBonus(a: Partial<Pick<Account, 'characters'>>): number {
+  if (!a.characters) return 0;
+  const acc = a as Pick<Account, 'characters'>;
+  return deathMaps().reduce((s, m) => s + deathRank(deathKills(acc, m)), 0) * 0.5;
+}
+/** 멀티킬(3월드에 간 계정부터): 한 번 잡을 때 그 맵 처치 수가 (1 + 처치 기록 단계)만큼 오른다 */
+export function multiKill(a: Pick<Account, 'characters'>, map: string): number {
+  if (!a.characters.some((c) => (c.maxWorld ?? 1) >= 3)) return 1;
+  return 1 + deathRank(deathKills(a, map));
 }
