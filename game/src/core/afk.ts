@@ -3,8 +3,7 @@
 // 멀티 전환 시 이 파일은 서버에서 실행되어 보상을 검증/지급한다.
 import {
   AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_BY_ID, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, GatherSkill, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES,
-  SkillKey,
-} from './data';
+  SkillKey, foodCd } from './data';
 import { Rng } from './rng';
 import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
 import { GATHER_INTERVAL } from './world';
@@ -91,10 +90,14 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   const totalHeal = foodTotalHeal(c), totalQty = c.foods.reduce((n, f) => n + (f?.qty ?? 0), 0);
   const heal = totalQty ? totalHeal / totalQty : 0;
   const deficit = Math.max(0, dps - d.regen);
-  const foodPerHour = heal > 0 ? (deficit * 3600) / heal : 0;
+  // 음식 재사용 대기 때문에 1초에 메울 수 있는 회복량에 한계가 있다(첫 칸 음식 기준)
+  const top = c.foods.find(Boolean);
+  const cd = top ? foodCd(top.id) : 5;
+  const healRate = heal / cd;
+  const foodPerHour = heal > 0 ? Math.min(deficit * 3600, healRate * 3600) / heal : 0;
   let survival = 1;
   if (deficit > 0) {
-    const fed = heal > 0 ? Math.min(1, totalHeal / (deficit * 3600)) : 0; // 1시간 기준 음식이 버티는 비율
+    const fed = heal > 0 ? Math.min(1, totalHeal / (deficit * 3600), healRate / deficit) : 0; // 1시간 기준 음식이 버티는 비율
     const alive = d.maxHp / deficit;
     const starved = alive / (alive + RESPAWN + TRAVEL);
     survival = fed + (1 - fed) * starved;

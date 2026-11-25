@@ -1,0 +1,115 @@
+// 지도 창: 1월드를 위에서 내려다본 지형 지도(SVG). 지역마다 땅 모양·색·작은 그림, 길로 이어진다.
+// 지역을 누르면 테두리만 빛나고(창 크기는 그대로), 아래 고정된 줄에 이동 정보가 나온다.
+
+export interface MapRegion {
+  id: string; name: string;
+  /** 'open' 갈 수 있음 · 'here' 현재 위치 · 'locked' 아직 모름 · 'unmet' 열렸지만 처치 목표가 남음 · 'mark' 누를 수 없는 장소(보스 둥지 등) */
+  state: 'open' | 'here' | 'locked' | 'unmet' | 'mark';
+  sel: boolean;
+  sub: string;
+}
+
+type Theme = 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena' | 'lair';
+interface Spot { x: number; y: number; r: number; theme: Theme }
+/** 지역 위치(가로 420 × 세로 230 좌표) */
+export const SPOTS: Record<string, Spot> = {
+  town: { x: 48, y: 172, r: 30, theme: 'town' },
+  meadow: { x: 112, y: 120, r: 32, theme: 'meadow' },
+  arena: { x: 70, y: 52, r: 20, theme: 'arena' },
+  hills: { x: 176, y: 168, r: 30, theme: 'hills' },
+  mine1: { x: 228, y: 192, r: 17, theme: 'mine' },
+  mine2: { x: 268, y: 200, r: 15, theme: 'mine' },
+  forest: { x: 196, y: 92, r: 34, theme: 'forest' },
+  lair: { x: 158, y: 30, r: 18, theme: 'lair' },
+  swamp: { x: 262, y: 128, r: 30, theme: 'swamp' },
+  cave: { x: 318, y: 178, r: 26, theme: 'cave' },
+  ridge: { x: 364, y: 126, r: 28, theme: 'ridge' },
+  ruins: { x: 318, y: 62, r: 28, theme: 'ruins' },
+  grove: { x: 388, y: 40, r: 26, theme: 'grove' },
+};
+export const ROADS: [string, string][] = [
+  ['town', 'meadow'], ['meadow', 'arena'], ['meadow', 'hills'], ['hills', 'mine1'], ['mine1', 'mine2'], ['hills', 'forest'],
+  ['forest', 'lair'], ['forest', 'swamp'], ['swamp', 'cave'], ['cave', 'ridge'], ['ridge', 'ruins'], ['ruins', 'grove'],
+];
+
+const FILL: Record<Theme, [string, string]> = {
+  town: ['#d9be82', '#b89a5c'], meadow: ['#93d46c', '#6cae4c'], arena: ['#e0b064', '#b8863c'], hills: ['#c2a874', '#97804e'],
+  mine: ['#8a7866', '#5e4e40'], forest: ['#4f9a52', '#2f6c38'], lair: ['#3a7440', '#22502a'], swamp: ['#6f8a62', '#4c6444'],
+  cave: ['#6c6274', '#463e50'], ridge: ['#b6c6d4', '#8496a8'], ruins: ['#b4a486', '#857458'], grove: ['#5a6cb4', '#3a4884'],
+};
+
+/** 정해진 씨앗으로 흔들린 둥근 땅 모양 */
+function blob(cx: number, cy: number, r: number, seed: number, flat = 0.78): string {
+  const n = 11, pts: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const k = 0.82 + 0.22 * Math.abs(Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453 % 1);
+    pts.push([cx + Math.cos(a) * r * k, cy + Math.sin(a) * r * k * flat]);
+  }
+  const mid = (a: [number, number], b: [number, number]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2].map((v) => v.toFixed(1)).join(' ');
+  let d = `M${mid(pts[n - 1], pts[0])}`;
+  for (let i = 0; i < n; i++) d += ` Q${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)} ${mid(pts[i], pts[(i + 1) % n])}`;
+  return d + 'Z';
+}
+
+// 작은 그림들(지역 성격이 보이도록)
+const tree = (x: number, y: number, c = '#2a6a30') => `<rect x="${x - 0.8}" y="${y}" width="1.6" height="3" fill="#6a4a2a"/><circle cx="${x}" cy="${y - 1}" r="3.4" fill="${c}"/><circle cx="${x - 1}" cy="${y - 2}" r="1.2" fill="#ffffff" opacity=".18"/>`;
+const rock = (x: number, y: number, c = '#8c8070') => `<path d="M${x - 3.5} ${y + 2} L${x - 2} ${y - 2} L${x + 1.5} ${y - 3} L${x + 3.5} ${y + 2}Z" fill="${c}" stroke="#4a4038" stroke-width=".5"/>`;
+const house = (x: number, y: number, roof = '#c8503c') => `<rect x="${x - 3}" y="${y - 2}" width="6" height="5" fill="#f2e2bc" stroke="#6a4a2a" stroke-width=".5"/><path d="M${x - 4} ${y - 2} L${x} ${y - 6} L${x + 4} ${y - 2}Z" fill="${roof}"/>`;
+const pond = (x: number, y: number, rx = 6, ry = 3) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#7fb8c8" stroke="#4e8898" stroke-width=".5"/>`;
+const peak = (x: number, y: number, s = 1) => `<path d="M${x - 7 * s} ${y + 4 * s} L${x} ${y - 7 * s} L${x + 7 * s} ${y + 4 * s}Z" fill="#8a9cb0"/><path d="M${x - 2.6 * s} ${y - 3 * s} L${x} ${y - 7 * s} L${x + 2.6 * s} ${y - 3 * s}Z" fill="#ffffff"/>`;
+const pillar = (x: number, y: number, h = 7) => `<rect x="${x - 1.3}" y="${y - h}" width="2.6" height="${h}" fill="#e2d6b8" stroke="#7a6a4c" stroke-width=".4"/>`;
+const arch = (x: number, y: number) => `<path d="M${x - 5} ${y + 3} L${x - 5} ${y - 1} Q${x} ${y - 6} ${x + 5} ${y - 1} L${x + 5} ${y + 3}Z" fill="#2a2228"/><path d="M${x - 6} ${y + 3} L${x - 6} ${y - 1} Q${x} ${y - 8} ${x + 6} ${y - 1} L${x + 6} ${y + 3}" fill="none" stroke="#a89888" stroke-width="1"/>`;
+const flower = (x: number, y: number, c: string) => `<circle cx="${x}" cy="${y}" r="1" fill="${c}"/>`;
+
+function deco(s: Spot): string {
+  const { x, y, theme } = s;
+  switch (theme) {
+    case 'town': return house(x - 9, y - 2) + house(x + 4, y - 7, '#3c78c8') + house(x + 8, y + 5, '#d89a3c') + `<circle cx="${x - 2}" cy="${y + 6}" r="1.6" fill="#ff9a3c"/>` + tree(x - 18, y + 6);
+    case 'meadow': return [[-12, -6, '#fff'], [6, -10, '#ffd34a'], [14, 4, '#ff8ab0'], [-4, 8, '#fff'], [-18, 6, '#ffd34a'], [2, 0, '#ff8ab0']].map(([a, b, c]) => flower(x + +a, y + +b, c as string)).join('') + tree(x + 18, y - 6, '#3e8a3a');
+    case 'arena': return `<ellipse cx="${x}" cy="${y}" rx="11" ry="7" fill="#c89048" stroke="#7a5428" stroke-width="1"/><ellipse cx="${x}" cy="${y}" rx="6.5" ry="3.6" fill="#e8cc8c"/>`;
+    case 'hills': return rock(x - 10, y - 4) + rock(x + 6, y - 8) + rock(x + 12, y + 6) + rock(x - 2, y + 6, '#a49478');
+    case 'mine': return arch(x, y - 1);
+    case 'forest': return [[-16, -4], [-6, -12], [6, -8], [16, -2], [-10, 6], [2, 4], [12, 10], [-20, 8]].map(([a, b]) => tree(x + a, y + b)).join('');
+    case 'lair': return tree(x - 8, y, '#1e4a24') + tree(x + 8, y + 1, '#1e4a24') + `<circle cx="${x}" cy="${y - 1}" r="4" fill="#5cc85a" stroke="#1e4a24" stroke-width=".8"/><path d="M${x - 3} ${y - 4} l1.5 -3 l1.5 2 l1.5 -2.5 l1.5 2 l1.5 -2 l.5 3.5Z" fill="#f6c945"/>`;
+    case 'swamp': return pond(x - 8, y - 4, 8, 3.5) + pond(x + 10, y + 6, 6, 2.6) + tree(x + 14, y - 8, '#3e5a3a') + `<path d="M${x - 2} ${y + 8} v-5 M${x} ${y + 8} v-6 M${x + 2} ${y + 8} v-4" stroke="#8aa060" stroke-width=".8"/>`;
+    case 'cave': return arch(x - 4, y) + rock(x + 12, y + 4, '#7c7088') + rock(x - 14, y + 6, '#7c7088');
+    case 'ridge': return peak(x - 8, y - 2, 1.1) + peak(x + 9, y + 3, 0.9) + `<path d="M${x - 16} ${y + 10} q4 -2 8 0 t8 0" stroke="#ffffff" stroke-width=".7" fill="none" opacity=".8"/>`;
+    case 'ruins': return pillar(x - 10, y + 4) + pillar(x - 4, y + 2, 9) + pillar(x + 8, y + 5, 5) + `<rect x="${x - 12}" y="${y + 4}" width="24" height="2" fill="#cabc9a"/>` + rock(x + 14, y - 6, '#a49478');
+    case 'grove': return tree(x - 10, y + 2, '#2c3c7c') + tree(x + 8, y - 4, '#2c3c7c') + tree(x + 2, y + 8, '#2c3c7c') + `<circle cx="${x - 2}" cy="${y - 10}" r="3" fill="#fff6c8"/><circle cx="${x - 0.8}" cy="${y - 10.8}" r="2.6" fill="${FILL.grove[0]}"/>` + flower(x + 12, y + 6, '#b8f0ff') + flower(x - 14, y - 4, '#b8f0ff');
+  }
+}
+
+/** 지도 SVG. regions 에 없는 지역은 그리지 않는다 */
+export function worldMapSvg(regions: MapRegion[]): string {
+  const by = Object.fromEntries(regions.map((r) => [r.id, r]));
+  // 섬(바탕 땅)과 바다
+  let out = `<svg class="wmap" viewBox="0 0 420 230" role="group" aria-label="1월드 지도">
+    <defs><pattern id="wave" width="16" height="8" patternUnits="userSpaceOnUse"><path d="M0 6 q4 -3 8 0 t8 0" stroke="#ffffff" stroke-opacity=".18" fill="none" stroke-width=".8"/></pattern>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <rect width="420" height="230" fill="#3e7aa0"/><rect width="420" height="230" fill="url(#wave)"/>
+    <path d="${blob(210, 120, 262, 3, 0.52)}" fill="#e8d6a4"/><path d="${blob(210, 120, 250, 3, 0.49)}" fill="#a8cf84"/>`;
+  // 길
+  for (const [a, b] of ROADS) {
+    if (!by[a] || !by[b]) continue;
+    const p = SPOTS[a], q = SPOTS[b], known = by[a].state !== 'locked' && by[b].state !== 'locked';
+    const mx = (p.x + q.x) / 2 + (q.y - p.y) * 0.12, my = (p.y + q.y) / 2 - (q.x - p.x) * 0.12;
+    out += `<path d="M${p.x} ${p.y} Q${mx.toFixed(1)} ${my.toFixed(1)} ${q.x} ${q.y}" fill="none" stroke="${known ? '#f6e6b8' : '#8a8a7a'}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${known ? '0' : '2 4'}"/>`;
+    if (known) out += `<path d="M${p.x} ${p.y} Q${mx.toFixed(1)} ${my.toFixed(1)} ${q.x} ${q.y}" fill="none" stroke="#c8a868" stroke-width="1" stroke-dasharray="3 3"/>`;
+  }
+  // 지역
+  regions.forEach((r, i) => {
+    const s = SPOTS[r.id];
+    if (!s) return;
+    const [fill, edge] = FILL[s.theme], locked = r.state === 'locked';
+    const click = r.state === 'open' || r.state === 'unmet' ? ` data-act="mapsel:${r.id}" tabindex="0"` : '';
+    out += `<g class="wreg ${r.state} ${r.sel ? 'sel' : ''}"${click} role="button" aria-pressed="${r.sel}" aria-label="${locked ? '알 수 없는 지역' : `${r.name} ${r.sub}`}">
+      <path class="land" d="${blob(s.x, s.y, s.r, i + 7)}" fill="${locked ? '#8c9488' : fill}" stroke="${r.sel ? '#ffe066' : locked ? '#6a7266' : edge}" stroke-width="${r.sel ? 3 : 1.5}" ${r.sel ? 'filter="url(#glow)"' : ''}/>
+      ${locked ? `<text x="${s.x}" y="${s.y + 4}" class="wq">?</text>` : deco(s)}
+      ${r.state === 'here' ? `<g class="pin"><path d="M${s.x} ${s.y - 4} l-4 -7 a4.6 4.6 0 1 1 8 0Z" fill="#e2574a" stroke="#3a1a1a" stroke-width=".8"/><circle cx="${s.x}" cy="${s.y - 13}" r="1.6" fill="#fff"/></g>` : ''}
+      <text x="${s.x}" y="${s.y + s.r * 0.78 + 9}" class="wname">${locked ? '???' : r.name}</text>
+      ${r.sub && !locked ? `<text x="${s.x}" y="${s.y + s.r * 0.78 + 17}" class="wsub ${r.state}">${r.sub}</text>` : ''}
+    </g>`;
+  });
+  return out + '</svg>';
+}

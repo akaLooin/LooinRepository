@@ -263,6 +263,7 @@ export class GameScene extends Phaser.Scene {
   private npcs: { id: string; img: Img; mark: Phaser.GameObjects.Text; x: number; y: number }[] = [];
   private bossRing: Phaser.GameObjects.Ellipse | null = null;
   private camX = 0; private camY = 0; private time0 = 0;
+  private press: { x: number; y: number; used: boolean } | null = null;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private pending: World | null | undefined;
 
@@ -275,11 +276,24 @@ export class GameScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.scale.on('resize', () => this.fitCamera());
     const el = document.getElementById('game')!;
-    el.addEventListener('pointerdown', (e) => { this.sweeping = true; this.onTap(e); });
+    // 누르는 순간: 떨어진 아이템이면 바로 줍는다. 이동·상호작용 명령은 손을 뗄 때 내린다
+    el.addEventListener('pointerdown', (e) => {
+      this.sweeping = true;
+      this.press = { x: e.clientX, y: e.clientY, used: this.pickDrop(e) };
+    });
     // 누른 채 밀면 지나간 자리의 아이템을 줍는다(캐릭터는 움직이지 않는다)
-    el.addEventListener('pointermove', (e) => { if (this.sweeping) this.pickAt(e); });
-    addEventListener('pointerup', () => { this.sweeping = false; });
-    addEventListener('pointercancel', () => { this.sweeping = false; });
+    el.addEventListener('pointermove', (e) => {
+      if (!this.sweeping || !this.press) return;
+      if (Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > 14) this.press.used = true;
+      this.pickAt(e);
+    });
+    el.addEventListener('pointerup', (e) => {
+      const p = this.press;
+      this.sweeping = false; this.press = null;
+      if (p && !p.used) this.onTap(e);
+    });
+    addEventListener('pointerup', () => { this.sweeping = false; this.press = null; });
+    addEventListener('pointercancel', () => { this.sweeping = false; this.press = null; });
     this.fitCamera();
     if (this.pending !== undefined) this.setWorld(this.pending);
     else this.setWorld(this.game_.world);
@@ -524,15 +538,16 @@ export class GameScene extends Phaser.Scene {
     // 카메라: 부드럽게 따라가며 맵 경계에서 멈춘다
     const cam = this.cameras.main, p = w.player;
     const halfW = cam.width / cam.zoom / 2, halfH = cam.height / cam.zoom / 2;
-    // 가운데 구역(화면 너비의 약 1/3) 안에서는 카메라가 가만히 있고, 벗어나면 그만큼만 천천히 따라간다
-    const dz = halfW * 0.32;
+    // 가운데 좁은 구역 안에서는 크게 흔들리지 않고, 벗어나면 따라간다. 멈춰 있어도 천천히 캐릭터 쪽으로 다시 맞춘다
+    const dz = halfW * 0.14;
     let goal = this.camGoal ?? p.x;
+    goal += (p.x - goal) * Math.min(1, dt * 1.2);
     if (p.x > goal + dz) goal = p.x - dz; else if (p.x < goal - dz) goal = p.x + dz;
     const tx = w.map.width > halfW * 2 ? Phaser.Math.Clamp(goal, halfW, w.map.width - halfW) : w.map.width / 2;
     this.camGoal = tx;
     const base = 52 - halfH;
     const ty = base + Math.min(0, (p.y + 50) * 0.7);
-    this.camX = smooth(this.camX, tx, dt, 2.6); this.camY = smooth(this.camY, ty, dt, 2.2);
+    this.camX = smooth(this.camX, tx, dt, 3.6); this.camY = smooth(this.camY, ty, dt, 2.8);
     if (Math.abs(this.camX - tx) > halfW * 2) this.camX = tx;
     cam.centerOn(this.camX, this.camY);
     const left = this.camX - halfW;
@@ -607,13 +622,20 @@ export class GameScene extends Phaser.Scene {
     const [x, y] = this.toWorld(ev);
     return w.pickAt(x, y);
   }
-  /** 화면 터치 → 월드 좌표로 바꿔 명령을 내린다. 떨어진 아이템을 누르면 줍기만 하고 움직이지 않는다 */
+  /** 떨어진 아이템을 눌렀으면 줍고 true(가방이 차서 못 줍더라도 캐릭터는 움직이지 않는다) */
+  private pickDrop(ev: PointerEvent): boolean {
+    const w = this.world;
+    if (!w || w !== this.game_.world) return false;
+    const [x, y] = this.toWorld(ev);
+    if (!w.dropNear(x, y)) return false;
+    w.pickAt(x, y);
+    return true;
+  }
+  /** 손을 뗀 자리 → 월드 좌표로 바꿔 명령을 내린다 */
   private onTap(ev: PointerEvent) {
     const w = this.world;
     if (!w || w !== this.game_.world) return;
     const [x, y] = this.toWorld(ev);
-    // 떨어진 아이템을 누르면 줍기만 한다(가방이 차서 못 줍더라도 캐릭터는 움직이지 않는다)
-    if (w.dropNear(x, y)) { w.pickAt(x, y); return; }
     const cmd = w.tap(x, y);
     // 터치 표시: 빈 바닥으로 걸어갈 때만 작은 화살표(몬스터·NPC·시설·포탈은 표시하지 않는다)
     if (!cmd || cmd.k !== 'move') return;

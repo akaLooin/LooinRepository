@@ -230,3 +230,28 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .ui-slot .upn { position: absolute; left: 0.2em; top: 0; font-size: var(--fs-xs); color: var(--c-accent); text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
 .stonebtns { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .stonebtns .mi, .stonebtns img { width: 1.3em; height: 1.3em; }
+/* 지형 지도 */
+.wmapbox { border: 2px solid var(--c-border); border-radius: var(--r-md); overflow: hidden; background: #3e7aa0; line-height: 0; }
+.wmap { display: block; width: 100%; height: auto; max-height: min(56vh, 380px); }
+.wreg { cursor: default; }
+.wreg[data-act] { cursor: pointer; }
+.wreg[data-act]:hover .land, .wreg[data-act]:focus-visible .land { stroke: #ffe066; stroke-width: 2.2; }
+.wreg.unmet .land { opacity: .8; }
+.wname { font-size: 8px; font-weight: 700; text-anchor: middle; fill: #fff8e2; paint-order: stroke; stroke: #2a1e14; stroke-width: 2.4px; pointer-events: none; }
+.wsub { font-size: 6.5px; text-anchor: middle; fill: #f6e6b8; paint-order: stroke; stroke: #2a1e14; stroke-width: 2px; pointer-events: none; }
+.wsub.unmet { fill: #ff9a8a; } .wsub.here { fill: #ffe066; }
+.wq { font-size: 14px; font-weight: 700; text-anchor: middle; fill: #e8ece4; opacity: .8; pointer-events: none; }
+.wreg.sel .land { animation: wsel 1.2s ease-in-out infinite; }
+@keyframes wsel { 50% { stroke-width: 4.5; } }
+.wreg .pin { animation: pinbob 1s ease-in-out infinite; }
+@keyframes pinbob { 50% { transform: translateY(-2px); } }
+.mapfoot { min-height: calc(var(--touch) + var(--sp-2)); margin-top: var(--sp-2); padding: var(--sp-1) var(--sp-3); background: var(--c-surface-inset); border: 1px solid var(--c-border); border-radius: var(--r-md); flex-wrap: nowrap; }
+/* 목차 > 참조: 시설 바로가기 */
+.refgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.2em, 1fr)); gap: var(--sp-2); }
+.refbtn { font: inherit; color: var(--c-text); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--sp-2); background: var(--c-surface-inset); border: 2px solid var(--c-border); border-radius: var(--r-md); cursor: pointer; text-align: center; }
+.refbtn img, .refbtn .mi { width: 2.6em; height: 2.6em; object-fit: contain; image-rendering: pixelated; }
+.refbtn b { font-size: var(--fs-sm); }
+.refbtn:not(.locked):hover { border-color: var(--c-accent); }
+.refbtn.locked { opacity: .5; cursor: default; }
+.quickhint { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--c-accent); border-radius: var(--r-md); background: var(--c-surface-inset); font-size: var(--fs-sm); animation: droppulse .9s ease-in-out infinite; }
+.wreg:focus { outline: none; }

@@ -591,3 +591,37 @@ describe('1월드 마무리', () => {
     expect(currentQuest(c, 'elder')!.name).toBe('첫 걸음');
   });
 });
+
+describe('음식 재사용 대기·채집 보호', () => {
+  it('음식은 먹은 뒤 대기시간이 지나야 다음 것을 먹는다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'town';
+    c.foods[0] = { id: 'berry', qty: 10 };
+    const w = new World(acc, c, new Rng(1));
+    const d = derive(c);
+    c.hp = 1;
+    w.step(1 / 60, { move: 0, climb: 0 });
+    expect(c.foods[0]!.qty).toBe(9);
+    c.hp = 1;
+    for (let i = 0; i < 60 * 2; i++) w.step(1 / 60, { move: 0, climb: 0 });
+    expect(c.foods[0]!.qty).toBe(9); // 산딸기 대기 3초
+    for (let i = 0; i < 60 * 1.5; i++) w.step(1 / 60, { move: 0, climb: 0 });
+    expect(c.foods[0]!.qty).toBe(8);
+    expect(c.hp).toBeLessThanOrEqual(d.maxHp);
+  });
+  it('채집하는 동안에는 일반 몬스터의 몸통 박치기를 받지 않는다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(5));
+    const node = w.nodes[0];
+    // 몬스터를 채집 자리로 모은다
+    w.player.x = node.x; w.player.y = node.y;
+    w.gatherT = 5;
+    const hp0 = c.hp;
+    for (let i = 0; i < 60; i++) { for (const m of w.mobs) { m.x = w.player.x; m.y = w.player.y; m.spawnAge = 2; } w.step(1 / 60, { move: 0, climb: 0 }); }
+    expect(c.hp).toBe(hp0);
+    w.gatherT = 0;
+    for (let i = 0; i < 60 * 3; i++) { for (const m of w.mobs) { m.x = w.player.x; m.y = w.player.y; m.spawnAge = 2; } w.step(1 / 60, { move: 0, climb: 0 }); }
+    expect(c.hp).toBeLessThan(hp0);
+  });
+});

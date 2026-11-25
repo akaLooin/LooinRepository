@@ -28,6 +28,8 @@ export interface ItemDef {
   chestSlots?: number;
   /** 음식: 먹으면 회복하는 체력 */
   heal?: number;
+  /** 음식: 먹은 뒤 다음 음식을 먹기까지 기다리는 시간(초) */
+  cd?: number;
   slot?: EquipSlot; stats?: ItemStats; reqLv?: number; wtype?: WeaponType;
   sell: number;
 }
@@ -96,8 +98,8 @@ const items: ItemDef[] = [
   { id: 'moss', name: '이끼 덩이', desc: '촉촉하고 폭신하다.', kind: 'material', sell: 1 },
   { id: 'pebble', name: '조약돌', desc: '손에 쏙 들어오는 돌.', kind: 'material', sell: 3 },
   { id: 'leaf', name: '마른 잎', desc: '바스락거리는 잎.', kind: 'material', sell: 8 },
-  { id: 'berry', name: '산딸기', desc: '먹으면 체력 15 회복.', kind: 'food', heal: 15, sell: 1 },
-  { id: 'mushroom', name: '숲 버섯', desc: '먹으면 체력 45 회복.', kind: 'food', heal: 45, sell: 4 },
+  { id: 'berry', name: '산딸기', desc: '먹으면 체력 15 회복. 재사용 3초.', kind: 'food', heal: 15, cd: 3, sell: 1 },
+  { id: 'mushroom', name: '숲 버섯', desc: '먹으면 체력 45 회복. 재사용 5초.', kind: 'food', heal: 45, cd: 5, sell: 4 },
   { id: 'twine', name: '노끈', desc: '모루에서 만든 질긴 끈.', kind: 'material', sell: 1 },
   { id: 'nail', name: '쇠못', desc: '모루에서 만든 못.', kind: 'material', sell: 3 },
   { id: 'plank', name: '판자', desc: '모루에서 다듬은 판자.', kind: 'material', sell: 6 },
@@ -138,8 +140,8 @@ const items: ItemDef[] = [
   { id: 'feather', name: '바람 깃털', desc: '바람을 타는 가벼운 깃털.', kind: 'material', sell: 20 },
   { id: 'runestone', name: '룬 조각', desc: '희미한 무늬가 새겨진 돌.', kind: 'material', sell: 28 },
   { id: 'sporecap', name: '포자 갓', desc: '톡 건드리면 포자가 날린다.', kind: 'material', sell: 36 },
-  { id: 'stew', name: '늪 스튜', desc: '먹으면 체력 120 회복.', kind: 'food', heal: 120, sell: 10 },
-  { id: 'moonpie', name: '달빛 파이', desc: '먹으면 체력 300 회복.', kind: 'food', heal: 300, sell: 25 },
+  { id: 'stew', name: '늪 스튜', desc: '먹으면 체력 120 회복. 재사용 7초.', kind: 'food', heal: 120, cd: 7, sell: 10 },
+  { id: 'moonpie', name: '달빛 파이', desc: '먹으면 체력 300 회복. 재사용 10초.', kind: 'food', heal: 300, cd: 10, sell: 25 },
   { id: 'anvil_exp2', name: '모루 확장 II', desc: '만들면 모루 3단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
   ...([['blue', '푸른쇠', 1], ['gold', '금빛', 2]] as const).flatMap(([k, n, t]) => [
     { id: `sword_${k}`, name: `${n} 검`, desc: '날이 잘 선 검.', kind: 'equip' as const, slot: 'weapon' as const, wtype: 'sword' as const, stats: { dmg: t === 1 ? 30 : 60, str: t === 1 ? 4 : 8 }, reqLv: t === 1 ? 20 : 35, sell: t === 1 ? 200 : 600 },
@@ -513,6 +515,8 @@ export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ?
 export const MAX_CHARACTERS = 6;
 /** 음식 칸 수: 위 칸부터 먹는다 */
 export const FOOD_SLOTS = 3;
+/** 음식 재사용 대기(초). 먹은 음식의 값을 쓴다 */
+export const foodCd = (id: string) => ITEMS[id]?.cd ?? 5;
 export const AFK_MIN_SECONDS = 60;
 export const AFK_MAX_SECONDS = 12 * 3600;
 /** 방치 효율 기본값(전투·채집). 능력치·특성·카드로 오른다 */

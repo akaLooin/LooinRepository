@@ -6,7 +6,7 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats,
+  STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, foodCd,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -17,6 +17,7 @@ import {
 import { WorldEvent } from '../core/world';
 import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, playsLeft, spikeOpen, totemRunsLeft } from '../core/minigames';
 import { PlayKind, runGame } from './minigames';
+import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
 import { STARS, achieveReady, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
@@ -125,6 +126,8 @@ export class UI {
   private forgeSel = 0;
   /** 아이템 창 왼쪽 탭: 0 장비, 1 홀로웨어 */
   private eqTab = 0;
+  /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
+  private refBack = false;
   private petSel: string | null = null;
   /** 지도에서 고른 맵(한 번 더 누르면 이동) */
   private mapSel: string | null = null;
@@ -139,6 +142,7 @@ export class UI {
   /** 하단 바가 공격 바로 바뀌어 있는지, 공격 바에 놓으려고 고른 특성, 특성 화면에서 고른 특성 */
   private attackMode = false;
   private assigning: string | null = null;
+  private assignPrev = false;
   /** 특성 창에서 퀵슬롯을 고르는 중인 특성과 공격 바 장 */
   private quickFor: string | null = null;
   private quickPage = 0;
@@ -278,7 +282,7 @@ export class UI {
     const d = w.d, need = xpToNext(c.level);
     const menu: [string, string, string, boolean?][] = [
       ['auto', '자동', 'auto'], ['attacks', '공격', 'atk'], ['items', '아이템', 'open:items'],
-      ['talents', '특성', 'open:char', c.statPoints > 0 || c.talentPoints > 0], ['codex', '도감', 'open:codex', Object.keys(NPCS).some((n) => questProgress(c, n)?.done)],
+      ['talents', '특성', 'open:char', c.statPoints > 0 || c.talentPoints > 0], ['codex', '목차', 'open:codex', Object.keys(NPCS).some((n) => questProgress(c, n)?.done)],
       ['map', '지도', 'open:map'], ['chat', '채팅', 'open:chat'], ['menu', '메뉴', 'open:menu'],
     ];
     // 요약·게이지·버튼을 따로 갱신한다: 체력·마나가 차오를 때 버튼이 다시 만들어져 터치가 씹히지 않도록
@@ -416,7 +420,8 @@ export class UI {
           const id = c.equipment[s];
           return `<button class="ui-slot eqslot" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) + upBadge(c.equipUp[s]) : ui(`eq_${s}`, 'sil')}</button>`;
         }).join('');
-        const food = c.foods.map((f, i) => `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food:${i}" aria-selected="${this.sel === `food:${i}`}" aria-label="음식 칸 ${i + 1}${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>` : ui('eq_food', 'sil')}</button>`).join('');
+        const eatCd = g.world?.eatT ?? 0;
+        const food = c.foods.map((f, i) => `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food:${i}" aria-selected="${this.sel === `food:${i}`}" aria-label="음식 칸 ${i + 1}${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>${eatCd > 0 ? `<span class="cool">${Math.ceil(eatCd)}</span>` : ''}` : ui('eq_food', 'sil')}</button>`).join('');
         let cells = '';
         for (let i = 0; i < Math.max(invSize(c), c.inventory.length); i++) {
           const s = c.inventory[i];
@@ -428,7 +433,7 @@ export class UI {
         if (this.sel?.startsWith('food:')) {
           const fi = +this.sel.slice(5), f = c.foods[fi];
           detail = f ? `<div class="ui-row"><span class="ui-slot">${icon(f.id)}</span><div><b>${ITEMS[f.id].name}</b><div class="ui-xs ui-muted">음식 칸 · ${f.qty}개</div></div></div>
-            <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다.</span>
+            <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다. 먹은 뒤에는 그 음식의 재사용 대기시간(${foodCd(f.id)}초) 동안 다음 음식을 먹지 않습니다.</span>${eatCd > 0 ? `<span class="ui-xs ui-accent">재사용까지 ${Math.ceil(eatCd)}초</span>` : ''}
             <button class="ui-btn" data-act="food::${fi}">가방으로</button>` : '<span class="ui-sm ui-muted">음식을 넣어 두면 체력이 낮을 때 위 칸부터 자동으로 먹습니다.</span>';
         } else if (this.sel?.startsWith('skin:')) {
           const slot = this.sel.slice(5) as SkinSlot, id = c.skins[slot];
@@ -495,8 +500,10 @@ export class UI {
       }
 
       case 'codex': {
+        // 목차: 첫 탭이 참조(어디서나 여는 시설 바로가기). t 는 예전 탭 번호(0 카드 … 5 참조)
+        const t = tab === 0 ? 5 : tab - 1;
         let body = '';
-        if (tab === 0) {
+        if (t === 0) {
           const slots = c.cardSlots.map((id, i) => id
             ? `<button class="ui-slot r3" data-act="cardoff:${i}" aria-label="${cardName(id)} 카드 빼기"><img class="px" src="${cardIcon(id)}" alt=""></button>`
             : `<div class="ui-slot empty" aria-label="빈 카드 칸"></div>`).join('');
@@ -523,36 +530,34 @@ export class UI {
               <div class="qchain">${chain}</div></div></div>`;
           }).join('');
         }
-        if (tab === 0) body = this.cardExtrasHtml(c) + body;
-        if (tab === 2) body = this.starsHtml(c);
-        if (tab === 3) body = this.achieveHtml();
-        if (tab === 4) body = this.familyHtml();
-        if (tab === 5) body = this.quickRefHtml();
+        if (t === 0) body = this.cardExtrasHtml(c) + body;
+        if (t === 2) body = this.starsHtml(c);
+        if (t === 3) body = this.achieveHtml();
+        if (t === 4) body = this.familyHtml();
+        if (t === 5) body = this.quickRefHtml();
         const achReady = ACHIEVEMENTS.some((d) => achieveReady(g.acc, d.id));
-        return win('도감', `${tabs(['카드', '퀘스트', '별자리', `업적${achReady ? ' !' : ''}`, '가족', '빠른 참조'], tab, tabAct, ['ui_card', 'ui_quest', 'ui_star', 'ui_trophy', 'ui_family', 'ui_quick'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('목차', `${tabs(['참조', '카드', '퀘스트', '별자리', `업적${achReady ? ' !' : ''}`, '가족'], tab, tabAct, ['ui_quick', 'ui_card', 'ui_quest', 'ui_star', 'ui_trophy', 'ui_family'])}<div class="ui-tabpanel">${body}</div>`);
       }
 
       case 'map': {
-        // 맵을 누르면 고르고, 한 번 더(또는 아래 이동 버튼) 누르면 순간이동. 마을은 무료, 나머지는 티켓 1장.
-        // 처치 목표를 다 채운 맵만 순간이동할 수 있고, 다 채우면 처치 수는 감춘다
+        // 위에서 내려다본 지형 지도. 지역을 누르면 테두리만 빛나고, 한 번 더(또는 아래 이동 버튼) 누르면 순간이동.
+        // 마을은 무료, 나머지는 티켓 1장. 처치 목표를 다 채운 맵만 순간이동할 수 있다.
         const tickets = countItem(c, TP_TICKET) + storageCount(g.acc, TP_TICKET);
-        const nodes = WORLD1.map((id) => {
+        const regions: MapRegion[] = [...WORLD1, 'arena', 'lair'].map((id) => {
           const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id), q = mapQuota(id), k = c.kills[id] ?? 0;
-          const ok = canTeleportTo(c, id), sel = this.mapSel === id;
-          const sub = here ? '현재 위치' : !open ? '잠김' : q && k < q ? `처치 ${k.toLocaleString()}/${q}` : id === 'town' ? '무료' : '';
-          const art = m.spawns.length ? iconUrl(`mob_${m.spawns[0].monster}`) : iconUrl('ui_teleport');
-          return `<button class="mapnode ${here ? 'here' : ''} ${open ? '' : 'locked'} ${sel ? 'sel' : ''} ${open && !ok && !here ? 'unmet' : ''}" data-act="mapsel:${id}" ${open && !here ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${m.name}">
-            <img class="px" src="${open ? art : iconUrl('ui_lock')}" alt=""><b>${open ? m.name : '???'}</b><span class="ui-xs ${here ? 'ui-accent' : q && k < q ? 'ui-bad' : 'ui-muted'}">${sub}</span></button>`;
-        }).join('<span class="mapline"></span>');
+          const mark = id === 'arena' || id === 'lair';
+          const state: MapRegion['state'] = here ? 'here' : !open ? 'locked' : mark ? 'mark' : canTeleportTo(c, id) ? 'open' : 'unmet';
+          const sub = here ? '현재 위치' : mark ? (id === 'lair' ? (g.acc.bosses.mossking ? `토벌 ${g.acc.bosses.mossking}회` : '숲 끝 · 열쇠') : '풀밭 위쪽 문') : q && k < q ? `처치 ${k.toLocaleString()}/${q}` : id === 'town' ? '무료' : '';
+          return { id, name: m.name, state, sel: this.mapSel === id, sub };
+        });
         const pick = this.mapSel && MAPS[this.mapSel] && this.mapSel !== c.mapId ? this.mapSel : null;
         const can = pick ? canTeleportTo(c, pick) : false, free = pick === 'town';
-        const go = pick ? `<div class="ui-row mapgo" style="margin:0 0 var(--sp-3)"><b class="ui-grow">${MAPS[pick].name}</b>
+        // 아래 줄은 늘 같은 높이: 고르기 전에는 안내, 고르면 이동 정보
+        const foot = pick ? `<b class="ui-grow">${MAPS[pick].name}</b>
             <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
-            <button class="ui-btn primary" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button></div>` : '<p class="ui-xs ui-muted">이동할 맵을 고르세요. 한 번 더 누르면 이동합니다.</p>';
-        const lair = `<span class="mapline"></span><div class="mapnode ${c.mapId === 'lair' ? 'here' : ''} ${mapUnlocked(c, 'forest') ? '' : 'locked'}"><img class="px" src="${iconUrl('mob_mossking')}" alt=""><b>${MAPS.lair.name}</b><span class="ui-xs ui-muted">${g.acc.bosses.mossking ? `처치 ${g.acc.bosses.mossking}회` : '숲 끝 문 · 열쇠'}</span></div>`;
-        const next = g.acc.bosses.mossking ? '<span class="mapline"></span><div class="mapnode locked"><img class="px" src="' + iconUrl('ui_lock') + '" alt=""><b>2월드</b><span class="ui-xs ui-muted">준비 중</span></div>' : '';
-        return win(`지도 <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `${go}<div class="mapchain">${nodes}${lair}${next}</div>
-          <p class="ui-xs ui-muted">마을은 언제나 무료, 다른 맵은 순간이동 티켓 1장. 티켓은 잡화점에서 팔고 몬스터도 드물게 떨어뜨립니다.</p>`);
+            <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
+          : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
+        return win(`지도 <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox">${worldMapSvg(regions)}</div><div class="ui-row mapfoot">${foot}</div>`);
       }
 
       case 'chat':
@@ -1030,9 +1035,9 @@ export class UI {
         <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${t.desc(Math.max(1, lv))}</div>
         ${lv < t.max ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}
         <div class="talbtns"><button class="ui-btn primary iconbtn block" data-act="talent:${t.id}" ${c.talentPoints && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
-        ${t.active ? `<button class="ui-btn iconbtn block ${this.quickFor === t.id ? 'success' : ''}" data-act="quick:${t.id}" ${lv ? '' : 'disabled'}>${ui('ui_assign', 'tic')} 퀵슬롯에 지정하기</button>` : ''}</div>
+        ${t.active ? `<button class="ui-btn iconbtn block ${this.assigning === t.id ? 'success' : ''}" data-act="quick:${t.id}" ${lv ? '' : 'disabled'}>${ui('ui_assign', 'tic')} ${this.assigning === t.id ? '지정 취소' : '퀵슬롯에 지정하기'}</button>` : ''}</div>
         ${t.active && !lv ? '<span class="ui-xs ui-muted">1레벨 이상 올리면 퀵슬롯에 지정할 수 있습니다.</span>' : ''}
-        ${t.active && lv && this.quickFor === t.id ? this.quickPickHtml(c, t.id) : ''}`;
+        ${t.active && lv && this.assigning === t.id ? `<div class="quickhint">${ui('ui_assign', 'tic')} 아래 깜빡이는 퀵슬롯 칸을 누르세요</div>` : ''}`;
     }
     return `<div class="split"><div class="talgrid">${tiles}</div><div class="ui-detail">${detail}</div></div>`;
   }
@@ -1064,9 +1069,11 @@ export class UI {
     const c = this.game.char, w = this.game.world;
     if (!c || !w || i < 0 || i >= ATTACK_SLOTS) return;
     if (this.assigning) {
-      const r = this.game.act({ t: 'barSet', bar: c.attackPage, slot: i, id: this.assigning });
+      const id = this.assigning, r = this.game.act({ t: 'barSet', bar: c.attackPage, slot: i, id });
       if (!r.ok) this.toast(r.err ?? '놓을 수 없습니다');
+      else this.toast(`${TALENT[id].name} → 퀵슬롯 ${c.attackPage + 1}장 ${i + 1}번 칸`, `tl_${id}`);
       this.assigning = null;
+      if (this.drag === null && this.panel === 'char') this.attackMode = this.assignPrev;
     } else {
       const id = c.attackBars[c.attackPage][i];
       if (id && !w.useSkill(id)) this.toast(c.mp < (TALENT[id].active?.mana ?? 0) ? '마나가 부족합니다' : '아직 쓸 수 없습니다');
@@ -1091,7 +1098,7 @@ export class UI {
     if (el) { this.assigning = id; this.pressSlot(+el.dataset.bslot!); }
   }
 
-  /** 도감 > 빠른 참조: 어디서나 창고와 다른 캐릭터 현황을 본다 */
+  /** 목차 > 참조: 시설 바로가기 + 창고·캐릭터 현황 */
   private quickRefHtml(): string {
     const g = this.game, acc = g.acc;
     const store = acc.storage.map((s) => `<div class="ui-slot" aria-label="${ITEMS[s.id].name} ${s.qty}개">${icon(s.id)}<span class="qty">${s.qty.toLocaleString()}</span></div>`).join('') || '<span class="ui-sm ui-muted">비어 있음</span>';
@@ -1101,7 +1108,21 @@ export class UI {
       return `<div class="ui-row line"><img class="px qface" src="${portraitUrl(ch.look)}" alt=""><div class="ui-grow"><b>${esc(ch.name)}</b> <span class="ui-xs ui-accent">Lv.${ch.level} ${CLASSES[ch.cls].name}</span>
         <div class="ui-xs ui-muted">${MAPS[ch.mapId].name} · ${act}</div></div><span class="ui-xs qanvil">${busy}</span></div>`;
     }).join('');
-    return `<h3 style="margin-top:0">${ui('ui_quick', 'tic')} 창고 ${acc.storage.length}/${storageSize(acc)}</h3><div class="ui-grid">${store}</div><h3>${ui('ui_swap', 'tic')} 캐릭터</h3>${chars}`;
+    // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
+    const c = g.char!;
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem'];
+    const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
+    const refs = kinds.map((k) => {
+      const m = where(k);
+      if (!m) return '';
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0);
+      const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
+      return known
+        ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
+        : `<div class="refbtn locked" aria-label="아직 찾지 못한 시설">${ui('ui_lock', 'mi')}<b>???</b><span class="ui-xs ui-muted">${mapUnlocked(c, m.id) ? '찾아가 보세요' : '아직 못 간 곳'}</span></div>`;
+    }).join('') + `<button class="refbtn" data-act="ref:afkinfo">${ui('ui_afk', 'mi')}<b>방치 정보</b><span class="ui-xs ui-muted">지금 맵</span></button>`;
+    return `<p class="ui-xs ui-muted" style="margin-top:0">한 번 찾아간 시설은 여기서 어디서나 열 수 있습니다.</p><div class="refgrid">${refs}</div>
+      <h3>${ui('ui_quick', 'tic')} 창고 ${acc.storage.length}/${storageSize(acc)} <span class="ui-xs ui-muted">(보기만)</span></h3><div class="ui-grid">${store}</div><h3>${ui('ui_swap', 'tic')} 캐릭터</h3>${chars}`;
   }
 
   // ───────── 입력 ─────────  // ───────── 입력 ─────────
@@ -1166,8 +1187,9 @@ export class UI {
       case 'select': g.select(+a); break;
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
-      case 'open': if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'close': this.panel = null; this.afk = null; break;
+      case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); break;
+      case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
         if (a === 'char' && c && ((+b === 2 && baseClass(c.cls) === 'beginner') || (+b === 3 && !classLine(c.cls)[2]))) {
@@ -1244,7 +1266,12 @@ export class UI {
       case 'atk': this.attackMode = !(this.attackMode || this.assigning); this.assigning = null; break;
       case 'bpage': if (c) g.act({ t: 'barPage', page: (c.attackPage + 1) % c.attackBars.length }); break;
       case 'tsel': if (this.talentSel !== a) this.quickFor = null; this.talentSel = a; break;
-      case 'quick': this.quickFor = this.quickFor === a ? null : a; this.quickPage = c?.attackPage ?? 0; break;
+      case 'quick':
+        // 아래 퀵슬롯(공격 바)이 깜빡이며 기다린다 → 원하는 칸을 직접 누른다. 한 번 더 누르면 취소
+        if (this.assigning === a) { this.assigning = null; this.attackMode = this.assignPrev; break; }
+        if (!this.assigning) this.assignPrev = this.attackMode;
+        this.assigning = a; this.attackMode = true;
+        break;
       case 'qpage': this.quickPage = +a; break;
       case 'qset': {
         if (!this.quickFor || !c) break;

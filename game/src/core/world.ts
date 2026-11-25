@@ -1,8 +1,7 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
   ARENA, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
-  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
-} from './data';
+  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult, foodCd } from './data';
 import { Rng } from './rng';
 import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady } from './state';
 
@@ -80,6 +79,8 @@ const IDLE: Input = { move: 0, climb: 0 };
 interface Rope { x: number; top: number; bottom: number; a: number; b: number }
 
 export class World {
+  /** 남은 채집 보호 시간(초). 0보다 크면 일반 몬스터의 몸통 박치기를 받지 않는다 */
+  gatherT = 0;
   readonly map: MapDef;
   readonly platforms: Platform[];
   readonly player: Player;
@@ -317,14 +318,15 @@ export class World {
     return true;
   }
 
-  private eatT = 0;
+  /** 음식 재사용 대기(초) */
+  eatT = 0;
   /** 음식 칸에서 하나 먹는다 */
   private eat(d: Derived) {
     const c = this.char, i = c.foods.findIndex(Boolean), f = c.foods[i]!, it = ITEMS[f.id], p = this.player;
     const before = c.hp;
     c.hp = Math.min(d.maxHp, c.hp + (it.heal ?? 0));
     if (--f.qty <= 0) c.foods[i] = null;
-    this.eatT = 1;
+    this.eatT = foodCd(f.id);
     this.events.push({ t: 'heal', x: p.x, y: p.y - 34, amount: Math.round(c.hp - before), food: f.id });
   }
 
@@ -375,6 +377,7 @@ export class World {
     this.eatT = Math.max(0, this.eatT - dt);
     if (c.foods.some(Boolean) && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
     p.hurtT = Math.max(0, p.hurtT - dt);
+    this.gatherT = Math.max(0, this.gatherT - dt);
     for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);
     if (c.auto && this.acc.options.autoAttacks) {
       // 원작처럼: 지금 공격 바의 왼쪽 칸부터 쓸 수 있는 것을 시전
@@ -458,6 +461,8 @@ export class World {
     if (target.x !== p.x) p.facing = target.x > p.x ? 1 : -1;
     p.swingKind = kind; p.swingT = SWING_TIME; p.swingId++; p.attackT = interval;
     this.swingTarget = target; this.hitDone = false;
+    // 채집하는 동안(다음 휘두름까지 조금 더)은 일반 몬스터가 건드리지 않는다
+    this.gatherT = 'hp' in target ? 0 : interval + 0.4;
   }
 
   /** 사거리 안에서 가장 가까운 몬스터(키보드 조작용) */
@@ -560,7 +565,7 @@ export class World {
         const [lo, hi] = this.mobRange(m.plat);
         if (m.x < lo) { m.x = lo; m.dir = 1; } else if (m.x > hi) { m.x = hi; m.dir = -1; }
       }
-      if (p.dead <= 0 && m.contactCd <= 0 && m.spawnAge > 0.8
+      if (p.dead <= 0 && m.contactCd <= 0 && m.spawnAge > 0.8 && (this.gatherT <= 0 || m.def.boss)
         && Math.abs(m.x - p.x) < m.def.radius + 5 && Math.abs(m.y - p.y) < 14) {
         m.contactCd = 1.2;
         const amount = dmgTaken(m.def, d.def, this.rng.range(0.8, 1.2));
