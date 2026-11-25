@@ -1,18 +1,18 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 54 files · ~34,476 words
+- 56 files · ~35,062 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 134 file(s) not represented in the graph (top: .import 52, .gd 36, .uid 36)
-- WARNING: 134 of 242 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- WARNING: 134 of 245 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 370 nodes · 506 edges · 36 communities (30 shown, 6 thin omitted)
+- 380 nodes · 517 edges · 37 communities (31 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d3b111bd`
+- Built from commit: `066420ca`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -52,6 +52,7 @@
 - sys
 - 아트 규격서 — 테일즈토피아 RPG
 - 게임 진행 흐름 — 원작 방식 대응표
+- 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형)
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
@@ -72,7 +73,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (36 total, 6 thin omitted)
+## Communities (37 total, 6 thin omitted)
 
 ### Community 0 - "listing.py"
 Cohesion: 0.33
@@ -183,8 +184,8 @@ Cohesion: 0.27
 Nodes (12): env(), f_of(), lowpass(), music(), noise(), render_song(), save(), sfx() (+4 more)
 
 ### Community 33 - "sys"
-Cohesion: 0.14
-Nodes (6): blob(), hero_down(), hero_frame(), stamp(), px(), sprite()
+Cohesion: 0.11
+Nodes (8): blob(), hero_down(), hero_frame(), stamp(), px(), sprite(), draw(), stamp()
 
 ### Community 34 - "아트 규격서 — 테일즈토피아 RPG"
 Cohesion: 0.20
@@ -193,6 +194,10 @@ Nodes (9): 1. 공통 규칙, 2. 스프라이트 시트 구조, 3. 게임에 연�
 ### Community 35 - "게임 진행 흐름 — 원작 방식 대응표"
 Cohesion: 0.40
 Nodes (4): 게임 진행 흐름 — 원작 방식 대응표, 로비에서 할 수 있는 것 (성장·관리), 한 판의 흐름, 화면 이동도
+
+### Community 36 - "캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형)"
+Cohesion: 0.40
+Nodes (4): 게임 설계 제안 (1차 직업 「기사」), 의뢰 내용 요약, 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형), 확인 필요
 
 ## Knowledge Gaps
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
@@ -211,4 +216,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `json` be split into smaller, more focused modules?**
   _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
 - **Should `sys` be split into smaller, more focused modules?**
-  _Cohesion score 0.14035087719298245 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11231884057971014 - nodes in this community are weakly interconnected._
