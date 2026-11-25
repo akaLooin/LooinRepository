@@ -854,13 +854,13 @@ export class UI {
         const head = `<div class="ui-row alchhead">${ui('obj_shrine', 'mi')}<b class="ui-grow">기도 Lv.<span class="ui-accent">${sk.lv}</span> · 기도력 <span class="ui-accent">${Math.floor(ch)}</span> / ${cap} <span class="ui-xs ui-muted">시간당 ${chargeRate(c).toFixed(1)}</span></b><div style="width:26%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
         let body = '';
         if (tab === 0) {
-          const be = boltEvery(c);
+          const towers = acc.build?.levels.b_tower ?? 0, be = boltEvery(c, towers);
           body = WTOTEMS.map((t) => {
             const lock = worshipLock(c, t.id), here = c.mapId === t.map;
             const btn = lock ? `<span class="ui-sm ui-bad">${lock}</span>` : !here ? `<span class="ui-xs ui-muted">${MAPS[t.map].name}에서</span>` : `<button class="ui-btn sm primary" data-act="wplay:${t.id}" ${ch >= t.cost ? '' : 'disabled'}>지키기 · 기도력 ${t.cost}</button>`;
             return `<div class="ui-row line ${lock ? 'locked' : ''}">${ui(`soul_${t.soul}`, 'mi')}<div class="ui-grow"><b>${t.name}</b> <span class="ui-xs ui-muted">${MAPS[t.map].name} · Lv.${t.lv}</span>
-              <div class="ui-xs ui-muted">${SOUL_NAMES[t.soul]} · 혼령 속도 ×${t.speed} · 혼령 최대 ${t.maxKills}마리(끝까지 지키면 ${runSouls(c, t.maxKills, true)}개)</div></div>${btn}</div>`;
-          }).join('') + `<p class="ui-xs ui-muted">토템이 있는 맵에서 기도력을 써서 1분 동안 토템을 지킵니다. 다가오는 혼령을 눌러 없애세요. ${be ? `기도 Lv가 올라 토템이 ${be.toFixed(1)}초마다 스스로 혼령을 쏩니다.` : '기도 Lv.5부터 토템이 스스로 혼령을 쏩니다.'}</p>`;
+              <div class="ui-xs ui-muted">${SOUL_NAMES[t.soul]} · 혼령 속도 ×${t.speed} · 최고 기록 ${acc.worship.best?.[t.id] ?? 0} · 끝까지 지키면 최대 영혼 ${runSouls(c, t.maxKills, true, towers)}개</div></div>${btn}</div>`;
+          }).join('') + `<p class="ui-xs ui-muted">토템이 있는 맵에서 기도력을 써서 다섯 웨이브 동안 토템을 지킵니다. 갑옷·날쌘·쪼개지는 혼령, 황금 혼령(하트·느려짐), 마지막 웨이브의 큰 혼령이 나옵니다. 연속으로 잡아 기도를 채우면 기도 폭발로 한꺼번에 없앨 수 있습니다. ${be ? `기도 Lv가 올라 토템이 ${be.toFixed(1)}초마다 스스로 혼령을 쏩니다.` : '기도 Lv.5부터 토템이 스스로 혼령을 쏩니다.'}</p>`;
         } else {
           const souls = (Object.keys(SOUL_NAMES) as SoulKind[]).map((k) => `<span class="ui-sm">${ui(`soul_${k}`, 'tic')} ${acc.worship.souls[k].toLocaleString()}</span>`).join(' ');
           const slots = prayerSlots(sk.lv), on = c.worship.on;
@@ -872,7 +872,7 @@ export class UI {
               <div class="ui-xs ui-bad">저주: ${ALCH_LABEL[p.curse]} ${p.cv}${p.cunit}</div></div>
               ${locked ? `<span class="ui-sm ui-bad">기도 Lv.${p.lv}</span>` : `<button class="ui-btn sm" data-act="wup:${p.id}" ${!max && acc.worship.souls[p.soul] >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui(`soul_${p.soul}`, 'tic')} ${cost.toLocaleString()}`}</button>
               <button class="ui-btn sm ${active ? 'primary' : ''}" data-act="wtog:${p.id}" ${lv ? '' : 'disabled'}>${active ? '끄기' : '켜기'}</button>`}</div>`;
-          }).join('') + `<p class="ui-xs ui-muted">기도문 레벨은 계정 공용이고, 켜는 것은 캐릭터마다입니다. 켠 기도문은 효과와 함께 저주도 걸립니다. 켤 수 있는 수는 기도 Lv.20마다 하나씩 늘어납니다(최대 4).</p>`;
+          }).join('') + `<p class="ui-xs ui-muted">기도문 레벨은 계정 공용이고, 켜는 것은 캐릭터마다입니다. 켠 기도문은 효과와 함께 저주도 걸립니다. 켤 수 있는 수는 기도 Lv.20마다 하나씩 늘어납니다(최대 4). 기도문은 Lv.50까지 오릅니다.</p>`;
         }
         return win(`기도 토템 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['토템', '기도문'], tab, tabAct, ['obj_shrine', 'soul_star'])}<div class="ui-tabpanel">${body}</div>`);
       }
@@ -1806,7 +1806,7 @@ export class UI {
           const res = g.act({ t: 'worship', op: 'run', id: t.id, kills: r.kills, survived: r.survived });
           if (res.ok) { this.toast(`${SOUL_NAMES[t.soul]} ${res.n}개를 얻었습니다`); this.audio?.play('coin'); } else this.toast(res.err ?? '보상을 받지 못했습니다');
           this.open('shrine'); this.refresh(true);
-        }, { speed: t.speed, art: t.art, bolt: boltEvery(c), totem: 'obj_shrine' });
+        }, { speed: t.speed, art: t.art, bolt: boltEvery(c, g.acc.build?.levels.b_tower ?? 0), totem: 'obj_shrine' });
         break;
       }
       case 'wup': { const r = g.act({ t: 'worship', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }

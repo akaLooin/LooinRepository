@@ -165,54 +165,105 @@ function spikeGame(): Game {
   };
 }
 
-/** 토템 디펜스: 양쪽에서 다가오는 혼령을 눌러 없앤다. 토템에 닿으면 토템 체력 -1(60초) */
+/** 토템 디펜스(기도): 다섯 웨이브. 혼령 종류가 여럿이고, 연속으로 잡으면 기도가 차서 '기도 폭발'로 화면의 혼령을 한꺼번에 없앤다.
+ *  · 보통(한 번) · 갑옷(두 번) · 날쌘(빠름) · 쪼개짐(잡으면 둘로) · 황금(잡으면 하트 +1 또는 느려짐) · 마지막 웨이브의 큰 혼령(다섯 번)
+ *  · 점수(혼령 수)는 종류마다 다르다: 갑옷 2, 큰 혼령 5 */
+type SpKind = 'normal' | 'armor' | 'swift' | 'split' | 'gold' | 'boss' | 'mini';
 function totemGame(o: TotemOpts): Game {
-  let t = 0, spawn = 0, kills = 0, hp = 5, done = false, bolt = o.bolt, fx: { x: number; y: number; t: number }[] = [];
+  const WAVES = 5, WAVE_T = 11, PAUSE = 1.2;
+  let t = 0, spawn = 0, kills = 0, hp = 5, done = false, bolt = o.bolt, combo = 0, comboT = 0, holy = 0, slowT = 0, wave = 0, waveT = 0, banner = 1.4, bossOut = false;
+  let fx: { x: number; y: number; t: number; col: string }[] = [], pops: { x: number; y: number; t: number; s: string }[] = [];
   const shots: { x0: number; y0: number; x: number; y: number; t: number }[] = [];
-  let spirits: { x: number; y: number; dir: number; sp: number }[] = [];
+  let spirits: { x: number; y: number; dir: number; sp: number; kind: SpKind; hp: number; hit: number }[] = [];
+  const HP: Record<SpKind, number> = { normal: 1, armor: 2, swift: 1, split: 1, gold: 1, boss: 5, mini: 1 };
+  const PTS: Record<SpKind, number> = { normal: 1, armor: 2, swift: 1, split: 1, gold: 1, boss: 5, mini: 1 };
+  const add = (kind: SpKind, x?: number, y?: number, dir?: number) => {
+    const d = dir ?? (Math.random() < 0.5 ? 1 : -1);
+    const base = (28 + wave * 7 + Math.random() * 12) * o.speed;
+    const sp = kind === 'swift' ? base * 1.8 : kind === 'armor' ? base * 0.7 : kind === 'boss' ? base * 0.45 : kind === 'mini' ? base * 1.3 : base;
+    spirits.push({ x: x ?? (d > 0 ? -10 : W + 10), y: y ?? 60 + Math.random() * 100, dir: d, sp, kind, hp: HP[kind], hit: 0 });
+  };
+  const kill = (i: number) => {
+    const s = spirits[i];
+    spirits.splice(i, 1);
+    kills += PTS[s.kind]; combo++; comboT = 1.4; holy = Math.min(1, holy + 0.06 + (s.kind === 'boss' ? 0.3 : 0));
+    fx.push({ x: s.x, y: s.y, t: 0.3, col: s.kind === 'gold' ? C.ok : C.good });
+    if (s.kind === 'split') { add('mini', s.x, s.y - 8, s.dir); add('mini', s.x, s.y + 8, s.dir); }
+    if (s.kind === 'gold') { if (hp < 5 && Math.random() < 0.5) { hp++; pops.push({ x: s.x, y: s.y, t: 1, s: '♥ +1' }); } else { slowT = 3; pops.push({ x: s.x, y: s.y, t: 1, s: '느려짐!' }); } }
+    if (combo > 0 && combo % 10 === 0) pops.push({ x: s.x, y: s.y - 10, t: 1, s: `${combo} 연속!` });
+  };
+  const hitAt = (i: number) => { const s = spirits[i]; s.hp--; s.hit = 0.15; if (s.hp <= 0) kill(i); else fx.push({ x: s.x, y: s.y, t: 0.2, col: C.spirit }); };
+  const pick = (): SpKind => {
+    const r = Math.random();
+    if (wave >= 1 && r < 0.05) return 'gold';
+    if (wave >= 1 && r < 0.25) return 'armor';
+    if (wave >= 2 && r < 0.42) return 'swift';
+    if (wave >= 3 && r < 0.56) return 'split';
+    return 'normal';
+  };
   return {
-    hint: '혼령을 눌러 없애세요. 토템이 다섯 번 맞으면 끝입니다.',
+    hint: '혼령을 눌러 없애세요(갑옷은 두 번). 연속으로 잡으면 아래 기도가 차고, 가득 차면 왼쪽 아래를 눌러 기도 폭발!',
     step(dt) {
       if (done) return;
-      t += dt; spawn -= dt;
-      if (spawn <= 0) {
-        spawn = Math.max(0.45, 1.3 - t * 0.014) / Math.sqrt(o.speed);
-        const dir = Math.random() < 0.5 ? 1 : -1;
-        spirits.push({ x: dir > 0 ? -10 : W + 10, y: 60 + Math.random() * 110, dir, sp: (28 + t * 0.9 + Math.random() * 12) * o.speed });
+      const k = slowT > 0 ? 0.45 : 1;
+      slowT = Math.max(0, slowT - dt); banner = Math.max(0, banner - dt);
+      t += dt; waveT += dt;
+      if (waveT > WAVE_T) { wave++; waveT = -PAUSE; banner = 1.4; if (wave >= WAVES) { done = true; return; } }
+      if (waveT > 0) {
+        spawn -= dt;
+        if (spawn <= 0) { spawn = Math.max(0.4, 1.2 - wave * 0.12) / Math.sqrt(o.speed); add(pick()); }
+        if (wave === WAVES - 1 && !bossOut && waveT > 2) { bossOut = true; add('boss', undefined, 110); }
       }
-      for (const s of spirits) { s.x += s.dir * s.sp * dt; s.y += (120 - s.y) * dt * 0.3; }
-      for (const s of spirits) if (Math.abs(s.x - W / 2) < 16) { hp--; s.x = 9999; }
+      if ((comboT -= dt) <= 0) combo = 0;
+      for (const s of spirits) { s.x += s.dir * s.sp * dt * k; s.y += (120 - s.y) * dt * 0.3 * k; s.hit = Math.max(0, s.hit - dt); }
+      for (const s of spirits) if (Math.abs(s.x - W / 2) < 16) { hp -= s.kind === 'boss' ? 2 : 1; s.x = 9999; combo = 0; }
       spirits = spirits.filter((s) => s.x > -20 && s.x < W + 20);
       // 토템이 스스로 쏜다: 가장 가까운 혼령
       if (o.bolt > 0 && (bolt -= dt) <= 0 && spirits.length) {
         bolt = o.bolt;
         let bi = 0; spirits.forEach((s, i) => { if (Math.abs(s.x - W / 2) < Math.abs(spirits[bi].x - W / 2)) bi = i; });
-        const s = spirits[bi]; shots.push({ x0: W / 2, y0: 110, x: s.x, y: s.y, t: 0.2 }); fx.push({ x: s.x, y: s.y, t: 0.3 }); spirits.splice(bi, 1); kills++;
+        const s = spirits[bi]; shots.push({ x0: W / 2, y0: 110, x: s.x, y: s.y, t: 0.2 }); hitAt(bi);
       }
       for (let i = shots.length - 1; i >= 0; i--) if ((shots[i].t -= dt) <= 0) shots.splice(i, 1);
-      fx = fx.filter((f) => (f.t -= dt) > 0);
-      if (hp <= 0 || t >= 60) done = true;
+      fx = fx.filter((f) => (f.t -= dt) > 0); pops = pops.filter((p) => (p.t -= dt) > 0);
+      if (hp <= 0) done = true;
     },
     press(x, y) {
       if (done) return;
+      // 기도 폭발 버튼(왼쪽 아래)
+      if (x < 70 && y > 168 && holy >= 1) { holy = 0; for (let i = spirits.length - 1; i >= 0; i--) { spirits[i].hp = 1; kill(i); } pops.push({ x: W / 2, y: 80, t: 1.2, s: '기도 폭발!' }); return; }
       let best = -1, bd = 22;
-      spirits.forEach((s, i) => { const d = Math.hypot(s.x - x, s.y - y); if (d < bd) { bd = d; best = i; } });
-      if (best >= 0) { const s = spirits[best]; fx.push({ x: s.x, y: s.y, t: 0.3 }); spirits.splice(best, 1); kills++; }
+      spirits.forEach((s, i) => { const d = Math.hypot(s.x - x, s.y - y); if (d < bd + (s.kind === 'boss' ? 14 : 0)) { bd = d; best = i; } });
+      if (best >= 0) hitAt(best); else combo = 0;
     },
     release() {},
     draw(c) {
       c.fillStyle = '#3a4a3a'; c.fillRect(0, 170, W, 30);
+      if (slowT > 0) { c.fillStyle = 'rgba(120,160,255,.12)'; c.fillRect(0, 0, W, 170); }
       sprite(c, o.totem, W / 2, 172, 84);
       c.strokeStyle = '#c8f0ff'; c.lineWidth = 2;
       for (const b of shots) { c.globalAlpha = b.t / 0.2; c.beginPath(); c.moveTo(b.x0, b.y0); c.lineTo(b.x, b.y); c.stroke(); }
-      c.globalAlpha = 0.9;
-      for (const s of spirits) sprite(c, o.art, s.x, s.y + 12, 24, s.dir < 0);
+      for (const s of spirits) {
+        const sz = s.kind === 'boss' ? 46 : s.kind === 'mini' ? 14 : s.kind === 'swift' ? 18 : 24;
+        c.globalAlpha = s.hit > 0 ? 0.5 : 0.92;
+        sprite(c, o.art, s.x, s.y + sz / 2, sz, s.dir < 0);
+        c.globalAlpha = 1;
+        if (s.kind === 'armor' || s.kind === 'boss') { c.strokeStyle = s.kind === 'boss' ? C.bad : C.spirit; c.lineWidth = 2; c.beginPath(); c.arc(s.x, s.y, sz / 2 + 2, 0, Math.PI * 2); c.stroke(); if (s.hp > 1) text(c, String(s.hp), s.x, s.y - sz / 2 - 4, C.text, 10); }
+        if (s.kind === 'gold') { c.strokeStyle = C.ok; c.lineWidth = 2; c.beginPath(); c.arc(s.x, s.y, sz / 2 + 2, 0, Math.PI * 2); c.stroke(); }
+        if (s.kind === 'split') { c.fillStyle = C.ok; c.fillRect(s.x - 1, s.y - sz / 2 - 3, 2, 2); }
+      }
       c.globalAlpha = 1;
-      for (const f of fx) { c.strokeStyle = C.ok; c.lineWidth = 2; c.beginPath(); c.arc(f.x, f.y, 14 * (1 - f.t / 0.3) + 4, 0, Math.PI * 2); c.stroke(); }
+      for (const f of fx) { c.strokeStyle = f.col; c.lineWidth = 2; c.beginPath(); c.arc(f.x, f.y, 14 * (1 - f.t / 0.3) + 4, 0, Math.PI * 2); c.stroke(); }
+      for (const p of pops) text(c, p.s, p.x, p.y - (1 - p.t) * 16, C.ok, 12);
       text(c, '♥'.repeat(Math.max(0, hp)), 10, 16, C.bad, 14, 'left');
+      text(c, `웨이브 ${Math.min(WAVES, wave + 1)}/${WAVES}${combo >= 3 ? ` · ${combo} 연속` : ''}`, W - 8, 16, C.text, 11, 'right');
+      // 기도 게이지와 폭발 버튼
+      c.fillStyle = '#1a1420'; c.fillRect(6, 178, 60, 14); c.fillStyle = holy >= 1 ? C.ok : C.spirit; c.fillRect(7, 179, 58 * holy, 12);
+      text(c, holy >= 1 ? '기도 폭발!' : '기도', 36, 189, holy >= 1 ? '#2a2230' : C.text, 9);
+      if (banner > 0 && !done) text(c, wave === WAVES - 1 ? `마지막 웨이브! 큰 혼령이 온다` : `웨이브 ${wave + 1}`, W / 2, 50, C.ok, 16);
       if (done) text(c, hp > 0 ? `지켜냈다! 혼령 ${kills}` : `토템이 쓰러졌다… 혼령 ${kills}`, 180, 60, C.ok, 18);
     },
-    status: () => `${Math.max(0, Math.ceil(60 - t))}초 · 혼령 ${kills}`,
+    status: () => `${Math.max(0, Math.ceil(WAVES * (WAVE_T + PAUSE) - t))}초 · 혼령 ${kills}`,
     over: () => done,
     result: () => ({ score: kills, kills, survived: hp > 0 }),
   };

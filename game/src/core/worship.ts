@@ -12,13 +12,13 @@ export const SOUL_NAMES: Record<SoulKind, string> = { moss: '이끼 영혼', san
 export interface WTotemDef { id: string; name: string; map: string; x: number; lv: number; cost: number; soul: SoulKind; speed: number; maxKills: number; art: string; xp: number }
 /** 기도 토템: 원작처럼 여러 월드에 흩어져 있다(1월드 안개 늪이 첫 토템) */
 export const WTOTEMS: WTotemDef[] = [
-  { id: 'wt_moss', name: '이끼 토템', map: 'swamp', x: 300, lv: 1, cost: 10, soul: 'moss', speed: 0.8, maxKills: 70, art: 'mob_glowbat', xp: 3 },
-  { id: 'wt_sand', name: '모래 토템', map: 'tomb', x: 400, lv: 8, cost: 15, soul: 'sand', speed: 0.9, maxKills: 80, art: 'mob_scorpip', xp: 4 },
-  { id: 'wt_snow', name: '눈꽃 토템', map: 'snowfield', x: 380, lv: 15, cost: 20, soul: 'snow', speed: 1, maxKills: 90, art: 'mob_snowpuff', xp: 6 },
-  { id: 'wt_water', name: '물결 토템', map: 'frostlake', x: 240, lv: 25, cost: 30, soul: 'water', speed: 1.2, maxKills: 110, art: 'mob_penglet', xp: 14 },
-  { id: 'wt_ice', name: '고드름 토템', map: 'glacier', x: 240, lv: 35, cost: 45, soul: 'ice', speed: 1.4, maxKills: 130, art: 'mob_icicle', xp: 28 },
-  { id: 'wt_star', name: '별빛 토템', map: 'frostpeak', x: 520, lv: 45, cost: 60, soul: 'star', speed: 1.6, maxKills: 150, art: 'mob_aurowisp', xp: 50 },
-  { id: 'wt_void', name: '공허 토템', map: 'asteroid', x: 400, lv: 60, cost: 80, soul: 'void', speed: 1.8, maxKills: 170, art: 'mob_voidimp', xp: 80 },
+  { id: 'wt_moss', name: '이끼 토템', map: 'swamp', x: 300, lv: 1, cost: 10, soul: 'moss', speed: 0.8, maxKills: 112, art: 'mob_glowbat', xp: 3 },
+  { id: 'wt_sand', name: '모래 토템', map: 'tomb', x: 400, lv: 8, cost: 15, soul: 'sand', speed: 0.9, maxKills: 128, art: 'mob_scorpip', xp: 4 },
+  { id: 'wt_snow', name: '눈꽃 토템', map: 'snowfield', x: 380, lv: 15, cost: 20, soul: 'snow', speed: 1, maxKills: 144, art: 'mob_snowpuff', xp: 6 },
+  { id: 'wt_water', name: '물결 토템', map: 'frostlake', x: 240, lv: 25, cost: 30, soul: 'water', speed: 1.2, maxKills: 176, art: 'mob_penglet', xp: 14 },
+  { id: 'wt_ice', name: '고드름 토템', map: 'glacier', x: 240, lv: 35, cost: 45, soul: 'ice', speed: 1.4, maxKills: 208, art: 'mob_icicle', xp: 28 },
+  { id: 'wt_star', name: '별빛 토템', map: 'frostpeak', x: 520, lv: 45, cost: 60, soul: 'star', speed: 1.6, maxKills: 240, art: 'mob_aurowisp', xp: 50 },
+  { id: 'wt_void', name: '공허 토템', map: 'asteroid', x: 400, lv: 60, cost: 80, soul: 'void', speed: 1.8, maxKills: 272, art: 'mob_voidimp', xp: 80 },
 ];
 export const WTOTEM: Record<string, WTotemDef> = Object.fromEntries(WTOTEMS.map((t) => [t.id, t]));
 
@@ -39,15 +39,22 @@ export const PRAYERS: PrayerDef[] = [
   { id: 'p_cards', name: '수집가의 기도', soul: 'star', lv: 50, eff: 'card', base: 5, per: 1.5, unit: '%', curse: 'dmg', cv: -12, cunit: '%' },
   { id: 'p_void', name: '공허의 기도', soul: 'void', lv: 60, eff: 'dmg', base: 12, per: 3, unit: '%', curse: 'def', cv: -20, cunit: '' },
   { id: 'p_echo', name: '메아리의 기도', soul: 'void', lv: 65, eff: 'xp', base: 10, per: 2.5, unit: '%', curse: 'afk', cv: -3, cunit: '%p' },
+  { id: 'p_might', name: '장사의 기도', soul: 'moss', lv: 10, eff: 'str', base: 5, per: 2, unit: '', curse: 'agi', cv: -10, cunit: '' },
+  { id: 'p_wind', name: '바람의 기도', soul: 'sand', lv: 18, eff: 'agi', base: 5, per: 2, unit: '', curse: 'str', cv: -10, cunit: '' },
+  { id: 'p_mind', name: '명상의 기도', soul: 'snow', lv: 22, eff: 'wis', base: 5, per: 2, unit: '', curse: 'luk', cv: -10, cunit: '' },
+  { id: 'p_hunt', name: '사냥의 기도', soul: 'water', lv: 28, eff: 'catching', base: 10, per: 3, unit: '%', curse: 'fishing', cv: -15, cunit: '%' },
+  { id: 'p_forge', name: '대장의 기도', soul: 'ice', lv: 42, eff: 'mining', base: 12, per: 3, unit: '%', curse: 'chopping', cv: -15, cunit: '%' },
+  { id: 'p_grove', name: '숲의 기도', soul: 'star', lv: 52, eff: 'chopping', base: 12, per: 3, unit: '%', curse: 'mining', cv: -15, cunit: '%' },
 ];
 export const PRAYER: Record<string, PrayerDef> = Object.fromEntries(PRAYERS.map((p) => [p.id, p]));
-export const PRAYER_MAX = 20;
-export const prayerCost = (lv: number) => Math.ceil(15 * Math.pow(1.45, lv));
+/** 기도문 최대 레벨(원작처럼 넉넉히) */
+export const PRAYER_MAX = 50;
+export const prayerCost = (lv: number) => Math.ceil(15 * Math.pow(1.22, lv));
 export const prayerValue = (p: PrayerDef, lv: number) => (lv <= 0 ? 0 : p.base + (lv - 1) * p.per);
 /** 켤 수 있는 기도문 수: 기도 Lv.1·20·40·60 */
 export const prayerSlots = (lv: number) => Math.min(4, 1 + Math.floor(lv / 20));
 
-export interface WorshipAcc { souls: Record<SoulKind, number>; prayers: Record<string, number> }
+export interface WorshipAcc { souls: Record<SoulKind, number>; prayers: Record<string, number>; /** 토템마다 최고 기록(혼령 수) */ best?: Record<string, number> }
 export interface WorshipChar { charge: number; t: number; on: string[] }
 export const newWorshipAcc = (): WorshipAcc => ({ souls: { moss: 0, sand: 0, snow: 0, water: 0, ice: 0, star: 0, void: 0 }, prayers: {} });
 export const newWorshipChar = (): WorshipChar => ({ charge: 0, t: 0, on: [] });
@@ -86,6 +93,7 @@ export function finishWorship(acc: Account, c: Character, id: string, kills: num
   const k = Math.min(t.maxKills, Math.max(0, Math.floor(kills)));
   const souls = runSouls(c, k, survived, acc.build?.levels.b_tower ?? 0);
   acc.worship.souls[t.soul] += souls;
+  acc.worship.best ??= {}; acc.worship.best[id] = Math.max(acc.worship.best[id] ?? 0, k);
   gainSkillXp(c, 'worship', k * t.xp * (survived ? 1.5 : 1));
   return souls;
 }
