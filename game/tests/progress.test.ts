@@ -436,40 +436,58 @@ describe('2월드', () => {
   });
 });
 
-import { BUBBLES, LIQUID, VIAL_COST, bubbleCost, bubbleValue, liquidCap } from '../src/core/alchemy';
+import { BUBBLES, CAULDRONS, LIQUIDS, VIAL_COST, bubbleCost, bubbleValue, liquidCap } from '../src/core/alchemy';
 describe('연금술', () => {
-  it('솥을 찾아야 시작되고, 액체는 시간에 따라 한도까지 쌓인다', () => {
-    const { acc } = setup();
+  it('솥을 찾아야 시작되고, 액체는 시간에 따라 한도까지 쌓인다(그 월드에 간 캐릭터가 있어야 그 액체가 열린다)', () => {
+    const { acc, c } = setup();
+    c.maxWorld = 2;
     expect(applyAction(acc, 0, { t: 'alch', op: 'liquid', id: 'rate' }, 0).ok).toBe(false);
     applyAction(acc, 0, { t: 'alch', op: 'start' }, 1000);
     applyAction(acc, 0, { t: 'alch', op: 'start' }, 1000 + 3_600_000);
-    expect(acc.alch.liquid).toBeCloseTo(LIQUID.rateBase);
+    expect(acc.alch.liquids.water).toBeCloseTo(LIQUIDS[0].rate);
+    expect(acc.alch.liquids.nitro).toBe(0); // 3월드 액체
     applyAction(acc, 0, { t: 'alch', op: 'start' }, 1000 + 100 * 3_600_000);
-    expect(acc.alch.liquid).toBe(liquidCap(acc.alch));
+    expect(acc.alch.liquids.water).toBe(liquidCap(acc.alch, LIQUIDS[0]));
   });
-  it('거품은 재료(가방+창고)와 액체를 써서 오르고 계정 보너스가 된다', () => {
+  it('거품은 재료(가방+창고)와 그 거품의 액체를 써서 오르고 계정 보너스가 된다', () => {
     const { acc, c } = setup();
     applyAction(acc, 0, { t: 'alch', op: 'start' }, 1);
-    acc.alch.liquid = 100;
+    acc.alch.liquids.water = 100;
     const b = BUBBLES.b_dmg, cost = bubbleCost(b, 0);
     addItem(c, b.item, cost.n - 2); acc.storage.push({ id: b.item, qty: 5 });
     const d0 = derive(c, acc).dmg;
     expect(applyAction(acc, 0, { t: 'alch', op: 'bubble', id: 'b_dmg' }, 1).ok).toBe(true);
     expect(acc.alch.bubbles.b_dmg).toBe(1);
-    expect(acc.alch.liquid).toBe(100 - cost.liquid);
+    expect(acc.alch.liquids.water).toBe(100 - cost.liquid);
     expect(acc.storage.find((s) => s.id === b.item)!.qty).toBe(3);
     expect(derive(c, acc).dmg).toBeCloseTo(d0 * (1 + bubbleValue(b, 1) / 100) / 1, 0);
   });
-  it('약병은 물고기·곤충을 부어 단계가 오른다', () => {
+  it('약병은 주사위로 발견한 뒤 물고기·곤충을 부어 단계가 오른다', () => {
     const { acc, c } = setup();
     applyAction(acc, 0, { t: 'alch', op: 'start' }, 1);
-    addItem(c, 'fish_minnow', VIAL_COST[0]);
     const hp0 = derive(c, acc).maxHp;
-    expect(applyAction(acc, 0, { t: 'alch', op: 'vial', id: 'v_minnow' }, 1).ok).toBe(true);
+    let rolls = 0;
+    while (!acc.alch.vials.v_minnow && rolls < 50) { addItem(c, 'fish_minnow', VIAL_COST[0]); expect(applyAction(acc, 0, { t: 'alch', op: 'vial', id: 'v_minnow' }, 1).ok).toBe(true); rolls++; }
     expect(acc.alch.vials.v_minnow).toBe(1);
     expect(derive(c, acc).maxHp).toBeGreaterThan(hp0);
     expect(applyAction(acc, 0, { t: 'alch', op: 'vial', id: 'v_minnow' }, 1).ok).toBe(false);
     expect(deserialize(serialize(acc))!.alch.vials.v_minnow).toBe(1);
+  });
+  it('캐릭터를 솥에 맡기면 끓여서 새 거품을 발견하고 연금 경험치를 얻으며, 큰 거품은 장착한 캐릭터만', () => {
+    const { acc, c } = setup();
+    c.maxWorld = 2;
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1);
+    expect(acc.alch.found.power).toBe(4);
+    expect(applyAction(acc, 0, { t: 'alch', op: 'assign', id: 'c:power' }, 1).ok).toBe(true);
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1 + 100 * 3_600_000);
+    expect(acc.alch.found.power).toBeGreaterThan(4);
+    expect(c.skills.alchemy.lv > 1 || c.skills.alchemy.xp > 0).toBe(true);
+    const big = CAULDRONS[0].bubbles.find((b) => b.big)!;
+    acc.alch.bubbles[big.id] = 10;
+    const v0 = derive(c, acc);
+    expect(applyAction(acc, 0, { t: 'alch', op: 'big', id: big.id }, 2).ok).toBe(true);
+    expect(JSON.stringify(derive(c, acc))).not.toBe(JSON.stringify(v0));
+    expect(CAULDRONS.every((cd) => cd.bubbles.length === 30)).toBe(true);
   });
 });
 

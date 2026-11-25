@@ -201,7 +201,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   shrineBonus(c, a, (k, v) => { b[k] += v; });
   b.dmg += deathBonus(a);
   // 연금술(거품·약병)
-  alchBonus(a.alch, (k, v) => { b[k] += v; });
+  alchBonus(a.alch, (k, v) => { b[k] += v; }, c);
   buildBonus(a.build, (k, v) => { b[k] += v; });
   cookBonus(a.cook, (k, v) => { b[k] += v; });
   breedBonus(a.breed, (k, v) => { b[k] += v; });

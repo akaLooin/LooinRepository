@@ -1009,6 +1009,11 @@ function buildObjects() {
     p = new Paint(14, 14); p.disc(7, 7, 6, 6, col); p.disc(7, 7, 4.4, 4.4, mix(col, '#ffffff', 0.35)); p.disc(5, 5, 1.6, 1.4, '#ffffff'); p.set(9, 9, mix(col, '#000000', 0.2));
     p.outline().save(`bub_${k}`);
   }
+  // 연금 액체 4종(물방울 모양)
+  for (const [k, col] of [['water', '#4ab8f0'], ['nitro', '#c8f0ff'], ['trench', '#2a5ab8'], ['mercury', '#b8c0d0']] as const) {
+    p = new Paint(12, 14); p.disc(6, 9, 4.6, 4.4, col); p.line(6, 1, 3, 7, col); p.line(6, 1, 9, 7, col); p.rect(5, 2, 2, 5, col); p.disc(4.5, 8.5, 1.2, 1.6, '#ffffff');
+    p.outline().save(`liq_${k}`);
+  }
   for (const [k, col] of [['v_minnow', '#7fc8e0'], ['v_salt', '#e8eef2'], ['v_star', '#5a5ac8'], ['v_ant', '#8a6a4a'], ['v_firefly', '#ffb04a'], ['v_beetle', '#f2c14e'], ['v_palm', '#6ac05a'], ['v_amber', '#f0902a'], ['v_hare', '#f4f6fa'], ['v_fox', '#8ad0f0']] as const) {
     p = new Paint(12, 15); p.rect(4, 1, 4, 3, '#c8a878'); p.rect(4, 4, 4, 2, '#d8e4ec'); p.disc(6, 10, 5, 4.5, '#d8e4ec'); p.disc(6, 10.5, 4, 3.4, col); p.set(4, 8, '#ffffff'); p.rect(5, 2, 2, 1, '#8a6a48');
     p.outline().save(`vial_${k}`);

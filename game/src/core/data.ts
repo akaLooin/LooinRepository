@@ -2,7 +2,7 @@
 // 이 폴더(core)는 DOM/Phaser에 의존하지 않는다 → 추후 서버에서 그대로 재사용.
 
 export type StatKey = 'str' | 'agi' | 'wis' | 'luk';
-export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping' | 'worship' | 'cooking' | 'lab';
+export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping' | 'worship' | 'cooking' | 'lab' | 'alchemy';
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
@@ -96,7 +96,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   str: '최대 체력·치명타 피해·채광. 전사 공격력, 궁수 명중', agi: '이동 속도·치명타 확률·모루 생산. 궁수 공격력, 마법사 명중',
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
-export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구' };
+export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', alchemy: '연금' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
@@ -871,7 +871,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   hexer: { id: 'hexer', base: 'mage', name: '주술사', desc: '느긋하게 쌓는다. 경험치 +10%, 방치 효율 +3%p.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', perk: { xp: 10, afk: 3 } },
 };
 /** 직업과 기술의 연결(원작처럼 계열마다 맡는 기술이 있다): 그 직업을 거친 캐릭터는 이 기술이 빨라진다 */
-export type LinkedSkill = SkillKey | 'build' | 'alchemy' | 'breed';
+export type LinkedSkill = SkillKey | 'build' | 'breed';
 export const CLASS_SKILLS: Partial<Record<ClassId, LinkedSkill>> = {
   warrior: 'mining', guardian: 'build', berserker: 'fishing', bastion: 'build', warlord: 'fishing',
   archer: 'chopping', ranger: 'trapping', sharpshooter: 'catching', pathfinder: 'breed', hawkeye: 'catching',

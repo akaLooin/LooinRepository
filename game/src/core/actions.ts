@@ -9,7 +9,7 @@ import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
 import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen, useLadle } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
-import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
+import { LiquidUp, alchSettle, assignAlch, toggleBig, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
@@ -88,7 +88,7 @@ export type Action =
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef' | 'ladle'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number; box?: string }
-  | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
+  | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid' | 'assign' | 'big'; id?: string }
   | { t: 'game'; kind: GameKind; score: number };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
@@ -182,7 +182,9 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'start') { alchSettle(acc, now); return ok(); }
       if (!acc.alch.t) return fail('먼저 오아시스 마을의 연금 솥을 찾아가세요');
       if (a.op === 'bubble') return res(upBubble(acc, c, a.id ?? '', now));
-      if (a.op === 'vial') return res(upVial(acc, c, a.id ?? ''));
+      if (a.op === 'vial') { const before = acc.alch.vials[a.id ?? ''] ?? 0; const r = upVial(acc, c, a.id ?? ''); return r ? fail(r) : ok((acc.alch.vials[a.id ?? ''] ?? 0) > before ? 1 : 0); }
+      if (a.op === 'assign') return res(assignAlch(acc, c, a.id ?? '', now));
+      if (a.op === 'big') return res(toggleBig(acc, c, a.id ?? ''));
       return res(upLiquid(acc, a.id as LiquidUp, now));
     }
     case 'worship': {
