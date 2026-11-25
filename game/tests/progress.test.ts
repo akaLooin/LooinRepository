@@ -804,7 +804,7 @@ describe('4월드: 별빛 성운', () => {
   });
 });
 
-import { COOK, MEAL as MEALD, mealNeed as mNeed, recipeResult as rRes, spiceRate as sRate, SPICE as SPC } from '../src/core/cooking';
+import { COOK, MEAL as MEALD, mealNeed as mNeed, recipeResult as rRes, recipeRoll as rRoll, recipeChance as rChance, spiceRate as sRate, SPICE as SPC } from '../src/core/cooking';
 describe('요리(별빛 식당)', () => {
   const H = 3_600_000;
   const ready = () => { const { acc, c } = setup(); c.maxWorld = 4; c.mapId = 'nebtown'; c.level = 100; return { acc, c }; };
@@ -813,16 +813,14 @@ describe('요리(별빛 식당)', () => {
     expect(applyAction(acc, 0, { t: 'cook', op: 'visit' }, 0).ok).toBe(false);
     c.maxWorld = 4; expect(applyAction(acc, 0, { t: 'cook', op: 'visit' }, 1000).ok).toBe(true);
   });
-  it('맵을 잡은 만큼 향신료가 저장고에 모이고, 24시간치에서 멈춘다', () => {
+  it('원작처럼 향신료는 사냥으로는 모이지 않는다(번식 영역에서만), 시간이 지나면 국자가 모인다', () => {
     const { acc, c } = ready();
-    c.kills.moondust = 49; expect(sRate(acc, SPC.sp_dust)).toBe(0);
-    c.kills.moondust = 400; expect(sRate(acc, SPC.sp_dust)).toBe(4);
+    c.kills.moondust = 4000; expect(sRate(acc, SPC.sp_dust)).toBe(0);
     applyAction(acc, 0, { t: 'cook', op: 'visit' }, H);
     applyAction(acc, 0, { t: 'cook', op: 'visit' }, H * 100);
-    expect(acc.cook.bank.sp_dust).toBe(4 * COOK.bankHours);
-    expect(applyAction(acc, 0, { t: 'cook', op: 'claim' }, H * 100).ok).toBe(true);
-    expect(acc.cook.spices.sp_dust).toBe(96);
+    expect(acc.cook.bank.sp_dust ?? 0).toBe(0);
     expect(applyAction(acc, 0, { t: 'cook', op: 'claim' }, H * 100).ok).toBe(false);
+    expect(acc.cook.ladles).toBe(COOK.ladleMax);
   });
   it('연구로 요리를 찾고, 주방이 계속 만들고, 접시로 레벨을 올리면 보너스가 생긴다', () => {
     const { acc, c } = ready();
@@ -831,6 +829,9 @@ describe('요리(별빛 식당)', () => {
     const want = rRes(acc.cook, ['sp_dust', 'sp_salt'])!;
     expect(MEALD[want].tier).toBe(2);
     expect(applyAction(acc, 0, { t: 'cook', op: 'recipe', idx: 0, sp: ['sp_dust', 'sp_honey'] }, H).ok).toBe(false); // 꿀이 없다
+    // 연구는 운: 이번 시도가 성공하도록 행운을 최대로(성공 확률 95%)하고 성공하는 시도 횟수를 찾는다
+    acc.cook.kitchens[0].luck = 60;
+    while (rRoll(acc.cook, ['sp_dust', 'sp_salt']) >= rChance(acc.cook.kitchens[0])) acc.cook.tries++;
     expect(applyAction(acc, 0, { t: 'cook', op: 'recipe', idx: 0, sp: ['sp_dust', 'sp_salt'] }, H).ok).toBe(true);
     expect(acc.cook.spices.sp_dust).toBe(90);
     applyAction(acc, 0, { t: 'cook', op: 'visit' }, H + COOK.recipeSecs * 2 * 1000);
@@ -839,7 +840,7 @@ describe('요리(별빛 식당)', () => {
     // 10시간 요리
     applyAction(acc, 0, { t: 'cook', op: 'visit' }, H * 11 + COOK.recipeSecs * 2 * 1000);
     const n = acc.cook.meals[want].n;
-    expect(n).toBeCloseTo((3600 / COOK.secs[2]) * 10, 5);
+    expect(n).toBeCloseTo((3600 / COOK.secs[2]) * 10 * (1 + 60 * COOK.luckPer), 5);
     const before = derive(c, acc);
     expect(applyAction(acc, 0, { t: 'cook', op: 'lvl', id: want }, H * 12).ok).toBe(true);
     expect(acc.cook.meals[want].lv).toBe(1);
@@ -920,7 +921,7 @@ describe('번식(번식 둥지)', () => {
     // 힘 15 / 요구 30 → 한 바퀴 1시간
     applyAction(acc, 0, { t: 'breed', op: 'visit' }, H + H * 3 + 10);
     expect(acc.breed.terr.t_dust.laps).toBe(3);
-    expect(acc.cook.spices[TER.t_dust.spice]).toBe(3 * 2); // 채집꾼 ×2
+    expect(acc.cook.spices[TER.t_dust.spice]).toBe(3 * 2 * 5); // 채집꾼 ×2, 영역에서만 나므로 ×5
     expect(acc.breed.lv > 1 || acc.breed.xp > 0).toBe(true);
   });
   it('개량은 코인으로, 펫을 놓아주면 자리가 빈다', () => {

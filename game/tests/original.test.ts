@@ -111,3 +111,23 @@ describe('사당', () => {
     expect(applyAction(acc, 0, { t: 'shrine', op: 'place', id: 'sh_valor' }, 2000).ok).toBe(false);
   });
 });
+
+import { COOK as CK, MEALS as ML, recipeChance as rc, recipeRoll as rr } from '../src/core/cooking';
+describe('요리(원작에 맞춤)', () => {
+  it('요리 52종, 최대 Lv.30, 주방 10개, 연구는 실패할 수 있고, 국자로 1시간치를 바로 진행', () => {
+    expect(ML.length).toBe(52); expect(CK.mealMax).toBe(30); expect(CK.kitchenCost.length).toBe(10);
+    const acc = newAccount(); createCharacter(acc, 'a', look, 0); const c = acc.characters[0];
+    c.maxWorld = 4; c.mapId = 'nebtown';
+    const H = 3_600_000;
+    applyAction(acc, 0, { t: 'cook', op: 'visit' }, H);
+    acc.cook.spices = { sp_dust: 100 };
+    // 실패하는 시도 횟수를 찾아 연구 → 끝나면 아무 요리도 찾지 못한다
+    while (rr(acc.cook, ['sp_dust']) < rc(acc.cook.kitchens[0])) acc.cook.tries++;
+    expect(applyAction(acc, 0, { t: 'cook', op: 'recipe', idx: 0, sp: ['sp_dust'] }, H).ok).toBe(true);
+    acc.cook.ladles = 1;
+    expect(applyAction(acc, 0, { t: 'cook', op: 'ladle', idx: 0 }, H).ok).toBe(true);
+    expect(acc.cook.ladles).toBe(0);
+    expect(acc.cook.kitchens[0].recipe).toBeNull();
+    expect(acc.cook.found).toEqual([]);
+  });
+});

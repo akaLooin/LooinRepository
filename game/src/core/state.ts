@@ -919,7 +919,7 @@ export function deserialize(json: string | null): Account | null {
     a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {};
     // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
     if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
-    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.build ??= newBuild(); a.cook ??= newCook(); a.breed ??= newBreed(Math.floor(Math.random() * 2 ** 31)); a.lab ??= newLab(); a.worship ??= newWorshipAcc(); a.mini ??= newMini(); a.totem ??= newTotem(); a.postOff ??= newPostOffice(); a.shrines ??= newShrines();
+    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.build ??= newBuild(); a.cook ??= newCook(); a.breed ??= newBreed(Math.floor(Math.random() * 2 ** 31)); a.lab ??= newLab(); a.worship ??= newWorshipAcc(); a.mini ??= newMini(); a.totem ??= newTotem(); a.postOff ??= newPostOffice(); a.cook.tries ??= 0; a.cook.ladles ??= 0; a.cook.ladleFrac ??= 0; a.shrines ??= newShrines();
     a.worship.souls = { ...newWorshipAcc().souls, ...a.worship.souls };
     { const moved = legacyTotemSouls(a.totem); if (moved > 0) { a.worship.souls.moss += moved; a.totem = newTotem(); } }
     for (const c of a.characters) {

@@ -8,7 +8,7 @@ import { boxLock, openBoxes, trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
 import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, labRange, labSettle, labState } from '../core/lab';
 import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
-import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
+import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
 import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
@@ -961,7 +961,7 @@ export class UI {
         const acc = g.acc, k = acc.cook, now = Date.now();
         cookSettle(acc, now);
         const sk = c.skills.cooking, need = skillXpToNext(sk.lv), seated = k.chefs.includes(c.id);
-        const head = `<div class="ui-row alchhead">${ui('obj_kitchen', 'mi')}<b class="ui-grow">요리 Lv.<span class="ui-accent">${sk.lv}</span> <span class="ui-xs ui-muted">요리사 ${k.chefs.length}/${k.kitchens.length} · 주방 속도 ×${chefMult(acc).toFixed(2)}</span></b>
+        const head = `<div class="ui-row alchhead">${ui('obj_kitchen', 'mi')}<b class="ui-grow">요리 Lv.<span class="ui-accent">${sk.lv}</span> <span class="ui-xs ui-muted">요리사 ${k.chefs.length}/${k.kitchens.length} · 주방 속도 ×${chefMult(acc).toFixed(2)} · 국자 ${k.ladles ?? 0}/${COOK.ladleMax}</span></b>
           <div style="width:24%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div><button class="ui-btn sm ${seated ? 'primary' : ''}" data-act="kchef" title="식탁에 앉은 캐릭터는 성운 정거장에 머무는 동안 요리 레벨만큼 모든 주방을 빠르게 하고 요리 경험치를 얻습니다. 연구원과 함께 할 수 없습니다">${seated ? '식탁에서 일어나기' : '식탁에 앉기'}</button></div>`;
         const spi = (id: string, n?: number) => `${ui(id, 'tic')}${n !== undefined ? n.toLocaleString() : ''}`;
         const hm = (s: number) => { const m = Math.ceil(s / 60); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
@@ -973,7 +973,7 @@ export class UI {
             const meals = k.found.map((id) => { const m = MEAL[id]; return `<button class="ui-btn sm ${k.kitchens[ki].meal === id ? 'primary' : ''}" data-act="kmeal:${ki}:${id}">${ui(`ml_${id}`, 'tic')} ${m.name}<br><span class="ui-xs">${mealsPerHour(acc, k.kitchens[ki], id).toFixed(1)}/시간</span></button>`; }).join('');
             const sel = this.recipeSp, cost = recipeCost(k.found.length), res = sel.length ? recipeResult(k, sel) : null;
             const sps = SPICES.map((s) => { const on = sel.includes(s.id), have = k.spices[s.id] ?? 0; return `<button class="ui-btn sm ${on ? 'primary' : ''}" data-act="ksp:${s.id}" ${!on && (sel.length >= 4 || have < cost) ? 'disabled' : ''} title="${s.name}">${spi(s.id, have)}</button>`; }).join('');
-            const tierTxt = sel.length ? `${sel.length}가지 → ${res ? `${MEAL[res].tier}단계 요리를 찾습니다 · ${hm(COOK.recipeSecs * sel.length / recipeRate(k.kitchens[ki]))}` : '이 단계 요리는 다 찾았습니다'}` : '향신료를 1~4가지 고르세요';
+            const tierTxt = sel.length ? `${sel.length}가지 → ${res ? `${MEAL[res].tier}단계 요리 · 성공 확률 ${Math.round(recipeChance(k.kitchens[ki]) * 100)}% · ${hm(COOK.recipeSecs * sel.length / recipeRate(k.kitchens[ki]))}` : '이 단계 요리는 다 찾았습니다'}` : '향신료를 1~4가지 고르세요';
             body = `<div class="ui-row"><b class="ui-grow">${ki + 1}번 주방에서 무엇을 할까요?</b><button class="ui-btn sm" data-act="kpick:${ki}">뒤로</button></div>
               <h3>아는 요리 만들기</h3><div class="ui-row trapbtns" style="flex-wrap:wrap;justify-content:flex-start">${meals || '<span class="ui-sm ui-muted">아직 아는 요리가 없습니다. 아래에서 연구하세요.</span>'}${k.kitchens[ki].meal ? `<button class="ui-btn sm" data-act="kmeal:${ki}:">멈추기</button>` : ''}</div>
               <h3>새 요리 연구 <span class="ui-xs ui-muted">가짓수마다 ${cost}개씩</span></h3><div class="ui-row trapbtns" style="flex-wrap:wrap;justify-content:flex-start">${sps}</div>
@@ -981,7 +981,7 @@ export class UI {
           } else {
             body = k.kitchens.map((kit, i) => {
               let st: string;
-              if (kit.recipe) st = `<b>요리 연구 중</b> <span class="ui-xs">${kit.recipe.sp.map((s) => ui(s, 'tic')).join('')}</span>${bar('xp', Math.floor(kit.recipe.prog), kit.recipe.need, `${hm((kit.recipe.need - kit.recipe.prog) / recipeRate(kit))} 남음`)}`;
+              if (kit.recipe) st = `<b>요리 연구 중</b> <span class="ui-xs">${kit.recipe.sp.map((s) => ui(s, 'tic')).join('')} · 끝나야 성공인지 알 수 있습니다</span>${bar('xp', Math.floor(kit.recipe.prog), kit.recipe.need, `${hm((kit.recipe.need - kit.recipe.prog) / recipeRate(kit))} 남음`)}`;
               else if (kit.meal) st = `<b>${MEAL[kit.meal].name}</b> <span class="ui-xs ui-good">시간당 ${mealsPerHour(acc, kit, kit.meal).toFixed(1)}접시</span><div class="ui-xs ui-muted">가진 수 ${Math.floor(k.meals[kit.meal]?.n ?? 0).toLocaleString()}</div>`;
               else st = '<span class="ui-muted">쉬는 중 · 요리를 고르거나 연구하세요</span>';
               const ups = (['spd', 'fire', 'luck'] as KitchenUp[]).map((u) => {
@@ -991,6 +991,7 @@ export class UI {
                 return `<button class="ui-btn sm" data-act="kup:${i}:${u}" title="${tip}" ${!max && (k.spices[sp] ?? 0) >= cost ? '' : 'disabled'}>${lab}<br><span class="ui-xs">${max ? '최대' : spi(sp, cost)}</span></button>`;
               }).join('');
               return `<div class="ui-row line">${kit.meal ? ui(`ml_${kit.meal}`, 'mi') : ui('obj_kitchen', 'mi')}<div class="ui-grow">${st}</div><div class="ui-row trapbtns">${ups}</div>
+                <button class="ui-btn sm" data-act="kladle:${i}" ${(k.ladles ?? 0) >= 1 && (kit.recipe || kit.meal) ? '' : 'disabled'} title="국자 하나로 이 주방의 1시간치를 바로 진행">국자</button>
                 <button class="ui-btn sm primary" data-act="kpick:${i}" ${kit.recipe ? 'disabled' : ''}>바꾸기</button></div>`;
             }).join('');
             const kc = COOK.kitchenCost[k.kitchens.length];
@@ -1008,10 +1009,10 @@ export class UI {
         } else {
           const bank = SPICES.reduce((s, x) => s + Math.floor(k.bank[x.id] ?? 0), 0);
           body = SPICES.map((s) => {
-            const r = spiceRate(acc, s), have = k.spices[s.id] ?? 0, b = Math.floor(k.bank[s.id] ?? 0);
-            return `<div class="ui-row line ${r ? '' : 'locked'}">${ui(s.id, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ui-accent">${have.toLocaleString()}개</span>
-              <div class="ui-xs ${r ? 'ui-good' : 'ui-muted'}">${spiceMapName(s)} · ${r ? `시간당 ${r}개 · 저장고 ${b}/${r * COOK.bankHours}` : '그 맵에서 50마리 넘게 잡으면 모이기 시작'}</div></div></div>`;
-          }).join('') + `<div class="ui-row"><span class="ui-xs ui-muted ui-grow">맵을 많이 잡을수록(계정에서 가장 많이 잡은 캐릭터 기준) 더 빨리 모입니다. 저장고는 24시간치까지 찹니다.</span><button class="ui-btn sm primary" data-act="kclaim" ${bank ? '' : 'disabled'}>모두 거두기 (${bank})</button></div>`;
+            const have = k.spices[s.id] ?? 0, t = TERRITORIES.find((x) => x.spice === s.id), team = t ? acc.breed.terr[t.id]?.team.length ?? 0 : 0;
+            return `<div class="ui-row line">${ui(s.id, 'mi')}<div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ui-accent">${have.toLocaleString()}개</span>
+              <div class="ui-xs ${team ? 'ui-good' : 'ui-muted'}">${t ? `번식 영역 '${t.name}'${team ? `에서 펫 ${team}마리가 모으는 중` : `에 펫을 보내면 모입니다(번식 Lv.${t.lv})`}` : '-'}</div></div></div>`;
+          }).join('') + `<div class="ui-row"><span class="ui-xs ui-muted ui-grow">원작처럼 향신료는 번식 둥지의 영역에 펫을 보내야 모입니다.</span>${bank ? `<button class="ui-btn sm primary" data-act="kclaim">예전 저장고 거두기 (${bank})</button>` : ''}</div>`;
         }
         return win('별빛 식당', `${head}${tabs(['주방', '요리', '향신료'], tab, tabAct, ['obj_kitchen', 'ml_m_bun', 'sp_honey'])}<div class="ui-tabpanel">${body}</div>`);
       }
@@ -1728,6 +1729,7 @@ export class UI {
       case 'klvl': { const r = g.act({ t: 'cook', op: 'lvl', id: a }); if (r.ok) { this.audio?.play('craft'); this.toast(`${MEAL[a].name} Lv.${g.acc.cook.meals[a].lv}!`); } else fail(r.err ?? null); break; }
       case 'kclaim': { const r = g.act({ t: 'cook', op: 'claim' }); if (r.ok) this.audio?.play('coin'); else fail(r.err ?? null); break; }
       case 'kchef': fail(g.act({ t: 'cook', op: 'chef' }).err ?? null); break;
+      case 'kladle': { const r = g.act({ t: 'cook', op: 'ladle', idx: +a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'trappick': this.trapIdx = this.trapIdx === +a ? -1 : +a; break;
       case 'trapbox': this.trapBox = a; break;
       case 'trapset': {

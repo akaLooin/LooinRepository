@@ -44,6 +44,7 @@ export const TERRITORIES: TerritoryDef[] = [
   { id: 't_rock', name: '소행성 띠', lv: 16, need: 260, spice: 'sp_pepper' },
   { id: 't_rings', name: '고리 행성', lv: 24, need: 450, spice: 'sp_cinna' },
   { id: 't_comet', name: '혜성 꼬리', lv: 32, need: 750, spice: 'sp_mint' },
+  { id: 't_void', name: '공허의 끝', lv: 40, need: 1200, spice: 'sp_vanilla' },
 ];
 export const TERR: Record<string, TerritoryDef> = Object.fromEntries(TERRITORIES.map((t) => [t.id, t]));
 
@@ -102,7 +103,8 @@ export function teamPower(b: Breed, tid: string): number {
   const base = team.reduce((s, p) => s + p.power * (p.gene === 'fighter' ? 1.5 : 1), 0);
   return base * (team.some((p) => p.gene === 'swift') ? 1.2 : 1);
 }
-export const spicePerLap = (b: Breed, tid: string) => ((b.terr[tid]?.team ?? []).some((u) => petOf(b, u)?.gene === 'forager') ? 2 : 1) * (1 + Math.floor(TERRITORIES.findIndex((t) => t.id === tid) / 2));
+/** 한 바퀴에 가져오는 향신료(원작처럼 향신료는 영역에서만 나므로 넉넉히) */
+export const spicePerLap = (b: Breed, tid: string) => ((b.terr[tid]?.team ?? []).some((u) => petOf(b, u)?.gene === 'forager') ? 2 : 1) * 5 * (1 + Math.floor(TERRITORIES.findIndex((t) => t.id === tid) / 2));
 
 export function breedSettle(acc: Pick<Account, 'breed' | 'cook'> & Partial<Pick<Account, 'lab' | 'characters'>>, now: number) {
   const b = acc.breed;
@@ -136,7 +138,7 @@ export function breedSettle(acc: Pick<Account, 'breed' | 'cook'> & Partial<Pick<
     const laps = Math.floor(st.prog / BREED.lapSecs);
     if (laps > 0) {
       st.prog -= laps * BREED.lapSecs; st.laps += laps;
-      acc.cook.spices[t.spice] = (acc.cook.spices[t.spice] ?? 0) + laps * spicePerLap(b, t.id);
+      acc.cook.spices[t.spice] = (acc.cook.spices[t.spice] ?? 0) + Math.floor(laps * spicePerLap(b, t.id) * labMult(acc, 'spice'));
       gainXp(b, laps * (10 + i * 10));
     }
   });

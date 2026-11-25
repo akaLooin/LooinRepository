@@ -7,7 +7,7 @@ import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
 import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
 import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
-import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen } from './cooking';
+import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen, useLadle } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
@@ -86,7 +86,7 @@ export type Action =
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
-  | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
+  | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef' | 'ladle'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number; box?: string }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number };
@@ -221,6 +221,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
         case 'buy': return res(buyKitchen(acc, now));
         case 'lvl': return res(levelMeal(acc, a.id ?? '', now));
         case 'chef': return res(toggleChef(acc, c.id, now));
+        case 'ladle': return res(useLadle(acc, a.idx ?? -1, now));
       }
       return fail('없는 행동');
     }
