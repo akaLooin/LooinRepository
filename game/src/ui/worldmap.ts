@@ -9,7 +9,7 @@ export interface MapRegion {
   sub: string;
 }
 
-type Theme = 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena' | 'lair';
+type Theme = 'gate' | 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena' | 'lair';
 interface Spot { x: number; y: number; r: number; theme: Theme }
 /** 지역 위치(가로 420 × 세로 230 좌표) */
 export const SPOTS: Record<string, Spot> = {
@@ -25,17 +25,18 @@ export const SPOTS: Record<string, Spot> = {
   cave: { x: 318, y: 178, r: 26, theme: 'cave' },
   ridge: { x: 364, y: 126, r: 28, theme: 'ridge' },
   ruins: { x: 318, y: 62, r: 28, theme: 'ruins' },
-  grove: { x: 388, y: 40, r: 26, theme: 'grove' },
+  grove: { x: 380, y: 52, r: 24, theme: 'grove' },
+  gate: { x: 404, y: 108, r: 12, theme: 'gate' },
 };
 export const ROADS: [string, string][] = [
   ['town', 'meadow'], ['meadow', 'arena'], ['meadow', 'hills'], ['hills', 'mine1'], ['mine1', 'mine2'], ['hills', 'forest'],
-  ['forest', 'lair'], ['forest', 'swamp'], ['swamp', 'cave'], ['cave', 'ridge'], ['ridge', 'ruins'], ['ruins', 'grove'],
+  ['forest', 'lair'], ['forest', 'swamp'], ['swamp', 'cave'], ['cave', 'ridge'], ['ridge', 'ruins'], ['ruins', 'grove'], ['grove', 'gate'],
 ];
 
 const FILL: Record<Theme, [string, string]> = {
   town: ['#d9be82', '#b89a5c'], meadow: ['#93d46c', '#6cae4c'], arena: ['#e0b064', '#b8863c'], hills: ['#c2a874', '#97804e'],
   mine: ['#8a7866', '#5e4e40'], forest: ['#4f9a52', '#2f6c38'], lair: ['#3a7440', '#22502a'], swamp: ['#6f8a62', '#4c6444'],
-  cave: ['#6c6274', '#463e50'], ridge: ['#b6c6d4', '#8496a8'], ruins: ['#b4a486', '#857458'], grove: ['#5a6cb4', '#3a4884'],
+  cave: ['#6c6274', '#463e50'], ridge: ['#b6c6d4', '#8496a8'], ruins: ['#b4a486', '#857458'], grove: ['#5a6cb4', '#3a4884'], gate: ['#d8c088', '#8a6a3a'],
 };
 
 /** 정해진 씨앗으로 흔들린 둥근 땅 모양 */
@@ -76,6 +77,7 @@ function deco(s: Spot): string {
     case 'cave': return arch(x - 4, y) + rock(x + 12, y + 4, '#7c7088') + rock(x - 14, y + 6, '#7c7088');
     case 'ridge': return peak(x - 8, y - 2, 1.1) + peak(x + 9, y + 3, 0.9) + `<path d="M${x - 16} ${y + 10} q4 -2 8 0 t8 0" stroke="#ffffff" stroke-width=".7" fill="none" opacity=".8"/>`;
     case 'ruins': return pillar(x - 10, y + 4) + pillar(x - 4, y + 2, 9) + pillar(x + 8, y + 5, 5) + `<rect x="${x - 12}" y="${y + 4}" width="24" height="2" fill="#cabc9a"/>` + rock(x + 14, y - 6, '#a49478');
+    case 'gate': return `<path d="M${x - 6} ${y + 5} L${x - 6} ${y - 3} Q${x} ${y - 10} ${x + 6} ${y - 3} L${x + 6} ${y + 5}Z" fill="#f6c945" stroke="#6a4a1a" stroke-width="1"/><path d="M${x - 3} ${y + 5} L${x - 3} ${y - 2} Q${x} ${y - 6} ${x + 3} ${y - 2} L${x + 3} ${y + 5}Z" fill="#ffe9a8"/>`;
     case 'grove': return tree(x - 10, y + 2, '#2c3c7c') + tree(x + 8, y - 4, '#2c3c7c') + tree(x + 2, y + 8, '#2c3c7c') + `<circle cx="${x - 2}" cy="${y - 10}" r="3" fill="#fff6c8"/><circle cx="${x - 0.8}" cy="${y - 10.8}" r="2.6" fill="${FILL.grove[0]}"/>` + flower(x + 12, y + 6, '#b8f0ff') + flower(x - 14, y - 4, '#b8f0ff');
   }
 }

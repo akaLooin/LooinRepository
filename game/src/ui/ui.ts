@@ -6,13 +6,13 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, foodCd,
+  STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
   mapUnlocked, refillTeleports, anvilCap, anvilPointsFree, anvilRate, anvilSlotsOpen, equipCard, recipeLock, unequipCard, buy, collectAnvil, deposit, depositAll, haveMat, invSize, setProduct, shopLeft, spendAnvilPoint,
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
-  minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot,
+  minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot, starTalPoints, foodWait, gateChecks, gateOpen,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, playsLeft, spikeOpen, totemRunsLeft } from '../core/minigames';
@@ -28,7 +28,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -126,6 +126,7 @@ export class UI {
   private forgeSel = 0;
   /** 아이템 창 왼쪽 탭: 0 장비, 1 홀로웨어 */
   private eqTab = 0;
+  private starSel: string | null = null;
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
   private refBack = false;
   private petSel: string | null = null;
@@ -255,6 +256,7 @@ export class UI {
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
     else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
+    else if (e.t === 'gate') { this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
     else if (e.t === 'faint') this.toast(this.game.world?.arena ? '쓰러졌습니다! 콜로세움이 끝났습니다' : '쓰러졌습니다... 잠시 후 부활합니다');
     else if (e.t === 'miniboss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -433,7 +435,7 @@ export class UI {
         if (this.sel?.startsWith('food:')) {
           const fi = +this.sel.slice(5), f = c.foods[fi];
           detail = f ? `<div class="ui-row"><span class="ui-slot">${icon(f.id)}</span><div><b>${ITEMS[f.id].name}</b><div class="ui-xs ui-muted">음식 칸 · ${f.qty}개</div></div></div>
-            <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다. 먹은 뒤에는 그 음식의 재사용 대기시간(${foodCd(f.id)}초) 동안 다음 음식을 먹지 않습니다.</span>${eatCd > 0 ? `<span class="ui-xs ui-accent">재사용까지 ${Math.ceil(eatCd)}초</span>` : ''}
+            <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다. 먹은 뒤에는 그 음식의 재사용 대기시간(${+foodWait(c, f.id).toFixed(1)}초) 동안 다음 음식을 먹지 않습니다.</span>${eatCd > 0 ? `<span class="ui-xs ui-accent">재사용까지 ${Math.ceil(eatCd)}초</span>` : ''}
             <button class="ui-btn" data-act="food::${fi}">가방으로</button>` : '<span class="ui-sm ui-muted">음식을 넣어 두면 체력이 낮을 때 위 칸부터 자동으로 먹습니다.</span>';
         } else if (this.sel?.startsWith('skin:')) {
           const slot = this.sel.slice(5) as SkinSlot, id = c.skins[slot];
@@ -489,13 +491,14 @@ export class UI {
         // 계보: 초보자 → 1차 → 2차. 탭은 능력치 + 계보마다 하나(아직 없는 단계는 잠김)
         const line = classLine(c.cls), base = baseClass(c.cls), sub = line[2];
         const hasCls = base !== 'beginner';
-        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', hasCls ? CLASSES[base].name : '직업', sub ? CLASSES[sub].name : '2차 직업'];
+        const sp = starTalPoints(g.acc, c);
+        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', hasCls ? CLASSES[base].name : '직업', sub ? CLASSES[sub].name : '2차 직업', `별빛${sp > 0 ? ` ${sp}` : ''}`];
         const t = (tab === 2 && !hasCls) || (tab === 3 && !sub) ? 1 : tab;
-        const body = t === 0 ? this.statsHtml(c) : this.talentsHtml(c, t === 1 ? 'beginner' : t === 2 ? base : sub!);
+        const body = t === 0 ? this.statsHtml(c) : t === 4 ? this.starTalHtml(c) : this.talentsHtml(c, t === 1 ? 'beginner' : t === 2 ? base : sub!);
         const baseIcon = hasCls ? `tl_${base === 'warrior' ? 'cleave' : base === 'archer' ? 'volley' : 'nova'}` : 'ui_lock';
         const subIcon = sub ? `tl_${TALENTS.find((x) => x.cls === sub)!.id}` : 'ui_lock';
-        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', baseIcon, subIcon])}
-          ${t > 0 && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
+        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', baseIcon, subIcon, 'ui_star'])}
+          ${t > 0 && t < 4 && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
           <div class="ui-tabpanel talentpanel">${body}</div>`);
       }
 
@@ -543,7 +546,8 @@ export class UI {
         // 위에서 내려다본 지형 지도. 지역을 누르면 테두리만 빛나고, 한 번 더(또는 아래 이동 버튼) 누르면 순간이동.
         // 마을은 무료, 나머지는 티켓 1장. 처치 목표를 다 채운 맵만 순간이동할 수 있다.
         const tickets = countItem(c, TP_TICKET) + storageCount(g.acc, TP_TICKET);
-        const regions: MapRegion[] = [...WORLD1, 'arena', 'lair'].map((id) => {
+        const regions: MapRegion[] = [...WORLD1, 'arena', 'lair', 'gate'].map((id) => {
+          if (id === 'gate') { const ok = gateOpen(g.acc, c); return { id, name: '세계의 문', state: mapUnlocked(c, 'grove') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 2월드 준비 중' : '조건 확인' } as MapRegion; }
           const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id), q = mapQuota(id), k = c.kills[id] ?? 0;
           const mark = id === 'arena' || id === 'lair';
           const state: MapRegion['state'] = here ? 'here' : !open ? 'locked' : mark ? 'mark' : canTeleportTo(c, id) ? 'open' : 'unmet';
@@ -558,6 +562,17 @@ export class UI {
             <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
           : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
         return win(`지도 <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox">${worldMapSvg(regions)}</div><div class="ui-row mapfoot">${foot}</div>`);
+      }
+
+      case 'gate': {
+        // 세계의 문: 조건을 다 채우면 2월드로 갈 수 있다(2월드는 아직 짓는 중)
+        const checks = gateChecks(g.acc, c), open = checks.every((x) => x.ok);
+        const rows = checks.map((x) => `<div class="ui-row line"><span class="gchk ${x.ok ? 'ok' : ''}">${x.ok ? '✓' : ''}</span><span class="ui-grow">${x.label}</span>
+          <span class="ui-sm ${x.ok ? 'ui-good' : 'ui-bad'}">${Math.min(x.have, x.need).toLocaleString()} / ${x.need.toLocaleString()}</span></div>
+          ${bar(x.ok ? 'xp' : 'hp', Math.min(x.have, x.need), x.need, '')}`).join('');
+        return win('세계의 문', `<div class="gatebox"><div class="gateart" aria-hidden="true"></div><div class="ui-grow">
+          <p class="ui-sm" style="margin-top:0">달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.</p>${rows}
+          <p class="ui-sm ${open ? 'ui-good' : 'ui-muted'}">${open ? '문이 열렸습니다! 2월드는 아직 길을 닦는 중입니다. 곧 이 문으로 건너갈 수 있습니다.' : '모든 조건을 채우면 이 캐릭터가 문을 지날 수 있습니다. 이끼왕 토벌은 계정 공용입니다.'}</p></div></div>`);
       }
 
       case 'chat':
@@ -1018,6 +1033,23 @@ export class UI {
   }
 
   /** 특성 격자: 틀 안의 그림 + LV 판. 고르면 오른쪽에 설명과 올리기·공격 지정 */
+  /** 별빛 특성: 직업과 상관없는 공용 탭. 포인트는 레벨 2마다 1 + 업적마다 1 */
+  private starTalHtml(c: Character): string {
+    const pts = starTalPoints(this.game.acc, c);
+    if (!STAR_TAL[this.starSel ?? '']) this.starSel = STAR_TALS[0].id;
+    const tiles = STAR_TALS.map((t) => {
+      const lv = c.starTal[t.id] ?? 0;
+      return `<button class="tal ${t.id === this.starSel ? 'sel' : ''} ${lv ? '' : 'zero'}" data-act="ssel:${t.id}" aria-label="${t.name} 레벨 ${lv}">${ui(t.icon, 'tic')}<span class="lvp">${lv >= t.max ? 'MAX' : `LV ${lv}`}</span></button>`;
+    }).join('');
+    const t = STAR_TAL[this.starSel!], lv = c.starTal[t.id] ?? 0;
+    const detail = `<div class="ui-row">${ui(t.icon, 'bigic')}<div><b>${t.name}</b><div class="ui-xs ui-muted">별빛 특성 · 패시브</div><div class="ui-accent">LV ${lv} / ${t.max}</div></div></div>
+      <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${t.desc(Math.max(1, lv))}</div>
+      ${lv < t.max ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}
+      <button class="ui-btn primary iconbtn block" data-act="startal:${t.id}" ${pts > 0 && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
+      <span class="ui-xs ui-muted">별빛 포인트 <b class="ui-accent">${pts}</b> — 레벨 2마다 1, 업적을 받을 때마다 1씩 늘어납니다. 직업이 바뀌어도 그대로입니다.</span>`;
+    return `<div class="split"><div class="talgrid">${tiles}</div><div class="ui-detail">${detail}</div></div>`;
+  }
+
   private talentsHtml(c: Character, cls: string): string {
     const list = TALENTS.filter((t) => (cls === 'beginner' ? !t.cls : t.cls === cls));
     if (!list.some((t) => t.id === this.talentSel)) this.talentSel = list[0]?.id ?? null;
@@ -1266,6 +1298,8 @@ export class UI {
       case 'atk': this.attackMode = !(this.attackMode || this.assigning); this.assigning = null; break;
       case 'bpage': if (c) g.act({ t: 'barPage', page: (c.attackPage + 1) % c.attackBars.length }); break;
       case 'tsel': if (this.talentSel !== a) this.quickFor = null; this.talentSel = a; break;
+      case 'ssel': this.starSel = a; break;
+      case 'startal': fail(g.act({ t: 'starTal', id: a }).err ?? null); break;
       case 'quick':
         // 아래 퀵슬롯(공격 바)이 깜빡이며 기다린다 → 원하는 칸을 직접 누른다. 한 번 더 누르면 취소
         if (this.assigning === a) { this.assigning = null; this.attackMode = this.assignPrev; break; }

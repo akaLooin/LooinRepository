@@ -255,3 +255,9 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .refbtn.locked { opacity: .5; cursor: default; }
 .quickhint { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--c-accent); border-radius: var(--r-md); background: var(--c-surface-inset); font-size: var(--fs-sm); animation: droppulse .9s ease-in-out infinite; }
 .wreg:focus { outline: none; }
+/* 세계의 문 */
+.gatebox { display: flex; gap: var(--sp-4); align-items: flex-start; }
+.gateart { flex: none; width: 5em; height: 6.5em; border-radius: 2.5em 2.5em var(--r-sm) var(--r-sm); background: radial-gradient(ellipse at 50% 70%, #fff3c0 0 30%, #f6c945 55%, #8a6a3a 56% 66%, transparent 67%); border: 3px solid #6a4a1a; box-shadow: 0 0 18px #f6c94566; }
+.gchk { width: 1.4em; height: 1.4em; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--c-border-input); border-radius: var(--r-sm); color: var(--c-text-good); font-weight: 700; }
+.gchk.ok { border-color: var(--c-text-good); }
+.gatebox .ui-bar { margin: 0 0 var(--sp-2); height: .5em; }

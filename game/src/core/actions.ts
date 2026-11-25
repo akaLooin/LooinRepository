@@ -6,7 +6,7 @@ import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './compan
 import { BlessKey, GameKind, buyBless, finishGame, finishTotem } from './minigames';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, learnStarTal, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
@@ -18,6 +18,7 @@ export type Action =
   | { t: 'stat'; stat: StatKey }
   | { t: 'talent'; id: string }
   | { t: 'equip'; id: string; at?: number }
+  | { t: 'starTal'; id: string }
   | { t: 'upgrade'; stone: string; slot: EquipSlot }
   | { t: 'unequip'; slot: EquipSlot }
   | { t: 'food'; id: string | null; slot?: number }
@@ -85,6 +86,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
   switch (a.t) {
     case 'stat': return spendStat(c, a.stat) ? ok() : fail('포인트가 없습니다');
     case 'talent': return learnTalent(c, a.id) ? ok() : fail('특성을 올릴 수 없습니다');
+    case 'starTal': return res(learnStarTal(acc, c, a.id));
     case 'equip': return res(equipItem(c, a.id, a.at));
     case 'upgrade': { const r = applyStone(acc, c, a.stone, a.slot); return typeof r === 'string' ? fail(r) : ok(r.ok ? 1 : 0); }
     case 'unequip': return res(unequipItem(c, a.slot));

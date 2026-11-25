@@ -5,7 +5,7 @@ import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -51,6 +51,8 @@ export interface Character {
   skins: Partial<Record<SkinSlot, string>>;
   /** 장착한 장비의 강화 기록 */
   equipUp: Partial<Record<EquipSlot, Upg>>;
+  /** 별빛 특성 레벨 */
+  starTal: Record<string, number>;
   /** 콜로세움에 들어갈 때의 콜로세움 처치 수(보상은 이번 회차 처치 수로) */
   arenaStart?: number | null;
   auto: boolean; activity: Activity;
@@ -141,7 +143,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {},
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {},
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -206,7 +208,11 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   pb.afk += (pk.afk ?? 0) + t2('patience') * 0.5;
   pb.xp += (pk.xp ?? 0) + t2('omen') * 2;
   pb.mining += t2('trailblazer') * 4; pb.chopping += t2('trailblazer') * 4;
-  const critAdd = ((pk.crit ?? 0) + t2('bloodlust')) / 100, mpMult = 1 + t2('overflow') * 0.05;
+  // 별빛 특성
+  const sl = (id: string) => c.starTal?.[id] ?? 0;
+  pb.mining += sl('sl_mine') * 4; pb.chopping += sl('sl_chop') * 4; pb.coins += sl('sl_coins') * 2; pb.xp += sl('sl_xp') * 1.5;
+  pb.afk += sl('sl_afk'); pb.drop += sl('sl_drop') * 2;
+  const critAdd = ((pk.crit ?? 0) + t2('bloodlust') + sl('sl_crit') * 0.5) / 100, mpMult = 1 + t2('overflow') * 0.05;
   const str = c.stats.str + e.str + pb.str, agi = c.stats.agi + e.agi + pb.agi;
   const wis = c.stats.wis + e.wis + pb.wis, luk = c.stats.luk + e.luk + pb.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
@@ -222,7 +228,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const work = 1 + tl('worker') * 0.05;
   const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp + pb.hp) * (1 + pb.hpPct / 100) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (baseClass(c.cls) === 'warrior' ? 1.15 : 1));
   return {
-    str, agi, wis, luk, maxHp, maxMp, mpRegen: (0.5 + maxMp * 0.02) * mpMult,
+    str, agi, wis, luk, maxHp, maxMp, mpRegen: (0.5 + maxMp * 0.02) * mpMult * (1 + sl('sl_mp') * 0.05),
     acc: 2 + accStat + c.level + sb.acc + pb.acc,
     afkFight: Math.min(1, AFK_BASE + luk * 0.002 + tl('idler') * 0.02 + cb.afk + afkAcc),
     afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill + afkAcc),
@@ -230,7 +236,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     def: e.def + c.level * 0.3 + tl('ironskin') * 1.5 + sb.def + pb.def,
     // 공격 속도는 능력치가 아니라 특성(날랜 손)으로만 오른다(원작처럼)
     atkInterval: Math.max(0.3, 0.72 * (1 - tl('swift') * 0.02)),
-    speed: 80 + Math.min(40, agi * 0.6) + (pk.speed ?? 0),
+    speed: (80 + Math.min(40, agi * 0.6) + (pk.speed ?? 0)) * (1 + sl('sl_speed') * 0.015),
     // 치명타 확률은 민첩, 치명타 피해는 힘
     crit: Math.min(0.75, 0.04 + agi * 0.004 + sb.crit / 100 + critAdd), critMult: 1.5 + str * 0.004 + t2('deadeye') * 0.04,
     bossMult: 1 + wis * 0.004,
@@ -653,7 +659,7 @@ function syncSlots(c: Character) {
 export const anvilRate = (c: Character, slot = 0) => {
   const p = PRODUCTS.find((x) => x.item === c.anvil.slots[slot]?.prod);
   // 민첩이 모루 생산 속도를 올린다(원작처럼 대장 기술은 민첩)
-  return p ? p.perHour * (1 + c.anvil.pts.spd * ANVIL.spdPer) * (1 + (c.stats.agi + equipStats(c).agi) * 0.004) : 0;
+  return p ? p.perHour * (1 + c.anvil.pts.spd * ANVIL.spdPer) * (1 + (c.starTal?.sl_smith ?? 0) * 0.03) * (1 + (c.stats.agi + equipStats(c).agi) * 0.004) : 0;
 };
 export function setProduct(c: Character, item: string | null, slot = 0): string | null {
   syncSlots(c);
@@ -870,7 +876,7 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
-      c.skins ??= {}; c.equipUp ??= {};
+      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {};
       c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];
@@ -879,3 +885,33 @@ export function deserialize(json: string | null): Account | null {
     return a;
   } catch { return null; }
 }
+
+// ───────── 별빛 특성 ─────────
+/** 받은 업적 수 */
+const achCount = (acc: Pick<Account, 'achievements'>) => Object.values(acc.achievements ?? {}).filter(Boolean).length;
+/** 남은 별빛 포인트: 레벨 2마다 1 + 업적마다 1 - 쓴 포인트 */
+export const starTalPoints = (acc: Pick<Account, 'achievements'>, c: Character) =>
+  Math.floor(c.level / 2) + achCount(acc) - Object.values(c.starTal).reduce((n, v) => n + v, 0);
+export function learnStarTal(acc: Account, c: Character, id: string): string | null {
+  const t = STAR_TAL[id];
+  if (!t) return '없는 특성';
+  const lv = c.starTal[id] ?? 0;
+  if (lv >= t.max) return '최대 레벨입니다';
+  if (starTalPoints(acc, c) <= 0) return '별빛 포인트가 부족합니다';
+  c.starTal[id] = lv + 1;
+  return null;
+}
+/** 이 캐릭터가 이 음식을 먹은 뒤 기다리는 시간(초) */
+export const foodWait = (c: Character, id: string) => foodCd(id) * (1 - (c.starTal?.sl_food ?? 0) * 0.04);
+
+// ───────── 세계의 문(2월드) ─────────
+export interface GateCheck { label: string; have: number; need: number; ok: boolean }
+export function gateChecks(acc: Pick<Account, 'bosses'>, c: Character): GateCheck[] {
+  const g = WORLD_GATE, boss = acc.bosses[g.boss] ?? 0, kills = c.kills[g.map] ?? 0;
+  return [
+    { label: `${MONSTERS[g.boss].name} 토벌(계정)`, have: boss, need: g.bossKills, ok: boss >= g.bossKills },
+    { label: '캐릭터 레벨', have: c.level, need: g.level, ok: c.level >= g.level },
+    { label: `${MAPS[g.map].name} 처치`, have: kills, need: g.kills, ok: kills >= g.kills },
+  ];
+}
+export const gateOpen = (acc: Pick<Account, 'bosses'>, c: Character) => gateChecks(acc, c).every((x) => x.ok);

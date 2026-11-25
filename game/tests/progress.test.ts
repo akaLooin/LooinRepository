@@ -357,3 +357,33 @@ describe('홀로웨어(겉모습 스킨)', () => {
     expect(deserialize(serialize(acc))!.characters[0].skins.hat).toBe('hat_moss');
   });
 });
+
+import { foodWait, gateChecks, gateOpen, learnStarTal, starTalPoints } from '../src/core/state';
+import { WORLD_GATE } from '../src/core/data';
+describe('별빛 특성', () => {
+  it('포인트는 레벨 2마다 1 + 업적마다 1, 쓴 만큼 줄고 효과가 반영된다', () => {
+    const { acc, c } = setup();
+    c.level = 10;
+    expect(starTalPoints(acc, c)).toBe(5);
+    acc.achievements.first = true;
+    expect(starTalPoints(acc, c)).toBe(6);
+    const sp0 = derive(c, acc).speed;
+    expect(applyAction(acc, 0, { t: 'starTal', id: 'sl_speed' }, 0).ok).toBe(true);
+    expect(derive(c, acc).speed).toBeCloseTo(sp0 * 1.015);
+    for (let i = 0; i < 5; i++) learnStarTal(acc, c, 'sl_food');
+    expect(starTalPoints(acc, c)).toBe(0);
+    expect(learnStarTal(acc, c, 'sl_food')).toMatch(/부족/);
+    expect(foodWait(c, 'berry')).toBeCloseTo(3 * 0.8);
+    expect(deserialize(serialize(acc))!.characters[0].starTal.sl_food).toBe(5);
+  });
+});
+describe('세계의 문', () => {
+  it('보스 토벌·레벨·달빛 숲 처치를 모두 채워야 열린다', () => {
+    const { acc, c } = setup();
+    expect(gateOpen(acc, c)).toBe(false);
+    acc.bosses.mossking = 1; c.level = WORLD_GATE.level;
+    expect(gateChecks(acc, c).filter((x) => !x.ok).length).toBe(1);
+    c.kills.grove = WORLD_GATE.kills;
+    expect(gateOpen(acc, c)).toBe(true);
+  });
+});

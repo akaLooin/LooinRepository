@@ -3,9 +3,9 @@
 // 멀티 전환 시 이 파일은 서버에서 실행되어 보상을 검증/지급한다.
 import {
   AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_BY_ID, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, GatherSkill, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES,
-  SkillKey, foodCd } from './data';
+  SkillKey } from './data';
 import { Rng } from './rng';
-import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill } from './state';
+import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill, foodWait } from './state';
 import { GATHER_INTERVAL } from './world';
 
 export interface AfkReport {
@@ -92,7 +92,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   const deficit = Math.max(0, dps - d.regen);
   // 음식 재사용 대기 때문에 1초에 메울 수 있는 회복량에 한계가 있다(첫 칸 음식 기준)
   const top = c.foods.find(Boolean);
-  const cd = top ? foodCd(top.id) : 5;
+  const cd = top ? foodWait(c, top.id) : 5;
   const healRate = heal / cd;
   const foodPerHour = heal > 0 ? Math.min(deficit * 3600, healRate * 3600) / heal : 0;
   let survival = 1;

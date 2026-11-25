@@ -28,7 +28,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const t = Math.max(0, elapsedSec);
 
   // 1) 행동으로만 바뀌는 값
-  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp'];
+  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal'];
   for (const k of fixed) if (!same(s[k], claimed[k])) return `바뀌면 안 되는 값: ${String(k)}`;
   if (!same(s.anvil.pts, claimed.anvil.pts)) return '바뀌면 안 되는 값: 모루 포인트';
   if (!same(s.anvil.slots.map((x) => x.prod), claimed.anvil.slots.map((x) => x.prod).slice(0, s.anvil.slots.length))) return '바뀌면 안 되는 값: 모루 품목';

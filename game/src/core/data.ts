@@ -283,7 +283,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 400, y: -48, w: 220 }, { x: 450, y: -96, w: 130 }, { x: 720, y: -48, w: 200 }],
     spawns: [{ monster: 'shroomkin', count: 9 }], nodes: [{ node: 'moonbirch', x: 90 }, { node: 'moonbirch', x: 660 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 420, top: -48, bottom: 0 }, { x: 520, top: -96, bottom: -48 }, { x: 900, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'ruins', toX: 910 }] },
+    facilities: [], portals: [{ x: 24, to: 'ruins', toX: 910 }, { x: 956, to: 'world2', toX: 0, label: '세계의 문' }] },
   { id: 'arena', name: '이슬 콜로세움', width: 640, theme: 'arena', arena: true,
     platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
     spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
@@ -515,6 +515,26 @@ export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ?
 export const MAX_CHARACTERS = 6;
 /** 음식 칸 수: 위 칸부터 먹는다 */
 export const FOOD_SLOTS = 3;
+/** 2월드로 가는 세계의 문(달빛 숲 끝): 계정이 이끼왕을 토벌하고, 이 캐릭터가 레벨·달빛 숲 처치를 채워야 한다 */
+export const WORLD_GATE = { boss: 'mossking', bossKills: 1, level: 30, map: 'grove', kills: 400 };
+
+// ───────── 별빛 특성(캐릭터마다, 직업과 상관없는 공용 특성 탭) ─────────
+// 포인트: 레벨 2마다 1 + 받은 업적마다 1. 쓴 만큼 빠진다(따로 저장하지 않고 계산)
+export interface StarTalDef { id: string; name: string; max: number; icon: string; desc: (lv: number) => string }
+export const STAR_TALS: StarTalDef[] = [
+  { id: 'sl_speed', name: '가벼운 발걸음', max: 10, icon: 'st_agi', desc: (lv) => `이동 속도 +${(lv * 1.5).toFixed(1)}%` },
+  { id: 'sl_food', name: '알뜰한 식사', max: 10, icon: 'it_berry', desc: (lv) => `음식 재사용 대기 -${lv * 4}%` },
+  { id: 'sl_mine', name: '광맥 감각', max: 10, icon: 'wp_pick_stone', desc: (lv) => `채광 효율 +${lv * 4}%` },
+  { id: 'sl_chop', name: '나뭇결 감각', max: 10, icon: 'wp_axe_stone', desc: (lv) => `벌목 효율 +${lv * 4}%` },
+  { id: 'sl_smith', name: '망치 리듬', max: 10, icon: 'obj_craft', desc: (lv) => `모루 생산 속도 +${lv * 3}%` },
+  { id: 'sl_coins', name: '동전 냄새', max: 10, icon: 'ui_coin', desc: (lv) => `코인 획득 +${lv * 2}%` },
+  { id: 'sl_xp', name: '배움의 별빛', max: 10, icon: 'ui_xp', desc: (lv) => `경험치 +${(lv * 1.5).toFixed(1)}%` },
+  { id: 'sl_afk', name: '꿈꾸는 사냥꾼', max: 10, icon: 'ui_afk', desc: (lv) => `방치 효율(전투·채집) +${lv}%p` },
+  { id: 'sl_crit', name: '반짝 일격', max: 10, icon: 'st_str', desc: (lv) => `치명타 확률 +${(lv * 0.5).toFixed(1)}%p` },
+  { id: 'sl_drop', name: '눈썰미', max: 10, icon: 'ui_items', desc: (lv) => `드롭률 +${lv * 2}%` },
+  { id: 'sl_mp', name: '고요한 마음', max: 10, icon: 'ui_mana', desc: (lv) => `마나 회복 +${lv * 5}%` },
+];
+export const STAR_TAL: Record<string, StarTalDef> = Object.fromEntries(STAR_TALS.map((t) => [t.id, t]));
 /** 음식 재사용 대기(초). 먹은 음식의 값을 쓴다 */
 export const foodCd = (id: string) => ITEMS[id]?.cd ?? 5;
 export const AFK_MIN_SECONDS = 60;

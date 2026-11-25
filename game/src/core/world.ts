@@ -1,9 +1,9 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
   ARENA, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
-  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult, foodCd } from './data';
+  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult } from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady } from './state';
+import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady, foodWait } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -47,6 +47,7 @@ export interface NodeInst { uid: number; def: NodeDef; x: number; y: number; pro
 export interface Shot { uid: number; kind: 'arrow' | 'orb'; x: number; y: number; target: Mob; mult: number; angle: number }
 
 export type WorldEvent =
+  | { t: 'gate' }
   | { t: 'dmg'; x: number; y: number; amount: number; crit: boolean; onPlayer: boolean; miss?: boolean }
   | { t: 'heal'; x: number; y: number; amount: number; food?: string }
   | { t: 'kill'; uid: number; x: number; y: number }
@@ -326,7 +327,7 @@ export class World {
     const before = c.hp;
     c.hp = Math.min(d.maxHp, c.hp + (it.heal ?? 0));
     if (--f.qty <= 0) c.foods[i] = null;
-    this.eatT = foodCd(f.id);
+    this.eatT = foodWait(c, f.id);
     this.events.push({ t: 'heal', x: p.x, y: p.y - 34, amount: Math.round(c.hp - before), food: f.id });
   }
 

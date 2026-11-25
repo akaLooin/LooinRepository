@@ -36,6 +36,7 @@ const id = z.string().min(1).max(40);
 const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('stat'), stat: z.enum(['str', 'agi', 'wis', 'luk']) }),
   z.object({ t: z.literal('talent'), id }),
+  z.object({ t: z.literal('starTal'), id }),
   z.object({ t: z.literal('equip'), id, at: z.number().int().min(0).max(200).optional() }),
   z.object({ t: z.literal('upgrade'), stone: id, slot: z.enum(['weapon', 'hat', 'body', 'legs', 'shoes', 'ring', 'trophy', 'pickaxe', 'axe']) }),
   z.object({ t: z.literal('unequip'), slot: z.enum(['weapon', 'hat', 'body', 'legs', 'shoes', 'ring', 'trophy', 'pickaxe', 'axe']) }),

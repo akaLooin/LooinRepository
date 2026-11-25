@@ -261,6 +261,7 @@ export class Game {
         if (e.t === 'arrive' && e.what === 'portal') {
           const q = w.map.portals[e.idx];
           if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `아직 열리지 않았습니다(${portalLock(w.char, w.map.id, q)})` }); continue; }
+          if (q.to === 'world2') { this.onEvent({ t: 'gate' }); continue; }
           if (!MAPS[q.to]) continue;
           this.travel(e.idx);
           return;
