@@ -2,11 +2,11 @@
 // 이 폴더(core)는 DOM/Phaser에 의존하지 않는다 → 추후 서버에서 그대로 재사용.
 
 export type StatKey = 'str' | 'agi' | 'wis' | 'luk';
-export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping';
+export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping' | 'worship';
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post' | 'traps' | 'build';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
   | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
@@ -93,8 +93,8 @@ export const STAT_DESC: Record<StatKey, string> = {
   str: '최대 체력·치명타 피해·채광. 전사 공격력, 궁수 명중', agi: '이동 속도·치명타 확률·모루 생산. 궁수 공격력, 마법사 명중',
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
-export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당' };
+export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
@@ -493,7 +493,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
     spawns: [{ monster: 'snowpuff', count: 9 }], nodes: [{ node: 'pine', x: 90 }, { node: 'pine', x: 650 }, { node: 'frostbush', x: 300 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'snowtown', toX: 650, toY: -48 }, { x: 916, to: 'pinewood', toX: 50, reqKills: 600 }] },
+    facilities: [{ kind: 'shrine', x: 380, y: 0 }], portals: [{ x: 24, to: 'snowtown', toX: 650, toY: -48 }, { x: 916, to: 'pinewood', toX: 50, reqKills: 600 }] },
   { id: 'pinewood', name: '전나무 숲', width: 960, theme: 'pinewood',
     platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
     spawns: [{ monster: 'pinekin', count: 9 }], nodes: [{ node: 'pine', x: 410 }, { node: 'pine', x: 660 }, { node: 'frostbush', x: 900 }],
@@ -503,7 +503,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
     spawns: [{ monster: 'penglet', count: 9 }], nodes: [{ node: 'icehole', x: 380 }, { node: 'icehole', x: 680 }, { node: 'frostrock', x: 800 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'pinewood', toX: 910 }, { x: 936, to: 'icecave', toX: 50, reqKills: 700 }] },
+    facilities: [{ kind: 'shrine', x: 240, y: 0 }], portals: [{ x: 24, to: 'pinewood', toX: 910 }, { x: 936, to: 'icecave', toX: 50, reqKills: 700 }] },
   { id: 'icecave', name: '고드름 동굴', width: 940, theme: 'icecave',
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
     spawns: [{ monster: 'icicle', count: 9 }], nodes: [{ node: 'frostrock', x: 420 }, { node: 'frostrock', x: 660 }],
@@ -513,7 +513,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
     spawns: [{ monster: 'yetiling', count: 9 }], nodes: [{ node: 'pine', x: 90 }, { node: 'frostrock', x: 380 }, { node: 'icehole', x: 700 }],
     ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'icecave', toX: 890 }, { x: 936, to: 'aurora', toX: 50, reqKills: 800 }] },
+    facilities: [{ kind: 'shrine', x: 240, y: 0 }], portals: [{ x: 24, to: 'icecave', toX: 890 }, { x: 936, to: 'aurora', toX: 50, reqKills: 800 }] },
   { id: 'aurora', name: '오로라 언덕', width: 980, theme: 'aurora',
     platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
     spawns: [{ monster: 'aurowisp', count: 9 }], nodes: [{ node: 'frostbush', x: 250 }, { node: 'pine', x: 410 }, { node: 'frostrock', x: 690 }, { node: 'icehole', x: 880 }],
@@ -524,7 +524,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
     spawns: [{ monster: 'frostgolem', count: 9 }], nodes: [{ node: 'icehole', x: 230 }, { node: 'frostrock', x: 380 }, { node: 'frostbush', x: 660 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
-    facilities: [], portals: [{ x: 24, to: 'aurora', toX: 930 }, { x: 952, y: -96, to: 'frostlair', toX: 60, reqKills: 400, key: 'frost_key', label: '눈보라 옥좌' }] },
+    facilities: [{ kind: 'shrine', x: 520, y: 0 }], portals: [{ x: 24, to: 'aurora', toX: 930 }, { x: 952, y: -96, to: 'frostlair', toX: 60, reqKills: 400, key: 'frost_key', label: '눈보라 옥좌' }] },
   { id: 'frostlair', name: '눈보라 옥좌', width: 600, theme: 'frostpeak', boss: 'frostlord',
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'frostpeak', toX: 930, toY: -96 }] },

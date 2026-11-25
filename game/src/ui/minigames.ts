@@ -1,6 +1,8 @@
 // 미니게임 화면: 화면 위에 덮는 전용 창(캔버스)에서 돌리고, 끝나면 점수를 돌려준다.
 // 규칙·보상은 core/minigames.ts, 여기는 조작과 그림만.
-export type PlayKind = 'chop' | 'mine' | 'spike' | 'totem';
+export type PlayKind = 'chop' | 'mine' | 'spike' | 'totem' | 'worship';
+/** 기도 토템 디펜스 설정: 혼령 속도 배율·그림·토템이 스스로 쏘는 간격(0이면 안 쏨)·토템 그림 */
+export interface TotemOpts { speed: number; art: string; bolt: number; totem: string }
 export interface PlayResult { score: number; kills: number; survived: boolean }
 
 import { canvases } from '../render/sprites';
@@ -15,7 +17,7 @@ function sprite(c: CanvasRenderingContext2D, key: string, x: number, bottom: num
 }
 const C = { bg: '#2a2230', panel: '#3a3142', text: '#fff3d6', muted: '#c3b8cc', good: '#94e07f', ok: '#f2c14e', bad: '#ff9686', wood: '#b9824f', leaf: '#5fb859', rock: '#8d97a3', spike: '#e9e4f0', spirit: '#a5d8ff', totem: '#8a6a4a' };
 
-export function runGame(kind: PlayKind, title: string, done: (r: PlayResult) => void) {
+export function runGame(kind: PlayKind, title: string, done: (r: PlayResult) => void, opts?: TotemOpts) {
   const wrap = document.createElement('div');
   wrap.className = 'mgwrap';
   wrap.innerHTML = `<div class="mgbox ui-win"><div class="mghead"><b>${title}</b><span class="mgscore"></span><button class="ui-btn sm" data-mg="quit">그만두기</button></div><canvas width="${W * 2}" height="${H * 2}"></canvas><div class="mghint ui-xs ui-muted"></div></div>`;
@@ -24,7 +26,7 @@ export function runGame(kind: PlayKind, title: string, done: (r: PlayResult) => 
   ctx.scale(2, 2); ctx.imageSmoothingEnabled = false;
   const scoreEl = wrap.querySelector<HTMLElement>('.mgscore')!, hint = wrap.querySelector<HTMLElement>('.mghint')!;
   let alive = true, last = performance.now(), down = false, tapX = -1;
-  const g = makeGame(kind);
+  const g = makeGame(kind, opts);
   hint.textContent = g.hint;
   const finish = () => { if (!alive) return; alive = false; wrap.remove(); done(g.result()); };
   wrap.querySelector('[data-mg="quit"]')!.addEventListener('click', finish);
@@ -51,11 +53,11 @@ function text(c: CanvasRenderingContext2D, s: string, x: number, y: number, col 
   c.fillStyle = col; c.font = `bold ${size}px sans-serif`; c.textAlign = align; c.fillText(s, x, y);
 }
 
-function makeGame(kind: PlayKind): Game {
+function makeGame(kind: PlayKind, opts?: TotemOpts): Game {
   if (kind === 'chop') return timingGame();
   if (kind === 'mine') return chargeGame();
   if (kind === 'spike') return spikeGame();
-  return totemGame();
+  return totemGame(opts ?? { speed: 1, art: 'mob_glowbat', bolt: 0, totem: 'obj_totem' });
 }
 
 /** 벌목: 왼쪽·오른쪽을 오가는 표시를 초록 구간에서 멈춘다(10번, 점점 빠르고 좁아진다) */
@@ -161,8 +163,9 @@ function spikeGame(): Game {
 }
 
 /** 토템 디펜스: 양쪽에서 다가오는 혼령을 눌러 없앤다. 토템에 닿으면 토템 체력 -1(60초) */
-function totemGame(): Game {
-  let t = 0, spawn = 0, kills = 0, hp = 5, done = false, fx: { x: number; y: number; t: number }[] = [];
+function totemGame(o: TotemOpts): Game {
+  let t = 0, spawn = 0, kills = 0, hp = 5, done = false, bolt = o.bolt, fx: { x: number; y: number; t: number }[] = [];
+  const shots: { x0: number; y0: number; x: number; y: number; t: number }[] = [];
   let spirits: { x: number; y: number; dir: number; sp: number }[] = [];
   return {
     hint: '혼령을 눌러 없애세요. 토템이 다섯 번 맞으면 끝입니다.',
@@ -170,13 +173,20 @@ function totemGame(): Game {
       if (done) return;
       t += dt; spawn -= dt;
       if (spawn <= 0) {
-        spawn = Math.max(0.45, 1.3 - t * 0.014);
+        spawn = Math.max(0.45, 1.3 - t * 0.014) / Math.sqrt(o.speed);
         const dir = Math.random() < 0.5 ? 1 : -1;
-        spirits.push({ x: dir > 0 ? -10 : W + 10, y: 60 + Math.random() * 110, dir, sp: 28 + t * 0.9 + Math.random() * 12 });
+        spirits.push({ x: dir > 0 ? -10 : W + 10, y: 60 + Math.random() * 110, dir, sp: (28 + t * 0.9 + Math.random() * 12) * o.speed });
       }
       for (const s of spirits) { s.x += s.dir * s.sp * dt; s.y += (120 - s.y) * dt * 0.3; }
       for (const s of spirits) if (Math.abs(s.x - W / 2) < 16) { hp--; s.x = 9999; }
       spirits = spirits.filter((s) => s.x > -20 && s.x < W + 20);
+      // 토템이 스스로 쏜다: 가장 가까운 혼령
+      if (o.bolt > 0 && (bolt -= dt) <= 0 && spirits.length) {
+        bolt = o.bolt;
+        let bi = 0; spirits.forEach((s, i) => { if (Math.abs(s.x - W / 2) < Math.abs(spirits[bi].x - W / 2)) bi = i; });
+        const s = spirits[bi]; shots.push({ x0: W / 2, y0: 110, x: s.x, y: s.y, t: 0.2 }); fx.push({ x: s.x, y: s.y, t: 0.3 }); spirits.splice(bi, 1); kills++;
+      }
+      for (let i = shots.length - 1; i >= 0; i--) if ((shots[i].t -= dt) <= 0) shots.splice(i, 1);
       fx = fx.filter((f) => (f.t -= dt) > 0);
       if (hp <= 0 || t >= 60) done = true;
     },
@@ -189,9 +199,11 @@ function totemGame(): Game {
     release() {},
     draw(c) {
       c.fillStyle = '#3a4a3a'; c.fillRect(0, 170, W, 30);
-      sprite(c, 'obj_totem', W / 2, 172, 84);
+      sprite(c, o.totem, W / 2, 172, 84);
+      c.strokeStyle = '#c8f0ff'; c.lineWidth = 2;
+      for (const b of shots) { c.globalAlpha = b.t / 0.2; c.beginPath(); c.moveTo(b.x0, b.y0); c.lineTo(b.x, b.y); c.stroke(); }
       c.globalAlpha = 0.9;
-      for (const s of spirits) sprite(c, 'mob_glowbat', s.x, s.y + 12, 24, s.dir < 0);
+      for (const s of spirits) sprite(c, o.art, s.x, s.y + 12, 24, s.dir < 0);
       c.globalAlpha = 1;
       for (const f of fx) { c.strokeStyle = C.ok; c.lineWidth = 2; c.beginPath(); c.arc(f.x, f.y, 14 * (1 - f.t / 0.3) + 4, 0, Math.PI * 2); c.stroke(); }
       text(c, '♥'.repeat(Math.max(0, hp)), 10, 16, C.bad, 14, 'left');

@@ -690,3 +690,49 @@ describe('건설(공방 마당)', () => {
     expect(acc.build.up.slots).toBe(1);
   });
 });
+
+import { PRAYER as PR, WTOTEM as WT, chargeCap as cCap, chargeNow as cNow, prayerCost as pCost, prayerSlots as pSlots } from '../src/core/worship';
+describe('기도', () => {
+  const ready = () => { const { acc, c } = setup(); c.maxWorld = 3; c.mapId = 'snowfield'; return { acc, c }; };
+  it('토템이 있는 맵에서 기도력을 써서 지키면 영혼과 기도 경험치, 기도력은 시간이 지나 다시 찬다', () => {
+    const { acc, c } = ready();
+    const t0 = 10_000_000;
+    const cap0 = cCap(c);
+    expect(cNow(c, t0)).toBe(cap0);
+    c.mapId = 'snowtown';
+    expect(applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_snow', kills: 40, survived: true }, t0).ok).toBe(false); // 그 맵이 아님
+    c.mapId = 'snowfield';
+    const r = applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_snow', kills: 40, survived: true }, t0);
+    expect(r.ok).toBe(true); expect(r.n).toBe(Math.floor(20 * 1.5 * 1.01));
+    expect(acc.worship.souls.snow).toBe(r.n);
+    expect(c.skills.worship.lv > 1 || c.skills.worship.xp > 0).toBe(true);
+    expect(cNow(c, t0)).toBeCloseTo(cap0 - WT.wt_snow.cost);
+    // 기도력이 모자라면 거절, 시간이 지나면 다시 찬다
+    let runs = 0;
+    while (applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_snow', kills: 0, survived: false }, t0).ok) runs++;
+    expect(runs).toBe(Math.floor((cap0 - WT.wt_snow.cost) / WT.wt_snow.cost));
+    expect(cNow(c, t0 + 10 * 3_600_000)).toBe(cCap(c));
+    // 혼령 수 상한, 높은 토템은 기도 레벨이 필요
+    c.mapId = 'frostlake';
+    expect(applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_water', kills: 10, survived: true }, t0 + 10 * 3_600_000).ok).toBe(false);
+  });
+  it('기도문은 영혼으로 배우고(계정 공용), 캐릭터마다 켜면 효과와 저주가 함께 걸린다', () => {
+    const { acc, c } = ready();
+    expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 0).ok).toBe(false); // 아직 안 배움
+    acc.worship.souls.snow = pCost(0);
+    expect(applyAction(acc, 0, { t: 'worship', op: 'up', id: 'p_valor' }, 0).ok).toBe(true);
+    expect(acc.worship.souls.snow).toBe(0);
+    const d0 = derive(c, acc);
+    expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 0).ok).toBe(true);
+    const d1 = derive(c, acc);
+    expect(d1.maxHp).toBeLessThan(d0.maxHp); // 저주: 최대 체력
+    expect(PR.p_valor.eff).toBe('dmg');
+    // 켤 수 있는 수는 기도 레벨로
+    expect(pSlots(1)).toBe(1); expect(pSlots(40)).toBe(3);
+    acc.worship.souls.snow = 9999; c.skills.worship.lv = 5;
+    applyAction(acc, 0, { t: 'worship', op: 'up', id: 'p_harvest' }, 0);
+    expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_harvest' }, 0).ok).toBe(false);
+    expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 0).ok).toBe(true); // 끄기
+    expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_harvest' }, 0).ok).toBe(true);
+  });
+});

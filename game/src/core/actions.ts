@@ -4,6 +4,7 @@ import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { finishWorship, togglePrayer, upPrayer } from './worship';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
@@ -76,6 +77,7 @@ export type Action =
   | { t: 'skinOff'; slot: 'hat' | 'body' }
   | { t: 'owl'; k?: OwlUp }
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
+  | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
@@ -174,6 +176,12 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'bubble') return res(upBubble(acc, c, a.id ?? '', now));
       if (a.op === 'vial') return res(upVial(acc, c, a.id ?? ''));
       return res(upLiquid(acc, a.id as LiquidUp, now));
+    }
+    case 'worship': {
+      if ((c.maxWorld ?? 1) < 3) return fail('3월드의 기도 토템에서 할 수 있습니다');
+      if (a.op === 'run') { const r = finishWorship(acc, c, a.id, a.kills ?? 0, !!a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
+      if (a.op === 'up') return res(upPrayer(acc, c, a.id));
+      return res(togglePrayer(acc, c, a.id));
     }
     case 'build': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 공방 마당에서 할 수 있습니다');

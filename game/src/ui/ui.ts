@@ -4,6 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
 import { trapLock, trapYield } from '../core/traps';
+import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
 import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
@@ -35,7 +36,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -778,6 +779,33 @@ export class UI {
         }).join('');
         return win('부엉이 횃대 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row"><b class="ui-grow">깃털 <span class="ui-accent">${Math.floor(o.f).toLocaleString()}</span></b><span class="ui-sm ui-muted">시간당 ${Math.round(owlPerHour(o))}개 · 접속하지 않아도 쌓입니다</span></div>${rows}`);
       }
+      case 'shrine': {
+        const acc = g.acc, now = Date.now(), sk = c.skills.worship, need = skillXpToNext(sk.lv), ch = chargeNow(c, now), cap = chargeCap(c);
+        const head = `<div class="ui-row alchhead">${ui('obj_shrine', 'mi')}<b class="ui-grow">기도 Lv.<span class="ui-accent">${sk.lv}</span> · 기도력 <span class="ui-accent">${Math.floor(ch)}</span> / ${cap} <span class="ui-xs ui-muted">시간당 ${chargeRate(c).toFixed(1)}</span></b><div style="width:26%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
+        let body = '';
+        if (tab === 0) {
+          const be = boltEvery(c);
+          body = WTOTEMS.map((t) => {
+            const lock = worshipLock(c, t.id), here = c.mapId === t.map;
+            const btn = lock ? `<span class="ui-sm ui-bad">${lock}</span>` : !here ? `<span class="ui-xs ui-muted">${MAPS[t.map].name}에서</span>` : `<button class="ui-btn sm primary" data-act="wplay:${t.id}" ${ch >= t.cost ? '' : 'disabled'}>지키기 · 기도력 ${t.cost}</button>`;
+            return `<div class="ui-row line ${lock ? 'locked' : ''}">${ui(`soul_${t.soul}`, 'mi')}<div class="ui-grow"><b>${t.name}</b> <span class="ui-xs ui-muted">${MAPS[t.map].name} · Lv.${t.lv}</span>
+              <div class="ui-xs ui-muted">${SOUL_NAMES[t.soul]} · 혼령 속도 ×${t.speed} · 혼령 최대 ${t.maxKills}마리(끝까지 지키면 ${runSouls(c, t.maxKills, true)}개)</div></div>${btn}</div>`;
+          }).join('') + `<p class="ui-xs ui-muted">토템이 있는 맵에서 기도력을 써서 1분 동안 토템을 지킵니다. 다가오는 혼령을 눌러 없애세요. ${be ? `기도 Lv가 올라 토템이 ${be.toFixed(1)}초마다 스스로 혼령을 쏩니다.` : '기도 Lv.5부터 토템이 스스로 혼령을 쏩니다.'}</p>`;
+        } else {
+          const souls = (Object.keys(SOUL_NAMES) as SoulKind[]).map((k) => `<span class="ui-sm">${ui(`soul_${k}`, 'tic')} ${acc.worship.souls[k].toLocaleString()}</span>`).join(' ');
+          const slots = prayerSlots(sk.lv), on = c.worship.on;
+          body = `<div class="ui-row" style="gap:10px;flex-wrap:wrap">${souls}<span class="ui-grow"></span><span class="ui-xs">켠 기도문 <b class="ui-accent">${on.length}/${slots}</b></span></div>` + PRAYERS.map((p) => {
+            const lv = acc.worship.prayers[p.id] ?? 0, max = lv >= PRAYER_MAX, cost = prayerCost(lv), locked = sk.lv < p.lv, active = on.includes(p.id);
+            const v = (x: number) => Math.round(x * 100) / 100;
+            return `<div class="ui-row line ${active ? 'sel' : ''} ${locked ? 'locked' : ''}">${ui(`soul_${p.soul}`, 'mi')}<div class="ui-grow"><b>${p.name}</b> <span class="ui-xs ui-accent">${lv}/${PRAYER_MAX}</span>
+              <div class="ui-sm ui-good">${ALCH_LABEL[p.eff]} +${v(prayerValue(p, Math.max(1, lv)))}${p.unit}${lv && !max ? ` → +${v(prayerValue(p, lv + 1))}${p.unit}` : ''}</div>
+              <div class="ui-xs ui-bad">저주: ${ALCH_LABEL[p.curse]} ${p.cv}${p.cunit}</div></div>
+              ${locked ? `<span class="ui-sm ui-bad">기도 Lv.${p.lv}</span>` : `<button class="ui-btn sm" data-act="wup:${p.id}" ${!max && acc.worship.souls[p.soul] >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui(`soul_${p.soul}`, 'tic')} ${cost.toLocaleString()}`}</button>
+              <button class="ui-btn sm ${active ? 'primary' : ''}" data-act="wtog:${p.id}" ${lv ? '' : 'disabled'}>${active ? '끄기' : '켜기'}</button>`}</div>`;
+          }).join('') + `<p class="ui-xs ui-muted">기도문 레벨은 계정 공용이고, 켜는 것은 캐릭터마다입니다. 켠 기도문은 효과와 함께 저주도 걸립니다. 켤 수 있는 수는 기도 Lv.20마다 하나씩 늘어납니다(최대 4).</p>`;
+        }
+        return win(`기도 토템 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['토템', '기도문'], tab, tabAct, ['obj_shrine', 'soul_star'])}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'build': {
         const acc = g.acc, b = acc.build, now = Date.now();
         buildSettle(acc, now);
@@ -1299,12 +1327,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1422,6 +1450,19 @@ export class UI {
       case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }
       case 'pshard': { const r = g.act({ t: 'petShard' }); if (r.ok) this.toast(`펫 크리스탈 ${r.n}개를 넣었습니다`); else fail(r.err ?? null); break; }
       case 'bsel': this.bubSel = a; break;
+      case 'wplay': {
+        const t = WTOTEM[a];
+        if (!t || !c) break;
+        this.panel = null; this.refresh(true);
+        runGame('worship', t.name, (r) => {
+          const res = g.act({ t: 'worship', op: 'run', id: t.id, kills: r.kills, survived: r.survived });
+          if (res.ok) { this.toast(`${SOUL_NAMES[t.soul]} ${res.n}개를 얻었습니다`); this.audio?.play('coin'); } else this.toast(res.err ?? '보상을 받지 못했습니다');
+          this.open('shrine'); this.refresh(true);
+        }, { speed: t.speed, art: t.art, bolt: boltEvery(c), totem: 'obj_shrine' });
+        break;
+      }
+      case 'wup': { const r = g.act({ t: 'worship', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
+      case 'wtog': fail(g.act({ t: 'worship', op: 'toggle', id: a }).err ?? null); break;
       case 'build': {
         const r = a === 'start' ? g.act({ t: 'build', op: 'start', id: b }) : a === 'cancel' ? g.act({ t: 'build', op: 'cancel', idx: +b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' });
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
