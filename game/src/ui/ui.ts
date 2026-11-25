@@ -7,7 +7,7 @@ import { SHRINE, SHRINES, SHRINE_MAX, shrineNeed, shrineRate, shrineSettle, shri
 import { BOXES, COMPANIES, STREAK_MAX, boxCost, boxValue, orderReward, streakNow } from '../core/post';
 import { boxLock, openBoxes, trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
-import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, labRange, labSettle, labState } from '../core/lab';
+import { CHIPS, LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, chipSlots, labRange, labSettle, labState, weeklyJewels } from '../core/lab';
 import { ARENA_COOLDOWN, ARENA_TEAM, BPet, BREED, BreedUp, GENES, RAR_NAMES, SPEC, SPECIES, TERR, TERRITORIES, arenaPower, arenaWave, breedLevel, breedSettle, dnaOf, eggRate, fenceCap, keeperMult, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCost as breedUpCost, winChance } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
@@ -900,21 +900,30 @@ export class UI {
             const m = lab.members.find((x) => x.spot === i), ch = m ? acc.characters.find((x) => x.id === m.id) : null;
             const mine = m?.id === c.id, linked = m && st.linked.has(m.id);
             svg += `<g class="labspot" data-act="labspot:${i}" tabindex="0" role="button" aria-label="${ch ? `${esc(ch.name)}의 자리` : `빈 자리 ${i + 1}`}">
-              <circle cx="${p.x}" cy="${p.y}" r="9" fill="${ch ? ch.look.outfit : '#1e1a3e'}" stroke="${mine ? '#ffe066' : linked ? '#c87aff' : '#5a5a7a'}" stroke-width="${mine ? 2.4 : 1.4}" ${ch ? '' : 'stroke-dasharray="2 2"'}/>
-              ${ch ? `<text x="${p.x}" y="${p.y + 3.5}" class="labtx">${esc(ch.name.slice(0, 1))}</text><text x="${p.x}" y="${p.y + 19}" class="wsub">${esc(ch.name)}${atStation(acc, ch.id) ? '' : ' (비움)'}</text>` : `<text x="${p.x}" y="${p.y + 3.5}" class="labtx dim">+</text>`}</g>`;
+              ${ch ? `<circle cx="${p.x}" cy="${p.y}" r="9" fill="${ch.look.outfit}" stroke="${mine ? '#ffe066' : linked ? '#c87aff' : '#5a5a7a'}" stroke-width="${mine ? 2.4 : 1.4}"/><text x="${p.x}" y="${p.y + 3.5}" class="labtx">${esc(ch.name.slice(0, 1))}</text><text x="${p.x}" y="${p.y + 19}" class="wsub">${esc(ch.name)}${atStation(acc, ch.id) ? '' : ' (비움)'}</text>`
+                : `<circle cx="${p.x}" cy="${p.y}" r="7" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="1.6" fill="#4a4a7a"/>`}</g>`;
           });
           svg += '</svg>';
-          body = `<div class="wmapbox" style="background:#120e2a">${svg}</div><p class="ui-xs ui-muted">빈 자리를 누르면 ${esc(c.name)}이(가) 그 자리에 섭니다. 본체(왼쪽)의 신호 범위나 연결된 캐릭터의 범위에 닿으면 연결되고, 연결된 캐릭터의 범위 안 장치(네모)와 보석(마름모)이 켜집니다. 연결된 캐릭터는 시간마다 연구 경험치를 얻어 범위가 넓어집니다. 연구원은 성운 정거장에 머물러 있어야 일하고(다른 맵에 가면 자리를 비움), 요리사와 함께 할 수 없습니다.</p>`;
+          body = `<div class="wmapbox" style="background:#120e2a">${svg}</div><p class="ui-xs ui-muted">판의 아무 점이나 누르면 ${esc(c.name)}이(가) 그 자리에 섭니다. 본체(왼쪽)의 신호 범위나 연결된 캐릭터의 범위에 닿으면 연결되고, 연결된 캐릭터의 범위 안 장치(네모)와 보석(마름모)이 켜집니다. 연결된 캐릭터는 시간마다 연구 경험치를 얻어 범위가 넓어집니다. 연구원은 성운 정거장에 머물러 있어야 일하고(다른 맵에 가면 자리를 비움), 요리사와 함께 할 수 없습니다.</p>`;
+        } else if (tab === 2) {
+          const mine = lab.chips[c.id] ?? [];
+          body = `<p class="ui-sm" style="margin-top:0">${esc(c.name)}의 칩 <b class="ui-accent">${mine.length}/${chipSlots(c)}</b> <span class="ui-xs ui-muted">(연구 Lv.40·80에 한 칸씩)</span></p>` + CHIPS.map((d) => {
+            const on = mine.includes(d.id), have = lab.chipBag.filter((x) => x === d.id).length, can = d.cost.every(([sp, k]) => (acc.cook.spices[sp] ?? 0) >= k);
+            const cost = d.cost.map(([sp, k]) => `<span class="ui-xs ${(acc.cook.spices[sp] ?? 0) >= k ? '' : 'ui-bad'}">${ui(sp, 'tic')}${k}</span>`).join(' ');
+            return `<div class="ui-row line ${on ? 'sel' : ''}">${ui('obj_lab', 'mi')}<div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">가진 것 ${have}</span>${on ? ' <span class="ui-xs ui-good">끼움</span>' : ''}<div class="ui-sm ui-good">${d.desc}</div><div class="costrow">${cost}</div></div>
+              <button class="ui-btn sm" data-act="labchip:${d.id}" ${can ? '' : 'disabled'}>만들기</button><button class="ui-btn sm ${on ? 'primary' : ''}" data-act="labchipon:${d.id}" ${on || have ? '' : 'disabled'}>${on ? '빼기' : '끼우기'}</button></div>`;
+          }).join('');
         } else {
+          const week = weeklyJewels(acc.petSeed, now);
           body = LAB_NODES.map((n) => {
-            const on = st.on.has(n.id), locked = n.jewel && !lab.jewels.includes(n.id);
+            const on = st.on.has(n.id), locked = n.jewel && !lab.jewels.includes(n.id), offer = n.jewel && week.includes(n.id);
             const cost = locked && n.cost ? n.cost.map(([s, k]) => `<span class="ui-xs ${(acc.cook.spices[s] ?? 0) >= k ? '' : 'ui-bad'}">${ui(s, 'tic')}${k}</span>`).join(' ') : '';
             const can = locked && n.cost?.every(([s, k]) => (acc.cook.spices[s] ?? 0) >= k);
             return `<div class="ui-row line ${on ? '' : 'locked'}">${ui(`lab_${n.id}`, 'mi')}<div class="ui-grow"><b>${n.name}</b> <span class="ui-xs ${on ? 'ui-good' : 'ui-muted'}">${locked ? '잠김' : on ? '켜짐' : '꺼짐(범위 밖)'}</span><div class="ui-sm ${on ? 'ui-good' : 'ui-muted'}">${n.desc}</div>${cost ? `<div class="costrow">${cost}</div>` : ''}</div>
-              ${locked ? `<button class="ui-btn sm primary" data-act="labjewel:${n.id}" ${can ? '' : 'disabled'}>열기</button>` : ''}</div>`;
-          }).join('') + `<p class="ui-xs ui-muted">보석은 요리 향신료로 엽니다. 연 보석도 연결된 캐릭터의 범위 안에 있어야 켜집니다.</p>`;
+              ${locked ? (offer ? `<button class="ui-btn sm primary" data-act="labjewel:${n.id}" ${can ? '' : 'disabled'}>열기</button>` : '<span class="ui-xs ui-muted">이번 주 상점에 없음</span>') : ''}</div>`;
+          }).join('') + `<p class="ui-xs ui-muted">장치는 다른 시스템을 몇 배로 키웁니다. 보석은 매주 바뀌는 보석 상점(이번 주: ${week.map((id) => LAB_NODE[id].name).join(', ')})에 나온 것만 요리 향신료로 엽니다. 장치·보석 모두 연결된 캐릭터의 범위 안에 있어야 켜집니다.</p>`;
         }
-        return win('연구실', `${head}${tabs(['연구판', '장치·보석'], tab, tabAct, ['obj_lab', 'lab_j_ruby'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('연구실', `${head}${tabs(['연구판', '장치·보석', '칩'], tab, tabAct, ['obj_lab', 'lab_j_ruby', 'obj_lab'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'nest': {
         const acc = g.acc, b = acc.breed, now = Date.now();
@@ -1819,6 +1828,8 @@ export class UI {
         break;
       }
       case 'labspot': { const r = g.act({ t: 'lab', op: 'place', spot: +a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
+      case 'labchip': { const r = g.act({ t: 'lab', op: 'chip', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
+      case 'labchipon': fail(g.act({ t: 'lab', op: 'chipOn', id: a }).err ?? null); break;
       case 'lableave': fail(g.act({ t: 'lab', op: 'leave' }).err ?? null); break;
       case 'labjewel': { const r = g.act({ t: 'lab', op: 'jewel', id: a }); if (r.ok) { this.audio?.play('craft'); this.toast(`${LAB_NODE[a].name}을(를) 열었습니다`); } else fail(r.err ?? null); break; }
       case 'bhatch': { const n0 = g.acc.breed.pets.length; const r = g.act({ t: 'breed', op: 'hatch' }); if (r.ok) { this.audio?.play('coin'); const p = g.acc.breed.pets[n0]; this.toast(`${SPEC[p.sp].name}이(가) 태어났습니다! 힘 ${p.power}`); } else fail(r.err ?? null); break; }

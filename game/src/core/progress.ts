@@ -11,7 +11,7 @@ import { alchBonus } from './alchemy';
 import { buildBonus } from './build';
 import { cookBonus } from './cooking';
 import { breedBonus } from './breeding';
-import { labBonus } from './lab';
+import { labBonus , chipBonus, labMult } from './lab';
 import { prayerBonus } from './worship';
 import { postBonus } from './post';
 import { shinyBonus } from './traps';
@@ -199,11 +199,12 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   // 우체국 택배 상자(캐릭터마다)
   postBonus(c, (k, v) => { b[k] += v; });
   shinyBonus(a, (k, v) => { b[k] += v; });
-  shrineBonus(c, a, (k, v) => { b[k] += v; });
+  { const m = labMult(a, 'shrines'); shrineBonus(c, a, (k, v) => { b[k] += v * m; }); }
+  chipBonus(c, a, (k, v) => { b[k] += v; });
   b.dmg += deathBonus(a);
   obolBonus(c, a, (k, v) => { b[k] += v; });
   // 연금술(거품·약병)
-  alchBonus(a.alch, (k, v) => { b[k] += v; }, c);
+  { const m = labMult(a, 'bubbles'); alchBonus(a.alch, (k, v) => { b[k] += v * m; }, c); }
   buildBonus(a.build, (k, v) => { b[k] += v; });
   cookBonus(a.cook, (k, v) => { b[k] += v; });
   breedBonus(a.breed, (k, v) => { b[k] += v; });

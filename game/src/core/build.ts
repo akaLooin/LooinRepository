@@ -7,6 +7,7 @@ import { BonusKey, ITEMS, classSkillMult } from './data';
 import type { Account, Character } from './state';
 import { gainSkillXp, haveMat, spendMat } from './state';
 import { hash } from './companions';
+import { labMult } from './lab';
 
 export interface BuildingDef { id: string; name: string; eff: BonusKey; per: number; unit: string; max: number; mats: [string, number][]; pts: number }
 export const BUILDINGS: BuildingDef[] = [
@@ -291,8 +292,9 @@ function specialSettle(acc: Pick<Account, 'build' | 'characters'> & Partial<Pick
     const st = acc.storage?.find((x) => x.id === d.item);
     const can = Math.min(cycles, st ? Math.floor(st.qty / d.per) : 0);
     if (st && can > 0) { st.qty -= can * d.per; if (st.qty <= 0) acc.storage!.splice(acc.storage!.indexOf(st), 1); }
-    if (d.need) { const pv = Math.min(can, b.salts[d.need] ?? 0); b.salts[d.need] = (b.salts[d.need] ?? 0) - pv; b.salts[d.id] = (b.salts[d.id] ?? 0) + pv * (r.rank + 1); }
-    else b.salts[d.id] = (b.salts[d.id] ?? 0) + can * (r.rank + 1);
+    const lm = labMult(acc as Partial<Pick<Account, 'lab' | 'characters'>>, 'refinery');
+    if (d.need) { const pv = Math.min(can, b.salts[d.need] ?? 0); b.salts[d.need] = (b.salts[d.need] ?? 0) - pv; b.salts[d.id] = (b.salts[d.id] ?? 0) + pv * (r.rank + 1) * lm; }
+    else b.salts[d.id] = (b.salts[d.id] ?? 0) + can * (r.rank + 1) * lm;
   }
   // 3D 프린터: 자원을 창고로 복사
   b.printer.forEach((p, i) => {

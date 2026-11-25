@@ -961,7 +961,8 @@ describe('번식(번식 둥지)', () => {
   });
 });
 
-import { labState as lSt, labMult as lMult, LAB_NODE as LN } from '../src/core/lab';
+import { labState as lSt, labMult as lMult, LAB_NODE as LN, nearestSpot as nSpot, weeklyJewels as wJ } from '../src/core/lab';
+import { stampBonus as stB } from '../src/core/stamps';
 import { kitchenSpeed as kSpd } from '../src/core/cooking';
 describe('연구실', () => {
   const H = 3_600_000;
@@ -974,24 +975,28 @@ describe('연구실', () => {
     const { acc, c } = ready(); c.maxWorld = 3;
     expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, H).ok).toBe(false);
   });
-  it('본체 범위에 선 캐릭터가 연결되고, 그 범위의 장치가 켜져 보너스가 생긴다', () => {
+  it('본체 범위에 선 캐릭터가 연결되고, 그 범위의 장치가 켜져 다른 시스템이 몇 배가 된다', () => {
     const { acc, c } = ready();
-    const xp0 = derive(c, acc).xpMult;
-    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, H).ok).toBe(true);
+    const sp = nSpot(70, 50);
+    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: sp }, H).ok).toBe(true);
     const st = lSt(acc);
     expect(st.linked.has(c.id)).toBe(true);
-    expect(st.on.has('n_xp')).toBe(true);
-    expect(derive(c, acc).xpMult).toBeGreaterThan(xp0);
     // 자동 국자: 주방 속도 ×1.25
     expect(st.on.has('n_kitchen')).toBe(true);
     expect(kSpd(acc, acc.cook.kitchens[0])).toBeCloseTo(1.25, 5);
+    // 우표 증폭기: 우표 ×1.5
+    acc.stamps.stamp_hp = 5;
+    const hp0 = stB(acc).hp;
+    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: nSpot(70, 90) }, H).ok).toBe(true);
+    expect(lSt(acc).on.has('n_xp')).toBe(true);
+    expect(stB(acc).hp).toBeCloseTo(hp0 * 1.5, 5);
     // 같은 자리에 다른 캐릭터는 못 선다
-    expect(applyAction(acc, 1, { t: 'lab', op: 'place', spot: 0 }, H).ok).toBe(false);
+    expect(applyAction(acc, 1, { t: 'lab', op: 'place', spot: nSpot(70, 90) }, H).ok).toBe(false);
   });
   it('연결은 사슬로 이어지고, 연구 레벨이 오르면 범위가 넓어진다', () => {
     const { acc, c, c2 } = ready();
-    applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, H);
-    applyAction(acc, 1, { t: 'lab', op: 'place', spot: 3 }, H);
+    applyAction(acc, 0, { t: 'lab', op: 'place', spot: nSpot(70, 90) }, H);
+    applyAction(acc, 1, { t: 'lab', op: 'place', spot: nSpot(130, 90) }, H);
     expect(lSt(acc).linked.has(c2.id)).toBe(false); // 너무 멀다
     c2.skills.lab = { lv: 10, xp: 0 };
     expect(lSt(acc).linked.has(c2.id)).toBe(true);
@@ -1004,13 +1009,16 @@ describe('연구실', () => {
     expect(applyAction(acc, 1, { t: 'lab', op: 'leave' }, H * 3).ok).toBe(true);
     expect(acc.lab.members.length).toBe(1);
   });
-  it('보석은 향신료로 열고, 범위 안이면 켜진다', () => {
+  it('보석은 이번 주 상점에 나온 것만 향신료로 열고, 범위 안이면 켜진다', () => {
     const { acc } = ready();
-    applyAction(acc, 0, { t: 'lab', op: 'place', spot: 1 }, H);
+    acc.petSeed = 1; while (!wJ(acc.petSeed, H).includes('j_ruby')) acc.petSeed++;
+    applyAction(acc, 0, { t: 'lab', op: 'place', spot: nSpot(70, 130) }, H);
     expect(applyAction(acc, 0, { t: 'lab', op: 'jewel', id: 'j_ruby' }, H).ok).toBe(false);
     for (const [s, k] of LN.j_ruby.cost!) acc.cook.spices[s] = k;
+    const off = ['j_amethyst', 'j_ruby', 'j_topaz', 'j_emerald', 'j_sapphire', 'j_pearl'].find((id) => !wJ(acc.petSeed, H).includes(id))!;
+    for (const [s, k] of LN[off].cost!) acc.cook.spices[s] = (acc.cook.spices[s] ?? 0) + k;
+    expect(applyAction(acc, 0, { t: 'lab', op: 'jewel', id: off }, H).ok).toBe(false); // 이번 주에 없는 보석
     expect(applyAction(acc, 0, { t: 'lab', op: 'jewel', id: 'j_ruby' }, H).ok).toBe(true);
-    expect(acc.cook.spices.sp_salt).toBe(0);
     expect(lSt(acc).on.has('j_ruby')).toBe(true);
     expect(lMult(acc, 'labxp')).toBe(1);
   });

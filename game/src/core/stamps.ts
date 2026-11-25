@@ -2,6 +2,7 @@
 import { BRIBES, BribeEff, ITEMS, STAMPS, STAMP_GROW, STAMP_LV, StampDef, StampEff } from './data';
 import type { Account, Character } from './state';
 import { countItem, haveMat, removeItem } from './state';
+import { labMult } from './lab';
 
 export const STAMP_BY_ID: Record<string, StampDef> = Object.fromEntries(STAMPS.map((s) => [s.id, s]));
 
@@ -14,7 +15,9 @@ export function stampValue(s: StampDef, lv: number): number {
 /** 계정의 우표 효과 합(효과 종류별) */
 export function stampBonus(acc: Partial<Pick<Account, 'stamps'>>): Record<StampEff, number> {
   const out = { dmg: 0, hp: 0, def: 0, acc: 0, crit: 0, mining: 0, chopping: 0, drop: 0, coins: 0, xp: 0, afk: 0, fishing: 0, catching: 0, str: 0, agi: 0, wis: 0, luk: 0, card: 0, hpPct: 0 } as Record<StampEff, number>;
-  for (const s of STAMPS) out[s.eff] += stampValue(s, acc.stamps?.[s.id] ?? 0);
+  // 연구실 우표 증폭기가 켜져 있으면 모든 우표 ×1.5
+  const m = labMult(acc as Partial<Pick<Account, 'lab' | 'characters'>>, 'stamps');
+  for (const s of STAMPS) out[s.eff] += stampValue(s, acc.stamps?.[s.id] ?? 0) * m;
   return out;
 }
 

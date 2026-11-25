@@ -6,7 +6,7 @@ import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook } from './build';
 import { placeObol, takeObol } from './obols';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
-import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
+import { buyChip, labSettle, leaveLab, placeInLab, toggleChip, unlockJewel } from './lab';
 import { BreedUp, breedSettle, fightArena, hatchEgg, releasePet, toggleArena, toggleFence, toggleKeeper, toggleTeam, upBreed } from './breeding';
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen, useLadle } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
@@ -86,7 +86,7 @@ export type Action =
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit' | 'staff' | 'cog' | 'trash' | 'refine' | 'rank' | 'print' | 'book' | 'atom'; id?: string; idx?: number; slot?: number }
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
-  | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
+  | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel' | 'chip' | 'chipOn'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up' | 'keeper' | 'arena' | 'fight'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef' | 'ladle'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number; box?: string }
@@ -200,6 +200,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'place') return res(placeInLab(acc, c, a.spot ?? -1, now));
       if (a.op === 'leave') return res(leaveLab(acc, c, now));
       if (a.op === 'jewel') return res(unlockJewel(acc, a.id ?? '', now));
+      if (a.op === 'chip') return res(buyChip(acc, a.id ?? ''));
+      if (a.op === 'chipOn') return res(toggleChip(acc, c, a.id ?? ''));
       return fail('없는 행동');
     }
     case 'breed': {

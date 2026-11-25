@@ -5,7 +5,7 @@ import { AFK_MAX_SECONDS, CRYSTAL_CHANCE, FAMILY, FAMILY_MIN, MAX_CHARACTERS, MO
 import { familyBest, statueLv } from '../src/core/progress';
 import { addItem, createCharacter, derive, newAccount } from '../src/core/state';
 import { chefMult } from '../src/core/cooking';
-import { labState } from '../src/core/lab';
+import { labState, nearestSpot } from '../src/core/lab';
 import { computeAfk } from '../src/core/afk';
 import { Rng } from '../src/core/rng';
 
@@ -63,7 +63,7 @@ describe('요리사·연구원은 그 자리에 머물러야 일한다', () => {
     c.mapId = 'moondust';
     expect(chefMult(acc)).toBe(1);
     c.mapId = 'nebtown';
-    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, 2000).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: nearestSpot(70, 90) }, 2000).ok).toBe(true);
     expect(acc.cook.chefs).not.toContain(c.id);
     expect(labState(acc).linked.has(c.id)).toBe(true);
     c.mapId = 'moondust';
@@ -253,5 +253,20 @@ describe('번식(원작에 맞춤)', () => {
     expect(r.ok).toBe(true); expect(r.n).toBeGreaterThan(3);
     expect(derive(c, acc).dmg).toBeGreaterThan(d0);
     expect(applyAction(acc, 0, { t: 'breed', op: 'fight' }, 2000).ok).toBe(false); // 한 시간에 한 번
+  });
+});
+
+import { CHIP as CH, buyChip, toggleChip } from '../src/core/lab';
+describe('연구실 칩', () => {
+  it('향신료로 만들고 캐릭터마다 끼우면 효과, 칸은 연구 레벨로', () => {
+    const { acc, c } = setup();
+    for (const [s, k] of CH.chip_dmg.cost) acc.cook.spices[s] = k * 2;
+    expect(buyChip(acc, 'chip_dmg')).toBeNull(); expect(buyChip(acc, 'chip_dmg')).toBeNull();
+    const d0 = derive(c, acc).dmg;
+    expect(toggleChip(acc, c, 'chip_dmg')).toBeNull();
+    expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+    expect(toggleChip(acc, c, 'chip_dmg')).toBeNull(); // 빼기
+    expect(toggleChip(acc, c, 'chip_dmg')).toBeNull();
+    expect(acc.lab.chipBag.length).toBe(1);
   });
 });

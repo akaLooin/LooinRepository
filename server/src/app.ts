@@ -88,7 +88,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('game'), kind: z.enum(['chop', 'mine', 'spike']), score: z.number().finite().min(0).max(1000) }),
   z.object({ t: z.literal('alch'), op: z.enum(['start', 'bubble', 'vial', 'liquid', 'assign', 'big']), id: z.string().max(40).optional() }),
   z.object({ t: z.literal('worship'), op: z.enum(['run', 'up', 'toggle']), id, kills: z.number().int().min(0).max(1000).optional(), survived: z.boolean().optional() }),
-  z.object({ t: z.literal('lab'), op: z.enum(['visit', 'place', 'leave', 'jewel']), spot: z.number().int().min(0).max(20).optional(), id: id.optional() }),
+  z.object({ t: z.literal('lab'), op: z.enum(['visit', 'place', 'leave', 'jewel', 'chip', 'chipOn']), spot: z.number().int().min(0).max(300).optional(), id: id.optional() }),
   z.object({ t: z.literal('breed'), op: z.enum(['visit', 'hatch', 'release', 'fence', 'team', 'up', 'keeper', 'arena', 'fight']), uid: z.number().int().min(0).max(1e9).optional(), terr: id.optional(), k: z.enum(['nest', 'speed', 'rarity', 'fence']).optional() }),
   z.object({ t: z.literal('cook'), op: z.enum(['visit', 'claim', 'meal', 'recipe', 'up', 'buy', 'lvl', 'chef', 'ladle']), idx: z.number().int().min(0).max(9).optional(), id: z.string().max(40).optional(), sp: z.array(id).max(4).optional(), k: z.enum(['spd', 'fire', 'luck']).optional() }),
   z.object({ t: z.literal('obol'), op: z.enum(['place', 'take']), fam: z.boolean(), idx: z.number().int().min(0).max(20), id: id.optional() }),
