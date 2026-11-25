@@ -4,6 +4,7 @@ import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
 import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
 import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen } from './cooking';
@@ -82,6 +83,7 @@ export type Action =
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
+  | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
@@ -221,6 +223,13 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
         case 'chef': return res(toggleChef(acc, c.id, now));
       }
       return fail('없는 행동');
+    }
+    case 'shrine': {
+      if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 공방 마당에서 지을 수 있습니다');
+      if (a.op === 'visit') { shrineSettle(acc, now); return ok(); }
+      if (a.op === 'build') return res(buildShrine(acc, c, a.id ?? '', now));
+      if (a.op === 'place') return res(placeShrine(acc, c, a.id ?? '', now));
+      return res(pickShrine(acc, a.id ?? '', now));
     }
     case 'build': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 공방 마당에서 할 수 있습니다');

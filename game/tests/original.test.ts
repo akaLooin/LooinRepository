@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applyAction } from '../src/core/actions';
 import { AFK_MAX_SECONDS, CRYSTAL_CHANCE, FAMILY, FAMILY_MIN, MAX_CHARACTERS, MONSTERS, PRODUCTS, crystalOf, statueNeed } from '../src/core/data';
 import { familyBest, statueLv } from '../src/core/progress';
-import { addItem, createCharacter, newAccount } from '../src/core/state';
+import { addItem, createCharacter, derive, newAccount } from '../src/core/state';
 import { chefMult } from '../src/core/cooking';
 import { labState } from '../src/core/lab';
 import { computeAfk } from '../src/core/afk';
@@ -87,4 +87,27 @@ describe('자동 줍기·방치 상한·모루', () => {
     expect(r.capped).toBe(0);
   });
   it('모루 생산품은 11가지', () => expect(PRODUCTS.length).toBe(11));
+});
+
+import { SHRINE, shrineValue } from '../src/core/shrines';
+describe('사당', () => {
+  it('지어서 사냥터에 놓으면 그 맵의 캐릭터만 효과를 받고, 놓여 있는 동안 자란다', () => {
+    const acc = newAccount(); createCharacter(acc, 'a', look, 0); createCharacter(acc, 'b', look, 0);
+    const [c, c2] = acc.characters;
+    c.maxWorld = 3; c.mapId = 'meadow'; c2.mapId = 'town';
+    acc.coins = 1e6;
+    for (const [m, n] of SHRINE.sh_valor.mats) acc.storage.push({ id: m, qty: n });
+    expect(applyAction(acc, 0, { t: 'shrine', op: 'build', id: 'sh_valor' }, 1000).ok).toBe(true);
+    const d0 = derive(c, acc).dmg;
+    expect(applyAction(acc, 0, { t: 'shrine', op: 'place', id: 'sh_valor' }, 1000).ok).toBe(true);
+    expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+    const e0 = derive(c2, acc).dmg; c2.mapId = 'meadow';
+    expect(derive(c2, acc).dmg).toBeGreaterThan(e0);
+    c2.mapId = 'town';
+    applyAction(acc, 0, { t: 'shrine', op: 'visit' }, 1000 + 50 * 3_600_000);
+    expect(acc.shrines.own.sh_valor.lv).toBeGreaterThan(1);
+    expect(shrineValue(SHRINE.sh_valor, 2)).toBeGreaterThan(shrineValue(SHRINE.sh_valor, 1));
+    c.mapId = 'town';
+    expect(applyAction(acc, 0, { t: 'shrine', op: 'place', id: 'sh_valor' }, 2000).ok).toBe(false);
+  });
 });

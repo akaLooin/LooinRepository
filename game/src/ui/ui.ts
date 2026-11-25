@@ -2,6 +2,7 @@
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
+import { SHRINE, SHRINES, SHRINE_MAX, shrineNeed, shrineRate, shrineSettle, shrineValue } from '../core/shrines';
 import { BOXES, COMPANIES, STREAK_MAX, boxCost, boxValue, orderReward, streakNow } from '../core/post';
 import { boxLock, openBoxes, trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
@@ -1040,6 +1041,21 @@ export class UI {
               <button class="ui-btn sm primary" data-act="build:start:${d.id}" ${!max && !busy && free && enough ? '' : 'disabled'}>${max ? '최대' : busy ? '공사 중' : '짓기'}</button></div>`;
           }).join('');
           body = `${jobs}<h3>건물</h3>${list}<p class="ui-xs ui-muted">재료는 가방과 창고에서 함께 씁니다. 공사는 접속하지 않아도 진행되고, 다 지어지면 계정의 모든 캐릭터에게 효과가 생깁니다.</p>`;
+        } else if (tab === 2) {
+          shrineSettle(acc, now);
+          const here = MAPS[c.mapId], canHere = !TOWNS.includes(c.mapId) && here.spawns.length > 0;
+          body = `<p class="ui-sm" style="margin-top:0">사당은 놓인 맵에 있는 캐릭터에게만 효과를 줍니다. 놓여 있는 동안 자라고, 그 맵에 캐릭터가 많을수록 빨리 자랍니다. 지금 <b>${esc(c.name)}</b>은(는) <b>${here.name}</b>에 있습니다${canHere ? '' : '(사냥터에만 놓을 수 있습니다)'}.</p>` + SHRINES.map((d) => {
+            const st = acc.shrines.own[d.id], v = (x: number) => Math.round(x * 100) / 100;
+            if (!st) {
+              const ok = acc.coins >= d.coins && d.mats.every(([m, n]) => haveMat(acc, c, m) >= n);
+              const cost = d.mats.map(([m, n]) => `<span class="ui-xs ${haveMat(acc, c, m) >= n ? '' : 'ui-bad'}">${icon(m)}${n}</span>`).join(' ') + ` <span class="ui-xs ${acc.coins >= d.coins ? '' : 'ui-bad'}">${ui('ui_coin', 'tic')}${short(d.coins)}</span>`;
+              return `<div class="ui-row line locked">${ui('obj_shrine', 'mi')}<div class="ui-grow"><b>${d.name}</b><div class="ui-sm ui-muted">${ALCH_LABEL[d.eff]} +${v(shrineValue(d, 1))}${d.unit}부터</div><div class="costrow">${cost}</div></div><button class="ui-btn sm primary" data-act="shrine:build:${d.id}" ${ok ? '' : 'disabled'}>짓기</button></div>`;
+            }
+            const need = shrineNeed(st.lv), max = st.lv >= SHRINE_MAX, onHere = st.map === c.mapId;
+            return `<div class="ui-row line ${onHere ? 'sel' : ''}">${ui('obj_shrine', 'mi')}<div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">Lv.${st.lv}</span> <span class="ui-xs ${st.map ? 'ui-good' : 'ui-muted'}">${st.map ? MAPS[st.map].name : '창고에 보관 중'}</span>
+              <div class="ui-sm ui-good">${ALCH_LABEL[d.eff]} +${v(shrineValue(d, st.lv))}${d.unit}</div>${max ? '' : bar('skill', Math.floor(st.xp), need, `${Math.floor(st.xp)} / ${need} · 시간당 ${shrineRate(acc, st)}`)}</div>
+              ${onHere ? `<button class="ui-btn sm" data-act="shrine:pick:${d.id}">거두기</button>` : `<button class="ui-btn sm primary" data-act="shrine:place:${d.id}" ${canHere ? '' : 'disabled'}>여기 놓기</button>`}</div>`;
+          }).join('') + '<p class="ui-xs ui-muted">어느 맵에서든 메뉴의 시설 바로가기로 이 창을 열어, 지금 서 있는 맵에 사당을 놓을 수 있습니다.</p>';
         } else {
           const rc = rateUpCost(b), sc = BUILD.slotCost[b.up.slots];
           body = `<div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>튼튼한 비계</b> <span class="ui-xs ui-accent">${b.up.rate}/${BUILD.rateUpMax}</span><div class="ui-sm ui-muted">건설 속도 +${b.up.rate * BUILD.rateUp * 100}%${b.up.rate < BUILD.rateUpMax ? ` → +${(b.up.rate + 1) * BUILD.rateUp * 100}%` : ''}</div></div>
@@ -1048,7 +1064,7 @@ export class UI {
               <button class="ui-btn sm" data-act="build:slots" ${sc !== undefined && acc.coins >= sc ? '' : 'disabled'}>${sc !== undefined ? `${ui('ui_coin', 'tic')} ${sc.toLocaleString()}` : '최대'}</button></div>
             <p class="ui-xs ui-muted">건설 레벨은 건물이 완성될 때마다 오르고, 레벨마다 건설 속도가 ${BUILD.ratePerLv * 100}%씩 빨라집니다.</p>`;
         }
-        return win('공방 마당', `${head}${tabs(['건물', '작업장'], tab, tabAct, ['obj_build', 'ui_up'])}<div class="ui-tabpanel">${body}</div>`);
+        return win('공방 마당', `${head}${tabs(['건물', '작업장', '사당'], tab, tabAct, ['obj_build', 'ui_up', 'obj_shrine'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'traps': {
         const tr = c.traps, sk = c.skills.trapping, open = trapSlots(sk.lv), now = Date.now(), need = skillXpToNext(sk.lv);
@@ -1684,6 +1700,11 @@ export class UI {
       }
       case 'wup': { const r = g.act({ t: 'worship', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'wtog': fail(g.act({ t: 'worship', op: 'toggle', id: a }).err ?? null); break;
+      case 'shrine': {
+        const r = g.act({ t: 'shrine', op: a as 'build' | 'place' | 'pick', id: b });
+        if (r.ok) { this.audio?.play('craft'); this.toast(a === 'build' ? `${SHRINE[b].name}을(를) 지었습니다` : a === 'place' ? `${SHRINE[b].name}을(를) 이 맵에 놓았습니다` : `${SHRINE[b].name}을(를) 거뒀습니다`); } else fail(r.err ?? null);
+        break;
+      }
       case 'build': {
         const r = a === 'start' ? g.act({ t: 'build', op: 'start', id: b }) : a === 'cancel' ? g.act({ t: 'build', op: 'cancel', idx: +b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' });
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
