@@ -13,6 +13,8 @@ var size := Vector2(6, 6)
 var remove_me := false
 var gravity := 0.0
 var delay := 0          # 0보다 크면 그동안 멈춰서 예고만 (판정 없음)
+var pierce := false
+var hit_ids: Dictionary = {}
 var homing := 0.0       # 플레이어 쪽으로 꺾는 정도
 var ground_y := 238.0
 
@@ -41,6 +43,9 @@ func tick() -> void:
 		if kind == "bell":
 			Sfx.play("bell", 0.15)
 			world.shake(2.0)
+		if kind == "sword":
+			Sfx.play("crit", 0.0)
+			world.shake(5.0)
 	life -= 1
 	if life <= 0 or position.x < -20 or position.x > float(world.width) + 20:
 		remove_me = true
@@ -59,6 +64,20 @@ func _draw() -> void:
 		draw_rect(Rect2(-9, -4, 18, 3), Color("6b4f2a"))
 		draw_rect(Rect2(-2, -1, 4, 2), Tk.INK)
 		draw_rect(Rect2(-5, -12, 3, 6), Color("b48f55"))
+		return
+	if kind == "slash":
+		var dir := 1.0 if vel.x >= 0.0 else -1.0
+		for i in range(5):
+			var k := absf(i - 2.0)
+			draw_rect(Rect2((4.0 - k * 3.0) * dir - 2.0, -22 + i * 5, 4, 5), Color("f4f8fc"))
+			draw_rect(Rect2((1.0 - k * 3.0) * dir - 2.0, -22 + i * 5, 3, 5), Color("b4c0cf", 0.8))
+		return
+	if kind == "sword":
+		draw_rect(Rect2(-2, -30, 4, 26), Color("f4f8fc"))
+		draw_rect(Rect2(1, -30, 1, 26), Color("b4c0cf"))
+		draw_rect(Rect2(-5, -34, 10, 3), Tk.GOLD)
+		draw_rect(Rect2(-1, -40, 2, 6), Tk.LEATHER)
+		draw_rect(Rect2(-6, -60, 12, 30), Color(Tk.GOLD, 0.18))
 		return
 	if kind == "note":
 		draw_rect(Rect2(-3, -5, 5, 4), Tk.INK)

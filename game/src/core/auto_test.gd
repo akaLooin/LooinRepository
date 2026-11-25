@@ -7,6 +7,7 @@ var main: Node
 var shots_dir := ""
 var god := false
 var hard := false
+var only_skill := 0   # --skill N: 봇이 그 필살기만 쓴다
 var dungeon_id := "dgn_01"
 var _hold := 0
 var charge_fired := 0
@@ -19,6 +20,9 @@ var _wall := 0
 
 func begin(args: PackedStringArray) -> void:
 	god = args.has("--god")
+	var si := args.find("--skill")
+	if si >= 0:
+		only_skill = int(args[si + 1])
 	if args.has("--hard"):
 		hard = true
 	if args.has("--unit"):
@@ -78,8 +82,8 @@ func _menu_tour() -> void:
 	GameState.char_data()["pet"] = "pet_bookworm"
 	Meta.add_item("eq_wpn_02")
 	Meta.add_item("eq_top_03")
-	Meta.learn("cls_tbd_01", "sk_mp2")
-	Meta.learn("cls_tbd_01", "sk_mp3")
+	Meta.learn("cls_silver", "sk_mp2")
+	Meta.learn("cls_silver", "sk_mp3")
 	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map", "room", "loading"]
 	if dungeon_id != "dgn_01":
 		tour = ["map"]
@@ -108,6 +112,7 @@ func shot(name: String) -> void:
 
 func on_dungeon(r: DungeonRun) -> void:
 	run = r
+	r.finished.connect(func(_res): print("[autotest] used ", JSON.stringify(r.player.used)))
 	run.player.god = god
 	k = 0
 
@@ -149,6 +154,9 @@ func _physics_process(_d: float) -> void:
 		"stage1_combat": run.stage_id.ends_with("_1") and run.ticks == 420,
 		"stage2_branch": run.stage_id.ends_with("_2") and not run.portals.is_empty(),
 		"boss": run.stage_id.ends_with("_boss") and run.ticks % 60 == 0 and run.boss() != null and run.boss().hp < run.boss().max_hp * 0.8 and run.boss().state == "atk",
+		"guard": run.player.state == "guard" and run.player.t == 10,
+		"rain": run.player.cur_atk_id == "atk_mp3" and run.player.state == "atk" and run.player.t == 62,
+		"slash": run.projectiles.any(func(pr): return pr.kind == "slash" and pr.life == 62),
 		"cutin": run.hud._cutin_t > 0 and run.hud._cutin_t < run.hud._cutin_max - 12,
 	}
 	for m in marks:
@@ -210,11 +218,15 @@ func _bot_input() -> Dictionary:
 				_hold = 0
 			return f
 		_hold = 0
+	if only_skill > 0:
+		if p.mp >= float(only_skill) and k % 40 == 0 and absf(dx) < 60.0:
+			f["skill%d_p" % only_skill] = true
+		return f
 	if p.mp >= 3.0 and k % 10 == 0:
 		f["skill3_p"] = true
-	elif p.mp >= 2.0 and p.mp < 3.0 and k % 300 == 0:
+	elif p.mp >= 2.0 and p.mp < 3.0 and k % 120 == 0:
 		f["skill2_p"] = true
-	elif p.mp >= 1.0 and p.mp < 2.0 and k % 260 == 0:
+	elif p.mp >= 1.0 and p.mp < 2.0 and k % 200 == 0:
 		f["skill1_p"] = true
 	if p.hp < p.max_hp / 3 and k % 30 == 0:
 		f["potion_p"] = true

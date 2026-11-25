@@ -1,14 +1,106 @@
 {
-  "tree_tbd_01": {
+  "tree_silver": {
     "nodes": {
-      "sk_mp1": { "name": "책장 회오리", "kind": "active", "max": 3, "req_lv": 1, "pre": [], "desc": "MP 1칸 필살기. 레벨당 피해 +15%" },
-      "sk_mp2": { "name": "책갈피 돌격", "kind": "active", "max": 3, "req_lv": 3, "pre": ["sk_mp1"], "desc": "MP 2칸 필살기. 레벨당 피해 +15%" },
-      "sk_mp3": { "name": "대단원", "kind": "active", "max": 3, "req_lv": 5, "pre": ["sk_mp2"], "desc": "MP 3칸 필살기. 레벨당 피해 +15%" },
-      "ps_atk": { "name": "단련", "kind": "passive", "max": 5, "req_lv": 1, "pre": [], "desc": "공격력 +3%/레벨", "effect": { "atk_pct": 0.03 } },
-      "ps_hp": { "name": "두꺼운 표지", "kind": "passive", "max": 5, "req_lv": 1, "pre": [], "desc": "최대 HP +5%/레벨", "effect": { "hp_pct": 0.05 } },
-      "ps_mp": { "name": "잉크 흡수", "kind": "passive", "max": 3, "req_lv": 4, "pre": ["ps_atk"], "desc": "MP 획득량 +10%/레벨", "effect": { "mp_gain_pct": 0.1 } },
-      "ps_back": { "name": "뒤표지 읽기", "kind": "passive", "max": 3, "req_lv": 5, "pre": ["ps_atk"], "desc": "백어택 피해 +10%/레벨", "effect": { "back_pct": 0.1 } },
-      "ps_air": { "name": "공중 각주", "kind": "passive", "max": 1, "req_lv": 7, "pre": ["ps_hp"], "desc": "공중 점프 +1회", "effect": { "air_jumps": 1 } }
+      "sk_mp1": {
+        "name": "은빛 검기",
+        "kind": "active",
+        "max": 3,
+        "req_lv": 1,
+        "pre": [],
+        "desc": "MP 1칸. 관통 검기 + 방어 -30% 6초. 레벨당 피해 +15%"
+      },
+      "sk_mp2": {
+        "name": "은빛 수호",
+        "kind": "active",
+        "max": 3,
+        "req_lv": 3,
+        "pre": [
+          "sk_mp1"
+        ],
+        "desc": "MP 2칸. 방어 자세 중 맞으면 충격파. 레벨당 피해 +15%"
+      },
+      "sk_mp3": {
+        "name": "은빛 깃털비",
+        "kind": "active",
+        "max": 3,
+        "req_lv": 5,
+        "pre": [
+          "sk_mp2"
+        ],
+        "desc": "MP 3칸. 칼날 비 + 낙하 검. 레벨당 피해 +15%"
+      },
+      "ps_atk": {
+        "name": "기사단 검술",
+        "kind": "passive",
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "desc": "공격력 +3%/레벨",
+        "effect": {
+          "atk_pct": 0.03
+        }
+      },
+      "ps_hp": {
+        "name": "단련된 몸",
+        "kind": "passive",
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "desc": "최대 HP +5%/레벨",
+        "effect": {
+          "hp_pct": 0.05
+        }
+      },
+      "ps_cut": {
+        "name": "투사체 베기",
+        "kind": "passive",
+        "max": 1,
+        "req_lv": 2,
+        "pre": [],
+        "desc": "공격으로 적의 투사체를 베어 없앤다",
+        "effect": {
+          "cut_proj": 1
+        }
+      },
+      "ps_armor": {
+        "name": "기사의 갑옷",
+        "kind": "passive",
+        "max": 3,
+        "req_lv": 3,
+        "pre": [
+          "ps_hp"
+        ],
+        "desc": "원거리 피해 -15%/레벨",
+        "effect": {
+          "ranged_cut": 0.15
+        }
+      },
+      "ps_firm": {
+        "name": "굳건함",
+        "kind": "passive",
+        "max": 1,
+        "req_lv": 4,
+        "pre": [
+          "ps_hp"
+        ],
+        "desc": "콤보 4타와 필살기 중 밀려나지 않는다",
+        "effect": {
+          "firm": 1
+        }
+      },
+      "ps_gold": {
+        "name": "금빛 일격",
+        "kind": "passive",
+        "max": 3,
+        "req_lv": 4,
+        "pre": [
+          "ps_atk"
+        ],
+        "desc": "금빛 일격에 필요한 타격 수 -1/레벨 (기본 8타)",
+        "effect": {
+          "gold_hits": -1
+        }
+      }
     }
   }
 }

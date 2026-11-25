@@ -21,7 +21,7 @@ static func _msg(box: Container, args: Dictionary) -> void:
 # ---------- S02 캐릭터 선택 ----------
 
 const SLOT_PREVIEW := [
-	["근접 입문형", "cls_tbd_01"],
+	["근접 입문형", "cls_silver"],
 	["원거리 기동형", ""],
 	["마법 광역형", ""],
 	["쌍검 암살형", ""],

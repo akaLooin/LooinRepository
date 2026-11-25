@@ -9,8 +9,8 @@ static func run() -> int:
 	var ck := func(cond: bool, name: String):
 		checks.append([cond, name])
 	GameState.data = GameState.new_save()
-	GameState.current_class = "cls_tbd_01"
-	var cls := "cls_tbd_01"
+	GameState.current_class = "cls_silver"
+	var cls := "cls_silver"
 	var base_atk: int = GameState.stats()["atk"]
 	ck.call(Meta.equipped(cls, "weapon")["item"] == "eq_wpn_01", "starter weapon equipped")
 	# 레벨 제한
@@ -64,10 +64,10 @@ static func run() -> int:
 	ck.call(GameState.data["account"]["pets"].has("pet_bookworm") and GameState.char_data(cls)["pet"] == "pet_bookworm", "first clear pet joins")
 	# 세이브 마이그레이션 v1 -> v2
 	var v1 := { "version": 1, "account": { "gold": 77, "potions": 1, "revives": 0, "pages": 2, "applied_runs": [] },
-		"characters": { "cls_tbd_01": { "lv": 4, "exp": 3 } }, "progress": { "cleared": {} }, "settings": {} }
+		"characters": { "cls_silver": { "lv": 4, "exp": 3 } }, "progress": { "cleared": {} }, "settings": {} }
 	var m := GameState._migrate(v1)
-	ck.call(int(m["version"]) == 2 and int(m["account"]["gold"]) == 77 and int(m["characters"]["cls_tbd_01"]["lv"]) == 4, "migration keeps progress")
-	ck.call(m["characters"]["cls_tbd_01"]["equip"]["weapon"] == "i1" and m["account"]["inventory"].size() == 2, "migration grants starter gear")
+	ck.call(int(m["version"]) == 3 and int(m["account"]["gold"]) == 77 and int(m["characters"]["cls_silver"]["lv"]) == 4, "migration keeps progress")
+	ck.call(m["characters"]["cls_silver"]["equip"]["weapon"] == "i1" and m["account"]["inventory"].size() == 2, "migration grants starter gear")
 	# 드롭 굴림
 	var cnt := 0
 	rng.seed = 9
@@ -88,6 +88,12 @@ static func run() -> int:
 	ck.call(Meta.difficulty_unlocked("dgn_01", "hard") and Meta.mission_state("msn_01") == "done", "normal clear unlocks hard + mission")
 	GameState.apply_rewards({ "run_id": "t3", "dungeon": "dgn_01", "difficulty": "hard", "cleared": true, "time": 99.0, "rank": "C", "exp": 1, "gold": 1 })
 	ck.call(Meta.mission_state("msn_06") == "done", "hard clear recorded separately")
+	# v2 세이브(임시 캐릭터) → 실버로 이전
+	var v2 := { "version": 2, "account": GameState.new_save()["account"], "characters": { "cls_tbd_01": { "lv": 6, "exp": 1, "equip": {}, "skills": { "sk_mp1": 2, "ps_air": 1 }, "pet": "" } },
+		"progress": { "cleared": {} }, "settings": {} }
+	var m3 := GameState._migrate(v2)
+	ck.call(m3["characters"].has("cls_silver") and not m3["characters"].has("cls_tbd_01") and int(m3["characters"]["cls_silver"]["lv"]) == 6, "v2 save moves to Silver")
+	ck.call(not m3["characters"]["cls_silver"]["skills"].has("ps_air") and int(m3["characters"]["cls_silver"]["skills"]["sk_mp1"]) == 2, "removed passives refunded")
 	for c in checks:
 		print("  %s %s" % ["ok  " if c[0] else "FAIL", c[1]])
 		if not c[0]:

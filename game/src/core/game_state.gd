@@ -3,11 +3,11 @@ extends Node
 
 const SAVE_DIR := "user://save"
 const SAVE_PATH := "user://save/slot0.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const LEVEL_CAP := 20
 
 var data: Dictionary = {}
-var current_class := "cls_tbd_01"
+var current_class := "cls_silver"
 var last_result: Dictionary = {}
 ## 자동 테스트 중이면 true (대화 자동 넘김)
 var autoplay := false
@@ -35,7 +35,7 @@ static func new_save() -> Dictionary:
 		"account": { "gold": 300, "potions": 3, "revives": 1, "pages": 5, "applied_runs": [],
 			"inventory": [ { "uid": "i1", "item": "eq_wpn_01", "enh": 0 }, { "uid": "i2", "item": "eq_top_01", "enh": 0 } ],
 			"next_uid": 3, "pets": [] },
-		"characters": { "cls_tbd_01": c },
+		"characters": { "cls_silver": c },
 		"progress": { "cleared": {}, "missions": {}, "seen": {}, "attend": { "last": "", "count": 0 } },
 		"settings": { "show_touch": "auto", "show_hitboxes": false, "charge_attack": false, "layout": {}, "bgm": 0.7, "sfx": 1.0 },
 	}
@@ -64,9 +64,20 @@ func _migrate(d: Dictionary) -> Dictionary:
 			for k in nc:
 				if not d["characters"][cls].has(k):
 					d["characters"][cls][k] = nc[k]
-		if d["characters"].has("cls_tbd_01"):
-			d["characters"]["cls_tbd_01"]["equip"] = { "weapon": "i1", "top": "i2" }
+		if d["characters"].has("cls_silver"):
+			d["characters"]["cls_silver"]["equip"] = { "weapon": "i1", "top": "i2" }
 		d["version"] = 2
+	if int(d.get("version", 1)) < 3:
+		# v2 -> v3: 임시 캐릭터가 실버로 교체됨. 레벨·장비는 그대로, 사라진 패시브에 쓴 SP 는 돌려준다.
+		if d["characters"].has("cls_tbd_01"):
+			d["characters"]["cls_silver"] = d["characters"]["cls_tbd_01"]
+			d["characters"].erase("cls_tbd_01")
+		for cls in d["characters"]:
+			var sk: Dictionary = d["characters"][cls].get("skills", {})
+			for sid in sk.keys():
+				if sid in ["ps_mp", "ps_back", "ps_air"]:
+					sk.erase(sid)
+		d["version"] = 3
 	for k in base:
 		if not d.has(k):
 			d[k] = base[k]
@@ -132,7 +143,8 @@ func stats(cls: String = "") -> Dictionary:
 		var ist := Meta.item_stats(it)
 		for k in ist:
 			st[k] = float(st.get(k, 0.0)) + float(ist[k])
-	var pct := { "atk_pct": 0.0, "hp_pct": 0.0, "mp_gain_pct": 0.0, "back_pct": 0.0, "air_jumps": 0.0 }
+	var pct := { "atk_pct": 0.0, "hp_pct": 0.0, "mp_gain_pct": 0.0, "back_pct": 0.0, "air_jumps": 0.0,
+		"cut_proj": 0.0, "ranged_cut": 0.0, "firm": 0.0, "gold_hits": 0.0 }
 	var nodes := Meta.tree(cls)
 	for sid in cd["skills"]:
 		var eff: Dictionary = nodes.get(sid, {}).get("effect", {})
@@ -156,6 +168,10 @@ func stats(cls: String = "") -> Dictionary:
 		"mp_gain_mul": 1.0 + pct["mp_gain_pct"],
 		"back_bonus": pct["back_pct"],
 		"air_jumps": int(pct["air_jumps"]),
+		"cut_proj": pct["cut_proj"] > 0.0,
+		"ranged_cut": minf(0.6, pct["ranged_cut"]),
+		"firm": pct["firm"] > 0.0,
+		"gold_hits": int(pct["gold_hits"]),
 		"skill_mul": skill_mul,
 		"skills": (cd["skills"] as Dictionary).duplicate(),
 		"pet": pet_id,

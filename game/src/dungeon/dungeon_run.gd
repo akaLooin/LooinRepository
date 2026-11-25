@@ -256,6 +256,15 @@ func _resolve_hits() -> void:
 				continue
 			if ar.intersects(o.hurtbox()) and f.can_hit(o):
 				_apply_hit(f, o, a)
+	# 투사체 베기: 플레이어의 공격 판정이 적 투사체에 닿으면 지운다
+	var pa: Dictionary = player.active_attack()
+	if player.cut_proj and not pa.is_empty():
+		var par: Rect2 = player.attack_rect(pa)
+		for pr in projectiles:
+			if pr.team != 0 and pr.active() and not pr.remove_me and pr.kind != "bell" and par.intersects(pr.rect()):
+				pr.remove_me = true
+				for i in range(4):
+					spawn_spark(pr.position, Tk.PAPER, 2.0)
 	for pr in projectiles:
 		if pr.remove_me or not pr.active():
 			continue
@@ -263,6 +272,12 @@ func _resolve_hits() -> void:
 			if o.team == pr.team or o.dead or o.invuln > 0:
 				continue
 			if pr.rect().intersects(o.hurtbox()):
+				if pr.pierce:
+					if pr.hit_ids.has(o.get_instance_id()):
+						continue
+					pr.hit_ids[o.get_instance_id()] = true
+					_apply_hit(pr.owner_f, o, pr.data, pr.position)
+					continue
 				_apply_hit(pr.owner_f, o, pr.data, pr.position)
 				pr.remove_me = pr.kind != "wave"
 				if pr.kind == "wave":
@@ -275,10 +290,26 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 	var is_back := (o.facing > 0 and src.x < o.position.x - 1.0) or (o.facing < 0 and src.x > o.position.x + 1.0)
 	if o is Boss:
 		is_back = is_back and not o.is_attacking()
+	if o == player and player.state == "guard":
+		player.guard_trigger()
+		return
 	var mul := float(a["mul"])
+	var gold := false
 	if att == player and from_pos == null:
 		mul *= player.attack_mul(player.cur_atk_id)
-	var res := DamageCalc.resolve(att.atk, o.def, mul, att.crit, is_back, rng)
+		gold = player.gold_attack
+		if gold:
+			mul *= player.gold_mul
+	var eff_def := o.def * (1.0 - o.def_down) if o.def_down_t > 0 else o.def
+	var res := DamageCalc.resolve(att.atk, eff_def, mul, att.crit, is_back, rng)
+	if o == player and from_pos != null and player.ranged_cut > 0.0:
+		res["dmg"] = maxi(1, int(res["dmg"] * (1.0 - player.ranged_cut)))
+	if a.has("def_down") and o.team == 1:
+		o.def_down = float(a["def_down"][0])
+		o.def_down_t = int(a["def_down"][1])
+		spawn_number(o.position + Vector2(0, -o.h - 14), "방어↓", Tk.MP)
+	if att == player and from_pos == null and o.team == 1:
+		player.on_landed_hit()
 	if att == player and res["back"] and player.back_bonus > 0.0:
 		res["dmg"] = int(res["dmg"] * (1.0 + player.back_bonus))
 	o.take_hit(att, a, res)
@@ -286,7 +317,11 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 	att.hitstop = maxi(att.hitstop, hs)
 	o.hitstop = maxi(o.hitstop, hs)
 	var col := Tk.TEXT
-	if res["crit"]:
+	if gold:
+		col = Tk.GOLD
+		for i in range(6):
+			spawn_spark(Vector2(o.position.x, o.position.y - o.h / 2.0), Tk.GOLD, 2.0)
+	elif res["crit"]:
 		col = Tk.CRIT
 	elif res["back"]:
 		col = Tk.BACK_ATK
@@ -418,6 +453,14 @@ func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionar
 	pr.size = Vector2(12, 14) if kind == "wave" else Vector2(6, 6)
 	if kind == "page":
 		pr.life = 90
+	elif kind == "slash":
+		pr.size = Vector2(12, 24)
+		pr.life = 70
+		pr.pierce = true
+	elif kind == "sword":
+		pr.size = Vector2(36, 40)
+		pr.life = 120
+		pr.pierce = true
 	elif kind == "bell":
 		pr.size = Vector2(16, 14)
 		pr.life = 400
@@ -559,3 +602,8 @@ func _longest_path(st_id: String) -> int:
 	for n in dungeon["stages"][st_id]["next"]:
 		best = maxi(best, _longest_path(n[0]))
 	return best + 1
+
+
+## 은빛 깃털비의 떨어지는 칼날 (연출)
+func spawn_blade(x: float) -> void:
+	_add_fx("blade", Vector2(x, cam.position.y - 150.0 + rng.randf_range(0, 30)), { "color": Color("f4f8fc"), "life": 26, "vel": Vector2(0, 9) })

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://xsr4hjx4lirk"
-path="res://.godot/imported/hero_tbd_01.png-e0e3cc3f3fc4148cd2b33abb6a7fcdbe.ctex"
+uid="uid://c6f6ciixuhntl"
+path="res://.godot/imported/hero_silver.png-ba57314e50e66d20b899de6d8954a0bf.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/hero_tbd_01.png"
-dest_files=["res://.godot/imported/hero_tbd_01.png-e0e3cc3f3fc4148cd2b33abb6a7fcdbe.ctex"]
+source_file="res://assets/sprites/hero_silver.png"
+dest_files=["res://.godot/imported/hero_silver.png-ba57314e50e66d20b899de6d8954a0bf.ctex"]
 
 [params]
 

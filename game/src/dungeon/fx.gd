@@ -39,6 +39,9 @@ func _draw() -> void:
 		"slash":
 			draw_rect(rect, Color(color, a * 0.55))
 			draw_rect(Rect2(rect.position.x, rect.position.y + rect.size.y / 2.0 - 1, rect.size.x, 2), Color(Tk.TEXT, a))
+		"blade":
+			draw_rect(Rect2(-1, -12, 2, 12), Color(color, 0.95))
+			draw_rect(Rect2(-1, -24, 2, 12), Color(color, 0.35))
 		"ring":
 			var r := (1.0 - float(life) / float(max_life)) * size
 			draw_arc(Vector2.ZERO, r, 0, TAU, 32, Color(color, a), 2.0)

@@ -26,6 +26,19 @@ var extra_air_jumps := 0
 var charge_mode := false
 var hold := 0
 var _charge_fire := 0
+var cut_proj := false
+var ranged_cut := 0.0
+var firm := false
+var gold_need := 0          # 0 이면 금빛 일격 없음
+var gold_mul := 1.0
+var gold_count := 0
+var gold_ready := false     # 다음 공격이 금빛
+var gold_attack := false    # 지금 공격이 금빛
+var cur_skill: Dictionary = {}
+## 발동 횟수 기록 (자동 테스트 확인용)
+var used := { "slash": 0, "guard_hit": 0, "guard_cancel": 0, "rain": 0, "gold": 0 }
+var guard_frames := 0
+var guard_refund := 0.0
 
 
 func setup(class_id: String, st: Dictionary) -> void:
@@ -48,6 +61,33 @@ func setup(class_id: String, st: Dictionary) -> void:
 	back_bonus = float(st.get("back_bonus", 0.0))
 	extra_air_jumps = int(st.get("air_jumps", 0))
 	charge_mode = bool(GameState.data["settings"].get("charge_attack", false))
+	cut_proj = bool(st.get("cut_proj", false))
+	ranged_cut = float(st.get("ranged_cut", 0.0))
+	firm = bool(st.get("firm", false))
+	if cls.has("gold"):
+		gold_need = maxi(3, int(cls["gold"]["hits"]) + int(st.get("gold_hits", 0)))
+		gold_mul = float(cls["gold"]["mul"])
+
+
+## 근접 공격이 적에게 맞을 때마다 호출: 금빛 일격 게이지를 채운다.
+func on_landed_hit() -> void:
+	if gold_need <= 0 or gold_attack or gold_ready:
+		return
+	gold_count += 1
+	if gold_count >= gold_need:
+		gold_count = 0
+		gold_ready = true
+		Sfx.play("portal", 0.0)
+
+
+## 은빛 수호 자세 중 공격을 받았을 때: 피해 없이 충격파로 되받아친다.
+func guard_trigger() -> void:
+	invuln = 50
+	used["guard_hit"] += 1
+	world.banner("은빛 수호!", Tk.GOLD)
+	world.shake(4.0)
+	Sfx.play("counter", 0.0)
+	start_attack(cur_skill["attack"], _atk(cur_skill["attack"]))
 
 
 func air_jumps() -> int:
@@ -64,8 +104,13 @@ func attack_mul(atk_id: String) -> float:
 
 func start_attack(id: String, data: Dictionary) -> void:
 	super.start_attack(id, data)
+	gold_attack = false
 	if not id.begins_with("atk_mp") and id != "atk_counter":
 		Sfx.play("slash")
+		if gold_ready:
+			gold_ready = false
+			gold_attack = true
+			used["gold"] += 1
 
 
 func gain_mp(v: float) -> void:
@@ -112,6 +157,13 @@ func think(f: Dictionary) -> void:
 			_dash(f)
 		"atk":
 			_attacking(f)
+		"guard":
+			vel.x = 0.0
+			if t >= guard_frames:
+				gain_mp(guard_refund)
+				used["guard_cancel"] += 1
+				world.banner("수호 취소 — MP 일부 회수", Tk.TEXT_DIM)
+				set_state("idle" if on_ground else "air")
 
 
 func _tick_common_states() -> bool:
@@ -137,6 +189,14 @@ func _try_skill(f: Dictionary) -> bool:
 				invuln = int(sk["invuln"])
 				skill_name = sk["name"]
 				vel = Vector2.ZERO
+				cur_skill = sk
+				if sk.has("guard"):
+					guard_frames = int(sk["guard"]["frames"])
+					guard_refund = float(sk["guard"]["refund"])
+					set_state("guard")
+					world.on_skill(self, sk, {})
+					Sfx.play("skill", 0.0)
+					return true
 				var a := _atk(sk["attack"])
 				start_attack(sk["attack"], a)
 				Sfx.play("skill3" if sk.get("cutin", false) else "skill", 0.0)
@@ -235,6 +295,24 @@ func _dash(f: Dictionary) -> void:
 func _attacking(f: Dictionary) -> void:
 	var a := cur_atk
 	var startup := int(a["startup"])
+	if not cur_skill.is_empty() and cur_atk_id == cur_skill.get("attack", ""):
+		if cur_skill.has("projectile") and t == startup:
+			var pd: Dictionary = (cur_skill["projectile"] as Dictionary).duplicate()
+			pd["mul"] = float(pd["mul"]) * attack_mul(cur_atk_id)
+			pd["mp"] = 0.0
+			world.spawn_projectile(self, position + Vector2(facing * 14, 0), Vector2(facing * float(pd["speed"]), 0), pd, pd["kind"])
+			Sfx.play("slash", 0.0)
+			used["slash"] += 1
+		if cur_skill.has("rain"):
+			var act := int(a["active"])
+			if t >= startup and t < startup + act and t % 3 == 0:
+				world.spawn_blade(position.x + randf_range(-115, 115))
+			if t == startup + act:
+				var sw: Projectile = world.spawn_projectile(self, Vector2(position.x + facing * 26, -30), Vector2(0, 7),
+					{ "mul": float(cur_skill["rain"]["sword_mul"]) * attack_mul(cur_atk_id), "hitstop": 10, "hitstun": 40,
+					"kb": [3.0, 0.0], "launch": 5.0, "mp": 0.0 }, "sword")
+				sw.gravity = 0.4
+				used["rain"] += 1
 	var lunge := float(a.get("lunge", 0.0))
 	if cur_atk_id == cls["air_attack"]:
 		vel.x = float(f["x"]) * float(move["run"]) * 0.6
@@ -285,6 +363,7 @@ func _use_potion() -> void:
 
 
 func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
+	super_armor = firm and state == "atk" and (cur_atk_id == combo[combo.size() - 1] or cur_atk_id.begins_with("atk_mp"))
 	if god:
 		res = res.duplicate()
 		res["dmg"] = 0
@@ -307,6 +386,14 @@ func _draw() -> void:
 		modulate.a = 0.55
 	else:
 		modulate.a = 1.0
+	if state == "guard":
+		var gr := 16.0 + sin(t * 0.4) * 2.0
+		draw_arc(Vector2(0, -14), gr, 0, TAU, 24, Color("dfe6ee", 0.9), 2.0)
+		draw_arc(Vector2(0, -14), gr - 4, 0, TAU, 24, Color(Tk.MP, 0.5), 1.0)
+	if gold_ready or gold_attack:
+		for i in range(4):
+			var ga := t * 0.15 + i * PI / 2.0
+			draw_rect(Rect2(cos(ga) * 12.0 - 1, -14 + sin(ga) * 14.0 - 1, 2, 2), Tk.GOLD)
 	if draw_sprite():
 		var cl0 := charge_level()
 		if hold >= CHARGE_START:

@@ -24,11 +24,11 @@ const DANGER := Color("ff5a5a")
 const OVERLAY := Color(0.04, 0.03, 0.07, 0.72)
 
 # 플레이어(임시 캐릭터) — 견습 사서: 남색 외투, 크림색 스카프, 리본 책갈피 검
-const P_COAT := Color("2f3a7a")
-const P_COAT_DARK := Color("1f2754")
+const P_COAT := Color("dfe6ee")
+const P_COAT_DARK := Color("9aa7b8")
 const P_SKIN := Color("f1c9a5")
-const P_HAIR := Color("3b2a22")
-const P_SCARF := Color("efe3c2")
+const P_HAIR := Color("f2e3a0")
+const P_SCARF := Color("3f6fc0")
 const P_BLADE := Color("dfe8f2")
 const P_RIBBON := Color("d64a5a")
 

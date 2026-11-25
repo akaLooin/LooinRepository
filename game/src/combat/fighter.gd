@@ -34,6 +34,8 @@ var flash := 0
 var dead := false
 var remove_me := false
 
+var def_down := 0.0     # 방어 약화 비율
+var def_down_t := 0     # 남은 틱
 var sprite: Dictionary = {}     # data/sprites.json 항목 (+ 로드된 "tex")
 
 var cur_atk: Dictionary = {}
@@ -117,6 +119,8 @@ func tick(input: Dictionary) -> void:
 		flash -= 1
 	if drop_timer > 0:
 		drop_timer -= 1
+	if def_down_t > 0:
+		def_down_t -= 1
 	if not _tick_common_states():
 		think(input)
 	physics()
@@ -262,6 +266,8 @@ func anim_name() -> String:
 			return "atk"
 		"hurt", "air_hurt":
 			return "hurt"
+		"guard":
+			return "guard"
 		"down", "getup", "dead":
 			return "down"
 	return "idle"

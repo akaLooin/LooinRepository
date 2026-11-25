@@ -1,20 +1,20 @@
 {
-  "cls_tbd_01": {
-    "name": "견습 사서 (임시)",
-    "note": "캐릭터 확정 전 플레이스홀더. 근접 입문형 역할만 담당.",
+  "cls_silver": {
+    "name": "실버 · 기사",
+    "note": "판타지아 은빛 기사단장. 방어 중점 밸런스형 근접 검사 (슬롯 1).",
     "base": {
-      "hp": 1200,
+      "hp": 1320,
       "atk": 100,
-      "def": 40,
+      "def": 50,
       "crit": 0.05
     },
     "growth": {
-      "hp": 80,
+      "hp": 88,
       "atk": 8,
-      "def": 3
+      "def": 4
     },
     "move": {
-      "run": 1.9,
+      "run": 1.8,
       "jump": 6.2,
       "air_jumps": 1,
       "dash": 4.6,
@@ -38,6 +38,10 @@
       "sk_mp2",
       "sk_mp3"
     ],
-    "skill_tree": "tree_tbd_01"
+    "skill_tree": "tree_silver",
+    "gold": {
+      "hits": 8,
+      "mul": 1.6
+    }
   }
 }

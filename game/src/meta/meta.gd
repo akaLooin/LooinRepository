@@ -235,7 +235,7 @@ static func learn(cls: String, sid: String) -> String:
 
 
 static func reset_skills(cls: String) -> void:
-	GameState.char_data(cls)["skills"] = { "sk_mp1": 1 }
+	GameState.char_data(cls)["skills"] = { DataDB.get_row("classes", cls)["skills"][0]: 1 }
 
 
 # ---------- 펫 ----------

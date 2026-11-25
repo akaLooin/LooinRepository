@@ -1,25 +1,94 @@
 {
   "_doc": "스프라이트 시트 연결표. 키 = 클래스 id 또는 몬스터 id. 시트 파일이 없으면 코드 그림으로 대체된다. 규격은 replica/art-spec.md",
-  "cls_tbd_01": {
-    "sheet": "res://assets/sprites/hero_tbd_01.png", "frame": [48, 48], "origin": [24, 44],
+  "cls_silver": {
+    "sheet": "res://assets/sprites/hero_silver.png",
+    "frame": [
+      48,
+      48
+    ],
+    "origin": [
+      24,
+      44
+    ],
     "anims": {
-      "idle": { "row": 0, "frames": 2, "fps": 3 },
-      "run": { "row": 1, "frames": 4, "fps": 10 },
-      "air": { "row": 2, "frames": 1, "col": 0 },
-      "dash": { "row": 2, "frames": 1, "col": 1 },
-      "atk": { "row": 3, "frames": 3, "phased": true },
-      "hurt": { "row": 4, "frames": 1, "col": 0 },
-      "down": { "row": 4, "frames": 1, "col": 1 }
+      "idle": {
+        "row": 0,
+        "frames": 2,
+        "fps": 3
+      },
+      "run": {
+        "row": 1,
+        "frames": 4,
+        "fps": 10
+      },
+      "air": {
+        "row": 2,
+        "frames": 1,
+        "col": 0
+      },
+      "dash": {
+        "row": 2,
+        "frames": 1,
+        "col": 1
+      },
+      "atk": {
+        "row": 3,
+        "frames": 3,
+        "phased": true
+      },
+      "hurt": {
+        "row": 4,
+        "frames": 1,
+        "col": 0
+      },
+      "down": {
+        "row": 4,
+        "frames": 1,
+        "col": 1
+      },
+      "guard": {
+        "row": 5,
+        "frames": 1,
+        "col": 0
+      }
     }
   },
   "mon_inkblob": {
-    "sheet": "res://assets/sprites/mon_inkblob.png", "frame": [24, 20], "origin": [12, 18],
+    "sheet": "res://assets/sprites/mon_inkblob.png",
+    "frame": [
+      24,
+      20
+    ],
+    "origin": [
+      12,
+      18
+    ],
     "anims": {
-      "idle": { "row": 0, "frames": 2, "fps": 4 },
-      "run": { "row": 1, "frames": 2, "fps": 6 },
-      "atk": { "row": 2, "frames": 2, "fps": 8 },
-      "hurt": { "row": 3, "frames": 1, "col": 0 },
-      "down": { "row": 3, "frames": 1, "col": 1 }
+      "idle": {
+        "row": 0,
+        "frames": 2,
+        "fps": 4
+      },
+      "run": {
+        "row": 1,
+        "frames": 2,
+        "fps": 6
+      },
+      "atk": {
+        "row": 2,
+        "frames": 2,
+        "fps": 8
+      },
+      "hurt": {
+        "row": 3,
+        "frames": 1,
+        "col": 0
+      },
+      "down": {
+        "row": 3,
+        "frames": 1,
+        "col": 1
+      }
     }
   }
 }

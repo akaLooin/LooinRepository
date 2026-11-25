@@ -155,4 +155,4 @@ func _draw() -> void:
 	UiKit.text(self, Vector2(cx, ry + 28), "— 차원의 도서관 —", Tk.PAPER_DIM, 11, true)
 	if not _opened and (_t / 30) % 2 == 0:
 		UiKit.text(self, Vector2(cx, sz.y - 16), "화면을 눌러 책을 펼치세요", Tk.PAPER, 11, true)
-	UiKit.text(self, Vector2(sz.x - 4 - 60, sz.y - 4), "데모 v0.6", Tk.TEXT_DIM, 11, false)
+	UiKit.text(self, Vector2(sz.x - 4 - 60, sz.y - 4), "데모 v0.7", Tk.TEXT_DIM, 11, false)

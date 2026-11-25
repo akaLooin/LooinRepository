@@ -101,6 +101,12 @@ func _draw() -> void:
 		if fill >= 1.0:
 			draw_rect(Rect2(bx + 1, 20, 16, 2), Color("a9dcff"))
 		draw_colored_polygon(PackedVector2Array([Vector2(bx + 5, 32), Vector2(bx + 9, 28), Vector2(bx + 13, 32)]), Tk.INK)
+	if p.gold_need > 0:
+		var gk := 1.0 if (p.gold_ready or p.gold_attack) else float(p.gold_count) / float(p.gold_need)
+		draw_rect(Rect2(38, 34, 62, 4), Tk.INK)
+		draw_rect(Rect2(39, 35, 60 * gk, 2), Tk.GOLD if gk >= 1.0 else Tk.GOLD.darkened(0.35))
+		if gk >= 1.0 and (run.ticks / 10) % 2 == 0:
+			_text(Vector2(104, 40), "금빛!", Tk.GOLD, 11)
 	if p.charge_mode and p.charge_level() > 0:
 		_text(Vector2(104, 30), "충전 %d" % p.charge_level(), Tk.MP, 11)
 	# 상단 중앙: 장 두루마리 + 페이지 진행 점

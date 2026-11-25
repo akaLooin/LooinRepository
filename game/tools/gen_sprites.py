@@ -35,11 +35,10 @@ def stamp(img, grid, pal, ox, oy, outline=True):
             img.putpixel(p, c)
 
 
-# ───────── 견습 사서 (임시 캐릭터) 48x48, 발 위치 (24, 44) ─────────
-HERO = {"h": C("5a3a2a"), "H": C("82563a"), "s": C("f3cfab"), "S": C("d9a383"), "e": C("1b1530"),
-        "c": C("2f3a7a"), "C": C("1f2754"), "k": C("4f60b0"), "g": C("e8b64c"), "w": C("f6eedb"),
-        "W": C("cbbb93"), "b": C("4a3326"), "p": C("26304f"),
-        "B": C("e9f0f7"), "K": C("aab8c8"), "r": C("d64a5a"), "R": C("9c2f3d"), "l": C("6b3a24")}
+# ───────── 실버 (B안: 금테 견갑 · 파란 휘장) 48x48, 발 위치 (24, 44) ─────────
+HERO = {"h": C("f2e3a0"), "H": C("d9c477"), "s": C("f3cfab"), "S": C("d9a383"), "e": C("4a6a8f"),
+        "a": C("dfe6ee"), "A": C("9aa7b8"), "D": C("6b7789"), "d": C("4a5364"), "t": C("3f6fc0"), "T": C("2a4a8a"),
+        "g": C("e8b64c"), "B": C("f4f8fc"), "K": C("b4c0cf"), "l": C("5a4636")}
 HEAD = [
     "....hhhhh....",
     "..hhHHHhhh...",
@@ -52,28 +51,28 @@ HEAD = [
     "...SSSSSS....",
 ]
 TORSO = [
-    "wwwwwwwwwww..",
-    ".WwwwWWwwwwg.",
-    "..ccckkcccg..",
-    "..cckkkcccg..",
-    ".cckkcccccg..",
-    ".cckcccCCg...",
-    ".cckkccCCg...",
-    ".ggggggggg...",
-    ".cccCccCCC...",
+    "gaaaaaaaaag..",
+    ".aaaAAAaaaa..",
+    "..aaattaaaA..",
+    "..aaattaaaA..",
+    ".aaaattaaaA..",
+    ".aaaattaAA...",
+    ".aaaattaAA...",
+    ".AAgggggAA...",
+    ".aatttttaA...",
 ]
 LEGS = {
-    "stand": [".ccc..ccC....", ".ccC..cCC....", ".ppp..ppp....", ".bbb..bbb....", "bbbb..bbbb..."],
-    "run1": [".ccc...ccC...", "ccC.....cCC..", "pp.......pp..", "bb.......bbb.", "bbb.......bb."],
-    "run2": ["..cccccC.....", "...ccCC......", "...pppp......", "...bbbb......", "..bbbbb......"],
-    "run3": ["ccc....ccC...", ".ccC....cCC..", "..pp.....pp..", "..bb.....bbb.", ".bbb......bb."],
-    "air": [".ccc.ccC.....", "..cC..cC.....", "..pp...pp....", "..bb....bb...", "..b......b..."],
-    "crouch": ["cccc...ccCC..", "ccC......cC..", "pp........pp.", "bbb.......bbb", "............."],
+    "stand": [".aat..taA....", ".aaA..aAA....", ".DDD..DDD....", ".ddd..ddd....", "dddd..dddd..."],
+    "run1": [".aat...taA...", "aaA.....aAA..", "DD.......DD..", "dd.......ddd.", "ddd.......dd."],
+    "run2": ["..aattaA.....", "...aaAA......", "...DDDD......", "...dddd......", "..ddddd......"],
+    "run3": ["aat....taA...", ".aaA....aAA..", "..DD.....DD..", "..dd.....ddd.", ".ddd......dd."],
+    "air": [".aat.taA.....", "..aA..aA.....", "..DD...DD....", "..dd....dd...", "..d......d..."],
+    "crouch": ["aaat...taAA..", "aaA......aA..", "DD........DD.", "ddd.......ddd", "............."],
 }
-SWORD_DOWN = ["..B", "..B", "..B", "..B", "..B", "..B", "..K", "gggg", ".l.", ".r.", "rR."]
-SWORD_UP = ["..B..", "..B..", "..B..", "..B..", "..B..", "..BK.", "..K..", ".ggg.", "..l..", ".rR..", "rR..."]
-SWORD_SWING = ["........BBBBBBBBBBBBB.", "gg.ll.BBBBBBBBBBBBBBBB", "ggglllgKKKKKKKKKKKKKK.", "gg....................", ".rr...................", "rR...................."]
-SWORD_LOW = ["gg.ll..........", "ggglllgKKKKBB..", "........KKBBBB.", "...........KBBB", ".rr............", "rR............."]
+SWORD_DOWN = ["..B", "..B", "..B", "..B", "..B", "..B", "..B", "..K", "gggg", ".l.", ".g."]
+SWORD_UP = ["..B..", "..B..", "..B..", "..B..", "..B..", "..B..", "..BK.", "..K..", ".ggg.", "..l..", "..g.."]
+SWORD_SWING = ["........BBBBBBBBBBBBB.", "gg.ll.BBBBBBBBBBBBBBBB", "ggglllgKKKKKKKKKKKKKK.", "gg...................."]
+SWORD_LOW = ["gg.ll..........", "ggglllgKKKKBB..", "........KKBBBB.", "...........KBBB"]
 
 
 def hero_frame(legs="stand", sword="down", bob=0, lean=0, scarf=0):
@@ -81,8 +80,6 @@ def hero_frame(legs="stand", sword="down", bob=0, lean=0, scarf=0):
     base_y = 44 - 23 + bob        # 머리~발 23줄
     x = 17 + lean
     # 스카프 꼬리 (뒤로 날림)
-    tail = [["ww", "wW"], ["www", ".wW"], ["wwww", "..wW"]][scarf]
-    stamp(im, tail, HERO, x - len(tail[0]) + 1, base_y + 9)
     stamp(im, HEAD, HERO, x, base_y)
     stamp(im, TORSO, HERO, x, base_y + 9)
     stamp(im, LEGS[legs], HERO, x, base_y + 18)
@@ -106,10 +103,10 @@ def hero_down():
     im = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
     body = [
         "......hhhh...........",
-        "....hhhhhhh.wwwcccc..",
-        "...hhhsssshwwcckkcccb",
-        "...hhsssessccccCCCCbb",
-        "....SSSSSS.gggpppppbb",
+        "....hhhhhhh.gaaaaaa..",
+        "...hhhsssshaaattaaaDd",
+        "...hhsssessaaattAAADd",
+        "....SSSSSS.gggaaAADdd",
     ]
     stamp(im, body, HERO, 12, 39)
     stamp(im, ["BBBBBBBBBK", ".........."], HERO, 30, 44, True)
@@ -122,12 +119,13 @@ rows = [
     [hero_frame("air", "down", bob=-1, scarf=1), hero_frame("crouch", "low", bob=2, lean=2, scarf=2)],  # 2 air, dash
     [hero_frame("stand", "up", lean=-1), hero_frame("crouch", "swing", bob=1, lean=2, scarf=2), hero_frame("stand", "low", lean=1, scarf=1)],  # 3 attack
     [hero_frame("crouch", "down", bob=2, lean=-2), hero_down()],                                  # 4 hurt, down
+    [hero_frame("crouch", "up", bob=2, lean=1)],                                                  # 5 guard
 ]
 sheet = Image.new("RGBA", (48 * 4, 48 * len(rows)), (0, 0, 0, 0))
 for r, frames in enumerate(rows):
     for c, fr in enumerate(frames):
         sheet.paste(fr, (c * 48, r * 48), fr)
-sheet.save(os.path.join(OUT, "hero_tbd_01.png"))
+sheet.save(os.path.join(OUT, "hero_silver.png"))
 
 # ───────── 번진 잉크 24x20, 발 위치 (12, 18) ─────────
 INK = {"I": C("2b1f4a"), "J": C("7a62c8"), "j": C("4b3a86"), "Y": C("ffe76a"), "K": C("150f24"), "w": C("ffffff"), "D": C("ff5a5a")}
