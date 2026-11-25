@@ -14,7 +14,7 @@ import { PostOffice, PostState, newPost, newPostOffice } from './post';
 import { Shrines, newShrines } from './shrines';
 import { MiniState, TotemState, legacyTotemSouls, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -239,6 +239,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const e = equipStats(c);
   // 석상·별자리·업적·가족·카드 세트(값은 %·%p 단위)
   const pb = progressBonus(c, a);
+  // 자동으로 채운 패시브 특성(탭마다 15개)
+  for (const [id, lv] of Object.entries(c.talents)) { const t = TALENT[id]; if (t?.eff && t.per && lv > 0) pb[t.eff] += lv * t.per; }
   // 우표 가운데 능력치·기술 우표는 여기서 더한다
   { const sx = stampBonus(a); for (const k of ['str', 'agi', 'wis', 'luk', 'fishing', 'catching', 'card', 'hpPct'] as const) pb[k] += sx[k]; }
   // 2차 직업 고유 보정과 2차 직업 특성(모두 패시브)
@@ -354,10 +356,21 @@ export function spendStat(c: Character, k: StatKey, n = 1): boolean {
   return true;
 }
 
+/** 특성 탭마다 따로 쌓이는 포인트(원작처럼): 초보자 탭은 레벨마다, k차 직업 탭은 그 전직 레벨부터 레벨마다 1 */
+export function tabEarned(c: Pick<Character, 'cls' | 'level'>, tab: number): number {
+  if (tab === 0) return c.level - 1;
+  if (!classLine(c.cls)[tab]) return 0;
+  return Math.max(0, c.level - TIER_LEVEL[tab] + 1);
+}
+export const tabSpent = (talents: Record<string, number>, tab: number) => Object.entries(talents).reduce((n, [id, lv]) => n + (TALENT[id] && talentTab(TALENT[id]) === tab ? lv : 0), 0);
+export const tabFree = (c: Pick<Character, 'cls' | 'level' | 'talents'>, tab: number) => tabEarned(c, tab) - tabSpent(c.talents, tab);
+/** 쓸 수 있는 탭 포인트가 남아 있는가(메뉴 알림) */
+export const anyTalentFree = (c: Character) => classLine(c.cls).some((_, k) => tabFree(c, k) > 0);
 export function learnTalent(c: Character, id: string): boolean {
   const t = TALENT[id], lv = c.talents[id] ?? 0;
-  if (!t || c.talentPoints <= 0 || lv >= t.max || (t.cls && !classLine(c.cls).includes(t.cls))) return false;
-  c.talents[id] = lv + 1; c.talentPoints--;
+  if (!t || lv >= t.max || (t.cls && !classLine(c.cls).includes(t.cls))) return false;
+  if (tabFree(c, talentTab(t)) <= 0) return false;
+  c.talents[id] = lv + 1;
   // 액티브를 처음 배우면 지금 공격 바의 빈 칸에 놓아 준다(옮기는 것은 특성 화면에서)
   if (lv === 0 && t.active && !c.attackBars.some((b) => b.includes(id))) {
     const bar = c.attackBars[c.attackPage], free = bar.indexOf(null);
@@ -411,17 +424,14 @@ export function switchTalentPreset(c: Character, i: number): string | null {
   if (c.level < TALENT_PRESET_LV) return `Lv.${TALENT_PRESET_LV}부터 쓸 수 있습니다`;
   if (i < 0 || i >= c.talentPresets.length) return '없는 프리셋';
   if (i === c.talentPreset) return null;
-  const spent = (t: Record<string, number>) => Object.values(t).reduce((n, v) => n + v, 0);
-  const pool = c.talentPoints + spent(c.talents);
   // 지금 직업 계보에서 쓸 수 없는 특성은 빼고 불러온다
   const line = classLine(c.cls), next = c.talentPresets[i];
   const talents = Object.fromEntries(Object.entries(next.talents).filter(([id, lv]) => lv > 0 && TALENT[id] && (!TALENT[id].cls || line.includes(TALENT[id].cls!))));
-  if (spent(talents) > pool) return '포인트가 모자랍니다';
+  if (line.some((_, k) => tabSpent(talents, k) > tabEarned(c, k))) return '포인트가 모자랍니다';
   c.talentPresets[c.talentPreset] = { talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) };
   c.talentPreset = i;
   c.talents = talents;
   c.attackBars = next.bars.map((b) => b.map((id) => (id && talents[id] ? id : null)));
-  c.talentPoints = pool - spent(talents);
   return null;
 }
 

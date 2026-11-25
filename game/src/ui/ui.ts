@@ -17,7 +17,7 @@ const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 �
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, talentTab, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
   TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
@@ -25,6 +25,7 @@ import {
   mapUnlocked, refillTeleports, anvilCap, anvilPointsFree, anvilRate, anvilSlotsOpen, equipCard, recipeLock, unequipCard, buy, collectAnvil, deposit, depositAll, haveMat, invSize, setProduct, shopLeft, spendAnvilPoint,
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
   minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot, starTalPoints, foodWait, gateChecks, gateOpen,
+  anyTalentFree, tabFree,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { GAMES, GameKind, SPIKE_WINDOW, gameReward, playsLeft, spikeOpen } from '../core/minigames';
@@ -334,7 +335,7 @@ export class UI {
     const d = w.d, need = xpToNext(c.level);
     const menu: [string, string, string, boolean?][] = [
       ['auto', '자동', 'auto'], ['attacks', '공격', 'atk'], ['items', '아이템', 'open:items'],
-      ['talents', '특성', 'open:char', c.statPoints > 0 || c.talentPoints > 0], ['codex', '목차', 'open:codex', Object.keys(NPCS).some((n) => questProgress(c, n)?.done)],
+      ['talents', '특성', 'open:char', c.statPoints > 0 || anyTalentFree(c)], ['codex', '목차', 'open:codex', Object.keys(NPCS).some((n) => questProgress(c, n)?.done)],
       ['map', '지도', 'open:map'], ['chat', '채팅', 'open:chat'], ['menu', '메뉴', 'open:menu'],
     ];
     // 요약·게이지·버튼을 따로 갱신한다: 체력·마나가 차오를 때 버튼이 다시 만들어져 터치가 씹히지 않도록
@@ -553,11 +554,13 @@ export class UI {
         const sp = starTalPoints(g.acc, c);
         const tierName = (k: number) => (line[k] ? CLASSES[line[k]].name : k === 1 ? '직업' : `${k}차 직업`);
         const tierIcon = (k: number) => (line[k] ? `tl_${TALENTS.find((x) => x.cls === line[k])?.id ?? 'smash'}` : 'ui_lock');
-        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', ...Array.from({ length: tiers }, (_, i) => tierName(i + 1)), `별빛${sp > 0 ? ` ${sp}` : ''}`];
+        const tp = (k: number) => (line[k] && tabFree(c, k) > 0 ? ` ${tabFree(c, k)}` : '');
+        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, `초보자${tp(0)}`, ...Array.from({ length: tiers }, (_, i) => `${tierName(i + 1)}${tp(i + 1)}`), `별빛${sp > 0 ? ` ${sp}` : ''}`];
         const icons = ['st_str', 'ui_talents', ...Array.from({ length: tiers }, (_, i) => tierIcon(i + 1)), 'ui_star'];
         const t = tab > star ? 1 : tab >= 2 && tab < star && !line[tab - 1] ? 1 : tab;
         const body = t === 0 ? this.statsHtml(c) : t === star ? this.starTalHtml(c) : this.talentsHtml(c, line[t - 1]);
-        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, icons)}
+        const tabPts = t > 0 && t < star ? tabFree(c, t - 1) : null;
+        return win(`특성${tabPts !== null ? ` <span class="ui-sm ui-muted">이 탭 포인트</span> <b class="ui-accent">${tabPts}</b>` : ''}`, `${tabs(names, t, tabAct, icons)}
           ${t > 0 && t < star && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
           <div class="ui-tabpanel talentpanel">${body}</div>`);
       }
@@ -1497,7 +1500,7 @@ export class UI {
         <div class="ui-accent">LV ${lv} / ${t.max}</div></div></div>
         <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${t.desc(Math.max(1, lv))}</div>
         ${lv < t.max ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}
-        <div class="talbtns"><button class="ui-btn primary iconbtn block" data-act="talent:${t.id}" ${c.talentPoints && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
+        <div class="talbtns"><button class="ui-btn primary iconbtn block" data-act="talent:${t.id}" ${tabFree(c, talentTab(t)) > 0 && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
         ${t.active ? `<button class="ui-btn iconbtn block ${this.assigning === t.id ? 'success' : ''}" data-act="quick:${t.id}" ${lv ? '' : 'disabled'}>${ui('ui_assign', 'tic')} ${this.assigning === t.id ? '지정 취소' : '퀵슬롯에 지정하기'}</button>` : ''}</div>
         ${t.active && !lv ? '<span class="ui-xs ui-muted">1레벨 이상 올리면 퀵슬롯에 지정할 수 있습니다.</span>' : ''}
         ${t.active && lv && this.assigning === t.id ? `<div class="quickhint">${ui('ui_assign', 'tic')} 아래 깜빡이는 퀵슬롯 칸을 누르세요</div>` : ''}`;

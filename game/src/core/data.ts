@@ -738,6 +738,8 @@ export const RECIPES: RecipeDef[] = [
 
 export interface TalentDef {
   id: string; name: string; max: number; active?: { cooldown: number; mana: number };
+  /** 자동으로 채운 패시브(원작처럼 탭마다 15개): 레벨마다 eff 를 per 만큼. skill 이면 그 직업이 맡은 기술 +3%/레벨 */
+  eff?: BonusKey; per?: number; unit?: string; skill?: boolean;
   /** 지정하면 해당 직업 전용 */
   cls?: ClassId;
   /** 레벨에 따른 설명 */
@@ -801,7 +803,7 @@ export const TALENTS: TalentDef[] = [
   { id: 'dreamwalk', name: '꿈길', max: 10, cls: 'oracle', desc: (lv) => `방치 효율 +${(lv * 0.8).toFixed(1)}%p` },
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
-export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
+
 /** 공격 바: 칸 수와 장 수(원작처럼 6칸, 넘겨 쓰는 두 번째 장) */
 export const ATTACK_SLOTS = 6;
 /** 지도 순간이동: 하루에 무료로 쌓이는 횟수와 최대 보유량. 마을은 언제나 무료 */
@@ -878,14 +880,15 @@ export const CLASS_SKILLS: Partial<Record<ClassId, LinkedSkill>> = {
 };
 export const LINKED_NAMES: Record<LinkedSkill, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', build: '건설', alchemy: '연금', breed: '번식' };
 /** 이 캐릭터의 기술 배율: 계보에서 그 기술을 맡은 직업 하나마다 +25%, 그리고 레벨마다 +0.5% */
-export function classSkillMult(c: { cls: ClassId; level: number }, k: LinkedSkill): number {
-  let n = 0;
-  for (let id: ClassId | undefined = c.cls; id && id !== 'beginner'; id = CLASSES[id]?.base) if (CLASS_SKILLS[id] === k) n++;
-  return n ? 1 + n * 0.25 + c.level * 0.005 : 1;
+export function classSkillMult(c: { cls: ClassId; level: number; talents?: Record<string, number> }, k: LinkedSkill): number {
+  let n = 0, mast = 0;
+  for (let id: ClassId | undefined = c.cls; id && id !== 'beginner'; id = CLASSES[id]?.base) if (CLASS_SKILLS[id] === k) { n++; mast += c.talents?.[`mast_${id}`] ?? 0; }
+  return n ? 1 + n * 0.25 + c.level * 0.005 + mast * 0.03 : 1;
 }
 for (const [id, k] of Object.entries(CLASS_SKILLS) as [ClassId, LinkedSkill][]) CLASSES[id].desc += ` [${LINKED_NAMES[k]} 담당: +25%]`;
 /** 계정 공용 기술: 그 기술을 맡은 캐릭터 가운데 가장 높은 배율 */
 export const accClassSkillMult = (chars: { cls: ClassId; level: number }[], k: LinkedSkill) => Math.max(1, ...chars.map((c) => classSkillMult(c, k)));
+
 export const CLASS_LEVEL = 10;
 /** 2차 전직 레벨 */
 export const SUBCLASS_LEVEL = 30;
@@ -911,6 +914,51 @@ export function maxTierOf(base: ClassId): number {
 }
 /** 다음 단계로 전직할 수 있는가(2차 이상) */
 export const canSubclass = (c: { cls: ClassId; level: number }) => c.cls !== 'beginner' && nextClasses(c.cls).length > 0 && c.level >= TIER_LEVEL[classTier(c.cls) + 1];
+// ───────── 특성 탭 채우기: 원작처럼 탭(초보자·1차·2차·3차…)마다 15개 ─────────
+export const TALENTS_PER_TAB = 15;
+const TAL_WORDS: Record<string, [string, string]> = {
+  str: ['근력 단련', '괴력'], agi: ['몸놀림', '잰걸음'], wis: ['명상', '깨달음'], luk: ['운 다루기', '행운의 별'], hp: ['튼튼한 심장', '굳은살'], hpPct: ['강인함', '생명력'],
+  def: ['방패술', '버티기'], dmg: ['날 세우기', '급소 찌르기'], acc: ['조준', '정밀함'], drop: ['눈썰미', '보물 사냥'], coins: ['흥정', '동전 줍기'], xp: ['배움', '경험 쌓기'],
+  card: ['수집벽', '카드 감각'], afk: ['느긋함', '단잠'], mining: ['광맥 감각', '곡괭이질'], chopping: ['나무 결', '도끼질'], fishing: ['물때 읽기', '낚싯줄'], catching: ['날쌘 그물', '벌레 눈'],
+};
+const TAL_BASE: Record<string, [number, string]> = {
+  str: [1, ''], agi: [1, ''], wis: [1, ''], luk: [1, ''], hp: [8, ''], hpPct: [1.5, '%'], def: [0.6, ''], dmg: [1, '%'], acc: [1.5, ''], drop: [1, '%'], coins: [2, '%'],
+  xp: [1, '%'], card: [1, '%'], afk: [0.2, '%p'], mining: [2, '%'], chopping: [2, '%'], fishing: [2, '%'], catching: [2, '%'],
+};
+const TAL_LABEL: Record<string, string> = { str: '힘', agi: '민첩', wis: '지혜', luk: '행운', hp: '최대 체력', hpPct: '최대 체력', def: '방어력', dmg: '공격력', acc: '명중', drop: '드롭률', coins: '코인 획득', xp: '경험치', card: '카드 드롭률', afk: '방치 효율', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율' };
+const TAL_THEME: Record<string, string[]> = {
+  beginner: ['hp', 'luk', 'str', 'agi', 'wis', 'coins', 'xp', 'drop', 'card', 'mining', 'chopping', 'afk', 'acc', 'def', 'fishing'],
+  warrior: ['str', 'hpPct', 'def', 'dmg', 'hp', 'acc', 'mining', 'coins', 'xp', 'drop', 'card', 'afk', 'luk', 'fishing', 'wis'],
+  archer: ['agi', 'dmg', 'acc', 'drop', 'catching', 'chopping', 'card', 'coins', 'xp', 'hpPct', 'luk', 'afk', 'str', 'def', 'hp'],
+  mage: ['wis', 'xp', 'dmg', 'afk', 'fishing', 'hpPct', 'card', 'coins', 'drop', 'luk', 'acc', 'def', 'agi', 'hp', 'mining'],
+  wanderer: ['luk', 'drop', 'coins', 'card', 'afk', 'xp', 'dmg', 'hpPct', 'acc', 'fishing', 'catching', 'mining', 'chopping', 'def', 'hp'],
+};
+{
+  const owners: (ClassId | undefined)[] = [undefined, ...(Object.keys(CLASSES) as ClassId[]).filter((k) => k !== 'beginner')];
+  for (const cls of owners) {
+    const have = TALENTS.filter((t) => t.cls === cls);
+    const tier = cls ? classTier(cls) : 0, root = cls ? baseClass(cls) : 'beginner';
+    const theme = TAL_THEME[root] ?? TAL_THEME.beginner, prefix = cls ? `${CLASSES[cls].name}의 ` : '';
+    const sk = cls ? CLASS_SKILLS[cls] : undefined;
+    if (cls && sk && have.length < TALENTS_PER_TAB) {
+      TALENTS.push({ id: `mast_${cls}`, name: `${prefix}${LINKED_NAMES[sk]} 숙련`, max: 20, cls, skill: true, desc: (lv) => `${LINKED_NAMES[sk]} +${lv * 3}%` });
+      have.push(TALENTS[TALENTS.length - 1]);
+    }
+    const used: Record<string, number> = {};
+    for (let i = 0; have.length < TALENTS_PER_TAB; i++) {
+      const eff = theme[i % theme.length], k = used[eff] ?? 0;
+      used[eff] = k + 1;
+      const [b, unit] = TAL_BASE[eff], per = Math.round(b * (1 + tier * 0.5) * 100) / 100;
+      const id = `gt_${cls ?? 'beginner'}_${eff}${k ? k + 1 : ''}`;
+      const name = `${prefix}${TAL_WORDS[eff][k % 2]}${k >= 2 ? ` ${k}` : ''}`;
+      const t: TalentDef = { id, name, max: 20, cls, eff: eff as BonusKey, per, unit, desc: (lv) => `${TAL_LABEL[eff] ?? eff} +${Math.round(lv * per * 100) / 100}${unit}` };
+      TALENTS.push(t); have.push(t);
+    }
+  }
+}
+export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
+/** 이 특성이 속한 탭(0 초보자, 1 1차 직업 …) */
+export const talentTab = (t: TalentDef) => (t.cls ? classTier(t.cls) : 0);
 
 /** 카드: 계정 전체가 함께 모으는 수집 보너스(장착해야 효과). 1/3/10장에서 단계 상승.
  *  id 는 몬스터 id(몬스터 카드) 또는 자원 id(자원 카드: 채집할 때 드물게) */

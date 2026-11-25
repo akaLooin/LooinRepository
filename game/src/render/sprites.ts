@@ -1,7 +1,7 @@
 // 모든 그래픽은 코드로 생성한 픽셀아트(임시 원화). 외부 이미지 파일 없음.
 // 1 아트픽셀 = 1 월드 단위. 나중에 실제 스프라이트 시트로 교체할 때는 같은 key로 텍스처만 바꾸면 된다.
 import { Look } from '../core/state';
-import { STAMPS } from '../core/data';
+import { STAMPS, TALENTS } from '../core/data';
 import { CLIPS, FH, FW, MANNEQUIN_WHITE, ROOT_X, ROOT_Y, paintClip } from './mannequin';
 import { GEAR, gearKey, paintGear } from './gear';
 
@@ -1485,6 +1485,24 @@ function buildIcons() {
   badge('overflow', '#4e8de2', (p) => { p.disc(8, 8, 3, 3, '#a7d8f0'); p.rect(7, 3, 2, 3, '#a7d8f0'); });
   badge('patience', '#8a6fd1', (p) => { p.rect(5, 3, 6, 1, C.white); p.rect(5, 11, 6, 1, C.white); p.line(6, 4, 10, 10, C.gold); p.line(10, 4, 6, 10, C.gold); });
   badge('omen', '#8a6fd1', (p) => { p.disc(8, 7, 3, 3, C.gold); p.disc(9.5, 6, 2.4, 2.4, '#8a6fd1'); });
+  // 자동으로 채운 패시브 특성: 효과마다 색과 무늬
+  const GEN_COL: Record<string, string> = { str: '#d9574a', agi: '#5fb859', wis: '#4e8de2', luk: '#c98f2a', hp: '#e25d7a', hpPct: '#e25d7a', def: '#7b8591', dmg: '#d9574a', acc: '#3a9a8a', drop: '#8a6fd1', coins: '#c98f2a', xp: '#4e8de2', card: '#8a6fd1', afk: '#3a9a8a', mining: '#8a6a4a', chopping: '#5a8a3a', fishing: '#4a8ae8', catching: '#5fb859' };
+  const GEN_SYM: Record<string, (p: Paint) => void> = {
+    str: (p) => { p.rect(6, 4, 5, 5, C.white); }, agi: (p) => { p.line(5, 9, 11, 3, C.white); p.line(7, 9, 12, 4, C.white); }, wis: (p) => { p.disc(8.5, 6, 2.6, 2.6, C.white); },
+    luk: (p) => { p.disc(7, 5, 1.4, 1.4, '#8fde5d'); p.disc(10, 5, 1.4, 1.4, '#8fde5d'); p.disc(7, 8, 1.4, 1.4, '#8fde5d'); p.disc(10, 8, 1.4, 1.4, '#8fde5d'); },
+    hp: (p) => { p.disc(7, 5, 1.6, 1.6, C.white); p.disc(10, 5, 1.6, 1.6, C.white); p.line(6, 6, 8.5, 9, C.white); p.line(11, 6, 8.5, 9, C.white); },
+    def: (p) => { p.rect(6, 3, 6, 4, C.white); p.line(6, 7, 9, 9, C.white); p.line(12, 7, 9, 9, C.white); }, dmg: (p) => { p.line(5, 9, 11, 3, C.white); p.rect(5, 8, 2, 2, C.gold); },
+    acc: (p) => { p.disc(8.5, 6, 2.6, 2.6, C.white); p.disc(8.5, 6, 1, 1, '#3a9a8a'); }, drop: (p) => { p.rect(6, 4, 6, 5, C.gold); }, coins: (p) => { p.disc(8.5, 6, 2.6, 2.6, C.gold); },
+    xp: (p) => { p.rect(5, 4, 7, 5, C.white); p.rect(8, 4, 1, 5, '#4e8de2'); }, card: (p) => { p.rect(6, 3, 5, 6, C.white); p.rect(7, 5, 3, 2, C.gold); },
+    afk: (p) => { p.rect(6, 3, 5, 1, C.white); p.rect(6, 8, 5, 1, C.white); p.line(6, 4, 10, 7, C.gold); p.line(10, 4, 6, 7, C.gold); },
+    mining: (p) => { p.line(5, 9, 11, 3, '#c9a26a'); p.line(8, 2, 12, 6, C.white); }, chopping: (p) => { p.line(5, 9, 10, 4, '#c9a26a'); p.rect(9, 3, 3, 3, C.white); },
+    fishing: (p) => { p.line(6, 3, 11, 8, C.white); p.disc(11, 9, 1, 1, C.gold); }, catching: (p) => { p.disc(8.5, 5.5, 2.6, 2, C.white); p.line(8, 7, 8, 9, C.white); },
+  };
+  GEN_SYM.hpPct = GEN_SYM.hp;
+  for (const t of TALENTS) {
+    if (t.eff) badge(t.id, GEN_COL[t.eff] ?? '#7b8591', GEN_SYM[t.eff] ?? GEN_SYM.str);
+    else if (t.skill) badge(t.id, '#b48a3a', (p) => { p.disc(8.5, 6, 3, 3, C.gold); p.disc(8.5, 6, 1.4, 1.4, '#b48a3a'); });
+  }
   // 기도: 영혼(토템마다 색)
   for (const [k, col, hi2] of [['moss', '#8fde5d', '#e0ffc8'], ['sand', '#e8c47a', '#fff0c8'], ['void', '#6a4ac8', '#c8a8ff'], ['snow', '#e8f2fc', '#ffffff'], ['water', '#4a8ae8', '#a8d4ff'], ['ice', '#7ae0ff', '#e0faff'], ['star', '#c48aff', '#fff0a8']] as const) {
     icon(`soul_${k}`, (p) => { p.disc(8, 9, 5, 5, col); p.disc(8, 4, 3, 3.6, col); p.disc(7, 8, 2, 2, hi2); p.set(6, 8, '#1e1420'); p.set(10, 8, '#1e1420'); p.set(8, 0, hi2); });

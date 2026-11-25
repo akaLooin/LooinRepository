@@ -99,7 +99,7 @@ describe('플레이 기록 검증', () => {
 describe('공격 바', () => {
   it('액티브를 배우면 빈 칸에 놓이고, 칸 옮기기·비우기·장 넘기기, 배우지 않은 것은 못 놓는다', () => {
     const acc = setup(), c = acc.characters[0];
-    c.talentPoints = 5;
+    c.level = 6; // 초보자 탭 포인트 5
     expect(applyAction(acc, 0, { t: 'talent', id: 'smash' }, 0).ok).toBe(true);
     expect(c.attackBars[0][0]).toBe('smash');
     expect(applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 3, id: 'heal' }, 0).err).toMatch(/배우지/);

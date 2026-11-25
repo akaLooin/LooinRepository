@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyAction } from '../src/core/actions';
 import { CARD_PRESET_LV, CARD_SETS, FAMILY_SLOTS, SIGN_LV, statueNeed } from '../src/core/data';
 import { charSlots, setTier, statueLevel } from '../src/core/progress';
-import { addItem, createCharacter, derive, deserialize, newAccount, serialize } from '../src/core/state';
+import { addItem, createCharacter, derive, deserialize, newAccount, serialize, tabFree as tFree } from '../src/core/state';
 
 const look = { hair: 0, hairColor: '#000', skin: '#fff', outfit: '#f00' };
 const setup = () => { const acc = newAccount(); createCharacter(acc, '테스트', look, 0); return { acc, c: acc.characters[0] }; };
@@ -123,14 +123,15 @@ import { TALENT_PRESET_LV } from '../src/core/data';
 describe('특성 프리셋', () => {
   it('배분과 공격 바를 두 벌로 저장해 바꿔 끼우고, 포인트 합은 그대로', () => {
     const { acc, c } = setup();
-    c.level = TALENT_PRESET_LV; c.talentPoints = 5;
+    c.level = TALENT_PRESET_LV;
+    const pool = tFree(c, 0);
     applyAction(acc, 0, { t: 'talent', id: 'smash' }, 0); applyAction(acc, 0, { t: 'talent', id: 'smash' }, 0);
     applyAction(acc, 0, { t: 'barSet', bar: 0, slot: 0, id: 'smash' }, 0);
     expect(applyAction(acc, 0, { t: 'talentPreset', i: 1 }, 0).ok).toBe(true);
-    expect(c.talents).toEqual({}); expect(c.talentPoints).toBe(5); expect(c.attackBars[0][0]).toBeNull();
+    expect(c.talents).toEqual({}); expect(tFree(c, 0)).toBe(pool); expect(c.attackBars[0][0]).toBeNull();
     applyAction(acc, 0, { t: 'talent', id: 'heal' }, 0);
     expect(applyAction(acc, 0, { t: 'talentPreset', i: 0 }, 0).ok).toBe(true);
-    expect(c.talents.smash).toBe(2); expect(c.talentPoints).toBe(3); expect(c.attackBars[0][0]).toBe('smash');
+    expect(c.talents.smash).toBe(2); expect(tFree(c, 0)).toBe(pool - 2); expect(c.attackBars[0][0]).toBe('smash');
   });
 });
 

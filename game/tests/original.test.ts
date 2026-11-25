@@ -162,3 +162,22 @@ describe('처치 기록·멀티킬', () => {
     expect(derive(c, acc).dmg).toBeGreaterThan(d0);
   });
 });
+
+import { TALENTS as TLS, TALENTS_PER_TAB, CLASSES as CLS2, talentTab as tTab } from '../src/core/data';
+import { tabFree as tFree2 } from '../src/core/state';
+describe('특성(원작처럼 탭마다 15개, 탭마다 따로 쌓이는 포인트)', () => {
+  it('모든 탭에 15개씩, 포인트는 탭마다 따로', () => {
+    expect(TLS.filter((t) => !t.cls).length).toBe(TALENTS_PER_TAB);
+    for (const k of Object.keys(CLS2)) if (k !== 'beginner') expect(TLS.filter((t) => t.cls === k).length).toBe(TALENTS_PER_TAB);
+    const { acc, c } = setup();
+    c.level = 15; c.cls = 'warrior';
+    expect(tFree2(c, 0)).toBe(14); expect(tFree2(c, 1)).toBe(6);
+    const w = TLS.find((t) => t.cls === 'warrior' && t.eff === 'str')!;
+    expect(tTab(w)).toBe(1);
+    const s0 = derive(c, acc).str;
+    for (let i = 0; i < 6; i++) expect(applyAction(acc, 0, { t: 'talent', id: w.id }, 0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'talent', id: w.id }, 0).ok).toBe(false); // 1차 탭 포인트를 다 씀
+    expect(tFree2(c, 0)).toBe(14); // 초보자 탭은 그대로
+    expect(derive(c, acc).str).toBe(s0 + 6 * w.per!);
+  });
+});
