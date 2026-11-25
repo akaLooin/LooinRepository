@@ -41,6 +41,7 @@ func setup(class_id: String, st: Dictionary) -> void:
 	atk = float(st["atk"])
 	def = float(st["def"])
 	crit = float(st["crit"])
+	load_sprite(class_id)
 	skill_lv = st.get("skills", {})
 	skill_mul = st.get("skill_mul", {})
 	mp_gain_mul = float(st.get("mp_gain_mul", 1.0))
@@ -306,6 +307,13 @@ func _draw() -> void:
 		modulate.a = 0.55
 	else:
 		modulate.a = 1.0
+	if draw_sprite():
+		var cl0 := charge_level()
+		if hold >= CHARGE_START:
+			for i in range(3):
+				draw_rect(Rect2(-7 + i * 5, -36, 4, 3), Tk.MP if i < cl0 else Color(Tk.TEXT_DIM, 0.5))
+		draw_debug_boxes()
+		return
 	var run_phase := (t / 6) % 2
 	match state:
 		"down", "dead":

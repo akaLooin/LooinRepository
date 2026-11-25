@@ -30,6 +30,7 @@ func setup(id: String) -> void:
 	gravity = 0.3
 	cooldown = 30 + randi() % 40
 	facing = -1
+	load_sprite(id)
 
 
 func melee_attack() -> Dictionary:
@@ -149,6 +150,9 @@ func _think_ranged(p: Fighter) -> void:
 
 func _draw() -> void:
 	var tele := state == "atk" and t < int(cur_atk.get("startup", 0)) and (t / 3) % 2 == 0
+	if draw_sprite():
+		draw_debug_boxes()
+		return
 	match mon_id:
 		"mon_inkblob":
 			_draw_inkblob(tele)

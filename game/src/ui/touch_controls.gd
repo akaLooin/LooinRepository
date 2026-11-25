@@ -148,34 +148,56 @@ func set_state(mp_v: float, potions_v: int, learned_v: Array = [true, true, true
 
 
 func _draw() -> void:
-	var sz := get_viewport_rect().size
 	var pad_c := _pad_origin if _pad_touch != -1 else pad_home()
-	draw_circle(pad_c, PAD_R, Color(Tk.PAPER, 0.12))
-	draw_arc(pad_c, PAD_R, 0, TAU, 24, Color(Tk.PAPER, 0.35), 1.0)
+	draw_circle(pad_c, PAD_R, Color(Tk.INK, 0.25))
+	draw_arc(pad_c, PAD_R, 0, TAU, 32, Color("fff1b8", 0.6), 1.0)
+	for k in range(4):
+		var a := k * PI / 2.0
+		draw_rect(Rect2(pad_c + Vector2(cos(a), sin(a)) * (PAD_R - 5) - Vector2(1, 1), Vector2(3, 3)), Color("fff1b8", 0.7))
 	var knob := pad_c + (InputRouter.touch_axis * PAD_R if _pad_touch != -1 else Vector2.ZERO)
-	draw_circle(knob, 10, Color(Tk.PAPER, 0.35))
+	draw_circle(knob, 10, Color(Tk.PAPER, 0.55))
+	draw_arc(knob, 10, 0, TAU, 20, Color(Tk.INK, 0.5), 1.0)
 	for b in BUTTONS:
 		var c := _btn_center(b)
 		var r := _btn_radius(b)
-		var col := Color(Tk.PAPER, 0.18)
-		var enabled := true
-		if String(b[0]).begins_with("skill"):
+		var id: String = b[0]
+		var pressed := _btn_touch.values().has(id)
+		if id.begins_with("skill"):
 			var need := int(String(b[1]))
-			enabled = mp >= float(need) and learned[need - 1]
-			col = Color(Tk.MP, 0.55) if enabled else Color(Tk.INK_SOFT, 0.35)
-		elif b[0] == "potion":
-			enabled = potions > 0
-		if _btn_touch.values().has(b[0]):
-			col = col.lightened(0.4)
-		draw_circle(c, r, col)
-		draw_arc(c, r, 0, TAU, 24, Color(Tk.PAPER, 0.5 if enabled else 0.2), 1.0)
-		var label: String = b[1] if b[0] != "potion" else "약%d" % potions
-		if String(b[0]).begins_with("skill") and not learned[int(String(b[1])) - 1]:
-			label = "-"
-		var fs := 11
-		var w := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		draw_string(_font, c + Vector2(-w / 2.0, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Tk.TEXT, 0.9 if enabled else 0.4))
-		if edit_mode and selected == b[0]:
+			var ok: bool = mp >= float(need) and learned[need - 1]
+			var seal := Color("b8323f", 0.92) if ok else Color("4a3a4a", 0.6)
+			if pressed:
+				seal = seal.lightened(0.3)
+			for k in range(8):
+				var a := k * TAU / 8.0
+				draw_circle(c + Vector2(cos(a), sin(a)) * r * 0.9, r * 0.28, seal)
+			draw_circle(c, r, seal)
+			draw_arc(c, r * 0.72, 0, TAU, 20, Color("6e1a24", 0.9) if ok else Color(Tk.INK, 0.5), 1.0)
+			var lab: String = b[1] if learned[need - 1] else "-"
+			UiKit.text(self, c + Vector2(0, 4), lab, Color("fff1b8") if ok else Color("8a7f9a"), 11, true, Color("6e1a24") if ok else Tk.INK)
+			continue
+		var fill := Color(Tk.INK, 0.5)
+		var ring := Color(Tk.PAPER, 0.6)
+		if id == "attack":
+			ring = Color(Tk.GOLD, 0.85)
+		if pressed:
+			fill = Color(Tk.GOLD, 0.35)
+		draw_circle(c, r, fill)
+		draw_arc(c, r, 0, TAU, 32, ring, 1.5 if id == "attack" else 1.0)
+		if id == "attack":
+			for k in range(int(r * 0.9)):
+				var t := float(k) / (r * 0.9)
+				draw_rect(Rect2(c + Vector2(-r * 0.45 + t * r * 0.9, r * 0.35 - t * r * 0.9), Vector2(2, 2)), Color("e9f0f7"))
+			draw_rect(Rect2(c + Vector2(-r * 0.5, r * 0.2), Vector2(6, 2)), Tk.GOLD)
+			UiKit.text(self, c + Vector2(0, r * 0.75), "공격", Color("fff1b8"), 11, true)
+		elif id == "potion":
+			var pi := UiKit.icon("potion")
+			if pi:
+				draw_texture(pi, c - Vector2(8, 10), Color(1, 1, 1, 1.0 if potions > 0 else 0.4))
+			UiKit.text(self, c + Vector2(r - 2, r), str(potions), Tk.TEXT, 11, false)
+		else:
+			UiKit.text(self, c + Vector2(0, 4), b[1], Color("fff1b8"), 11, true)
+		if edit_mode and selected == id:
 			draw_arc(c, r + 3, 0, TAU, 32, Tk.GOLD, 2.0)
 	if edit_mode and selected == "pad":
 		draw_arc(pad_home(), PAD_R + 3, 0, TAU, 32, Tk.GOLD, 2.0)

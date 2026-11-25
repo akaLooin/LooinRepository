@@ -52,14 +52,16 @@ func make_split(title: String, info: String, back: Callable, left_w: float = 190
 	root.add_child(col)
 	var head := HBoxContainer.new()
 	col.add_child(head)
-	head.add_child(UiKit.label(title, Tk.GOLD))
+	var bb := UiKit.button("", back, false, "back")
+	bb.custom_minimum_size = Vector2(26, 18)
+	head.add_child(bb)
+	head.add_child(UiKit.label(title, Tk.GOLD, 11, true))
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(sp)
-	head.add_child(UiKit.label(info, Tk.TEXT_DIM))
-	var bb := UiKit.button("돌아가기", back)
-	bb.custom_minimum_size = Vector2(60, 16)
-	head.add_child(bb)
+	var acc: Dictionary = GameState.data["account"]
+	head.add_child(UiKit.currency("gold", int(acc["gold"])))
+	head.add_child(UiKit.currency("page", int(acc["pages"])))
 	var row := HBoxContainer.new()
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.add_theme_constant_override("separation", 6)

@@ -32,11 +32,19 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	Sfx.bgm("bgm_town")
 	match screen:
 		"title":
-			current = Screens.title(self)
+			var ts := TitleScreen.new()
+			ts.router = self
+			current = ts
 		"town":
-			current = Screens.town(self)
-		"books":
-			current = Screens.books(self)
+			var tw := TownScreen.new()
+			tw.router = self
+			current = tw
+		"map", "books":
+			var bm := BookMapScreen.new()
+			bm.router = self
+			bm.sel = args.get("sel", "")
+			bm.diff = args.get("difficulty", "normal")
+			current = bm
 		"options":
 			current = Screens.options(self, args)
 		"select":
@@ -73,5 +81,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	add_child(current)
 	if current is MenuScreen:
 		(current as MenuScreen).focus_first.call_deferred()
+	if current is Control and not (current is MenuScreen):
+		pass
 	if autotest:
 		autotest.on_screen(screen, current)

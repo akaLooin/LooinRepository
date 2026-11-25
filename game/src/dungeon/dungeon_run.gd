@@ -31,6 +31,7 @@ var max_combo := 0
 var exp_gain := 0
 var gold_gain := 0
 var stage_path: Array = []
+var total_pages := 1
 var last_input: Dictionary = InputRouter.empty_frame()
 var show_hitboxes := false
 var paused := false
@@ -95,6 +96,7 @@ func start(dgn_id: String, seed_v: int = -1, diff_id: String = "normal") -> void
 		pet = Pet.new()
 		pet.world = self
 		pet.setup(st["pet"])
+	total_pages = _longest_path(dungeon["first_stage"])
 	_load_stage(dungeon["first_stage"])
 
 
@@ -550,3 +552,10 @@ func _drop_table() -> Dictionary:
 	if diff.has("drop_rolls"):
 		t["rolls"] = int(diff["drop_rolls"])
 	return t
+
+
+func _longest_path(st_id: String) -> int:
+	var best := 0
+	for n in dungeon["stages"][st_id]["next"]:
+		best = maxi(best, _longest_path(n[0]))
+	return best + 1

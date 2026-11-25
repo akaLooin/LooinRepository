@@ -34,6 +34,8 @@ var flash := 0
 var dead := false
 var remove_me := false
 
+var sprite: Dictionary = {}     # data/sprites.json 항목 (+ 로드된 "tex")
+
 var cur_atk: Dictionary = {}
 var cur_atk_id := ""
 var _hit_log: Dictionary = {}   # 대상 instance_id -> 마지막으로 맞힌 히트 번호
@@ -234,6 +236,67 @@ func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
 		set_state("hurt")
 	if not flying:
 		facing = -dir
+
+
+# ---------- 스프라이트 시트 ----------
+
+## id 의 스프라이트 시트를 찾아 둔다. 시트 파일이 없으면 코드 그림을 쓴다.
+func load_sprite(id: String) -> void:
+	var row: Dictionary = DataDB.tables.get("sprites", {}).get(id, {})
+	if row.is_empty() or not ResourceLoader.exists(row["sheet"]):
+		sprite = {}
+		return
+	sprite = row.duplicate()
+	sprite["tex"] = load(row["sheet"])
+
+
+func anim_name() -> String:
+	match state:
+		"run":
+			return "run"
+		"air":
+			return "air"
+		"dash":
+			return "dash"
+		"atk":
+			return "atk"
+		"hurt", "air_hurt":
+			return "hurt"
+		"down", "getup", "dead":
+			return "down"
+	return "idle"
+
+
+## 스프라이트로 그렸으면 true
+func draw_sprite() -> bool:
+	if sprite.is_empty():
+		return false
+	var anims: Dictionary = sprite["anims"]
+	var key := anim_name()
+	if not anims.has(key):
+		key = "idle"
+	var a: Dictionary = anims[key]
+	var frames := int(a.get("frames", 1))
+	var idx := 0
+	if a.get("phased", false) and not cur_atk.is_empty():
+		var s := int(cur_atk["startup"])
+		idx = 0 if t < s else (1 if t < s + int(cur_atk["active"]) else 2)
+		idx = mini(idx, frames - 1)
+	elif frames > 1:
+		idx = int(t * float(a.get("fps", 6)) / 60.0) % frames
+	var col := int(a.get("col", 0)) + idx
+	var fw := float(sprite["frame"][0])
+	var fh := float(sprite["frame"][1])
+	var src := Rect2(col * fw, int(a["row"]) * fh, fw, fh)
+	var o := Vector2(float(sprite["origin"][0]), float(sprite["origin"][1]))
+	var mod := Color(1, 1, 1, 1)
+	if flash > 0 and flash % 2 == 0:
+		mod = Color(3, 3, 3, 1)
+	if facing < 0:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
+	draw_texture_rect_region(sprite["tex"], Rect2(-o, Vector2(fw, fh)), src, mod)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	return true
 
 
 # ---------- 그리기 도우미 (픽셀 사각형) ----------

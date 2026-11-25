@@ -80,9 +80,9 @@ func _menu_tour() -> void:
 	Meta.add_item("eq_top_03")
 	Meta.learn("cls_tbd_01", "sk_mp2")
 	Meta.learn("cls_tbd_01", "sk_mp3")
-	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "books"]
+	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map"]
 	if dungeon_id != "dgn_01":
-		tour = ["books"]
+		tour = ["map"]
 		for d in ["dgn_01", "dgn_02"]:
 			GameState.data["progress"]["cleared"][d + ":normal"] = { "best_rank": "A", "best_time": 100.0 }
 	for scr in tour:

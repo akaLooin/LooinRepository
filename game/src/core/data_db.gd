@@ -1,7 +1,7 @@
 extends Node
 ## 정적 게임 데이터 로더. res://data/*.json 을 읽고 id 참조 무결성을 검사한다.
 
-const FILES := ["classes", "attacks", "skills", "monsters", "dungeons", "items", "skill_tree", "pets", "dialogs", "missions"]
+const FILES := ["classes", "attacks", "skills", "monsters", "dungeons", "items", "skill_tree", "pets", "dialogs", "missions", "sprites"]
 
 var tables: Dictionary = {}
 var errors: PackedStringArray = []
