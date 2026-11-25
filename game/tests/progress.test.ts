@@ -341,7 +341,7 @@ describe('전투·줍기 조작', () => {
 import { clearSkin, lookOf, setSkin } from '../src/core/state';
 describe('홀로웨어(겉모습 스킨)', () => {
   it('가방의 모자를 넣으면 겉모습만 바뀌고 능력치는 그대로', () => {
-    const acc = newAccount(); const c = createCharacter(acc, '스킨', 'beginner');
+    const { acc, c } = setup();
     addItem(c, 'hat_moss', 1);
     const before = derive(c, acc);
     expect(setSkin(c, 'hat_moss')).toBeNull();
@@ -354,6 +354,6 @@ describe('홀로웨어(겉모습 스킨)', () => {
     expect(c.inventory.some((s) => s.id === 'hat_moss')).toBe(true);
     // 저장 후 다시 불러와도 남는다
     setSkin(c, 'hat_moss');
-    expect(deserialize(serialize(acc)).characters[0].skins.hat).toBe('hat_moss');
+    expect(deserialize(serialize(acc))!.characters[0].skins.hat).toBe('hat_moss');
   });
 });
