@@ -131,3 +131,19 @@ describe('요리(원작에 맞춤)', () => {
     expect(acc.cook.found).toEqual([]);
   });
 });
+
+import { BRIBES as BR, STAMPS as ST, ITEMS as IT2 } from '../src/core/data';
+describe('우표·뇌물(원작처럼 많이, 세트로)', () => {
+  it('우표가 60장 넘게 있고 모두 아이템·드롭처가 있으며, 뇌물은 월드마다 한 세트', () => {
+    expect(ST.length).toBeGreaterThanOrEqual(60);
+    for (const s of ST) expect(IT2[s.id]?.kind).toBe('stamp');
+    for (const s of ST.filter((x) => x.w)) expect(Object.values(MONSTERS).some((m) => m.drops.some((d) => d.item === s.id))).toBe(true);
+    expect(new Set(BR.map((b) => b.set)).size).toBe(4);
+  });
+  it('능력치 우표는 능력치를 올린다', () => {
+    const { acc, c } = setup();
+    const s0 = derive(c, acc).str;
+    acc.stamps.stamp_fist = 5;
+    expect(derive(c, acc).str).toBe(s0 + 5);
+  });
+});

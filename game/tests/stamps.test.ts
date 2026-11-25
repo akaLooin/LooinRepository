@@ -44,6 +44,10 @@ describe('우표', () => {
     expect(applyAction(acc, 0, { t: 'bribe' }, 0).ok).toBe(true); // 우표 할인
     expect(stampCost(acc, STAMP_BY_ID.stamp_hp).coins).toBeLessThan(before);
     for (let i = 1; i < BRIBES.length; i++) applyAction(acc, 0, { t: 'bribe' }, 0);
+    // 다음 세트는 그 월드에 가야 열린다
+    expect(acc.bribes).toBe(BRIBES.filter((b) => b.set === 1).length);
+    c.maxWorld = 4; acc.coins = 1e12;
+    for (let i = acc.bribes; i < BRIBES.length; i++) applyAction(acc, 0, { t: 'bribe' }, 0);
     expect(acc.bribes).toBe(BRIBES.length);
     expect(applyAction(acc, 0, { t: 'bribe' }, 0).ok).toBe(false);
   });

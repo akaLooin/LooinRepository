@@ -1,6 +1,7 @@
 // 모든 그래픽은 코드로 생성한 픽셀아트(임시 원화). 외부 이미지 파일 없음.
 // 1 아트픽셀 = 1 월드 단위. 나중에 실제 스프라이트 시트로 교체할 때는 같은 key로 텍스처만 바꾸면 된다.
 import { Look } from '../core/state';
+import { STAMPS } from '../core/data';
 import { CLIPS, FH, FW, MANNEQUIN_WHITE, ROOT_X, ROOT_Y, paintClip } from './mannequin';
 import { GEAR, gearKey, paintGear } from './gear';
 
@@ -1161,6 +1162,16 @@ function buildItems() {
     ['xp', '#4e8de2', (q) => { q.rect(3, 4, 7, 5, '#f2f0e6'); q.rect(6, 4, 1, 5, '#4e8de2'); }],
     ['afk', '#3a9a8a', (q) => { q.rect(4, 3, 5, 1, '#f2f0e6'); q.rect(4, 9, 5, 1, '#f2f0e6'); q.line(4, 4, 8, 8, '#f6c945'); q.line(8, 4, 4, 8, '#f6c945'); }],
   ];
+  stampArt.push(
+    ['fishing', '#4e8de2', (q) => { q.line(4, 3, 9, 8, '#f2f0e6'); q.disc(9, 9, 1.2, 1.2, '#f6c945'); }],
+    ['catching', '#5fb859', (q) => { q.disc(6.5, 6, 3, 2.4, '#f2f0e6'); q.line(6, 8, 6, 10, '#f2f0e6'); }],
+    ['str', '#d9574a', (q) => { q.rect(4, 4, 5, 5, '#f2f0e6'); q.rect(5, 3, 3, 1, '#f2f0e6'); }],
+    ['agi', '#5fb859', (q) => { q.line(3, 9, 9, 3, '#f2f0e6'); q.line(5, 9, 10, 4, '#f2f0e6'); }],
+    ['wis', '#4e8de2', (q) => { q.disc(6.5, 6.5, 3, 3, '#f2f0e6'); q.disc(6.5, 6.5, 1.4, 1.4, '#4e8de2'); }],
+    ['luk', '#c98f2a', (q) => { q.disc(5, 5, 1.6, 1.6, '#5fb859'); q.disc(8, 5, 1.6, 1.6, '#5fb859'); q.disc(5, 8, 1.6, 1.6, '#5fb859'); q.disc(8, 8, 1.6, 1.6, '#5fb859'); }],
+    ['card', '#8a6fd1', (q) => { q.rect(4, 3, 5, 7, '#f2f0e6'); q.rect(5, 5, 3, 2, '#f6c945'); }],
+    ['hpPct', '#e25d7a', (q) => { q.disc(5, 5, 1.8, 1.8, '#f2f0e6'); q.disc(8, 5, 1.8, 1.8, '#f2f0e6'); q.line(3, 6, 6, 10, '#f2f0e6'); q.line(10, 6, 7, 10, '#f2f0e6'); }],
+  );
   for (const [k, col, art] of stampArt) {
     p = new Paint(13, 13);
     p.rect(1, 1, 11, 11, '#f2f0e6');
@@ -1382,6 +1393,7 @@ export const ITEM_ICON: Record<string, string> = {
   twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
+  ...Object.fromEntries(STAMPS.filter((st) => st.name).map((st) => [st.id, `it_stamp_${st.eff}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].flatMap((k) => [[`statue_${k}`, `it_statue_${k}`], [`gstatue_${k}`, `it_gstatue_${k}`]])), sculpt_tools: 'it_sculpt', loot_magnet: 'it_magnet',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
   arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',

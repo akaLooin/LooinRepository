@@ -1418,8 +1418,8 @@ export const TALENT_PRESET_LV = 15;
 /** 우표(계정 공용): 우표함에 넣어 모으고, 코인 + 재료로 끝없이 올린다.
  *  lin: 레벨마다 a 씩, sat: a·lv/(lv+b) 로 점점 덜 오른다(최대 a에 가까워짐) */
 export type StampCat = 'combat' | 'skill' | 'misc';
-export type StampEff = 'dmg' | 'hp' | 'def' | 'acc' | 'crit' | 'mining' | 'chopping' | 'drop' | 'coins' | 'xp' | 'afk';
-export interface StampDef { id: string; eff: StampEff; cat: StampCat; kind: 'lin' | 'sat'; a: number; b?: number; unit: '%' | '%p' | ''; label: string; cost: number; mat: string; matBase: number }
+export type StampEff = 'dmg' | 'hp' | 'def' | 'acc' | 'crit' | 'mining' | 'chopping' | 'drop' | 'coins' | 'xp' | 'afk' | 'fishing' | 'catching' | 'str' | 'agi' | 'wis' | 'luk' | 'card' | 'hpPct';
+export interface StampDef { id: string; eff: StampEff; cat: StampCat; kind: 'lin' | 'sat'; a: number; b?: number; unit: '%' | '%p' | ''; label: string; cost: number; mat: string; matBase: number; /** 우표 이름(새 우표) */ name?: string; /** 나오는 월드 */ w?: number }
 export const STAMPS: StampDef[] = [
   { id: 'stamp_dmg', eff: 'dmg', cat: 'combat', kind: 'sat', a: 60, b: 40, unit: '%', label: '공격력', cost: 30, mat: 'pebble', matBase: 4 },
   { id: 'stamp_hp', eff: 'hp', cat: 'combat', kind: 'lin', a: 4, unit: '', label: '최대 체력', cost: 25, mat: 'moss', matBase: 4 },
@@ -1433,6 +1433,46 @@ export const STAMPS: StampDef[] = [
   { id: 'stamp_xp', eff: 'xp', cat: 'misc', kind: 'sat', a: 40, b: 50, unit: '%', label: '경험치', cost: 150, mat: 'plank', matBase: 2 },
   { id: 'stamp_afk', eff: 'afk', cat: 'misc', kind: 'sat', a: 10, b: 60, unit: '%p', label: '방치 효율', cost: 300, mat: 'bar_red', matBase: 2 },
 ];
+// 원작처럼 우표가 많다: 월드마다 13장씩 더(그 월드 몬스터가 드물게 떨어뜨린다)
+const STAMP_LABEL: Record<StampEff, [string, '%' | '%p' | '']> = {
+  dmg: ['공격력', '%'], hp: ['최대 체력', ''], def: ['방어력', ''], acc: ['명중', ''], crit: ['치명타 확률', '%p'], mining: ['채광 효율', '%'], chopping: ['벌목 효율', '%'],
+  drop: ['드롭률', '%'], coins: ['코인 획득', '%'], xp: ['경험치', '%'], afk: ['방치 효율', '%p'], fishing: ['낚시 효율', '%'], catching: ['곤충 채집 효율', '%'],
+  str: ['힘', ''], agi: ['민첩', ''], wis: ['지혜', ''], luk: ['행운', ''], card: ['카드 드롭률', '%'], hpPct: ['최대 체력', '%'],
+};
+const STAMP_MATS = [
+  ['moss', 'pebble', 'leaf', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap'],
+  ['cactus_spine', 'scorp_tail', 'heat_feather', 'old_bandage', 'salt_crystal', 'worm_scale', 'sun_ember'],
+  ['snow_tuft', 'pine_cone', 'peng_feather', 'icicle_shard', 'yeti_fur', 'aurora_dust', 'frost_core'],
+  ['star_sand', 'crater_shell', 'neb_jelly', 'meteor_chip', 'ring_plume', 'comet_hair', 'void_shard'],
+];
+/** [id, 이름, 효과, 분류, 'lin'이면 레벨마다 a, 'sat'이면 a·lv/(lv+b)] */
+const EXTRA_STAMPS: [string, string, StampEff, StampCat, 'lin' | 'sat', number, number][][] = [
+  [['stamp_fist', '주먹 우표', 'str', 'combat', 'lin', 1, 0], ['stamp_boot', '장화 우표', 'agi', 'combat', 'lin', 1, 0], ['stamp_book', '책장 우표', 'wis', 'combat', 'lin', 1, 0], ['stamp_clover', '클로버 우표', 'luk', 'combat', 'lin', 1, 0],
+   ['stamp_heart', '하트 우표', 'hpPct', 'combat', 'sat', 30, 60], ['stamp_rod', '낚싯대 우표', 'fishing', 'skill', 'sat', 60, 40], ['stamp_netw', '그물 우표', 'catching', 'skill', 'sat', 60, 40], ['stamp_anvil', '모루 우표', 'mining', 'skill', 'sat', 40, 60],
+   ['stamp_saw', '톱 우표', 'chopping', 'skill', 'sat', 40, 60], ['stamp_map', '지도 우표', 'drop', 'misc', 'sat', 20, 60], ['stamp_purse', '지갑 우표', 'coins', 'misc', 'sat', 30, 50], ['stamp_quill', '깃펜 우표', 'xp', 'misc', 'sat', 25, 60], ['stamp_cardw', '카드 우표', 'card', 'misc', 'sat', 30, 60]],
+  [['stamp_cactus', '선인장 우표', 'def', 'combat', 'lin', 1, 0], ['stamp_scorp', '전갈 우표', 'crit', 'combat', 'sat', 8, 50], ['stamp_sun', '태양 우표', 'dmg', 'combat', 'sat', 40, 60], ['stamp_camel', '낙타 우표', 'hp', 'combat', 'lin', 8, 0],
+   ['stamp_eye', '매의 눈 우표', 'acc', 'combat', 'lin', 1.5, 0], ['stamp_oasis', '샘물 우표', 'fishing', 'skill', 'sat', 80, 50], ['stamp_beetle', '풍뎅이 우표', 'catching', 'skill', 'sat', 80, 50], ['stamp_dune', '모래언덕 우표', 'mining', 'skill', 'sat', 60, 60],
+   ['stamp_palm', '야자 우표', 'chopping', 'skill', 'sat', 60, 60], ['stamp_mummy', '붕대 우표', 'afk', 'misc', 'sat', 6, 70], ['stamp_gold', '금화 우표', 'coins', 'misc', 'sat', 40, 60], ['stamp_scroll', '두루마리 우표', 'xp', 'misc', 'sat', 30, 70], ['stamp_mirage', '신기루 우표', 'drop', 'misc', 'sat', 25, 70]],
+  [['stamp_snow', '눈송이 우표', 'str', 'combat', 'lin', 2, 0], ['stamp_ice', '고드름 우표', 'agi', 'combat', 'lin', 2, 0], ['stamp_owl', '부엉이 우표', 'wis', 'combat', 'lin', 2, 0], ['stamp_yeti', '설인 우표', 'hpPct', 'combat', 'sat', 40, 70],
+   ['stamp_frost', '서리 우표', 'dmg', 'combat', 'sat', 50, 70], ['stamp_pine', '솔방울 우표', 'chopping', 'skill', 'sat', 80, 70], ['stamp_drill', '드릴 우표', 'mining', 'skill', 'sat', 80, 70], ['stamp_hole', '얼음 구멍 우표', 'fishing', 'skill', 'sat', 100, 60],
+   ['stamp_moth', '눈나방 우표', 'catching', 'skill', 'sat', 100, 60], ['stamp_aurora', '오로라 우표', 'luk', 'misc', 'lin', 2, 0], ['stamp_sled', '썰매 우표', 'afk', 'misc', 'sat', 8, 80], ['stamp_cardx', '수집첩 우표', 'card', 'misc', 'sat', 40, 70], ['stamp_lantern', '등불 우표', 'drop', 'misc', 'sat', 30, 80]],
+  [['stamp_star', '별 우표', 'dmg', 'combat', 'sat', 60, 80], ['stamp_comet', '혜성 우표', 'crit', 'combat', 'sat', 10, 70], ['stamp_moon', '달 우표', 'def', 'combat', 'lin', 2, 0], ['stamp_orbit', '궤도 우표', 'acc', 'combat', 'lin', 3, 0],
+   ['stamp_planet', '행성 우표', 'hp', 'combat', 'lin', 20, 0], ['stamp_meteor', '운석 우표', 'mining', 'skill', 'sat', 100, 80], ['stamp_nebula', '성운 우표', 'chopping', 'skill', 'sat', 100, 80], ['stamp_ringw', '고리 우표', 'fishing', 'skill', 'sat', 120, 80],
+   ['stamp_void', '공허 우표', 'catching', 'skill', 'sat', 120, 80], ['stamp_galaxy', '은하 우표', 'xp', 'misc', 'sat', 40, 80], ['stamp_rocket', '로켓 우표', 'coins', 'misc', 'sat', 50, 80], ['stamp_quasar', '퀘이사 우표', 'afk', 'misc', 'sat', 10, 90], ['stamp_cosmos', '우주 우표', 'card', 'misc', 'sat', 50, 80]],
+];
+const STAMP_PRICE = [80, 2500, 40000, 500000];
+EXTRA_STAMPS.forEach((list, wi) => list.forEach(([id, name, eff, cat, kind, a, b], i) => {
+  const [label, unit] = STAMP_LABEL[eff];
+  STAMPS.push({ id, name, eff, cat, kind, a, b: kind === 'sat' ? b : undefined, unit, label, cost: Math.round(STAMP_PRICE[wi] * (1 + i * 0.15)), mat: STAMP_MATS[wi][i % STAMP_MATS[wi].length], matBase: 3 + (i % 4), w: wi + 1 });
+}));
+// 새 우표: 아이템으로 등록하고, 그 월드 몬스터가 드물게 떨어뜨린다
+EXTRA_STAMPS.forEach((list, wi) => {
+  const mobs = [...new Set(WORLDS[wi].maps.flatMap((m) => MAPS[m].spawns.map((x) => x.monster)))];
+  list.forEach(([id, name], i) => {
+    ITEMS[id] = { id, name, desc: '우표함에 넣으면 계정 전체에 효과가 생긴다.', kind: 'stamp', sell: 1 + wi * 5 };
+    MONSTERS[mobs[i % mobs.length]].drops.push({ item: id, chance: 0.0015, qty: [1, 1] });
+  });
+});
 export const STAMP_NAMES: Record<StampCat, string> = { combat: '전투', skill: '기술', misc: '기타' };
 /** 우표함을 쓸 수 있는 캐릭터 레벨 */
 export const STAMP_LV = 12;
@@ -1440,14 +1480,32 @@ export const STAMP_GROW = { coins: 1.17, mats: 1.11 };
 
 /** 후원 계약(원작의 뇌물에 해당): 코인으로 한 번 사는 고정 효과, 앞의 것을 사야 다음이 열린다 */
 export type BribeEff = 'stampCost' | 'drop' | 'forgeSpeed' | 'coins' | 'afk' | 'xp';
-export interface BribeDef { name: string; eff: BribeEff; v: number; price: number; desc: string }
+export interface BribeDef { name: string; eff: BribeEff; v: number; price: number; desc: string; /** 원작처럼 월드마다 한 세트(그 월드에 가야 열린다) */ set: number }
 export const BRIBES: BribeDef[] = [
-  { name: '우표 장인 소개장', eff: 'stampCost', v: 0.1, price: 300, desc: '우표 올리는 코인 -10%' },
-  { name: '잃어버린 물건 지도', eff: 'drop', v: 0.05, price: 1200, desc: '드롭률 +5%' },
-  { name: '풀무 수리 계약', eff: 'forgeSpeed', v: 0.15, price: 2500, desc: '용광로 속도 +15%' },
-  { name: '상인 조합 회원증', eff: 'coins', v: 0.05, price: 5000, desc: '코인 획득 +5%' },
-  { name: '낮잠 보험', eff: 'afk', v: 0.02, price: 9000, desc: '방치 효율 +2%p' },
-  { name: '도서관 출입증', eff: 'xp', v: 0.05, price: 15000, desc: '경험치 +5%' },
+  { set: 1, name: '우표 장인 소개장', eff: 'stampCost', v: 0.1, price: 300, desc: '우표 올리는 코인 -10%' },
+  { set: 1, name: '잃어버린 물건 지도', eff: 'drop', v: 0.05, price: 1200, desc: '드롭률 +5%' },
+  { set: 1, name: '풀무 수리 계약', eff: 'forgeSpeed', v: 0.15, price: 2500, desc: '용광로 속도 +15%' },
+  { set: 1, name: '상인 조합 회원증', eff: 'coins', v: 0.05, price: 5000, desc: '코인 획득 +5%' },
+  { set: 1, name: '낮잠 보험', eff: 'afk', v: 0.02, price: 9000, desc: '방치 효율 +2%p' },
+  { set: 1, name: '도서관 출입증', eff: 'xp', v: 0.05, price: 15000, desc: '경험치 +5%' },
+  { set: 2, name: '사막 우편 할인권', eff: 'stampCost', v: 0.05, price: 40000, desc: '우표 올리는 코인 -5%' },
+  { set: 2, name: '대상 호위 계약', eff: 'coins', v: 0.05, price: 70000, desc: '코인 획득 +5%' },
+  { set: 2, name: '도굴꾼 지도', eff: 'drop', v: 0.05, price: 110000, desc: '드롭률 +5%' },
+  { set: 2, name: '숯가마 계약', eff: 'forgeSpeed', v: 0.15, price: 160000, desc: '용광로 속도 +15%' },
+  { set: 2, name: '오아시스 그늘막', eff: 'afk', v: 0.02, price: 230000, desc: '방치 효율 +2%p' },
+  { set: 2, name: '고문서 해독본', eff: 'xp', v: 0.05, price: 320000, desc: '경험치 +5%' },
+  { set: 3, name: '설원 우체국 인맥', eff: 'stampCost', v: 0.05, price: 1_000_000, desc: '우표 올리는 코인 -5%' },
+  { set: 3, name: '모피 상인 계약', eff: 'coins', v: 0.05, price: 1_600_000, desc: '코인 획득 +5%' },
+  { set: 3, name: '눈사태 경보', eff: 'afk', v: 0.02, price: 2_400_000, desc: '방치 효율 +2%p' },
+  { set: 3, name: '얼음 낚시 비법', eff: 'drop', v: 0.05, price: 3_400_000, desc: '드롭률 +5%' },
+  { set: 3, name: '화롯불 계약', eff: 'forgeSpeed', v: 0.15, price: 4_800_000, desc: '용광로 속도 +15%' },
+  { set: 3, name: '장로의 비망록', eff: 'xp', v: 0.05, price: 6_500_000, desc: '경험치 +5%' },
+  { set: 4, name: '정거장 화물 계약', eff: 'coins', v: 0.06, price: 20_000_000, desc: '코인 획득 +6%' },
+  { set: 4, name: '별지기 추천서', eff: 'xp', v: 0.06, price: 32_000_000, desc: '경험치 +6%' },
+  { set: 4, name: '무중력 침대', eff: 'afk', v: 0.03, price: 48_000_000, desc: '방치 효율 +3%p' },
+  { set: 4, name: '운석 탐지 지도', eff: 'drop', v: 0.06, price: 70_000_000, desc: '드롭률 +6%' },
+  { set: 4, name: '항성로 계약', eff: 'forgeSpeed', v: 0.2, price: 100_000_000, desc: '용광로 속도 +20%' },
+  { set: 4, name: '은하 우표 협회장', eff: 'stampCost', v: 0.05, price: 140_000_000, desc: '우표 올리는 코인 -5%' },
 ];
 
 /** 용광로: 광석 need 개 → 주괴 1개, secs 초(업그레이드·기름 전) */

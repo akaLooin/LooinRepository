@@ -1221,7 +1221,7 @@ export class UI {
     let detail = `<div class="ui-row"><span class="ui-slot">${icon(s.id)}</span><div><b>${ITEMS[s.id].name}</b> ${lv ? `<span class="ui-accent">Lv.${lv}</span>` : ''}<div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${s.label} ${fmt(s, Math.max(1, lv))}${lv ? ` → ${fmt(s, lv + 1)}` : ''}</div></div></div>`;
     if (!lv) {
       detail += countItem(c, s.id) ? `<button class="ui-btn primary block" data-act="sin:${s.id}">우표함에 넣기</button>`
-        : `<span class="ui-xs ui-muted">아직 이 우표가 없습니다. ${SHOP.some((e) => e.item === s.id) ? '잡화점에서 팝니다.' : '몬스터가 드물게 떨어뜨립니다.'}</span>`;
+        : `<span class="ui-xs ui-muted">아직 이 우표가 없습니다. ${SHOP.some((e) => e.item === s.id) ? '잡화점에서 팝니다.' : `${s.w ? `${s.w}월드 ` : ''}몬스터가 드물게 떨어뜨립니다.`}</span>`;
     } else {
       const cost = stampCost(acc, s), mats = haveMat(acc, c, cost.mat);
       detail += `<div class="qline">${tile(iconUrl(ITEM_ICON.coin), cost.coins.toLocaleString(), `코인 ${acc.coins}/${cost.coins}`, '', acc.coins >= cost.coins ? 'ok' : 'bad')}${tile(iconUrl(ITEM_ICON[cost.mat]), `${mats}/${cost.qty}`, `${ITEMS[cost.mat].name} ${mats}/${cost.qty}`, '', mats >= cost.qty ? 'ok' : 'bad')}</div>
@@ -1328,11 +1328,13 @@ export class UI {
 
   private bribesHtml(): string {
     const acc = this.game.acc;
+    const mw = Math.max(1, ...acc.characters.map((x) => x.maxWorld ?? 1));
     return BRIBES.map((b, i) => {
-      const got = i < acc.bribes, next = i === acc.bribes;
-      return `<div class="ui-row line ${got || next ? '' : 'ui-muted'}"><div class="ui-grow"><b>${next || got ? b.name : '???'}</b><div class="ui-sm ${got ? 'ui-good' : ''}">${next || got ? b.desc : '앞의 계약을 맺으면 열립니다'}</div></div>
-        ${got ? '<span class="ui-good">✓</span>' : next ? `<button class="ui-btn primary sm" data-act="bribe" ${acc.coins >= b.price ? '' : 'disabled'}>${icon('coin')} ${b.price.toLocaleString()}</button>` : ''}</div>`;
-    }).join('') + '<p class="ui-xs ui-muted">후원 계약은 한 번 맺으면 계정 전체에 계속 효과가 있습니다. 차례대로 맺을 수 있습니다.</p>';
+      const got = i < acc.bribes, next = i === acc.bribes, open = b.set <= mw;
+      const head = i === 0 || BRIBES[i - 1].set !== b.set ? `<h3>${b.set}월드 세트${open ? '' : ' <span class="ui-xs ui-muted">(그 월드에 가면 열림)</span>'}</h3>` : '';
+      return `${head}<div class="ui-row line ${got || (next && open) ? '' : 'ui-muted'}"><div class="ui-grow"><b>${(next && open) || got ? b.name : '???'}</b><div class="ui-sm ${got ? 'ui-good' : ''}">${(next && open) || got ? b.desc : open ? '앞의 계약을 맺으면 열립니다' : `${b.set}월드에 가면 열립니다`}</div></div>
+        ${got ? '<span class="ui-good">✓</span>' : next && open ? `<button class="ui-btn primary sm" data-act="bribe" ${acc.coins >= b.price ? '' : 'disabled'}>${icon('coin')} ${short(b.price)}</button>` : ''}</div>`;
+    }).join('') + '<p class="ui-xs ui-muted">후원 계약은 한 번 맺으면 계정 전체에 계속 효과가 있습니다. 월드마다 한 세트가 있고, 차례대로 맺을 수 있습니다.</p>';
   }
 
   private forgeHtml(c: Character): string {

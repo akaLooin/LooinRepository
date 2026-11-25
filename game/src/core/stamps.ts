@@ -13,7 +13,7 @@ export function stampValue(s: StampDef, lv: number): number {
 
 /** 계정의 우표 효과 합(효과 종류별) */
 export function stampBonus(acc: Partial<Pick<Account, 'stamps'>>): Record<StampEff, number> {
-  const out = { dmg: 0, hp: 0, def: 0, acc: 0, crit: 0, mining: 0, chopping: 0, drop: 0, coins: 0, xp: 0, afk: 0 } as Record<StampEff, number>;
+  const out = { dmg: 0, hp: 0, def: 0, acc: 0, crit: 0, mining: 0, chopping: 0, drop: 0, coins: 0, xp: 0, afk: 0, fishing: 0, catching: 0, str: 0, agi: 0, wis: 0, luk: 0, card: 0, hpPct: 0 } as Record<StampEff, number>;
   for (const s of STAMPS) out[s.eff] += stampValue(s, acc.stamps?.[s.id] ?? 0);
   return out;
 }
@@ -66,10 +66,11 @@ export function upgradeStamp(acc: Account, c: Character, id: string): string | n
   return null;
 }
 
-/** 다음 후원 계약 사기(차례대로) */
+/** 다음 후원 계약 사기(차례대로). 세트는 그 월드에 간 캐릭터가 있어야 열린다 */
 export function buyBribe(acc: Account): string | null {
   const b = BRIBES[acc.bribes];
   if (!b) return '모두 샀습니다';
+  if (!acc.characters.some((c) => (c.maxWorld ?? 1) >= b.set)) return `${b.set}월드에 가야 열리는 세트입니다`;
   if (acc.coins < b.price) return '코인이 부족합니다';
   acc.coins -= b.price;
   acc.bribes++;

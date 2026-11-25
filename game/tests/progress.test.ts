@@ -564,7 +564,7 @@ describe('우체국', () => {
     applyAction(acc, 0, { t: 'post', op: 'refresh' }, now);
     const o = acc.postOff.orders[0];
     expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(false);
-    for (const it of o.items) addItem(c, it.item, it.n);
+    for (const it of o.items) acc.storage.push({ id: it.item, qty: it.n });
     const coins = acc.coins;
     expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(true);
     expect(c.post.pts).toBe(o.pts); expect(acc.coins).toBe(coins + Math.round(o.coins * 1.05));

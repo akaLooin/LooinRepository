@@ -239,6 +239,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const e = equipStats(c);
   // 석상·별자리·업적·가족·카드 세트(값은 %·%p 단위)
   const pb = progressBonus(c, a);
+  // 우표 가운데 능력치·기술 우표는 여기서 더한다
+  { const sx = stampBonus(a); for (const k of ['str', 'agi', 'wis', 'luk', 'fishing', 'catching', 'card', 'hpPct'] as const) pb[k] += sx[k]; }
   // 2차 직업 고유 보정과 2차 직업 특성(모두 패시브)
   const pk = CLASSES[c.cls]?.perk ?? {}, t2 = (id: string) => c.talents[id] ?? 0;
   pb.hpPct += (pk.hpPct ?? 0) + t2('bulwark') * 3 + t2('stalwart') * 4;
