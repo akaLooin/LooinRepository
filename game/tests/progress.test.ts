@@ -461,3 +461,34 @@ describe('연금술', () => {
     expect(deserialize(serialize(acc))!.alch.vials.v_minnow).toBe(1);
   });
 });
+
+import { HIDDEN_CLASS, CLASSES as CLS } from '../src/core/data';
+describe('히든 직업(방랑자 → 운명술사)', () => {
+  it('초보자로 Lv.15 이상, 네잎 클로버를 들고 언덕에서만 전직된다', () => {
+    const { acc, c } = setup();
+    c.level = 12; c.mapId = HIDDEN_CLASS.map;
+    addItem(c, HIDDEN_CLASS.item, 1);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(false); // 레벨 부족
+    c.level = 15; c.mapId = 'meadow';
+    expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(false); // 장소가 다름
+    c.mapId = HIDDEN_CLASS.map;
+    expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(true);
+    expect(c.cls).toBe('wanderer');
+    expect(c.inventory.some((s) => s.id === HIDDEN_CLASS.item)).toBe(false);
+    // 이미 전사인 캐릭터는 갈 수 없다
+    const { acc: a2, c: c2 } = setup();
+    c2.level = 20; c2.mapId = HIDDEN_CLASS.map; addItem(c2, HIDDEN_CLASS.item, 1);
+    applyAction(a2, 0, { t: 'class', cls: 'warrior' }, 0);
+    expect(applyAction(a2, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(false);
+  });
+  it('Lv.30에 운명술사로, 행운이 주력이고 패시브가 붙는다', () => {
+    const { acc, c } = setup();
+    c.level = 30; c.mapId = HIDDEN_CLASS.map; addItem(c, HIDDEN_CLASS.item, 1);
+    applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'fateweaver' }, 0).ok).toBe(true);
+    expect(CLS[c.cls].main).toBe('luk');
+    const drop0 = derive(c, acc).dropMult;
+    c.talents.treasure = 5;
+    expect(derive(c, acc).dropMult).toBeGreaterThan(drop0);
+  });
+});

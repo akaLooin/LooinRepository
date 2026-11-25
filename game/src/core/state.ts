@@ -6,7 +6,7 @@ import { Owl, newOwl } from './companions';
 import { Alch, newAlch } from './alchemy';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  WORLDS, TOWNS, worldOf, WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  HIDDEN_CLASS, WORLDS, TOWNS, worldOf, WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -213,6 +213,9 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   pb.afk += (pk.afk ?? 0) + t2('patience') * 0.5;
   pb.xp += (pk.xp ?? 0) + t2('omen') * 2;
   pb.mining += t2('trailblazer') * 4; pb.chopping += t2('trailblazer') * 4;
+  // 히든 계열 패시브
+  pb.drop += t2('treasure') * 3; pb.afk += t2('roam'); pb.coins += t2('jackpot') * 4;
+  for (const k of ['mining', 'chopping', 'fishing', 'catching'] as const) pb[k] += t2('gatherluck') * 4;
   // 별빛 특성
   const sl = (id: string) => c.starTal?.[id] ?? 0;
   pb.mining += sl('sl_mine') * 4; pb.chopping += sl('sl_chop') * 4; pb.coins += sl('sl_coins') * 2; pb.xp += sl('sl_xp') * 1.5;
@@ -401,6 +404,12 @@ export function advanceClass(c: Character, cls: ClassId): string | null {
   const need = def.base ? SUBCLASS_LEVEL : CLASS_LEVEL;
   if (def.base ? c.cls !== def.base : c.cls !== 'beginner') return '전직할 수 없습니다';
   if (c.level < need) return `레벨 ${need} 필요`;
+  // 히든 직업: 숨은 나그네가 있는 맵에서, 초보자로 더 오래 버티고, 네잎 클로버를 바쳐야 한다
+  if (def.hidden) {
+    const h = HIDDEN_CLASS;
+    if (c.mapId !== h.map || c.level < h.level || countItem(c, h.item) < 1) return '전직할 수 없습니다';
+    removeItem(c, h.item, 1);
+  }
   if (def.starter && c.inventory.length >= INVENTORY_SIZE) return '가방이 가득 찼습니다';
   c.cls = cls;
   if (def.starter) {

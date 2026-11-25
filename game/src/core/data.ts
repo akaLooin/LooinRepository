@@ -7,8 +7,8 @@ export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
 export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy';
-export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage';
-export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer';
+export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
+export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe' | 'rod' | 'net';
 
@@ -203,6 +203,7 @@ const items: ItemDef[] = [
   { id: 'net_palm', name: '야자 잠자리채', desc: '곤충 채집 효율 +10', kind: 'equip', slot: 'net', stats: { catching: 10 }, reqLv: 30, sell: 600 },
   { id: 'rod_amber', name: '호박 낚싯대', desc: '낚시 효율 +22', kind: 'equip', slot: 'rod', stats: { fishing: 22 }, reqLv: 42, sell: 1400 },
   { id: 'net_amber', name: '호박 잠자리채', desc: '곤충 채집 효율 +22', kind: 'equip', slot: 'net', stats: { catching: 22 }, reqLv: 42, sell: 1400 },
+  { id: 'four_leaf', name: '네잎 클로버', desc: '풀밭에서 아주 드물게 발견된다. 누군가 이걸 찾고 있다는 소문이 있다.', kind: 'key', sell: 0 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
@@ -229,7 +230,7 @@ const monsters: MonsterDef[] = [
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
     drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3, 5] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
-    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
+    drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'four_leaf', chance: 0.003, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
     drops: [{ item: 'pebble', chance: 0.45, qty: [1, 2] }, { item: 'berry', chance: 0.12, qty: [1, 2] }, { item: 'pebble_charm', chance: 0.004, qty: [1, 1] }, { item: 'stone_mine', chance: 0.003, qty: [1, 1] }, { item: 'stamp_def', chance: 0.003, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'statue_guard', chance: 0.004, qty: [1, 1] }] },
   { id: 'leafling', name: '잎새깨비', hp: 130, atk: 16, acc: 22, defZero: 34, xp: 30, coins: [8, 15], speed: 28, motion: 'float', radius: 8,
@@ -316,7 +317,7 @@ const maps: MapDef[] = [
     spawns: [{ monster: 'pebbler', count: 7 }, { monster: 'mossblob', count: 2 }],
     nodes: [{ node: 'redrock', x: 330 }, { node: 'redrock', x: 535 }],
     ropes: [{ x: 165, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 600, top: -48, bottom: 0 }, { x: 740, top: -96, bottom: -48 }],
-    facilities: [{ kind: 'owl', x: 230, y: -48 }],
+    facilities: [{ kind: 'owl', x: 230, y: -48 }, { kind: 'npc', npc: 'stranger', x: 650, y: -96 }],
     portals: [{ x: 24, to: 'meadow', toX: 765 }, { x: 896, to: 'forest', toX: 50, reqKills: 40 }, { x: 700, y: -96, to: 'mine1', toX: 50, reqSkill: { skill: 'mining', lv: 5 }, label: '얕은 광산' }] },
   // 숲: 오른쪽 끝 언덕 위에 보스방 문(열쇠 필요)
   { id: 'forest', name: '속삭임 숲', width: 980, theme: 'forest',
@@ -501,6 +502,13 @@ export const TALENTS: TalentDef[] = [
   { id: 'overflow', name: '넘치는 마력', max: 10, cls: 'elementalist', desc: (lv) => `최대 마나 +${lv * 5}%, 마나 회복 +${lv * 5}%` },
   { id: 'patience', name: '기다림의 주문', max: 10, cls: 'hexer', desc: (lv) => `방치 효율 +${lv * 0.5}%p` },
   { id: 'omen', name: '길조', max: 10, cls: 'hexer', desc: (lv) => `경험치 +${lv * 2}%` },
+  // 히든 계열(방랑자 → 운명술사)
+  { id: 'fortune', name: '행운 폭발', max: 10, cls: 'wanderer', active: { cooldown: 9, mana: 7 }, desc: (lv) => `주변의 모든 적에게 ${200 + lv * 25}% 피해` },
+  { id: 'treasure', name: '보물 감각', max: 10, cls: 'wanderer', desc: (lv) => `드롭률 +${lv * 3}%` },
+  { id: 'roam', name: '떠돌이 걸음', max: 10, cls: 'wanderer', desc: (lv) => `방치 효율 +${lv}%p` },
+  { id: 'destiny', name: '운명의 실', max: 10, cls: 'fateweaver', active: { cooldown: 14, mana: 12 }, desc: (lv) => `가까운 적과 그 주변에 ${300 + lv * 30}% 피해` },
+  { id: 'jackpot', name: '대박', max: 10, cls: 'fateweaver', desc: (lv) => `코인 획득 +${lv * 4}%` },
+  { id: 'gatherluck', name: '행운의 손', max: 10, cls: 'fateweaver', desc: (lv) => `채집 효율(채광·벌목·낚시·곤충) +${lv * 4}%` },
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
@@ -532,6 +540,8 @@ export interface ClassDef {
   id: ClassId; name: string; desc: string; main: StatKey; acc: StatKey; range: number; weapon: WeaponType; starter?: string;
   /** 2차 직업이면 바탕이 되는 1차 직업 */
   base?: ClassId;
+  /** 히든 직업: 숨은 NPC에게서만, 숨은 조건을 채워야 전직(HIDDEN_CLASS) */
+  hidden?: boolean;
   /** 직업 고유 보정(2차 직업) */
   perk?: Partial<Record<'hpPct' | 'dmg' | 'crit' | 'def' | 'xp' | 'afk' | 'drop' | 'speed', number>>;
 }
@@ -545,6 +555,8 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   sharpshooter: { id: 'sharpshooter', base: 'archer', name: '명사수', desc: '한 발 한 발이 정확하다. 치명타 +8%p, 공격력 +6%.', main: 'agi', acc: 'str', range: 125, weapon: 'bow', perk: { crit: 8, dmg: 6 } },
   ranger: { id: 'ranger', base: 'archer', name: '사냥꾼', desc: '숲을 잘 안다. 드롭률 +12%, 이동 속도 +8.', main: 'agi', acc: 'str', range: 115, weapon: 'bow', perk: { drop: 12, speed: 8 } },
   elementalist: { id: 'elementalist', base: 'mage', name: '원소술사', desc: '원소를 다룬다. 공격력 +14%.', main: 'wis', acc: 'agi', range: 100, weapon: 'wand', perk: { dmg: 14 } },
+  wanderer: { id: 'wanderer', name: '방랑자', hidden: true, desc: '어느 길에도 서지 않은 숨겨진 길. 행운이 공격력과 명중이 되고, 드롭률 +6%.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 6 } },
+  fateweaver: { id: 'fateweaver', base: 'wanderer', name: '운명술사', desc: '운을 엮어 싸운다. 드롭률 +12%, 방치 효율 +3%p, 치명타 +4%p.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 12, afk: 3, crit: 4 } },
   hexer: { id: 'hexer', base: 'mage', name: '주술사', desc: '느긋하게 쌓는다. 경험치 +10%, 방치 효율 +3%p.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', perk: { xp: 10, afk: 3 } },
 };
 export const CLASS_LEVEL = 10;
@@ -638,8 +650,11 @@ export interface NpcDef { id: string; name: string; look: { hair: number; hairCo
 export const NPCS: Record<string, NpcDef> = {
   elder: { id: 'elder', name: '촌장 바루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
   smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#d9c3ad', outfit: '#d9574a' }, quests: SMITH_QUESTS },
-  caravan: { id: 'caravan', name: '대상 카림', look: { hair: 3, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
+  stranger: { id: 'stranger', name: '수상한 나그네', look: { hair: 1, hairColor: '#5a4a6a', skin: '#d8c8b8', outfit: '#3a5a4a' }, quests: [] },
+  caravan: { id: 'caravan', name: '대상 카림', look: { hair: 2, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
 };
+/** 히든 직업 조건: 초보자로 이 레벨 이상, 이 아이템 1개, 숨은 NPC가 있는 맵에서 */
+export const HIDDEN_CLASS = { cls: 'wanderer' as ClassId, npc: 'stranger', map: 'hills', level: 15, item: 'four_leaf' };
 /** 전직을 맡는 NPC */
 export const CLASS_NPC = 'elder';
 export const NPC_NAME = NPCS.elder.name;
@@ -800,6 +815,7 @@ export const FAMILY: Record<BaseClass, { eff: BonusKey; a: number; b: number; la
   warrior: { eff: 'hpPct', a: 15, b: 50, label: '최대 체력' },
   archer: { eff: 'dmg', a: 10, b: 50, label: '공격력' },
   mage: { eff: 'xp', a: 12, b: 50, label: '경험치' },
+  wanderer: { eff: 'drop', a: 8, b: 50, label: '드롭률' },
 };
 /** 레벨 합이 이만큼이면 캐릭터 칸이 하나씩 늘어난다(기본 2칸) */
 export const FAMILY_SLOTS = [15, 40, 80, 140];

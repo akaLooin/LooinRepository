@@ -307,6 +307,18 @@ export class World {
       pose('cast');
       fx = tgt.x; fy = tgt.y;
       for (const m of live(NOVA_RADIUS, tgt.x, tgt.y)) this.damageMob(m, d, 2.2 + lv * 0.25, m.x >= tgt.x ? 1 : -1);
+    } else if (id === 'fortune') {
+      const hit = live(SMASH_RANGE);
+      if (!hit.length) return false;
+      pose('attack');
+      for (const m of hit) this.damageMob(m, d, 2 + lv * 0.25, m.x >= p.x ? 1 : -1);
+    } else if (id === 'destiny') {
+      const tgt = live(d.range + 40).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
+      if (!tgt) return false;
+      p.facing = tgt.x >= p.x ? 1 : -1;
+      pose('attack');
+      fx = tgt.x; fy = tgt.y;
+      for (const m of live(NOVA_RADIUS, tgt.x, tgt.y)) this.damageMob(m, d, 3 + lv * 0.3, m.x >= tgt.x ? 1 : -1);
     } else if (id === 'heal') {
       if (c.hp >= d.maxHp) return false;
       const before = c.hp;

@@ -44,7 +44,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('use'), id }),
   z.object({ t: z.literal('sell'), id, qty: z.number().int().min(1).max(1e6) }),
   z.object({ t: z.literal('craft'), idx: z.number().int().min(0).max(999) }),
-  z.object({ t: z.literal('class'), cls: z.enum(['warrior', 'archer', 'mage', 'guardian', 'berserker', 'sharpshooter', 'ranger', 'elementalist', 'hexer']) }),
+  z.object({ t: z.literal('class'), cls: z.enum(['warrior', 'archer', 'mage', 'guardian', 'berserker', 'sharpshooter', 'ranger', 'elementalist', 'hexer', 'wanderer', 'fateweaver']) }),
   z.object({ t: z.literal('qaccept'), npc: id }),
   z.object({ t: z.literal('qdone'), npc: id }),
   z.object({ t: z.literal('deposit'), id }),

@@ -1096,6 +1096,14 @@ function buildIcons() {
   badge('overflow', '#4e8de2', (p) => { p.disc(8, 8, 3, 3, '#a7d8f0'); p.rect(7, 3, 2, 3, '#a7d8f0'); });
   badge('patience', '#8a6fd1', (p) => { p.rect(5, 3, 6, 1, C.white); p.rect(5, 11, 6, 1, C.white); p.line(6, 4, 10, 10, C.gold); p.line(10, 4, 6, 10, C.gold); });
   badge('omen', '#8a6fd1', (p) => { p.disc(8, 7, 3, 3, C.gold); p.disc(9.5, 6, 2.4, 2.4, '#8a6fd1'); });
+  // 히든 계열: 초록 네잎 배지
+  const clover = (p: Paint, x: number, y: number, c2 = '#6ac05a') => { for (const [dx, dy] of [[-1.4, 0], [1.4, 0], [0, -1.4], [0, 1.4]]) p.disc(x + dx, y + dy, 1.4, 1.4, c2); p.set(x, y, '#2a6a2a'); };
+  badge('treasure', '#2f8a6a', (p) => { p.rect(5, 6, 6, 4, C.gold); p.rect(5, 5, 6, 1, C.wood); p.set(8, 8, C.white); });
+  badge('roam', '#2f8a6a', (p) => { p.line(4, 11, 12, 3, C.white); p.disc(5, 4, 1.4, 1.4, C.white); p.disc(11, 10, 1.4, 1.4, C.white); });
+  badge('jackpot', '#2f8a6a', (p) => { p.disc(6, 7, 2.4, 2.4, C.gold); p.disc(10, 8, 2.4, 2.4, C.gold); p.set(6, 7, C.wood); p.set(10, 8, C.wood); });
+  badge('gatherluck', '#2f8a6a', (p) => { clover(p, 8, 7, '#a8e878'); });
+  icon('tl_fortune', (p) => { p.disc(7.5, 7.5, 7, 7, '#2f8a6a'); clover(p, 7.5, 7.5, '#a8e878'); for (const [x, y] of [[2, 2], [13, 3], [12, 13], [2, 12]]) p.set(x, y, C.gold); });
+  icon('tl_destiny', (p) => { p.disc(7.5, 7.5, 7, 7, '#3a3a6a'); p.line(1, 12, 14, 3, C.gold); p.line(1, 3, 14, 12, '#c48aff'); p.disc(7.5, 7.5, 2, 2, C.white); });
   icon('tl_smash', (p) => { p.rect(6, 6, 3, 10, C.wood); p.rect(2, 1, 11, 6, C.steel); p.rect(2, 1, 11, 2, C.white); for (const [x, y] of [[1, 9], [13, 10], [12, 13]]) p.rect(x, y, 2, 2, C.gold); });
   icon('tl_heal', (p) => { p.disc(7.5, 9, 6, 6, C.red); p.rect(6, 1, 4, 4, C.paper); p.rect(6, 6, 4, 8, C.white); p.rect(3, 8, 10, 4, C.white); });
   icon('tl_sharp', (p) => { p.line(3, 13, 12, 4, C.steel); p.line(4, 13, 13, 4, C.steel); p.line(4, 12, 13, 3, C.white); p.rect(1, 12, 4, 3, C.wood); p.set(13, 1, C.gold); p.set(14, 2, C.gold); p.set(12, 0, C.gold); });

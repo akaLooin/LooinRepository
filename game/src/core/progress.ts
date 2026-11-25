@@ -109,7 +109,7 @@ export function claimAchievement(acc: Account, id: string): string | null {
 // ───────── 가족 ─────────
 /** 직업별 최고 레벨 */
 export function familyBest(chars: Character[]): Record<keyof typeof FAMILY, number> {
-  const out = { beginner: 0, warrior: 0, archer: 0, mage: 0 };
+  const out = { beginner: 0, warrior: 0, archer: 0, mage: 0, wanderer: 0 };
   for (const c of chars) out[baseClass(c.cls)] = Math.max(out[baseClass(c.cls)], c.level);
   return out;
 }

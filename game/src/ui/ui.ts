@@ -9,7 +9,7 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  WORLD2, WORLDS, TOWNS, worldOf, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  HIDDEN_CLASS, WORLD2, WORLDS, TOWNS, worldOf, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -64,7 +64,7 @@ function patchChildren(dst: Node, src: Node) {
 function statInfo(k: StatKey, v: number, cls: ClassId): string[] {
   const b = baseClass(cls), main = CLASSES[cls].main, acc = CLASSES[cls].acc;
   const role = [main === k ? `<b class="ui-good">지금 직업(${CLASSES[cls].name})의 공격력 능력치</b> — 1당 공격력 +0.5` : '', acc === k ? `<b class="ui-good">지금 직업의 명중 능력치</b> — 1당 명중 +1` : ''].filter(Boolean);
-  const who: Record<StatKey, string> = { str: '전사의 공격력, 궁수의 명중', agi: '궁수의 공격력, 마법사의 명중', wis: '마법사의 공격력, 전사의 명중', luk: '초보자의 공격력과 명중' };
+  const who: Record<StatKey, string> = { str: '전사의 공격력, 궁수의 명중', agi: '궁수의 공격력, 마법사의 명중', wis: '마법사의 공격력, 전사의 명중', luk: '초보자(와 숨겨진 길)의 공격력과 명중' };
   const f = (n: number, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toLocaleString();
   const lines: Record<StatKey, string[]> = {
     str: [`최대 체력 +${f(v * 3, 0)} (1당 +3)`, `치명타 피해 +${f(v * 0.4)}%p (1당 +0.4%p)`, `채광 효율 +${f(v * 0.05, 2)} (1당 +0.05)`],
@@ -501,7 +501,7 @@ export class UI {
         const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', hasCls ? CLASSES[base].name : '직업', sub ? CLASSES[sub].name : '2차 직업', `별빛${sp > 0 ? ` ${sp}` : ''}`];
         const t = (tab === 2 && !hasCls) || (tab === 3 && !sub) ? 1 : tab;
         const body = t === 0 ? this.statsHtml(c) : t === 4 ? this.starTalHtml(c) : this.talentsHtml(c, t === 1 ? 'beginner' : t === 2 ? base : sub!);
-        const baseIcon = hasCls ? `tl_${base === 'warrior' ? 'cleave' : base === 'archer' ? 'volley' : 'nova'}` : 'ui_lock';
+        const baseIcon = hasCls ? `tl_${base === 'warrior' ? 'cleave' : base === 'archer' ? 'volley' : base === 'wanderer' ? 'fortune' : 'nova'}` : 'ui_lock';
         const subIcon = sub ? `tl_${TALENTS.find((x) => x.cls === sub)!.id}` : 'ui_lock';
         return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', baseIcon, subIcon, 'ui_star'])}
           ${t > 0 && t < 4 && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
@@ -620,6 +620,16 @@ export class UI {
         if (npc.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
           return speaker(`<p>“많이 강해졌구먼! 이제 자네의 길을 정할 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
             ${(['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
+        }
+        // 수상한 나그네: 히든 직업. 조건을 대놓고 알려 주지 않고 수수께끼로만
+        if (npc.id === HIDDEN_CLASS.npc) {
+          const h = HIDDEN_CLASS, ready = c.cls === 'beginner' && c.level >= h.level && countItem(c, h.item) > 0;
+          if (c.cls === h.cls || CLASSES[c.cls]?.base === h.cls) return speaker('<p>“길 위에서 또 만나는군. 바람이 부는 쪽으로 걷게, 동료여.”</p>');
+          if (c.cls !== 'beginner') return speaker('<p>“이미 길을 정했군… 아쉽네. 정해진 길만 있는 건 아니었는데.”</p>');
+          if (!ready) return speaker(`<p>“흠… 아무 길에도 서지 않은 자로구먼.”</p><p class="ui-sm ui-muted">“${c.level < h.level ? '조금 더 오래, 아무 길에도 서지 말고 걸어 보게.' : '풀밭에서 아주 드물게 잎이 넷 달린 것을 찾으면… 그때 다시 오게.'}”</p>`);
+          const w = CLASSES[h.cls];
+          return speaker(`<p>“그래, 그 잎을 찾았군. 네 갈래 길 대신 다섯 번째 길이 있다네.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다 · ${ITEMS[h.item].name} 1개를 바칩니다)</span></p>
+            <div class="ui-row line"><div class="ui-grow"><b class="ui-accent">${w.name}</b> <span class="ui-xs ui-accent">히든</span><div class="ui-sm ui-muted">${w.desc}</div></div><button class="ui-btn primary" data-act="class:${h.cls}">전직</button></div>`);
         }
         const q = currentQuest(c, npc.id), p = questProgress(c, npc.id), st = c.quests[npc.id] ?? { idx: 0, accepted: false };
         if (!q || !p) return speaker('<p>“고맙네! 지금은 부탁할 일이 없다네.”</p>');
