@@ -916,6 +916,19 @@ function buildObjects() {
   for (let y = 0; y < 14; y++) p.rect(17 - y, 6 + y, y * 2 + 1, 1, y % 4 < 2 ? '#e25d4e' : '#f2f0e6');
   p.rect(4, 20, 27, 10, '#c9805a'); p.rect(14, 22, 7, 8, '#5a3a2a'); p.rect(17, 0, 1, 7, '#8a5a3c'); p.rect(18, 0, 6, 4, '#f6c945');
   p.outline().save('obj_games');
+  // 오락실: 반짝이는 오락 기계
+  p = new Paint(26, 40);
+  p.rect(3, 4, 20, 36, '#8a4ab8'); p.rect(3, 4, 20, 3, '#c87aff'); p.rect(6, 9, 14, 11, '#1a1430'); p.rect(7, 10, 12, 9, '#4ad0ff');
+  p.disc(10, 14, 1.6, 1.6, '#f6c945'); p.disc(15, 16, 1.4, 1.4, '#ff7ae0'); p.rect(5, 23, 16, 4, '#5a2a7a'); p.disc(10, 25, 1.5, 1.5, '#e25d4e'); p.disc(15, 25, 1.5, 1.5, '#5fb859');
+  p.rect(9, 30, 8, 2, '#2a1a3a'); p.rect(4, 37, 18, 3, '#5a2a7a'); p.set(4, 5, '#ffffff'); p.set(21, 5, '#ffffff');
+  p.volume(); p.outline().save('obj_arcade');
+  // 낚시꾼 포피: 양동이 옆에 앉은 작은 낚시꾼 + 낚싯대
+  p = new Paint(34, 30);
+  p.rect(2, 22, 10, 8, '#7b8591'); p.rect(2, 22, 10, 2, '#9aa3ad'); p.disc(7, 21, 2, 1, '#4ab8f0');
+  p.disc(20, 14, 4, 4, '#f6d8b8'); p.rect(15, 9, 10, 3, '#e8b24a'); p.rect(17, 6, 6, 3, '#e8b24a'); p.rect(16, 18, 9, 9, '#4e8de2'); p.rect(16, 27, 9, 3, '#3a5a8a');
+  p.set(19, 14, '#2a2230'); p.set(22, 14, '#2a2230');
+  p.line(25, 20, 33, 2, '#8a5a3c'); p.line(33, 2, 33, 14, '#e9e4f0');
+  p.volume(); p.outline().save('obj_poppy');
   // 수호 토템: 새겨진 나무 기둥 + 빛나는 눈
   p = new Paint(22, 40);
   p.rect(5, 6, 12, 34, '#8a6a4a'); p.rect(2, 12, 18, 4, '#6a4a32'); p.rect(2, 26, 18, 4, '#6a4a32');

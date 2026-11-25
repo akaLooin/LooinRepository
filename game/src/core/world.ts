@@ -1,6 +1,6 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  ARENA, CRYSTAL_CHANCE, crystalOf, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  arenaOf, CRYSTAL_CHANCE, crystalOf, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult } from './data';
 import { Rng } from './rng';
 import { multiKill } from './progress';
@@ -150,7 +150,7 @@ export class World {
     for (const n of this.map.nodes) {
       this.nodes.push({ uid: this.uid++, def: NODES[n.node], x: n.x, y: 0, progress: 0, shakeT: 0 });
     }
-    if (this.map.arena) { this.arena = { t: ARENA.seconds, wave: 0, next: 0, kills: 0, score: 0, mult: 1, comboT: 0, done: false }; }
+    if (this.map.arena) { this.arena = { t: arenaOf(this.map.id).seconds, wave: 0, next: 0, kills: 0, score: 0, mult: 1, comboT: 0, done: false }; }
     this.checkMinibosses();
   }
 
@@ -169,7 +169,7 @@ export class World {
 
   /** 콜로세움: 다음 웨이브를 내보낸다 */
   private spawnWave() {
-    const a = this.arena!, [id, n] = ARENA.waves[a.wave];
+    const a = this.arena!, [id, n] = arenaOf(this.map.id).waves[a.wave];
     const def = MONSTERS[id];
     for (let i = 0; i < n; i++) {
       const plat = this.platforms[i % this.platforms.length];
@@ -178,7 +178,7 @@ export class World {
       this.placeMob(m);
       this.mobs.push(m);
     }
-    a.wave++; a.next = ARENA.waveGap;
+    a.wave++; a.next = arenaOf(this.map.id).waveGap;
   }
   private stepArena(dt: number) {
     const a = this.arena!;
@@ -186,13 +186,13 @@ export class World {
     a.t -= dt; a.next -= dt; a.comboT -= dt;
     if (a.comboT <= 0) a.mult = 1;
     const alive = this.mobs.some((m) => m.alive);
-    if (a.wave < ARENA.waves.length && (a.wave === 0 || !alive || a.next <= 0)) this.spawnWave();
-    const cleared = a.wave >= ARENA.waves.length && !alive;
+    if (a.wave < arenaOf(this.map.id).waves.length && (a.wave === 0 || !alive || a.next <= 0)) this.spawnWave();
+    const cleared = a.wave >= arenaOf(this.map.id).waves.length && !alive;
     if (cleared || a.t <= 0 || this.player.dead > 0) {
       a.done = true;
       // 일찍 다 깨면 남은 시간만큼 점수 보너스
       if (cleared) a.score += Math.round(a.t * 20);
-      this.events.push({ t: 'arenaEnd', waves: arenaWaves(a.kills), score: Math.round(a.score) });
+      this.events.push({ t: 'arenaEnd', waves: arenaWaves(a.kills, arenaOf(this.map.id)), score: Math.round(a.score) });
     }
   }
 

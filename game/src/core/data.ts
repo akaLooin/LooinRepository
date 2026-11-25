@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catchin
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | 'kitchen' | 'nest' | 'lab';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | 'kitchen' | 'nest' | 'lab' | 'arcade' | 'poppy';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
   | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
@@ -97,7 +97,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', alchemy: '연금', construction: '건설', breeding: '번식' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실', arcade: '오락실', poppy: '낚시꾼 포피' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
@@ -293,6 +293,8 @@ const items: ItemDef[] = [
   { id: 'four_leaf', name: '네잎 클로버', desc: '풀밭에서 아주 드물게 발견된다. 누군가 이걸 찾고 있다는 소문이 있다.', kind: 'key', sell: 0 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
+  { id: 'arena_ticket2', name: '모래 투기장 입장권', desc: '바람 모래톱 위쪽 문으로 모래 투기장에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
+  { id: 'arena_ticket3', name: '얼음 투기장 입장권', desc: '눈송이 벌판 위쪽 문으로 얼음 투기장에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
   { id: 'pick_red', name: '붉은쇠 곡괭이', desc: '채광 효율 +5', kind: 'equip', slot: 'pickaxe', stats: { mining: 5 }, reqLv: 6, sell: 45 },
@@ -328,6 +330,8 @@ const monsters: MonsterDef[] = [
   { id: 'ruinwarden', name: '유적 수호자', hp: 16000, atk: 70, acc: 80, defZero: 120, xp: 5000, coins: [2500, 4000], speed: 8, motion: 'waddle', radius: 20, scale: 2.4, art: 'golemite', tint: 0xffd27a,
     drops: [{ item: 'statue_fortune', chance: 0.8, qty: [1, 3] }, { item: 'stone_stat', chance: 0.5, qty: [1, 2] }, { item: 'stamp_xp', chance: 0.2, qty: [1, 1] }, { item: 'chest_small', chance: 0.3, qty: [1, 1] }, { item: 'moonpie', chance: 1, qty: [3, 6] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }] },
   { id: 'champion', name: '콜로세움 챔피언', hp: 9000, atk: 55, acc: 60, defZero: 95, xp: 2500, coins: [0, 0], speed: 18, motion: 'waddle', radius: 18, scale: 2.2, art: 'pebbler', tint: 0xffa0a0, drops: [] },
+  { id: 'champion2', name: '모래 투기장 챔피언', hp: 160000, atk: 220, acc: 260, defZero: 330, xp: 40000, coins: [0, 0], speed: 18, motion: 'waddle', radius: 18, scale: 2.2, art: 'scorpip', tint: 0xffc080, drops: [] },
+  { id: 'champion3', name: '얼음 투기장 챔피언', hp: 1500000, atk: 480, acc: 600, defZero: 680, xp: 300000, coins: [0, 0], speed: 18, motion: 'waddle', radius: 18, scale: 2.2, art: 'yetiling', tint: 0xa0e0ff, drops: [] },
   // 1월드 후반(숲 오른쪽에서 이어지는 다섯 사냥터)
   { id: 'mudturtle', name: '진흙거북', hp: 300, atk: 26, acc: 34, defZero: 50, xp: 60, coins: [12, 22], speed: 12, motion: 'waddle', radius: 9,
     drops: [{ item: 'shell', chance: 0.4, qty: [1, 2] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }, { item: 'stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_guard', chance: 0.006, qty: [1, 1] }, { item: 'stamp_mining', chance: 0.002, qty: [1, 1] }] },
@@ -356,7 +360,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'sun_ember', chance: 0.4, qty: [1, 2] }, { item: 'sun_key', chance: 0.004, qty: [1, 1] }, { item: 'date_cake', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
   { id: 'sandlord', name: '사막 거상', hp: 90000, atk: 210, acc: 250, defZero: 330, xp: 30000, coins: [8000, 12000], speed: 10, motion: 'waddle', radius: 22, scale: 2.8,
     boss: { slamEvery: 4.5, slamWindup: 1.0, slamRadius: 64, slamDmg: 170, card: 'sandlord' },
-    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }] },
+    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }, { item: 'arena_ticket2', chance: 0.5, qty: [1, 2] }] },
   // ───── 3월드: 서리 고원 ─────
   { id: 'snowpuff', name: '눈뭉치', hp: 20000, atk: 232, acc: 280, defZero: 330, xp: 2200, coins: [190, 340], speed: 18, motion: 'hop', radius: 9,
     drops: [{ item: 'snow_tuft', chance: 0.4, qty: [1, 2] }, { item: 'hot_cocoa', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
@@ -374,7 +378,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'frost_core', chance: 0.4, qty: [1, 2] }, { item: 'frost_key', chance: 0.004, qty: [1, 1] }, { item: 'pine_soup', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
   { id: 'frostlord', name: '눈보라 군주', hp: 700000, atk: 430, acc: 520, defZero: 600, xp: 250000, coins: [60000, 90000], speed: 10, motion: 'float', radius: 24, scale: 2.8,
     boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 70, slamDmg: 360, card: 'frostlord' },
-    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }] },
+    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }, { item: 'arena_ticket3', chance: 0.5, qty: [1, 2] }] },
   // ───── 4월드: 별빛 성운 ─────
   { id: 'starling', name: '별모래톨', hp: 150000, atk: 470, acc: 570, defZero: 620, xp: 13000, coins: [600, 1100], speed: 20, motion: 'hop', radius: 9,
     drops: [{ item: 'star_sand', chance: 0.4, qty: [1, 2] }, { item: 'moon_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
@@ -504,6 +508,15 @@ const maps: MapDef[] = [
     platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
     spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'meadow', toX: 560, toY: -96 }] },
+  // 2·3월드 콜로세움(원작처럼 월드마다 하나)
+  { id: 'arena2', name: '모래 투기장', width: 640, theme: 'arena', arena: true,
+    platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
+    spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'dunes', toX: 525, toY: -96 }] },
+  { id: 'arena3', name: '얼음 투기장', width: 640, theme: 'arena', arena: true,
+    platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
+    spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'snowfield', toX: 525, toY: -96 }] },
   // 광산(언덕에서 갈라짐): 몬스터 없이 광맥만, 채광 레벨로 열린다
   { id: 'mine1', name: '얕은 광산', width: 700, theme: 'mine',
     platforms: [{ x: 160, y: -48, w: 200 }, { x: 440, y: -48, w: 200 }],
@@ -516,17 +529,17 @@ const maps: MapDef[] = [
     ropes: [{ x: 200, top: -48, bottom: 0 }, { x: 610, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'mine1', toX: 650 }] },
   // ───── 2월드: 노을 사막(오아시스 마을에서 동쪽으로 이어진다) ─────
-  { id: 'oasis', name: '오아시스 마을', width: 700, theme: 'oasis',
+  { id: 'oasis', name: '오아시스 마을', width: 860, theme: 'oasis',
     platforms: [{ x: 420, y: -48, w: 280 }],
     ropes: [{ x: 430, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'spring', x: 330 }, { node: 'antbush', x: 395 }], campfireX: 72,
-    facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'post', x: 470, y: -48 }, { kind: 'anvil', x: 540, y: -48 }, { kind: 'alchemy', x: 620, y: -48 }],
+    facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'post', x: 470, y: -48 }, { kind: 'anvil', x: 540, y: -48 }, { kind: 'alchemy', x: 620, y: -48 }, { kind: 'arcade', x: 740, y: 0 }, { kind: 'poppy', x: 810, y: 0 }],
     portals: [{ x: 24, to: 'grove', toX: 920, label: '세계의 문' }, { x: 676, y: -48, to: 'dunes', toX: 50 }] },
   { id: 'dunes', name: '바람 모래톱', width: 940, theme: 'dunes',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
     spawns: [{ monster: 'cactling', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'palm', x: 650 }, { node: 'antbush', x: 300 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'oasis', toX: 650, toY: -48 }, { x: 916, to: 'canyon', toX: 50, reqKills: 300 }] },
+    facilities: [], portals: [{ x: 24, to: 'oasis', toX: 650, toY: -48 }, { x: 916, to: 'canyon', toX: 50, reqKills: 300 }, { x: 525, y: -96, to: 'arena2', toX: 60, key: 'arena_ticket2', label: '모래 투기장' }] },
   { id: 'canyon', name: '붉은 협곡', width: 960, theme: 'canyon',
     platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
     spawns: [{ monster: 'scorpip', count: 9 }], nodes: [{ node: 'amberrock', x: 410 }, { node: 'amberrock', x: 660 }],
@@ -572,7 +585,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
     spawns: [{ monster: 'snowpuff', count: 9 }], nodes: [{ node: 'pine', x: 90 }, { node: 'pine', x: 650 }, { node: 'frostbush', x: 300 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [{ kind: 'shrine', x: 380, y: 0 }], portals: [{ x: 24, to: 'snowtown', toX: 650, toY: -48 }, { x: 916, to: 'pinewood', toX: 50, reqKills: 600 }] },
+    facilities: [{ kind: 'shrine', x: 380, y: 0 }], portals: [{ x: 24, to: 'snowtown', toX: 650, toY: -48 }, { x: 916, to: 'pinewood', toX: 50, reqKills: 600 }, { x: 525, y: -96, to: 'arena3', toX: 60, key: 'arena_ticket3', label: '얼음 투기장' }] },
   { id: 'pinewood', name: '전나무 숲', width: 960, theme: 'pinewood',
     platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
     spawns: [{ monster: 'pinekin', count: 9 }], nodes: [{ node: 'pine', x: 410 }, { node: 'pine', x: 660 }, { node: 'frostbush', x: 900 }],
@@ -823,7 +836,7 @@ export const WORLDS = [
   { n: 4, name: '4월드 · 별빛 성운', town: 'nebtown', spawnX: 300, maps: WORLD4 },
 ];
 /** 보스방·콜로세움처럼 순간이동 지도에 오르지 않는 맵이 속한 월드 */
-const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, sandlair: 2, frostlair: 3, voidlair: 4 };
+const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, arena2: 2, arena3: 3, sandlair: 2, frostlair: 3, voidlair: 4 };
 export const TOWNS = WORLDS.map((w) => w.town);
 /** 이 맵이 속한 월드(보스방·콜로세움은 이어진 맵을 따라간다) */
 export function worldOf(id: string): number {
@@ -1261,6 +1274,8 @@ export const SHOP: ShopEntry[] = [
   { item: 'sculpt_tools', price: 1000, daily: 1 },
   { item: 'loot_magnet', price: 40000, daily: 1, w: 2 },
   { item: 'arena_ticket', price: 250, daily: 2 },
+  { item: 'arena_ticket2', price: 6000, daily: 2, w: 2 },
+  { item: 'arena_ticket3', price: 60000, daily: 2, w: 3 },
   { item: 'tp_ticket', price: 60, daily: 8 },
   { item: 'pet_shard', price: 300, daily: 2 },
   { item: 'cactus_juice', price: 140, daily: 30, w: 2 },
@@ -1433,24 +1448,52 @@ export const OWL = {
 
 // ───────── 콜로세움 ─────────
 /** 5분 동안 웨이브가 차례로 나온다(앞 웨이브를 다 잡거나 시간이 지나면 다음). 보상은 깬 웨이브 수 */
-export const ARENA = {
+export interface ArenaDef { seconds: number; waveGap: number; waves: [string, number][]; rewards: { waves: number; coins: number; items: [string, number][] }[]; exit: { map: string; x: number; y: number } }
+export const ARENA: ArenaDef = {
   seconds: 300, waveGap: 25,
   waves: [
     ['mossblob', 6], ['mossblob', 8], ['pebbler', 6], ['pebbler', 8], ['leafling', 6], ['leafling', 8], ['mudturtle', 6], ['mudturtle', 8],
     ['glowbat', 6], ['glowbat', 8], ['gusthopper', 6], ['gusthopper', 8], ['golemite', 6], ['shroomkin', 6], ['champion', 1],
-  ] as [string, number][],
+  ],
   /** 깬 웨이브 수에 따른 보상(도달한 단계까지 모두 받는다) */
   rewards: [
     { waves: 3, coins: 150, items: [['stew', 2]] },
     { waves: 6, coins: 400, items: [['forge_oil', 3], ['statue_luk', 2], ['stone_guard', 1]] },
     { waves: 10, coins: 1200, items: [['moonpie', 3], ['statue_fortune', 2], ['pet_shard', 2], ['stone_atk', 1]] },
     { waves: 15, coins: 3000, items: [['stamp_crit', 1], ['chest_small', 1], ['pet_shard', 5]] },
-  ] as { waves: number; coins: number; items: [string, number][] }[],
+  ],
+  exit: { map: 'meadow', x: 560, y: -96 },
 };
-/** 처치 수 → 깬 웨이브 수(웨이브 순서대로 센다) */
-export function arenaWaves(kills: number): number {
+/** 월드마다 콜로세움 */
+export const ARENAS: Record<string, ArenaDef> = {
+  arena: ARENA,
+  arena2: {
+    seconds: 300, waveGap: 25,
+    waves: [['cactling', 6], ['cactling', 8], ['scorpip', 6], ['scorpip', 8], ['mirabird', 6], ['mirabird', 8], ['mumbun', 6], ['mumbun', 8], ['saltcrab', 6], ['saltcrab', 8], ['duneworm', 6], ['duneworm', 8], ['sunwisp', 6], ['sunwisp', 8], ['champion2', 1]],
+    rewards: [
+      { waves: 3, coins: 3000, items: [['date_cake', 3]] },
+      { waves: 6, coins: 8000, items: [['statue_fortune', 3], ['stone_stat', 1], ['pet_shard', 3]] },
+      { waves: 10, coins: 25000, items: [['stamp_mirage', 1], ['obol_silver_circle_luk', 1], ['pet_shard', 5]] },
+      { waves: 15, coins: 60000, items: [['chest_small', 1], ['obol_silver_square_drop', 1], ['gstatue_fortune', 1]] },
+    ],
+    exit: { map: 'dunes', x: 525, y: -96 },
+  },
+  arena3: {
+    seconds: 300, waveGap: 25,
+    waves: [['snowpuff', 6], ['snowpuff', 8], ['pinekin', 6], ['pinekin', 8], ['penglet', 6], ['penglet', 8], ['icicle', 6], ['icicle', 8], ['yetiling', 6], ['yetiling', 8], ['aurowisp', 6], ['aurowisp', 8], ['frostgolem', 4], ['frostgolem', 6], ['champion3', 1]],
+    rewards: [
+      { waves: 3, coins: 30000, items: [['hot_cocoa', 3]] },
+      { waves: 6, coins: 80000, items: [['statue_guard', 3], ['stone_stat', 2], ['pet_shard', 5]] },
+      { waves: 10, coins: 250000, items: [['stamp_lantern', 1], ['obol_gold_circle_str', 1], ['pet_shard', 8]] },
+      { waves: 15, coins: 600000, items: [['chest_small', 1], ['obol_gold_hex_dmg', 1], ['gstatue_guard', 1]] },
+    ],
+    exit: { map: 'snowfield', x: 525, y: -96 },
+  },
+};
+export const arenaOf = (map: string) => ARENAS[map] ?? ARENA;
+export function arenaWaves(kills: number, def: ArenaDef = ARENA): number {
   let n = 0, sum = 0;
-  for (const [, cnt] of ARENA.waves) { sum += cnt; if (kills >= sum) n++; else break; }
+  for (const [, cnt] of def.waves) { sum += cnt; if (kills >= sum) n++; else break; }
   return n;
 }
 

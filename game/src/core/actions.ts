@@ -5,6 +5,7 @@ import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook } from './build';
 import { placeObol, takeObol } from './obols';
+import { arcadeSettle, poppySettle, shootBall, upPoppy } from './arcade';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
 import { buyChip, labSettle, leaveLab, placeInLab, toggleChip, unlockJewel } from './lab';
 import { BreedUp, breedSettle, fightArena, hatchEgg, releasePet, toggleArena, toggleFence, toggleKeeper, toggleTeam, upBreed } from './breeding';
@@ -86,6 +87,8 @@ export type Action =
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit' | 'staff' | 'cog' | 'trash' | 'refine' | 'rank' | 'print' | 'book' | 'atom'; id?: string; idx?: number; slot?: number }
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
+  | { t: 'arcade'; op: 'visit' | 'shoot' }
+  | { t: 'poppy'; op: 'visit' | 'up'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel' | 'chip' | 'chipOn'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up' | 'keeper' | 'arena' | 'fight'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef' | 'ladle'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
@@ -233,6 +236,16 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
         case 'ladle': return res(useLadle(acc, a.idx ?? -1, now));
       }
       return fail('없는 행동');
+    }
+    case 'arcade': {
+      if ((c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 오락실에서 할 수 있습니다');
+      if (a.op === 'visit') { arcadeSettle(acc, now); return ok(); }
+      const r = shootBall(acc, now); return typeof r === 'string' ? fail(r) : ok(r.coins);
+    }
+    case 'poppy': {
+      if ((c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 포피에게서 할 수 있습니다');
+      if (a.op === 'visit') { poppySettle(acc, now); return ok(); }
+      return res(upPoppy(acc, a.id ?? '', now));
     }
     case 'obol': return res(a.op === 'place' ? placeObol(acc, c, a.id ?? '', a.fam, a.idx) : takeObol(acc, c, a.fam, a.idx));
     case 'shrine': {

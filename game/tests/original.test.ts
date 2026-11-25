@@ -270,3 +270,26 @@ describe('연구실 칩', () => {
     expect(acc.lab.chipBag.length).toBe(1);
   });
 });
+
+import { ARENAS } from '../src/core/data';
+import { arcadeSettle as aSet, poppySettle as pSet } from '../src/core/arcade';
+describe('2·3월드 콜로세움·오락실·포피', () => {
+  it('월드마다 콜로세움, 오락실 공은 30분마다, 공을 쏘면 보너스나 코인, 포피는 물고기를 낚아 보너스', () => {
+    expect(Object.keys(ARENAS)).toEqual(['arena', 'arena2', 'arena3']);
+    const { acc, c } = setup();
+    c.maxWorld = 2;
+    const H = 3_600_000;
+    applyAction(acc, 0, { t: 'arcade', op: 'visit' }, H);
+    aSet(acc, H * 3);
+    expect(acc.arcade.balls).toBe(5 + 4);
+    const d0 = JSON.stringify(derive(c, acc));
+    for (let i = 0; i < 9; i++) expect(applyAction(acc, 0, { t: 'arcade', op: 'shoot' }, H * 3).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'arcade', op: 'shoot' }, H * 3).ok).toBe(false);
+    expect(JSON.stringify(derive(c, acc)) !== d0 || acc.coins > 0).toBe(true);
+    applyAction(acc, 0, { t: 'poppy', op: 'visit' }, H);
+    pSet(acc, H * 11);
+    expect(acc.poppy.fish).toBeCloseTo(60, 5);
+    expect(applyAction(acc, 0, { t: 'poppy', op: 'up', id: 'pp_tales' }, H * 11).ok).toBe(true);
+    expect(derive(c, acc).xpMult).toBeGreaterThan(1);
+  });
+});

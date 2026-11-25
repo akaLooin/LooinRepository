@@ -2,6 +2,7 @@
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
+import { ARC, ARCADE, POPPY, arcadeSettle, poppyCost, poppyRate, poppySettle } from '../core/arcade';
 import { FAMILY_OBOL_SLOTS, OBOL, PERSONAL_SLOTS, SHAPE_NAMES, slotOpen } from '../core/obols';
 import { SHRINE, SHRINES, SHRINE_MAX, shrineNeed, shrineRate, shrineSettle, shrineValue } from '../core/shrines';
 import { BOXES, COMPANIES, STREAK_MAX, boxCost, boxValue, orderReward, streakNow } from '../core/post';
@@ -19,7 +20,7 @@ const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 �
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, talentTab, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, talentTab, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaOf, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
   TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
@@ -43,7 +44,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'lab' | 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
+type Panel = 'arcade' | 'poppy' | 'lab' | 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
 /** '을(를)·이(가)·은(는)·와(과)·(으)로'를 앞 글자의 받침에 맞춰 고른다(태그는 건너뛰고 본다) */
 const JOSA: Record<string, [string, string]> = { '을(를)': ['을', '를'], '이(가)': ['이', '가'], '은(는)': ['은', '는'], '와(과)': ['과', '와'], '(으)로': ['으로', '로'], '아(야)': ['아', '야'] };
@@ -309,7 +310,7 @@ export class UI {
     else if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); if (f.kind === 'nest') this.game.act({ t: 'breed', op: 'visit' }); if (f.kind === 'lab') this.game.act({ t: 'lab', op: 'visit' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); if (f.kind === 'nest') this.game.act({ t: 'breed', op: 'visit' }); if (f.kind === 'lab') this.game.act({ t: 'lab', op: 'visit' }); if (f.kind === 'arcade') this.game.act({ t: 'arcade', op: 'visit' }); if (f.kind === 'poppy') this.game.act({ t: 'poppy', op: 'visit' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.gateWorld = e.to; this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -366,8 +367,9 @@ export class UI {
     const lines: string[] = [];
     if (w.arena) {
       const a = w.arena;
-      lines.push(`<b class="ui-accent">콜로세움</b> 웨이브 ${Math.min(a.wave, ARENA.waves.length)}/${ARENA.waves.length} · 남은 시간 ${Math.max(0, Math.ceil(a.t))}초`);
-      lines.push(`점수 <b>${Math.round(a.score).toLocaleString()}</b>${a.mult > 1 ? ` <span class="ui-accent">×${a.mult.toFixed(1)}</span>` : ''} · 깬 웨이브 ${arenaWaves(a.kills)}`);
+      const ad = arenaOf(w.map.id);
+      lines.push(`<b class="ui-accent">${w.map.name}</b> 웨이브 ${Math.min(a.wave, ad.waves.length)}/${ad.waves.length} · 남은 시간 ${Math.max(0, Math.ceil(a.t))}초`);
+      lines.push(`점수 <b>${Math.round(a.score).toLocaleString()}</b>${a.mult > 1 ? ` <span class="ui-accent">×${a.mult.toFixed(1)}</span>` : ''} · 깬 웨이브 ${arenaWaves(a.kills, ad)}`);
     }
     const mbs = MINIBOSSES.filter((m) => minibossOpen(g.acc, m.id, Date.now()) && mapUnlocked(c, m.map));
     if (mbs.length && !w.arena) lines.push(`<span class="ui-accent">⚔ ${mbs.map((m) => `${MONSTERS[m.id].name}(${MAPS[m.map].name})`).join(', ')} 출현 중</span>`);
@@ -1243,12 +1245,29 @@ export class UI {
         }
         return win('연금 솥 <span class="ui-sm ui-muted">계정 공용</span>', `${head}${tabs(['거품', '액체', '약병', '배치'], tab, tabAct, ['bub_power', 'liq_water', 'vial_v_star', 'ui_family'])}<div class="ui-tabpanel">${body}</div>`);
       }
+      case 'arcade': {
+        const acc = g.acc, a = acc.arcade;
+        arcadeSettle(acc, Date.now());
+        const rows = ARCADE.map((b) => { const lv = a.up[b.id] ?? 0; return `<div class="ui-row line ${lv ? '' : 'ui-muted'}"><div class="ui-grow"><b>${b.name}</b> <span class="ui-xs ui-accent">${lv}/${b.max}</span></div><span class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[b.eff]} +${Math.round(lv * b.per * 100) / 100}${b.unit}</span></div>`; }).join('');
+        return win('오락실 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row alchhead">${ui('obj_arcade', 'mi')}<b class="ui-grow">공 <span class="ui-accent">${a.balls}</span> / ${ARC.ballMax} <span class="ui-xs ui-muted">${ARC.ballMins}분마다 하나</span></b>
+          <button class="ui-btn primary" data-act="arcshoot" ${a.balls ? '' : 'disabled'}>공 쏘기</button><button class="ui-btn" data-act="arcshoot10" ${a.balls >= 10 ? '' : 'disabled'}>10번</button></div>
+          <div class="ui-tabpanel">${rows}<p class="ui-xs ui-muted">공을 쏘면 오락실 보너스 하나가 오르거나 코인이 나옵니다. 보너스는 계정의 모든 캐릭터에게 적용됩니다.</p></div>`);
+      }
+      case 'poppy': {
+        const acc = g.acc, p = acc.poppy;
+        poppySettle(acc, Date.now());
+        const rows = POPPY.map((u) => { const lv = p.up[u.id] ?? 0, max = lv >= u.max, cost = poppyCost(u, lv);
+          return `<div class="ui-row line"><div class="ui-grow"><b>${u.name}</b> <span class="ui-xs ui-accent">${lv}/${u.max}</span><div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${u.eff ? `${ALCH_LABEL[u.eff]} +${Math.round(lv * u.per * 100) / 100}${u.unit}` : u.desc}</div></div>
+            <button class="ui-btn sm" data-act="popup:${u.id}" ${!max && p.fish >= cost ? '' : 'disabled'}>${max ? '최대' : `물고기 ${short(cost)}`}</button></div>`; }).join('');
+        return win('낚시꾼 포피', `<div class="ui-row alchhead">${ui('obj_poppy', 'mi')}<b class="ui-grow">물고기 <span class="ui-accent">${short(Math.floor(p.fish))}</span> <span class="ui-xs ui-muted">시간당 ${poppyRate(p).toFixed(1)} · 접속하지 않아도 낚습니다</span></b></div>
+          <div class="ui-tabpanel"><p class="ui-sm" style="margin-top:0">“샘물에서 하루 종일 낚시를 하지. 물고기를 나눠 줄 테니 내 낚시 도구 좀 손봐 주겠나?”</p>${rows}</div>`);
+      }
       case 'arena': {
         const r = this.arenaResult ?? { waves: 0, score: 0 };
-        const got = ARENA.rewards.filter((x) => r.waves >= x.waves);
+        const ad = arenaOf(c.mapId), got = ad.rewards.filter((x) => r.waves >= x.waves);
         const tiles = got.flatMap((x) => [tile(iconUrl(ITEM_ICON.coin), x.coins.toLocaleString(), `코인 ${x.coins}`), ...x.items.map(([id, n]) => tile(iconUrl(ITEM_ICON[id]), n, `${ITEMS[id].name} ${n}개`))]).join('');
-        const next = ARENA.rewards.find((x) => r.waves < x.waves);
-        return win('콜로세움 결과', `<div class="stack"><div class="ui-row"><b class="ui-grow">깬 웨이브 ${r.waves}/${ARENA.waves.length}</b><span>점수 <b class="ui-accent">${r.score.toLocaleString()}</b></span></div>
+        const next = ad.rewards.find((x) => r.waves < x.waves);
+        return win('콜로세움 결과', `<div class="stack"><div class="ui-row"><b class="ui-grow">깬 웨이브 ${r.waves}/${ad.waves.length}</b><span>점수 <b class="ui-accent">${r.score.toLocaleString()}</b></span></div>
           <div class="qline">${tiles || '<span class="ui-muted">받을 보상이 없습니다.</span>'}</div>
           ${next ? `<span class="ui-xs ui-muted">웨이브 ${next.waves}개를 깨면 다음 보상</span>` : ''}
           <span class="ui-xs ui-muted">최고 기록 ${Math.max(g.acc.arenaBest, r.waves)}웨이브</span>
@@ -1660,12 +1679,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen', 'nest', 'lab'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'alchemy', 'post', 'arcade', 'poppy', 'traps', 'build', 'shrine', 'kitchen', 'nest', 'lab'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && ((k !== 'kitchen' && k !== 'nest' && k !== 'lab') || (c.maxWorld ?? 1) >= 4);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && ((k !== 'arcade' && k !== 'poppy') || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && ((k !== 'kitchen' && k !== 'nest' && k !== 'lab') || (c.maxWorld ?? 1) >= 4);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1740,7 +1759,7 @@ export class UI {
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); if (a === 'nest') g.act({ t: 'breed', op: 'visit' }); if (a === 'lab') g.act({ t: 'lab', op: 'visit' }); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); if (a === 'nest') g.act({ t: 'breed', op: 'visit' }); if (a === 'lab') g.act({ t: 'lab', op: 'visit' }); if (a === 'arcade') g.act({ t: 'arcade', op: 'visit' }); if (a === 'poppy') g.act({ t: 'poppy', op: 'visit' }); break;
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
@@ -1833,6 +1852,13 @@ export class UI {
       case 'lableave': fail(g.act({ t: 'lab', op: 'leave' }).err ?? null); break;
       case 'labjewel': { const r = g.act({ t: 'lab', op: 'jewel', id: a }); if (r.ok) { this.audio?.play('craft'); this.toast(`${LAB_NODE[a].name}을(를) 열었습니다`); } else fail(r.err ?? null); break; }
       case 'bhatch': { const n0 = g.acc.breed.pets.length; const r = g.act({ t: 'breed', op: 'hatch' }); if (r.ok) { this.audio?.play('coin'); const p = g.acc.breed.pets[n0]; this.toast(`${SPEC[p.sp].name}이(가) 태어났습니다! 힘 ${p.power}`); } else fail(r.err ?? null); break; }
+      case 'arcshoot': case 'arcshoot10': {
+        const n = act === 'arcshoot10' ? 10 : 1, hits: string[] = []; let coins = 0;
+        for (let i = 0; i < n; i++) { const before = { ...g.acc.arcade.up }; const r = g.act({ t: 'arcade', op: 'shoot' }); if (!r.ok) { if (!i) fail(r.err ?? null); break; } if (r.n) coins += r.n; else { const id = ARCADE.find((b) => (g.acc.arcade.up[b.id] ?? 0) > (before[b.id] ?? 0)); if (id) hits.push(id.name); } }
+        if (hits.length || coins) { this.audio?.play('coin'); this.toast([...new Set(hits)].map((h) => `${h} +${hits.filter((x) => x === h).length}`).join(', ') + (coins ? `${hits.length ? ' · ' : ''}코인 +${short(coins)}` : '')); }
+        break;
+      }
+      case 'popup': { const r = g.act({ t: 'poppy', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'bkeeper': fail(g.act({ t: 'breed', op: 'keeper' }).err ?? null); break;
       case 'barteam': fail(g.act({ t: 'breed', op: 'arena', uid: +a }).err ?? null); break;
       case 'barena': { const r = g.act({ t: 'breed', op: 'fight' }); if (r.ok) { this.audio?.play('coin'); this.toast(`펫 아레나: ${r.n}웨이브까지 버텼습니다!`); } else fail(r.err ?? null); break; }
