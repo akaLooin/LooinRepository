@@ -1169,7 +1169,7 @@ export class UI {
         }
         break;
       // ── 게임 행동: 전부 g.act 로(기기와 서버가 같은 규칙으로 적용) ──
-      case 'auto': if (c) g.act({ t: 'auto', on: !c.auto }); break;
+      case 'auto': if (c) { const on = !c.auto; g.act({ t: 'auto', on }); if (!on) g.world?.stopAuto(); } break;
       case 'use': { const r = g.act({ t: 'use', id: a }); fail(r.err ?? null); if (r.ok) { this.toast(`${ITEMS[a].name} 사용!`, a); this.sel = null; } break; }
       case 'put': fail(g.act({ t: 'deposit', id: a }).err ?? null); break;
       case 'take': fail(g.act({ t: 'withdraw', id: a }).err ?? null); break;

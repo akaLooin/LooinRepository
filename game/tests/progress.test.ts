@@ -265,17 +265,45 @@ describe('미니게임·토템', () => {
 });
 
 import { DROP_LIFE } from '../src/core/world';
+import { computeAfk } from '../src/core/afk';
 describe('전투·줍기 조작', () => {
-  it('걷는 중이나 로프를 타는 중에는 공격하지 않는다', () => {
+  it('자동이 꺼져 있으면 옆에 적이 있어도 치지 않고, 지정하면 멈춰 선 뒤에만 친다', () => {
     const { acc, c } = setup();
-    c.mapId = 'meadow';
+    c.mapId = 'meadow'; c.auto = false;
     const w = new World(acc, c, new Rng(1));
-    const m = w.mobs[0]; m.x = w.player.x + 10; m.y = 0; m.plat = w.platforms[0]; m.spawnAge = 5;
+    for (const o of w.mobs.slice(1)) { o.alive = false; o.respawnT = 999; }
+    const m = w.mobs[0]; m.plat = w.platforms[0]; m.y = 0; m.spawnAge = 5;
     let swung = false;
+    const near = () => { m.x = w.player.x + 10; m.t = 99; m.moving = false; };
+    for (let i = 0; i < 120; i++) { near(); w.step(1 / 60, { move: 0, climb: 0 }); if (w.player.swingT > 0) swung = true; }
+    expect(swung).toBe(false); // 자동 꺼짐: 옆에 있어도 그대로
     for (let i = 0; i < 30; i++) { w.step(1 / 60, { move: 1, climb: 0 }); if (w.player.swingT > 0) swung = true; }
-    expect(swung).toBe(false);
-    for (let i = 0; i < 60 && !swung; i++) { m.x = w.player.x + 10; w.step(1 / 60, { move: 0, climb: 0 }); if (w.player.swingT > 0) swung = true; }
-    expect(swung).toBe(true);
+    expect(swung).toBe(false); // 걷는 중
+    w.command = { k: 'mob', uid: m.uid };
+    for (let i = 0; i < 120 && !swung; i++) { near(); w.step(1 / 60, { move: 0, climb: 0 }); if (w.player.swingT > 0) swung = true; }
+    expect(swung).toBe(true); // 눌러서 지정하면 친다
+  });
+  it('자동을 끄면 하던 일을 멈추고 그 자리에 선다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow'; c.auto = true;
+    const w = new World(acc, c, new Rng(1));
+    for (let i = 0; i < 60; i++) w.step(1 / 60, { move: 0, climb: 0 });
+    applyAction(acc, 0, { t: 'auto', on: false }, 0); w.stopAuto();
+    for (let i = 0; i < 30; i++) w.step(1 / 60, { move: 0, climb: 0 });
+    const x = w.player.x;
+    for (let i = 0; i < 120; i++) w.step(1 / 60, { move: 0, climb: 0 });
+    expect(Math.abs(w.player.x - x)).toBeLessThan(1);
+    expect(w.command).toBeNull();
+  });
+  it('방치로 잡은 몬스터도 그 맵의 처치 수에 들어가 포탈을 연다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow'; c.level = 20; c.stats.luk = 60;
+    expect(mapUnlocked(c, 'hills')).toBe(false);
+    computeAfk(acc, c, 2 * 3600_000, new Rng(1));
+    expect(c.kills.meadow).toBeGreaterThanOrEqual(15);
+    expect(mapUnlocked(c, 'hills')).toBe(true);
+    const portal = MAPS.meadow.portals.findIndex((p) => p.to === 'hills');
+    expect(applyAction(acc, 0, { t: 'travel', portal }, 0).ok).toBe(true);
   });
   it('떨어진 아이템은 30분 뒤 사라진다', () => {
     const { acc, c } = setup();

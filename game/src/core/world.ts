@@ -267,6 +267,13 @@ export class World {
   }
 
   /** 액티브 스킬 사용. 성공 여부 반환 */
+  /** 자동을 끄면 하던 일을 멈추고 그 자리에 선다 */
+  stopAuto() {
+    this.command = null; this.aiTarget = null; this.engaged = -1; this.climbDir = 0;
+    const p = this.player;
+    p.vx = 0;
+  }
+
   useSkill(id: string): boolean {
     const p = this.player, c = this.char, lv = c.talents[id] ?? 0, t = TALENT[id];
     const d = this.d;
@@ -432,8 +439,9 @@ export class World {
       const cmd = this.command;
       // 터치/AUTO 중에는 자리를 잡은(engaged) 대상만 친다 → 지나가다 멈칫거리지 않는다.
       // 한 번 시작한 공격은 대상이 자리를 벗어나도 적용된다(applyHit는 거리 검사를 하지 않음).
-      const mob = keyed || (!cmd && !c.auto) ? this.mobInRange(d)
-        : this.mobs.find((m) => m.uid === this.engaged && m.alive && m.spawnAge >= 0.4) ?? null;
+      // 자동이 켜져 있거나 몬스터를 눌러 지정했을 때만 싸운다(자동이 꺼져 있으면 옆에 적이 있어도 치지 않는다)
+      const fighting = c.auto || cmd?.k === 'mob';
+      const mob = fighting ? this.mobs.find((m) => m.uid === this.engaged && m.alive && m.spawnAge >= 0.4) ?? null : null;
       if (mob) {
         this.startSwing(d.ranged ? (baseClass(c.cls) === 'mage' ? 'cast' : 'shoot') : 'attack', mob, d.atkInterval);
       } else {
@@ -453,17 +461,7 @@ export class World {
   }
 
   /** 사거리 안에서 가장 가까운 몬스터(키보드 조작용) */
-  private mobInRange(d: Derived): Mob | null {
-    const p = this.player;
-    let best: Mob | null = null, bd = 1e9;
-    for (const m of this.mobs) {
-      if (!m.alive || m.spawnAge < 0.4) continue;
-      const dx = Math.abs(m.x - p.x);
-      if (dx > d.range + m.def.radius * 0.5 || Math.abs(m.y - p.y) >= 18) continue;
-      if (dx < bd) { best = m; bd = dx; }
-    }
-    return best;
-  }
+
 
   private applyHit(d: Derived) {
     const t = this.swingTarget, c = this.char;
