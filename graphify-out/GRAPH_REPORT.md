@@ -1,7 +1,7 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 95 files · ~109,452 words
+- 95 files · ~109,691 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `982c4198`
+- Built from commit: `b4e5337a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -116,18 +116,18 @@
   replica/backend.md → game/src/core/afk.ts
 - `장비 겉모습 (game/src/render/gear.ts)` --references--> `remoteGear()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/gear.ts
-- `색` --references--> `ramp()`  [INFERRED]
-  replica/design/art-spec.md → game/src/render/sprites.ts
 - `색` --references--> `lineOf()`  [INFERRED]
+  replica/design/art-spec.md → game/src/render/sprites.ts
+- `색` --references--> `ramp()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/sprites.ts
 
 ## Import Cycles
-- 2-file cycle: `game/src/core/forge.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
-- 2-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/minigames.ts`
 - 2-file cycle: `game/src/core/progress.ts -> game/src/core/state.ts -> game/src/core/progress.ts`
+- 2-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/minigames.ts`
+- 2-file cycle: `game/src/core/forge.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
 - 2-file cycle: `game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/stamps.ts`
-- 3-file cycle: `game/src/core/forge.ts -> game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
 - 3-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/progress.ts -> game/src/core/minigames.ts`
+- 3-file cycle: `game/src/core/forge.ts -> game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
 
 ## Communities (90 total, 23 thin omitted)
 
@@ -405,16 +405,16 @@ Nodes (6): acceptQuest(), completeQuest(), currentQuest(), noteKill(), qs(), que
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `World` connect `World` to `api.test.ts`, `tasks.ts`, `core.test.ts`, `Game`, `scene.ts`, `GameScene`, `progress.test.ts`, `.setWorld`, `game.ts`, `world.ts`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+- **Why does `Game` connect `Game` to `World`, `index.ts`, `scene.ts`, `Live`, `Audio`, `GameScene`, `WorldEvent`, `game.ts`, `Net`, `data.ts`, `Looin Idle (가제)`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
 - **Should `game/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07308377896613191 - nodes in this community are weakly interconnected._
-- **Why does `Game` connect `Game` to `World`, `index.ts`, `scene.ts`, `Live`, `Audio`, `GameScene`, `WorldEvent`, `game.ts`, `Net`, `data.ts`, `Looin Idle (가제)`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
+- **Why does `World` connect `World` to `api.test.ts`, `tasks.ts`, `core.test.ts`, `Game`, `scene.ts`, `GameScene`, `progress.test.ts`, `.setWorld`, `game.ts`, `world.ts`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Should `server/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
-- **Why does `Audio` connect `Audio` to `.panelHtml`, `data.ts`, `Game`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Why does `Live` connect `Live` to `game.ts`, `Game`?**
+  _High betweenness centrality (0.029) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
 - **Should `정찰 지도: Legends of Idleon (Android 우선, 이후 iOS/PC)` be split into smaller, more focused modules?**
