@@ -1,24 +1,24 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 94 files · ~106,027 words
+- 95 files · ~108,112 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
 ## Summary
-- 1242 nodes · 3132 edges · 75 communities (55 shown, 20 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 108 edges (avg confidence: 0.86)
+- 1264 nodes · 3172 edges · 73 communities (53 shown, 20 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 113 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `390d4843`
+- Built from commit: `b2a16cf4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - actions.ts
 - reviews.py
-- derive
+- tasks.ts
 - game/package.json
 - server/package.json
 - imgdiff.py
@@ -52,7 +52,7 @@
 - components.md
 - progress.ts
 - Audio
-- state.ts
+- progress.test.ts
 - app.ts
 - scripts
 - app.ts
@@ -63,12 +63,12 @@
 - game.ts
 - Net
 - world.ts
-- scene.ts
+- patchChildren
 - mannequin.ts
 - Paint
 - data.ts
 - core/minigames.ts
-- core.test.ts
+- state.ts
 - Looin Idle (가제)
 - gear.ts
 - World
@@ -76,8 +76,6 @@
 - api.test.ts
 - tasks.ts
 - companions.ts
-- 백엔드 (Looin Idle 서버)
-- SqlStore
 - forge.ts
 - ui/minigames.ts
 - countItem
@@ -92,42 +90,42 @@
 6. `countItem()` - 32 edges
 7. `derive()` - 31 edges
 8. `Character` - 24 edges
-9. `buildApp()` - 23 edges
-10. `newAccount()` - 22 edges
+9. `boot()` - 23 edges
+10. `buildApp()` - 23 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `권한 모델 (이 게임에서 가장 중요한 결정)` --references--> `computeAfk()`  [INFERRED]
   replica/architecture.md → game/src/core/afk.ts
-- `구조` --references--> `computeAfk()`  [INFERRED]
-  replica/backend.md → game/src/core/afk.ts
 - `장비 겉모습 (game/src/render/gear.ts)` --references--> `remoteGear()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/gear.ts
+- `구조` --references--> `computeAfk()`  [INFERRED]
+  replica/backend.md → game/src/core/afk.ts
 - `색` --references--> `lineOf()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/sprites.ts
 - `색` --references--> `ramp()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/sprites.ts
 
 ## Import Cycles
+- 2-file cycle: `game/src/core/progress.ts -> game/src/core/state.ts -> game/src/core/progress.ts`
 - 2-file cycle: `game/src/core/forge.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
 - 2-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/minigames.ts`
-- 2-file cycle: `game/src/core/progress.ts -> game/src/core/state.ts -> game/src/core/progress.ts`
 - 2-file cycle: `game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/stamps.ts`
-- 3-file cycle: `game/src/core/forge.ts -> game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
 - 3-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/progress.ts -> game/src/core/minigames.ts`
+- 3-file cycle: `game/src/core/forge.ts -> game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
 
-## Communities (75 total, 20 thin omitted)
+## Communities (73 total, 20 thin omitted)
 
 ### Community 0 - "actions.ts"
-Cohesion: 0.16
-Nodes (25): applyAction(), fail(), ok(), res(), owlSettle(), owlUpgrade(), classLine(), buyForge() (+17 more)
+Cohesion: 0.15
+Nodes (27): applyAction(), fail(), ok(), res(), classLine(), buyForge(), finishGame(), hourKey() (+19 more)
 
 ### Community 1 - "reviews.py"
 Cohesion: 0.06
 Nodes (40): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), check(), colours() (+32 more)
 
-### Community 2 - "derive"
-Cohesion: 0.19
-Nodes (15): AfkRates, afkRates(), computeAfk(), anvilRate(), anvilTick(), derive(), dmgTaken(), equipStats() (+7 more)
+### Community 2 - "tasks.ts"
+Cohesion: 0.16
+Nodes (12): STAMPS, buyMerit(), MERIT_BY_ID, meritCost(), MeritDef, MeritEff, meritLv(), MERITS (+4 more)
 
 ### Community 3 - "game/package.json"
 Cohesion: 0.07
@@ -146,8 +144,8 @@ Cohesion: 0.25
 Nodes (7): 그림 규칙 (art spec), 몬스터, 몸 방향 (2026-11-25), 장비 겉모습 (game/src/render/gear.ts), 지형, 캐릭터: 기본 마네킹 + 동작 프레임 + 붙임 지점, 해상도
 
 ### Community 7 - "GameScene"
-Cohesion: 0.10
-Nodes (11): PortalDef, WorldEvent, remoteGear(), CharRig, ensureTextures(), GameScene, label(), MobView (+3 more)
+Cohesion: 0.07
+Nodes (22): FACILITY_NAMES, SMASH_RANGE, HURT_TIME, Player, SWING_TIME, SwingKind, WorldEvent, MQ_SCALE (+14 more)
 
 ### Community 8 - "replica-recon"
 Cohesion: 0.15
@@ -213,17 +211,21 @@ Nodes (6): API, Architecture: {{your app}} (a rebuild of {{app}}'s core features
 Cohesion: 0.33
 Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Production, Watch
 
+### Community 38 - "Game"
+Cohesion: 0.16
+Nodes (3): deleteCharacter(), Game, boot()
+
 ### Community 43 - "progress.ts"
-Cohesion: 0.08
-Nodes (32): owlValue(), ACHIEVEMENTS, baseClass(), BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef (+24 more)
+Cohesion: 0.10
+Nodes (27): owlValue(), ACHIEVEMENTS, BaseClass, baseClass(), BonusKey, CARD_SLOTS, CardSetDef, cardTier() (+19 more)
 
 ### Community 44 - "Audio"
-Cohesion: 0.10
-Nodes (8): Audio, Sfx, bar, colors, menu, ART, FILL, pixelIcon()
+Cohesion: 0.06
+Nodes (17): Audio, Sfx, DORIAN, MAJOR, MINOR, Music, PENTA, Song (+9 more)
 
-### Community 45 - "state.ts"
-Cohesion: 0.10
-Nodes (28): AFK_BASE, arenaWaves(), ATTACK_BARS, CLASS_LEVEL, FOOD_SLOTS, INVENTORY_SIZE, ItemStats, STACK_BASE (+20 more)
+### Community 45 - "progress.test.ts"
+Cohesion: 0.12
+Nodes (16): ARENA, arenaWaves(), CARD_PRESET_LV, CARD_SETS, CLASS_LEVEL, FAMILY_SLOTS, MINIBOSSES, SIGN_LV (+8 more)
 
 ### Community 46 - "app.ts"
 Cohesion: 0.17
@@ -234,104 +236,92 @@ Cohesion: 0.33
 Nodes (6): scripts, dev, migrate, start, test, typecheck
 
 ### Community 48 - "app.ts"
-Cohesion: 0.12
-Nodes (16): deleteCharacter(), checkSync(), cumXp(), itemCount(), same(), SyncAccount, ActionSchema, buildApp() (+8 more)
+Cohesion: 0.15
+Nodes (14): serialize(), acceptSync(), SyncAccount, ActionSchema, buildApp(), sync(), withAccount(), colour (+6 more)
 
 ### Community 49 - "live.ts"
 Cohesion: 0.14
 Nodes (13): ChatLine, cleanText(), colour, Gear, GearMsg, itemId, Join, Msg (+5 more)
 
 ### Community 50 - "sprites.ts"
-Cohesion: 0.17
-Nodes (18): C, grid(), HI, hslToHex(), lineOf(), mixHex(), mk(), PAL (+10 more)
+Cohesion: 0.15
+Nodes (20): MANNEQUIN_WHITE, ROOT_X, C, grid(), HI, hslToHex(), lineOf(), mixHex() (+12 more)
 
 ### Community 51 - ".panelHtml"
-Cohesion: 0.07
-Nodes (33): anvilCap(), skillXpToNext(), buyMerit(), claimTask(), MERIT_BY_ID, meritCost(), MeritDef, MeritEff (+25 more)
+Cohesion: 0.11
+Nodes (22): achieveReady(), anvilCap(), anvilRate(), skillXpToNext(), taskDone(), iconUrl(), portraitUrl(), bar() (+14 more)
 
 ### Community 52 - "compilerOptions"
 Cohesion: 0.18
 Nodes (10): compilerOptions, lib, module, moduleResolution, noEmit, skipLibCheck, strict, target (+2 more)
 
 ### Community 53 - "game.ts"
-Cohesion: 0.20
-Nodes (10): Action, ActionResult, Look, localBackend, NetState, onlineCache, ChatLine, Gear (+2 more)
+Cohesion: 0.21
+Nodes (12): Action, ActionResult, Character, Look, Input, localBackend, NetState, onlineCache (+4 more)
 
 ### Community 55 - "world.ts"
-Cohesion: 0.07
-Nodes (42): AfkReport, AFK_MAX_SECONDS, AFK_MIN_SECONDS, ARENA, BaseClass, CARD_BOSS_CHANCE, CARD_BY_ID, CARD_CHANCE (+34 more)
-
-### Community 56 - "scene.ts"
-Cohesion: 0.12
-Nodes (14): FACILITY_NAMES, SMASH_RANGE, HURT_TIME, Player, SWING_TIME, SwingKind, MQ_SCALE, Img (+6 more)
+Cohesion: 0.06
+Nodes (52): AfkRates, afkRates(), AfkReport, computeAfk(), settle(), AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_BOSS_CHANCE (+44 more)
 
 ### Community 57 - "mannequin.ts"
 Cohesion: 0.08
-Nodes (37): GEAR, Anchors, bake(), bakeClip(), BakedClip, BASE, BASE_PX, BIG (+29 more)
+Nodes (35): GEAR, Anchors, bake(), bakeClip(), BakedClip, BASE, BASE_PX, BIG (+27 more)
 
 ### Community 58 - "Paint"
-Cohesion: 0.31
+Cohesion: 0.33
 Nodes (11): bigEye(), buildAll(), buildIcons(), buildItems(), buildMonsters(), buildObjects(), buildTheme(), buildWeapons() (+3 more)
 
 ### Community 59 - "data.ts"
-Cohesion: 0.05
-Nodes (58): AchieveDef, ANVIL, ATTACK_SLOTS, BribeDef, BRIBES, canSubclass(), CardBonus, CardDef (+50 more)
+Cohesion: 0.04
+Nodes (70): AchieveDef, AFK_BASE, ANVIL, ATTACK_BARS, ATTACK_SLOTS, BribeDef, BribeEff, BRIBES (+62 more)
 
 ### Community 60 - "core/minigames.ts"
-Cohesion: 0.17
-Nodes (17): BLESS, blessCost(), BlessKey, buyBless(), finishGame(), finishTotem(), GameKind, gameReward() (+9 more)
-
-### Community 61 - "core.test.ts"
 Cohesion: 0.19
-Nodes (22): acceptQuest(), addItem(), addItemSome(), advanceClass(), buy(), canCraft(), collectAnvil(), completeQuest() (+14 more)
+Nodes (13): BLESS, blessCost(), BlessKey, buyBless(), finishTotem(), GameKind, gameReward(), playsLeft() (+5 more)
+
+### Community 61 - "state.ts"
+Cohesion: 0.10
+Nodes (49): newOwl(), stackGroup(), newForge(), newMini(), newTotem(), AccBonus, acceptQuest(), Activity (+41 more)
 
 ### Community 62 - "Looin Idle (가제)"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (8): Looin Idle (가제), 구조, 다음 단계(제안), 멀티 전환을 위한 설계, 서버, 실행, 현재 들어간 것, SaveBackend
 
 ### Community 63 - "gear.ts"
-Cohesion: 0.17
-Nodes (10): GearDef, gearKey(), GearOn, gearPos(), GOLD, MOSS, paintGear(), WOOD (+2 more)
+Cohesion: 0.14
+Nodes (12): GearDef, gearKey(), GearOn, gearPos(), GOLD, MOSS, paintGear(), remoteGear() (+4 more)
 
 ### Community 64 - "World"
-Cohesion: 0.10
-Nodes (12): settle(), Platform, Rng, Derived, acceptSync(), clamp(), World, run() (+4 more)
+Cohesion: 0.12
+Nodes (9): healPct(), MapDef, Platform, smashMult(), Rng, Derived, clamp(), World (+1 more)
 
 ### Community 65 - "index.ts"
-Cohesion: 0.11
-Nodes (11): Owl, Forge, MiniState, TotemState, Account, TaskDef, AppOptions, AccountRow (+3 more)
+Cohesion: 0.12
+Nodes (9): MiniState, TotemState, StarDef, Account, AppOptions, AccountRow, MemoryStore, Row (+1 more)
 
 ### Community 66 - "api.test.ts"
-Cohesion: 0.23
-Nodes (7): pg, dir, pool, app, migrate(), look, makeStores()
+Cohesion: 0.12
+Nodes (11): pg, dir, pool, app, migrate(), Sql, SqlStore, toRow() (+3 more)
 
 ### Community 67 - "tasks.ts"
-Cohesion: 0.13
-Nodes (23): newOwl(), RECIPES, STORAGE_SIZE, TELEPORTS_PER_DAY, newForge(), newMini(), newTotem(), STAMP_BY_ID (+15 more)
+Cohesion: 0.15
+Nodes (18): STORAGE_SIZE, TELEPORTS_PER_DAY, STAMP_BY_ID, createCharacter(), newAccount(), TASK_BY_ID, setup(), look (+10 more)
 
 ### Community 68 - "companions.ts"
-Cohesion: 0.24
-Nodes (10): claimPet(), owlCost(), owlPerHour(), petOfWeek(), petReady(), weekKey(), OWL, OwlUp (+2 more)
-
-### Community 69 - "백엔드 (Looin Idle 서버)"
 Cohesion: 0.22
-Nodes (8): API, 구조, 배포 (사용자가 할 일), 백엔드 (Looin Idle 서버), 보안 점검표, 설계에서 바꾼 점 (architecture.md 대비), 아직 없는 것, 환경 변수
-
-### Community 70 - "SqlStore"
-Cohesion: 0.22
-Nodes (3): Sql, SqlStore, toRow()
+Nodes (13): claimPet(), Owl, owlCost(), owlPerHour(), owlSettle(), owlUpgrade(), petOfWeek(), petReady() (+5 more)
 
 ### Community 71 - "forge.ts"
-Cohesion: 0.27
-Nodes (16): emptySlot(), forgeBonus(), forgeCap(), forgeCollect(), forgeLoad(), forgeOil(), forgeProgress(), forgeSettle() (+8 more)
+Cohesion: 0.25
+Nodes (17): emptySlot(), Forge, forgeBonus(), forgeCap(), forgeCollect(), forgeLoad(), forgeOil(), forgeProgress() (+9 more)
 
 ### Community 72 - "ui/minigames.ts"
 Cohesion: 0.12
 Nodes (11): canvases, C, chargeGame(), Game, makeGame(), PlayKind, PlayResult, runGame() (+3 more)
 
 ### Community 73 - "countItem"
-Cohesion: 0.18
-Nodes (21): BribeEff, STAMP_GROW, StampEff, offerStatue(), useSculptTools(), bribeBonus(), collectStamp(), stampBonus() (+13 more)
+Cohesion: 0.26
+Nodes (16): offerStatue(), useSculptTools(), bribeBonus(), collectStamp(), stampBonus(), stampCost(), stampsOpen(), stampValue() (+8 more)
 
 ### Community 75 - "설계: Looin Idle (방치형 횡스크롤 RPG, 1월드부터 단계 확장)"
 Cohesion: 0.22
@@ -343,17 +333,17 @@ Nodes (8): API, 구현 순서, 권한 모델 (이 게임에서 가장 중요한 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Game` connect `Game` to `World`, `index.ts`, `tasks.ts`, `GameScene`, `Live`, `Audio`, `game.ts`, `Net`, `world.ts`, `scene.ts`, `data.ts`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
+- **Why does `Game` connect `Game` to `World`, `index.ts`, `GameScene`, `Live`, `Audio`, `game.ts`, `Net`, `world.ts`, `data.ts`, `Looin Idle (가제)`?**
+  _High betweenness centrality (0.058) - this node is a cross-community bridge._
+- **Should `actions.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.1455026455026455 - nodes in this community are weakly interconnected._
+- **Why does `World` connect `World` to `api.test.ts`, `tasks.ts`, `Game`, `GameScene`, `progress.test.ts`, `game.ts`, `world.ts`, `state.ts`, `gear.ts`?**
+  _High betweenness centrality (0.055) - this node is a cross-community bridge._
 - **Should `reviews.py` be split into smaller, more focused modules?**
   _Cohesion score 0.05875251509054326 - nodes in this community are weakly interconnected._
-- **Why does `World` connect `World` to `api.test.ts`, `Game`, `GameScene`, `state.ts`, `game.ts`, `world.ts`, `scene.ts`, `core.test.ts`?**
-  _High betweenness centrality (0.042) - this node is a cross-community bridge._
+- **Why does `computeAfk()` connect `world.ts` to `World`, `Game`, `설계: Looin Idle (방치형 횡스크롤 RPG, 1월드부터 단계 확장)`, `app.ts`, `game.ts`, `state.ts`?**
+  _High betweenness centrality (0.037) - this node is a cross-community bridge._
 - **Should `game/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07308377896613191 - nodes in this community are weakly interconnected._
-- **Why does `phaser` connect `game/package.json` to `scene.ts`, `Audio`?**
-  _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **Should `server/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.09686609686609686 - nodes in this community are weakly interconnected._
-- **Should `imgdiff.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.11724137931034483 - nodes in this community are weakly interconnected._
