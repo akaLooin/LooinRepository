@@ -313,3 +313,6 @@ html, body { word-break: keep-all; overflow-wrap: anywhere; }
 .invright .ui-detail { flex: 1; width: auto; min-width: 9em; }
 /* 아이템 창은 내용만큼 넓게(상세가 오른쪽에서 잘리지 않게) */
 .ui-win:has(.invlayout) { width: auto; max-width: calc(100vw - var(--sp-5) * 2); }
+
+/* 오볼판: 작은 칸 5줄 */
+.ui-grid.obgrid { grid-template-columns: repeat(5, auto); justify-content: start; gap: 3px; }

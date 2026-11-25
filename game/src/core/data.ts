@@ -20,7 +20,7 @@ export interface ItemStats {
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
-  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp' | 'statue' | 'tool' | 'stone';
+  kind: 'material' | 'equip' | 'food' | 'bag' | 'pouch' | 'chest' | 'key' | 'unlock' | 'stamp' | 'statue' | 'tool' | 'stone' | 'obol';
   /** 가방 확장: 사용하면 이 캐릭터의 가방 칸 +n (종류마다 한 번) */
   bagSlots?: number;
   /** 소지 한도 주머니: 이 묶음의 한 칸 최대치를 cap 으로 */
@@ -1584,3 +1584,55 @@ export function stackGroup(id: string): StackGroup {
   return 'misc';
 }
 export const GROUP_NAMES: Record<StackGroup, string> = { material: '재료', resource: '통나무·광석', food: '음식', equip: '장비', misc: '기타' };
+
+// ───────── 오볼(2월드부터, 몬스터 드롭) ─────────
+export type ObolShape = 'circle' | 'square' | 'hex' | 'spark';
+export const OBOL_SHAPES: ObolShape[] = ['circle', 'square', 'hex', 'spark'];
+export const SHAPE_NAMES: Record<ObolShape, string> = { circle: '동그라미', square: '네모', hex: '육각', spark: '별빛' };
+export const SHAPE_MULT: Record<ObolShape, number> = { circle: 1, square: 2, hex: 3.5, spark: 5 };
+export const OBOL_TIERS = [{ k: 'bronze', name: '동', mult: 1, col: '#c9804a' }, { k: 'silver', name: '은', mult: 2, col: '#c9d1d9' }, { k: 'gold', name: '금', mult: 4, col: '#f6c945' }, { k: 'star', name: '별', mult: 7, col: '#c48aff' }];
+export interface ObolTheme { k: string; name: string; eff: BonusKey; per: number; unit: string }
+export const OBOL_THEMES: ObolTheme[] = [
+  { k: 'str', name: '힘', eff: 'str', per: 1, unit: '' }, { k: 'agi', name: '날램', eff: 'agi', per: 1, unit: '' },
+  { k: 'wis', name: '슬기', eff: 'wis', per: 1, unit: '' }, { k: 'luk', name: '행운', eff: 'luk', per: 1, unit: '' },
+  { k: 'dmg', name: '날카로움', eff: 'dmg', per: 1, unit: '%' }, { k: 'drop', name: '보물', eff: 'drop', per: 1, unit: '%' },
+];
+export interface ObolDef { id: string; shape: ObolShape; tier: number; theme: ObolTheme; v: number }
+export const OBOLS: ObolDef[] = [];
+for (let tier = 0; tier < OBOL_TIERS.length; tier++) for (const shape of OBOL_SHAPES) for (const theme of OBOL_THEMES)
+  OBOLS.push({ id: `obol_${OBOL_TIERS[tier].k}_${shape}_${theme.k}`, shape, tier, theme, v: Math.round(theme.per * SHAPE_MULT[shape] * OBOL_TIERS[tier].mult * 10) / 10 });
+export const OBOL: Record<string, ObolDef> = Object.fromEntries(OBOLS.map((o) => [o.id, o]));
+export const obolName = (o: ObolDef) => `${OBOL_TIERS[o.tier].name} ${o.theme.name}의 ${SHAPE_NAMES[o.shape]} 오볼`;
+const obolItems = (): ItemDef[] => OBOLS.map((o) => ({ id: o.id, name: obolName(o), desc: `오볼판의 ${SHAPE_NAMES[o.shape]} 칸에 끼운다. ${o.theme.name === '날카로움' ? '공격력' : o.theme.name === '보물' ? '드롭률' : o.theme.name} +${o.v}${o.theme.unit}`, kind: 'obol' as const, sell: 5 * (o.tier + 1) * SHAPE_MULT[o.shape] }));
+
+/** 오볼판 칸: 모양과 열리는 조건(개인: 캐릭터 레벨, 가족: 가족 레벨) */
+export interface ObolSlot { shape: ObolShape; need: number }
+export const PERSONAL_SLOTS: ObolSlot[] = [
+  ...[1, 5, 10, 15, 25, 35, 50, 70].map((need) => ({ shape: 'circle' as const, need })),
+  ...[30, 45, 60, 90].map((need) => ({ shape: 'square' as const, need })),
+  ...[80, 110].map((need) => ({ shape: 'hex' as const, need })),
+  { shape: 'spark', need: 130 },
+];
+export const FAMILY_OBOL_SLOTS: ObolSlot[] = [
+  ...[30, 60, 100, 150, 220, 300, 400, 520].map((need) => ({ shape: 'circle' as const, need })),
+  ...[250, 380, 500, 650].map((need) => ({ shape: 'square' as const, need })),
+  ...[600, 800].map((need) => ({ shape: 'hex' as const, need })),
+  { shape: 'spark', need: 1000 },
+];
+/** 몬스터 드롭에 넣을 오볼: 월드가 높을수록 높은 등급, 큰 모양은 드물게 */
+function obolDropsFor(world: number, boss: boolean): { item: string; chance: number; qty: [number, number] }[] {
+  const out: { item: string; chance: number; qty: [number, number] }[] = [];
+  const tiers = world <= 1 ? [0] : world === 2 ? [0, 1] : world === 3 ? [1, 2] : [2, 3];
+  for (const tier of tiers) for (const shape of OBOL_SHAPES) for (const theme of OBOL_THEMES) {
+    const base = (boss ? 0.02 : 0.0006) * (tier === tiers[0] ? 1 : 0.3) / SHAPE_MULT[shape] / SHAPE_MULT[shape];
+    out.push({ item: `obol_${OBOL_TIERS[tier].k}_${shape}_${theme.k}`, chance: base, qty: [1, 1] });
+  }
+  return out;
+}
+
+for (const it of obolItems()) ITEMS[it.id] = it;
+// 일반 몬스터와 보스가 그 월드 등급의 오볼을 드물게 떨어뜨린다
+for (const w of WORLDS) for (const id of [...new Set(w.maps.flatMap((m) => [...MAPS[m].spawns.map((x) => x.monster), ...(MAPS[m].boss ? [MAPS[m].boss!] : [])]))]) {
+  const m = MONSTERS[id]; if (m) m.drops.push(...obolDropsFor(w.n, !!m.boss));
+}
+for (const [mapId, wn] of Object.entries(EXTRA_WORLD)) { const b = MAPS[mapId]?.boss; if (b && MONSTERS[b] && !MONSTERS[b].drops.some((d) => d.item.startsWith('obol_'))) MONSTERS[b].drops.push(...obolDropsFor(wn, true)); }

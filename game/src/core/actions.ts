@@ -4,6 +4,7 @@ import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { placeObol, takeObol } from './obols';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
 import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
 import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
@@ -84,6 +85,7 @@ export type Action =
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
+  | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef' | 'ladle'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
@@ -227,6 +229,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       }
       return fail('없는 행동');
     }
+    case 'obol': return res(a.op === 'place' ? placeObol(acc, c, a.id ?? '', a.fam, a.idx) : takeObol(acc, c, a.fam, a.idx));
     case 'shrine': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 공방 마당에서 지을 수 있습니다');
       if (a.op === 'visit') { shrineSettle(acc, now); return ok(); }

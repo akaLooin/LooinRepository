@@ -16,6 +16,7 @@ import { prayerBonus } from './worship';
 import { postBonus } from './post';
 import { shinyBonus } from './traps';
 import { shrineBonus } from './shrines';
+import { obolBonus } from './obols';
 
 export type Bonus = Record<BonusKey, number>;
 export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, acc: 0, card: 0 });
@@ -186,7 +187,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'shinies' | 'shrines' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'shinies' | 'shrines' | 'famObols' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLv(a, c, s.id) * s.per;
   for (const id of new Set([...(c.aligned ?? []), ...(c.birth ? [c.birth] : [])])) { const sg = SIGNS.find((x) => x.id === id); if (sg) b[sg.eff] += sg.v; }
@@ -200,6 +201,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   shinyBonus(a, (k, v) => { b[k] += v; });
   shrineBonus(c, a, (k, v) => { b[k] += v; });
   b.dmg += deathBonus(a);
+  obolBonus(c, a, (k, v) => { b[k] += v; });
   // 연금술(거품·약병)
   alchBonus(a.alch, (k, v) => { b[k] += v; }, c);
   buildBonus(a.build, (k, v) => { b[k] += v; });
@@ -218,7 +220,8 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
 /** 처치 기록 단계: 그 맵의 계정 전체 처치 수가 이만큼이면 한 단계씩 */
 export const DEATH_TIERS = [1000, 5000, 20000, 75000, 250000, 1000000];
 /** 처치 기록에 오르는 맵(사냥터만, 콜로세움 제외) */
-export const deathMaps = () => Object.values(MAPS).filter((m) => m.spawns.length && !m.arena).map((m) => m.id);
+let DEATH_MAPS: string[] | null = null;
+export const deathMaps = () => (DEATH_MAPS ??= Object.values(MAPS).filter((m) => m.spawns.length && !m.arena).map((m) => m.id));
 export const deathKills = (a: Pick<Account, 'characters'>, map: string) => a.characters.reduce((n, c) => n + (c.kills[map] ?? 0), 0);
 export const deathRank = (n: number) => DEATH_TIERS.filter((t) => n >= t).length;
 /** 처치 기록 보너스: 모든 맵의 단계 합마다 공격력 +0.5% */

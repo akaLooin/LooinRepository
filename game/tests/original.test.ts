@@ -181,3 +181,26 @@ describe('특성(원작처럼 탭마다 15개, 탭마다 따로 쌓이는 포인
     expect(derive(c, acc).str).toBe(s0 + 6 * w.per!);
   });
 });
+
+import { OBOLS as OBS, placeObol, takeObol } from '../src/core/obols';
+describe('오볼', () => {
+  it('같은 모양 칸에만, 열린 칸에만 끼우고, 가족판은 모든 캐릭터에게 효과', () => {
+    const { acc, c } = setup();
+    createCharacter(acc, '둘째', look, 0);
+    const c2 = acc.characters[1];
+    const circ = OBS.find((o) => o.shape === 'circle' && o.theme.k === 'str')!, sq = OBS.find((o) => o.shape === 'square')!;
+    addItem(c, circ.id, 2); addItem(c, sq.id, 1);
+    expect(placeObol(acc, c, sq.id, false, 0)).toMatch(/칸에는/);
+    const s0 = derive(c, acc).str;
+    expect(placeObol(acc, c, circ.id, false, 0)).toBeNull();
+    expect(derive(c, acc).str).toBe(s0 + circ.v);
+    expect(placeObol(acc, c, circ.id, false, 1)).toMatch(/Lv/); // 아직 닫힌 칸
+    c.level = 40;
+    const t0 = derive(c2, acc).str;
+    expect(placeObol(acc, c, circ.id, true, 0)).toBeNull();
+    expect(derive(c2, acc).str).toBe(t0 + circ.v);
+    expect(takeObol(acc, c, false, 0)).toBeNull();
+    expect(OBS.length).toBe(96);
+    expect(Object.values(MONSTERS).some((m) => m.drops.some((d) => d.item === circ.id))).toBe(true);
+  });
+});

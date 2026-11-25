@@ -55,6 +55,8 @@ export interface Character {
   /** 정렬한 별자리 */
   /** 정렬한 별자리(칸 수만큼) */
   aligned: string[];
+  /** 개인 오볼판 */
+  obols: (string | null)[];
   /** 탄생 별자리(만들 때 고름) */
   birth: string | null;
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
@@ -128,6 +130,8 @@ export interface Account {
   goldStatues?: string[];
   /** 빛나는 동물(덫 사냥) 모은 수 */
   shinies?: Record<string, number>;
+  /** 가족 오볼판(계정 공용) */
+  famObols?: (string | null)[];
   /** 찾은 별 지도, 남은 별 포인트, 연 별자리 */
   stars: Record<string, true>;
   starPoints: number;
@@ -183,7 +187,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, aligned: [], birth: BIRTH_SIGNS.includes(sign ?? '') ? sign! : null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(), traps: newTraps(), worship: newWorshipChar(),
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, aligned: [], obols: [], birth: BIRTH_SIGNS.includes(sign ?? '') ? sign! : null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(), traps: newTraps(), worship: newWorshipChar(),
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 }, trapping: { lv: 1, xp: 0 }, worship: { lv: 1, xp: 0 }, cooking: { lv: 1, xp: 0 }, lab: { lv: 1, xp: 0 }, alchemy: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -967,7 +971,7 @@ export function deserialize(json: string | null): Account | null {
       c.talents ??= {};
       c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost(); { const op = c.post as PostState & { orders?: unknown; day?: unknown }; delete op.orders; delete op.day; } c.traps ??= newTraps(); c.skills.trapping ??= { lv: 1, xp: 0 }; c.worship ??= newWorshipChar(); c.skills.worship ??= { lv: 1, xp: 0 }; c.skills.cooking ??= { lv: 1, xp: 0 }; c.skills.lab ??= { lv: 1, xp: 0 }; c.skills.alchemy ??= { lv: 1, xp: 0 };
       c.skills.fishing ??= { lv: 1, xp: 0 }; c.skills.catching ??= { lv: 1, xp: 0 };
-      c.statues ??= {}; c.talentPreset ??= 0;
+      c.statues ??= {}; c.talentPreset ??= 0; c.obols ??= [];
       { const o = c as Character & { sign?: string | null }; c.aligned ??= o.sign ? [o.sign] : []; c.birth ??= null; delete o.sign; }
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];

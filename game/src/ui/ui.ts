@@ -2,6 +2,7 @@
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
+import { FAMILY_OBOL_SLOTS, OBOL, PERSONAL_SLOTS, SHAPE_NAMES, slotOpen } from '../core/obols';
 import { SHRINE, SHRINES, SHRINE_MAX, shrineNeed, shrineRate, shrineSettle, shrineValue } from '../core/shrines';
 import { BOXES, COMPANIES, STREAK_MAX, boxCost, boxValue, orderReward, streakNow } from '../core/post';
 import { boxLock, openBoxes, trapLock, trapYield } from '../core/traps';
@@ -530,7 +531,7 @@ export class UI {
             ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, undefined)}` : ''}
             ${STONE_BY_ID[it.id] ? `<span class="ui-xs ui-muted">장비 탭에서 장착한 장비를 누르면 붙일 수 있습니다. 실패해도 강화 칸 하나를 씁니다.</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
-            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest', 'tool'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
+            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest', 'tool'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}${it.kind === 'obol' ? `<button class="ui-btn success iconbtn" data-act="obput:0:${it.id}">개인판에</button><button class="ui-btn iconbtn" data-act="obput:1:${it.id}">가족판에</button>` : ''}
               ${n ? sellBtn(1) : ''}${n > 1 ? sellBtn(n) : ''}</div>`;
         }
         // 왼쪽: 장비 / 홀로웨어(스킨) 탭, 오른쪽: 가방과 상세
@@ -538,12 +539,18 @@ export class UI {
           const id = c.skins[s];
           return `<button class="ui-slot eqslot ${id ? 'r3' : ''}" data-act="pick:skin:${s}" aria-selected="${this.sel === `skin:${s}`}" aria-label="홀로웨어 ${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) : ui(`eq_${s}`, 'sil')}</button>`;
         }).join('');
+        const board = (fam: boolean) => (fam ? FAMILY_OBOL_SLOTS : PERSONAL_SLOTS).map((sl, i) => {
+          const id = (fam ? g.acc.famObols ?? [] : c.obols ?? [])[i], open = slotOpen(g.acc, c, fam, i);
+          return id ? `<button class="ui-slot sm r2" data-act="obtake:${fam ? 1 : 0}:${i}" aria-label="${ITEMS[id].name} 빼기">${icon(id)}</button>`
+            : `<span class="ui-slot sm ${open ? 'empty' : 'locked'}" title="${SHAPE_NAMES[sl.shape]} 칸${open ? '' : ` · ${fam ? `가족 레벨 ${sl.need}` : `Lv.${sl.need}`}`}"><span class="ui-xs ui-muted">${open ? ({ circle: '○', square: '□', hex: '⬡', spark: '✦' })[sl.shape] : '🔒'}</span></span>`;
+        }).join('');
         const left = this.eqTab === 0
           ? `<div class="ui-grid eqcol">${eq}</div><h3 class="eqsub">${ui('eq_food', 'tic')} 음식</h3><div class="ui-grid eqcol">${food}</div>`
-          : `<div class="ui-grid eqcol">${skins}</div><p class="ui-xs ui-muted">겉모습만 바꾸는 칸입니다. 능력치는 장비 탭의 장비를 따릅니다.</p>`;
+          : this.eqTab === 1 ? `<div class="ui-grid eqcol">${skins}</div><p class="ui-xs ui-muted">겉모습만 바꾸는 칸입니다. 능력치는 장비 탭의 장비를 따릅니다.</p>`
+          : `<h3 class="eqsub" style="margin-top:0">개인 오볼판</h3><div class="ui-grid obgrid">${board(false)}</div><h3 class="eqsub">가족 오볼판 <span class="ui-xs ui-muted">모두에게</span></h3><div class="ui-grid obgrid">${board(true)}</div><p class="ui-xs ui-muted">가방의 오볼을 눌러 끼웁니다. 끼운 오볼을 누르면 뺍니다.</p>`;
         return win(`아이템 <span class="ui-sm ui-muted">${c.inventory.length}/${invSize(c)}</span>`, `
           <div class="invlayout"><div class="eqpanel"><div class="ui-tabs mini" role="tablist">
-              <button role="tab" aria-selected="${this.eqTab === 0}" data-act="eqtab:0">장비</button><button role="tab" aria-selected="${this.eqTab === 1}" data-act="eqtab:1">홀로웨어</button></div>${left}</div>
+              <button role="tab" aria-selected="${this.eqTab === 0}" data-act="eqtab:0">장비</button><button role="tab" aria-selected="${this.eqTab === 1}" data-act="eqtab:1">홀로웨어</button><button role="tab" aria-selected="${this.eqTab === 2}" data-act="eqtab:2">오볼</button></div>${left}</div>
             <div class="invright"><div class="ui-grid bag">${cells}</div><div class="ui-detail">${detail}</div></div></div>`);
       }
 
@@ -1717,6 +1724,18 @@ export class UI {
       }
       case 'psel': this.petSel = a; break;
       case 'eqtab': this.eqTab = +a; this.sel = null; break;
+      case 'obtake': fail(g.act({ t: 'obol', op: 'take', fam: a === '1', idx: +b }).err ?? null); break;
+      case 'obput': {
+        // 같은 모양의 열린 빈 칸 → 없으면 같은 모양의 첫 열린 칸(바꿔 끼움)
+        const fam = a === '1', o = OBOL[b], slots = fam ? FAMILY_OBOL_SLOTS : PERSONAL_SLOTS, board = fam ? g.acc.famObols ?? [] : c!.obols ?? [];
+        const ok = (i: number) => slots[i].shape === o.shape && slotOpen(g.acc, c!, fam, i);
+        let idx = slots.findIndex((_, i) => ok(i) && !board[i]);
+        if (idx < 0) idx = slots.findIndex((_, i) => ok(i));
+        if (idx < 0) { this.toast(`${fam ? '가족' : '개인'} 오볼판에 열린 ${SHAPE_NAMES[o.shape]} 칸이 없습니다`); break; }
+        const r = g.act({ t: 'obol', op: 'place', fam, idx, id: b });
+        if (r.ok) { this.audio?.play('craft'); this.eqTab = 2; } else fail(r.err ?? null);
+        break;
+      }
       case 'skinon': { const r = g.act({ t: 'skinOn', id: a }); if (r.ok) { this.toast(`${ITEMS[a].name}을(를) 홀로웨어에 넣었습니다`, a); this.eqTab = 1; this.sel = `skin:${ITEMS[a].slot}`; } else fail(r.err ?? null); break; }
       case 'skinoff': fail(g.act({ t: 'skinOff', slot: a as SkinSlot }).err ?? null); break;
       case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }

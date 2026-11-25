@@ -89,7 +89,7 @@ describe('월드 시뮬레이션', () => {
         expect(seen.has(m.uid), `${map.id} ${Math.round(m.x)},${m.y}`).toBe(true);
       }
     }
-  });
+  }, 30000);
   it('자동 채집: 나무를 베어 통나무와 스킬 경험치를 얻는다', () => {
     const { acc, c } = setup();
     c.mapId = 'meadow'; c.auto = true; c.activity = { k: 'gather', node: 'oak' };

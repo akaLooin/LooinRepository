@@ -1,7 +1,7 @@
 // 모든 그래픽은 코드로 생성한 픽셀아트(임시 원화). 외부 이미지 파일 없음.
 // 1 아트픽셀 = 1 월드 단위. 나중에 실제 스프라이트 시트로 교체할 때는 같은 key로 텍스처만 바꾸면 된다.
 import { Look } from '../core/state';
-import { STAMPS, TALENTS } from '../core/data';
+import { OBOLS, OBOL_TIERS, STAMPS, TALENTS } from '../core/data';
 import { CLIPS, FH, FW, MANNEQUIN_WHITE, ROOT_X, ROOT_Y, paintClip } from './mannequin';
 import { GEAR, gearKey, paintGear } from './gear';
 
@@ -1009,6 +1009,18 @@ function buildObjects() {
     p = new Paint(14, 14); p.disc(7, 7, 6, 6, col); p.disc(7, 7, 4.4, 4.4, mix(col, '#ffffff', 0.35)); p.disc(5, 5, 1.6, 1.4, '#ffffff'); p.set(9, 9, mix(col, '#000000', 0.2));
     p.outline().save(`bub_${k}`);
   }
+  // 오볼: 모양(동그라미·네모·육각·별빛) × 등급 색 × 효과 색 점
+  const OB_EFF: Record<string, string> = { str: '#d9574a', agi: '#5fb859', wis: '#4e8de2', luk: '#8fde5d', dmg: '#ff7a3a', drop: '#c48aff' };
+  for (const o of OBOLS) {
+    const col = OBOL_TIERS[o.tier].col, dark = mix(col, '#000000', 0.3), hi = mix(col, '#ffffff', 0.4);
+    p = new Paint(12, 12);
+    if (o.shape === 'circle') { p.disc(5.5, 5.5, 5, 5, dark); p.disc(5.5, 5.5, 4, 4, col); }
+    else if (o.shape === 'square') { p.rect(1, 1, 10, 10, dark); p.rect(2, 2, 8, 8, col); }
+    else if (o.shape === 'hex') { p.rect(3, 0, 6, 12, dark); p.rect(1, 2, 10, 8, dark); p.rect(3, 1, 6, 10, col); p.rect(2, 3, 8, 6, col); }
+    else { p.rect(5, 0, 2, 12, dark); p.rect(0, 5, 12, 2, dark); p.disc(5.5, 5.5, 3.6, 3.6, dark); p.disc(5.5, 5.5, 2.8, 2.8, col); p.rect(5, 1, 2, 10, col); p.rect(1, 5, 10, 2, col); }
+    p.set(3, 3, hi); p.disc(5.5, 5.5, 1.6, 1.6, OB_EFF[o.theme.k] ?? '#ffffff');
+    p.outline().save(`it_${o.id}`);
+  }
   // 연금 액체 4종(물방울 모양)
   for (const [k, col] of [['water', '#4ab8f0'], ['nitro', '#c8f0ff'], ['trench', '#2a5ab8'], ['mercury', '#b8c0d0']] as const) {
     p = new Paint(12, 14); p.disc(6, 9, 4.6, 4.4, col); p.line(6, 1, 3, 7, col); p.line(6, 1, 9, 7, col); p.rect(5, 2, 2, 5, col); p.disc(4.5, 8.5, 1.2, 1.6, '#ffffff');
@@ -1399,6 +1411,7 @@ export const ITEM_ICON: Record<string, string> = {
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(STAMPS.filter((st) => st.name).map((st) => [st.id, `it_stamp_${st.eff}`])),
+  ...Object.fromEntries(OBOLS.map((o) => [o.id, `it_${o.id}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].flatMap((k) => [[`statue_${k}`, `it_statue_${k}`], [`gstatue_${k}`, `it_gstatue_${k}`]])), sculpt_tools: 'it_sculpt', loot_magnet: 'it_magnet',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
   arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
