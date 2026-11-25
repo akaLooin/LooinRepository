@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "game/data/dungeons.json": {
-    "mtime": 1795599709.143614,
-    "seen": 1795600137.0453851,
-    "ast_hash": "859f308712903bbbd728ca0a54275378",
+    "mtime": 1795600794.6521616,
+    "seen": 1795601796.599686,
+    "ast_hash": "bec6a9cc6548fbbc0e0a8cabe3ec4d7e",
     "semantic_hash": ""
   },
   "game/data/monsters.json": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1795600136.0438247,
-    "seen": 1795600137.0454576,
-    "ast_hash": "e7b239d52e80b74e63698c5e71e01d44",
+    "mtime": 1795601795.5520287,
+    "seen": 1795601796.599729,
+    "ast_hash": "c5deda6b1bc8928590583e4642ae55a2",
     "semantic_hash": ""
   },
   "replica/demo-plan.md": {
@@ -291,6 +291,24 @@
     "mtime": 1795599522.977756,
     "seen": 1795600137.0454016,
     "ast_hash": "2647efe03b9d94f3379831f38f0f7838",
+    "semantic_hash": ""
+  },
+  "game/data/dialogs.json": {
+    "mtime": 1795600794.623531,
+    "seen": 1795601796.5996833,
+    "ast_hash": "0080ca8747333db75004ee26545a54c2",
+    "semantic_hash": ""
+  },
+  "game/data/missions.json": {
+    "mtime": 1795600794.6250691,
+    "seen": 1795601796.5996895,
+    "ast_hash": "a4ba77cd56d66fcef92f074de2c5e2e7",
+    "semantic_hash": ""
+  },
+  "replica/character-request-template.md": {
+    "mtime": 1795600741.5027692,
+    "seen": 1795601796.5997305,
+    "ast_hash": "873c356e0d517340b99531b47fd48d8c",
     "semantic_hash": ""
   }
 }
