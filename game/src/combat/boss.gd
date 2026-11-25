@@ -31,7 +31,12 @@ func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
 			world.banner("그로기!", Tk.GOLD)
 	if phase == 1 and hp < max_hp / 2:
 		phase = 2
-		world.banner("제본 골렘이 페이지를 찢는다!", Tk.DANGER)
+		world.banner(phase_text(), Tk.DANGER)
+		Sfx.play("boss_roar", 0.0)
+
+
+func phase_text() -> String:
+	return "%s이(가) 페이지를 찢는다!" % mon["name"]
 
 
 func _speed_mul() -> float:

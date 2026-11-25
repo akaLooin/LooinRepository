@@ -7,6 +7,7 @@ var main: Node
 var shots_dir := ""
 var god := false
 var hard := false
+var dungeon_id := "dgn_01"
 var _hold := 0
 var charge_fired := 0
 var run: DungeonRun = null
@@ -34,11 +35,41 @@ func begin(args: PackedStringArray) -> void:
 		GameState.data["settings"]["charge_attack"] = true
 	if args.has("--touch"):
 		GameState.data["settings"]["show_touch"] = "on"
+	var di := args.find("--dungeon")
+	if di >= 0:
+		dungeon_id = args[di + 1]
+	var li := args.find("--lv")
+	if li >= 0:
+		_gear_up(int(args[li + 1]))
 	InputRouter.scripted = _bot_input
 	if shots_dir != "":
 		_menu_tour()
 	else:
-		main.go("dungeon", { "dungeon": "dgn_01", "seed": 7, "difficulty": "hard" if hard else "normal" })
+		main.go("dungeon", { "dungeon": dungeon_id, "seed": 7, "difficulty": "hard" if hard else "normal" })
+
+
+## 밸런스 점검용: 그 레벨의 평범한 플레이어 상태(해당 레벨 장비 +2, 스킬 습득)를 흉내 낸다.
+func _gear_up(lv: int) -> void:
+	var cls := GameState.current_class
+	GameState.char_data(cls)["lv"] = lv
+	GameState.data["account"]["pets"] = ["pet_bookworm"]
+	GameState.char_data(cls)["pet"] = "pet_bookworm"
+	for slot in Meta.SLOTS:
+		var best := ""
+		var best_lv := -1
+		for item_id in DataDB.tables["items"]:
+			var d: Dictionary = DataDB.tables["items"][item_id]
+			if d["slot"] == slot and int(d["lv"]) <= lv and int(d["lv"]) > best_lv and d["grade"] != "epic":
+				best = item_id
+				best_lv = int(d["lv"])
+		if best != "":
+			var uid := Meta.add_item(best)
+			Meta.find(uid)["enh"] = 2
+			Meta.equip(cls, uid)
+	for sid in ["sk_mp2", "sk_mp3", "ps_atk", "ps_atk", "ps_hp", "ps_hp", "ps_atk", "ps_hp"]:
+		Meta.learn(cls, sid)
+	var st := GameState.stats()
+	print("[autotest] lv=%d hp=%d atk=%d def=%d" % [lv, st["hp"], st["atk"], st["def"]])
 
 
 func _menu_tour() -> void:
@@ -49,11 +80,16 @@ func _menu_tour() -> void:
 	Meta.add_item("eq_top_03")
 	Meta.learn("cls_tbd_01", "sk_mp2")
 	Meta.learn("cls_tbd_01", "sk_mp3")
-	for scr in ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "books"]:
+	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "books"]
+	if dungeon_id != "dgn_01":
+		tour = ["books"]
+		for d in ["dgn_01", "dgn_02"]:
+			GameState.data["progress"]["cleared"][d + ":normal"] = { "best_rank": "A", "best_time": 100.0 }
+	for scr in tour:
 		main.go(scr, { "sel": "i3" } if scr in ["equip", "enhance"] else {})
 		await _frames(20)
 		await shot("menu_" + scr)
-	main.go("dungeon", { "dungeon": "dgn_01", "seed": 7 })
+	main.go("dungeon", { "dungeon": dungeon_id, "seed": 7 })
 
 
 func _frames(n: int) -> void:
@@ -110,9 +146,9 @@ func _physics_process(_d: float) -> void:
 		print("[autotest] TIMEOUT stage=", run.stage_id)
 		get_tree().quit(1)
 	var marks := {
-		"stage1_combat": run.stage_id == "stg_01_1" and run.ticks == 420,
-		"stage2_branch": run.stage_id == "stg_01_2" and not run.portals.is_empty(),
-		"boss": run.stage_id == "stg_01_boss" and run.ticks % 60 == 0 and run.boss() != null and run.boss().hp < run.boss().max_hp * 0.8,
+		"stage1_combat": run.stage_id.ends_with("_1") and run.ticks == 420,
+		"stage2_branch": run.stage_id.ends_with("_2") and not run.portals.is_empty(),
+		"boss": run.stage_id.ends_with("_boss") and run.ticks % 60 == 0 and run.boss() != null and run.boss().hp < run.boss().max_hp * 0.8 and run.boss().state == "atk",
 		"cutin": run.hud._cutin_t > 0 and run.hud._cutin_t < run.hud._cutin_max - 12,
 	}
 	for m in marks:

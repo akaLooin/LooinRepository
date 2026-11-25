@@ -14,6 +14,7 @@ config/icon="res://icon.svg"
 DataDB="*res://src/core/data_db.gd"
 GameState="*res://src/core/game_state.gd"
 InputRouter="*res://src/input/input_router.gd"
+Sfx="*res://src/core/audio.gd"
 
 [display]
 

@@ -33,6 +33,7 @@ static func button(text: String, cb: Callable, primary: bool = false) -> Button:
 	b.add_theme_color_override("font_disabled_color", Tk.TEXT_DIM)
 	b.add_theme_font_size_override("font_size", Tk.FONT_SIZE)
 	b.custom_minimum_size = Vector2(0, 18)
+	b.pressed.connect(func(): Sfx.play("click", 0.0))
 	b.pressed.connect(cb)
 	return b
 

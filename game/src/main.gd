@@ -29,6 +29,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	if current:
 		current.queue_free()
 		current = null
+	Sfx.bgm("bgm_town")
 	match screen:
 		"title":
 			current = Screens.title(self)
@@ -60,6 +61,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 			GameState.last_result = args
 			current = Screens.result(self, args)
 		"dungeon":
+			Sfx.bgm("bgm_dungeon")
 			var run := DungeonRun.new()
 			current = run
 			add_child(run)

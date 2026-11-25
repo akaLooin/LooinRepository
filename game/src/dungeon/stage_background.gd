@@ -8,6 +8,11 @@ const PALETTES := {
 	"deep": [Color("9fb6c2"), Color("6f8a9b"), Color("41596b"), Color("1f2d3a")],
 	"sky": [Color("d6eef2"), Color("a9d3df"), Color("6aa0b8"), Color("33566e")],
 	"boss": [Color("4a2a3a"), Color("6b3a46"), Color("2c1a28"), Color("140c16")],
+	"bell": [Color("ead9b6"), Color("c9a98a"), Color("6f8a86"), Color("2f3f42")],
+	"bell_dark": [Color("8f8a74"), Color("6e6a58"), Color("4a5a56"), Color("222b2c")],
+	"bell_boss": [Color("3c4a48"), Color("5b4a3a"), Color("2a3433"), Color("121818")],
+	"water": [Color("bfd9d2"), Color("86b3ad"), Color("3f6f74"), Color("1d3438")],
+	"water_boss": [Color("23404a"), Color("2f5560"), Color("173038"), Color("0a171c")],
 }
 
 var run: Node

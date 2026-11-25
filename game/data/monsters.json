@@ -1,6 +1,152 @@
 {
-  "mon_inkblob": { "name": "번진 잉크", "ai": "melee", "hp": 380, "atk": 70, "def": 10, "size": [18, 14], "speed": 0.9, "exp": 14, "gold": 6, "fly": false, "reach": 22 },
-  "mon_crane":   { "name": "종이학",   "ai": "ranged", "hp": 260, "atk": 60, "def": 6,  "size": [16, 12], "speed": 1.1, "exp": 16, "gold": 7, "fly": true, "reach": 140 },
-  "mon_quill":   { "name": "깃펜 병사", "ai": "melee", "hp": 620, "atk": 90, "def": 20, "size": [14, 26], "speed": 1.1, "exp": 24, "gold": 10, "fly": false, "reach": 26 },
-  "boss_binder": { "name": "제본 골렘", "ai": "boss_binder", "hp": 7200, "atk": 120, "def": 30, "size": [44, 58], "speed": 1.0, "exp": 220, "gold": 120, "fly": false, "reach": 40, "boss": true, "stagger": 900 }
+  "mon_inkblob": {
+    "name": "번진 잉크",
+    "ai": "melee",
+    "hp": 380,
+    "atk": 70,
+    "def": 10,
+    "size": [
+      18,
+      14
+    ],
+    "speed": 0.9,
+    "exp": 14,
+    "gold": 6,
+    "fly": false,
+    "reach": 22
+  },
+  "mon_crane": {
+    "name": "종이학",
+    "ai": "ranged",
+    "hp": 260,
+    "atk": 60,
+    "def": 6,
+    "size": [
+      16,
+      12
+    ],
+    "speed": 1.1,
+    "exp": 16,
+    "gold": 7,
+    "fly": true,
+    "reach": 140
+  },
+  "mon_quill": {
+    "name": "깃펜 병사",
+    "ai": "melee",
+    "hp": 620,
+    "atk": 90,
+    "def": 20,
+    "size": [
+      14,
+      26
+    ],
+    "speed": 1.1,
+    "exp": 24,
+    "gold": 10,
+    "fly": false,
+    "reach": 26
+  },
+  "boss_binder": {
+    "name": "제본 골렘",
+    "ai": "boss_binder",
+    "hp": 7200,
+    "atk": 120,
+    "def": 30,
+    "size": [
+      44,
+      58
+    ],
+    "speed": 1.0,
+    "exp": 220,
+    "gold": 120,
+    "fly": false,
+    "reach": 40,
+    "boss": true,
+    "stagger": 900
+  },
+  "mon_note": {
+    "name": "떠도는 음표",
+    "ai": "ranged",
+    "hp": 520,
+    "atk": 95,
+    "def": 18,
+    "size": [
+      14,
+      16
+    ],
+    "speed": 1.2,
+    "exp": 30,
+    "gold": 12,
+    "fly": true,
+    "reach": 140
+  },
+  "mon_scroll": {
+    "name": "젖은 두루마리",
+    "ai": "charger",
+    "hp": 900,
+    "atk": 120,
+    "def": 30,
+    "size": [
+      20,
+      14
+    ],
+    "speed": 1.0,
+    "exp": 38,
+    "gold": 15,
+    "fly": false,
+    "reach": 160
+  },
+  "mon_inkblob2": {
+    "name": "짙은 잉크",
+    "ai": "melee",
+    "hp": 820,
+    "atk": 115,
+    "def": 26,
+    "size": [
+      18,
+      14
+    ],
+    "speed": 1.1,
+    "exp": 32,
+    "gold": 11,
+    "fly": false,
+    "reach": 22
+  },
+  "boss_bell": {
+    "name": "녹슨 종지기",
+    "ai": "boss_bell",
+    "hp": 15000,
+    "atk": 170,
+    "def": 45,
+    "size": [
+      46,
+      56
+    ],
+    "speed": 1.0,
+    "exp": 520,
+    "gold": 260,
+    "fly": false,
+    "reach": 44,
+    "boss": true,
+    "stagger": 1600
+  },
+  "boss_eel": {
+    "name": "등불을 삼킨 장어왕",
+    "ai": "boss_eel",
+    "hp": 24000,
+    "atk": 210,
+    "def": 60,
+    "size": [
+      40,
+      34
+    ],
+    "speed": 1.0,
+    "exp": 900,
+    "gold": 420,
+    "fly": false,
+    "reach": 60,
+    "boss": true,
+    "stagger": 2400
+  }
 }

@@ -127,7 +127,11 @@ func _load_stage(id: String) -> void:
 	wave = 0
 	_spawn_wave()
 	hud.show_title(stage["title"])
-	if stage["waves"].size() > 0 and DataDB.get_row("monsters", stage["waves"][0][0][0]).get("boss", false):
+	var is_boss_stage: bool = stage["waves"].size() > 0 and DataDB.get_row("monsters", stage["waves"][0][0][0]).get("boss", false)
+	Sfx.bgm("bgm_boss" if is_boss_stage else "bgm_dungeon")
+	if is_boss_stage:
+		Sfx.play("boss_roar", 0.0)
+	if is_boss_stage:
 		var dlg_id: String = dungeon.get("dialogs", {}).get("pre_boss", "")
 		if dlg_id != "":
 			var dlg := DialogBox.show_once(overlay, dlg_id, func(): paused = false)
@@ -149,10 +153,20 @@ func _spawn_wave() -> void:
 
 func spawn_monster(id: String, at: Vector2) -> Enemy:
 	var mon: Dictionary = DataDB.get_row("monsters", id)
-	var e: Enemy = Boss.new() if mon.get("boss", false) else Enemy.new()
+	var e: Enemy
+	match mon["ai"]:
+		"boss_bell":
+			e = BossBell.new()
+		"boss_eel":
+			e = BossEel.new()
+		_:
+			e = Boss.new() if mon.get("boss", false) else Enemy.new()
 	e.world = self
 	e.setup(id)
-	e.max_hp = int(e.max_hp * float(diff.get("hp", 1.0)))
+	var sc: Dictionary = dungeon.get("scale", {})
+	var hp_scale := 1.0 if mon.get("boss", false) else float(sc.get("hp", 1.0))
+	e.max_hp = int(e.max_hp * float(diff.get("hp", 1.0)) * hp_scale)
+	e.atk *= float(sc.get("atk", 1.0))
 	e.hp = e.max_hp
 	e.atk *= float(diff.get("atk", 1.0))
 	e.position = at
@@ -165,6 +179,9 @@ func spawn_monster(id: String, at: Vector2) -> Enemy:
 
 
 func boss() -> Boss:
+	for e in enemies:
+		if e is BossEel and not e.dead:
+			return e
 	for e in enemies:
 		if e is Boss and not e.dead:
 			return e
@@ -238,7 +255,7 @@ func _resolve_hits() -> void:
 			if ar.intersects(o.hurtbox()) and f.can_hit(o):
 				_apply_hit(f, o, a)
 	for pr in projectiles:
-		if pr.remove_me:
+		if pr.remove_me or not pr.active():
 			continue
 		for o in fighters:
 			if o.team == pr.team or o.dead or o.invuln > 0:
@@ -271,6 +288,9 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 		col = Tk.CRIT
 	elif res["back"]:
 		col = Tk.BACK_ATK
+	Sfx.play("crit" if res["crit"] else ("hurt" if o == player else "hit"))
+	if o.dead and o.team == 1:
+		Sfx.play("enemy_die")
 	if o == player:
 		col = Tk.DANGER
 		hits_taken += 1
@@ -328,16 +348,19 @@ func _check_progress() -> void:
 			_end_timer = 150
 			Engine.time_scale = 1.0
 			hud.banner_text("페이지 정화 완료!", Tk.GOLD, 150)
+			Sfx.play("fanfare", 0.0)
 		return
 	if portals.is_empty():
 		for n in nexts:
 			portals.append({ "rect": Rect2(float(n[1]) - 10.0, float(n[2]) - 34.0, 20, 34), "to": n[0] })
 		hud.banner_text("다음 페이지가 열렸다 →" if nexts.size() == 1 else "갈림길! 넘길 페이지를 고르자", Tk.GOLD, 120)
 		bg.portals = portals
+		Sfx.play("portal", 0.0)
 	for p in portals:
 		if (p["rect"] as Rect2).intersects(player.hurtbox()) and not player.dead:
 			_pending_stage = p["to"]
 			_transition = 30
+			Sfx.play("page", 0.0)
 			return
 
 
@@ -368,6 +391,7 @@ func on_skill(p: Player, sk: Dictionary, a: Dictionary) -> void:
 
 
 func on_counter(p: Player) -> void:
+	Sfx.play("counter", 0.0)
 	hud.banner_text("반격!", Tk.GOLD, 40)
 	_add_fx("ring", p.position + Vector2(0, -12), { "size": 50.0, "color": Tk.GOLD, "life": 20 })
 
@@ -380,7 +404,7 @@ func banner(text: String, col: Color) -> void:
 	hud.banner_text(text, col, 90)
 
 
-func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionary, kind: String) -> void:
+func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionary, kind: String) -> Projectile:
 	var pr := Projectile.new()
 	pr.world = self
 	pr.owner_f = owner_f
@@ -392,8 +416,15 @@ func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionar
 	pr.size = Vector2(12, 14) if kind == "wave" else Vector2(6, 6)
 	if kind == "page":
 		pr.life = 90
+	elif kind == "bell":
+		pr.size = Vector2(16, 14)
+		pr.life = 400
+	elif kind == "orb":
+		pr.size = Vector2(8, 8)
+		pr.life = 300
 	world_layer.add_child(pr)
 	projectiles.append(pr)
+	return pr
 
 
 func spawn_number(at: Vector2, text: String, col: Color) -> void:

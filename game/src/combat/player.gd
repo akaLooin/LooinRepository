@@ -61,6 +61,12 @@ func attack_mul(atk_id: String) -> float:
 	return float(skill_mul.get(atk_id, 1.0))
 
 
+func start_attack(id: String, data: Dictionary) -> void:
+	super.start_attack(id, data)
+	if not id.begins_with("atk_mp") and id != "atk_counter":
+		Sfx.play("slash")
+
+
 func gain_mp(v: float) -> void:
 	mp = clampf(mp + v, 0.0, MP_MAX)
 
@@ -132,6 +138,7 @@ func _try_skill(f: Dictionary) -> bool:
 				vel = Vector2.ZERO
 				var a := _atk(sk["attack"])
 				start_attack(sk["attack"], a)
+				Sfx.play("skill3" if sk.get("cutin", false) else "skill", 0.0)
 				world.on_skill(self, sk, a)
 				return true
 	return false
@@ -156,6 +163,7 @@ func _ground(f: Dictionary) -> void:
 		on_ground = false
 		air_jumps_left = air_jumps()
 		set_state("air")
+		Sfx.play("jump")
 		return
 	if f["dash_p"]:
 		_start_dash(f)
@@ -187,6 +195,7 @@ func _air(f: Dictionary) -> void:
 		air_jumps_left -= 1
 		vel.y = -float(move["jump"]) * 0.88
 		world.spawn_dust(position, 2)
+		Sfx.play("jump")
 	elif f["dash_p"] and not air_dash_used:
 		air_dash_used = true
 		_start_dash(f)
@@ -201,6 +210,7 @@ func _start_dash(f: Dictionary) -> void:
 	set_state("dash")
 	vel = Vector2(facing * float(move["dash"]), 0.0)
 	world.spawn_dust(position, 3)
+	Sfx.play("dash")
 
 
 func _dash(f: Dictionary) -> void:
@@ -269,6 +279,7 @@ func _use_potion() -> void:
 	var heal := int(max_hp * POTION_HEAL)
 	hp = mini(max_hp, hp + heal)
 	potion_cd = 60
+	Sfx.play("potion", 0.0)
 	world.spawn_number(position + Vector2(0, -h - 4), "+%d" % heal, Tk.HEAL)
 
 

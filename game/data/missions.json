@@ -1,8 +1,101 @@
 {
-  "msn_01": { "name": "첫 페이지를 넘겨라", "desc": "「얼룩진 동화책」 1장 클리어", "cond": { "type": "clear", "dungeon": "dgn_01", "difficulty": "normal" }, "reward": { "gold": 300, "pages": 3 } },
-  "msn_02": { "name": "성장하는 독자", "desc": "레벨 3 달성", "cond": { "type": "level", "value": 3 }, "reward": { "gold": 200, "potions": 2 } },
-  "msn_03": { "name": "두 번째 필살기", "desc": "「책갈피 돌격」 배우기", "cond": { "type": "skill", "skill": "sk_mp2" }, "reward": { "pages": 5 } },
-  "msn_04": { "name": "단단한 장정", "desc": "장비 하나를 +1 이상 강화", "cond": { "type": "enhance", "value": 1 }, "reward": { "gold": 300 } },
-  "msn_05": { "name": "희귀한 발견", "desc": "희귀 등급 이상 장비 착용", "cond": { "type": "equip_grade", "grade": "rare" }, "reward": { "revives": 1, "gold": 200 } },
-  "msn_06": { "name": "어려운 독서", "desc": "1장을 어려움으로 클리어", "cond": { "type": "clear", "dungeon": "dgn_01", "difficulty": "hard" }, "reward": { "gold": 800, "pages": 8 } }
+  "msn_01": {
+    "name": "첫 페이지를 넘겨라",
+    "desc": "「얼룩진 동화책」 1장 클리어",
+    "cond": {
+      "type": "clear",
+      "dungeon": "dgn_01",
+      "difficulty": "normal"
+    },
+    "reward": {
+      "gold": 300,
+      "pages": 3
+    }
+  },
+  "msn_02": {
+    "name": "성장하는 독자",
+    "desc": "레벨 3 달성",
+    "cond": {
+      "type": "level",
+      "value": 3
+    },
+    "reward": {
+      "gold": 200,
+      "potions": 2
+    }
+  },
+  "msn_03": {
+    "name": "두 번째 필살기",
+    "desc": "「책갈피 돌격」 배우기",
+    "cond": {
+      "type": "skill",
+      "skill": "sk_mp2"
+    },
+    "reward": {
+      "pages": 5
+    }
+  },
+  "msn_04": {
+    "name": "단단한 장정",
+    "desc": "장비 하나를 +1 이상 강화",
+    "cond": {
+      "type": "enhance",
+      "value": 1
+    },
+    "reward": {
+      "gold": 300
+    }
+  },
+  "msn_05": {
+    "name": "희귀한 발견",
+    "desc": "희귀 등급 이상 장비 착용",
+    "cond": {
+      "type": "equip_grade",
+      "grade": "rare"
+    },
+    "reward": {
+      "revives": 1,
+      "gold": 200
+    }
+  },
+  "msn_06": {
+    "name": "어려운 독서",
+    "desc": "1장을 어려움으로 클리어",
+    "cond": {
+      "type": "clear",
+      "dungeon": "dgn_01",
+      "difficulty": "hard"
+    },
+    "reward": {
+      "gold": 800,
+      "pages": 8
+    }
+  },
+  "msn_07": {
+    "name": "종소리를 되찾아라",
+    "desc": "2장 클리어",
+    "cond": {
+      "type": "clear",
+      "dungeon": "dgn_02",
+      "difficulty": "normal"
+    },
+    "reward": {
+      "gold": 600,
+      "pages": 6
+    }
+  },
+  "msn_08": {
+    "name": "동화책의 마지막 장",
+    "desc": "3장 클리어",
+    "cond": {
+      "type": "clear",
+      "dungeon": "dgn_03",
+      "difficulty": "normal"
+    },
+    "reward": {
+      "gold": 1200,
+      "pages": 10,
+      "revives": 2
+    }
+  }
 }

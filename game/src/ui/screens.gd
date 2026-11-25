@@ -15,7 +15,7 @@ static func title(router: Node) -> MenuScreen:
 	box.add_child(sub)
 	box.add_child(UiKit.button("책을 펼친다", func(): router.go("select"), true))
 	box.add_child(UiKit.button("옵션", func(): router.go("options")))
-	var v := UiKit.label("프로토타입 v0.3 · 임시 캐릭터", Tk.TEXT_DIM)
+	var v := UiKit.label("데모 v0.4 · 임시 캐릭터", Tk.TEXT_DIM)
 	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(v)
 	return s
@@ -49,8 +49,12 @@ static func town(router: Node) -> MenuScreen:
 	box.add_child(UiKit.button("등장인물 바꾸기", func(): router.go("select")))
 	# 스토리: 처음 들어왔을 때 / 1장 첫 클리어 후
 	var dlg := DialogBox.show_once(s, "intro")
-	if dlg == null and GameState.data["progress"]["cleared"].has("dgn_01:normal"):
-		DialogBox.show_once(s, DataDB.get_row("dungeons", "dgn_01")["dialogs"]["after_first_clear"])
+	if dlg == null:
+		for did in DataDB.tables["dungeons"]:
+			var dd: Dictionary = DataDB.tables["dungeons"][did]
+			if GameState.data["progress"]["cleared"].has(did + ":normal") and dd.has("dialogs"):
+				if DialogBox.show_once(s, dd["dialogs"]["after_first_clear"]) != null:
+					break
 	return s
 
 
@@ -58,9 +62,12 @@ static func books(router: Node) -> MenuScreen:
 	var s := MenuScreen.new()
 	s.router = router
 	var box := s.make_center(260)
-	box.add_child(UiKit.label("서가 — 펼칠 책을 고르세요", Tk.GOLD))
+	box.add_child(UiKit.label("서가 — 펼칠 장을 고르세요", Tk.GOLD))
 	for did in DataDB.tables["dungeons"]:
 		var d: Dictionary = DataDB.tables["dungeons"][did]
+		if d.has("unlock") and not GameState.data["progress"]["cleared"].has(d["unlock"] + ":normal"):
+			box.add_child(UiKit.label("「%s」 %s — 이전 장을 먼저 정화하세요" % [d["book"], d["name"]], Tk.TEXT_DIM))
+			continue
 		var best: Dictionary = GameState.data["progress"]["cleared"].get(did + ":normal", {})
 		var info := "클리어" if not best.is_empty() else "미클리어"
 		box.add_child(UiKit.label("「%s」 %s" % [d["book"], d["name"]]))
@@ -97,6 +104,21 @@ static func options(router: Node, args: Dictionary = {}) -> MenuScreen:
 		GameState.save_game()
 		router.go("options")))
 	box.add_child(UiKit.button("터치 버튼 위치·크기 편집", func(): router.go("layout")))
+	var steps := [0.0, 0.35, 0.7, 1.0]
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	box.add_child(row)
+	for kind in [["bgm", "배경음"], ["sfx", "효과음"]]:
+		var k: String = kind[0]
+		var v := float(st.get(k, 1.0))
+		var b := UiKit.button("%s %d%%" % [kind[1], int(v * 100)], func():
+			var i := steps.find(v)
+			st[k] = steps[(i + 1) % steps.size()] if i >= 0 else 1.0
+			GameState.save_game()
+			Sfx.refresh_volume()
+			router.go("options"))
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(b)
 	box.add_child(UiKit.button("필살기: %s" % ("공격 길게 눌러 충전 (원작식)" if st.get("charge_attack", false) else "필살기 버튼 1·2·3"), func():
 		st["charge_attack"] = not st.get("charge_attack", false)
 		GameState.save_game()
@@ -162,6 +184,7 @@ static func result(router: Node, r: Dictionary) -> MenuScreen:
 					return
 				cards[0].set_meta("done", true)
 				GameState.grant_card(pool[idx])
+				Sfx.play("coin", 0.0)
 				for j in range(4):
 					cards[j].text = pool[j]["label"]
 					cards[j].disabled = j != idx

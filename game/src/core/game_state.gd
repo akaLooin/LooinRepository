@@ -37,7 +37,7 @@ static func new_save() -> Dictionary:
 			"next_uid": 3, "pets": [] },
 		"characters": { "cls_tbd_01": c },
 		"progress": { "cleared": {}, "missions": {}, "seen": {} },
-		"settings": { "show_touch": "auto", "show_hitboxes": false, "charge_attack": false, "layout": {} },
+		"settings": { "show_touch": "auto", "show_hitboxes": false, "charge_attack": false, "layout": {}, "bgm": 0.7, "sfx": 1.0 },
 	}
 
 

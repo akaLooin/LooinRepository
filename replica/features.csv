@@ -25,10 +25,10 @@ MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 /
 제작/합성 (재료 → 장비),economy,should,yes,no,
 펫 (전투 보조 + 펫 필살기),companion,should,yes,partial,"[DEMO] 1종 오리지널 펫 / 빌드: 1종, 자동 공격 + 능력치 보너스. 펫 필살기 없음"
 펫 진화/먹이,companion,could,yes,no,
-월드맵 → 대륙 → 던전 선택,dungeon,must,yes,partial,[DEMO] 1개 대륙(지역) / 빌드: 책 목록 화면
+월드맵 → 대륙 → 던전 선택,dungeon,must,yes,partial,"[DEMO] 1개 대륙(지역) / 빌드: 책 1권 · 장 3개, 이전 장 클리어로 해금"
 던전 난이도 (보통/어려움/챔피언),dungeon,must,yes,yes,"[DEMO] 보통/어려움 / 빌드: 보통/어려움, 어려움은 보통 클리어 후 해금"
 던전 내 스테이지 분기 (포탈 선택),dungeon,should,yes,yes,[DEMO] 1개 던전에서 체험
-보스전 (패턴 / 페이즈),dungeon,must,yes,yes,[DEMO] 보스 3종 / 빌드: 보스 1종 2페이즈+그로기
+보스전 (패턴 / 페이즈),dungeon,must,yes,yes,"[DEMO] 보스 3종 / 빌드: 보스 3종(제본 골렘·녹슨 종지기·장어왕), 2페이즈·그로기"
 던전 결과 화면 (랭크·경험치·골드),dungeon,must,yes,yes,[DEMO]
 결과 보상 카드 뒤집기,dungeon,should,yes,yes,[DEMO] 오리지널 연출
 부활 (아이템 소모),dungeon,should,yes,yes,[DEMO]
@@ -45,7 +45,7 @@ MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 /
 칭호 / 업적,meta,could,yes,no,
 출석 보상,meta,could,yes,no,
 스토리 컷신 / 대화,story,should,yes,yes,[DEMO] 오리지널 세계관 대사 박스 / 빌드: 대화 상자: 인트로·보스 전·1장 클리어 후
-옵션 (사운드/진동/버튼 배치),settings,must,yes,partial,[DEMO] 버튼 위치·크기 커스텀 / 빌드: 버튼 배치 편집·홀드식 필살기·터치 표시. 사운드 없음
+옵션 (사운드/진동/버튼 배치),settings,must,yes,yes,"[DEMO] 버튼 위치·크기 커스텀 / 빌드: 배경음·효과음 음량, 버튼 배치, 홀드 필살기, 터치 표시"
 로컬 저장 (오프라인),system,must,yes,yes,[DEMO]
 게임패드 / 키보드 입력,system,should,yes,yes,PC 단계 필수
 캐시샵 / 가챠,economy,could,yes,skip,BM은 온라인 이후 별도 설계

@@ -54,8 +54,40 @@ func think(_f: Dictionary) -> void:
 		cooldown -= 1
 	if ai == "ranged":
 		_think_ranged(p)
+	elif ai == "charger":
+		_think_charger(p)
 	else:
 		_think_melee(p)
+
+
+## 굴러오는 돌진형: 같은 높이에서 거리가 맞으면 예고 후 길게 굴러온다.
+func _think_charger(p: Fighter) -> void:
+	if state == "atk":
+		var s := int(cur_atk["startup"])
+		if t >= s and t < s + int(cur_atk["active"]):
+			vel.x = facing * 3.4
+			if position.x <= w / 2.0 + 1.0 or position.x >= float(world.width) - w / 2.0 - 1.0:
+				t = s + int(cur_atk["active"])
+		else:
+			vel.x *= 0.8
+		if t >= atk_total(cur_atk):
+			cur_atk = {}
+			cooldown = 70 + randi() % 40
+			set_state("idle")
+		return
+	if not on_ground or p.dead:
+		return
+	var dx := p.position.x - position.x
+	var dy := p.position.y - position.y
+	facing = 1 if dx > 0 else -1
+	if absf(dx) < reach and absf(dy) < 20.0 and cooldown <= 0:
+		vel.x = 0.0
+		start_attack("mon_roll", { "startup": 30, "active": 50, "recovery": 30, "cancel": 99, "hitbox": [-4, -h, w + 4, h],
+			"mul": 1.0, "hits": 1, "hitstop": 5, "hitstun": 26, "kb": [3.0, 0.0], "launch": 2.6, "mp": 0.0 })
+	elif absf(dx) < 300.0:
+		vel.x = facing * speed * 0.6
+		if state != "run":
+			set_state("run")
 
 
 func _think_melee(p: Fighter) -> void:
@@ -124,22 +156,59 @@ func _draw() -> void:
 			_draw_crane(tele)
 		"mon_quill":
 			_draw_quill(tele)
+		"mon_inkblob2":
+			_draw_inkblob(tele, true)
+		"mon_note":
+			_draw_note(tele)
+		"mon_scroll":
+			_draw_scroll(tele)
 	draw_debug_boxes()
 
 
-func _draw_inkblob(tele: bool) -> void:
+func _draw_note(tele: bool) -> void:
+	if state in ["down", "dead"]:
+		px(-6, -4, 12, 4, Tk.M_INK)
+		return
+	var bob := 1.0 if (t / 8) % 2 == 0 else 0.0
+	px(-6, -7 + bob, 8, 6, Tk.M_INK)
+	px(-5, -6 + bob, 3, 2, Tk.M_INK_HI)
+	px(1, -18 + bob, 2, 12, Tk.M_INK)
+	px(1, -18 + bob, 7, 3, Tk.M_INK)
+	px(6, -15 + bob, 2, 3, Tk.M_INK)
+	px(-3, -5 + bob, 2, 2, Tk.DANGER if tele else Tk.M_EYE)
+
+
+func _draw_scroll(tele: bool) -> void:
+	if state in ["down", "dead"]:
+		px(-12, -5, 24, 5, Color("cdbf9a"))
+		return
+	var rolling := state == "atk" and t >= int(cur_atk.get("startup", 0))
+	var spin := (t / 3) % 4 if rolling else 0
+	px(-10, -14, 20, 14, Color("d9c9a2"))
+	px(-10, -14, 20, 2, Color("efe3c2"))
+	px(-10, -2, 20, 2, Color("a8946a"))
+	px(-12, -12, 2, 10, Tk.LEATHER)
+	px(10, -12, 2, 10, Tk.LEATHER)
+	for i in range(3):
+		px(-7 + ((i * 6 + spin * 2) % 16), -9, 3, 1, Color("6f8a9a"))
+	px(-6, -6, 12, 2, Color(Tk.MP, 0.5))   # 물 얼룩
+	if tele and (t / 3) % 2 == 0:
+		px(-4, -18, 8, 2, Tk.DANGER)
+
+
+func _draw_inkblob(tele: bool, dark: bool = false) -> void:
 	var squash := 1.0 if (t / 8) % 2 == 0 else 0.0
 	if state in ["down", "dead"]:
-		px(-10, -6, 20, 6, Tk.M_INK)
+		px(-10, -6, 20, 6, (Color("1a1230") if dark else Tk.M_INK))
 		return
-	px(-9, -12 + squash, 18, 12 - squash, Tk.M_INK)
-	px(-7, -14 + squash, 14, 2, Tk.M_INK)
-	px(-6, -12 + squash, 4, 2, Tk.M_INK_HI)
+	px(-9, -12 + squash, 18, 12 - squash, (Color("1a1230") if dark else Tk.M_INK))
+	px(-7, -14 + squash, 14, 2, (Color("1a1230") if dark else Tk.M_INK))
+	px(-6, -12 + squash, 4, 2, (Color("8a3a5a") if dark else Tk.M_INK_HI))
 	var eye := Tk.DANGER if tele else Tk.M_EYE
 	px(1, -10 + squash, 2, 3, eye)
 	px(5, -10 + squash, 2, 3, eye)
-	px(-11, -2, 4, 2, Tk.M_INK)
-	px(8, -2, 4, 2, Tk.M_INK)
+	px(-11, -2, 4, 2, (Color("1a1230") if dark else Tk.M_INK))
+	px(8, -2, 4, 2, (Color("1a1230") if dark else Tk.M_INK))
 
 
 func _draw_crane(tele: bool) -> void:

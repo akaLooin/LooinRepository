@@ -10,7 +10,9 @@ Godot 4.7.2 · GDScript · 480×270 픽셀 · Android 우선
 ## 자동 검증
 ```
 godot --headless --path game -s res://tests/run_tests.gd        # 단위 테스트
-godot --headless --path game -- --autotest [--god]              # 봇이 던전 1장을 끝까지 플레이
+godot --headless --fixed-fps 60 --path game -- --autotest [--god] [--dungeon dgn_02 --lv 4] [--hard]   # 봇 플레이 (fixed-fps 로 수 초 만에)
+godot --headless --fixed-fps 60 --path game -- --unit          # 성장·미션 테스트
+python3 game/tools/gen_audio.py game/assets/audio               # 효과음·배경음 재생성 (numpy, ffmpeg)
 xvfb-run godot --path game -- --autotest --god --shots <dir>    # 화면 캡처
 ```
 
