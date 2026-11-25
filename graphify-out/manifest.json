@@ -256,5 +256,17 @@
     "seen": 1795596304.1594963,
     "ast_hash": "ffca23d2caddcd0b276cb60d6301c208",
     "semantic_hash": ""
+  },
+  "replica/concept/char1_options.py": {
+    "mtime": 1795596432.8043878,
+    "seen": 1795596453.857391,
+    "ast_hash": "a2a47fc6175f726aa22b8bd5f0b92c7c",
+    "semantic_hash": ""
+  },
+  "replica/concept/char1-options.png": {
+    "mtime": 1795596432.8025835,
+    "seen": 1795596453.8574288,
+    "ast_hash": "47030d5b66209a719342a8f5b07457ac",
+    "semantic_hash": ""
   }
 }

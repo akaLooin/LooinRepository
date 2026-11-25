@@ -1,18 +1,18 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 40 files · ~25,997 words
+- 41 files · ~26,609 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 54 file(s) not represented in the graph (top: .gd 21, .uid 21, (none) 4)
-- WARNING: 54 of 97 files seen (56%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- WARNING: 54 of 99 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 305 nodes · 406 edges · 29 communities (23 shown, 6 thin omitted)
+- 310 nodes · 413 edges · 32 communities (25 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7ec257dd`
+- Built from commit: `81c1a34e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,6 +32,7 @@
 - replica-deploy
 - replica-entrepreneur
 - replica-test
+- listing.py
 - replica-architect
 - replica-design
 - replica-diff
@@ -45,6 +46,8 @@
 - bug-report.md
 - test-plan.md
 - build-log.md
+- Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)
+- sys
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
@@ -56,7 +59,7 @@
 7. `read_png()` - 9 edges
 8. `replica-build` - 9 edges
 9. `replica-backend` - 9 edges
-10. `blend_px()` - 8 edges
+10. `main()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `4. 시스템 인터페이스 ("API")` --references--> `load()`  [INFERRED]
@@ -65,11 +68,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (29 total, 6 thin omitted)
+## Communities (32 total, 7 thin omitted)
 
 ### Community 0 - "reviews.py"
-Cohesion: 0.10
-Nodes (24): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), analyse(), FeedbackError (+16 more)
+Cohesion: 0.20
+Nodes (12): analyse(), FeedbackError, _host(), load_reviews(), load_themes(), main(), parse_date(), parse_rating() (+4 more)
 
 ### Community 1 - "imgdiff.py"
 Cohesion: 0.12
@@ -80,19 +83,19 @@ Cohesion: 0.12
 Nodes (16): 10. 개발 단계 (한 단계씩, 매 단계 승인 후 진행), 11. 데모 완료 기준, 12. 결정 사항 (2026-11-25), 1. 한 줄 요약, 2. 원작에서 가져올 것 vs 새로 만들 것, 3. 아트 컨셉 — 픽셀, 4. 세계관 — 테일즈토피아 (사용자 원작 환상학), 5. 데모 캐릭터 — 협의 중 (+8 more)
 
 ### Community 3 - "contrast.py"
-Cohesion: 0.23
+Cohesion: 0.26
 Nodes (9): check(), colours(), default_pairs(), flatten(), luminance(), main(), parse_hex(), ratio() (+1 more)
 
 ### Community 4 - "json"
-Cohesion: 0.13
-Nodes (15): combine(), load(), main(), MatrixError, render(), score(), visual_scores(), 1. Stack (+7 more)
+Cohesion: 0.17
+Nodes (13): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+5 more)
 
 ### Community 5 - "replica-recon"
 Cohesion: 0.15
 Nodes (12): Output, replica-recon, Step 1: scope, Step 2: list the sources, Step 3: screen inventory, Step 4: user flows, Step 5: components, Step 6: inferred data model (+4 more)
 
 ### Community 6 - "concept_field_battle.py"
-Cohesion: 0.22
+Cohesion: 0.23
 Nodes (12): blend_px(), book_platform(), C(), dither_grad(), frame(), ink_tree(), lerp(), puddle() (+4 more)
 
 ### Community 7 - "Recon map: {{app}} ({{platform}})"
@@ -127,6 +130,10 @@ Nodes (8): Output, replica-entrepreneur, Step 1: collect, Step 2: rank, Step 3: 
 Cohesion: 0.22
 Nodes (8): Output, replica-test, Step 1: the plan, Step 2: automate what you can, Step 3: click through the rest, Step 4: report bugs, Step 5: fix loop, The rule
 
+### Community 15 - "listing.py"
+Cohesion: 0.33
+Nodes (6): has_emoji(), length(), lint(), main(), render(), words()
+
 ### Community 16 - "replica-architect"
 Cohesion: 0.25
 Nodes (7): Output, replica-architect, Step 1: the stack, Step 2: the schema, Step 3: the API, Step 4: the parts that bite, Step 5: build order
@@ -159,17 +166,21 @@ Nodes (5): Deploy checklist: {{your app}}, Domain, Preflight (all must pass), Pr
 Cohesion: 0.33
 Nodes (5): 구조, 빌드, 실행, 자동 검증, 테일즈토피아 RPG (프로토타입 v0.1)
 
+### Community 30 - "Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)"
+Cohesion: 0.22
+Nodes (8): 1. Stack, 2. 폴더 구조, 3. 데이터 구조 ("스키마"), 4. 시스템 인터페이스 ("API"), 5. 까다로운 부분 (The parts that bite), 6. Build order, Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성), 요약
+
 ## Knowledge Gaps
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Should `reviews.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.10365853658536585 - nodes in this community are weakly interconnected._
+- **Why does `load()` connect `json` to `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)`?**
+  _High betweenness centrality (0.023) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
+- **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Should `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
-- **Should `json` be split into smaller, more focused modules?**
-  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
