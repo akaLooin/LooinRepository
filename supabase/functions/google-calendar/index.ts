@@ -587,17 +587,21 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
     const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time, e.repeat ?? null, e.instance_of ?? null]);
     groups.set(k, [...(groups.get(k) ?? []), e]);
   }
-  let copies = 0, removed = 0, groupsWithCopies = 0;
+  // the one kept: a linked one if there is (it is the real Google event), the oldest of those; copies with no link are
+  // only in 립마크 (taken out of the app, Google untouched); linked copies are real copies in Google (deleted there too)
+  let copies = 0, removed = 0, groupsWithCopies = 0, appOnly = 0, inGoogle = 0;
   const now = new Date().toISOString();
   for (const list of groups.values()) {
     if (list.length < 2) continue;
     groupsWithCopies++;
-    list.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    list.sort((a, b) => Number(!links.has(a.id)) - Number(!links.has(b.id)) || String(a.created_at).localeCompare(String(b.created_at)));
     for (const e of list.slice(1)) {
       copies++;
-      if (dry || !canWrite.has(e.google_calendar_id)) continue;
       const l = links.get(e.id);
+      if (l) inGoogle++; else appOnly++;
+      if (dry) continue;
       if (l) {
+        if (!canWrite.has(l.calendar_id)) continue;
         const r = await g(token, `/calendars/${enc(l.calendar_id)}/events/${enc(l.google_id)}`, { method: "DELETE" });
         if (!r.ok && r.status !== 404 && r.status !== 410) continue;
         await db.from("google_event_links").delete().eq("event_id", e.id);
@@ -606,7 +610,7 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
       removed++;
     }
   }
-  return { events: evs.length, groupsWithCopies, copies, removed, dry };
+  return { events: evs.length, groupsWithCopies, copies, appOnly, inGoogle, removed, dry };
 }
 
 /** What Google said a moment ago (colours, labels), kept while this server copy lives: a quick round asks less. */
