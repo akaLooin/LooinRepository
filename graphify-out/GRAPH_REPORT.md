@@ -1,18 +1,18 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 53 files · ~34,030 words
+- 54 files · ~34,476 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 130 file(s) not represented in the graph (top: .import 52, .gd 34, .uid 34)
-- WARNING: 130 of 237 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- Unclassified: 134 file(s) not represented in the graph (top: .import 52, .gd 36, .uid 36)
+- WARNING: 134 of 242 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 365 nodes · 502 edges · 35 communities (29 shown, 6 thin omitted)
+- 370 nodes · 506 edges · 36 communities (30 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6d46b5e2`
+- Built from commit: `d3b111bd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -51,6 +51,7 @@
 - gen_audio.py
 - sys
 - 아트 규격서 — 테일즈토피아 RPG
+- 게임 진행 흐름 — 원작 방식 대응표
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
@@ -71,7 +72,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (35 total, 6 thin omitted)
+## Communities (36 total, 6 thin omitted)
 
 ### Community 0 - "listing.py"
 Cohesion: 0.33
@@ -189,6 +190,10 @@ Nodes (6): blob(), hero_down(), hero_frame(), stamp(), px(), sprite()
 Cohesion: 0.20
 Nodes (9): 1. 공통 규칙, 2. 스프라이트 시트 구조, 3. 게임에 연결하기, 4. UI 그림, 5. 지금 들어 있는 시범 그림, 보스 (칸 96×96 ~ 160×160), 아트 규격서 — 테일즈토피아 RPG, 일반 몬스터 (칸 24×20 / 32×32 / 48×48 중 몸집에 맞게) (+1 more)
 
+### Community 35 - "게임 진행 흐름 — 원작 방식 대응표"
+Cohesion: 0.40
+Nodes (4): 게임 진행 흐름 — 원작 방식 대응표, 로비에서 할 수 있는 것 (성장·관리), 한 판의 흐름, 화면 이동도
+
 ## Knowledge Gaps
 - **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -196,7 +201,7 @@ Nodes (9): 1. 공통 규칙, 2. 스프라이트 시트 구조, 3. 게임에 연�
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `load()` connect `json` to `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
 - **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
