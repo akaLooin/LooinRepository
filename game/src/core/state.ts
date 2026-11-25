@@ -3,6 +3,7 @@ import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
 import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
+import { Alch, newAlch } from './alchemy';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
   WORLDS, TOWNS, worldOf, WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
@@ -123,6 +124,8 @@ export interface Account {
   /** 강화석을 쓴 횟수(성공 여부를 정하는 씨앗) */
   upTries: number;
   owl: Owl;
+  /** 연금술(2월드) */
+  alch: Alch;
   /** 미니게임 기록(오늘 판수·최고 점수), 토템 디펜스(영혼·축복) */
   mini: MiniState;
   totem: TotemState;
@@ -134,7 +137,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, upTries: 0, owl: newOwl(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, upTries: 0, owl: newOwl(), alch: newAlch(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -192,7 +195,7 @@ export function equipStats(c: Character): Required<ItemStats> {
 
 export type Cards = Record<string, number>;
 /** 능력치 계산에 쓰는 계정 공용 보너스 출처(카드·우표·뇌물 …) */
-export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem'>>;
+export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem' | 'alch'>>;
 const NO_ACC: AccBonus = { cards: {} };
 
 export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
@@ -250,8 +253,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     mining: (1 + e.mining + c.skills.mining.lv * 0.35 + str * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100),
     chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100),
     // 2월드 기술: 민첩 → 낚시, 행운 → 곤충 채집
-    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing),
-    catching: (1 + e.catching + (c.skills.catching?.lv ?? 1) * 0.35 + luk * 0.05) * work * (1 + cb.catching),
+    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing) * (1 + pb.fishing / 100),
+    catching: (1 + e.catching + (c.skills.catching?.lv ?? 1) * 0.35 + luk * 0.05) * work * (1 + cb.catching) * (1 + pb.catching / 100),
   };
 }
 
@@ -615,6 +618,18 @@ export function sellItem(acc: Account, c: Character, id: string, qty: number): n
 
 /** 제작 재료는 가방과 계정 창고를 합쳐서 센다 */
 export const haveMat = (acc: Account, c: Character, id: string) => countItem(c, id) + storageCount(acc, id);
+/** 재료 쓰기: 가방에서 먼저, 모자라면 창고에서(모자라면 아무것도 쓰지 않고 false) */
+export function spendMat(acc: Account, c: Character, id: string, n: number): boolean {
+  if (haveMat(acc, c, id) < n) return false;
+  const fromBag = Math.min(n, countItem(c, id));
+  removeItem(c, id, fromBag);
+  if (n > fromBag) {
+    const st = acc.storage.find((x) => x.id === id)!;
+    st.qty -= n - fromBag;
+    if (st.qty <= 0) acc.storage.splice(acc.storage.indexOf(st), 1);
+  }
+  return true;
+}
 /** 레시피가 잠겨 있으면 그 이유 */
 export function recipeLock(acc: Account, c: Character, idx: number): string | null {
   const r = RECIPES[idx];
@@ -854,7 +869,7 @@ export function deserialize(json: string | null): Account | null {
     a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {};
     // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
     if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
-    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.mini ??= newMini(); a.totem ??= newTotem();
+    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.mini ??= newMini(); a.totem ??= newTotem();
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];

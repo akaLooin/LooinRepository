@@ -1,6 +1,7 @@
 // 플레이어 행동. 기기(낙관적 적용)와 서버(권위)가 같은 함수로 적용한다.
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
 import { applyStone } from './upgrade';
+import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
@@ -71,6 +72,7 @@ export type Action =
   | { t: 'skinOn'; id: string }
   | { t: 'skinOff'; slot: 'hat' | 'body' }
   | { t: 'owl'; k?: OwlUp }
+  | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number }
   | { t: 'totem'; kills: number; survived: boolean }
   | { t: 'bless'; k: BlessKey };
@@ -159,6 +161,14 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'game': return res(finishGame(acc, c, a.kind, a.score, now));
     case 'totem': { const r = finishTotem(acc, a.kills, a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
     case 'bless': return res(buyBless(acc, a.k));
+    case 'alch': {
+      // 처음 솥을 찾은 순간부터 액체가 쌓인다
+      if (a.op === 'start') { alchSettle(acc, now); return ok(); }
+      if (!acc.alch.t) return fail('먼저 오아시스 마을의 연금 솥을 찾아가세요');
+      if (a.op === 'bubble') return res(upBubble(acc, c, a.id ?? '', now));
+      if (a.op === 'vial') return res(upVial(acc, c, a.id ?? ''));
+      return res(upLiquid(acc, a.id as LiquidUp, now));
+    }
     case 'owl': if (!a.k) { owlSettle(acc, now); return ok(); } return res(owlUpgrade(acc, a.k, now));
     case 'arenaClaim': { const r = arenaClaim(acc, c); return typeof r === 'string' ? fail(r) : ok(r.waves); }
     case 'target': {

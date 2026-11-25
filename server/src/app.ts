@@ -88,6 +88,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('game'), kind: z.enum(['chop', 'mine', 'spike']), score: z.number().finite().min(0).max(1000) }),
   z.object({ t: z.literal('totem'), kills: z.number().int().min(0).max(1000), survived: z.boolean() }),
   z.object({ t: z.literal('bless'), k: z.enum(['dmg', 'afk', 'xp']) }),
+  z.object({ t: z.literal('alch'), op: z.enum(['start', 'bubble', 'vial', 'liquid']), id: id.optional() }),
   z.object({ t: z.literal('owl'), k: z.enum(['rate', 'dmg', 'xp', 'drop', 'afk']).optional() }),
   z.object({ t: z.literal('talentPreset'), i: z.number().int().min(0).max(3) }),
   z.object({ t: z.literal('merit'), id: z.enum(['storage', 'afk', 'drop', 'xp', 'teleport', 'coins']) }),

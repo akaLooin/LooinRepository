@@ -424,3 +424,40 @@ describe('2월드', () => {
     for (const id of WORLD2) expect(ALLMAPS[id]).toBeTruthy();
   });
 });
+
+import { BUBBLES, LIQUID, VIAL_COST, bubbleCost, bubbleValue, liquidCap } from '../src/core/alchemy';
+describe('연금술', () => {
+  it('솥을 찾아야 시작되고, 액체는 시간에 따라 한도까지 쌓인다', () => {
+    const { acc } = setup();
+    expect(applyAction(acc, 0, { t: 'alch', op: 'liquid', id: 'rate' }, 0).ok).toBe(false);
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1000);
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1000 + 3_600_000);
+    expect(acc.alch.liquid).toBeCloseTo(LIQUID.rateBase);
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1000 + 100 * 3_600_000);
+    expect(acc.alch.liquid).toBe(liquidCap(acc.alch));
+  });
+  it('거품은 재료(가방+창고)와 액체를 써서 오르고 계정 보너스가 된다', () => {
+    const { acc, c } = setup();
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1);
+    acc.alch.liquid = 100;
+    const b = BUBBLES.b_dmg, cost = bubbleCost(b, 0);
+    addItem(c, b.item, cost.n - 2); acc.storage.push({ id: b.item, qty: 5 });
+    const d0 = derive(c, acc).dmg;
+    expect(applyAction(acc, 0, { t: 'alch', op: 'bubble', id: 'b_dmg' }, 1).ok).toBe(true);
+    expect(acc.alch.bubbles.b_dmg).toBe(1);
+    expect(acc.alch.liquid).toBe(100 - cost.liquid);
+    expect(acc.storage.find((s) => s.id === b.item)!.qty).toBe(3);
+    expect(derive(c, acc).dmg).toBeCloseTo(d0 * (1 + bubbleValue(b, 1) / 100) / 1, 0);
+  });
+  it('약병은 물고기·곤충을 부어 단계가 오른다', () => {
+    const { acc, c } = setup();
+    applyAction(acc, 0, { t: 'alch', op: 'start' }, 1);
+    addItem(c, 'fish_minnow', VIAL_COST[0]);
+    const hp0 = derive(c, acc).maxHp;
+    expect(applyAction(acc, 0, { t: 'alch', op: 'vial', id: 'v_minnow' }, 1).ok).toBe(true);
+    expect(acc.alch.vials.v_minnow).toBe(1);
+    expect(derive(c, acc).maxHp).toBeGreaterThan(hp0);
+    expect(applyAction(acc, 0, { t: 'alch', op: 'vial', id: 'v_minnow' }, 1).ok).toBe(false);
+    expect(deserialize(serialize(acc))!.alch.vials.v_minnow).toBe(1);
+  });
+});

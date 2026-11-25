@@ -697,6 +697,24 @@ function buildObjects() {
   p.disc(13, 12, 8, 9, '#9a7a5a'); p.disc(13, 15, 5, 5, '#e8d4b0'); p.disc(10, 9, 2.6, 2.6, '#ffffff'); p.disc(16, 9, 2.6, 2.6, '#ffffff');
   p.disc(10, 9, 1.2, 1.2, '#1e1420'); p.disc(16, 9, 1.2, 1.2, '#1e1420'); p.rect(12, 11, 2, 2, '#f6c945'); p.rect(6, 2, 2, 4, '#9a7a5a'); p.rect(18, 2, 2, 4, '#9a7a5a');
   p.outline().save('obj_owl');
+  // 연금 솥: 세 발 달린 검은 솥 + 끓는 물약 + 떠오르는 거품
+  p = new Paint(34, 34);
+  p.rect(6, 28, 3, 5, '#3a3442'); p.rect(25, 28, 3, 5, '#3a3442'); p.rect(15, 29, 4, 4, '#3a3442');
+  p.disc(17, 21, 14, 10, '#4a4456'); p.rect(3, 13, 28, 4, '#5a546a');
+  p.volume();
+  p.disc(17, 14, 12, 3, '#7a3ab8'); p.disc(14, 13, 4, 1.4, '#c48aff');
+  for (const [x, y, r] of [[12, 8, 2.4], [20, 5, 3], [15, 1.6, 1.6], [25, 9, 1.8]] as const) { p.disc(x, y, r, r, '#b07aef'); p.set(x - 1, y - 1, '#ffffff'); }
+  p.rect(3, 13, 28, 1, '#8a8498');
+  p.outline().save('obj_alchemy');
+  // 연금술 거품(솥 색) · 약병(내용물 색)
+  for (const [k, col] of [['power', '#e2574a'], ['quick', '#5fb859'], ['wise', '#8a6fd1'], ['luck', '#f6c945']] as const) {
+    p = new Paint(14, 14); p.disc(7, 7, 6, 6, col); p.disc(7, 7, 4.4, 4.4, mix(col, '#ffffff', 0.35)); p.disc(5, 5, 1.6, 1.4, '#ffffff'); p.set(9, 9, mix(col, '#000000', 0.2));
+    p.outline().save(`bub_${k}`);
+  }
+  for (const [k, col] of [['v_minnow', '#7fc8e0'], ['v_salt', '#e8eef2'], ['v_star', '#5a5ac8'], ['v_ant', '#8a6a4a'], ['v_firefly', '#ffb04a'], ['v_beetle', '#f2c14e'], ['v_palm', '#6ac05a'], ['v_amber', '#f0902a']] as const) {
+    p = new Paint(12, 15); p.rect(4, 1, 4, 3, '#c8a878'); p.rect(4, 4, 4, 2, '#d8e4ec'); p.disc(6, 10, 5, 4.5, '#d8e4ec'); p.disc(6, 10.5, 4, 3.4, col); p.set(4, 8, '#ffffff'); p.rect(5, 2, 2, 1, '#8a6a48');
+    p.outline().save(`vial_${k}`);
+  }
   // 동료 아이콘(동그란 얼굴 + 귀)
   for (const [id, col] of [['pup', '#f2e6d0'], ['kit', '#e8a03a'], ['frog', '#5fb859'], ['mole', '#8a6a4a'], ['squirrel', '#c9805a'], ['hedgehog', '#9a8a7a'], ['firefly', '#f6e46a'], ['sloth', '#a89a80'], ['owlet', '#9a7a5a'], ['fox', '#e8833a'], ['dragonling', '#d9574a']] as const) {
     p = new Paint(14, 13);

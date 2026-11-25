@@ -2,6 +2,9 @@
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
+import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
+/** 연금술 효과 이름 */
+const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중' };
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
@@ -28,7 +31,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -127,6 +130,7 @@ export class UI {
   /** 아이템 창 왼쪽 탭: 0 장비, 1 홀로웨어 */
   private eqTab = 0;
   private starSel: string | null = null;
+  private bubSel: string | null = null;
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
   private refBack = false;
   /** 지도 창에서 보고 있는 월드(없으면 지금 있는 월드) */
@@ -256,7 +260,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -751,6 +755,45 @@ export class UI {
         }).join('');
         return win('부엉이 횃대 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row"><b class="ui-grow">깃털 <span class="ui-accent">${Math.floor(o.f).toLocaleString()}</span></b><span class="ui-sm ui-muted">시간당 ${Math.round(owlPerHour(o))}개 · 접속하지 않아도 쌓입니다</span></div>${rows}`);
       }
+      case 'alchemy': {
+        const acc = g.acc, a = acc.alch;
+        alchSettle(acc, Date.now());
+        const head = `<div class="ui-row alchhead">${ui('bub_wise', 'mi')}<b class="ui-grow">연금 액체 <span class="ui-accent">${Math.floor(a.liquid)}</span> / ${liquidCap(a)}</b><span class="ui-xs ui-muted">시간당 ${liquidRate(a)} · 접속하지 않아도 쌓입니다</span></div>`;
+        let body = '';
+        if (tab === 0) {
+          // 거품: 솥 4개를 세로줄로, 고른 거품은 오른쪽에 자세히
+          if (!BUBBLES[this.bubSel ?? '']) this.bubSel = CAULDRONS[0].bubbles[0].id;
+          const cols = CAULDRONS.map((cd) => `<div class="cauldron"><b class="ui-xs" style="color:${cd.color}">${cd.name}</b>${cd.bubbles.map((b) => {
+            const lv = bubbleLv(a, b.id);
+            return `<button class="tal ${b.id === this.bubSel ? 'sel' : ''} ${lv ? '' : 'zero'}" data-act="bsel:${b.id}" aria-label="${b.name} 레벨 ${lv}">${ui(`bub_${cd.id}`, 'tic')}<span class="lvp">LV ${lv}</span></button>`;
+          }).join('')}</div>`).join('');
+          const b = BUBBLES[this.bubSel!], lv = bubbleLv(a, b.id), cost = bubbleCost(b, lv), cd = CAULDRONS.find((x) => x.bubbles.includes(b))!;
+          const have = haveMat(acc, c, cost.item), fmt = (v: number) => `${ALCH_LABEL[b.eff]} +${(Math.round(v * 10) / 10).toLocaleString()}${b.unit}`;
+          const detail = `<div class="ui-row">${ui(`bub_${cd.id}`, 'bigic')}<div><b>${b.name}</b><div class="ui-xs ui-muted">${cd.name} · 계정 공용</div><div class="ui-accent">LV ${lv}</div></div></div>
+            <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${fmt(bubbleValue(b, Math.max(1, lv)))}${lv ? '' : ' (1레벨)'}</div>
+            <div class="ui-xs ui-muted">다음: ${fmt(bubbleValue(b, lv + 1))} · 최대 ${b.max}${b.unit}에 가까워집니다</div>
+            <div class="costrow"><span>${icon(cost.item)}</span><span class="ui-grow ui-sm">${ITEMS[cost.item].name}</span><b class="ui-sm ${have >= cost.n ? 'ui-good' : 'ui-bad'}">${have.toLocaleString()} / ${cost.n.toLocaleString()}</b></div>
+            <div class="costrow"><span>${ui('bub_wise', 'mi')}</span><span class="ui-grow ui-sm">연금 액체</span><b class="ui-sm ${a.liquid >= cost.liquid ? 'ui-good' : 'ui-bad'}">${Math.floor(a.liquid)} / ${cost.liquid}</b></div>
+            <button class="ui-btn primary iconbtn block" data-act="alch:bubble:${b.id}" ${have >= cost.n && a.liquid >= cost.liquid && lv < BUBBLE_MAX_LV ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>`;
+          body = `<div class="split"><div class="cauldrons">${cols}</div><div class="ui-detail">${detail}</div></div>`;
+        } else if (tab === 1) {
+          body = VIALS.map((v) => {
+            const lv = a.vials[v.id] ?? 0, n = VIAL_COST[lv], have = haveMat(acc, c, v.item);
+            return `<div class="ui-row line">${ui(`vial_${v.id}`, 'mi')}<div class="ui-grow"><b>${v.name}</b> <span class="ui-xs ui-accent">${lv}/${VIAL_MAX}</span>
+              <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[v.eff]} +${vialValue(v, Math.max(1, lv))}${v.unit}${lv ? '' : ' (1단계)'}</div></div>
+              ${lv < VIAL_MAX ? tile(iconUrl(ITEM_ICON[v.item]), `${have}/${n}`, `${ITEMS[v.item].name} ${have}/${n}`, '', have >= n ? 'ok' : 'bad') : ''}
+              <button class="ui-btn sm" data-act="alch:vial:${v.id}" ${lv < VIAL_MAX && have >= n ? '' : 'disabled'}>${lv >= VIAL_MAX ? '최대' : '붓기'}</button></div>`;
+          }).join('') + '<p class="ui-xs ui-muted">물고기·곤충·사막 자원을 약병에 부으면 단계가 오릅니다. 가방과 창고의 재료를 함께 씁니다.</p>';
+        } else {
+          body = (['rate', 'cap'] as LiquidUp[]).map((k) => {
+            const lv = a.up[k], max = lv >= LIQUID.max, cost = liquidUpCost(a, k);
+            const label = k === 'rate' ? `끓이는 불 (시간당 +${LIQUID.ratePer})` : `큰 솥 (한도 +${LIQUID.capPer})`;
+            return `<div class="ui-row line"><div class="ui-grow"><b>${label}</b> <span class="ui-xs ui-accent">${lv}/${LIQUID.max}</span><div class="ui-sm ui-muted">지금 ${k === 'rate' ? `시간당 ${liquidRate(a)}` : `한도 ${liquidCap(a)}`}</div></div>
+              <button class="ui-btn sm iconbtn" data-act="alch:liquid:${k}" ${!max && acc.coins >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui('ui_coin', 'tic')} ${cost.toLocaleString()}`}</button></div>`;
+          }).join('');
+        }
+        return win('연금 솥 <span class="ui-sm ui-muted">계정 공용</span>', `${head}${tabs(['거품', '약병', '액체'], tab, tabAct, ['bub_power', 'vial_v_star', 'bub_wise'])}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'arena': {
         const r = this.arenaResult ?? { waves: 0, score: 0 };
         const got = ARENA.rewards.filter((x) => r.waves >= x.waves);
@@ -1150,12 +1193,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1269,6 +1312,8 @@ export class UI {
       case 'skinoff': fail(g.act({ t: 'skinOff', slot: a as SkinSlot }).err ?? null); break;
       case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }
       case 'pshard': { const r = g.act({ t: 'petShard' }); if (r.ok) this.toast(`펫 크리스탈 ${r.n}개를 넣었습니다`); else fail(r.err ?? null); break; }
+      case 'bsel': this.bubSel = a; break;
+      case 'alch': { const r = g.act({ t: 'alch', op: a as 'bubble' | 'vial' | 'liquid', id: b }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'owl': fail(g.act({ t: 'owl', k: a as OwlUp }).err ?? null); break;
       case 'arenaclaim': {
         const r = g.act({ t: 'arenaClaim' });
