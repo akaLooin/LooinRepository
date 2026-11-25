@@ -20,7 +20,7 @@ Supabase 웹 → 프로젝트 → SQL Editor → New query → 파일 내용 전
 ## C. PC에서 (PowerShell)
 1. ✅ (11-23) 최신 코드 받기: `cd C:\Users\User\LooinRepository` → `git pull`
 2. ✅ (11-23) 부품 설치: `cd app` → `npm.cmd install`
-3. [ ] 서버 함수 올리기 (`C:\Users\User\LooinRepository`에서, `<ref>` = Supabase 주소의 프로젝트 id):
+3. ✅ (11-23) 서버 함수 올리기 (`C:\Users\User\LooinRepository`에서, `<ref>` = Supabase 주소의 프로젝트 id):
    - ✅ (11-23) `npx.cmd supabase functions deploy push --no-verify-jwt --project-ref <ref>` (크루 대화 푸시, backend.md 17)
    - ✅ (11-23) `npx.cmd supabase functions deploy admin-broadcast --project-ref <ref>` (관리자 앱 전체 알림, backend.md 23.2) — 했는지 미확인
    - ✅ (11-23) `npx.cmd supabase functions deploy google-calendar --no-verify-jwt --project-ref <ref>` (D를 먼저)
