@@ -138,15 +138,15 @@
     "semantic_hash": ""
   },
   "game/src/core/afk.ts": {
-    "mtime": 1795567019.0021007,
-    "seen": 1795567384.1796768,
-    "ast_hash": "9fa94346af351b7116802127e49ccd71",
+    "mtime": 1795571708.0972476,
+    "seen": 1795572032.0679252,
+    "ast_hash": "5d9e5473e8b6b4ee36dd849d091e3230",
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1795571387.0746672,
-    "seen": 1795571589.1322856,
-    "ast_hash": "46e5da176e5a96ab97311d7c2eaec6f6",
+    "mtime": 1795571704.3532193,
+    "seen": 1795572032.0679495,
+    "ast_hash": "e51d84fb2deda533d2c49d64e2d89fa1",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -162,9 +162,9 @@
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1795570785.3412166,
-    "seen": 1795571180.3635068,
-    "ast_hash": "ecb392252dd3c1dc870969ace22dd457",
+    "mtime": 1795571708.0979085,
+    "seen": 1795572032.0681682,
+    "ast_hash": "6355e5dbe2baeab840ab5e79c64b1b6c",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
@@ -180,9 +180,9 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1795570948.8618443,
-    "seen": 1795571180.3635948,
-    "ast_hash": "0ef0c343ca8aac2d93d190fa6a2f7843",
+    "mtime": 1795571656.5926397,
+    "seen": 1795572032.0682878,
+    "ast_hash": "83192ad6cbb11f5831ef3fccf9530102",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
@@ -192,15 +192,15 @@
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1795571488.6697657,
-    "seen": 1795571589.1326904,
-    "ast_hash": "1ff1bd0dc02c31727664abb1cb5c0a9f",
+    "mtime": 1795572001.5135984,
+    "seen": 1795572032.068372,
+    "ast_hash": "1733c2fd4f1f0e61fa848b2578096988",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
-    "mtime": 1795567026.514251,
-    "seen": 1795567384.1799724,
-    "ast_hash": "1af4cc295d71b5bf6fd52ba305020f19",
+    "mtime": 1795571928.693794,
+    "seen": 1795572032.0683758,
+    "ast_hash": "1a8e413b85ae19246a458ac2835b2940",
     "semantic_hash": ""
   },
   "game/tsconfig.json": {
@@ -1149,6 +1149,12 @@
     "mtime": 1795571398.143738,
     "seen": 1795571589.1324131,
     "ast_hash": "9d3742b71abaef77f06ed2ede37eb4df",
+    "semantic_hash": ""
+  },
+  "game/src/ui/worldmap.ts": {
+    "mtime": 1795572001.497589,
+    "seen": 1795572032.068374,
+    "ast_hash": "79c90534f148a546f6236e7d90be122f",
     "semantic_hash": ""
   },
   "game/package-lock.json": {
