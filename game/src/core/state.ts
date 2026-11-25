@@ -150,6 +150,8 @@ export interface Derived {
   afkFight: number; afkSkill: number;
   atkInterval: number; speed: number; crit: number; critMult: number;
   xpMult: number; dropMult: number; regen: number;
+  /** 보스(미니보스 포함)에게 주는 피해 배수(지혜) */
+  bossMult: number;
   /** 코인 획득 배수 */
   coinMult: number;
   mining: number; chopping: number;
@@ -208,14 +210,18 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     afkSkill: Math.min(1, AFK_BASE + wis * 0.002 + tl('idler') * 0.02 + cb.afk + cb.afkSkill + afkAcc),
     dmg: (2 + e.dmg + main * 0.5 + c.level * 0.4) * (1 + tl('sharp') * 0.03) * (1 + cb.dmg) * (1 + sb.dmg / 100) * (1 + pb.dmg / 100),
     def: e.def + c.level * 0.3 + tl('ironskin') * 1.5 + sb.def + pb.def,
-    atkInterval: Math.max(0.3, (0.75 - agi * 0.004) * (1 - tl('swift') * 0.02)),
+    // 공격 속도는 능력치가 아니라 특성(날랜 손)으로만 오른다(원작처럼)
+    atkInterval: Math.max(0.3, 0.72 * (1 - tl('swift') * 0.02)),
     speed: 80 + Math.min(40, agi * 0.6) + (pk.speed ?? 0),
-    crit: Math.min(0.75, 0.04 + luk * 0.004 + sb.crit / 100 + critAdd), critMult: 1.6 + t2('deadeye') * 0.04,
-    xpMult: (1 + wis * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
+    // 치명타 확률은 민첩, 치명타 피해는 힘
+    crit: Math.min(0.75, 0.04 + agi * 0.004 + sb.crit / 100 + critAdd), critMult: 1.5 + str * 0.004 + t2('deadeye') * 0.04,
+    bossMult: 1 + wis * 0.004,
+    xpMult: (1 + luk * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
     coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins') + pb.coins / 100,
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
-    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + wis * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100),
+    // 기술 효율: 힘 → 채광, 지혜 → 벌목(대장 생산 속도는 민첩, anvilRate)
+    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + str * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100),
     chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100),
   };
 }
@@ -403,37 +409,51 @@ export function stackCap(c: Character, id: string): number {
   for (const p of c.pouches) { const d = ITEMS[p]?.pouch; if (d && d.group === g) cap = Math.max(cap, d.cap); }
   return cap;
 }
-export const countItem = (c: Character, id: string) => c.inventory.find((s) => s.id === id)?.qty ?? 0;
+/** 가방에 있는 개수(같은 아이템이 여러 칸에 나뉘어 있으면 모두 더한다) */
+export const countItem = (c: Character, id: string) => c.inventory.reduce((n, s) => n + (s.id === id ? s.qty : 0), 0);
+/** 이 아이템을 더 넣을 수 있는 개수: 덜 찬 칸의 남은 자리 + 빈 칸마다 한 칸 최대치 */
+export function itemRoom(c: Character, id: string): number {
+  const cap = stackCap(c, id);
+  const part = c.inventory.reduce((n, s) => n + (s.id === id ? Math.max(0, cap - s.qty) : 0), 0);
+  return part + Math.max(0, invSize(c) - c.inventory.length) * cap;
+}
 
-/** 들어가는 만큼 넣고 넣은 개수를 돌려준다 */
+/** 들어가는 만큼 넣고 넣은 개수를 돌려준다. 칸이 가득 차면 빈 칸에 새로 쌓는다 */
 export function addItemSome(c: Character, id: string, qty = 1): number {
   if (qty <= 0) return 0;
   const cap = stackCap(c, id);
-  let s = c.inventory.find((x) => x.id === id);
-  if (!s) {
-    if (c.inventory.length >= invSize(c)) return 0;
-    s = { id, qty: 0 };
-    c.inventory.push(s);
+  let left = qty;
+  for (const s of c.inventory) {
+    if (s.id !== id || s.qty >= cap) continue;
+    const n = Math.min(left, cap - s.qty);
+    s.qty += n; left -= n;
+    if (!left) return qty;
   }
-  const n = Math.min(qty, cap - s.qty);
-  s.qty += Math.max(0, n);
-  if (s.qty === 0) c.inventory.splice(c.inventory.indexOf(s), 1);
-  return Math.max(0, n);
+  while (left > 0 && c.inventory.length < invSize(c)) {
+    const n = Math.min(left, cap);
+    c.inventory.push({ id, qty: n }); left -= n;
+  }
+  return qty - left;
 }
 /** 전부 들어가면 true. 들어가지 않으면 아무것도 넣지 않는다 */
 export function addItem(c: Character, id: string, qty = 1): boolean {
   if (qty <= 0) return true;
-  const s = c.inventory.find((x) => x.id === id);
-  const room = s ? stackCap(c, id) - s.qty : c.inventory.length < invSize(c) ? stackCap(c, id) : 0;
-  if (room < qty) return false;
+  if (itemRoom(c, id) < qty) return false;
   addItemSome(c, id, qty);
   return true;
 }
+/** 꺼내기: 덜 찬 뒤쪽 칸부터 줄인다 */
 export function removeItem(c: Character, id: string, qty = 1): boolean {
-  const i = c.inventory.findIndex((x) => x.id === id);
-  if (i < 0 || c.inventory[i].qty < qty) return false;
-  c.inventory[i].qty -= qty;
-  if (c.inventory[i].qty === 0) c.inventory.splice(i, 1);
+  if (qty <= 0) return true;
+  if (countItem(c, id) < qty) return false;
+  let left = qty;
+  for (let i = c.inventory.length - 1; i >= 0 && left > 0; i--) {
+    const s = c.inventory[i];
+    if (s.id !== id) continue;
+    const n = Math.min(left, s.qty);
+    s.qty -= n; left -= n;
+    if (s.qty === 0) c.inventory.splice(i, 1);
+  }
   return true;
 }
 
@@ -535,8 +555,7 @@ export function craft(acc: Account, c: Character, idx: number): string | null {
   if (lock) return lock;
   if (!canCraft(acc, c, idx)) return '재료가 부족합니다';
   const freed = r.mats.some(([id, n]) => countItem(c, id) > 0 && countItem(c, id) <= n);
-  const s = c.inventory.find((x) => x.id === r.item);
-  if (!r.unlock && (s ? s.qty >= stackCap(c, r.item) : !freed && c.inventory.length >= invSize(c))) return '가방이 가득 찼습니다';
+  if (!r.unlock && !freed && itemRoom(c, r.item) < 1) return '가방이 가득 찼습니다';
   acc.coins -= r.coins;
   for (const [id, n] of r.mats) {
     // 가방에서 먼저 쓰고 모자라면 창고에서
@@ -565,7 +584,8 @@ function syncSlots(c: Character) {
 }
 export const anvilRate = (c: Character, slot = 0) => {
   const p = PRODUCTS.find((x) => x.item === c.anvil.slots[slot]?.prod);
-  return p ? p.perHour * (1 + c.anvil.pts.spd * ANVIL.spdPer) : 0;
+  // 민첩이 모루 생산 속도를 올린다(원작처럼 대장 기술은 민첩)
+  return p ? p.perHour * (1 + c.anvil.pts.spd * ANVIL.spdPer) * (1 + (c.stats.agi + equipStats(c).agi) * 0.004) : 0;
 };
 export function setProduct(c: Character, item: string | null, slot = 0): string | null {
   syncSlots(c);

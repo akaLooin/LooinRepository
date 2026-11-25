@@ -218,3 +218,17 @@ describe('동료·부엉이', () => {
     expect(derive(c, acc).dmg).toBeGreaterThan(d0);
   });
 });
+
+import { STACK_BASE } from '../src/core/data';
+import { countItem as cnt, removeItem } from '../src/core/state';
+describe('가방 칸 나누기', () => {
+  it('한 칸이 가득 차면 빈 칸에 새로 쌓고, 꺼낼 때는 뒤 칸부터', () => {
+    const { c } = setup();
+    expect(addItem(c, 'moss', STACK_BASE + 5)).toBe(true);
+    const moss = c.inventory.filter((s) => s.id === 'moss');
+    expect(moss.map((s) => s.qty)).toEqual([STACK_BASE, 5]);
+    expect(cnt(c, 'moss')).toBe(STACK_BASE + 5);
+    expect(removeItem(c, 'moss', 7)).toBe(true);
+    expect(c.inventory.filter((s) => s.id === 'moss').map((s) => s.qty)).toEqual([STACK_BASE - 2]);
+  });
+});

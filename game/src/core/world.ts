@@ -327,7 +327,8 @@ export class World {
       return;
     }
     const crit = this.rng.chance(d.crit);
-    const amount = Math.max(1, Math.round(d.dmg * mult * this.rng.range(0.8, 1.2) * (crit ? d.critMult : 1)));
+    const boss = m.def.boss || MINIBOSS_IDS.has(m.def.id) || m.def.id === 'champion';
+    const amount = Math.max(1, Math.round(d.dmg * mult * this.rng.range(0.8, 1.2) * (crit ? d.critMult : 1) * (boss ? d.bossMult : 1)));
     m.hp -= amount; m.hitT = 0.22;
     m.x = clamp(m.x + push * 5, m.plat.x + 8, m.plat.x + m.plat.w - 8);
     this.events.push({ t: 'dmg', x: m.x, y: m.y - 18, amount, crit, onPlayer: false });

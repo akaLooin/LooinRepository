@@ -30,6 +30,43 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const ui = (key: string, cls = 'ic') => `<img class="px ${cls}" src="${iconUrl(key)}" alt="">`;
 const iconHtml = (key: string) => `<img class="px tic" src="${iconUrl(key)}" alt="">`;
 const PET_BONUS_NAMES: Record<string, string> = { hpPct: '최대 체력', drop: '드롭률', xp: '경험치', mining: '채광 효율', chopping: '벌목 효율', def: '방어력', coins: '코인 획득', afk: '방치 효율' };
+/** 바뀐 부분만 고치기: 같은 자리의 같은 태그는 속성·글자만 바꾸고, 다르면 그 노드만 갈아 끼운다 */
+function morph(el: HTMLElement, html: string) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  patchChildren(el, tpl.content);
+}
+function patchChildren(dst: Node, src: Node) {
+  const a = Array.from(dst.childNodes), b = Array.from(src.childNodes);
+  for (let i = 0; i < b.length; i++) {
+    const n = b[i], o = a[i];
+    if (!o) { dst.appendChild(n); continue; }
+    if (o.nodeType !== n.nodeType || o.nodeName !== n.nodeName) { dst.replaceChild(n, o); continue; }
+    if (n.nodeType === 3 || n.nodeType === 8) { if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; continue; }
+    const oe = o as Element, ne = n as Element;
+    for (const at of Array.from(oe.attributes)) if (!ne.hasAttribute(at.name)) oe.removeAttribute(at.name);
+    for (const at of Array.from(ne.attributes)) if (oe.getAttribute(at.name) !== at.value) oe.setAttribute(at.name, at.value);
+    // 입력칸은 사용자가 쓰는 값을 건드리지 않는다
+    if (ne.nodeName !== 'INPUT' && ne.nodeName !== 'TEXTAREA') patchChildren(o, n);
+  }
+  for (let i = a.length - 1; i >= b.length; i--) dst.removeChild(a[i]);
+}
+
+/** 능력치 하나가 올려 주는 것(지금 값 기준으로 계산해 보여 준다) */
+function statInfo(k: StatKey, v: number, cls: ClassId): string[] {
+  const b = baseClass(cls), main = CLASSES[cls].main, acc = CLASSES[cls].acc;
+  const role = [main === k ? `<b class="ui-good">지금 직업(${CLASSES[cls].name})의 공격력 능력치</b> — 1당 공격력 +0.5` : '', acc === k ? `<b class="ui-good">지금 직업의 명중 능력치</b> — 1당 명중 +1` : ''].filter(Boolean);
+  const who: Record<StatKey, string> = { str: '전사의 공격력, 궁수의 명중', agi: '궁수의 공격력, 마법사의 명중', wis: '마법사의 공격력, 전사의 명중', luk: '초보자의 공격력과 명중' };
+  const f = (n: number, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toLocaleString();
+  const lines: Record<StatKey, string[]> = {
+    str: [`최대 체력 +${f(v * 3, 0)} (1당 +3)`, `치명타 피해 +${f(v * 0.4)}%p (1당 +0.4%p)`, `채광 효율 +${f(v * 0.05, 2)} (1당 +0.05)`],
+    agi: [`이동 속도 +${f(Math.min(40, v * 0.6))} (1당 +0.6, 최대 +40)`, `치명타 확률 +${f(v * 0.4)}%p (1당 +0.4%p)`, `모루 생산 속도 +${f(v * 0.4)}% (1당 +0.4%)`],
+    wis: [`최대 마나 +${f(v * 1.5, 0)} (1당 +1.5)`, `보스·미니보스에게 주는 피해 +${f(v * 0.4)}% (1당 +0.4%)`, `벌목 효율 +${f(v * 0.05, 2)} (1당 +0.05)`, `채집 방치 효율 +${f(v * 0.2)}%p`],
+    luk: [`드롭률 +${f(v * 0.4)}% (1당 +0.4%)`, `경험치 +${f(v * 0.5)}% (1당 +0.5%)`, `전투 방치 효율 +${f(v * 0.2)}%p`],
+  };
+  void b;
+  return [...role, `${who[k]}이 됩니다`, ...lines[k]];
+}
 /** 아이콘 칸 + 숫자 배지(글자 대신). tone: ok(초록) / bad(빨강) */
 const tile = (src: string, badge: string | number, label: string, cls = '', tone = '') =>
   `<span class="ui-slot sm ${cls}" title="${label}" aria-label="${label}"><img class="px" src="${src}" alt="">${badge !== '' ? `<span class="qty ${tone}">${badge}</span>` : ''}</span>`;
@@ -72,6 +109,8 @@ export class UI {
   private afk: AfkReport | null = null;
   private craftSel = -1;
   private forgeSel = 0;
+  private statSel: StatKey | null = null;
+  private shownPanel: Panel = null;
   private arenaResult: { waves: number; score: number } | null = null;
   private stampSel = '';
   /** 대화 중인 NPC, 생산 칸 선택 */
@@ -79,6 +118,9 @@ export class UI {
   /** 하단 바가 공격 바로 바뀌어 있는지, 공격 바에 놓으려고 고른 특성, 특성 화면에서 고른 특성 */
   private attackMode = false;
   private assigning: string | null = null;
+  /** 특성 창에서 퀵슬롯을 고르는 중인 특성과 공격 바 장 */
+  private quickFor: string | null = null;
+  private quickPage = 0;
   private talentSel: string | null = null;
   private drag: { id: string; ghost: HTMLElement } | null = null;
   private prodSlot = 0;
@@ -102,9 +144,6 @@ export class UI {
     this.root.addEventListener('pointerdown', (e) => {
       const sk = (e.target as HTMLElement).closest<HTMLElement>('[data-bslot]');
       if (sk) { e.preventDefault(); this.pressSlot(+sk.dataset.bslot!); return; }
-      // 특성 그림을 끌어 공격 바에 놓기
-      const tal = (e.target as HTMLElement).closest<HTMLElement>('[data-tal]');
-      if (tal && TALENT[tal.dataset.tal!]?.active && (this.game.char?.talents[tal.dataset.tal!] ?? 0) > 0) { e.preventDefault(); this.startDrag(tal.dataset.tal!, e as PointerEvent); }
     });
     this.root.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
@@ -146,8 +185,10 @@ export class UI {
   /** 내용이 바뀐 경우에만 DOM 갱신(누르는 도중 버튼이 교체되는 것 방지) */
   private put(id: string, html: string) {
     if (this.last[id] === html) return;
+    const first = !this.$(id).firstChild;
     this.last[id] = html;
-    this.$(id).innerHTML = html;
+    // 통째로 갈아 끼우면 그림이 다시 그려지며 깜빡이고 스크롤·애니메이션이 처음으로 돌아간다 → 바뀐 곳만 고친다
+    if (first) this.$(id).innerHTML = html; else morph(this.$(id), html);
   }
   private show(id: string, on: boolean) { this.$(id).classList.toggle('hidden', !on); }
 
@@ -241,6 +282,11 @@ export class UI {
     this.put('quest', lines.join('<br>'));
 
     this.show('modal', !!this.panel);
+    // 튀어나오는 애니메이션은 창을 새로 열 때만(같은 창을 다시 그릴 때는 재생하지 않는다)
+    if (this.panel !== this.shownPanel) {
+      this.shownPanel = this.panel;
+      if (this.panel) { const m = this.$('modal'); m.classList.remove('opening'); void m.offsetWidth; m.classList.add('opening'); }
+    }
     if (this.panel) this.put('modal', this.panelHtml(c));
     if (this.panel === 'chat' && document.getElementById('chatlog')) {
       const log = g.chat.map((l) => `<div><b class="${l.id === g.liveId ? 'ui-accent' : ''}">${esc(l.from)}</b> ${esc(l.text)}</div>`).join('') || '<span class="ui-muted">아직 대화가 없습니다.</span>';
@@ -366,7 +412,7 @@ export class UI {
         const subIcon = sub ? `tl_${TALENTS.find((x) => x.cls === sub)!.id}` : 'ui_lock';
         return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', baseIcon, subIcon])}
           ${t > 0 && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
-          <div class="ui-tabpanel talentpanel">${t > 0 ? `<button class="assignflag ${this.assigning !== null || this.attackMode ? 'on' : ''}" data-act="flag" aria-label="공격 지정">${ui('ui_assign', 'mi')}<span>공격<br>지정</span></button>` : ''}${body}</div>`);
+          <div class="ui-tabpanel talentpanel">${body}</div>`);
       }
 
       case 'codex': {
@@ -809,18 +855,23 @@ export class UI {
 
   private statsHtml(c: Character): string {
     const d = derive(c, this.game.acc);
-    const stats = (Object.keys(STAT_NAMES) as StatKey[]).map((k) => `<div class="ui-row line"><b class="stat-name">${STAT_NAMES[k]}</b><span class="ui-accent stat-val">${d[k]}</span>
-      <span class="ui-grow ui-xs ui-muted">${STAT_DESC[k]}</span><button class="ui-btn sm" data-act="stat:${k}" aria-label="${STAT_NAMES[k]} 올리기" ${c.statPoints ? '' : 'disabled'}>＋</button></div>`).join('');
+    // 능력치 이름을 누르면 오른쪽에 자세한 설명(지금 값으로 계산한 효과)
+    const stats = (Object.keys(STAT_NAMES) as StatKey[]).map((k) => `<div class="ui-row line"><button class="stat-name stat-pick ${this.statSel === k ? 'on' : ''}" data-act="statinfo:${k}" aria-pressed="${this.statSel === k}">${STAT_NAMES[k]} <span class="ui-xs ui-muted">ⓘ</span></button><span class="ui-accent stat-val ui-grow">${d[k]}</span>
+      <button class="ui-btn sm" data-act="stat:${k}" aria-label="${STAT_NAMES[k]} 올리기" ${c.statPoints ? '' : 'disabled'}>＋</button></div>`).join('');
+    const sel = this.statSel;
+    const info = sel ? `<div class="statinfo"><div class="ui-row"><b class="ui-grow">${STAT_NAMES[sel]} <span class="ui-accent">${d[sel]}</span></b><button class="ui-btn sm" data-act="statinfo:" aria-label="닫기">✕</button></div>
+      <ul>${statInfo(sel, d[sel], c.cls).map((l) => `<li>${l}</li>`).join('')}</ul></div>` : '';
     const skills = (Object.keys(SKILL_NAMES) as SkillKey[]).map((k) => {
       const s = c.skills[k], need = skillXpToNext(s.lv);
       return `<div class="ui-row line"><b class="stat-name">${SKILL_NAMES[k]}</b><span class="ui-accent stat-val">${s.lv}</span><div class="ui-grow">${bar('skill', s.xp, need, `${s.xp} / ${need}`)}</div></div>`;
     }).join('');
     return `<div class="split"><div><div class="ui-row"><span class="ui-grow">남은 포인트</span><b class="ui-accent ui-lg">${c.statPoints}</b></div>${stats}<h3>기술</h3>${skills}</div>
-      <div class="ui-detail"><h3>세부 능력치</h3><div class="ui-kv">
+      <div class="ui-detail">${info || '<p class="ui-xs ui-muted" style="margin:0">능력치 이름을 누르면 무엇을 올려 주는지 자세히 볼 수 있습니다.</p>'}<h3>세부 능력치</h3><div class="ui-kv">
         <span>공격력</span><span>${Math.round(d.dmg * 0.8)}~${Math.round(d.dmg * 1.2)}</span><span>최대 체력</span><span>${d.maxHp}</span>
         <span>최대 마나</span><span>${d.maxMp}</span><span>명중</span><span>${d.acc}</span>
         <span>방어력</span><span>${d.def.toFixed(1)}</span><span>공격 속도</span><span>${(1 / d.atkInterval).toFixed(2)}/초</span>
-        <span>치명타</span><span>${(d.crit * 100).toFixed(1)}%</span><span>이동 속도</span><span>${Math.round(d.speed)}</span>
+        <span>치명타</span><span>${(d.crit * 100).toFixed(1)}% · ×${d.critMult.toFixed(2)}</span><span>이동 속도</span><span>${Math.round(d.speed)}</span>
+        <span>보스 피해</span><span>×${d.bossMult.toFixed(2)}</span><span>코인 배율</span><span>×${d.coinMult.toFixed(2)}</span>
         <span>경험치 배율</span><span>×${d.xpMult.toFixed(2)}</span><span>드롭 배율</span><span>×${d.dropMult.toFixed(2)}</span></div>
         ${this.vsHtml(c, d)}</div></div>`;
   }
@@ -853,11 +904,21 @@ export class UI {
         <div class="ui-accent">LV ${lv} / ${t.max}</div></div></div>
         <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${t.desc(Math.max(1, lv))}</div>
         ${lv < t.max ? `<div class="ui-xs ui-muted">다음: ${t.desc(lv + 1)}</div>` : ''}
-        <div class="ui-row"><button class="ui-btn primary iconbtn" data-act="talent:${t.id}" ${c.talentPoints && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
-        ${t.active ? `<button class="ui-btn iconbtn" data-act="assign:${t.id}" ${lv ? '' : 'disabled'}>${ui('ui_assign', 'tic')} 공격 바에</button>` : ''}</div>
-        ${t.active && lv ? '<span class="ui-xs ui-muted">그림을 끌어 아래 공격 바 칸에 놓아도 됩니다. 자동은 왼쪽 칸부터 씁니다.</span>' : ''}`;
+        <div class="talbtns"><button class="ui-btn primary iconbtn block" data-act="talent:${t.id}" ${c.talentPoints && lv < t.max ? '' : 'disabled'}>${ui('ui_up', 'tic')} 올리기</button>
+        ${t.active ? `<button class="ui-btn iconbtn block ${this.quickFor === t.id ? 'success' : ''}" data-act="quick:${t.id}" ${lv ? '' : 'disabled'}>${ui('ui_assign', 'tic')} 퀵슬롯에 지정하기</button>` : ''}</div>
+        ${t.active && !lv ? '<span class="ui-xs ui-muted">1레벨 이상 올리면 퀵슬롯에 지정할 수 있습니다.</span>' : ''}
+        ${t.active && lv && this.quickFor === t.id ? this.quickPickHtml(c, t.id) : ''}`;
     }
     return `<div class="split"><div class="talgrid">${tiles}</div><div class="ui-detail">${detail}</div></div>`;
+  }
+
+  /** 퀵슬롯 고르기: 공격 바 장을 고르고 칸을 누르면 그 칸에 놓는다(이미 있으면 그 칸에서 뺀다) */
+  private quickPickHtml(c: Character, id: string): string {
+    const page = Math.min(this.quickPage, c.attackBars.length - 1), bar = c.attackBars[page];
+    const pages = c.attackBars.map((_, i) => `<button class="ui-btn sm ${i === page ? 'primary' : ''}" data-act="qpage:${i}">${i + 1}장</button>`).join('');
+    const slots = bar.map((sid, i) => `<button class="ui-slot sm qslot ${sid === id ? 'r3' : ''}" data-act="qset:${i}" aria-label="${i + 1}번 칸${sid ? `: ${TALENT[sid].name}` : ' 비어 있음'}">${sid ? ui(`tl_${sid}`, 'mi') : '<span class="empty-plus">+</span>'}<span class="keyno">${i + 1}</span></button>`).join('');
+    return `<div class="quickpick"><div class="ui-row"><span class="ui-xs ui-grow">놓을 칸을 누르세요 (자동은 왼쪽 칸부터 씁니다)</span>${pages}</div><div class="qline">${slots}</div>
+      ${bar.includes(id) ? `<button class="ui-btn sm" data-act="qclear">이 장에서 빼기</button>` : ''}</div>`;
   }
 
   /** 하단 공격 바: [메뉴로] [장 넘기기] [6칸] */
@@ -946,7 +1007,15 @@ export class UI {
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
       case 'close': this.panel = null; this.afk = null; break;
-      case 'tab': this.tab[a as Exclude<Panel, null>] = +b; this.craftSel = -1; break;
+      case 'tab': {
+        // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
+        if (a === 'char' && c && ((+b === 2 && baseClass(c.cls) === 'beginner') || (+b === 3 && !classLine(c.cls)[2]))) {
+          this.toast(+b === 2 ? `Lv.${CLASS_LEVEL}에 마을의 ${NPCS[CLASS_NPC].name}에게서 전직하면 열립니다` : `Lv.${SUBCLASS_LEVEL}에 ${NPCS[CLASS_NPC].name}에게서 2차 전직하면 열립니다`);
+          break;
+        }
+        this.tab[a as Exclude<Panel, null>] = +b; this.craftSel = -1; break;
+      }
+      case 'statinfo': this.statSel = (a || null) as StatKey | null; break;
       case 'csel': this.craftSel = +a; break;
       case 'pslot': this.prodSlot = +a; break;
       case 'fslot': this.forgeSel = +a; break;
@@ -988,9 +1057,21 @@ export class UI {
       }
       case 'atk': this.attackMode = !(this.attackMode || this.assigning); this.assigning = null; break;
       case 'bpage': if (c) g.act({ t: 'barPage', page: (c.attackPage + 1) % c.attackBars.length }); break;
-      case 'flag': this.attackMode = !this.attackMode; this.assigning = this.attackMode && this.talentSel && TALENT[this.talentSel]?.active && c?.talents[this.talentSel] ? this.talentSel : null; break;
-      case 'tsel': this.talentSel = a; if (this.attackMode && TALENT[a]?.active && c?.talents[a]) this.assigning = a; break;
-      case 'assign': this.assigning = a; this.attackMode = true; this.toast('아래 공격 바에서 놓을 칸을 누르세요'); break;
+      case 'tsel': if (this.talentSel !== a) this.quickFor = null; this.talentSel = a; break;
+      case 'quick': this.quickFor = this.quickFor === a ? null : a; this.quickPage = c?.attackPage ?? 0; break;
+      case 'qpage': this.quickPage = +a; break;
+      case 'qset': {
+        if (!this.quickFor || !c) break;
+        const r = g.act({ t: 'barSet', bar: this.quickPage, slot: +a, id: this.quickFor });
+        if (r.ok) this.toast(`${TALENT[this.quickFor].name}을(를) 퀵슬롯 ${this.quickPage + 1}장 ${+a + 1}번 칸에 지정했습니다`); else fail(r.err ?? null);
+        break;
+      }
+      case 'qclear': {
+        if (!this.quickFor || !c) break;
+        const i = c.attackBars[this.quickPage].indexOf(this.quickFor);
+        if (i >= 0) fail(g.act({ t: 'barSet', bar: this.quickPage, slot: i, id: null }).err ?? null);
+        break;
+      }
       case 'tp': { const r = g.act({ t: 'teleport', map: a }); if (r.ok) { g.travelTo(); this.panel = null; } else fail(r.err ?? null); break; }
       case 'opt': g.act({ t: 'option', autoAttacks: !g.acc.options.autoAttacks }); break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;

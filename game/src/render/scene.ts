@@ -114,10 +114,11 @@ class CharRig {
     b.setRotation(-this.lie * 1.45 * p.facing);
     b.y = -this.lie * 4;
     // 피격: 처음엔 붉게, 이후 무적 시간처럼 깜빡인다(화면은 흔들지 않는다)
-    const hurtK = p.hurtT > 0 ? Math.max(0, (p.hurtT - (HURT_TIME - 0.22)) / 0.22) : 0;
-    const tint = hurtK > 0 ? 0xff8a8a : 0xffffff;
+    const hurtK = p.hurtT > 0 ? Math.max(0, (p.hurtT - (HURT_TIME - 0.3)) / 0.3) : 0;
+    // 맞는 순간 붉었다가 부드럽게 돌아온다(깜빡이지 않게)
+    const gb = Math.round(255 - 110 * hurtK), tint = (0xff << 16) | (gb << 8) | gb;
     this.back.setTint(tint); this.front.setTint(tint); this.hat.setTint(tint); this.armor.setTint(tint);
-    b.setAlpha(p.hurtT > 0 && !dead && Math.sin(this.t * 38) > 0 ? 0.35 : 1);
+    b.setAlpha(1);
     b.x = -p.facing * hurtK * 2.5;
 
     this.root.setPosition(p.x, p.y);
@@ -176,7 +177,8 @@ class MobView {
       this.wings[0].setRotation(flap + 0.2).setY(y - 10); this.wings[1].setRotation(-flap - 0.2).setY(y - 10);
     }
     if (m.hitT > 0) { const k = m.hitT / 0.22; sx *= 1 + k * 0.22; sy *= 1 - k * 0.2; }
-    if (m.hitT > 0.12) this.spr.setTintFill(0xffffff); else if (m.def.tint) this.spr.setTint(m.def.tint); else this.spr.clearTint();
+    // 맞으면 잠깐 옅은 붉은빛(번쩍이는 흰색 대신)
+    if (m.hitT > 0.12) this.spr.setTint(0xffb4b4); else if (m.def.tint) this.spr.setTint(m.def.tint); else this.spr.clearTint();
     const k = (m.def.scale ?? 1) * ART;
     // 보스 내려찍기 예고: 몸을 움츠렸다가 내려찍는다
     if (m.windup > 0) { const t = 1 - m.windup / m.def.boss!.slamWindup; sy *= 1 - Math.sin(t * Math.PI * 0.5) * 0.28; sx *= 1 + Math.sin(t * Math.PI * 0.5) * 0.18; }
@@ -435,7 +437,6 @@ export class GameScene extends Phaser.Scene {
         const ring = this.add.circle(e.x, e.y - 10, 6, 0xa5d8ff, 0.5).setStrokeStyle(2, 0xffffff).setDepth(86);
         this.tweens.add({ targets: ring, scale: 9, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
         this.puff(e.x, e.y - 10, 0xa5d8ff, 12);
-        this.cameras.main.shake(120, 0.005);
       } else if (e.id === 'volley') {
         this.puff(e.x, e.y - 16, 0xffffff, 4);
       } else if (e.id === 'smash' || e.id === 'cleave') {
@@ -443,7 +444,6 @@ export class GameScene extends Phaser.Scene {
         const ring = this.add.ellipse(e.x, e.y - 3, 10, 4).setStrokeStyle(2, 0xffe98a).setDepth(86);
         this.tweens.add({ targets: ring, width: SMASH_RANGE * 2, height: 14, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onUpdate: () => ring.setSize(ring.width, ring.height), onComplete: () => ring.destroy() });
         this.puff(e.x, e.y - 4, 0xffe98a, 10);
-        this.cameras.main.shake(120, 0.006);
       } else {
         for (let i = 0; i < 8; i++) {
           const s = this.add.image(e.x + (Math.random() - 0.5) * 20, e.y - 6 - Math.random() * 10, 'fx_px').setTint(0x8fde5d).setDepth(94).setScale(0.7);

@@ -83,8 +83,8 @@ export interface RecipeDef { item: string; coins: number; mats: [string, number]
 
 export const STAT_NAMES: Record<StatKey, string> = { str: '힘', agi: '민첩', wis: '지혜', luk: '행운' };
 export const STAT_DESC: Record<StatKey, string> = {
-  str: '최대 체력. 전사 공격력, 궁수 명중', agi: '공격·이동 속도. 궁수 공격력, 마법사 명중',
-  wis: '최대 마나, 경험치, 채집. 마법사 공격력, 전사 명중', luk: '치명타, 드롭률. 초보자 공격력·명중',
+  str: '최대 체력·치명타 피해·채광. 전사 공격력, 궁수 명중', agi: '이동 속도·치명타 확률·모루 생산. 궁수 공격력, 마법사 명중',
+  wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대' };
@@ -214,9 +214,9 @@ const nodes: NodeDef[] = [
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
 const maps: MapDef[] = [
-  // 마을: 왼쪽 아래 시설들, 오른쪽은 흙으로 꽉 찬 언덕(로프로 오르내림) 위에 촌장과 포탈
+  // 마을: 왼쪽 아래 시설들, 오른쪽 높은 발판(로프로 오르내림, 아래 땅도 걸을 수 있다) 위에 촌장과 포탈
   { id: 'town', name: '모닥불 마을', width: 680, theme: 'town',
-    platforms: [{ x: 380, y: -48, w: 300, solid: true }, { x: 120, y: -60, w: 150 }],
+    platforms: [{ x: 380, y: -48, w: 300 }, { x: 120, y: -60, w: 150 }],
     ropes: [{ x: 386, top: -48, bottom: 0 }, { x: 250, top: -60, bottom: 0 }],
     spawns: [], nodes: [], campfireX: 330,
     facilities: [{ kind: 'storage', x: 40, y: 0 }, { kind: 'npc', npc: 'smith', x: 96, y: 0 }, { kind: 'anvil', x: 152, y: 0 }, { kind: 'forge', x: 208, y: 0 }, { kind: 'stamps', x: 300, y: 0 }, { kind: 'tasks', x: 560, y: -48 }, { kind: 'statues', x: 136, y: -60 }, { kind: 'pets', x: 420, y: -48 }, { kind: 'shop', x: 190, y: -60 }, { kind: 'npc', npc: 'elder', x: 480, y: -48 }],
@@ -237,7 +237,7 @@ const maps: MapDef[] = [
     portals: [{ x: 24, to: 'meadow', toX: 765 }, { x: 896, to: 'forest', toX: 50, reqKills: 40 }, { x: 700, y: -96, to: 'mine1', toX: 50, reqSkill: { skill: 'mining', lv: 5 }, label: '얕은 광산' }] },
   // 숲: 오른쪽 끝 언덕 위에 보스방 문(열쇠 필요)
   { id: 'forest', name: '속삭임 숲', width: 980, theme: 'forest',
-    platforms: [{ x: 90, y: -48, w: 220 }, { x: 180, y: -96, w: 110 }, { x: 430, y: -48, w: 160 }, { x: 660, y: -48, w: 150 }, { x: 860, y: -48, w: 120, solid: true }],
+    platforms: [{ x: 90, y: -48, w: 220 }, { x: 180, y: -96, w: 110 }, { x: 430, y: -48, w: 160 }, { x: 660, y: -48, w: 150 }, { x: 860, y: -48, w: 120 }],
     spawns: [{ monster: 'leafling', count: 8 }],
     nodes: [{ node: 'silvertree', x: 380 }, { node: 'oak', x: 620 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 510, top: -48, bottom: 0 }, { x: 760, top: -48, bottom: 0 }, { x: 866, top: -48, bottom: 0 }],
@@ -367,7 +367,7 @@ export const ATTACK_SLOTS = 6;
 export const TELEPORTS_PER_DAY = 5;
 export const TELEPORTS_MAX = 50;
 /** 1월드 맵 순서(앞 맵의 처치 조건을 채우면 다음 맵이 열린다) */
-export const WORLD1 = ['town', 'meadow', 'hills', 'forest', 'swamp', 'cave', 'ridge', 'ruins', 'grove', 'mine1', 'mine2'];
+export const WORLD1 = ['town', 'meadow', 'hills', 'mine1', 'mine2', 'forest', 'swamp', 'cave', 'ridge', 'ruins', 'grove'];
 export const ATTACK_BARS = 2;
 export const smashMult = (lv: number) => 1.8 + lv * 0.2;
 export const healPct = (lv: number) => 0.25 + lv * 0.05;
@@ -460,7 +460,7 @@ const SMITH_QUESTS: QuestDef[] = [
 
 export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
 export const NPCS: Record<string, NpcDef> = {
-  elder: { id: 'elder', name: '촌장 모루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
+  elder: { id: 'elder', name: '촌장 바루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
   smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#d9c3ad', outfit: '#d9574a' }, quests: SMITH_QUESTS },
 };
 /** 전직을 맡는 NPC */

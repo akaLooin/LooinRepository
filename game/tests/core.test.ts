@@ -67,21 +67,24 @@ describe('월드 시뮬레이션', () => {
     // 발판 위 몬스터도 잡았는지: 모든 개체가 최소 한 번은 죽었어야 2분 내 이 수치가 나온다
     expect(w.player.x).toBeGreaterThan(0);
   });
-  it('자동 전투: 모든 맵에서 모든 발판에 도달할 수 있다', () => {
+  it('모든 맵에서 모든 발판의 몬스터에게 갈 수 있다(터치로 하나씩 지정)', () => {
     for (const map of Object.values(MAPS)) {
       if (!map.spawns.length) continue;
       const { acc, c } = setup();
-      c.mapId = map.id; c.auto = true; c.level = 60; c.stats.luk = 200; // 초보자는 행운이 공격력
+      c.mapId = map.id; c.level = 60; c.stats.luk = 200; // 초보자는 행운이 공격력
       acc.stamps.stamp_def = 300; // 강한 맵에서도 쓰러지지 않게(도달 가능성만 본다)
       const w = new World(acc, c, new Rng(3));
       const seen = new Set<number>();
-      // 가까운 몬스터부터 잡으므로 먼 발판까지 가려면 시간이 걸린다
-      for (let i = 0; i < 900 * 60 && seen.size < w.mobs.length; i++) {
-        w.step(1 / 60, { move: 0, climb: 0 });
-        for (const e of w.events) if (e.t === 'kill') seen.add(e.uid);
-        w.events.length = 0;
+      for (const m of w.mobs.slice()) {
+        if (!m.alive || m.def.scale) continue; // 미니보스는 체력이 많아 도달성과 무관하게 오래 걸린다
+        w.command = { k: 'mob', uid: m.uid };
+        for (let i = 0; i < 60 * 60 && !seen.has(m.uid); i++) {
+          w.step(1 / 60, { move: 0, climb: 0 });
+          for (const e of w.events) if (e.t === 'kill') seen.add(e.uid);
+          w.events.length = 0;
+        }
+        expect(seen.has(m.uid), `${map.id} ${Math.round(m.x)},${m.y}`).toBe(true);
       }
-      expect(seen.size, map.id).toBe(w.mobs.length);
     }
   });
   it('자동 채집: 나무를 베어 통나무와 스킬 경험치를 얻는다', () => {
@@ -150,9 +153,9 @@ describe('방치 보상', () => {
     c.mapId = 'hills'; c.activity = { k: 'gather', node: 'redrock' };
     const r = computeAfk(acc, c, 3600_000, new Rng(1))!;
     expect(r.mode).toBe('gather');
-    // 가방 한 칸은 기본 25개까지: 넘치는 만큼은 잃는다
-    expect(countItem(c, 'ore')).toBe(25);
-    expect(r.lost).toBeGreaterThan(0);
+    // 한 칸이 차면 빈 칸에 이어서 쌓고, 가방이 다 차서 못 넣은 만큼만 잃는다
+    expect(countItem(c, 'ore')).toBe(345);
+    expect(r.lost).toBe(0);
     expect(r.skill!.levels).toBeGreaterThan(0);
   });
 });
@@ -366,12 +369,17 @@ describe('가방·주머니·창고', () => {
   });
   it('한 칸 최대치: 기본 25, 주머니를 쓰면 그 묶음만 100', () => {
     const { acc, c } = setup();
-    expect(addItemSome(c, 'moss', 40)).toBe(25);
+    // 한 칸이 차면 다음 칸으로(가방 칸 수가 전체 한도)
+    expect(addItemSome(c, 'moss', 40)).toBe(40);
+    expect(c.inventory.filter((s) => s.id === 'moss').map((s) => s.qty)).toEqual([25, 15]);
+    expect(addItemSome(c, 'moss', 10_000)).toBe(25 * 16 - 40);
     expect(addItem(c, 'moss', 1)).toBe(false);
+    c.inventory = [];
     addItem(c, 'pouch_mat'); useItem(acc, c, 'pouch_mat');
     expect(stackCap(c, 'moss')).toBe(100);
     expect(stackCap(c, 'log')).toBe(25);
-    expect(addItemSome(c, 'moss', 200)).toBe(75);
+    expect(addItemSome(c, 'moss', 200)).toBe(200);
+    expect(c.inventory.filter((s) => s.id === 'moss').map((s) => s.qty)).toEqual([100, 100]);
   });
   it('창고: 넣고 빼기, 전부 넣기는 재료·음식만, 제작은 창고 재료도 쓴다', () => {
     const { acc, c } = setup();
@@ -413,9 +421,11 @@ describe('모루 생산', () => {
     expect(spendAnvilPoint(c, 'cap')).toBe(true);
     anvilTick(c, 99999);
     expect(c.anvil.slots[0].stored).toBe(90);
-    expect(collectAnvil(acc, c, false)).toBe(25);
-    expect(collectAnvil(acc, c, true)).toBe(65);
-    expect(storageCount(acc, 'twine')).toBe(65);
+    expect(collectAnvil(acc, c, false)).toBe(90);
+    expect(c.inventory.filter((s) => s.id === 'twine').map((s) => s.qty)).toEqual([25, 25, 25, 15]);
+    anvilTick(c, 99999);
+    expect(collectAnvil(acc, c, true)).toBe(90);
+    expect(storageCount(acc, 'twine')).toBe(90);
   });
   it('방치 보상에도 모루 생산이 들어간다', () => {
     const { acc, c } = setup();
@@ -476,12 +486,12 @@ describe('방치 정보와 보상', () => {
 });
 
 describe('마을·언덕·보스', () => {
-  it('언덕 아래로는 걸어 들어갈 수 없고, 로프로 올라 위의 촌장에게 간다', () => {
+  it('마을 오른쪽 높은 발판 아래 땅도 걷고, 로프로 올라 위의 촌장에게 간다', () => {
     const { acc, c } = setup();
     const w = new World(acc, c, new Rng(1));
     for (let i = 0; i < 600; i++) w.step(1 / 60, { move: 1, climb: 0 });
     expect(w.player.y).toBe(0);
-    expect(w.player.x).toBeLessThanOrEqual(390);
+    expect(w.player.x).toBeGreaterThan(600); // 발판 아래 땅을 지나 맵 끝까지
     const npc = w.map.facilities.findIndex((f) => f.npc === 'elder');
     const f = w.map.facilities[npc];
     expect(w.tap(f.x, f.y - 10)).toEqual({ k: 'fac', idx: npc });
@@ -493,8 +503,8 @@ describe('마을·언덕·보스', () => {
     }
     expect(arrived).toBe(true);
     expect(w.player.y).toBe(-48);
-    // 언덕 옆면을 누르면 언덕 위로 간다(언덕 속 지면은 고를 수 없다)
-    expect(w.tap(520, -5)).toEqual({ k: 'move', x: 520, y: -48 });
+    // 발판 아래 땅을 누르면 땅으로 간다
+    expect(w.tap(520, 5)).toEqual({ k: 'move', x: 520, y: 0 });
   });
   it('보스: 예고 후 내려찍고, 처치하면 기록이 남고 다시 살아나지 않는다', () => {
     const { acc, c } = setup();
