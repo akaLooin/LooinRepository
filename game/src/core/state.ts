@@ -1,3 +1,4 @@
+import { newTraps, Traps } from './traps';
 import { Forge, newForge } from './forge';
 import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
@@ -7,7 +8,7 @@ import { Alch, newAlch } from './alchemy';
 import { PostState, newPost } from './post';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  TIER_LEVEL, classTier, HIDDEN_CLASS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, HIDDEN_CLASS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -57,6 +58,8 @@ export interface Character {
   starTal: Record<string, number>;
   /** 세계의 문을 지나 열어 둔 가장 높은 월드 */
   maxWorld: number;
+  /** 덫 사냥: 덫 도구 단계와 놓인 덫 */
+  traps: Traps;
   /** 우체국(2월드): 오늘의 배달 주문·배달 포인트·택배 상자 */
   post: PostState;
   /** 콜로세움에 들어갈 때의 콜로세움 처치 수(보상은 이번 회차 처치 수로) */
@@ -151,8 +154,8 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(),
-    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 } },
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(), traps: newTraps(),
+    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 }, trapping: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
     attackBars: emptyBars(), attackPage: 0,
@@ -544,6 +547,7 @@ export function useItem(acc: Account, c: Character, id: string): string | null {
   else if (it.kind === 'pouch') { if (c.pouches.includes(id)) return '이미 사용한 주머니입니다'; c.pouches.push(id); }
   else if (it.kind === 'chest') { if (acc.chests.includes(id)) return '이미 사용한 보관함입니다'; acc.chests.push(id); }
   else if (id === 'sculpt_tools') return useSculptTools(acc, c);
+  else if (TRAP_KITS[id]) { if (c.traps.tier >= TRAP_KITS[id]) return '이미 같거나 더 좋은 덫을 씁니다'; c.traps.tier = TRAP_KITS[id]; }
   else return '사용할 수 없는 아이템';
   removeItem(c, id, 1);
   return null;
@@ -912,7 +916,7 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
-      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost();
+      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost(); c.traps ??= newTraps(); c.skills.trapping ??= { lv: 1, xp: 0 };
       c.skills.fishing ??= { lv: 1, xp: 0 }; c.skills.catching ??= { lv: 1, xp: 0 };
       c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;

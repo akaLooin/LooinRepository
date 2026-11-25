@@ -2,11 +2,11 @@
 // 이 폴더(core)는 DOM/Phaser에 의존하지 않는다 → 추후 서버에서 그대로 재사용.
 
 export type StatKey = 'str' | 'agi' | 'wis' | 'luk';
-export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching';
+export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching' | 'trapping';
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post' | 'traps';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
   | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
@@ -93,8 +93,8 @@ export const STAT_DESC: Record<StatKey, string> = {
   str: '최대 체력·치명타 피해·채광. 전사 공격력, 궁수 명중', agi: '이동 속도·치명타 확률·모루 생산. 궁수 공격력, 마법사 명중',
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
-export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국' };
+export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
@@ -235,6 +235,17 @@ const items: ItemDef[] = [
   { id: 'plate_frost', name: '서리 갑옷', desc: '눈보라 속에서도 몸이 따뜻하다.', kind: 'equip', slot: 'body', stats: { def: 70, hp: 520 }, reqLv: 80, sell: 5200 },
   { id: 'legs_frost', name: '서리 다리 갑옷', desc: '빙판 위에서도 미끄러지지 않는다.', kind: 'equip', slot: 'legs', stats: { def: 48, hp: 360 }, reqLv: 79, sell: 4400 },
   { id: 'boots_frost', name: '서리 장화', desc: '눈에 빠지지 않는 넓은 바닥.', kind: 'equip', slot: 'shoes', stats: { def: 36, agi: 18 }, reqLv: 78, sell: 4200 },
+  // 덫 사냥: 잡은 동물(재료)과 덫 도구
+  { id: 'cr_hare', name: '눈토끼', desc: '덫에 걸린 하얀 토끼. 털이 아주 부드럽다.', kind: 'material', sell: 30 },
+  { id: 'cr_fox', name: '서리여우', desc: '꼬리 끝이 얼음처럼 반짝인다.', kind: 'material', sell: 60 },
+  { id: 'cr_weasel', name: '얼음족제비', desc: '빙판 위를 미끄러지듯 달린다.', kind: 'material', sell: 110 },
+  { id: 'cr_marten', name: '오로라담비', desc: '털 색이 오로라처럼 바뀐다.', kind: 'material', sell: 180 },
+  { id: 'cr_reindeer', name: '별빛순록', desc: '뿔 끝에 별빛이 맺혀 있다.', kind: 'material', sell: 280 },
+  { id: 'trap_wood', name: '나무 덫 꾸러미', desc: '사용하면 이 캐릭터의 덫이 나무 덫이 된다(잡는 수 ×1.5).', kind: 'tool', sell: 0 },
+  { id: 'trap_iron', name: '쇠 덫 꾸러미', desc: '사용하면 이 캐릭터의 덫이 쇠 덫이 된다(잡는 수 ×2.2).', kind: 'tool', sell: 0 },
+  { id: 'trap_frost', name: '서리 덫 꾸러미', desc: '사용하면 이 캐릭터의 덫이 서리 덫이 된다(잡는 수 ×3.2).', kind: 'tool', sell: 0 },
+  { id: 'fur_scarf', name: '털 목도리', desc: '눈토끼와 여우 털로 짠 목도리.', kind: 'equip', slot: 'ring', stats: { hp: 300, def: 12, luk: 10 }, reqLv: 60, sell: 2500 },
+  { id: 'antler_charm', name: '순록뿔 부적', desc: '별빛순록의 뿔을 깎았다. 네 능력이 고루 오른다.', kind: 'equip', slot: 'ring', stats: { str: 14, agi: 14, wis: 14, luk: 14 }, reqLv: 85, sell: 6000 },
   { id: 'four_leaf', name: '네잎 클로버', desc: '풀밭에서 아주 드물게 발견된다. 누군가 이걸 찾고 있다는 소문이 있다.', kind: 'key', sell: 0 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
@@ -476,7 +487,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 400, y: -48, w: 300 }],
     ropes: [{ x: 410, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'icehole', x: 330 }], campfireX: 250,
-    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'anvil', x: 470, y: -48 }, { kind: 'npc', npc: 'elder3', x: 560, y: -48 }],
+    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'anvil', x: 460, y: -48 }, { kind: 'npc', npc: 'elder3', x: 540, y: -48 }, { kind: 'traps', x: 612, y: -48 }],
     portals: [{ x: 24, to: 'sunspire', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'snowfield', toX: 50 }] },
   { id: 'snowfield', name: '눈송이 벌판', width: 940, theme: 'snowfield',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
@@ -554,6 +565,10 @@ export const RECIPES: RecipeDef[] = [
   { item: 'legs_amber', coins: 8000, mats: [['bar_amber', 14], ['worm_scale', 16]], tier: 4 },
   { item: 'boots_amber', coins: 7000, mats: [['bar_amber', 10], ['worm_scale', 12], ['twine', 40]], tier: 4 },
   { item: 'anvil_exp4', coins: 60000, mats: [['bar_frost', 25], ['pinelog', 80], ['snow_tuft', 60]], unlock: 5, smithLv: 45, tier: 4 },
+  { item: 'trap_iron', coins: 12000, mats: [['bar_frost', 8], ['pinelog', 30], ['nail', 40]], tier: 5 },
+  { item: 'trap_frost', coins: 40000, mats: [['bar_frost', 20], ['frost_core', 10], ['cr_fox', 40]], tier: 5 },
+  { item: 'fur_scarf', coins: 15000, mats: [['cr_hare', 60], ['cr_fox', 30], ['twine', 50]], tier: 5 },
+  { item: 'antler_charm', coins: 45000, mats: [['cr_reindeer', 30], ['cr_marten', 40], ['aurora_dust', 20]], tier: 5 },
   { item: 'rod_frost', coins: 15000, mats: [['bar_frost', 10], ['pinelog', 30], ['fish_ice', 50]], tier: 5 },
   { item: 'net_frost', coins: 15000, mats: [['bar_frost', 10], ['pinelog', 30], ['bug_frost', 50]], tier: 5 },
   { item: 'sword_frost', coins: 24000, mats: [['bar_frost', 16], ['icicle_shard', 24], ['frost_core', 8]], tier: 5 },
@@ -889,6 +904,26 @@ export const STONE_BY_ID: Record<string, StoneDef> = Object.fromEntries(STONES.m
 export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, trophy: 0, pickaxe: 3, axe: 3, rod: 3, net: 3 };
 export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ? UP_SLOTS[s] : 0; };
 export const MAX_CHARACTERS = 6;
+
+// ───────── 덫 사냥(3월드 기술) ─────────
+/** mins: 한 마리 잡히는 데 드는 기본 분, map: 이 맵이 열려야 덫을 놓을 수 있다 */
+export interface CritterDef { id: string; name: string; map: string; lv: number; mins: number; xp: number }
+export const CRITTERS: CritterDef[] = [
+  { id: 'cr_hare', name: '눈토끼', map: 'snowfield', lv: 1, mins: 6, xp: 8 },
+  { id: 'cr_fox', name: '서리여우', map: 'pinewood', lv: 8, mins: 10, xp: 18 },
+  { id: 'cr_weasel', name: '얼음족제비', map: 'frostlake', lv: 16, mins: 15, xp: 34 },
+  { id: 'cr_marten', name: '오로라담비', map: 'aurora', lv: 28, mins: 22, xp: 60 },
+  { id: 'cr_reindeer', name: '별빛순록', map: 'frostpeak', lv: 40, mins: 32, xp: 100 },
+];
+export const CRITTER: Record<string, CritterDef> = Object.fromEntries(CRITTERS.map((x) => [x.id, x]));
+/** 덫 시간: 길게 놓을수록 시간당 효율이 조금 오른다 */
+export const TRAP_TIMES = [{ min: 20, mult: 1, label: '20분' }, { min: 60, mult: 1.1, label: '1시간' }, { min: 240, mult: 1.25, label: '4시간' }, { min: 720, mult: 1.4, label: '12시간' }];
+/** 덫 도구 단계별 잡는 수 배율(맨손 · 나무 · 쇠 · 서리) */
+export const TRAP_MULT = [1, 1.5, 2.2, 3.2];
+export const TRAP_KITS: Record<string, number> = { trap_wood: 1, trap_iron: 2, trap_frost: 3 };
+export const TRAP_NAMES = ['맨손 덫', '나무 덫', '쇠 덫', '서리 덫'];
+/** 덫 칸: 기본 1칸, 덫 사냥 10레벨마다 1칸(최대 5) */
+export const trapSlots = (lv: number) => Math.min(5, 1 + Math.floor(lv / 10));
 /** 음식 칸 수: 위 칸부터 먹는다 */
 export const FOOD_SLOTS = 3;
 /** 2월드로 가는 세계의 문(달빛 숲 끝): 계정이 이끼왕을 토벌하고, 이 캐릭터가 레벨·달빛 숲 처치를 채워야 한다 */
@@ -962,6 +997,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stone_chop', price: 500, daily: 1 },
   { item: 'stone_guard', price: 900, daily: 1 },
   { item: 'hot_cocoa', price: 360, daily: 30 },
+  { item: 'trap_wood', price: 3000, daily: 1 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────

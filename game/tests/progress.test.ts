@@ -610,3 +610,46 @@ describe('3월드: 서리 고원', () => {
   });
 });
 const TALENTS_OF = (cls: string) => Object.values(TL3).filter((t) => t.cls === cls);
+
+import { CRITTER as CRT, TRAP_TIMES as TT, trapSlots as tSlots } from '../src/core/data';
+import { trapYield } from '../src/core/traps';
+import { checkSync as cs } from '../src/core/sync';
+describe('덫 사냥', () => {
+  const ready = () => {
+    const { acc, c } = setup();
+    c.maxWorld = 3; c.mapId = 'snowtown'; c.level = 60;
+    return { acc, c };
+  };
+  it('3월드에 가야 덫을 놓고, 시간이 다 되면 정해진 수를 거둔다', () => {
+    const { acc, c } = setup();
+    expect(applyAction(acc, 0, { t: 'trap', op: 'set', idx: 0, critter: 'cr_hare', time: 0 }, 0).ok).toBe(false);
+    const r = ready();
+    const t0 = 1_000_000, y = trapYield(r.c, 'cr_hare', 1);
+    expect(applyAction(r.acc, 0, { t: 'trap', op: 'set', idx: 0, critter: 'cr_hare', time: 1 }, t0).ok).toBe(true);
+    expect(r.c.traps.slots[0]!.n).toBe(y.n);
+    // 칸은 레벨 10마다 하나(처음엔 1칸)
+    expect(applyAction(r.acc, 0, { t: 'trap', op: 'set', idx: 1, critter: 'cr_hare', time: 0 }, t0).ok).toBe(false);
+    // 이미 놓인 칸, 시간 전 거두기는 거절
+    expect(applyAction(r.acc, 0, { t: 'trap', op: 'collect', idx: 0 }, t0 + 1000).ok).toBe(false);
+    expect(applyAction(r.acc, 0, { t: 'trap', op: 'collect', idx: 0 }, t0 + TT[1].min * 60_000).ok).toBe(true);
+    expect(cnt(r.c, 'cr_hare')).toBe(y.n);
+    expect(r.c.skills.trapping.xp + (r.c.skills.trapping.lv > 1 ? 1 : 0)).toBeGreaterThan(0);
+    expect(r.c.traps.slots[0]).toBeNull();
+    expect(tSlots(10)).toBe(2); expect(tSlots(99)).toBe(5);
+  });
+  it('레벨·맵이 모자라면 못 놓고, 덫 꾸러미로 잡는 수가 늘며, 길게 놓을수록 시간당 효율이 좋다', () => {
+    const { acc, c } = ready();
+    expect(applyAction(acc, 0, { t: 'trap', op: 'set', idx: 0, critter: 'cr_fox', time: 0 }, 0).ok).toBe(false);
+    const short = trapYield(c, 'cr_hare', 0).n / TT[0].min, long = trapYield(c, 'cr_hare', 3).n / TT[3].min;
+    expect(long).toBeGreaterThan(short);
+    const before = trapYield(c, 'cr_hare', 3).n;
+    addItem(c, 'trap_wood', 1);
+    expect(applyAction(acc, 0, { t: 'use', id: 'trap_wood' }, 0).ok).toBe(true);
+    expect(c.traps.tier).toBe(1);
+    expect(trapYield(c, 'cr_hare', 3).n).toBeGreaterThan(before);
+    expect(CRT.cr_fox.lv).toBeGreaterThan(1);
+    // 덫은 서버 행동으로만 바뀐다(동기화로 고칠 수 없다)
+    const claimed = JSON.parse(JSON.stringify(c)); claimed.traps.tier = 3;
+    expect(cs(acc, 0, claimed, { coins: acc.coins, cards: acc.cards, bosses: acc.bosses } as never, 5)).toMatch(/traps/);
+  });
+});

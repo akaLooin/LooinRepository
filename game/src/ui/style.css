@@ -272,3 +272,7 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .cauldron { gap: var(--sp-1); }
 .cauldrons .tal { width: calc(var(--slot) * 0.92); padding-top: var(--sp-1); }
 .cauldrons .tal img.tic { width: 1.8em; height: 1.8em; }
+
+/* 덫 오두막: 시간 버튼 */
+.trapbtns { gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.trapbtns .ui-btn { line-height: 1.1; min-width: 52px; }

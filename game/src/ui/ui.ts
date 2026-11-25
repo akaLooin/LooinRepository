@@ -3,6 +3,8 @@
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
+import { trapLock, trapYield } from '../core/traps';
+import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
 /** 연금술 효과 이름 */
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중' };
@@ -32,7 +34,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -132,6 +134,8 @@ export class UI {
   private eqTab = 0;
   private starSel: string | null = null;
   private bubSel: string | null = null;
+  /** 덫 오두막: 덫을 놓으려고 고른 칸 */
+  private trapIdx = -1;
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
   private refBack = false;
   /** 지도 창에서 보고 있는 월드(없으면 지금 있는 월드) */
@@ -479,7 +483,7 @@ export class UI {
             ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, undefined)}` : ''}
             ${STONE_BY_ID[it.id] ? `<span class="ui-xs ui-muted">장비 탭에서 장착한 장비를 누르면 붙일 수 있습니다. 실패해도 강화 칸 하나를 씁니다.</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
-            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
+            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest', 'tool'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
               ${n ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:1">${ui('ui_coin', 'tic')} ${it.sell}</button>` : ''}
               ${n > 1 ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:${n}">${ui('ui_coin', 'tic')} 전부 ${it.sell * n}</button>` : ''}</div>`;
         }
@@ -772,6 +776,30 @@ export class UI {
             <button class="ui-btn sm" data-act="owl:${k}" ${!max && o.f >= cost ? '' : 'disabled'}>${max ? '최대' : `🪶 ${cost.toLocaleString()}`}</button></div>`;
         }).join('');
         return win('부엉이 횃대 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row"><b class="ui-grow">깃털 <span class="ui-accent">${Math.floor(o.f).toLocaleString()}</span></b><span class="ui-sm ui-muted">시간당 ${Math.round(owlPerHour(o))}개 · 접속하지 않아도 쌓입니다</span></div>${rows}`);
+      }
+      case 'traps': {
+        const tr = c.traps, sk = c.skills.trapping, open = trapSlots(sk.lv), now = Date.now(), need = skillXpToNext(sk.lv);
+        const head = `<div class="ui-row alchhead">${ui('obj_traps', 'mi')}<b class="ui-grow">덫 사냥 Lv.<span class="ui-accent">${sk.lv}</span> · ${TRAP_NAMES[tr.tier]} <span class="ui-xs ui-muted">잡는 수 ×${TRAP_MULT[tr.tier]}</span></b><div style="width:30%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
+        const mmss = (ms: number) => { const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}시간 ${m}분` : m ? `${m}분 ${s % 60}초` : `${s}초`; };
+        const rows = [0, 1, 2, 3, 4].map((i) => {
+          if (i >= open) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<span class="ui-grow ui-muted">덫 사냥 Lv.${i * 10}에 열리는 칸</span></div>`;
+          const t = tr.slots[i];
+          if (!t) return `<div class="ui-row line ${this.trapIdx === i ? 'sel' : ''}">${ui('obj_traps', 'mi')}<span class="ui-grow ui-muted">빈 덫</span><button class="ui-btn sm ${this.trapIdx === i ? 'primary' : ''}" data-act="trappick:${i}">덫 놓기</button></div>`;
+          const left = t.end - now, done = left <= 0, total = Math.max(1, t.end - (t.end - left));
+          void total;
+          return `<div class="ui-row line"><span class="ui-slot">${icon(t.critter)}</span><div class="ui-grow"><b>${ITEMS[t.critter].name} ×${t.n}</b> <span class="ui-xs ui-muted">경험치 ${t.xp.toLocaleString()}</span>
+            <div class="ui-sm ${done ? 'ui-good' : 'ui-muted'}">${done ? '다 잡혔습니다!' : `${mmss(left)} 남음 · 접속하지 않아도 진행`}</div></div>
+            ${done ? `<button class="ui-btn sm primary" data-act="trap:collect:${i}">거두기</button>` : `<button class="ui-btn sm" data-act="trap:cancel:${i}" title="덫을 걷으면 잡은 것은 사라집니다">걷기</button>`}</div>`;
+        }).join('');
+        let pick = '';
+        if (this.trapIdx >= 0 && this.trapIdx < open && !tr.slots[this.trapIdx]) {
+          pick = `<div class="ui-row"><b class="ui-grow">${this.trapIdx + 1}번 덫에 무엇을 잡을까요?</b><button class="ui-btn sm" data-act="trappick:${this.trapIdx}">뒤로</button></div>` + CRITTERS.map((cr) => {
+            const lock = trapLock(c, cr.id);
+            const btns = lock ? `<span class="ui-sm ui-bad">${lock}</span>` : TRAP_TIMES.map((tt, k) => `<button class="ui-btn sm" data-act="trapset:${cr.id}:${k}" title="${tt.label} 동안 ${trapYield(c, cr.id, k).n}마리">${tt.label}<br><span class="ui-xs">${trapYield(c, cr.id, k).n}마리</span></button>`).join('');
+            return `<div class="ui-row line ${lock ? 'locked' : ''}"><span class="ui-slot">${icon(cr.id)}</span><div class="ui-grow"><b>${cr.name}</b><div class="ui-xs ui-muted">${MAPS[cr.map].name} · Lv.${cr.lv}</div></div><div class="ui-row trapbtns">${btns}</div></div>`;
+          }).join('');
+        }
+        return win(`덫 오두막 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}<div class="ui-tabpanel">${pick || rows}<p class="ui-xs ui-muted">덫은 캐릭터마다 따로 놓습니다. 길게 놓을수록 시간당 조금 더 잡히고, 덫 꾸러미를 쓰면 잡는 수가 늘어납니다. 거둔 동물은 가방에, 넘치면 창고에 들어갑니다.</p></div>`);
       }
       case 'post': {
         const p = c.post, left = p.orders.filter((o) => !o.done).length;
@@ -1234,12 +1262,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1357,6 +1385,18 @@ export class UI {
       case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }
       case 'pshard': { const r = g.act({ t: 'petShard' }); if (r.ok) this.toast(`펫 크리스탈 ${r.n}개를 넣었습니다`); else fail(r.err ?? null); break; }
       case 'bsel': this.bubSel = a; break;
+      case 'trappick': this.trapIdx = this.trapIdx === +a ? -1 : +a; break;
+      case 'trapset': {
+        const r = g.act({ t: 'trap', op: 'set', idx: this.trapIdx, critter: a, time: +b });
+        if (r.ok) { this.audio?.play('craft'); this.toast(`${ITEMS[a].name} 덫을 놓았습니다`, a); this.trapIdx = -1; } else fail(r.err ?? null);
+        break;
+      }
+      case 'trap': {
+        const before = c!.skills.trapping.lv;
+        const r = g.act({ t: 'trap', op: a as 'collect' | 'cancel', idx: +b });
+        if (r.ok && a === 'collect') { this.audio?.play('coin'); this.toast(c!.skills.trapping.lv > before ? `덫 사냥 Lv.${c!.skills.trapping.lv}!` : '덫을 거뒀습니다'); } else if (!r.ok) fail(r.err ?? null);
+        break;
+      }
       case 'post': {
         const r = a === 'deliver' ? g.act({ t: 'post', op: 'deliver', idx: +b }) : g.act({ t: 'post', op: 'box', id: b });
         if (r.ok) { this.audio?.play(a === 'deliver' ? 'coin' : 'craft'); if (a === 'deliver') this.toast('배달 완료! 배달 포인트와 코인을 받았습니다', 'coin'); } else fail(r.err ?? null);

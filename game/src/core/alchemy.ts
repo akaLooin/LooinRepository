@@ -37,6 +37,8 @@ export const VIALS: VialDef[] = [
   { id: 'v_beetle', name: '풍뎅이 약병', item: 'bug_beetle', eff: 'coins', per: 3, unit: '%' },
   { id: 'v_palm', name: '야자 약병', item: 'palmlog', eff: 'chopping', per: 3, unit: '%' },
   { id: 'v_amber', name: '호박 약병', item: 'ore_amber', eff: 'mining', per: 3, unit: '%' },
+  { id: 'v_hare', name: '토끼털 약병', item: 'cr_hare', eff: 'hpPct', per: 2, unit: '%' },
+  { id: 'v_fox', name: '여우털 약병', item: 'cr_fox', eff: 'drop', per: 2, unit: '%' },
 ];
 export const VIAL_BY_ID: Record<string, VialDef> = Object.fromEntries(VIALS.map((v) => [v.id, v]));
 /** 약병 단계별로 붓는 개수(단계 n → n+1) */

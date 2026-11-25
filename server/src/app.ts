@@ -89,6 +89,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('totem'), kills: z.number().int().min(0).max(1000), survived: z.boolean() }),
   z.object({ t: z.literal('bless'), k: z.enum(['dmg', 'afk', 'xp']) }),
   z.object({ t: z.literal('alch'), op: z.enum(['start', 'bubble', 'vial', 'liquid']), id: id.optional() }),
+  z.object({ t: z.literal('trap'), op: z.enum(['set', 'collect', 'cancel']), idx: z.number().int().min(0).max(4), critter: id.optional(), time: z.number().int().min(0).max(3).optional() }),
   z.object({ t: z.literal('post'), op: z.enum(['refresh', 'deliver', 'box']), idx: z.number().int().min(0).max(9).optional(), id: id.optional() }),
   z.object({ t: z.literal('owl'), k: z.enum(['rate', 'dmg', 'xp', 'drop', 'afk']).optional() }),
   z.object({ t: z.literal('talentPreset'), i: z.number().int().min(0).max(3) }),

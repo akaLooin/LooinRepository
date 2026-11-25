@@ -2,6 +2,7 @@
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
 import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
+import { cancelTrap, collectTrap, setTrap } from './traps';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
@@ -74,6 +75,7 @@ export type Action =
   | { t: 'skinOff'; slot: 'hat' | 'body' }
   | { t: 'owl'; k?: OwlUp }
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
+  | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number }
   | { t: 'totem'; kills: number; survived: boolean }
@@ -170,6 +172,12 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'bubble') return res(upBubble(acc, c, a.id ?? '', now));
       if (a.op === 'vial') return res(upVial(acc, c, a.id ?? ''));
       return res(upLiquid(acc, a.id as LiquidUp, now));
+    }
+    case 'trap': {
+      if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 덫 오두막에서 할 수 있습니다');
+      if (a.op === 'set') return res(setTrap(c, a.idx, a.critter ?? '', a.time ?? 0, now));
+      if (a.op === 'collect') return res(collectTrap(acc, c, a.idx, now));
+      return res(cancelTrap(c, a.idx));
     }
     case 'post': {
       if (worldOf(c.mapId) < 2 && (c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 우체국에서 할 수 있습니다');

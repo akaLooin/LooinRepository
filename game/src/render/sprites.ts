@@ -838,12 +838,20 @@ function buildObjects() {
   p.rect(32, 2, 1, 16, '#6e4630'); p.rect(33, 2, 3, 3, '#e2574a');
   p.volume();
   p.outline().save('obj_post');
+  // 덫 오두막: 눈 덮인 통나무 오두막 + 앞에 놓인 덫
+  p = new Paint(38, 34);
+  p.rect(4, 14, 26, 18, '#8a5a3c'); for (const y of [17, 21, 25, 29]) p.rect(4, y, 26, 1, '#6e4630');
+  for (let y = 0; y < 12; y++) p.rect(17 - y - 2, 3 + y, (y + 2) * 2 + 1, 1, y < 3 ? '#f4f8fc' : '#a8744e');
+  p.rect(2, 13, 30, 2, '#f4f8fc'); p.rect(13, 22, 7, 10, '#4a3020'); p.rect(22, 18, 5, 4, '#ffd06a'); p.rect(24, 18, 1, 4, '#8a5a3c');
+  p.disc(33, 31, 4.6, 2, '#9aa3ad'); for (const x of [30, 32, 34, 36]) p.rect(x, 27, 1, 3, '#c9d1d9'); p.rect(29, 31, 9, 1, '#6a7480');
+  p.volume();
+  p.outline().save('obj_traps');
   // 연금술 거품(솥 색) · 약병(내용물 색)
   for (const [k, col] of [['power', '#e2574a'], ['quick', '#5fb859'], ['wise', '#8a6fd1'], ['luck', '#f6c945']] as const) {
     p = new Paint(14, 14); p.disc(7, 7, 6, 6, col); p.disc(7, 7, 4.4, 4.4, mix(col, '#ffffff', 0.35)); p.disc(5, 5, 1.6, 1.4, '#ffffff'); p.set(9, 9, mix(col, '#000000', 0.2));
     p.outline().save(`bub_${k}`);
   }
-  for (const [k, col] of [['v_minnow', '#7fc8e0'], ['v_salt', '#e8eef2'], ['v_star', '#5a5ac8'], ['v_ant', '#8a6a4a'], ['v_firefly', '#ffb04a'], ['v_beetle', '#f2c14e'], ['v_palm', '#6ac05a'], ['v_amber', '#f0902a']] as const) {
+  for (const [k, col] of [['v_minnow', '#7fc8e0'], ['v_salt', '#e8eef2'], ['v_star', '#5a5ac8'], ['v_ant', '#8a6a4a'], ['v_firefly', '#ffb04a'], ['v_beetle', '#f2c14e'], ['v_palm', '#6ac05a'], ['v_amber', '#f0902a'], ['v_hare', '#f4f6fa'], ['v_fox', '#8ad0f0']] as const) {
     p = new Paint(12, 15); p.rect(4, 1, 4, 3, '#c8a878'); p.rect(4, 4, 4, 2, '#d8e4ec'); p.disc(6, 10, 5, 4.5, '#d8e4ec'); p.disc(6, 10.5, 4, 3.4, col); p.set(4, 8, '#ffffff'); p.rect(5, 2, 2, 1, '#8a6a48');
     p.outline().save(`vial_${k}`);
   }
@@ -1053,6 +1061,23 @@ function buildItems() {
   p = new Paint(14, 11); p.rect(1, 4, 12, 6, '#a8e8ff'); for (const x of [1, 5, 9]) p.rect(x, 1, 3, 4, '#a8e8ff'); p.rect(1, 9, 12, 1, '#4a7ab8'); p.disc(7, 6.5, 1.5, 1.5, '#4a8ae8'); p.set(3, 5, '#ffffff'); p.outline().save('it_frost_crown');
   p = new Paint(12, 14); p.rect(3, 10, 6, 3, '#4a7ab8'); p.rect(5, 7, 2, 3, '#a8c8e4'); p.disc(6, 4.5, 4.5, 4, '#8ad0f0'); p.disc(6, 4.5, 2.4, 2, '#e0faff'); p.set(4, 3, '#ffffff'); p.outline().save('it_trophy_frost');
   p = new Paint(12, 11); p.disc(6, 6, 1.4, 3.4, '#5a6a8a'); p.disc(3, 4, 2.6, 2.2, '#e8f2fa'); p.disc(9, 4, 2.6, 2.2, '#e8f2fa'); p.disc(3, 8, 2, 1.6, '#c8e8ff'); p.disc(9, 8, 2, 1.6, '#c8e8ff'); p.set(5, 2, '#5a6a8a'); p.set(7, 2, '#5a6a8a'); p.outline().save('it_bug_frost');
+  // 덫 사냥 동물
+  for (const [k, body, ear, eye] of [['cr_hare', '#f4f6fa', '#f2a0b0', '#1e1420'], ['cr_fox', '#e8f2fa', '#8ad0f0', '#1e1420'], ['cr_weasel', '#c8e4f4', '#6aa8d0', '#1e1420'], ['cr_marten', '#8a7ac8', '#7affc8', '#ffffff'], ['cr_reindeer', '#a8845a', '#fff0a8', '#1e1420']] as const) {
+    p = new Paint(13, 12);
+    p.disc(7, 8, 5, 3.4, body); p.disc(3.5, 5, 2.8, 2.6, body);
+    if (k === 'cr_hare') { p.rect(2, 0, 1, 4, body); p.rect(4, 0, 1, 4, body); p.set(2, 1, ear); p.set(4, 1, ear); }
+    else if (k === 'cr_reindeer') { p.line(2, 2, 1, 0, ear); p.line(4, 2, 6, 0, ear); p.set(0, 1, ear); p.set(6, 1, ear); }
+    else { p.set(2, 2, body); p.set(5, 2, body); p.set(2, 1, ear); p.set(5, 1, ear); }
+    if (k === 'cr_fox' || k === 'cr_marten') p.disc(11.5, 6, 1.6, 2.6, ear);
+    p.set(2, 5, eye); p.set(1, 6, '#3a2a2a'); p.rect(4, 11, 1, 1, mix(body, '#000000', 0.3)); p.rect(9, 11, 1, 1, mix(body, '#000000', 0.3));
+    p.outline().save(`it_${k}`);
+  }
+  for (const [k, col] of [['trap_wood', '#a8744e'], ['trap_iron', '#9aa3ad'], ['trap_frost', '#8ad0f0']] as const) {
+    p = new Paint(13, 12); p.disc(6.5, 8, 6, 3, col); p.disc(6.5, 8, 3.6, 1.6, mix(col, '#000000', 0.35)); for (const x of [2, 4, 6, 8, 10]) p.rect(x, 4, 1, 3, mix(col, '#ffffff', 0.4)); p.rect(5, 1, 3, 2, '#c9a26a');
+    p.outline().save(`it_${k}`);
+  }
+  p = new Paint(12, 12); p.rect(2, 2, 8, 4, '#e25d4e'); p.rect(2, 6, 3, 5, '#e25d4e'); for (const x of [3, 5, 7, 9]) p.set(x, 3, '#f4f6fa'); p.rect(2, 10, 3, 1, '#f4f6fa'); p.outline().save('it_fur_scarf');
+  p = new Paint(12, 12); p.line(2, 1, 5, 6, '#e8d4a8'); p.line(9, 1, 6, 6, '#e8d4a8'); p.set(1, 3, '#e8d4a8'); p.set(10, 3, '#e8d4a8'); p.disc(5.5, 8, 2.6, 2.6, '#fff0a8'); p.set(5, 7, '#ffffff'); p.outline().save('it_antler_charm');
   // 물고기·곤충
   for (const [k, body, fin, eye] of [['fish_minnow', '#c8d8e0', '#8aa8b8', '#1e1420'], ['fish_salt', '#e8e4d8', '#b8ae9e', '#1e1420'], ['fish_star', '#4a4aa8', '#2a2a78', '#fff6c8'], ['fish_ice', '#b8e0f4', '#6aa8d0', '#1e1420']] as const) {
     p = new Paint(13, 10); p.disc(6, 5, 5, 3, body); p.line(10, 5, 12, 2, fin); p.line(10, 5, 12, 8, fin); p.rect(11, 3, 1, 5, fin); p.rect(4, 2, 3, 1, fin); p.set(3, 4, eye); p.rect(4, 6, 4, 1, mix(body, '#000000', 0.15));
@@ -1173,6 +1198,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['cactus_spine', 'scorp_tail', 'heat_feather', 'old_bandage', 'salt_crystal', 'worm_scale', 'sun_ember', 'palmlog', 'ore_amber', 'bar_amber', 'cactus_juice', 'date_cake', 'sand_crown', 'trophy_sand'].map((k) => [k, `it_${k}`])),
   sun_key: 'it_sunkey', stone_lure: 'it_stone_lure',
   ...Object.fromEntries(['snow_tuft', 'pine_cone', 'peng_feather', 'icicle_shard', 'yeti_fur', 'aurora_dust', 'frost_core', 'pinelog', 'ore_frost', 'bar_frost', 'hot_cocoa', 'pine_soup', 'frost_crown', 'trophy_frost', 'fish_ice', 'bug_frost'].map((k) => [k, `it_${k}`])),
+  ...Object.fromEntries(['cr_hare', 'cr_fox', 'cr_weasel', 'cr_marten', 'cr_reindeer', 'trap_wood', 'trap_iron', 'trap_frost', 'fur_scarf', 'antler_charm'].map((k) => [k, `it_${k}`])),
   frost_key: 'it_frostkey', anvil_exp4: 'obj_craft', rod_frost: 'wp_rod_frost', net_frost: 'wp_net_frost',
   ...Object.fromEntries(['fish_minnow', 'fish_salt', 'fish_star', 'bug_ant', 'bug_firefly', 'bug_beetle'].map((k) => [k, `it_${k}`])),
   ...Object.fromEntries(['rod_reed', 'rod_palm', 'rod_amber', 'net_cloth', 'net_palm', 'net_amber'].map((k) => [k, `wp_${k}`])),
