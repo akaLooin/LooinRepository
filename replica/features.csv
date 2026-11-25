@@ -1,0 +1,53 @@
+feature,area,priority,original,clone,notes
+가로 스크롤 이동 (좌우 이동/달리기),combat-move,must,yes,no,[DEMO] 가상 패드 좌측
+점프 / 2단 점프,combat-move,must,yes,no,[DEMO] 캐릭터별 2단 점프 가능 여부 다름
+대시 (방향 2회 입력 또는 대시 버튼),combat-move,must,yes,no,[DEMO] 모바일은 전용 버튼 + 스와이프
+다층 발판 위/아래 이동 (아래 점프로 내려가기),combat-move,must,yes,no,[DEMO] 원작 핵심 지형 메커니즘
+기본 공격 콤보 (지상 N타),combat-attack,must,yes,no,[DEMO] 캐릭터별 3~5타
+대시 공격 / 점프 공격 / 내려찍기,combat-attack,must,yes,no,[DEMO]
+공중 콤보·띄우기·다운·기상 무적,combat-attack,must,yes,no,[DEMO] 히트스톱 포함
+크리티컬 / 백어택 / 더블어택 판정,combat-attack,must,yes,no,[DEMO] 데미지 텍스트로 표기
+MP 게이지 (타격 시 충전 3칸),combat-skill,must,yes,no,[DEMO]
+MP 1/2/3단 필살기,combat-skill,must,yes,no,[DEMO] 원작=공격키 홀드 / 리디자인=단계별 스킬 버튼
+필살기 컷인 연출,combat-skill,should,yes,no,[DEMO] 픽셀 컷인 오리지널 연출
+반격(카운터): MP 소모로 피격 탈출,combat-skill,should,yes,no,[DEMO]
+스킬 트리 + 스킬 포인트,growth,must,yes,no,[DEMO] 1차 트리만
+캐릭터별 전직 (1~4차),growth,must,yes,no,데모는 1차 직업 + 2차 전직 예고만
+레벨 / 경험치,growth,must,yes,no,[DEMO] 데모 상한 Lv20
+장비 슬롯 (무기/투구/상의/하의/장갑/신발/망토),items,must,yes,no,[DEMO] 데모 6슬롯
+장비 강화 (실패 확률 포함),items,should,yes,no,[DEMO] 단순 +0~+5
+장비 옵션/등급(일반~에픽),items,should,yes,no,[DEMO]
+소켓/보석·카드 삽입,items,could,yes,no,
+세트 효과,items,could,yes,no,
+퀵슬롯 소모품 (HP/MP 포션),items,must,yes,no,[DEMO] 2칸
+인벤토리,items,must,yes,no,[DEMO]
+상점 (게임 재화),economy,must,yes,no,[DEMO] 골드만
+제작/합성 (재료 → 장비),economy,should,yes,no,
+펫 (전투 보조 + 펫 필살기),companion,should,yes,no,[DEMO] 1종 오리지널 펫
+펫 진화/먹이,companion,could,yes,no,
+월드맵 → 대륙 → 던전 선택,dungeon,must,yes,no,[DEMO] 1개 대륙(지역)
+던전 난이도 (보통/어려움/챔피언),dungeon,must,yes,no,[DEMO] 보통/어려움
+던전 내 스테이지 분기 (포탈 선택),dungeon,should,yes,no,[DEMO] 1개 던전에서 체험
+보스전 (패턴 / 페이즈),dungeon,must,yes,no,[DEMO] 보스 3종
+던전 결과 화면 (랭크·경험치·골드),dungeon,must,yes,no,[DEMO]
+결과 보상 카드 뒤집기,dungeon,should,yes,no,[DEMO] 오리지널 연출
+부활 (아이템 소모),dungeon,should,yes,no,[DEMO]
+던전 입장 제한/피로도,dungeon,could,yes,no,모바일 운영 요소 — 온라인 이후
+영웅 던전 / 이벤트 던전 / 레이드,dungeon,could,yes,no,
+파티 플레이 (최대 4인 협동),online,should,yes,skip,온라인 단계에서 구현 — 데모는 AI 동료로 대체 검토
+대전 PvP (개인전/팀전/아이템전/데스매치),online,should,yes,skip,온라인 단계. 오프라인 AI 대전은 could
+길드,online,could,yes,skip,온라인 단계
+채팅 / 친구 / 광장,online,could,yes,skip,온라인 단계
+캐릭터 다수 (20+),roster,must,yes,no,데모 2명 + 1명 잠금 예고 / 전부 오리지널 캐릭터
+캐릭터 선택·교체 (계정 공유 인벤토리),roster,must,yes,no,[DEMO]
+마을(로비) 화면,meta,must,yes,no,[DEMO] 오리지널 허브 마을
+퀘스트/미션 (일일·메인),meta,should,yes,no,[DEMO] 메인 미션 5개
+칭호 / 업적,meta,could,yes,no,
+출석 보상,meta,could,yes,no,
+스토리 컷신 / 대화,story,should,yes,no,[DEMO] 오리지널 세계관 대사 박스
+옵션 (사운드/진동/버튼 배치),settings,must,yes,no,[DEMO] 버튼 위치·크기 커스텀
+로컬 저장 (오프라인),system,must,yes,no,[DEMO]
+게임패드 / 키보드 입력,system,should,yes,no,PC 단계 필수
+캐시샵 / 가챠,economy,could,yes,skip,BM은 온라인 이후 별도 설계
+원작 캐릭터·이름·세계관·아트·사운드,ip,skip,yes,skip,원작 소유 IP — 전부 오리지널로 대체
+원작 서버·유저 네트워크·계정 데이터,ip,skip,yes,skip,복제 불가 / 대상 아님
