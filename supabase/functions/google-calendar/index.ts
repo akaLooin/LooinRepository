@@ -578,7 +578,7 @@ async function every(make: () => any, key: string): Promise<Row[]> {
 async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
   await syncUser(db, uid).catch(() => {}); // first bring in what Google has (copies made there too)
   const token = await accessToken(db, uid);
-  const evs = await every(() => db.from("events").select("id, title, start_date, end_date, all_day, start_time, end_time, repeat, instance_of, google_calendar_id, created_at").eq("user_id", uid).is("deleted_at", null).not("google_calendar_id", "is", null), "id");
+  const evs = await every(() => db.from("events").select("id, title, start_date, end_date, all_day, start_time, end_time, repeat, instance_of, google_calendar_id, created_at, color, memo, location, alarm_minutes, alarms, important").eq("user_id", uid).is("deleted_at", null).not("google_calendar_id", "is", null), "id");
   const links = new Map((await every(() => db.from("google_event_links").select("event_id, calendar_id, google_id").eq("user_id", uid), "event_id")).map((l) => [l.event_id, l]));
   const { data: cals } = await db.from("google_calendars").select("calendar_id, can_write").eq("user_id", uid);
   const canWrite = new Set((cals ?? []).filter((c) => c.can_write).map((c) => c.calendar_id));
@@ -588,7 +588,9 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
   // event, never copies of each other, so a usual repeat is never touched (user, 2026-11-25).
   let repeatGroups = 0;
   for (const e of evs) {
-    const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time, e.repeat ?? null, e.instance_of ?? null]);
+    const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time, e.repeat ?? null, e.instance_of ?? null,
+      // and everything else written on it (user, 2026-11-25): a different colour, memo, place, alarm or 강조 = not a copy
+      String(e.color ?? "").toUpperCase(), e.memo ?? "", e.location ?? "", e.alarm_minutes ?? null, e.alarms ?? null, !!e.important]);
     groups.set(k, [...(groups.get(k) ?? []), e]);
   }
   // the one kept: a linked one if there is (it is the real Google event), the oldest of those; copies with no link are
