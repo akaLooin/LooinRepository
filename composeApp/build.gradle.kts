@@ -25,6 +25,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.work)
             implementation(libs.kotlinx.coroutines.android)
         }
         jvmMain.dependencies {
@@ -41,8 +42,8 @@ android {
         applicationId = "world.looin.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 5
-        versionName = "0.4.0"
+        versionCode = 6
+        versionName = "0.5.0"
     }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1,INDEX.LIST,io.netty.versions.properties}" } }
     buildTypes { getByName("release") { isMinifyEnabled = false } }
@@ -74,5 +75,14 @@ tasks.register<JavaExec>("showcase") {
     classpath(jvmCompilation.output.allOutputs, jvmCompilation.runtimeDependencyFiles)
     mainClass.set("world.looin.app.debug.ShowcaseKt")
     args(layout.buildDirectory.dir("showcase").get().asFile.absolutePath)
+    dependsOn(jvmCompilation.compileTaskProvider)
+}
+
+// 실제 앱을 서버에 붙여 화면을 차례로 캡처: ./gradlew :composeApp:tour -Ptour="url token outDir [redditPostId dcPostId]"
+tasks.register<JavaExec>("tour") {
+    val jvmCompilation = kotlin.jvm().compilations["main"]
+    classpath(jvmCompilation.output.allOutputs, jvmCompilation.runtimeDependencyFiles)
+    mainClass.set("world.looin.app.debug.AppTourKt")
+    args((project.findProperty("tour") as String? ?: "").split(" ").filter { it.isNotBlank() })
     dependsOn(jvmCompilation.compileTaskProvider)
 }

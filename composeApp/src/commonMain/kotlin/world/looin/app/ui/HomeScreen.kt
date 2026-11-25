@@ -1,5 +1,6 @@
 package world.looin.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import world.looin.shared.SpaceType
 
 @Composable
 fun HomeScreen(c: AppController) {
+    androidx.compose.runtime.LaunchedEffect(Unit) { c.refreshInbox() }
     val ov = c.overview ?: return
     val ownerName = ov.owner.nickname.ifBlank { ov.owner.name }.ifBlank { "루인" }
     LazyColumn(Modifier.fillMaxSize()) {
@@ -67,6 +69,24 @@ fun HomeScreen(c: AppController) {
                 }
             }
         }
+        // 아카엘이 먼저 말을 걸었을 때
+        c.inbox?.takeIf { it.latest.isNotEmpty() && it.conversationId != null }?.let { inbox ->
+            item {
+                val core = c.core
+                SectionCard(onClick = { core?.let { c.push(Route.Chat(it, inbox.conversationId)) } }) {
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text(if (inbox.unread > 0) "✨ 아카엘이 먼저 말을 걸었어요" else "✨ 아카엘이 건넨 말", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        if (inbox.unread > 0) Text(
+                            "${inbox.unread}", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape).padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(inbox.latest.last().content.lineSequence().first(), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+                    Text(timeAgo(inbox.latest.last().createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
         item {
             val s = ov.stats
             SectionCard {
@@ -80,21 +100,25 @@ fun HomeScreen(c: AppController) {
             }
         }
         item { SectionTitle("공간") }
-        ov.spaces.forEach { sp ->
+        item {
+            SectionCard(onClick = { c.push(Route.CommunityHub) }) {
+                Text("🌐 AI 커뮤니티", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("r/looin · 루인 갤러리 — AI 주민들이 루인 님에 대해 이야기하는 곳", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        ov.spaces.filter { it.type == SpaceType.COMPANY }.forEach { sp ->
             item(sp.id) {
                 SectionCard(onClick = { c.push(Route.SpaceRoute(sp)) }) {
-                    val icon = when (sp.type) { SpaceType.COMMUNITY -> "🗨️"; SpaceType.COMPANY -> "🏢"; SpaceType.FORUM -> "🏛️" }
-                    Text("$icon ${sp.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(sp.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("구성원 ${sp.memberAgentIds.size}명", style = MaterialTheme.typography.labelSmall)
+                    Text("🏢 ${sp.name}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("내 고민을 안건으로 올리면 AI 임원진이 회의해요", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
         item {
             if (ov.owner.bio.isBlank()) SectionCard(onClick = { c.tab = Tab.Me }) {
-                Text("👋 먼저 '나' 탭에서 프로필을 채워주세요", fontWeight = FontWeight.SemiBold)
+                Text("📖 '나' 탭에서 나의 서사를 쌓아보세요", fontWeight = FontWeight.SemiBold)
                 Text(
-                    "프로필과 기억이 쌓일수록 모든 AI 가 당신을 더 깊이 이해합니다.",
+                    "아카엘이 질문 하나를 던지면 답하기만 하면 돼요. 프로필은 아카엘이 알아서 정리해요.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

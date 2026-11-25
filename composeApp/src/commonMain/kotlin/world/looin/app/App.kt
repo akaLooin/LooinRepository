@@ -9,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -21,7 +22,6 @@ import world.looin.app.ui.HomeScreen
 import world.looin.app.ui.LooinTheme
 import world.looin.app.ui.MeScreen
 import world.looin.app.ui.NewAgentScreen
-import world.looin.app.ui.PostScreen
 import world.looin.app.ui.SpaceScreen
 import world.looin.app.ui.WorldScreen
 
@@ -38,9 +38,23 @@ fun App(onBackAvailable: (Boolean) -> Unit = {}, controllerOut: (AppController) 
         }
         LaunchedEffect(c.stack.size) { onBackAvailable(c.stack.isNotEmpty()) }
 
+        // 알림으로 들어왔으면 소식함 대화로 바로
+        LaunchedEffect(c.openInboxRequested, c.overview, c.inbox) {
+            val conv = c.inbox?.conversationId
+            val core = c.core
+            if (c.openInboxRequested && conv != null && core != null) {
+                c.openInboxRequested = false
+                c.push(Route.Chat(core, conv))
+            }
+        }
+
         if (c.api == null || c.overview == null) {
             Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { pad ->
-                Box(Modifier.padding(pad)) { ConnectScreen(c) }
+                Box(Modifier.padding(pad)) {
+                    androidx.compose.animation.Crossfade(targetState = c.restoring) { restoring ->
+                        if (restoring) world.looin.app.ui.SplashScreen() else ConnectScreen(c)
+                    }
+                }
             }
             return@LooinTheme
         }
@@ -49,30 +63,47 @@ fun App(onBackAvailable: (Boolean) -> Unit = {}, controllerOut: (AppController) 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
-                if (top == null) NavigationBar {
-                    Tab.entries.forEach { t ->
-                        NavigationBarItem(
-                            selected = c.tab == t,
-                            onClick = { c.tab = t; if (t == Tab.Home) c.refresh() },
-                            icon = { Text(t.icon) },
-                            label = { Text(t.label) },
-                        )
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = top == null,
+                    enter = androidx.compose.animation.slideInVertically { it } + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.slideOutVertically { it } + androidx.compose.animation.fadeOut(),
+                ) {
+                    NavigationBar {
+                        Tab.entries.forEach { t ->
+                            NavigationBarItem(
+                                selected = c.tab == t,
+                                onClick = { c.tab = t; if (t == Tab.Home) c.refresh() },
+                                icon = { Text(t.icon) },
+                                label = { Text(t.label) },
+                            )
+                        }
                     }
                 }
             },
         ) { pad ->
             Box(Modifier.fillMaxSize().padding(pad)) {
-                when (top) {
-                    is Route.Chat -> ChatScreen(c, top)
-                    is Route.SpaceRoute -> SpaceScreen(c, top.space)
-                    is Route.PostRoute -> PostScreen(c, top.postId)
-                    Route.NewAgent -> NewAgentScreen(c)
-                    Route.BrainSettings -> world.looin.app.ui.BrainSettingsScreen(c)
-                    null -> when (c.tab) {
+                // 화면이 바뀔 때 부드럽게 미끄러지며 겹쳐 바뀐다
+                androidx.compose.animation.AnimatedContent(
+                    targetState = top ?: c.tab,
+                    transitionSpec = {
+                        val forward = c.navForward
+                        (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(240)) +
+                            androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(280)) { if (forward) it / 8 else -it / 8 }) togetherWith
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(180))
+                    },
+                ) { screen ->
+                    when (screen) {
+                        is Route.Chat -> ChatScreen(c, screen)
+                        is Route.SpaceRoute -> SpaceScreen(c, screen.space)
+                        is Route.PostRoute -> world.looin.app.ui.CommunityPostScreen(c, screen)
+                        Route.CommunityHub -> world.looin.app.ui.CommunityHubScreen(c)
+                        Route.NewAgent -> NewAgentScreen(c)
+                        Route.BrainSettings -> world.looin.app.ui.BrainSettingsScreen(c)
                         Tab.Home -> HomeScreen(c)
                         Tab.Chat -> ChatHubScreen(c)
                         Tab.World -> WorldScreen(c)
                         Tab.Me -> MeScreen(c)
+                        else -> Unit
                     }
                 }
             }

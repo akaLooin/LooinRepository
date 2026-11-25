@@ -52,9 +52,15 @@ fun WorldScreen(c: AppController) {
     LazyColumn(Modifier.fillMaxSize()) {
         item { TopBar("세계") { TextButton(onClick = { c.push(Route.NewAgent) }) { Text("+ 새 AI") } } }
         item { SectionTitle("공간") }
-        items(ov.spaces, key = { it.id }) { sp ->
+        item {
+            SectionCard(onClick = { c.push(Route.CommunityHub) }) {
+                Text("🌐 AI 커뮤니티", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text("r/looin (레딧 스타일) · 루인 갤러리 (디시 스타일)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        items(ov.spaces.filter { it.type == SpaceType.COMPANY }, key = { it.id }) { sp ->
             SectionCard(onClick = { c.push(Route.SpaceRoute(sp)) }) {
-                Text(sp.name, fontWeight = FontWeight.Bold)
+                Text("🏢 ${sp.name}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 Text(sp.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -72,70 +78,15 @@ fun WorldScreen(c: AppController) {
 
 @Composable
 fun SpaceScreen(c: AppController, space: Space) {
-    var tab by remember(space.id) { mutableStateOf(if (space.type == SpaceType.COMMUNITY) 0 else 1) }
+    if (space.type == SpaceType.COMMUNITY) { CommunityFeed(c, space); return }
     Column(Modifier.fillMaxSize().imePadding()) {
-        TopBar(space.name, onBack = { c.pop() })
-        TabRow(selectedTabIndex = tab) {
-            Tab(tab == 0, onClick = { tab = 0 }, text = { Text("게시판") })
-            Tab(tab == 1, onClick = { tab = 1 }, text = { Text(if (space.type == SpaceType.COMPANY) "회의" else "토론") })
-        }
-        if (tab == 0) Feed(c, space) else Meetings(c, space)
-    }
-}
-
-@Composable
-private fun Feed(c: AppController, space: Space) {
-    var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
-    var busy by remember { mutableStateOf(false) }
-    var writing by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf("") }
-    var body by remember { mutableStateOf("") }
-
-    fun load() = c.run({ it.posts(space.id) }) { posts = it }
-    LaunchedEffect(space.id) { load() }
-
-    LazyColumn(Modifier.fillMaxSize()) {
-        item {
-            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = {
-                    busy = true
-                    c.run({ it.tick(space.id, TickRequest(3)) }) { busy = false; load(); c.refresh() }
-                }, enabled = !busy) { Text(if (busy) "주민들이 활동 중…" else "🌀 세계 돌리기") }
-                OutlinedButton(onClick = { writing = !writing }) { Text("✍️ 글쓰기") }
-            }
-            if (busy) CircularProgressIndicator(Modifier.padding(start = 16.dp))
-        }
-        if (writing) item {
-            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("제목") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(body, { body = it }, label = { Text("본문") }, minLines = 3, modifier = Modifier.fillMaxWidth())
-                Button(onClick = {
-                    busy = true
-                    c.run({ it.createPost(space.id, CreatePostRequest(title, body)) }) {
-                        busy = false; writing = false; title = ""; body = ""; load()
-                        c.push(Route.PostRoute(it.id))
-                    }
-                }, enabled = !busy && title.isNotBlank() && body.isNotBlank()) { Text("올리기") }
-            }
-        }
-        if (posts.isEmpty() && !busy) item {
-            Text(
-                "아직 글이 없어요. '세계 돌리기'를 누르면 주민들이 글을 쓰기 시작합니다.",
-                modifier = Modifier.padding(20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        items(posts, key = { it.id }) { p ->
-            SectionCard(onClick = { c.push(Route.PostRoute(p.id)) }) {
-                Text(p.title, fontWeight = FontWeight.Bold)
-                Text(p.body, maxLines = 3, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "${p.authorName} · ${timeAgo(p.createdAt)} · 댓글 ${p.commentCount}",
-                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        item { Spacer(Modifier.height(24.dp)) }
+        TopBar("🏢 ${space.name}", onBack = { c.pop() })
+        Text(
+            "고민·계획·아이디어를 안건으로 올리면, 직원 AI 들이 각자 맡은 역할의 관점에서 회의하고 회의록을 남겨요.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
+        Meetings(c, space)
     }
 }
 
@@ -192,46 +143,5 @@ private fun Meetings(c: AppController, space: Space) {
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
-    }
-}
-
-@Composable
-fun PostScreen(c: AppController, postId: String) {
-    var detail by remember { mutableStateOf<PostDetail?>(null) }
-    var input by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    LaunchedEffect(postId) { c.run({ it.post(postId) }) { detail = it } }
-    Column(Modifier.fillMaxSize().imePadding()) {
-        TopBar("글", onBack = { c.pop() })
-        val d = detail
-        LazyColumn(Modifier.weight(1f)) {
-            if (d != null) {
-                item {
-                    Column(Modifier.padding(20.dp)) {
-                        Text(d.post.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text("${d.post.authorName} · ${timeAgo(d.post.createdAt)}", style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.height(12.dp))
-                        SelectionContainer { Text(d.post.body) }
-                    }
-                    HorizontalDivider()
-                }
-                items(d.comments, key = { it.id }) { cm ->
-                    Column(Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
-                        Text(
-                            cm.authorName + if (cm.authorAgentId == null) " (나)" else "",
-                            fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall,
-                        )
-                        Text(cm.body)
-                    }
-                }
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-            OutlinedTextField(input, { input = it }, modifier = Modifier.weight(1f), placeholder = { Text("댓글") }, maxLines = 4)
-            Button(onClick = {
-                busy = true
-                c.run({ it.comment(postId, CreateCommentRequest(input)) }) { detail = it; input = ""; busy = false }
-            }, enabled = !busy && input.isNotBlank()) { Text(if (busy) "…" else "등록") }
-        }
     }
 }

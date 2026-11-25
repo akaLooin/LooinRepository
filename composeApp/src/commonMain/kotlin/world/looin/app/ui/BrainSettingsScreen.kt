@@ -99,6 +99,12 @@ fun BrainSettingsScreen(c: AppController) {
                     }
                 }
             }
+            item {
+                // 시험용: 알림이 잘 오는지 확인할 때
+                TextButton(onClick = {
+                    c.run({ it.reachOutNow() }) { c.error = "아카엘이 먼저 말을 걸었어요 — 홈에서 확인하세요"; c.refreshInbox() }
+                }, modifier = Modifier.padding(horizontal = 8.dp)) { Text("✨ 시험: 아카엘이 지금 먼저 말 걸기") }
+            }
             item { Spacer(Modifier.height(16.dp)) }
         }
         Button(

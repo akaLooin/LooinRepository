@@ -13,9 +13,11 @@ import world.looin.shared.WorldOverview
 
 /** 화면 이동 대상. 탭 위에 쌓이는 상세 화면들. */
 sealed interface Route {
-    data class Chat(val agent: Agent, val conversationId: String? = null) : Route
+    /** narrative: "나의 서사 쌓기" 대화 (다음 질문 받기 버튼이 붙는다) */
+    data class Chat(val agent: Agent, val conversationId: String? = null, val narrative: Boolean = false) : Route
     data class SpaceRoute(val space: Space) : Route
-    data class PostRoute(val postId: String) : Route
+    data class PostRoute(val postId: String, val style: String = "") : Route
+    data object CommunityHub : Route
     data object NewAgent : Route
     data object BrainSettings : Route
 }
@@ -42,6 +44,10 @@ fun normalizeServerUrl(input: String): String {
 /** 앱 전체 상태. */
 class AppController(private val scope: CoroutineScope) {
     var api: LooinApi? by mutableStateOf(null); private set
+    /** 저장된 로그인으로 자동 접속하는 중 — 로그인 화면 대신 로고 화면을 보여준다. */
+    var restoring by mutableStateOf(false); private set
+    /** 아카엘이 먼저 말 건 소식 */
+    var inbox: world.looin.shared.Inbox? by mutableStateOf(null); private set
     var overview: WorldOverview? by mutableStateOf(null); private set
     var error: String? by mutableStateOf(null)
     var loading by mutableStateOf(false); private set
@@ -52,7 +58,10 @@ class AppController(private val scope: CoroutineScope) {
     val token get() = AppSettings.get(KEY_TOKEN) ?: ""
 
     init {
-        if (serverUrl.isNotBlank() && token.isNotBlank()) connect(serverUrl, token)
+        if (serverUrl.isNotBlank() && token.isNotBlank()) {
+            restoring = true
+            connect(serverUrl, token) { restoring = false }
+        }
     }
 
     fun connect(url: String, token: String, onDone: (Boolean) -> Unit = {}) {
@@ -68,6 +77,7 @@ class AppController(private val scope: CoroutineScope) {
                 api = candidate
                 overview = ov
                 error = null
+                refreshInbox()
                 onDone(true)
             } catch (e: Exception) {
                 candidate.close()
@@ -89,7 +99,19 @@ class AppController(private val scope: CoroutineScope) {
         scope.launch {
             runCatching { a.overview() }.onSuccess { overview = it }.onFailure { error = it.message }
         }
+        refreshInbox()
     }
+
+    fun refreshInbox() {
+        val a = api ?: return
+        scope.launch { runCatching { a.inbox() }.onSuccess { inbox = it } }
+    }
+
+    /** 대화 상대: 아카엘(중심 AI) */
+    val core: Agent? get() = overview?.agents?.firstOrNull { it.kind == world.looin.shared.AgentKind.CORE }
+
+    /** 알림을 눌러 들어왔을 때: 아카엘이 먼저 건 대화로 바로 이동 */
+    var openInboxRequested by mutableStateOf(false)
 
     /** API 호출을 감싸 오류를 화면 상단에 보여준다. */
     fun <T> run(block: suspend (LooinApi) -> T, onResult: (T) -> Unit = {}) {
@@ -99,8 +121,11 @@ class AppController(private val scope: CoroutineScope) {
         }
     }
 
-    fun push(r: Route) { stack.add(r) }
-    fun pop(): Boolean = if (stack.isNotEmpty()) { stack.removeAt(stack.lastIndex); true } else false
+    /** 마지막 이동 방향 (화면 전환 애니메이션 방향에 쓴다) */
+    var navForward by mutableStateOf(true); private set
+
+    fun push(r: Route) { navForward = true; stack.add(r) }
+    fun pop(): Boolean = if (stack.isNotEmpty()) { navForward = false; stack.removeAt(stack.lastIndex); true } else false
 
     companion object {
         const val KEY_URL = "server_url"

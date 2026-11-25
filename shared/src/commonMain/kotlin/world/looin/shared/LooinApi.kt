@@ -141,6 +141,8 @@ class LooinApi(baseUrl: String, private val token: String) {
     // --- 나의 서사 / 소식함 ---
     suspend fun nextNarrativeQuestion(): NarrativeQuestion = http.post(url("/narrative/next")) { auth() }.ok()
     suspend fun inbox(): Inbox = http.get(url("/inbox")) { auth() }.ok()
+    /** 시험용: 아카엘이 지금 바로 먼저 말을 걸게 한다 */
+    suspend fun reachOutNow(): ChatMessage = http.post(url("/inbox/now")) { auth() }.ok()
 
     // --- 파일 ---
     /** 파일을 서버에 올린다 (최대 25MB). 돌려받은 id 를 SendMessageRequest.attachmentIds 에 넣는다. */

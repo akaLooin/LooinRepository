@@ -47,6 +47,7 @@ fun MeScreen(c: AppController) {
     var memories by remember { mutableStateOf<List<Memory>>(emptyList()) }
     var newMemory by remember { mutableStateOf("") }
     var saved by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
     var growth by remember { mutableStateOf<GrowthStatus?>(null) }
     var insights by remember { mutableStateOf<List<Insight>>(emptyList()) }
     var reflecting by remember { mutableStateOf(false) }
@@ -64,6 +65,28 @@ fun MeScreen(c: AppController) {
                 TextButton(onClick = { c.disconnect() }) { Text("로그아웃") }
             }
         }
+        // ── 나의 서사 쌓기 ──
+        item {
+            var asking by remember { mutableStateOf(false) }
+            SectionCard {
+                Text("📖 나의 서사 쌓기", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "아카엘이 루인 님에 대해 궁금한 질문을 하나 던져요. 채팅하듯 답하고, 필요하면 사진·파일도 붙여 주세요. " +
+                        "답이 쌓일수록 아래 프로필과 기억을 아카엘이 알아서 정리해요.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                Button(onClick = {
+                    asking = true
+                    c.run({ it.nextNarrativeQuestion() }) { q ->
+                        asking = false
+                        c.core?.let { core -> c.push(Route.Chat(core, q.conversationId, narrative = true)) }
+                    }
+                }, enabled = !asking, modifier = Modifier.fillMaxWidth()) { Text(if (asking) "아카엘이 질문을 고르는 중…" else "질문 받기") }
+            }
+        }
+
         item { SectionTitle("🌱 성장 — AI 들이 이해한 나") }
         item {
             val g = growth
@@ -100,8 +123,25 @@ fun MeScreen(c: AppController) {
                 Text(ins.content, style = MaterialTheme.typography.bodySmall)
             }
         }
-        item { SectionTitle("프로필 — 모든 AI 가 나를 이해하는 출발점") }
+        item { SectionTitle("프로필 — 아카엘이 서사와 대화로 정리해요") }
         item {
+            SectionCard {
+                @Composable
+                fun line(label: String, value: String) {
+                    if (value.isBlank()) return
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(value, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(8.dp))
+                }
+                line("이름", listOf(profile.name, profile.nickname).filter { it.isNotBlank() }.joinToString(" · "))
+                line("소개", profile.bio); line("가치관", profile.values); line("관심사", profile.interests)
+                line("목표", profile.goals); line("말투", profile.speakingStyle)
+                if (listOf(profile.bio, profile.values, profile.interests, profile.goals).all { it.isBlank() })
+                    Text("아직 비어 있어요. 위의 '질문 받기'로 서사를 쌓아보세요.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = { editing = !editing }) { Text(if (editing) "직접 고치기 닫기" else "✏ 직접 고치기") }
+            }
+        }
+        if (editing) item {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 @Composable
                 fun field(label: String, value: String, lines: Int = 1, set: (String) -> Unit) =

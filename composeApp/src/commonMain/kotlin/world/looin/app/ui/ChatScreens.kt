@@ -79,18 +79,6 @@ import world.looin.shared.ChatStreamEvent
 import world.looin.shared.Conversation
 import world.looin.shared.SendMessageRequest
 
-/** 대화 탭: 말 걸 상대 고르기. */
-@Composable
-fun ChatHubScreen(c: AppController) {
-    val ov = c.overview ?: return
-    Column(Modifier.fillMaxSize()) {
-        TopBar("대화") { TextButton(onClick = { c.push(Route.NewAgent) }) { Text("+ 새 AI") } }
-        LazyColumn {
-            items(ov.agents, key = { it.id }) { a -> AgentRow(a, onClick = { c.push(Route.Chat(a)) }) }
-        }
-    }
-}
-
 /** "claude:claude-sonnet-5-5" → "Sonnet 5.5", "groq:openai/gpt-oss-120b" → "gpt-oss-120b (groq)" */
 fun brainLabel(brain: String?): String? {
     if (brain.isNullOrBlank()) return null
@@ -187,7 +175,7 @@ fun ChatScreen(c: AppController, route: Route.Chat) {
 
     Column(Modifier.fillMaxSize().imePadding()) {
         // ── 상단 바 ──
-        TopBar("${agent.avatar} ${agent.name}", onBack = { c.pop() }) {
+        TopBar(if (route.narrative) "📖 나의 서사" else "${agent.avatar} ${agent.name}", onBack = { c.pop(); c.refreshInbox() }) {
             Box {
                 TextButton(onClick = { menu = true }) { Text("☰") }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -229,6 +217,20 @@ fun ChatScreen(c: AppController, route: Route.Chat) {
                     else AssistantMessage(agent.avatar, m) { SelectionContainer { MarkdownText(m.content) } }
                 }
             }
+        }
+
+        // ── 나의 서사: 다음 질문 받기 ──
+        if (route.narrative) Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.Center,
+        ) {
+            var asking by remember { mutableStateOf(false) }
+            TextButton(
+                onClick = {
+                    asking = true
+                    c.run({ it.nextNarrativeQuestion() }) { q -> conversationId = q.conversationId; messages.add(q.question); asking = false }
+                },
+                enabled = phase == Phase.IDLE && !asking,
+            ) { Text(if (asking) "질문을 고르는 중…" else "📖 다음 질문 받기", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) }
         }
 
         // ── 입력창 ──

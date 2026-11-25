@@ -17,7 +17,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -79,11 +86,28 @@ fun AgentRow(agent: Agent, onClick: () -> Unit, trailing: @Composable () -> Unit
 @Composable
 fun SectionCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val m = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
     Card(
-        modifier = if (onClick != null) m.clickable(onClick = onClick) else m,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) { Column(Modifier.padding(16.dp)) { content() } }
+        modifier = if (onClick != null) m.clip(shape).clickable(onClick = onClick) else m,
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) { Column(Modifier.padding(18.dp)) { content() } }
+}
+
+/** 앱을 켤 때 저장된 로그인으로 접속하는 동안 보이는 화면. 로고가 천천히 숨쉰다. */
+@Composable
+fun SplashScreen() {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition()
+    val scale by t.animateFloat(0.94f, 1.04f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1100), androidx.compose.animation.core.RepeatMode.Reverse))
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.scale(scale)) { AkaelLogo(112) }
+            Spacer(Modifier.height(18.dp))
+            Text("아카엘", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("aka eL", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        }
+    }
 }
 
 @Composable

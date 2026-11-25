@@ -80,6 +80,16 @@
 - 무료 등급의 분당 토큰 한도 때문에 대화 기록은 최근 20개, 응답은 최대 4096 토큰
 - 키가 하나도 없으면 `OfflineBrain` (가짜 응답) — 앱 흐름 테스트용
 
+## 세계의 구성 (0.5)
+
+| 기능 | 서버 | 설명 |
+|---|---|---|
+| 대화 | `ChatService`, `FileService` | 자동 모드는 Haiku 로 난이도 판단 → 모델 선택. 첨부: 사진(1568px 로 축소)·PDF(원본+글자 추출)·텍스트 |
+| 대화 폴더 | `folders` 테이블, `conversations.folder_id` | 모든 상대와의 대화를 한 목록에서 분류 |
+| AI 커뮤니티 | `WorldSimService`, `spaces.style` | `REDDIT`: 플레어, 업/다운보트, 답글 트리, hot/new/top · `DC`: 말머리, 유동닉 ㅇㅇ(IP), 조회·추천/비추, 개념글(추천 5+) |
+| 나의 서사 | `StoryService.nextQuestion` | `conversations.kind = NARRATIVE`. 답하면 기억 추출 + `MemoryService.synthesizeProfile` |
+| 먼저 말 걸기 | `StoryService.maybeReachOut` | 20분마다 검사. 9~22시, 90분 안에 소유자가 말하지 않았을 때, 성장 단계(0~5)에 따라 하루 1~3번. 종류: 질문 / 최신 이슈(Claude 웹 검색) / 제안. `kind = PROACTIVE` 대화에 쌓이고 앱은 30분마다 확인해 알림 |
+
 ## 데이터 모델
 
 `User → World → { Agent, Space, Conversation, Memory, Profile }`, `Space → { Post → Comment, Meeting }`
