@@ -93,7 +93,7 @@ const rewardTiles = (r: QuestDef['reward']) => [
 const icon = (id: string) => `<img class="px" src="${iconUrl(ITEM_ICON[id])}" alt="">`;
 const pct = (a: number, b: number) => `${Math.max(0, Math.min(100, (a / b) * 100)).toFixed(1)}%`;
 const dur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.floor((s % 3600) / 60)}분` : `${Math.floor(s / 60)}분`);
-const STAT_LABEL: Record<string, string> = { dmg: '공격력', def: '방어력', hp: '체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광', chopping: '벌목' };
+const STAT_LABEL: Record<string, string> = { dmg: '공격력', def: '방어력', hp: '체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광', chopping: '벌목', fishing: '낚시', catching: '곤충 채집' };
 const statsText = (s: ItemStats | undefined) => Object.entries(s ?? {}).map(([k, v]) => `${STAT_LABEL[k]} +${v}`).join(', ');
 const statLine = (id: string) => statsText(ITEMS[id].stats);
 /** 강화 기록 한 줄 */

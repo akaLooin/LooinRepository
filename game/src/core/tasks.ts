@@ -25,6 +25,8 @@ export const TASKS: TaskDef[] = [
   { id: 'boss', group: 'fight', name: '이끼왕 토벌', unit: '번', tiers: [1, 5, 25], merit: [3, 4, 6], value: (a) => a.bosses.mossking ?? 0 },
   { id: 'mining', group: 'skill', name: '광부의 길', unit: 'Lv', tiers: [5, 15, 30], merit: [1, 2, 4], value: (a) => best(a, (c) => c.skills.mining.lv), recipes: { 1: 'pick_red' } },
   { id: 'chopping', group: 'skill', name: '나무꾼의 길', unit: 'Lv', tiers: [5, 15, 30], merit: [1, 2, 4], value: (a) => best(a, (c) => c.skills.chopping.lv), recipes: { 1: 'axe_red' } },
+  { id: 'fishing', group: 'skill', name: '강태공의 길', unit: 'Lv', tiers: [5, 15, 30], merit: [1, 2, 4], value: (a) => best(a, (c) => c.skills.fishing?.lv ?? 1), recipes: { 2: 'rod_amber' } },
+  { id: 'catching', group: 'skill', name: '곤충학자의 길', unit: 'Lv', tiers: [5, 15, 30], merit: [1, 2, 4], value: (a) => best(a, (c) => c.skills.catching?.lv ?? 1), recipes: { 2: 'net_amber' } },
   { id: 'smithing', group: 'skill', name: '대장장이의 길', unit: 'Lv', tiers: [5, 15, 30], merit: [1, 2, 4], value: (a) => best(a, (c) => c.skills.smithing.lv), recipes: { 1: 'sword_red' } },
   { id: 'forge', group: 'skill', name: '불을 다루는 법', unit: '단계', tiers: [1, 10, 30], merit: [1, 2, 4], value: (a) => (a.forge.owned ? 1 : 0) + Object.values(a.forge.up).reduce((n, v) => n + v, 0) },
   { id: 'levels', group: 'life', name: '함께 자라기', unit: 'Lv 합', tiers: [20, 60, 150], merit: [1, 2, 4], value: (a) => sum(a, (c) => c.level) },

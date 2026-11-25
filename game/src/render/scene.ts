@@ -61,7 +61,7 @@ class CharRig {
     if (p.hurtT > HURT_TIME - 0.24 && p.swingT <= 0) return at('hurt', 1 - (p.hurtT - (HURT_TIME - 0.24)) / 0.24);
     if (p.rope >= 0) { this.walkPh += dt * Math.abs(p.vy) / 28; return loop('climb', this.walkPh); }
     if (p.swingT > 0) {
-      const c = ({ attack: 'swing', shoot: 'shoot', cast: 'cast', mining: 'mine', chopping: 'chop' } as Record<SwingKind, string>)[p.swingKind];
+      const c = ({ attack: 'swing', shoot: 'shoot', cast: 'cast', mining: 'mine', chopping: 'chop', fishing: 'chop', catching: 'swing' } as Record<SwingKind, string>)[p.swingKind];
       return at(c, 1 - p.swingT / SWING_TIME);
     }
     if (!p.onGround) { this.airT += dt; return at(p.vy < 0 ? 'jump' : 'fall', this.airT * 8); }
@@ -83,8 +83,10 @@ class CharRig {
     const an = bakeClip(clip).anchors[f];
 
     // 무기: 손 위치에 붙이고 프레임에 기록된 각도로 돌린다
-    const tool = p.rope >= 0 ? null : p.swingT > 0 && (p.swingKind === 'mining' || p.swingKind === 'chopping')
-      ? (p.swingKind === 'mining' ? (c.equipment.pickaxe ? `wp_${c.equipment.pickaxe}` : 'wp_pick') : (c.equipment.axe ? `wp_${c.equipment.axe}` : 'wp_axe'))
+    // 채집 중에는 그 기술의 도구(없으면 기본 도구)를 든다
+    const TOOL: Partial<Record<SwingKind, [keyof RigChar['equipment'], string]>> = { mining: ['pickaxe', 'wp_pick'], chopping: ['axe', 'wp_axe'], fishing: ['rod', 'wp_rod'], catching: ['net', 'wp_net'] };
+    const tk = p.swingT > 0 ? TOOL[p.swingKind] : undefined;
+    const tool = p.rope >= 0 ? null : tk ? (c.equipment[tk[0]] ? `wp_${c.equipment[tk[0]]}` : tk[1])
       : c.equipment.weapon ? `wp_${c.equipment.weapon}` : null;
     this.weapon.setVisible(!!tool);
     if (tool && this.weapon.texture.key !== tool) this.weapon.setTexture(tool);

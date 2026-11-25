@@ -2,20 +2,20 @@
 // 이 폴더(core)는 DOM/Phaser에 의존하지 않는다 → 추후 서버에서 그대로 재사용.
 
 export type StatKey = 'str' | 'agi' | 'wis' | 'luk';
-export type SkillKey = 'mining' | 'chopping' | 'smithing';
-export type GatherSkill = 'mining' | 'chopping';
+export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catching';
+export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
 export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer';
 export type WeaponType = 'sword' | 'bow' | 'wand';
-export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe';
+export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe' | 'rod' | 'net';
 
 export interface ItemStats {
   dmg?: number; def?: number; hp?: number;
   str?: number; agi?: number; wis?: number; luk?: number;
-  mining?: number; chopping?: number;
+  mining?: number; chopping?: number; fishing?: number; catching?: number;
 }
 export interface ItemDef {
   id: string; name: string; desc: string;
@@ -91,10 +91,10 @@ export const STAT_DESC: Record<StatKey, string> = {
   str: '최대 체력·치명타 피해·채광. 전사 공격력, 궁수 명중', agi: '이동 속도·치명타 확률·모루 생산. 궁수 공격력, 마법사 명중',
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
-export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
+export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
-  weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼',
+  weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
 
 const items: ItemDef[] = [
@@ -162,6 +162,7 @@ const items: ItemDef[] = [
   { id: 'stone_guard', name: '단단함 강화석', desc: '모자·갑옷·바지·신발에 붙이면 방어력 +2, 체력 +15. 성공률 80%.', kind: 'stone', sell: 20 },
   { id: 'stone_stat', name: '네 갈래 강화석', desc: '무기·옷·장신구에 붙이면 힘·민첩·지혜·행운 +1. 성공률 60%.', kind: 'stone', sell: 30 },
   { id: 'stone_mine', name: '광맥 강화석', desc: '곡괭이에 붙이면 채광력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
+  { id: 'stone_lure', name: '미끼 강화석', desc: '낚싯대·잠자리채에 붙이면 낚시·곤충 채집력 +3. 성공률 70%.', kind: 'stone', sell: 20 },
   { id: 'stone_chop', name: '나뭇결 강화석', desc: '도끼에 붙이면 벌목력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
   // ───── 2월드: 노을 사막 ─────
   { id: 'cactus_spine', name: '선인장 가시', desc: '끝이 바늘처럼 뾰족하다.', kind: 'material', sell: 44 },
@@ -189,6 +190,19 @@ const items: ItemDef[] = [
   { id: 'plate_amber', name: '호박 갑옷', desc: '모래바람에도 끄떡없다.', kind: 'equip', slot: 'body', stats: { def: 38, hp: 240 }, reqLv: 50, sell: 2000 },
   { id: 'legs_amber', name: '호박 다리 갑옷', desc: '뜨거운 모래 위에서도 시원하다.', kind: 'equip', slot: 'legs', stats: { def: 26, hp: 160 }, reqLv: 49, sell: 1700 },
   { id: 'boots_amber', name: '호박 장화', desc: '모래에 빠지지 않는다.', kind: 'equip', slot: 'shoes', stats: { def: 19, agi: 10 }, reqLv: 48, sell: 1600 },
+  // ───── 2월드 기술: 낚시·곤충 채집 ─────
+  { id: 'fish_minnow', name: '사막 송사리', desc: '오아시스 샘에 사는 작은 물고기.', kind: 'material', sell: 12 },
+  { id: 'fish_salt', name: '소금 가자미', desc: '짭짤한 물에서도 잘 사는 납작한 물고기.', kind: 'material', sell: 30 },
+  { id: 'fish_star', name: '별빛 메기', desc: '밤이면 수염 끝이 빛난다.', kind: 'material', sell: 70 },
+  { id: 'bug_ant', name: '모래개미', desc: '제 몸보다 큰 모래알을 나른다.', kind: 'material', sell: 12 },
+  { id: 'bug_firefly', name: '노을 반딧불', desc: '해 질 녘 색으로 깜빡인다.', kind: 'material', sell: 30 },
+  { id: 'bug_beetle', name: '황금 풍뎅이', desc: '등딱지가 금화처럼 반짝인다.', kind: 'material', sell: 70 },
+  { id: 'rod_reed', name: '갈대 낚싯대', desc: '낚시 효율 +3', kind: 'equip', slot: 'rod', stats: { fishing: 3 }, sell: 100 },
+  { id: 'net_cloth', name: '천 잠자리채', desc: '곤충 채집 효율 +3', kind: 'equip', slot: 'net', stats: { catching: 3 }, sell: 100 },
+  { id: 'rod_palm', name: '야자 낚싯대', desc: '낚시 효율 +10', kind: 'equip', slot: 'rod', stats: { fishing: 10 }, reqLv: 30, sell: 600 },
+  { id: 'net_palm', name: '야자 잠자리채', desc: '곤충 채집 효율 +10', kind: 'equip', slot: 'net', stats: { catching: 10 }, reqLv: 30, sell: 600 },
+  { id: 'rod_amber', name: '호박 낚싯대', desc: '낚시 효율 +22', kind: 'equip', slot: 'rod', stats: { fishing: 22 }, reqLv: 42, sell: 1400 },
+  { id: 'net_amber', name: '호박 잠자리채', desc: '곤충 채집 효율 +22', kind: 'equip', slot: 'net', stats: { catching: 22 }, reqLv: 42, sell: 1400 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
@@ -272,6 +286,13 @@ const nodes: NodeDef[] = [
   { id: 'goldrock', name: '금빛돌 광맥', skill: 'mining', reqLv: 20, hp: 95, xp: 50, item: 'ore_gold' },
   { id: 'palm', name: '야자나무', skill: 'chopping', reqLv: 30, hp: 200, xp: 110, item: 'palmlog' },
   { id: 'amberrock', name: '호박 광맥', skill: 'mining', reqLv: 30, hp: 180, xp: 100, item: 'ore_amber' },
+  // 낚시터·곤충 덤불(2월드). 처음 레벨부터 시작하는 새 기술이라 단계가 낮다
+  { id: 'spring', name: '오아시스 샘', skill: 'fishing', reqLv: 1, hp: 8, xp: 5, item: 'fish_minnow' },
+  { id: 'saltpool', name: '소금 물가', skill: 'fishing', reqLv: 10, hp: 40, xp: 22, item: 'fish_salt' },
+  { id: 'starpool', name: '별빛 웅덩이', skill: 'fishing', reqLv: 22, hp: 100, xp: 55, item: 'fish_star' },
+  { id: 'antbush', name: '개미 덤불', skill: 'catching', reqLv: 1, hp: 8, xp: 5, item: 'bug_ant' },
+  { id: 'glowbush', name: '반딧불 덤불', skill: 'catching', reqLv: 10, hp: 40, xp: 22, item: 'bug_firefly' },
+  { id: 'goldbush', name: '풍뎅이 덤불', skill: 'catching', reqLv: 22, hp: 100, xp: 55, item: 'bug_beetle' },
 ];
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
@@ -352,12 +373,12 @@ const maps: MapDef[] = [
   { id: 'oasis', name: '오아시스 마을', width: 700, theme: 'oasis',
     platforms: [{ x: 420, y: -48, w: 280 }],
     ropes: [{ x: 430, top: -48, bottom: 0 }],
-    spawns: [], nodes: [], campfireX: 360,
+    spawns: [], nodes: [{ node: 'spring', x: 480 }, { node: 'antbush', x: 620 }], campfireX: 360,
     facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'anvil', x: 540, y: -48 }],
     portals: [{ x: 24, to: 'grove', toX: 920, label: '세계의 문' }, { x: 676, y: -48, to: 'dunes', toX: 50 }] },
   { id: 'dunes', name: '바람 모래톱', width: 940, theme: 'dunes',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
-    spawns: [{ monster: 'cactling', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'palm', x: 650 }],
+    spawns: [{ monster: 'cactling', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'palm', x: 650 }, { node: 'antbush', x: 300 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'oasis', toX: 650, toY: -48 }, { x: 916, to: 'canyon', toX: 50, reqKills: 300 }] },
   { id: 'canyon', name: '붉은 협곡', width: 960, theme: 'canyon',
@@ -367,28 +388,28 @@ const maps: MapDef[] = [
     facilities: [], portals: [{ x: 24, to: 'dunes', toX: 890 }, { x: 936, to: 'mirage', toX: 50, reqKills: 350 }] },
   { id: 'mirage', name: '신기루 평원', width: 960, theme: 'mirage',
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
-    spawns: [{ monster: 'mirabird', count: 9 }], nodes: [{ node: 'palm', x: 400 }],
+    spawns: [{ monster: 'mirabird', count: 9 }], nodes: [{ node: 'palm', x: 400 }, { node: 'spring', x: 780 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'canyon', toX: 910 }, { x: 936, to: 'tomb', toX: 50, reqKills: 400 }] },
   { id: 'tomb', name: '모래 무덤', width: 940, theme: 'tomb',
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
-    spawns: [{ monster: 'mumbun', count: 9 }], nodes: [{ node: 'amberrock', x: 420 }],
+    spawns: [{ monster: 'mumbun', count: 9 }], nodes: [{ node: 'amberrock', x: 420 }, { node: 'glowbush', x: 640 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'mirage', toX: 910 }, { x: 916, to: 'saltlake', toX: 50, reqKills: 450 }] },
   { id: 'saltlake', name: '소금 호수', width: 960, theme: 'saltlake',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
-    spawns: [{ monster: 'saltcrab', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'amberrock', x: 700 }],
+    spawns: [{ monster: 'saltcrab', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'saltpool', x: 330 }, { node: 'saltpool', x: 560 }, { node: 'amberrock', x: 700 }],
     ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'tomb', toX: 890 }, { x: 936, to: 'starfield', toX: 50, reqKills: 500 }] },
   { id: 'starfield', name: '별모래 들판', width: 980, theme: 'starfield',
     platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
-    spawns: [{ monster: 'duneworm', count: 9 }], nodes: [{ node: 'palm', x: 410 }, { node: 'amberrock', x: 690 }],
+    spawns: [{ monster: 'duneworm', count: 9 }], nodes: [{ node: 'glowbush', x: 250 }, { node: 'palm', x: 410 }, { node: 'amberrock', x: 690 }, { node: 'starpool', x: 880 }],
     ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 750, top: -48, bottom: 0 }, { x: 880, top: -96, bottom: -48 }],
     facilities: [], portals: [{ x: 24, to: 'saltlake', toX: 910 }, { x: 956, to: 'sunspire', toX: 50, reqKills: 550 }] },
   // 해탑 유적: 오른쪽 위 발판 끝에 거상의 방(열쇠)
   { id: 'sunspire', name: '해탑 유적', width: 980, theme: 'sunspire',
     platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
-    spawns: [{ monster: 'sunwisp', count: 9 }], nodes: [{ node: 'amberrock', x: 380 }],
+    spawns: [{ monster: 'sunwisp', count: 9 }], nodes: [{ node: 'starpool', x: 230 }, { node: 'amberrock', x: 380 }, { node: 'goldbush', x: 660 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
     facilities: [], portals: [{ x: 24, to: 'starfield', toX: 930 }, { x: 952, y: -96, to: 'sandlair', toX: 60, reqKills: 300, key: 'sun_key', label: '거상의 방' }] },
   { id: 'sandlair', name: '거상의 방', width: 600, theme: 'sunspire', boss: 'sandlord',
@@ -417,6 +438,10 @@ export const RECIPES: RecipeDef[] = [
   { item: 'anvil_exp', coins: 500, mats: [['plank', 15], ['nail', 25], ['ore', 20]], unlock: 2, smithLv: 5 },
   { item: 'anvil_exp2', coins: 3000, mats: [['bar_blue', 20], ['runestone', 15], ['plank', 30]], unlock: 3, smithLv: 15, tier: 2 },
   { item: 'anvil_exp3', coins: 20000, mats: [['bar_amber', 20], ['cactus_spine', 40], ['palmlog', 60]], unlock: 4, smithLv: 30, tier: 3 },
+  { item: 'rod_palm', coins: 2500, mats: [['palmlog', 25], ['twine', 40], ['fish_minnow', 30]], tier: 3 },
+  { item: 'net_palm', coins: 2500, mats: [['palmlog', 25], ['twine', 40], ['bug_ant', 30]], tier: 3 },
+  { item: 'rod_amber', coins: 6000, mats: [['bar_amber', 10], ['palmlog', 20], ['fish_salt', 40]], tier: 4 },
+  { item: 'net_amber', coins: 6000, mats: [['bar_amber', 10], ['palmlog', 20], ['bug_firefly', 40]], tier: 4 },
   { item: 'sword_amber', coins: 9000, mats: [['bar_amber', 14], ['scorp_tail', 20], ['sun_ember', 6]], tier: 4 },
   { item: 'bow_amber', coins: 9000, mats: [['bar_amber', 10], ['palmlog', 30], ['heat_feather', 20]], tier: 4 },
   { item: 'wand_amber', coins: 9000, mats: [['bar_amber', 10], ['palmlog', 25], ['sun_ember', 10]], tier: 4 },
@@ -534,7 +559,7 @@ export const classLine = (cls: ClassId): ClassId[] => (cls === 'beginner' ? ['be
 
 /** 카드: 계정 전체가 함께 모으는 수집 보너스(장착해야 효과). 1/3/10장에서 단계 상승.
  *  id 는 몬스터 id(몬스터 카드) 또는 자원 id(자원 카드: 채집할 때 드물게) */
-export type CardBonus = 'hp' | 'dmg' | 'drop' | 'afk' | 'mining' | 'chopping' | 'afkSkill';
+export type CardBonus = 'hp' | 'dmg' | 'drop' | 'afk' | 'mining' | 'chopping' | 'fishing' | 'catching' | 'afkSkill';
 export interface CardDef { id: string; from: 'monster' | 'node'; bonus: CardBonus; per: number; label: string }
 export const CARDS: CardDef[] = [
   { id: 'mossblob', from: 'monster', bonus: 'hp', per: 0.03, label: '최대 체력' },
@@ -563,6 +588,12 @@ export const CARDS: CardDef[] = [
   { id: 'sandlord', from: 'monster', bonus: 'afk', per: 0.04, label: '방치 효율' },
   { id: 'palm', from: 'node', bonus: 'chopping', per: 0.08, label: '벌목 효율' },
   { id: 'amberrock', from: 'node', bonus: 'mining', per: 0.1, label: '채광 효율' },
+  { id: 'spring', from: 'node', bonus: 'fishing', per: 0.06, label: '낚시 효율' },
+  { id: 'saltpool', from: 'node', bonus: 'fishing', per: 0.08, label: '낚시 효율' },
+  { id: 'starpool', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
+  { id: 'antbush', from: 'node', bonus: 'catching', per: 0.06, label: '곤충 채집 효율' },
+  { id: 'glowbush', from: 'node', bonus: 'catching', per: 0.08, label: '곤충 채집 효율' },
+  { id: 'goldbush', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
 ];
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
@@ -639,11 +670,12 @@ export const STONES: StoneDef[] = [
   { item: 'stone_guard', stats: { def: 2, hp: 15 }, chance: 0.8, slots: WEAR },
   { item: 'stone_stat', stats: { str: 1, agi: 1, wis: 1, luk: 1 }, chance: 0.6, slots: ['weapon', ...WEAR, 'ring'] },
   { item: 'stone_mine', stats: { mining: 3 }, chance: 0.7, slots: ['pickaxe'] },
+  { item: 'stone_lure', stats: { fishing: 3, catching: 3 }, chance: 0.7, slots: ['rod', 'net'] },
   { item: 'stone_chop', stats: { chopping: 3 }, chance: 0.7, slots: ['axe'] },
 ];
 export const STONE_BY_ID: Record<string, StoneDef> = Object.fromEntries(STONES.map((s) => [s.item, s]));
 /** 부위별 강화 칸 수 */
-export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, trophy: 0, pickaxe: 3, axe: 3 };
+export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, trophy: 0, pickaxe: 3, axe: 3, rod: 3, net: 3 };
 export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ? UP_SLOTS[s] : 0; };
 export const MAX_CHARACTERS = 6;
 /** 음식 칸 수: 위 칸부터 먹는다 */
@@ -705,6 +737,9 @@ export const SHOP: ShopEntry[] = [
   { item: 'tp_ticket', price: 60, daily: 8 },
   { item: 'pet_shard', price: 300, daily: 2 },
   { item: 'cactus_juice', price: 140, daily: 30 },
+  { item: 'rod_reed', price: 1500, daily: 1 },
+  { item: 'net_cloth', price: 1500, daily: 1 },
+  { item: 'stone_lure', price: 700, daily: 1 },
   { item: 'stone_mine', price: 500, daily: 1 },
   { item: 'stone_chop', price: 500, daily: 1 },
   { item: 'stone_guard', price: 900, daily: 1 },

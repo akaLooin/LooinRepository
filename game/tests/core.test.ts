@@ -625,3 +625,28 @@ describe('음식 재사용 대기·채집 보호', () => {
     expect(c.hp).toBeLessThan(hp0);
   });
 });
+
+describe('2월드 기술: 낚시·곤충 채집', () => {
+  for (const [node, item, skill] of [['spring', 'fish_minnow', 'fishing'], ['antbush', 'bug_ant', 'catching']] as const) {
+    it(`${node}: 자동으로 ${item}과(와) 기술 경험치를 얻는다`, () => {
+      const { acc, c } = setup();
+      c.mapId = 'oasis'; c.maxWorld = 2; c.auto = true; c.activity = { k: 'gather', node };
+      const w = new World(acc, c, new Rng(2));
+      run(w, 60);
+      expect(countItem(c, item)).toBeGreaterThan(3);
+      expect(c.skills[skill].lv + c.skills[skill].xp).toBeGreaterThan(1);
+    });
+  }
+  it('낚싯대·잠자리채가 효율을 올리고, 저장 후에도 기술이 남는다', () => {
+    const { acc, c } = setup();
+    const f0 = derive(c, acc).fishing, k0 = derive(c, acc).catching;
+    addItem(c, 'rod_reed', 1); addItem(c, 'net_cloth', 1);
+    expect(equipItem(c, 'rod_reed')).toBeNull(); expect(equipItem(c, 'net_cloth')).toBeNull();
+    expect(derive(c, acc).fishing).toBeCloseTo(f0 + 3);
+    expect(derive(c, acc).catching).toBeCloseTo(k0 + 3);
+    const raw = JSON.parse(serialize(acc));
+    delete raw.characters[0].skills.fishing; // 예전 저장 데이터
+    const back = deserialize(JSON.stringify(raw))!;
+    expect(back.characters[0].skills.fishing).toEqual({ lv: 1, xp: 0 });
+  });
+});

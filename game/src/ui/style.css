@@ -218,8 +218,8 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .petcell[aria-pressed="true"] { box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
 /* 아이템 창: 왼쪽 장비/홀로웨어, 오른쪽 가방·상세 */
 .invlayout { display: flex; gap: var(--sp-4); align-items: flex-start; }
-.eqpanel { flex: none; width: calc(var(--slot) * 3 + var(--sp-2) * 4); background: var(--c-surface-inset); border: 1px solid var(--c-border); border-radius: var(--r-md); padding: var(--sp-2); }
-.ui-grid.eqcol { grid-template-columns: repeat(3, var(--slot)); }
+.eqpanel { flex: none; width: calc(var(--slot) * 4 + var(--sp-2) * 5); background: var(--c-surface-inset); border: 1px solid var(--c-border); border-radius: var(--r-md); padding: var(--sp-2); }
+.ui-grid.eqcol { grid-template-columns: repeat(4, var(--slot)); }
 .ui-tabs.mini { margin-bottom: var(--sp-2); } .ui-tabs.mini button { padding: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); }
 .eqsub { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-sm); }
 .invright { flex: 1; min-width: 0; display: flex; gap: var(--sp-3); align-items: flex-start; }

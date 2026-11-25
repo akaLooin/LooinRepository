@@ -146,7 +146,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
     anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1,
-    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
+    skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
     attackBars: emptyBars(), attackPage: 0,
@@ -174,13 +174,13 @@ export interface Derived {
   bossMult: number;
   /** 코인 획득 배수 */
   coinMult: number;
-  mining: number; chopping: number;
+  mining: number; chopping: number; fishing: number; catching: number;
   /** 공격 사거리. 원거리 직업은 발사체를 쏜다 */
   range: number; ranged: boolean;
 }
 
 export function equipStats(c: Character): Required<ItemStats> {
-  const t: Required<ItemStats> = { dmg: 0, def: 0, hp: 0, str: 0, agi: 0, wis: 0, luk: 0, mining: 0, chopping: 0 };
+  const t: Required<ItemStats> = { dmg: 0, def: 0, hp: 0, str: 0, agi: 0, wis: 0, luk: 0, mining: 0, chopping: 0, fishing: 0, catching: 0 };
   const add = (s?: ItemStats) => { if (s) for (const k in s) t[k as keyof ItemStats] += s[k as keyof ItemStats]!; };
   for (const [slot, id] of Object.entries(c.equipment)) {
     if (!id) continue;
@@ -219,7 +219,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const wis = c.stats.wis + e.wis + pb.wis, luk = c.stats.luk + e.luk + pb.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
-  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, afkSkill: 0 };
+  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, afkSkill: 0 };
   // 우표(효과 값은 % 단위)·후원 계약
   const sb = stampBonus(a), bb = bribeBonus(a);
   const afkAcc = sb.afk / 100 + bb.afk + meritValue(a, 'afk') + pb.afk / 100;
@@ -249,6 +249,9 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     // 기술 효율: 힘 → 채광, 지혜 → 벌목(대장 생산 속도는 민첩, anvilRate)
     mining: (1 + e.mining + c.skills.mining.lv * 0.35 + str * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100),
     chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100),
+    // 2월드 기술: 민첩 → 낚시, 행운 → 곤충 채집
+    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing),
+    catching: (1 + e.catching + (c.skills.catching?.lv ?? 1) * 0.35 + luk * 0.05) * work * (1 + cb.catching),
   };
 }
 
@@ -883,6 +886,7 @@ export function deserialize(json: string | null): Account | null {
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
       c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1;
+      c.skills.fishing ??= { lv: 1, xp: 0 }; c.skills.catching ??= { lv: 1, xp: 0 };
       c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];

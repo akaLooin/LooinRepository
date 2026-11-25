@@ -7,7 +7,7 @@ import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gain
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
-export type SwingKind = 'attack' | 'shoot' | 'cast' | 'mining' | 'chopping';
+export type SwingKind = 'attack' | 'shoot' | 'cast' | 'mining' | 'chopping' | 'fishing' | 'catching';
 
 /** 터치로 내린 명령. 도착하거나 끝나면 사라진다. */
 export type Command =

@@ -64,7 +64,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   if (claimed.statPoints - s.statPoints !== dl * 3 || claimed.talentPoints - s.talentPoints !== dl) return '포인트가 레벨과 맞지 않습니다';
 
   // 기술 경험치: 채집(맵 자원) + 모루 생산
-  for (const k of ['mining', 'chopping'] as const) {
+  for (const k of ['mining', 'chopping', 'fishing', 'catching'] as const) {
     const nodes = map.nodes.map((n) => NODES[n.node]).filter((n) => n.skill === k);
     const maxYield = nodes.length ? Math.max(...nodes.map((n) => Math.ceil(d[k] / n.hp))) * swings : 0;
     const maxXp = maxYield * Math.max(0, ...nodes.map((n) => n.xp));
