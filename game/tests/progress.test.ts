@@ -263,3 +263,26 @@ describe('미니게임·토템', () => {
     expect(derive(c, acc).dmg).toBeGreaterThan(d0);
   });
 });
+
+import { DROP_LIFE } from '../src/core/world';
+describe('전투·줍기 조작', () => {
+  it('걷는 중이나 로프를 타는 중에는 공격하지 않는다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(1));
+    const m = w.mobs[0]; m.x = w.player.x + 10; m.y = 0; m.plat = w.platforms[0]; m.spawnAge = 5;
+    let swung = false;
+    for (let i = 0; i < 30; i++) { w.step(1 / 60, { move: 1, climb: 0 }); if (w.player.swingT > 0) swung = true; }
+    expect(swung).toBe(false);
+    for (let i = 0; i < 60 && !swung; i++) { m.x = w.player.x + 10; w.step(1 / 60, { move: 0, climb: 0 }); if (w.player.swingT > 0) swung = true; }
+    expect(swung).toBe(true);
+  });
+  it('떨어진 아이템은 30분 뒤 사라진다', () => {
+    const { acc, c } = setup();
+    c.mapId = 'meadow';
+    const w = new World(acc, c, new Rng(1));
+    w.drops.push({ uid: 999, coin: false, id: 'moss', qty: 1, x: 300, y: -5, vx: 0, vy: 0, floorY: 0, age: DROP_LIFE - 0.5 });
+    for (let i = 0; i < 30; i++) w.step(1 / 30, { move: 0, climb: 0 });
+    expect(w.drops.some((d) => d.uid === 999)).toBe(false);
+  });
+});

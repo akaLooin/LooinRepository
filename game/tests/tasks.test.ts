@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction } from '../src/core/actions';
-import { RECIPES, STORAGE_SIZE, TELEPORTS_PER_DAY } from '../src/core/data';
-import { recipeLock, createCharacter, derive, deserialize, newAccount, refillTeleports, serialize, storageSize } from '../src/core/state';
+import { RECIPES, SHOP, STORAGE_SIZE } from '../src/core/data';
+import { recipeLock, createCharacter, derive, deserialize, newAccount, serialize, shopLeft, storageSize } from '../src/core/state';
 import { TASK_BY_ID } from '../src/core/tasks';
 
 const look = { hair: 0, hairColor: '#000', skin: '#fff', outfit: '#f00' };
@@ -31,10 +31,9 @@ describe('작업판', () => {
     expect(storageSize(acc)).toBe(STORAGE_SIZE + 4);
     expect(applyAction(acc, 0, { t: 'merit', id: 'afk' }, 0).ok).toBe(true);
     expect(derive(c, acc).afkFight).toBeGreaterThan(afk0);
+    const ti = SHOP.findIndex((e) => e.item === 'tp_ticket'), base = shopLeft(acc, ti, 0);
     applyAction(acc, 0, { t: 'merit', id: 'teleport' }, 0);
-    acc.teleports = { n: 0, day: '2026-01-01' };
-    refillTeleports(acc, new Date('2026-01-02T12:00:00').getTime());
-    expect(acc.teleports.n).toBe(TELEPORTS_PER_DAY + 1);
+    expect(shopLeft(acc, ti, 0)).toBe(base + 2); // 순간이동 티켓 하루 구매 수
     acc.merit = 0;
     expect(applyAction(acc, 0, { t: 'merit', id: 'xp' }, 0).err).toMatch(/부족/);
   });

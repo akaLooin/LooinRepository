@@ -4,7 +4,7 @@ import {
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult,
 } from './data';
 import { Rng } from './rng';
-import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady } from './state';
+import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -39,7 +39,11 @@ export interface Mob {
 export interface Drop {
   uid: number; coin: boolean; id: string; qty: number;
   x: number; y: number; vx: number; vy: number; floorY: number; age: number;
+  /** 주웠으면 캐릭터에게 날아온다 */
+  picked?: boolean; flyT?: number;
 }
+/** 떨어진 아이템이 남아 있는 시간(초)과 한 맵에 쌓이는 최대 수 */
+export const DROP_LIFE = 30 * 60, MAX_DROPS = 300;
 export interface NodeInst { uid: number; def: NodeDef; x: number; y: number; progress: number; shakeT: number }
 export interface Shot { uid: number; kind: 'arrow' | 'orb'; x: number; y: number; target: Mob; mult: number; angle: number }
 
@@ -267,6 +271,8 @@ export class World {
     const p = this.player, c = this.char, lv = c.talents[id] ?? 0, t = TALENT[id];
     const d = this.d;
     if (!t?.active || lv <= 0 || p.dead > 0 || (p.cd[id] ?? 0) > 0 || c.mp < t.active.mana) return false;
+    // 걷거나 로프를 타는 중에는 쓸 수 없다
+    if (!p.onGround || p.rope >= 0 || Math.abs(p.vx) > 1) return false;
     const live = (r: number, cx = p.x, cy = p.y) => this.mobs.filter((m) => m.alive && m.spawnAge > 0.4 && Math.abs(m.x - cx) <= r && Math.abs(m.y - cy) < 22);
     const pose = (kind: SwingKind) => {
       p.swingKind = kind; p.swingT = SWING_TIME; p.swingId++; p.attackT = Math.max(p.attackT, d.atkInterval * 0.6);
@@ -420,13 +426,15 @@ export class World {
       p.swingT -= dt;
       if (!this.hitDone && p.swingT <= SWING_TIME * 0.55) { this.hitDone = true; this.applyHit(d); }
     }
-    if (p.attackT <= 0 && p.swingT <= 0 && p.onGround) {
+    // 공격·채집은 멈춰 서 있을 때만(걷기·로프 타기가 끝난 뒤)
+    const still = p.onGround && p.rope < 0 && inp.move === 0 && inp.climb === 0;
+    if (p.attackT <= 0 && p.swingT <= 0 && still) {
       const cmd = this.command;
       // 터치/AUTO 중에는 자리를 잡은(engaged) 대상만 친다 → 지나가다 멈칫거리지 않는다.
       // 한 번 시작한 공격은 대상이 자리를 벗어나도 적용된다(applyHit는 거리 검사를 하지 않음).
       const mob = keyed || (!cmd && !c.auto) ? this.mobInRange(d)
         : this.mobs.find((m) => m.uid === this.engaged && m.alive && m.spawnAge >= 0.4) ?? null;
-      if (mob && (d.ranged ? inp.move === 0 : true)) {
+      if (mob) {
         this.startSwing(d.ranged ? (baseClass(c.cls) === 'mage' ? 'cast' : 'shoot') : 'attack', mob, d.atkInterval);
       } else {
         const wants = cmd ? cmd.k === 'node' : c.auto && c.activity.k === 'gather';
@@ -593,20 +601,20 @@ export class World {
     }
   }
 
+  /** 떨어진 아이템: 바닥에 머물고, 터치·밀어서 주워야 들어온다(주운 것만 캐릭터에게 날아온다). 30분이 지나면 사라진다 */
   private stepDrops(dt: number) {
     const p = this.player, c = this.char;
     for (let i = this.drops.length - 1; i >= 0; i--) {
       const dr = this.drops[i];
       dr.age += dt;
-      const dx = p.x - dr.x, dy = p.y - 14 - dr.y, dist = Math.hypot(dx, dy);
-      if (p.dead <= 0 && dr.age > 0.55 && (dist < 60 || dr.age > 1.3)) {
-        // 플레이어에게 빨려 들어온다
-        const sp = 140 + dr.age * 260;
+      if (dr.age > DROP_LIFE && !dr.picked) { this.drops.splice(i, 1); continue; }
+      if (dr.picked) {
+        const dx = p.x - dr.x, dy = p.y - 14 - dr.y, dist = Math.hypot(dx, dy), sp = 220 + (dr.flyT = (dr.flyT ?? 0) + dt) * 400;
         if (dist < 9 || dist < sp * dt) {
           this.drops.splice(i, 1);
           if (dr.coin) { this.acc.coins += dr.qty; this.events.push({ t: 'loot', text: `+${dr.qty} 코인` }); }
           else if (addItem(c, dr.id, dr.qty)) this.events.push({ t: 'loot', text: `${ITEMS[dr.id].name} +${dr.qty}`, item: dr.id });
-          else this.events.push({ t: 'loot', text: '가방이 가득 찼습니다!' });
+          else { dr.picked = false; dr.x = p.x; dr.y = p.y - 5; dr.floorY = p.y; dr.vy = 0; this.drops.push(dr); this.events.push({ t: 'loot', text: '가방이 가득 찼습니다!' }); }
           continue;
         }
         dr.x += (dx / dist) * sp * dt; dr.y += (dy / dist) * sp * dt;
@@ -615,8 +623,22 @@ export class World {
         if (dr.y >= dr.floorY - 5 && dr.vy > 0) { dr.y = dr.floorY - 5; dr.vy = 0; }
         dr.x = clamp(dr.x, 6, this.map.width - 6);
       }
-      if (dr.age > 30) this.drops.splice(i, 1);
     }
+    // 너무 많이 쌓이면 오래된 것부터 정리
+    if (this.drops.length > MAX_DROPS) this.drops.splice(0, this.drops.length - MAX_DROPS);
+  }
+
+  /** (x, y) 근처에 떨어진 아이템을 줍는다(캐릭터는 움직이지 않는다). 주운 개수 */
+  pickAt(x: number, y: number, r = 16): number {
+    if (this.player.dead > 0) return 0;
+    let n = 0, full = false;
+    for (const dr of this.drops) {
+      if (dr.picked || dr.age < 0.3 || Math.hypot(dr.x - x, dr.y - y) > r) continue;
+      if (!dr.coin && itemRoom(this.char, dr.id) < dr.qty) { full = true; continue; }
+      dr.picked = true; n++;
+    }
+    if (full && !n) this.events.push({ t: 'loot', text: '가방이 가득 찼습니다!' });
+    return n;
   }
 
   // ───────── 길 찾기 ─────────

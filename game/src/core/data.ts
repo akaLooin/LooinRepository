@@ -152,6 +152,7 @@ const items: ItemDef[] = [
     { id: `legs_${k}`, name: `${n} 다리 갑옷`, desc: '무릎을 지킨다.', kind: 'equip' as const, slot: 'legs' as const, stats: { def: t === 1 ? 8 : 16, hp: t === 1 ? 40 : 90 }, reqLv: t === 1 ? 19 : 34, sell: t === 1 ? 180 : 520 },
     { id: `boots_${k}`, name: `${n} 장화`, desc: '발걸음이 묵직하다.', kind: 'equip' as const, slot: 'shoes' as const, stats: { def: t === 1 ? 6 : 12, agi: t === 1 ? 3 : 6 }, reqLv: t === 1 ? 18 : 33, sell: t === 1 ? 160 : 480 },
   ]),
+  { id: 'tp_ticket', name: '순간이동 티켓', desc: '지도에서 마을이 아닌 맵으로 순간이동할 때 1장을 쓴다.', kind: 'key', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
@@ -200,7 +201,11 @@ const monsters: MonsterDef[] = [
   { id: 'shroomkin', name: '버섯도깨비', hp: 1700, atk: 80, acc: 94, defZero: 132, xp: 280, coins: [40, 75], speed: 22, motion: 'hop', radius: 9,
     drops: [{ item: 'sporecap', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.004, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
 ];
+// 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
+for (const m of monsters) if (!m.boss && !m.scale) m.drops.push({ item: 'tp_ticket', chance: 0.006, qty: [1, 1] });
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries(monsters.map((m) => [m.id, m]));
+/** 순간이동 티켓 */
+export const TP_TICKET = 'tp_ticket';
 
 const nodes: NodeDef[] = [
   { id: 'oak', name: '참나무', skill: 'chopping', reqLv: 1, hp: 6, xp: 3, item: 'log' },
@@ -517,6 +522,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stamp_afk', price: 4000, daily: 1 },
   { item: 'sculpt_tools', price: 1000, daily: 1 },
   { item: 'arena_ticket', price: 250, daily: 2 },
+  { item: 'tp_ticket', price: 60, daily: 8 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────

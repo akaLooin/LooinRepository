@@ -2,7 +2,7 @@
 import Phaser from 'phaser';
 import { MAPS } from '../core/data';
 import { Look } from '../core/state';
-import { HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEvent } from '../core/world';
+import { DROP_LIFE, HURT_TIME, Mob, NodeInst, Player, SWING_TIME, SwingKind, World, WorldEvent } from '../core/world';
 import { Game } from '../game';
 import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
@@ -273,7 +273,12 @@ export class GameScene extends Phaser.Scene {
     // enableCapture=false: 입력칸(이름·채팅)에 W·A·S·D·스페이스를 칠 수 있도록 키를 가로채지 않는다
     this.keys = this.input.keyboard!.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.scale.on('resize', () => this.fitCamera());
-    document.getElementById('game')!.addEventListener('pointerdown', (e) => this.onTap(e));
+    const el = document.getElementById('game')!;
+    el.addEventListener('pointerdown', (e) => { this.sweeping = true; this.onTap(e); });
+    // 누른 채 밀면 지나간 자리의 아이템을 줍는다(캐릭터는 움직이지 않는다)
+    el.addEventListener('pointermove', (e) => { if (this.sweeping) this.pickAt(e); });
+    addEventListener('pointerup', () => { this.sweeping = false; });
+    addEventListener('pointercancel', () => { this.sweeping = false; });
     this.fitCamera();
     if (this.pending !== undefined) this.setWorld(this.pending);
     else this.setWorld(this.game_.world);
@@ -389,7 +394,7 @@ export class GameScene extends Phaser.Scene {
     this.nodeViews = w.nodes.map((n) => new NodeView(this, n));
     this.mobs = w.mobs.map((m) => new MobView(this, m));
     this.rig = new CharRig(this, w.char.look, w.char.name);
-    this.camX = w.player.x; this.camY = 0;
+    this.camX = w.player.x; this.camY = 0; this.camGoal = null;
     this.cameras.main.fadeIn(250, 20, 16, 30);
   }
 
@@ -518,10 +523,15 @@ export class GameScene extends Phaser.Scene {
     // 카메라: 부드럽게 따라가며 맵 경계에서 멈춘다
     const cam = this.cameras.main, p = w.player;
     const halfW = cam.width / cam.zoom / 2, halfH = cam.height / cam.zoom / 2;
-    const tx = w.map.width > halfW * 2 ? Phaser.Math.Clamp(p.x + p.facing * 14, halfW, w.map.width - halfW) : w.map.width / 2;
+    // 가운데 구역(화면 너비의 약 1/3) 안에서는 카메라가 가만히 있고, 벗어나면 그만큼만 천천히 따라간다
+    const dz = halfW * 0.32;
+    let goal = this.camGoal ?? p.x;
+    if (p.x > goal + dz) goal = p.x - dz; else if (p.x < goal - dz) goal = p.x + dz;
+    const tx = w.map.width > halfW * 2 ? Phaser.Math.Clamp(goal, halfW, w.map.width - halfW) : w.map.width / 2;
+    this.camGoal = tx;
     const base = 52 - halfH;
     const ty = base + Math.min(0, (p.y + 50) * 0.7);
-    this.camX = smooth(this.camX, tx, dt, 5); this.camY = smooth(this.camY, ty, dt, 4);
+    this.camX = smooth(this.camX, tx, dt, 2.6); this.camY = smooth(this.camY, ty, dt, 2.2);
     if (Math.abs(this.camX - tx) > halfW * 2) this.camX = tx;
     cam.centerOn(this.camX, this.camY);
     const left = this.camX - halfW;
@@ -583,19 +593,33 @@ export class GameScene extends Phaser.Scene {
     for (const [uid, img] of this.shotViews) if (!alive.has(uid)) { img.destroy(); this.shotViews.delete(uid); }
   }
 
-  /** 화면 터치 → 월드 좌표로 바꿔 명령을 내린다 */
+  private sweeping = false;
+  /** 카메라가 머무는 가로 위치(가운데 구역을 벗어날 때만 옮긴다) */
+  private camGoal: number | null = null;
+  private toWorld(ev: PointerEvent): [number, number] {
+    const v = this.cameras.main.worldView;
+    return [v.x + (ev.clientX / innerWidth) * v.width, v.y + (ev.clientY / innerHeight) * v.height];
+  }
+  private pickAt(ev: PointerEvent): number {
+    const w = this.world;
+    if (!w || w !== this.game_.world) return 0;
+    const [x, y] = this.toWorld(ev);
+    return w.pickAt(x, y);
+  }
+  /** 화면 터치 → 월드 좌표로 바꿔 명령을 내린다. 떨어진 아이템을 누르면 줍기만 하고 움직이지 않는다 */
   private onTap(ev: PointerEvent) {
     const w = this.world;
     if (!w || w !== this.game_.world) return;
-    const v = this.cameras.main.worldView;
-    const x = v.x + (ev.clientX / innerWidth) * v.width, y = v.y + (ev.clientY / innerHeight) * v.height;
+    if (this.pickAt(ev) > 0) return;
+    const [x, y] = this.toWorld(ev);
     const cmd = w.tap(x, y);
     if (!cmd) return;
-    // 터치 표시: 이동은 바닥에 고리, 대상 지정은 붉은 고리
-    const target = cmd.k !== 'move';
-    const ring = this.add.ellipse(cmd.k === 'move' ? cmd.x : x, cmd.k === 'move' ? cmd.y : y, 4, target ? 4 : 2)
-      .setStrokeStyle(1.5, target ? 0xff8a7a : 0xffffff).setDepth(88);
-    this.tweens.add({ targets: ring, scaleX: 5, scaleY: 5, alpha: 0, duration: 380, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    // 터치 표시: 가려는 곳에 작은 화살표(대상 지정이면 붉은색)가 톡 떨어진다
+    const tx = cmd.k === 'move' ? cmd.x : x, ty = cmd.k === 'move' ? cmd.y : y;
+    const col = cmd.k === 'move' ? 0xffffff : 0xff8a7a;
+    const arrow = this.add.triangle(tx, ty - 10, 0, 0, 7, 0, 3.5, 5, col).setOrigin(0.5, 1).setStrokeStyle(1, 0x1e1420).setDepth(88).setAlpha(0);
+    this.tweens.add({ targets: arrow, y: ty - 2, alpha: 1, duration: 160, ease: 'Quad.easeIn' });
+    this.tweens.add({ targets: arrow, alpha: 0, delay: 520, duration: 260, onComplete: () => arrow.destroy() });
   }
 
   private syncDrops(w: World) {
@@ -605,7 +629,9 @@ export class GameScene extends Phaser.Scene {
       let img = this.dropViews.get(d.uid);
       if (!img) { img = this.add.image(d.x, d.y, d.coin ? 'it_coin' : ITEM_ICON[d.id]).setDepth(45).setScale(0.85); this.dropViews.set(d.uid, img); }
       const rest = d.vy === 0;
-      img.setPosition(d.x, d.y + (rest ? Math.sin(d.age * 5) * 1.2 : 0)).setRotation(rest ? 0 : d.age * 9);
+      img.setPosition(d.x, d.y + (rest ? Math.sin(d.age * 5) * 1.2 : 0)).setRotation(rest && !d.picked ? 0 : d.age * 9);
+      // 사라지기 1분 전부터 깜빡이지 않고 서서히 옅어진다
+      img.setAlpha(d.picked ? 1 : Math.max(0.35, Math.min(1, (DROP_LIFE - d.age) / 60)));
     }
     for (const [uid, img] of this.dropViews) if (!alive.has(uid)) { img.destroy(); this.dropViews.delete(uid); }
   }

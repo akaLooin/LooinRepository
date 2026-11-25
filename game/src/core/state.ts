@@ -5,7 +5,7 @@ import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  AFK_BASE, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -718,13 +718,26 @@ export function refillTeleports(acc: Account, now: number) {
   const days = acc.teleports.day ? Math.max(1, Math.round((new Date(d).getTime() - new Date(acc.teleports.day).getTime()) / 864e5)) : 1;
   acc.teleports = { n: Math.min(TELEPORTS_MAX, acc.teleports.n + days * (TELEPORTS_PER_DAY + meritValue(acc, 'teleport'))), day: d };
 }
+/** 맵의 처치 목표(다음 맵으로 가는 문 조건). 목표가 없으면 0 */
+export function mapQuota(id: string): number {
+  const gate = MAPS[id]?.portals.find((p) => p.reqKills && !p.key && WORLD1.includes(p.to));
+  return gate?.reqKills ?? 0;
+}
+/** 순간이동 할 수 있는 맵인가: 열렸고, 그 맵의 처치 목표를 채웠다(마을은 언제나) */
+export const canTeleportTo = (c: Character, id: string) => id === 'town' || (mapUnlocked(c, id) && (c.kills[id] ?? 0) >= mapQuota(id));
+/** 지도 순간이동: 마을은 무료, 다른 맵은 순간이동 티켓 1장(가방 → 창고 순서로 쓴다) */
 export function teleport(acc: Account, c: Character, id: string, now: number): string | null {
-  if (!MAPS[id] || !mapUnlocked(c, id)) return '아직 열리지 않은 맵';
+  void now;
+  if (!MAPS[id] || !mapUnlocked(c, id)) return '아직 열리지 않은 맵입니다';
   if (c.mapId === id) return '이미 이 맵에 있습니다';
-  refillTeleports(acc, now);
+  if (!canTeleportTo(c, id)) return `이 맵의 처치 목표(${mapQuota(id)}마리)를 채워야 순간이동할 수 있습니다`;
   if (id !== 'town') {
-    if (acc.teleports.n <= 0) return '오늘 순간이동을 다 썼습니다';
-    acc.teleports.n--;
+    if (countItem(c, TP_TICKET) > 0) removeItem(c, TP_TICKET, 1);
+    else {
+      const st = acc.storage.find((x) => x.id === TP_TICKET);
+      if (!st) return '순간이동 티켓이 필요합니다';
+      st.qty--; if (st.qty <= 0) acc.storage.splice(acc.storage.indexOf(st), 1);
+    }
   }
   c.mapId = id; c.x = id === 'town' ? 120 : 50; c.y = 0;
   return null;
@@ -735,7 +748,9 @@ export const today = (now: number) => { const d = new Date(now); return `${d.get
 export function shopLeft(acc: Account, idx: number, now: number): number {
   if (acc.shop.day !== today(now)) acc.shop = { day: today(now), bought: {} };
   const e = SHOP[idx];
-  return e ? e.daily - (acc.shop.bought[e.item] ?? 0) : 0;
+  // 공로 상점 '길잡이 표지판'은 순간이동 티켓 하루 구매 수를 늘린다
+  const extra = e?.item === TP_TICKET ? meritValue(acc, 'teleport') : 0;
+  return e ? e.daily + extra - (acc.shop.bought[e.item] ?? 0) : 0;
 }
 export function buy(acc: Account, c: Character, idx: number, qty: number, now: number): string | null {
   const e = SHOP[idx];

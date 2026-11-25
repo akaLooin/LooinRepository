@@ -203,3 +203,11 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .chardel { position: absolute; top: var(--sp-1); right: var(--sp-1); width: 2em; height: 2em; display: flex; align-items: center; justify-content: center; padding: 0; background: var(--c-surface-inset); border: 1px solid var(--c-border); border-radius: var(--r-sm); cursor: pointer; opacity: .75; }
 .chardel:hover, .chardel:focus-visible { opacity: 1; border-color: var(--c-text-bad); }
 .delbox { width: min(90vw, 26em); }
+/* 중요 알림: 화면 가운데 위쪽에 잠깐 떴다가 사라진다(깜빡이지 않게 서서히) */
+#notice { position: absolute; left: 50%; top: 18%; transform: translate(-50%, -6px); max-width: min(86vw, 30em); padding: var(--sp-2) var(--sp-5);
+  background: rgba(24, 18, 30, .92); color: var(--c-text); border: var(--sp-1) solid var(--c-accent); border-radius: var(--r-md); box-shadow: var(--sh-card);
+  font-weight: bold; text-align: center; pointer-events: none; opacity: 0; transition: opacity .25s ease, transform .25s ease; z-index: 150; }
+#notice.show { opacity: 1; transform: translate(-50%, 0); }
+.mapnode.sel { border-color: var(--c-accent); box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
+.mapnode.unmet img { opacity: .6; }
+.mapgo { margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--c-surface-inset); border: 1px solid var(--c-accent); border-radius: var(--r-md); }

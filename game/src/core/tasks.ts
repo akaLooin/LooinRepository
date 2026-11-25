@@ -67,7 +67,7 @@ export const MERITS: MeritDef[] = [
   { id: 'afk', name: '느긋한 마음', per: 0.01, max: 10, cost: 2, grow: 1, desc: (v) => `방치 효율 +${Math.round(v * 100)}%p` },
   { id: 'drop', name: '날카로운 눈', per: 0.02, max: 10, cost: 2, grow: 1, desc: (v) => `드롭률 +${Math.round(v * 100)}%` },
   { id: 'xp', name: '배움의 기쁨', per: 0.02, max: 10, cost: 2, grow: 1, desc: (v) => `경험치 +${Math.round(v * 100)}%` },
-  { id: 'teleport', name: '길잡이 표지판', per: 1, max: 5, cost: 3, grow: 1, desc: (v) => `하루 순간이동 +${v}회` },
+  { id: 'teleport', name: '길잡이 표지판', per: 2, max: 5, cost: 3, grow: 1, desc: (v) => `잡화점 순간이동 티켓 하루 구매 +${v}장` },
 ];
 export const MERIT_BY_ID = Object.fromEntries(MERITS.map((m) => [m.id, m])) as Record<MeritEff, MeritDef>;
 export const meritLv = (acc: Partial<Pick<Account, 'meritShop'>>, id: MeritEff) => acc.meritShop?.[id] ?? 0;

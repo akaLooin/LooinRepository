@@ -16,7 +16,7 @@ function play(mapId: string, seconds: number, prep?: (a: ReturnType<typeof setup
   prep?.(server);
   const client = clone(server);
   const w = new World(client, client.characters[0], new Rng(9));
-  for (let i = 0; i < seconds * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; }
+  for (let i = 0; i < seconds * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; if (i % 60 === 59) for (const d of w.drops.slice()) w.pickAt(d.x, d.y); }
   const c = client.characters[0];
   return { server, client, c, ca: { coins: client.coins, cards: client.cards, bosses: client.bosses } };
 }
@@ -144,20 +144,19 @@ describe('공격 바', () => {
 });
 
 describe('지도 순간이동', () => {
-  it('열린 맵만, 마을은 무료, 나머지는 하루 횟수를 쓰고 날이 바뀌면 채워진다', () => {
+  it('열린 맵만, 처치 목표를 채운 맵만, 마을은 무료, 나머지는 순간이동 티켓 1장', () => {
     const acc = setup(), c = acc.characters[0];
-    const day1 = new Date(2026, 0, 1, 12).getTime(), day3 = new Date(2026, 0, 3, 12).getTime();
-    expect(applyAction(acc, 0, { t: 'teleport', map: 'hills' }, day1).err).toMatch(/열리지/);
-    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, day1).ok).toBe(true);
-    const n = acc.teleports.n;
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'hills' }, 0).err).toMatch(/열리지/);
+    // 풀밭은 열렸지만 처치 목표(15)를 못 채웠다
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, 0).err).toMatch(/처치 목표/);
     c.kills.meadow = 15;
-    expect(applyAction(acc, 0, { t: 'teleport', map: 'hills' }, day1).ok).toBe(true);
-    expect(acc.teleports.n).toBe(n - 1);
-    expect(applyAction(acc, 0, { t: 'teleport', map: 'town' }, day1).ok).toBe(true);
-    expect(acc.teleports.n).toBe(n - 1); // 마을은 무료
-    acc.teleports.n = 0;
-    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, day1).err).toMatch(/다 썼/);
-    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, day3).ok).toBe(true); // 이틀 치가 쌓임
-    expect(acc.teleports.n).toBe(9);
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, 0).err).toMatch(/티켓/);
+    addItem(c, 'tp_ticket', 1); acc.storage.push({ id: 'tp_ticket', qty: 1 });
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, 0).ok).toBe(true);
+    expect(countItem(c, 'tp_ticket')).toBe(0); // 가방에서 먼저
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'town' }, 0).ok).toBe(true); // 마을은 무료
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'meadow' }, 0).ok).toBe(true); // 창고 티켓
+    expect(acc.storage.some((s) => s.id === 'tp_ticket')).toBe(false);
   });
+
 });

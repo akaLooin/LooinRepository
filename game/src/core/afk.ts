@@ -16,7 +16,8 @@ export interface AfkReport {
   items: { id: string; name: string; qty: number }[];
   cards: { name: string; qty: number }[];
   /** 가방이 가득 차 잃은 개수 */
-  lost: number;
+  /** 가방이 차서 줍지 않은 개수(버린 것이 아니라 애초에 줍지 않음) */
+  skipped: number;
   /** 먹은 음식 */
   food: number;
   /** 모루에서 만든 것(칸별) */
@@ -125,12 +126,12 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
   c.lastActive = now;
   const map = MAPS[c.mapId], hours = elapsed / 3600;
   const r = afkRates(acc, c);
-  const rep: AfkReport = { seconds: elapsed, mapName: map.name, mode: r.mode, kills: 0, xp: 0, coins: 0, levels: 0, items: [], cards: [], lost: 0, food: 0 };
+  const rep: AfkReport = { seconds: elapsed, mapName: map.name, mode: r.mode, kills: 0, xp: 0, coins: 0, levels: 0, items: [], cards: [], skipped: 0, food: 0 };
   const give = (id: string, qty: number) => {
     if (qty <= 0) return;
     const got = addItemSome(c, id, qty);
     if (got) rep.items.push({ id, name: ITEMS[id].name, qty: got });
-    rep.lost += qty - got;
+    rep.skipped += qty - got;
   };
 
   if (r.mode === 'fight') {

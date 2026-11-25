@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Looin Idle</string>
-    <string name="title_activity_main">Looin Idle</string>
+    <string name="app_name">테일즈토피아 Idle</string>
+    <string name="title_activity_main">테일즈토피아 Idle</string>
     <string name="package_name">com.looin.idle</string>
     <string name="custom_url_scheme">com.looin.idle</string>
 </resources>

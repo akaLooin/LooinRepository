@@ -4,13 +4,13 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, PETS, PET_MAX_LV, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_MAX_LV, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
   mapUnlocked, refillTeleports, anvilCap, anvilPointsFree, anvilRate, anvilSlotsOpen, equipCard, recipeLock, unequipCard, buy, collectAnvil, deposit, depositAll, haveMat, invSize, setProduct, shopLeft, spendAnvilPoint,
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
-  minibossOpen,
+  minibossOpen, mapQuota, canTeleportTo,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, playsLeft, spikeOpen, totemRunsLeft } from '../core/minigames';
@@ -69,6 +69,8 @@ function statInfo(k: StatKey, v: number, cls: ClassId): string[] {
   void b;
   return [...role, `${who[k]}이 됩니다`, ...lines[k]];
 }
+/** 화면 앞에 띄울 중요 알림인지(잠김·조건·부족·실패) */
+const IMPORTANT = /(열리지|잠겨|열립니다|필요|부족|없습니다|가득|할 수 없|쓸 수 없|아직|못했|맞지 않|최대 단계|이미)/;
 /** 아이콘 칸 + 숫자 배지(글자 대신). tone: ok(초록) / bad(빨강) */
 const tile = (src: string, badge: string | number, label: string, cls = '', tone = '') =>
   `<span class="ui-slot sm ${cls}" title="${label}" aria-label="${label}"><img class="px" src="${src}" alt="">${badge !== '' ? `<span class="qty ${tone}">${badge}</span>` : ''}</span>`;
@@ -111,6 +113,8 @@ export class UI {
   private afk: AfkReport | null = null;
   private craftSel = -1;
   private forgeSel = 0;
+  /** 지도에서 고른 맵(한 번 더 누르면 이동) */
+  private mapSel: string | null = null;
   /** 삭제 확인 중인 캐릭터 */
   private delIdx: number | null = null;
   private statSel: StatKey | null = null;
@@ -140,6 +144,7 @@ export class UI {
       <div id="bossbar" class="hidden"></div>
       <div id="skills" class="hidden"></div>
       <div id="toasts" aria-live="polite"></div>
+      <div id="notice" role="alert" aria-live="assertive"></div>
       <div id="modal" class="hidden"></div>
       <div id="bottom" class="ui-bottom hidden"><div id="bsum" class="ui-summary"></div><div id="bgauge" class="ui-gauges"></div><nav id="bmenu" class="ui-menu" aria-label="메뉴"></nav></div>
       <div id="title"></div>`;
@@ -196,7 +201,19 @@ export class UI {
   }
   private show(id: string, on: boolean) { this.$(id).classList.toggle('hidden', !on); }
 
+  /** 중요한 알림(잠김·부족·실패 등): 화면 가운데 위쪽에 크게 */
+  notice(text: string) {
+    const el = this.$('notice');
+    el.textContent = text;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(this.noticeT);
+    this.noticeT = window.setTimeout(() => el.classList.remove('show'), 2200);
+  }
+  private noticeT = 0;
+
   toast(text: string, item?: string) {
+    // 잠김·부족·실패 같은 알림은 놓치지 않게 화면 앞으로
+    if (!item && IMPORTANT.test(text)) { this.notice(text); return; }
     const box = this.$('toasts');
     const d = document.createElement('div');
     d.className = 'ui-toast';
@@ -307,7 +324,7 @@ export class UI {
       const l = this.draft.look;
       const sw = (label: string, key: 'hairColor' | 'skin' | 'outfit', list: string[]) =>
         `<div class="sw"><span class="ui-sm ui-muted">${label}</span>${list.map((col) => `<button class="chip" data-act="look:${key}:${col}" aria-label="${label} ${col}" aria-pressed="${l[key] === col}" style="background:${col}"></button>`).join('')}</div>`;
-      return `<h1>LOOIN IDLE</h1>
+      return `<h1 class="gametitle">테일즈토피아 <span>Idle</span></h1>
         <div class="ui-win creator"><header><h2>새 캐릭터</h2></header><div class="body">
           <div class="pv"><img class="px" src="${portraitUrl(l)}" alt="미리보기"></div>
           <div class="opts">
@@ -322,7 +339,7 @@ export class UI {
     // 삭제 확인: 이름을 그대로 써야 지운다
     const del = this.delIdx !== null ? acc.characters[this.delIdx] : null;
     if (del) {
-      return `<h1>LOOIN IDLE</h1><div class="ui-win delbox"><header><h2>캐릭터 삭제</h2></header><div class="body stack">
+      return `<h1 class="gametitle">테일즈토피아 <span>Idle</span></h1><div class="ui-win delbox"><header><h2>캐릭터 삭제</h2></header><div class="body stack">
         <div class="ui-row"><img class="px" src="${portraitUrl(del.look)}" alt="" style="height:4em"><div><b>${esc(del.name)}</b><div class="ui-sm ui-accent">Lv.${del.level} ${CLASSES[del.cls].name}</div></div></div>
         <p class="ui-sm ui-bad">삭제하면 되돌릴 수 없습니다. 이 캐릭터의 가방·장비·레벨·특성이 모두 사라집니다. 창고와 카드·우표 등 계정 공용 기록은 남습니다.</p>
         <label class="ui-sm ui-muted" for="delname">확인을 위해 캐릭터 이름 <b>${esc(del.name)}</b>을(를) 그대로 입력하세요</label>
@@ -343,7 +360,7 @@ export class UI {
     const slots = charSlots(acc), nextLv = FAMILY_SLOTS.find((n) => familyLevel(acc) < n);
     const add = (acc.characters.length < slots ? `<button class="charcard new" data-act="newChar"><span class="ui-xl">＋</span><span>새 캐릭터</span></button>` : '')
       + (slots < MAX_CHARACTERS && nextLv ? `<div class="charcard locked"><span class="ui-xl">🔒</span><span class="ui-xs ui-muted">가족 레벨 ${nextLv}</span></div>` : '');
-    return `<h1>LOOIN IDLE</h1><div class="ui-sm ui-muted">캐릭터를 선택하세요 — 선택하지 않은 캐릭터는 계속 방치 성장합니다</div><div class="cards">${cards}${add}</div>`;
+    return `<h1 class="gametitle">테일즈토피아 <span>Idle</span></h1><div class="ui-sm ui-muted">캐릭터를 선택하세요 — 선택하지 않은 캐릭터는 계속 방치 성장합니다</div><div class="cards">${cards}${add}</div>`;
   }
 
   private panelHtml(c: Character): string {
@@ -373,7 +390,7 @@ export class UI {
           ${r.cards.length ? `<p class="ui-accent">${r.cards.map((k) => `★ ${k.name} 카드 ×${k.qty}`).join(' · ')}</p>` : ''}
           ${r.anvil ? `<p class="ui-sm">모루에서 ${r.anvil.items.map((x) => `${ITEMS[x.item].name} ${x.made}개`).join(', ')}를 만들었습니다${r.anvil.levels ? ` (대장 레벨 +${r.anvil.levels})` : ''}.</p>` : ''}
           ${r.food ? `<p class="ui-sm ui-muted">음식 ${r.food}개를 먹었습니다.</p>` : ''}
-          ${r.lost ? `<p class="ui-sm ui-bad">가방 칸이나 한 칸 최대치가 모자라 아이템 ${r.lost.toLocaleString()}개를 잃었습니다. 창고에 맡기거나 주머니를 쓰세요.</p>` : ''}
+          ${r.skipped ? `<p class="ui-sm ui-accent">가방이 가득 차서 그 뒤로는 줍지 않았습니다(남은 칸만큼만 주웠습니다). 창고에 맡기거나 가방·주머니를 늘리면 더 모을 수 있습니다.</p>` : ''}
           <button class="ui-btn primary block" data-act="close">받기</button>`, false);
       }
 
@@ -469,20 +486,26 @@ export class UI {
       }
 
       case 'map': {
-        // 열린 맵을 누르면 순간이동(마을은 무료, 나머지는 하루 무료 횟수). 보스방은 숲 끝 문으로
-        refillTeleports(g.acc, Date.now());
+        // 맵을 누르면 고르고, 한 번 더(또는 아래 이동 버튼) 누르면 순간이동. 마을은 무료, 나머지는 티켓 1장.
+        // 처치 목표를 다 채운 맵만 순간이동할 수 있고, 다 채우면 처치 수는 감춘다
+        const tickets = countItem(c, TP_TICKET) + storageCount(g.acc, TP_TICKET);
         const nodes = WORLD1.map((id) => {
-          const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id);
-          const gate = m.portals.find((p) => p.reqKills && !p.key && WORLD1.includes(p.to));
-          const sub = here ? '현재 위치' : !open ? '잠김' : m.spawns.length ? `처치 ${(c.kills[id] ?? 0).toLocaleString()}${gate ? `/${gate.reqKills}` : ''}` : '무료';
+          const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id), q = mapQuota(id), k = c.kills[id] ?? 0;
+          const ok = canTeleportTo(c, id), sel = this.mapSel === id;
+          const sub = here ? '현재 위치' : !open ? '잠김' : q && k < q ? `처치 ${k.toLocaleString()}/${q}` : id === 'town' ? '무료' : '';
           const art = m.spawns.length ? iconUrl(`mob_${m.spawns[0].monster}`) : iconUrl('ui_teleport');
-          return `<button class="mapnode ${here ? 'here' : ''} ${open ? '' : 'locked'}" data-act="tp:${id}" ${open && !here ? '' : 'disabled'} aria-label="${m.name}로 순간이동">
-            <img class="px" src="${open ? art : iconUrl('ui_lock')}" alt=""><b>${open ? m.name : '???'}</b><span class="ui-xs ${here ? 'ui-accent' : 'ui-muted'}">${sub}</span></button>`;
+          return `<button class="mapnode ${here ? 'here' : ''} ${open ? '' : 'locked'} ${sel ? 'sel' : ''} ${open && !ok && !here ? 'unmet' : ''}" data-act="mapsel:${id}" ${open && !here ? '' : 'disabled'} aria-pressed="${sel}" aria-label="${m.name}">
+            <img class="px" src="${open ? art : iconUrl('ui_lock')}" alt=""><b>${open ? m.name : '???'}</b><span class="ui-xs ${here ? 'ui-accent' : q && k < q ? 'ui-bad' : 'ui-muted'}">${sub}</span></button>`;
         }).join('<span class="mapline"></span>');
+        const pick = this.mapSel && MAPS[this.mapSel] && this.mapSel !== c.mapId ? this.mapSel : null;
+        const can = pick ? canTeleportTo(c, pick) : false, free = pick === 'town';
+        const go = pick ? `<div class="ui-row mapgo" style="margin:0 0 var(--sp-3)"><b class="ui-grow">${MAPS[pick].name}</b>
+            <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
+            <button class="ui-btn primary" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button></div>` : '<p class="ui-xs ui-muted">이동할 맵을 고르세요. 한 번 더 누르면 이동합니다.</p>';
         const lair = `<span class="mapline"></span><div class="mapnode ${c.mapId === 'lair' ? 'here' : ''} ${mapUnlocked(c, 'forest') ? '' : 'locked'}"><img class="px" src="${iconUrl('mob_mossking')}" alt=""><b>${MAPS.lair.name}</b><span class="ui-xs ui-muted">${g.acc.bosses.mossking ? `처치 ${g.acc.bosses.mossking}회` : '숲 끝 문 · 열쇠'}</span></div>`;
         const next = g.acc.bosses.mossking ? '<span class="mapline"></span><div class="mapnode locked"><img class="px" src="' + iconUrl('ui_lock') + '" alt=""><b>2월드</b><span class="ui-xs ui-muted">준비 중</span></div>' : '';
-        return win(`지도 <span class="ui-sm">${ui('ui_teleport', 'tic')} ${g.acc.teleports.n}/${TELEPORTS_MAX}</span>`, `<div class="mapchain">${nodes}${lair}${next}</div>
-          <p class="ui-xs ui-muted">열린 맵을 누르면 바로 이동합니다. 마을은 언제나 무료이고, 다른 맵은 하루마다 무료 이동 횟수가 쌓입니다.</p>`);
+        return win(`지도 <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `${go}<div class="mapchain">${nodes}${lair}${next}</div>
+          <p class="ui-xs ui-muted">마을은 언제나 무료, 다른 맵은 순간이동 티켓 1장. 티켓은 잡화점에서 팔고 몬스터도 드물게 떨어뜨립니다.</p>`);
       }
 
       case 'chat':
@@ -1026,7 +1049,7 @@ export class UI {
     const [act, a, b] = el.dataset.act!.split(':');
     this.audio?.play('click');
     const g = this.game, c = g.char;
-    const fail = (msg: string | null) => { if (msg) { this.toast(msg); this.audio?.play('fail'); } };
+    const fail = (msg: string | null) => { if (msg) { this.notice(msg); this.audio?.play('fail'); } };
     switch (act) {
       case 'delask': this.delIdx = +a; break;
       case 'delcancel': this.delIdx = null; break;
@@ -1129,7 +1152,12 @@ export class UI {
         if (i >= 0) fail(g.act({ t: 'barSet', bar: this.quickPage, slot: i, id: null }).err ?? null);
         break;
       }
-      case 'tp': { const r = g.act({ t: 'teleport', map: a }); if (r.ok) { g.travelTo(); this.panel = null; } else fail(r.err ?? null); break; }
+      case 'mapsel': {
+        // 같은 맵을 한 번 더 누르면 이동
+        if (this.mapSel !== a) { this.mapSel = a; break; }
+      }
+      // falls through
+      case 'tp': { const r = g.act({ t: 'teleport', map: a }); if (r.ok) { g.travelTo(); this.panel = null; this.mapSel = null; this.audio?.play('portal'); } else fail(r.err ?? null); break; }
       case 'opt': g.act({ t: 'option', autoAttacks: !g.acc.options.autoAttacks }); break;
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
       case 'sfx': this.audio?.setSfx(!this.audio.sfxOn); break;

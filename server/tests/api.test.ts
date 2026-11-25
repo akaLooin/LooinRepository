@@ -127,7 +127,8 @@ for (const [label, make] of await makeStores()) {
       const acc = (await call('GET', '/account', g.token)).json.account;
       const c = acc.characters[0]; c.auto = true;
       const w = new World(acc, c, new Rng(5));
-      for (let i = 0; i < 240 * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; }
+      // 떨어진 아이템은 플레이어처럼 1초마다 쓸어 줍는다
+      for (let i = 0; i < 240 * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; if (i % 60 === 59) for (const d of w.drops.slice()) w.pickAt(d.x, d.y); }
       tick(240_000);
       const moss = c.inventory.find((s: { id: string }) => s.id === 'moss')?.qty ?? 0;
       expect(moss).toBeGreaterThan(0);

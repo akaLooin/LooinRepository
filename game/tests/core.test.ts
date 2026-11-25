@@ -16,8 +16,11 @@ const setup = () => {
   const c = createCharacter(acc, '테스트', look, 0)!;
   return { acc, c };
 };
+/** 실제 플레이어처럼 떨어진 아이템을 주워 담는다(1초마다 화면을 쓸어 줍기) */
+const sweep = (w: World) => { for (const d of w.drops.slice()) w.pickAt(d.x, d.y); };
 const run = (w: World, seconds: number) => {
-  for (let i = 0; i < seconds * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; }
+  for (let i = 0; i < seconds * 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; if (i % 60 === 59) sweep(w); }
+  for (let i = 0; i < 60; i++) { w.step(1 / 60, { move: 0, climb: 0 }); w.events.length = 0; if (i === 0) sweep(w); }
 };
 
 describe('성장', () => {
@@ -155,7 +158,14 @@ describe('방치 보상', () => {
     expect(r.mode).toBe('gather');
     // 한 칸이 차면 빈 칸에 이어서 쌓고, 가방이 다 차서 못 넣은 만큼만 잃는다
     expect(countItem(c, 'ore')).toBe(345);
-    expect(r.lost).toBe(0);
+    expect(r.skipped).toBe(0);
+    // 가방이 거의 차 있으면 남은 칸만큼만 줍고 멈춘다(버리지 않는다)
+    const { acc: a2, c: c2 } = setup();
+    c2.mapId = 'hills'; c2.activity = { k: 'gather', node: 'redrock' };
+    for (let i = 0; i < 15; i++) c2.inventory.push({ id: 'pebble', qty: 25 });
+    const r2 = computeAfk(a2, c2, 3600_000, new Rng(1))!;
+    expect(countItem(c2, 'ore')).toBe(25);
+    expect(r2.skipped).toBeGreaterThan(0);
     expect(r.skill!.levels).toBeGreaterThan(0);
   });
 });
@@ -253,8 +263,15 @@ describe('터치 조작', () => {
     const w = new World(acc, c, new Rng(1));
     for (const m of w.mobs) m.alive = false, m.respawnT = 999;
     expect(w.tap(95, -20)?.k).toBe('node');
-    until(w, () => countItem(c, 'log') >= 2, 40);
-    expect(countItem(c, 'log')).toBeGreaterThanOrEqual(2);
+    // 통나무는 바닥에 떨어지고, 눌러서 주워야 가방에 들어온다(줍는 동안 캐릭터는 그대로 벤다)
+    until(w, () => w.drops.filter((d) => d.id === 'log').length >= 2, 40);
+    expect(countItem(c, 'log')).toBe(0);
+    const d = w.drops.find((x) => x.id === 'log')!;
+    w.step(0.5, { move: 0, climb: 0 });
+    expect(w.pickAt(d.x, d.y)).toBeGreaterThan(0);
+    expect(w.command?.k).toBe('node');
+    until(w, () => countItem(c, 'log') >= 1, 5);
+    expect(countItem(c, 'log')).toBeGreaterThanOrEqual(1);
     expect(w.tap(24, -20)?.k).toBe('portal');
     w.events.length = 0;
     expect(until(w, () => w.events.some((e) => e.t === 'arrive'))).toBe(true);
