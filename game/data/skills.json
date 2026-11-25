@@ -1,0 +1,5 @@
+{
+  "sk_mp1": { "name": "책장 회오리", "mp_cost": 1, "attack": "atk_mp1", "invuln": 26, "cutin": false },
+  "sk_mp2": { "name": "책갈피 돌격", "mp_cost": 2, "attack": "atk_mp2", "invuln": 30, "cutin": false },
+  "sk_mp3": { "name": "대단원", "mp_cost": 3, "attack": "atk_mp3", "invuln": 70, "cutin": true }
+}

@@ -1,0 +1,6 @@
+{
+  "mon_inkblob": { "name": "번진 잉크", "ai": "melee", "hp": 380, "atk": 70, "def": 10, "size": [18, 14], "speed": 0.9, "exp": 14, "gold": 6, "fly": false, "reach": 22 },
+  "mon_crane":   { "name": "종이학",   "ai": "ranged", "hp": 260, "atk": 60, "def": 6,  "size": [16, 12], "speed": 1.1, "exp": 16, "gold": 7, "fly": true, "reach": 140 },
+  "mon_quill":   { "name": "깃펜 병사", "ai": "melee", "hp": 620, "atk": 90, "def": 20, "size": [14, 26], "speed": 1.1, "exp": 24, "gold": 10, "fly": false, "reach": 26 },
+  "boss_binder": { "name": "제본 골렘", "ai": "boss_binder", "hp": 7200, "atk": 120, "def": 30, "size": [44, 58], "speed": 1.0, "exp": 220, "gold": 120, "fly": false, "reach": 40, "boss": true, "stagger": 900 }
+}

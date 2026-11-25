@@ -1,0 +1,70 @@
+{
+  "dgn_01": {
+    "book": "얼룩진 동화책",
+    "name": "1장 — 번져버린 첫 페이지",
+    "rec_lv": 1,
+    "first_stage": "stg_01_1",
+    "time_par": 240,
+    "stages": {
+      "stg_01_1": {
+        "title": "1쪽 · 잉크가 스며든 숲",
+        "width": 900,
+        "palette": "parchment",
+        "platforms": [[0, 238, 900, 40, "solid"], [150, 190, 110, 6, "oneway"], [340, 150, 120, 6, "oneway"], [560, 190, 130, 6, "oneway"], [720, 140, 110, 6, "oneway"]],
+        "spawn": [40, 238],
+        "waves": [
+          [["mon_inkblob", 260, 238], ["mon_inkblob", 330, 238], ["mon_inkblob", 380, 150]],
+          [["mon_inkblob", 600, 238], ["mon_crane", 700, 110], ["mon_inkblob", 620, 190], ["mon_inkblob", 760, 238]]
+        ],
+        "next": [["stg_01_2", 860, 238]]
+      },
+      "stg_01_2": {
+        "title": "2쪽 · 갈림길 삽화",
+        "width": 960,
+        "palette": "dusk",
+        "platforms": [[0, 238, 960, 40, "solid"], [120, 196, 100, 6, "oneway"], [260, 160, 120, 6, "oneway"], [430, 120, 110, 6, "oneway"], [600, 160, 110, 6, "oneway"], [780, 110, 150, 6, "oneway"]],
+        "spawn": [40, 238],
+        "waves": [
+          [["mon_quill", 300, 238], ["mon_inkblob", 280, 160], ["mon_crane", 420, 90]],
+          [["mon_quill", 640, 238], ["mon_quill", 700, 238], ["mon_crane", 640, 120], ["mon_inkblob", 820, 110]]
+        ],
+        "next": [["stg_01_3a", 920, 238], ["stg_01_3b", 860, 110]]
+      },
+      "stg_01_3a": {
+        "title": "3쪽(아래) · 젖은 지하 서고",
+        "width": 820,
+        "palette": "deep",
+        "platforms": [[0, 238, 820, 40, "solid"], [180, 186, 140, 6, "oneway"], [420, 150, 140, 6, "oneway"], [620, 190, 120, 6, "oneway"]],
+        "spawn": [40, 238],
+        "waves": [
+          [["mon_inkblob", 240, 238], ["mon_inkblob", 300, 238], ["mon_inkblob", 360, 238], ["mon_quill", 460, 238]],
+          [["mon_quill", 620, 238], ["mon_inkblob", 660, 190], ["mon_crane", 700, 100]]
+        ],
+        "next": [["stg_01_boss", 780, 238]]
+      },
+      "stg_01_3b": {
+        "title": "3쪽(위) · 바람 부는 책등",
+        "width": 820,
+        "palette": "sky",
+        "platforms": [[0, 238, 820, 40, "solid"], [100, 180, 120, 6, "oneway"], [280, 130, 140, 6, "oneway"], [480, 100, 120, 6, "oneway"], [640, 150, 140, 6, "oneway"]],
+        "spawn": [40, 238],
+        "waves": [
+          [["mon_crane", 260, 90], ["mon_crane", 340, 80], ["mon_inkblob", 320, 130]],
+          [["mon_crane", 560, 70], ["mon_quill", 600, 238], ["mon_crane", 700, 110], ["mon_inkblob", 680, 150]]
+        ],
+        "next": [["stg_01_boss", 780, 238]]
+      },
+      "stg_01_boss": {
+        "title": "마지막 쪽 · 제본실",
+        "width": 560,
+        "palette": "boss",
+        "platforms": [[0, 238, 560, 40, "solid"], [70, 176, 110, 6, "oneway"], [380, 176, 110, 6, "oneway"], [220, 126, 120, 6, "oneway"]],
+        "spawn": [60, 238],
+        "waves": [
+          [["boss_binder", 420, 238]]
+        ],
+        "next": []
+      }
+    }
+  }
+}

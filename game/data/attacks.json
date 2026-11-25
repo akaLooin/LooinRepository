@@ -1,0 +1,12 @@
+{
+  "atk_g1":   { "startup": 4, "active": 3, "recovery": 12, "cancel": 9,  "hitbox": [2, -22, 26, 16], "mul": 0.8, "hitstop": 3, "hitstun": 20, "kb": [1.2, 0.0], "launch": 0.0, "lunge": 1.0, "mp": 0.05 },
+  "atk_g2":   { "startup": 4, "active": 3, "recovery": 12, "cancel": 9,  "hitbox": [2, -22, 28, 16], "mul": 0.9, "hitstop": 3, "hitstun": 20, "kb": [1.2, 0.0], "launch": 0.0, "lunge": 1.0, "mp": 0.05 },
+  "atk_g3":   { "startup": 5, "active": 4, "recovery": 14, "cancel": 11, "hitbox": [0, -26, 30, 22], "mul": 1.0, "hitstop": 4, "hitstun": 22, "kb": [1.0, 0.0], "launch": 0.0, "lunge": 1.4, "mp": 0.05 },
+  "atk_g4":   { "startup": 7, "active": 4, "recovery": 20, "cancel": 99, "hitbox": [0, -30, 34, 30], "mul": 1.5, "hitstop": 7, "hitstun": 30, "kb": [2.6, 0.0], "launch": 4.6, "lunge": 2.0, "mp": 0.07 },
+  "atk_dash": { "startup": 3, "active": 6, "recovery": 16, "cancel": 99, "hitbox": [0, -24, 30, 20], "mul": 1.2, "hitstop": 5, "hitstun": 26, "kb": [3.0, 0.0], "launch": 3.0, "lunge": 3.5, "mp": 0.06 },
+  "atk_air":  { "startup": 3, "active": 5, "recovery": 10, "cancel": 99, "hitbox": [0, -26, 28, 26], "mul": 0.9, "hitstop": 4, "hitstun": 22, "kb": [1.0, 0.0], "launch": 2.4, "lunge": 0.0, "mp": 0.05 },
+  "atk_mp1":  { "startup": 8, "active": 18, "recovery": 14, "cancel": 99, "hitbox": [-34, -36, 68, 40], "mul": 0.55, "hits": 4, "hitstop": 3, "hitstun": 26, "kb": [1.6, 0.0], "launch": 2.0, "lunge": 0.0, "mp": 0.0 },
+  "atk_mp2":  { "startup": 10, "active": 16, "recovery": 18, "cancel": 99, "hitbox": [-6, -30, 40, 30], "mul": 0.9, "hits": 3, "hitstop": 4, "hitstun": 30, "kb": [2.0, 0.0], "launch": 3.6, "lunge": 7.5, "mp": 0.0 },
+  "atk_mp3":  { "startup": 40, "active": 6, "recovery": 24, "cancel": 99, "hitbox": [-260, -200, 520, 260], "mul": 4.5, "hitstop": 12, "hitstun": 40, "kb": [3.0, 0.0], "launch": 5.5, "lunge": 0.0, "mp": 0.0 },
+  "atk_counter": { "startup": 1, "active": 6, "recovery": 18, "cancel": 99, "hitbox": [-40, -40, 80, 46], "mul": 0.3, "hitstop": 4, "hitstun": 30, "kb": [4.0, 0.0], "launch": 3.0, "lunge": 0.0, "mp": 0.0 }
+}
