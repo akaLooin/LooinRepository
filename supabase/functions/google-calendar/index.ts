@@ -571,8 +571,8 @@ async function every(make: () => any, key: string): Promise<Row[]> {
 }
 
 /**
- * One-time clean-up of copies (user, 2026-11-23: saving a Google event made a new one): single (not repeating) events
- * of the same Google calendar with the same title, days and times are copies; the oldest stays, the others leave the app and
+ * One-time clean-up of copies (user, 2026-11-23: saving a Google event made a new one): stored events of the same
+ * Google calendar with the same title, days, times and repeat rule are copies; the oldest stays, the others leave the app and
  * Google. {dry: true} only counts.
  */
 async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
@@ -583,12 +583,12 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
   const { data: cals } = await db.from("google_calendars").select("calendar_id, can_write").eq("user_id", uid);
   const canWrite = new Set((cals ?? []).filter((c) => c.can_write).map((c) => c.calendar_id));
   const groups = new Map<string, Row[]>();
-  let repeatsSkipped = 0;
+  // a copy is a second stored event that is the same: same calendar, title, first day, times and the same repeat
+  // rule (a whole second repeat), or the same changed time of a repeat. The days a repeat comes back on are one stored
+  // event, never copies of each other, so a usual repeat is never touched (user, 2026-11-25).
+  let repeatGroups = 0;
   for (const e of evs) {
-    // repeating events (and changed times of a repeat) are never touched: only single events that are the same on
-    // the same day (user, 2026-11-25)
-    if (e.repeat || e.instance_of) { repeatsSkipped++; continue; }
-    const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time]);
+    const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time, e.repeat ?? null, e.instance_of ?? null]);
     groups.set(k, [...(groups.get(k) ?? []), e]);
   }
   // the one kept: a linked one if there is (it is the real Google event), the oldest of those; copies with no link are
@@ -598,6 +598,7 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
   for (const list of groups.values()) {
     if (list.length < 2) continue;
     groupsWithCopies++;
+    if (list[0].repeat) repeatGroups++;
     list.sort((a, b) => Number(!links.has(a.id)) - Number(!links.has(b.id)) || String(a.created_at).localeCompare(String(b.created_at)));
     for (const e of list.slice(1)) {
       copies++;
@@ -614,7 +615,7 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean) {
       removed++;
     }
   }
-  return { events: evs.length, repeatsSkipped, groupsWithCopies, copies, appOnly, inGoogle, removed, dry };
+  return { events: evs.length, groupsWithCopies, repeatGroups, copies, appOnly, inGoogle, removed, dry };
 }
 
 /** What Google said a moment ago (colours, labels), kept while this server copy lives: a quick round asks less. */
