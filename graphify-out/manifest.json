@@ -156,9 +156,9 @@
     "semantic_hash": ""
   },
   "game/src/core/state.ts": {
-    "mtime": 1795565185.361953,
-    "seen": 1795565385.1785874,
-    "ast_hash": "d56c7532b3755d04eb64705c1c531581",
+    "mtime": 1795565809.3323894,
+    "seen": 1795565866.615939,
+    "ast_hash": "7e4aae2b1a10503dfdf8b8f706462ed7",
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
@@ -168,9 +168,9 @@
     "semantic_hash": ""
   },
   "game/src/game.ts": {
-    "mtime": 1795564133.5704088,
-    "seen": 1795564288.5628548,
-    "ast_hash": "bc10e4d1268c8c70345287e4f6647e87",
+    "mtime": 1795565809.338893,
+    "seen": 1795565866.6160119,
+    "ast_hash": "7552f3f0746f6e206a5fbfb94c4a58f4",
     "semantic_hash": ""
   },
   "game/src/main.ts": {
@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1795565254.6535478,
-    "seen": 1795565385.1788135,
-    "ast_hash": "99243ee01a5a442c6d0efa26b025832f",
+    "mtime": 1795565809.3405967,
+    "seen": 1795565866.616174,
+    "ast_hash": "a489b8f634240a4068beea39b806be93",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
@@ -816,9 +816,9 @@
     "semantic_hash": ""
   },
   "game/src/net.ts": {
-    "mtime": 1795560695.220855,
-    "seen": 1795560757.834357,
-    "ast_hash": "c8aaafcde17134d306d337182715d448",
+    "mtime": 1795565809.338622,
+    "seen": 1795565866.6160316,
+    "ast_hash": "0beac29d8a1c435c561cb748d6e03dd3",
     "semantic_hash": ""
   },
   "game/tests/server-rules.test.ts": {
@@ -840,9 +840,9 @@
     "semantic_hash": ""
   },
   "server/src/app.ts": {
-    "mtime": 1795565185.3628664,
-    "seen": 1795565385.179017,
-    "ast_hash": "394fec127e80714cc1b384f14105bff5",
+    "mtime": 1795565809.3382907,
+    "seen": 1795565866.6163785,
+    "ast_hash": "f3ea955747d132fc21c251438b5e60d3",
     "semantic_hash": ""
   },
   "server/src/index.ts": {
@@ -858,9 +858,9 @@
     "semantic_hash": ""
   },
   "server/tests/api.test.ts": {
-    "mtime": 1794933084.187516,
-    "seen": 1794933366.57723,
-    "ast_hash": "570c886f2abab8ffe209f2004c89c0c3",
+    "mtime": 1795565834.3855357,
+    "seen": 1795565866.6164322,
+    "ast_hash": "b099ce81121a960e10d8f9d2e9609da6",
     "semantic_hash": ""
   },
   "server/tsconfig.json": {
