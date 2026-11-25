@@ -289,7 +289,7 @@ export class UI {
     // 튀어나오는 애니메이션은 창을 새로 열 때만(같은 창을 다시 그릴 때는 재생하지 않는다)
     if (this.panel !== this.shownPanel) {
       this.shownPanel = this.panel;
-      if (this.panel) { const m = this.$('modal'); m.classList.remove('opening'); void m.offsetWidth; m.classList.add('opening'); }
+      if (this.panel) { const m = this.$('modal'); m.classList.remove('opening'); void m.offsetWidth; m.classList.add('opening'); this.audio?.play('open'); }
     }
     if (this.panel) this.put('modal', this.panelHtml(c));
     if (this.panel === 'chat' && document.getElementById('chatlog')) {
@@ -1026,7 +1026,7 @@ export class UI {
     const [act, a, b] = el.dataset.act!.split(':');
     this.audio?.play('click');
     const g = this.game, c = g.char;
-    const fail = (msg: string | null) => { if (msg) this.toast(msg); };
+    const fail = (msg: string | null) => { if (msg) { this.toast(msg); this.audio?.play('fail'); } };
     switch (act) {
       case 'delask': this.delIdx = +a; break;
       case 'delcancel': this.delIdx = null; break;
@@ -1146,7 +1146,7 @@ export class UI {
       case 'put': fail(g.act({ t: 'deposit', id: a }).err ?? null); break;
       case 'take': fail(g.act({ t: 'withdraw', id: a }).err ?? null); break;
       case 'putall': { const r = g.act({ t: 'depositAll' }); this.toast(r.n ? `${r.n}종류를 창고에 맡겼습니다` : '맡길 재료가 없습니다'); break; }
-      case 'buy': { const r = g.act({ t: 'buy', idx: +a, qty: +b }); fail(r.err ?? null); if (r.ok) this.toast(`${ITEMS[SHOP[+a].item].name} ×${b} 구입`, SHOP[+a].item); break; }
+      case 'buy': { const r = g.act({ t: 'buy', idx: +a, qty: +b }); fail(r.err ?? null); if (r.ok) { this.toast(`${ITEMS[SHOP[+a].item].name} ×${b} 구입`, SHOP[+a].item); this.audio?.play('buy'); } break; }
       case 'prod': fail(g.act({ t: 'prod', slot: this.prodSlot, item: a || null }).err ?? null); break;
       case 'cardon': fail(g.act({ t: 'cardOn', card: a }).err ?? null); break;
       case 'cardoff': g.act({ t: 'cardOff', slot: +a }); break;
@@ -1171,8 +1171,8 @@ export class UI {
       case 'stat': g.act({ t: 'stat', stat: a as StatKey }); break;
       case 'talent': g.act({ t: 'talent', id: a }); break;
       case 'qaccept': if (c && g.act({ t: 'qaccept', npc: a }).ok) { this.toast(`퀘스트 수락: ${currentQuest(c, a)!.name}`); this.panel = null; } break;
-      case 'qdone': { const name = c && currentQuest(c, a)?.name; const r = g.act({ t: 'qdone', npc: a }); fail(r.err ?? null); if (r.ok) this.toast(`퀘스트 완료: ${name}`); break; }
-      case 'craft': { const r = g.act({ t: 'craft', idx: +a }); fail(r.err ?? null); if (r.ok) this.toast(`${ITEMS[RECIPES[+a].item].name} ${RECIPES[+a].unlock ? '완료 — 모루가 한 단계 올랐습니다!' : '제작 완료!'}`, RECIPES[+a].item); break; }
+      case 'qdone': { const name = c && currentQuest(c, a)?.name; const r = g.act({ t: 'qdone', npc: a }); fail(r.err ?? null); if (r.ok) { this.toast(`퀘스트 완료: ${name}`); this.audio?.play('quest'); } break; }
+      case 'craft': { const r = g.act({ t: 'craft', idx: +a }); fail(r.err ?? null); if (r.ok) this.toast(`${ITEMS[RECIPES[+a].item].name} ${RECIPES[+a].unlock ? '완료 — 모루가 한 단계 올랐습니다!' : '제작 완료!'}`, RECIPES[+a].item); if (r.ok) this.audio?.play('craft'); break; }
     }
     this.refresh();
   }

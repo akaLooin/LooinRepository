@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Audio } from './audio';
+import { songFor } from './music';
 import { Game } from './game';
 import { GameScene } from './render/scene';
 import { buildAll } from './render/sprites';
@@ -17,19 +18,23 @@ async function boot() {
   const scene = new GameScene(game);
   const ui = new UI(game);
   const onWorld = game.onWorld;
-  game.onWorld = (w) => { scene.setWorld(w); onWorld(w); };
   const audio = new Audio();
+  // 맵에 따라 곡을 바꾼다(캐릭터 선택 화면은 마을 곡)
+  game.onWorld = (w) => { scene.setWorld(w); onWorld(w); audio.setSong(w ? songFor(w.map.theme, !!w.map.boss, !!w.map.arena) : 'town'); if (w) audio.play('portal'); };
   ui.audio = audio;
   game.onEvent = (e) => {
     scene.handle(e); ui.onEvent(e);
     // 효과음
     if (e.t === 'dmg') audio.play(e.miss ? 'miss' : e.onPlayer ? (e.amount ? 'hurt' : 'miss') : e.crit ? 'crit' : 'hit');
-    else if (e.t === 'loot') audio.play(e.text.includes('코인') ? 'coin' : e.item ? 'item' : 'click');
+    else if (e.t === 'loot') audio.play(e.text.includes('카드') ? 'card' : e.text.includes('나타났') ? 'warn' : e.text.includes('코인') ? 'coin' : e.item ? 'item' : 'click');
     else if (e.t === 'level' || e.t === 'skill' || e.t === 'boss') audio.play('level');
     else if (e.t === 'yield') audio.play(e.item === 'ore' ? 'mine' : 'chop');
     else if (e.t === 'slam') audio.play('slam');
     else if (e.t === 'heal') audio.play('heal');
     else if (e.t === 'cast') audio.play('skill');
+    else if (e.t === 'kill') audio.play('kill');
+    else if (e.t === 'miniboss' || e.t === 'arenaEnd') audio.play('quest');
+    else if (e.t === 'faint') audio.play('fail');
   };
   game.onNet = (st, msg) => {
     if (st === 'online') ui.toast('서버에 연결되었습니다');

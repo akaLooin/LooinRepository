@@ -1,6 +1,9 @@
-// 효과음·배경음. 음원 파일 없이 Web Audio 로 짧은 소리를 만든다(나중에 실제 음원으로 바꿀 때 play() 이름만 유지).
+// 효과음·배경음. 음원 파일 없이 Web Audio 로 만든다(직접 만든 소리와 곡이라 저작권 걱정이 없다).
 // 브라우저·안드로이드 WebView 는 사용자가 한 번 터치해야 소리를 낼 수 있어, 첫 터치 때 켠다.
-type Sfx = 'hit' | 'crit' | 'miss' | 'hurt' | 'coin' | 'item' | 'level' | 'chop' | 'mine' | 'slam' | 'click' | 'heal' | 'skill';
+import { Music } from './music';
+
+export type Sfx = 'hit' | 'crit' | 'miss' | 'hurt' | 'coin' | 'item' | 'level' | 'chop' | 'mine' | 'slam' | 'click' | 'heal' | 'skill'
+  | 'open' | 'portal' | 'quest' | 'card' | 'craft' | 'warn' | 'buy' | 'fail' | 'kill';
 const PREF = 'looin-idle-audio-v1';
 
 export class Audio {
@@ -8,7 +11,7 @@ export class Audio {
   private master: GainNode | null = null;
   private music: GainNode | null = null;
   private last: Partial<Record<Sfx, number>> = {};
-  private bgmTimer = 0;
+  private mus: Music | null = null;
   sfxOn = true; bgmOn = true;
 
   constructor() {
@@ -71,24 +74,21 @@ export class Audio {
       case 'mine': this.tone('square', 1400, 900, 0.05, 0.08); this.noise(0.04, 0.4, 3000); break;
       case 'slam': this.noise(0.35, 0.9, 60); this.tone('sine', 90, 40, 0.35, 0.4); break;
       case 'click': this.tone('square', 1200, 1200, 0.025, 0.05); break;
+      case 'open': this.tone('triangle', 520, 780, 0.06, 0.06); break;
+      case 'portal': this.tone('sine', 300, 1200, 0.35, 0.12); this.tone('triangle', 600, 1800, 0.3, 0.06, 0.05); break;
+      case 'quest': [784, 988, 1175, 1568].forEach((f, i) => this.tone('triangle', f, f, 0.16, 0.12, i * 0.09)); break;
+      case 'card': [1047, 1319, 1568, 2093].forEach((f, i) => this.tone('sine', f, f * 1.01, 0.22, 0.09, i * 0.06)); break;
+      case 'craft': this.noise(0.05, 0.5, 2500); this.tone('square', 880, 880, 0.04, 0.08); this.tone('square', 1320, 1320, 0.1, 0.07, 0.07); break;
+      case 'warn': this.tone('sawtooth', 220, 220, 0.18, 0.1); this.tone('sawtooth', 220, 220, 0.18, 0.1, 0.25); break;
+      case 'buy': this.tone('square', 1319, 1319, 0.04, 0.06); this.tone('square', 1760, 1760, 0.08, 0.06, 0.04); break;
+      case 'fail': this.tone('square', 300, 200, 0.12, 0.06); break;
+      case 'kill': this.tone('triangle', 520, 260, 0.08, 0.08); this.noise(0.05, 0.25, 2200); break;
     }
   }
 
-  // 배경음: 짧은 8마디 선율을 반복(직접 만든 진행)
-  private startBgm() {
-    if (!this.ctx || this.bgmTimer) return;
-    const lead = [0, 4, 7, 4, 9, 7, 4, 2, 0, 4, 7, 12, 11, 7, 4, 2];
-    const bass = [0, 0, -5, -5, -3, -3, -7, -7];
-    const beat = 0.32, root = 330;
-    const f = (semi: number) => root * Math.pow(2, semi / 12);
-    let step = 0;
-    const tick = () => {
-      if (!this.ctx || !this.bgmOn) return;
-      this.tone('triangle', f(lead[step % 16]), f(lead[step % 16]), beat * 0.9, 0.5, 0, this.music);
-      if (step % 2 === 0) this.tone('sine', f(bass[(step / 2) % 8] - 12), f(bass[(step / 2) % 8] - 12), beat * 1.8, 0.6, 0, this.music);
-      step++;
-    };
-    this.bgmTimer = window.setInterval(tick, beat * 1000);
-  }
-  private stopBgm() { clearInterval(this.bgmTimer); this.bgmTimer = 0; }
+  // 배경음: 장소마다 직접 작곡한 곡(music.ts). 곡을 바꾸면 천천히 넘어간다
+  private song = 'town';
+  setSong(id: string) { this.song = id; if (this.bgmOn && this.mus) this.mus.play(id); }
+  private startBgm() { if (!this.ctx || !this.music) return; this.mus ??= new Music(this.ctx, this.music); this.mus.play(this.song); }
+  private stopBgm() { this.mus?.stop(); }
 }
