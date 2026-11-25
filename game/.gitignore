@@ -2,3 +2,5 @@
 /build/
 *.keystore
 export_credentials.cfg
+# Android Gradle 빌드 템플릿 — 엔진 템플릿에서 다시 설치함 (README 참고)
+/android/

@@ -19,7 +19,7 @@ xvfb-run godot --path game -- --autotest --god --shots <dir>    # 화면 캡처
 godot --headless --path game --export-debug "Android" build/talestopia-debug.apk
 godot --headless --path game --export-debug "Windows" build/windows/TalestopiaRPG.exe
 ```
-Android 는 에디터 설정에 SDK·JDK·디버그 키스토어 경로가 필요합니다. 키스토어는 저장소에 커밋하지 않습니다.
+Android 는 **Gradle 빌드**를 씁니다(간이 내보내기는 매니페스트 provider 식별자가 겹쳐 설치가 "충돌"로 거부됨). 처음 한 번 `android_source.zip`(내보내기 템플릿에 포함)을 `game/android/build/`에 풀고 `game/android/.build_version`에 `4.7.2.stable`을 적어야 합니다(에디터: 프로젝트 → Android 빌드 템플릿 설치). 또 에디터 설정에 SDK·JDK·디버그 키스토어 경로가 필요합니다. 키스토어는 저장소에 커밋하지 않습니다.
 
 ## 구조
 - `data/*.json` 캐릭터·공격 프레임·스킬·몬스터·던전 수치 (코드 수정 없이 조정)
