@@ -17,6 +17,11 @@ var atk_buffer := 0
 var potion_cd := 0
 var god := false
 var skill_name := ""
+var skill_lv: Dictionary = {}
+var skill_mul: Dictionary = {}
+var mp_gain_mul := 1.0
+var back_bonus := 0.0
+var extra_air_jumps := 0
 
 
 func setup(class_id: String, st: Dictionary) -> void:
@@ -32,6 +37,23 @@ func setup(class_id: String, st: Dictionary) -> void:
 	atk = float(st["atk"])
 	def = float(st["def"])
 	crit = float(st["crit"])
+	skill_lv = st.get("skills", {})
+	skill_mul = st.get("skill_mul", {})
+	mp_gain_mul = float(st.get("mp_gain_mul", 1.0))
+	back_bonus = float(st.get("back_bonus", 0.0))
+	extra_air_jumps = int(st.get("air_jumps", 0))
+
+
+func air_jumps() -> int:
+	return int(move["air_jumps"]) + extra_air_jumps
+
+
+func skill_learned(i: int) -> bool:
+	return int(skill_lv.get(cls["skills"][i], 0)) > 0
+
+
+func attack_mul(atk_id: String) -> float:
+	return float(skill_mul.get(atk_id, 1.0))
 
 
 func gain_mp(v: float) -> void:
@@ -78,7 +100,7 @@ func _tick_common_states() -> bool:
 func _try_skill(f: Dictionary) -> bool:
 	var skills: Array = cls["skills"]
 	for i in range(3):
-		if f["skill%d_p" % (i + 1)]:
+		if f["skill%d_p" % (i + 1)] and skill_learned(i):
 			var sk: Dictionary = DataDB.get_row("skills", skills[i])
 			if mp >= float(sk["mp_cost"]):
 				mp -= float(sk["mp_cost"])
@@ -95,7 +117,7 @@ func _try_skill(f: Dictionary) -> bool:
 func _ground(f: Dictionary) -> void:
 	if not on_ground:
 		set_state("air")
-		air_jumps_left = int(move["air_jumps"])
+		air_jumps_left = air_jumps()
 		return
 	air_dash_used = false
 	if _try_skill(f):
@@ -104,12 +126,12 @@ func _ground(f: Dictionary) -> void:
 		drop_timer = 12
 		position.y += 2.0
 		set_state("air")
-		air_jumps_left = int(move["air_jumps"])
+		air_jumps_left = air_jumps()
 		return
 	if f["jump_p"]:
 		vel.y = -float(move["jump"])
 		on_ground = false
-		air_jumps_left = int(move["air_jumps"])
+		air_jumps_left = air_jumps()
 		set_state("air")
 		return
 	if f["dash_p"]:
@@ -169,7 +191,7 @@ func _dash(f: Dictionary) -> void:
 	if f["jump_p"] and on_ground:
 		vel.y = -float(move["jump"])
 		on_ground = false
-		air_jumps_left = int(move["air_jumps"])
+		air_jumps_left = air_jumps()
 		set_state("air")
 		return
 	if t >= int(move["dash_frames"]):
@@ -205,7 +227,7 @@ func _attacking(f: Dictionary) -> void:
 		if f["jump_p"] and on_ground:
 			vel.y = -float(move["jump"])
 			on_ground = false
-			air_jumps_left = int(move["air_jumps"])
+			air_jumps_left = air_jumps()
 			set_state("air")
 			return
 		if _try_skill(f):

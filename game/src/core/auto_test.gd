@@ -15,6 +15,10 @@ var _wall := 0
 
 func begin(args: PackedStringArray) -> void:
 	god = args.has("--god")
+	if args.has("--unit"):
+		var f := MetaTests.run()
+		get_tree().quit(1 if f > 0 else 0)
+		return
 	var i := args.find("--shots")
 	if i >= 0 and i + 1 < args.size():
 		shots_dir = args[i + 1]
@@ -30,8 +34,15 @@ func begin(args: PackedStringArray) -> void:
 
 
 func _menu_tour() -> void:
-	for scr in ["title", "town", "books"]:
-		main.go(scr)
+	GameState.char_data()["lv"] = 5
+	GameState.data["account"]["pets"] = ["pet_bookworm"]
+	GameState.char_data()["pet"] = "pet_bookworm"
+	Meta.add_item("eq_wpn_02")
+	Meta.add_item("eq_top_03")
+	Meta.learn("cls_tbd_01", "sk_mp2")
+	Meta.learn("cls_tbd_01", "sk_mp3")
+	for scr in ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "books"]:
+		main.go(scr, { "sel": "i3" } if scr in ["equip", "enhance"] else {})
 		await _frames(20)
 		await shot("menu_" + scr)
 	main.go("dungeon", { "dungeon": "dgn_01", "seed": 7 })

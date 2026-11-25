@@ -14,6 +14,7 @@ var width := 900
 var platforms: Array = []
 var portals: Array = []          # [{rect, to}]
 var player: Player
+var pet: Pet = null
 var enemies: Array = []
 var projectiles: Array = []
 var fx_list: Array = []
@@ -84,7 +85,12 @@ func start(dgn_id: String, seed_v: int = -1) -> void:
 
 	player = Player.new()
 	player.world = self
-	player.setup(GameState.current_class, GameState.stats())
+	var st := GameState.stats()
+	player.setup(GameState.current_class, st)
+	if st["pet"] != "":
+		pet = Pet.new()
+		pet.world = self
+		pet.setup(st["pet"])
 	_load_stage(dungeon["first_stage"])
 
 
@@ -95,7 +101,7 @@ func _load_stage(id: String) -> void:
 	width = int(stage["width"])
 	for c in world_layer.get_children():
 		world_layer.remove_child(c)
-		if c != player:
+		if c != player and c != pet:
 			c.queue_free()
 	enemies.clear()
 	projectiles.clear()
@@ -107,6 +113,9 @@ func _load_stage(id: String) -> void:
 	bg.setup(self, stage)
 	world_layer.add_child(player)
 	player.position = Vector2(stage["spawn"][0], stage["spawn"][1])
+	if pet:
+		world_layer.add_child(pet)
+		pet.position = player.position + Vector2(-16, -34)
 	player.vel = Vector2.ZERO
 	player.facing = 1
 	if not player.dead:
@@ -184,6 +193,8 @@ func tick_once(input: Dictionary) -> void:
 		player.tick(input)
 	else:
 		player.tick(input)
+		if pet:
+			pet.tick()
 		for e in enemies:
 			e.tick(last_input)
 		for pr in projectiles:
@@ -193,7 +204,7 @@ func tick_once(input: Dictionary) -> void:
 	_tick_fx()
 	_check_progress()
 	_update_camera()
-	touch.set_state(player.mp, int(GameState.data["account"]["potions"]))
+	touch.set_state(player.mp, int(GameState.data["account"]["potions"]), [player.skill_learned(0), player.skill_learned(1), player.skill_learned(2)])
 	hud.queue_redraw()
 
 	if player.dead and player.state == "dead" and player.t == 30 and overlay.get_child_count() == 0:
@@ -232,7 +243,12 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 	var is_back := (o.facing > 0 and src.x < o.position.x - 1.0) or (o.facing < 0 and src.x > o.position.x + 1.0)
 	if o is Boss:
 		is_back = is_back and not o.is_attacking()
-	var res := DamageCalc.resolve(att.atk, o.def, float(a["mul"]), att.crit, is_back, rng)
+	var mul := float(a["mul"])
+	if att == player and from_pos == null:
+		mul *= player.attack_mul(player.cur_atk_id)
+	var res := DamageCalc.resolve(att.atk, o.def, mul, att.crit, is_back, rng)
+	if att == player and res["back"] and player.back_bonus > 0.0:
+		res["dmg"] = int(res["dmg"] * (1.0 + player.back_bonus))
 	o.take_hit(att, a, res)
 	var hs := int(a["hitstop"])
 	att.hitstop = maxi(att.hitstop, hs)
@@ -248,7 +264,7 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 		combo = 0
 		shake(2.0)
 	else:
-		player.gain_mp(float(a.get("mp", 0.0)))
+		player.gain_mp(float(a.get("mp", 0.0)) * player.mp_gain_mul)
 		combo += 1
 		combo_timer = COMBO_TIMEOUT
 		max_combo = maxi(max_combo, combo)
@@ -361,6 +377,8 @@ func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionar
 	pr.data = data
 	pr.kind = kind
 	pr.size = Vector2(12, 14) if kind == "wave" else Vector2(6, 6)
+	if kind == "page":
+		pr.life = 90
 	world_layer.add_child(pr)
 	projectiles.append(pr)
 
@@ -475,5 +493,7 @@ func _finish(cleared: bool) -> void:
 		"score": sc, "rank": RankCalc.rank_of(sc) if cleared else "-",
 		"exp": exp_gain if cleared else exp_gain / 3, "gold": gold_gain if cleared else gold_gain / 3,
 		"path": stage_path,
+		"drops": Meta.roll_drops(dungeon.get("drops", {}), rng) if cleared else [],
+		"pet": dungeon.get("first_clear_pet", "") if cleared else "",
 	}
 	finished.emit(result)

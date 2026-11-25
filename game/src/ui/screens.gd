@@ -13,9 +13,9 @@ static func title(router: Node) -> MenuScreen:
 	var sub := UiKit.label("— 차원의 도서관 —", Tk.PAPER_DIM)
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(sub)
-	box.add_child(UiKit.button("책을 펼친다", func(): router.go("town"), true))
+	box.add_child(UiKit.button("책을 펼친다", func(): router.go("select"), true))
 	box.add_child(UiKit.button("옵션", func(): router.go("options")))
-	var v := UiKit.label("프로토타입 v0.1 · 임시 캐릭터", Tk.TEXT_DIM)
+	var v := UiKit.label("프로토타입 v0.2 · 임시 캐릭터", Tk.TEXT_DIM)
 	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(v)
 	return s
@@ -24,26 +24,27 @@ static func title(router: Node) -> MenuScreen:
 static func town(router: Node) -> MenuScreen:
 	var s := MenuScreen.new()
 	s.router = router
-	var box := s.make_center(250)
+	var box := s.make_center(300)
 	var acc: Dictionary = GameState.data["account"]
 	var cd := GameState.char_data()
 	var st := GameState.stats()
 	var cls: Dictionary = DataDB.get_row("classes", GameState.current_class)
 	box.add_child(UiKit.label("열람실", Tk.GOLD, 11))
-	box.add_child(UiKit.label("%s  Lv%d  (EXP %d/%d)" % [cls["name"], cd["lv"], cd["exp"], GameState.exp_to_next(int(cd["lv"]))]))
+	box.add_child(UiKit.label("%s  Lv%d  (EXP %d/%d)  SP %d" % [cls["name"], cd["lv"], cd["exp"], GameState.exp_to_next(int(cd["lv"])), Meta.sp_left(GameState.current_class)]))
 	box.add_child(UiKit.label("HP %d · 공격 %d · 방어 %d" % [st["hp"], st["atk"], st["def"]], Tk.TEXT_DIM))
-	box.add_child(UiKit.label("골드 %d · 포션 %d · 부활 책갈피 %d · 페이지 조각 %d" % [acc["gold"], acc["potions"], acc["revives"], acc["pages"]], Tk.TEXT_DIM))
+	box.add_child(UiKit.label("골드 %d · 포션 %d · 부활 %d · 페이지 조각 %d" % [acc["gold"], acc["potions"], acc["revives"], acc["pages"]], Tk.TEXT_DIM))
 	box.add_child(UiKit.button("책 고르기 (던전)", func(): router.go("books"), true))
-	var buy := UiKit.button("보급: 포션 1개 (50골드)", func():
-		if int(acc["gold"]) >= 50:
-			acc["gold"] = int(acc["gold"]) - 50
-			acc["potions"] = int(acc["potions"]) + 1
-			GameState.save_game()
-		router.go("town"))
-	buy.disabled = int(acc["gold"]) < 50
-	box.add_child(buy)
-	box.add_child(UiKit.button("옵션", func(): router.go("options")))
-	box.add_child(UiKit.button("타이틀로", func(): router.go("title")))
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	box.add_child(grid)
+	for e in [["캐릭터·가방", "equip"], ["스킬", "skills"], ["강화", "enhance"], ["상점", "shop"], ["펫", "pets"], ["옵션", "options"]]:
+		var target: String = e[1]
+		var b := UiKit.button(e[0], func(): router.go(target))
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(b)
+	box.add_child(UiKit.button("등장인물 바꾸기", func(): router.go("select")))
 	return s
 
 
@@ -105,6 +106,13 @@ static func result(router: Node, r: Dictionary) -> MenuScreen:
 	box.add_child(UiKit.label("EXP +%d · 골드 +%d" % [r["exp"], r["gold"]]))
 	if receipt["level_ups"] > 0:
 		box.add_child(UiKit.label("레벨 업! → Lv%d" % int(GameState.char_data()["lv"]), Tk.EXP))
+	if not r.get("drops", []).is_empty():
+		var names: PackedStringArray = []
+		for item_id in r["drops"]:
+			names.append(Meta.item_label({ "item": item_id, "enh": 0 }))
+		box.add_child(UiKit.label("획득 장비: " + ", ".join(names), Tk.MP))
+	if receipt.get("new_pet", "") != "":
+		box.add_child(UiKit.label("새 동료! 「%s」가 따라오기 시작했다" % DataDB.get_row("pets", receipt["new_pet"])["name"], Tk.EXP))
 	box.add_child(UiKit.label("지나온 페이지: " + " → ".join(PackedStringArray(r["path"])).replace("stg_", ""), Tk.TEXT_DIM))
 	if r["cleared"]:
 		box.add_child(UiKit.label("보상 카드를 한 장 뒤집으세요", Tk.GOLD))

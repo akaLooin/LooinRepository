@@ -11,19 +11,19 @@ MP 게이지 (타격 시 충전 3칸),combat-skill,must,yes,yes,[DEMO]
 MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 / 리디자인=단계별 스킬 버튼 / 빌드: 버튼 방식. 홀드 방식 옵션은 미구현
 필살기 컷인 연출,combat-skill,should,yes,partial,[DEMO] 픽셀 컷인 오리지널 연출 / 빌드: 3단만 컷인
 반격(카운터): MP 소모로 피격 탈출,combat-skill,should,yes,yes,[DEMO]
-스킬 트리 + 스킬 포인트,growth,must,yes,no,[DEMO] 1차 트리만
+스킬 트리 + 스킬 포인트,growth,must,yes,yes,"[DEMO] 1차 트리만 / 빌드: 필살기 3 + 패시브 5, 선행·레벨 조건, 무료 초기화"
 캐릭터별 전직 (1~4차),growth,must,yes,no,데모는 1차 직업 + 2차 전직 예고만
 레벨 / 경험치,growth,must,yes,yes,[DEMO] 데모 상한 Lv20
-장비 슬롯 (무기/투구/상의/하의/장갑/신발/망토),items,must,yes,no,[DEMO] 데모 6슬롯
-장비 강화 (실패 확률 포함),items,should,yes,no,[DEMO] 단순 +0~+5
-장비 옵션/등급(일반~에픽),items,should,yes,no,[DEMO]
+장비 슬롯 (무기/투구/상의/하의/장갑/신발/망토),items,must,yes,yes,[DEMO] 데모 6슬롯 / 빌드: 6부위
+장비 강화 (실패 확률 포함),items,should,yes,yes,"[DEMO] 단순 +0~+5 / 빌드: +0~+5, 실패 시 재료만 소모"
+장비 옵션/등급(일반~에픽),items,should,yes,partial,"[DEMO] / 빌드: 등급 3단계(일반/희귀/영웅), 랜덤 옵션 없음"
 소켓/보석·카드 삽입,items,could,yes,no,
 세트 효과,items,could,yes,no,
 퀵슬롯 소모품 (HP/MP 포션),items,must,yes,partial,[DEMO] 2칸 / 빌드: HP 포션 1칸
-인벤토리,items,must,yes,no,[DEMO]
-상점 (게임 재화),economy,must,yes,partial,[DEMO] 골드만 / 빌드: 포션 구매만
+인벤토리,items,must,yes,yes,"[DEMO] / 빌드: 계정 공유, 착용은 캐릭터별"
+상점 (게임 재화),economy,must,yes,yes,[DEMO] 골드만 / 빌드: 구매 + 장비 판매
 제작/합성 (재료 → 장비),economy,should,yes,no,
-펫 (전투 보조 + 펫 필살기),companion,should,yes,no,[DEMO] 1종 오리지널 펫
+펫 (전투 보조 + 펫 필살기),companion,should,yes,partial,"[DEMO] 1종 오리지널 펫 / 빌드: 1종, 자동 공격 + 능력치 보너스. 펫 필살기 없음"
 펫 진화/먹이,companion,could,yes,no,
 월드맵 → 대륙 → 던전 선택,dungeon,must,yes,partial,[DEMO] 1개 대륙(지역) / 빌드: 책 목록 화면
 던전 난이도 (보통/어려움/챔피언),dungeon,must,yes,partial,[DEMO] 보통/어려움 / 빌드: 보통만
@@ -39,8 +39,8 @@ MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 /
 길드,online,could,yes,skip,온라인 단계
 채팅 / 친구 / 광장,online,could,yes,skip,온라인 단계
 캐릭터 다수 (20+),roster,must,yes,no,데모 2명 + 1명 잠금 예고 / 전부 오리지널 캐릭터
-캐릭터 선택·교체 (계정 공유 인벤토리),roster,must,yes,no,[DEMO]
-마을(로비) 화면,meta,must,yes,partial,[DEMO] 오리지널 허브 마을 / 빌드: 열람실 메뉴만
+캐릭터 선택·교체 (계정 공유 인벤토리),roster,must,yes,partial,[DEMO] / 빌드: 선택 화면 + 슬롯 4개(1개만 플레이 가능)
+마을(로비) 화면,meta,must,yes,partial,[DEMO] 오리지널 허브 마을 / 빌드: 열람실 메뉴 8개
 퀘스트/미션 (일일·메인),meta,should,yes,no,[DEMO] 메인 미션 5개
 칭호 / 업적,meta,could,yes,no,
 출석 보상,meta,could,yes,no,

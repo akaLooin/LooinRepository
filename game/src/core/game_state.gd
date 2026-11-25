@@ -3,7 +3,7 @@ extends Node
 
 const SAVE_DIR := "user://save"
 const SAVE_PATH := "user://save/slot0.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 const LEVEL_CAP := 20
 
 var data: Dictionary = {}
@@ -20,12 +20,20 @@ func _notification(what: int) -> void:
 		save_game()
 
 
+static func new_char() -> Dictionary:
+	return { "lv": 1, "exp": 0, "equip": {}, "skills": { "sk_mp1": 1 }, "pet": "" }
+
+
 static func new_save() -> Dictionary:
+	var c := new_char()
+	c["equip"] = { "weapon": "i1", "top": "i2" }
 	return {
 		"version": SAVE_VERSION,
 		"saved_at": "",
-		"account": { "gold": 0, "potions": 3, "revives": 1, "pages": 0, "applied_runs": [] },
-		"characters": { "cls_tbd_01": { "lv": 1, "exp": 0 } },
+		"account": { "gold": 300, "potions": 3, "revives": 1, "pages": 5, "applied_runs": [],
+			"inventory": [ { "uid": "i1", "item": "eq_wpn_01", "enh": 0 }, { "uid": "i2", "item": "eq_top_01", "enh": 0 } ],
+			"next_uid": 3, "pets": [] },
+		"characters": { "cls_tbd_01": c },
 		"progress": { "cleared": {} },
 		"settings": { "show_touch": "auto", "show_hitboxes": false },
 	}
@@ -44,8 +52,19 @@ func load_game() -> void:
 
 
 func _migrate(d: Dictionary) -> Dictionary:
-	# version 1 이 첫 버전. 이후 버전이 생기면 여기서 단계별로 올린다.
 	var base := new_save()
+	if int(d.get("version", 1)) < 2:
+		# v1 -> v2: 인벤토리·장비·스킬·펫 추가. 기존 진행(레벨·골드)은 유지하고 기본 장비를 지급.
+		d["account"]["inventory"] = base["account"]["inventory"]
+		d["account"]["next_uid"] = 3
+		for cls in d["characters"]:
+			var nc := new_char()
+			for k in nc:
+				if not d["characters"][cls].has(k):
+					d["characters"][cls][k] = nc[k]
+		if d["characters"].has("cls_tbd_01"):
+			d["characters"]["cls_tbd_01"]["equip"] = { "weapon": "i1", "top": "i2" }
+		d["version"] = 2
 	for k in base:
 		if not d.has(k):
 			d[k] = base[k]
@@ -82,7 +101,7 @@ func char_data(cls: String = "") -> Dictionary:
 	if cls == "":
 		cls = current_class
 	if not data["characters"].has(cls):
-		data["characters"][cls] = { "lv": 1, "exp": 0 }
+		data["characters"][cls] = new_char()
 	return data["characters"][cls]
 
 
@@ -90,16 +109,53 @@ static func exp_to_next(lv: int) -> int:
 	return 60 + lv * lv * 25
 
 
+## 최종 능력치 = 기본 + 성장 + 장비(강화 포함) → 패시브/펫 % 보너스. 전투 보조 수치도 함께 돌려준다.
 func stats(cls: String = "") -> Dictionary:
 	if cls == "":
 		cls = current_class
 	var c: Dictionary = DataDB.get_row("classes", cls)
-	var lv: int = int(char_data(cls)["lv"]) - 1
-	return {
-		"hp": int(c["base"]["hp"] + c["growth"]["hp"] * lv),
-		"atk": int(c["base"]["atk"] + c["growth"]["atk"] * lv),
-		"def": int(c["base"]["def"] + c["growth"]["def"] * lv),
+	var cd := char_data(cls)
+	var lv: int = int(cd["lv"]) - 1
+	var st := {
+		"hp": float(c["base"]["hp"] + c["growth"]["hp"] * lv),
+		"atk": float(c["base"]["atk"] + c["growth"]["atk"] * lv),
+		"def": float(c["base"]["def"] + c["growth"]["def"] * lv),
 		"crit": float(c["base"]["crit"]),
+	}
+	for slot in cd["equip"]:
+		var it := Meta.find(cd["equip"][slot])
+		if it.is_empty():
+			continue
+		var ist := Meta.item_stats(it)
+		for k in ist:
+			st[k] = float(st.get(k, 0.0)) + float(ist[k])
+	var pct := { "atk_pct": 0.0, "hp_pct": 0.0, "mp_gain_pct": 0.0, "back_pct": 0.0, "air_jumps": 0.0 }
+	var nodes := Meta.tree(cls)
+	for sid in cd["skills"]:
+		var eff: Dictionary = nodes.get(sid, {}).get("effect", {})
+		for k in eff:
+			pct[k] = float(pct.get(k, 0.0)) + float(eff[k]) * int(cd["skills"][sid])
+	var pet_id: String = cd.get("pet", "")
+	if pet_id != "":
+		var bonus: Dictionary = DataDB.get_row("pets", pet_id).get("bonus", {})
+		for k in bonus:
+			pct[k] = float(pct.get(k, 0.0)) + float(bonus[k])
+	var skill_mul := {}
+	for sid in cd["skills"]:
+		if nodes.get(sid, {}).get("kind", "") == "active":
+			var atk_id: String = DataDB.get_row("skills", sid)["attack"]
+			skill_mul[atk_id] = 1.0 + 0.15 * (int(cd["skills"][sid]) - 1)
+	return {
+		"hp": int(st["hp"] * (1.0 + pct["hp_pct"])),
+		"atk": int(st["atk"] * (1.0 + pct["atk_pct"])),
+		"def": int(st["def"]),
+		"crit": float(st["crit"]),
+		"mp_gain_mul": 1.0 + pct["mp_gain_pct"],
+		"back_bonus": pct["back_pct"],
+		"air_jumps": int(pct["air_jumps"]),
+		"skill_mul": skill_mul,
+		"skills": (cd["skills"] as Dictionary).duplicate(),
+		"pet": pet_id,
 	}
 
 
@@ -124,6 +180,14 @@ func apply_rewards(result: Dictionary) -> Dictionary:
 		var prev: Dictionary = data["progress"]["cleared"].get(key, {})
 		if prev.is_empty() or RankCalc.rank_value(result["rank"]) > RankCalc.rank_value(prev["best_rank"]):
 			data["progress"]["cleared"][key] = { "best_rank": result["rank"], "best_time": result["time"] }
+	for item_id in result.get("drops", []):
+		Meta.add_item(item_id)
+	var pet: String = result.get("pet", "")
+	if pet != "" and not data["account"]["pets"].has(pet):
+		data["account"]["pets"].append(pet)
+		receipt["new_pet"] = pet
+		if char_data()["pet"] == "":
+			char_data()["pet"] = pet
 	receipt["applied"] = true
 	save_game()
 	return receipt

@@ -30,6 +30,9 @@ func _draw() -> void:
 		var f := (life / 3) % 2
 		draw_rect(Rect2(-6, -14 + f, 12, 14 - f), Color(Tk.B_PAGE, 0.9))
 		draw_rect(Rect2(-4, -10, 8, 10), Tk.B_SPINE)
+	elif kind == "page":
+		draw_rect(Rect2(-3, -5, 6, 4), Tk.PAPER)
+		draw_rect(Rect2(-2, -4, 4, 1), Tk.PAPER_DIM)
 	else:
 		draw_rect(Rect2(-3, -6, 6, 6), Tk.M_INK)
 		draw_rect(Rect2(-2, -5, 2, 2), Tk.M_INK_HI)

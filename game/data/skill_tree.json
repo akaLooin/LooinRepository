@@ -1,0 +1,14 @@
+{
+  "tree_tbd_01": {
+    "nodes": {
+      "sk_mp1": { "name": "책장 회오리", "kind": "active", "max": 3, "req_lv": 1, "pre": [], "desc": "MP 1칸 필살기. 레벨당 피해 +15%" },
+      "sk_mp2": { "name": "책갈피 돌격", "kind": "active", "max": 3, "req_lv": 3, "pre": ["sk_mp1"], "desc": "MP 2칸 필살기. 레벨당 피해 +15%" },
+      "sk_mp3": { "name": "대단원", "kind": "active", "max": 3, "req_lv": 5, "pre": ["sk_mp2"], "desc": "MP 3칸 필살기. 레벨당 피해 +15%" },
+      "ps_atk": { "name": "단련", "kind": "passive", "max": 5, "req_lv": 1, "pre": [], "desc": "공격력 +3%/레벨", "effect": { "atk_pct": 0.03 } },
+      "ps_hp": { "name": "두꺼운 표지", "kind": "passive", "max": 5, "req_lv": 1, "pre": [], "desc": "최대 HP +5%/레벨", "effect": { "hp_pct": 0.05 } },
+      "ps_mp": { "name": "잉크 흡수", "kind": "passive", "max": 3, "req_lv": 4, "pre": ["ps_atk"], "desc": "MP 획득량 +10%/레벨", "effect": { "mp_gain_pct": 0.1 } },
+      "ps_back": { "name": "뒤표지 읽기", "kind": "passive", "max": 3, "req_lv": 5, "pre": ["ps_atk"], "desc": "백어택 피해 +10%/레벨", "effect": { "back_pct": 0.1 } },
+      "ps_air": { "name": "공중 각주", "kind": "passive", "max": 1, "req_lv": 7, "pre": ["ps_hp"], "desc": "공중 점프 +1회", "effect": { "air_jumps": 1 } }
+    }
+  }
+}

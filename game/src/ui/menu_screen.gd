@@ -38,3 +38,46 @@ func focus_first() -> void:
 		if not (c as Button).disabled:
 			(c as Button).grab_focus()
 			return
+
+
+## 두 칸 레이아웃: 상단 제목줄(제목·보조 정보·돌아가기) + 왼쪽/오른쪽 패널. 오른쪽은 스크롤.
+func make_split(title: String, info: String, back: Callable, left_w: float = 190.0) -> Array:
+	var root := MarginContainer.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "right", "top", "bottom"]:
+		root.add_theme_constant_override("margin_" + side, 6)
+	add_child(root)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	root.add_child(col)
+	var head := HBoxContainer.new()
+	col.add_child(head)
+	head.add_child(UiKit.label(title, Tk.GOLD))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(sp)
+	head.add_child(UiKit.label(info, Tk.TEXT_DIM))
+	var bb := UiKit.button("돌아가기", back)
+	bb.custom_minimum_size = Vector2(60, 16)
+	head.add_child(bb)
+	var row := HBoxContainer.new()
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 6)
+	col.add_child(row)
+	var lp := UiKit.panel()
+	lp.custom_minimum_size = Vector2(left_w, 0)
+	row.add_child(lp)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 3)
+	lp.add_child(left)
+	var rp := UiKit.panel()
+	rp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(rp)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	rp.add_child(scroll)
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 3)
+	scroll.add_child(right)
+	return [left, right]

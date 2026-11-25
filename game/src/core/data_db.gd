@@ -1,7 +1,7 @@
 extends Node
 ## 정적 게임 데이터 로더. res://data/*.json 을 읽고 id 참조 무결성을 검사한다.
 
-const FILES := ["classes", "attacks", "skills", "monsters", "dungeons"]
+const FILES := ["classes", "attacks", "skills", "monsters", "dungeons", "items", "skill_tree", "pets"]
 
 var tables: Dictionary = {}
 var errors: PackedStringArray = []
@@ -53,11 +53,24 @@ func _validate() -> void:
 		_need("attacks", c["air_attack"], cid)
 		for s in c["skills"]:
 			_need("skills", s, cid)
+		_need("skill_tree", c["skill_tree"], cid)
+	for tid in tables["skill_tree"]:
+		var nodes: Dictionary = tables["skill_tree"][tid]["nodes"]
+		for nid in nodes:
+			if nodes[nid]["kind"] == "active":
+				_need("skills", nid, tid)
+			for p in nodes[nid]["pre"]:
+				if not nodes.has(p):
+					errors.append("%s.%s -> missing prereq %s" % [tid, nid, p])
 	for sid in tables["skills"]:
 		_need("attacks", tables["skills"][sid]["attack"], sid)
 	for did in tables["dungeons"]:
 		var d: Dictionary = tables["dungeons"][did]
 		var stages: Dictionary = d["stages"]
+		for row in d.get("drops", {}).get("table", []):
+			_need("items", row[0], did)
+		if d.has("first_clear_pet"):
+			_need("pets", d["first_clear_pet"], did)
 		if not stages.has(d["first_stage"]):
 			errors.append(did + " first_stage missing")
 		for st_id in stages:

@@ -1,0 +1,16 @@
+{
+  "eq_wpn_01": { "name": "견습생의 책갈피 검", "slot": "weapon", "grade": "common", "lv": 1, "stats": { "atk": 20 }, "price": 200 },
+  "eq_wpn_02": { "name": "푸른 리본 검", "slot": "weapon", "grade": "rare", "lv": 3, "stats": { "atk": 45, "crit": 0.03 }, "price": 900 },
+  "eq_wpn_03": { "name": "잉크를 베는 서문검", "slot": "weapon", "grade": "epic", "lv": 5, "stats": { "atk": 80, "crit": 0.06 }, "price": 2400 },
+  "eq_hel_01": { "name": "낡은 독서모", "slot": "helm", "grade": "common", "lv": 1, "stats": { "def": 6, "hp": 60 }, "price": 150 },
+  "eq_hel_02": { "name": "사서의 베레모", "slot": "helm", "grade": "rare", "lv": 3, "stats": { "def": 14, "hp": 140 }, "price": 700 },
+  "eq_top_01": { "name": "견습 외투", "slot": "top", "grade": "common", "lv": 1, "stats": { "def": 12, "hp": 100 }, "price": 220 },
+  "eq_top_02": { "name": "금실 외투", "slot": "top", "grade": "rare", "lv": 3, "stats": { "def": 26, "hp": 220 }, "price": 950 },
+  "eq_top_03": { "name": "장정(裝幀) 갑옷", "slot": "top", "grade": "epic", "lv": 5, "stats": { "def": 46, "hp": 400 }, "price": 2600 },
+  "eq_bot_01": { "name": "천 바지", "slot": "bottom", "grade": "common", "lv": 1, "stats": { "def": 8, "hp": 80 }, "price": 180 },
+  "eq_bot_02": { "name": "가죽 장정 바지", "slot": "bottom", "grade": "rare", "lv": 3, "stats": { "def": 18, "hp": 170 }, "price": 800 },
+  "eq_glv_01": { "name": "잉크 묻은 장갑", "slot": "glove", "grade": "common", "lv": 1, "stats": { "atk": 5, "crit": 0.01 }, "price": 160 },
+  "eq_glv_02": { "name": "필경사의 장갑", "slot": "glove", "grade": "rare", "lv": 3, "stats": { "atk": 12, "crit": 0.03 }, "price": 750 },
+  "eq_sho_01": { "name": "서가 장화", "slot": "shoe", "grade": "common", "lv": 1, "stats": { "def": 5, "hp": 50 }, "price": 150 },
+  "eq_sho_02": { "name": "책등 부츠", "slot": "shoe", "grade": "rare", "lv": 3, "stats": { "def": 12, "hp": 120, "atk": 4 }, "price": 700 }
+}

@@ -16,6 +16,7 @@ const BUTTONS := [
 
 var mp := 0.0
 var potions := 0
+var learned: Array = [true, true, true]
 var _pad_touch := -1
 var _pad_origin := Vector2.ZERO
 var _pad_pos := Vector2.ZERO
@@ -72,10 +73,11 @@ func _input(event: InputEvent) -> void:
 			queue_redraw()
 
 
-func set_state(mp_v: float, potions_v: int) -> void:
-	if absf(mp_v - mp) > 0.01 or potions_v != potions:
+func set_state(mp_v: float, potions_v: int, learned_v: Array = [true, true, true]) -> void:
+	if absf(mp_v - mp) > 0.01 or potions_v != potions or learned_v != learned:
 		mp = mp_v
 		potions = potions_v
+		learned = learned_v
 		queue_redraw()
 
 
@@ -93,7 +95,7 @@ func _draw() -> void:
 		var enabled := true
 		if String(b[0]).begins_with("skill"):
 			var need := int(String(b[1]))
-			enabled = mp >= float(need)
+			enabled = mp >= float(need) and learned[need - 1]
 			col = Color(Tk.MP, 0.55) if enabled else Color(Tk.INK_SOFT, 0.35)
 		elif b[0] == "potion":
 			enabled = potions > 0
@@ -102,6 +104,8 @@ func _draw() -> void:
 		draw_circle(c, r, col)
 		draw_arc(c, r, 0, TAU, 24, Color(Tk.PAPER, 0.5 if enabled else 0.2), 1.0)
 		var label: String = b[1] if b[0] != "potion" else "약%d" % potions
+		if String(b[0]).begins_with("skill") and not learned[int(String(b[1])) - 1]:
+			label = "-"
 		var fs := 11
 		var w := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(_font, c + Vector2(-w / 2.0, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Tk.TEXT, 0.9 if enabled else 0.4))

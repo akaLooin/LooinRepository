@@ -14,7 +14,7 @@ func _ready() -> void:
 		ThemeDB.fallback_font = font
 	ThemeDB.fallback_font_size = Tk.FONT_SIZE
 	var args := OS.get_cmdline_user_args()
-	if args.has("--autotest") or args.has("--shots"):
+	if args.has("--autotest") or args.has("--shots") or args.has("--unit"):
 		autotest = AutoTest.new()
 		autotest.main = self
 		add_child(autotest)
@@ -38,6 +38,18 @@ func go(screen: String, args: Dictionary = {}) -> void:
 			current = Screens.books(self)
 		"options":
 			current = Screens.options(self)
+		"select":
+			current = MetaScreens.select(self)
+		"equip":
+			current = MetaScreens.equip(self, args)
+		"skills":
+			current = MetaScreens.skills(self, args)
+		"enhance":
+			current = MetaScreens.enhance(self, args)
+		"shop":
+			current = MetaScreens.shop(self, args)
+		"pets":
+			current = MetaScreens.pets(self, args)
 		"result":
 			GameState.last_result = args
 			current = Screens.result(self, args)

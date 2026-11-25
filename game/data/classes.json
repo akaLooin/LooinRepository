@@ -2,13 +2,42 @@
   "cls_tbd_01": {
     "name": "견습 사서 (임시)",
     "note": "캐릭터 확정 전 플레이스홀더. 근접 입문형 역할만 담당.",
-    "base": { "hp": 1200, "atk": 100, "def": 40, "crit": 0.05 },
-    "growth": { "hp": 80, "atk": 8, "def": 3 },
-    "move": { "run": 1.9, "jump": 6.2, "air_jumps": 1, "dash": 4.6, "dash_frames": 14, "gravity": 0.32 },
-    "size": [12, 26],
-    "combo": ["atk_g1", "atk_g2", "atk_g3", "atk_g4"],
+    "base": {
+      "hp": 1200,
+      "atk": 100,
+      "def": 40,
+      "crit": 0.05
+    },
+    "growth": {
+      "hp": 80,
+      "atk": 8,
+      "def": 3
+    },
+    "move": {
+      "run": 1.9,
+      "jump": 6.2,
+      "air_jumps": 1,
+      "dash": 4.6,
+      "dash_frames": 14,
+      "gravity": 0.32
+    },
+    "size": [
+      12,
+      26
+    ],
+    "combo": [
+      "atk_g1",
+      "atk_g2",
+      "atk_g3",
+      "atk_g4"
+    ],
     "dash_attack": "atk_dash",
     "air_attack": "atk_air",
-    "skills": ["sk_mp1", "sk_mp2", "sk_mp3"]
+    "skills": [
+      "sk_mp1",
+      "sk_mp2",
+      "sk_mp3"
+    ],
+    "skill_tree": "tree_tbd_01"
   }
 }
