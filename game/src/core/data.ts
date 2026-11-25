@@ -68,7 +68,8 @@ export interface MapDef {
   id: string; name: string; width: number;
   theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena'
     | 'oasis' | 'dunes' | 'canyon' | 'mirage' | 'tomb' | 'saltlake' | 'starfield' | 'sunspire'
-    | 'snowtown' | 'snowfield' | 'pinewood' | 'frostlake' | 'icecave' | 'glacier' | 'aurora' | 'frostpeak';
+    | 'snowtown' | 'snowfield' | 'pinewood' | 'frostlake' | 'icecave' | 'glacier' | 'aurora' | 'frostpeak'
+    | 'nebtown' | 'moondust' | 'crater' | 'nebula' | 'asteroid' | 'rings' | 'comet' | 'voidedge';
   /** 콜로세움(웨이브 전투) */
   arena?: boolean;
   /** 지면(y=0)을 제외한 발판. y는 위쪽이 음수. */
@@ -235,6 +236,36 @@ const items: ItemDef[] = [
   { id: 'plate_frost', name: '서리 갑옷', desc: '눈보라 속에서도 몸이 따뜻하다.', kind: 'equip', slot: 'body', stats: { def: 70, hp: 520 }, reqLv: 80, sell: 5200 },
   { id: 'legs_frost', name: '서리 다리 갑옷', desc: '빙판 위에서도 미끄러지지 않는다.', kind: 'equip', slot: 'legs', stats: { def: 48, hp: 360 }, reqLv: 79, sell: 4400 },
   { id: 'boots_frost', name: '서리 장화', desc: '눈에 빠지지 않는 넓은 바닥.', kind: 'equip', slot: 'shoes', stats: { def: 36, agi: 18 }, reqLv: 78, sell: 4200 },
+  // ───── 4월드: 별빛 성운 ─────
+  { id: 'star_sand', name: '별모래', desc: '한 줌 쥐면 손가락 사이로 반짝이며 흘러내린다.', kind: 'material', sell: 300 },
+  { id: 'crater_shell', name: '운석 껍데기', desc: '구덩이 진드기가 벗어 둔 단단한 껍데기.', kind: 'material', sell: 340 },
+  { id: 'neb_jelly', name: '성운 젤리', desc: '안쪽에서 작은 별들이 천천히 돈다.', kind: 'material', sell: 380 },
+  { id: 'meteor_chip', name: '운석 조각', desc: '아직도 미지근하다.', kind: 'material', sell: 420 },
+  { id: 'ring_plume', name: '고리 깃털', desc: '고리 행성의 빛을 머금은 깃털.', kind: 'material', sell: 470 },
+  { id: 'comet_hair', name: '혜성 꼬리털', desc: '스치기만 해도 긴 빛줄기가 남는다.', kind: 'material', sell: 520 },
+  { id: 'void_shard', name: '공허 조각', desc: '들여다보면 빛이 빨려 들어간다.', kind: 'material', sell: 580 },
+  { id: 'starlog', name: '별빛나무 통나무', desc: '나이테 대신 별자리가 새겨져 있다.', kind: 'material', sell: 140 },
+  { id: 'ore_nova', name: '신성 광석', desc: '별이 터질 때 생긴 무거운 광석.', kind: 'material', sell: 130 },
+  { id: 'bar_nova', name: '신성 주괴', desc: '용광로에서 신성 광석을 녹였다. 은은한 보랏빛이 돈다.', kind: 'material', sell: 600 },
+  { id: 'fish_neb', name: '성운 해마', desc: '꼬리를 말고 별빛 웅덩이를 떠다닌다.', kind: 'material', sell: 180 },
+  { id: 'bug_neb', name: '별똥 반딧불', desc: '날 때마다 짧은 꼬리를 그린다.', kind: 'material', sell: 180 },
+  { id: 'moon_cake', name: '달떡', desc: '먹으면 체력 4000 회복. 재사용 14초.', kind: 'food', heal: 4000, cd: 14, sell: 160 },
+  { id: 'nova_stew', name: '신성 스튜', desc: '먹으면 체력 7000 회복. 재사용 18초.', kind: 'food', heal: 7000, cd: 18, sell: 260 },
+  { id: 'void_key', name: '공허 열쇠', desc: '공허의 끝, 성운 거신이 도는 궤도로 가는 문을 연다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
+  { id: 'trophy_void', name: '성운 거신 트로피', desc: '성운 거신을 쓰러뜨린 증표.', kind: 'equip', slot: 'trophy', stats: { str: 14, agi: 14, wis: 14, luk: 14, def: 20 }, sell: 0 },
+  { id: 'void_mask', name: '공허 가면', desc: '눈구멍 너머로 별이 보인다.', kind: 'equip', slot: 'hat', stats: { def: 80, hp: 700, str: 18, luk: 18 }, reqLv: 110, sell: 12000 },
+  { id: 'anvil_exp5', name: '모루 확장 V', desc: '만들면 모루 6단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
+  { id: 'sword_nova', name: '신성 검', desc: '칼날에 작은 별이 박혀 있다.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 260, str: 36 }, reqLv: 115, sell: 14000 },
+  { id: 'bow_nova', name: '신성 활', desc: '쏠 때마다 시위에서 별빛이 튄다.', kind: 'equip', slot: 'weapon', wtype: 'bow', stats: { dmg: 245, agi: 38 }, reqLv: 115, sell: 14000 },
+  { id: 'wand_nova', name: '신성 지팡이', desc: '끝의 구슬 안에서 별이 태어난다.', kind: 'equip', slot: 'weapon', wtype: 'wand', stats: { dmg: 245, wis: 38 }, reqLv: 115, sell: 14000 },
+  { id: 'pick_nova', name: '신성 곡괭이', desc: '채광 효율 +72', kind: 'equip', slot: 'pickaxe', stats: { mining: 72 }, reqLv: 100, sell: 8000 },
+  { id: 'axe_nova', name: '신성 도끼', desc: '벌목 효율 +72', kind: 'equip', slot: 'axe', stats: { chopping: 72 }, reqLv: 100, sell: 8000 },
+  { id: 'rod_nova', name: '신성 낚싯대', desc: '낚시 효율 +62', kind: 'equip', slot: 'rod', stats: { fishing: 62 }, reqLv: 100, sell: 8000 },
+  { id: 'net_nova', name: '신성 잠자리채', desc: '곤충 채집 효율 +62', kind: 'equip', slot: 'net', stats: { catching: 62 }, reqLv: 100, sell: 8000 },
+  { id: 'helm_nova', name: '신성 투구', desc: '이마에 별 하나가 빛난다.', kind: 'equip', slot: 'hat', stats: { def: 72, hp: 560 }, reqLv: 110, sell: 9500 },
+  { id: 'plate_nova', name: '신성 갑옷', desc: '우주의 추위도 막아 준다.', kind: 'equip', slot: 'body', stats: { def: 104, hp: 800 }, reqLv: 112, sell: 11500 },
+  { id: 'legs_nova', name: '신성 다리 갑옷', desc: '무중력에서도 발이 땅에 붙는다.', kind: 'equip', slot: 'legs', stats: { def: 72, hp: 560 }, reqLv: 111, sell: 9800 },
+  { id: 'boots_nova', name: '신성 장화', desc: '한 걸음마다 별모래가 흩날린다.', kind: 'equip', slot: 'shoes', stats: { def: 54, agi: 26 }, reqLv: 110, sell: 9500 },
   // 덫 사냥: 잡은 동물(재료)과 덫 도구
   { id: 'cr_hare', name: '눈토끼', desc: '덫에 걸린 하얀 토끼. 털이 아주 부드럽다.', kind: 'material', sell: 30 },
   { id: 'cr_fox', name: '서리여우', desc: '꼬리 끝이 얼음처럼 반짝인다.', kind: 'material', sell: 60 },
@@ -331,6 +362,24 @@ const monsters: MonsterDef[] = [
   { id: 'frostlord', name: '눈보라 군주', hp: 700000, atk: 430, acc: 520, defZero: 600, xp: 250000, coins: [60000, 90000], speed: 10, motion: 'float', radius: 24, scale: 2.8,
     boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 70, slamDmg: 360, card: 'frostlord' },
     drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }] },
+  // ───── 4월드: 별빛 성운 ─────
+  { id: 'starling', name: '별모래톨', hp: 150000, atk: 470, acc: 570, defZero: 620, xp: 13000, coins: [600, 1100], speed: 20, motion: 'hop', radius: 9,
+    drops: [{ item: 'star_sand', chance: 0.4, qty: [1, 2] }, { item: 'moon_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
+  { id: 'cratermite', name: '구덩이 진드기', hp: 200000, atk: 510, acc: 620, defZero: 670, xp: 16500, coins: [700, 1250], speed: 26, motion: 'waddle', radius: 10,
+    drops: [{ item: 'crater_shell', chance: 0.4, qty: [1, 2] }, { item: 'moon_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_str', chance: 0.005, qty: [1, 1] }, { item: 'stone_chop', chance: 0.004, qty: [1, 1] }] },
+  { id: 'nebjelly', name: '성운해파리', hp: 270000, atk: 555, acc: 675, defZero: 725, xp: 21000, coins: [800, 1450], speed: 18, motion: 'float', radius: 9,
+    drops: [{ item: 'neb_jelly', chance: 0.4, qty: [1, 2] }, { item: 'moon_cake', chance: 0.06, qty: [1, 1] }, { item: 'statue_wis', chance: 0.005, qty: [1, 1] }, { item: 'stone_lure', chance: 0.004, qty: [1, 1] }] },
+  { id: 'meteorite', name: '운석돌이', hp: 360000, atk: 600, acc: 730, defZero: 785, xp: 27000, coins: [900, 1650], speed: 22, motion: 'hop', radius: 10,
+    drops: [{ item: 'meteor_chip', chance: 0.4, qty: [1, 2] }, { item: 'nova_stew', chance: 0.04, qty: [1, 1] }, { item: 'statue_agi', chance: 0.005, qty: [1, 1] }, { item: 'stone_atk', chance: 0.004, qty: [1, 1] }] },
+  { id: 'ringowl', name: '고리부엉이', hp: 480000, atk: 650, acc: 790, defZero: 850, xp: 34000, coins: [1050, 1900], speed: 30, motion: 'float', radius: 9,
+    drops: [{ item: 'ring_plume', chance: 0.4, qty: [1, 2] }, { item: 'nova_stew', chance: 0.05, qty: [1, 1] }, { item: 'statue_luk', chance: 0.005, qty: [1, 1] }, { item: 'stone_stat', chance: 0.003, qty: [1, 1] }] },
+  { id: 'cometfox', name: '혜성여우', hp: 640000, atk: 705, acc: 860, defZero: 920, xp: 43000, coins: [1200, 2200], speed: 34, motion: 'waddle', radius: 10,
+    drops: [{ item: 'comet_hair', chance: 0.4, qty: [1, 2] }, { item: 'nova_stew', chance: 0.05, qty: [1, 1] }, { item: 'statue_guard', chance: 0.005, qty: [1, 1] }, { item: 'stamp_xp', chance: 0.002, qty: [1, 1] }] },
+  { id: 'voidimp', name: '공허 도깨비', hp: 850000, atk: 765, acc: 930, defZero: 1000, xp: 54000, coins: [1400, 2600], speed: 16, motion: 'float', radius: 10,
+    drops: [{ item: 'void_shard', chance: 0.4, qty: [1, 2] }, { item: 'void_key', chance: 0.004, qty: [1, 1] }, { item: 'nova_stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
+  { id: 'nebtitan', name: '성운 거신', hp: 5500000, atk: 780, acc: 950, defZero: 1080, xp: 2000000, coins: [400000, 600000], speed: 10, motion: 'float', radius: 26, scale: 3,
+    boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 76, slamDmg: 640, card: 'nebtitan' },
+    drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
 for (const m of monsters) if (!m.boss && !m.scale) m.drops.push({ item: 'tp_ticket', chance: 0.006, qty: [1, 1] });
@@ -360,6 +409,11 @@ const nodes: NodeDef[] = [
   { id: 'frostrock', name: '서리 광맥', skill: 'mining', reqLv: 45, hp: 380, xp: 210, item: 'ore_frost' },
   { id: 'icehole', name: '얼음 구멍', skill: 'fishing', reqLv: 35, hp: 200, xp: 110, item: 'fish_ice' },
   { id: 'frostbush', name: '서리 덤불', skill: 'catching', reqLv: 35, hp: 200, xp: 110, item: 'bug_frost' },
+  // 4월드
+  { id: 'startree', name: '별빛나무', skill: 'chopping', reqLv: 60, hp: 900, xp: 480, item: 'starlog' },
+  { id: 'novarock', name: '신성 광맥', skill: 'mining', reqLv: 60, hp: 820, xp: 440, item: 'ore_nova' },
+  { id: 'nebpool', name: '성운 웅덩이', skill: 'fishing', reqLv: 50, hp: 420, xp: 230, item: 'fish_neb' },
+  { id: 'cometbush', name: '혜성 덤불', skill: 'catching', reqLv: 50, hp: 420, xp: 230, item: 'bug_neb' },
 ];
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
@@ -524,10 +578,55 @@ const maps: MapDef[] = [
     platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
     spawns: [{ monster: 'frostgolem', count: 9 }], nodes: [{ node: 'icehole', x: 230 }, { node: 'frostrock', x: 380 }, { node: 'frostbush', x: 660 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
-    facilities: [{ kind: 'shrine', x: 520, y: 0 }], portals: [{ x: 24, to: 'aurora', toX: 930 }, { x: 952, y: -96, to: 'frostlair', toX: 60, reqKills: 400, key: 'frost_key', label: '눈보라 옥좌' }] },
+    facilities: [{ kind: 'shrine', x: 520, y: 0 }], portals: [{ x: 24, to: 'aurora', toX: 930 }, { x: 952, y: -96, to: 'frostlair', toX: 60, reqKills: 400, key: 'frost_key', label: '눈보라 옥좌' }, { x: 956, to: 'nebtown', toX: 60, label: '세계의 문', gate: true }] },
   { id: 'frostlair', name: '눈보라 옥좌', width: 600, theme: 'frostpeak', boss: 'frostlord',
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'frostpeak', toX: 930, toY: -96 }] },
+  // ───── 4월드: 별빛 성운(성운 정거장에서 동쪽으로 이어진다) ─────
+  { id: 'nebtown', name: '성운 정거장', width: 700, theme: 'nebtown',
+    platforms: [{ x: 400, y: -48, w: 300 }],
+    ropes: [{ x: 410, top: -48, bottom: 0 }],
+    spawns: [], nodes: [{ node: 'nebpool', x: 330 }],
+    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'astro', x: 220, y: 0 }, { kind: 'anvil', x: 480, y: -48 }],
+    portals: [{ x: 24, to: 'frostpeak', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'moondust', toX: 50 }] },
+  { id: 'moondust', name: '달먼지 평원', width: 940, theme: 'moondust',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
+    spawns: [{ monster: 'starling', count: 9 }], nodes: [{ node: 'startree', x: 90 }, { node: 'startree', x: 650 }, { node: 'cometbush', x: 300 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'nebtown', toX: 650, toY: -48 }, { x: 916, to: 'crater', toX: 50, reqKills: 900 }] },
+  { id: 'crater', name: '운석 구덩이', width: 960, theme: 'crater',
+    platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
+    spawns: [{ monster: 'cratermite', count: 9 }], nodes: [{ node: 'novarock', x: 420 }, { node: 'novarock', x: 660 }, { node: 'cometbush', x: 900 }],
+    ropes: [{ x: 130, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 850, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'moondust', toX: 890 }, { x: 936, to: 'nebula', toX: 50, reqKills: 950 }] },
+  { id: 'nebula', name: '성운 안개', width: 960, theme: 'nebula',
+    platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
+    spawns: [{ monster: 'nebjelly', count: 9 }], nodes: [{ node: 'nebpool', x: 380 }, { node: 'nebpool', x: 680 }, { node: 'novarock', x: 800 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'crater', toX: 910 }, { x: 936, to: 'asteroid', toX: 50, reqKills: 1000 }] },
+  { id: 'asteroid', name: '소행성 띠', width: 940, theme: 'asteroid',
+    platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
+    spawns: [{ monster: 'meteorite', count: 9 }], nodes: [{ node: 'novarock', x: 420 }, { node: 'novarock', x: 660 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'nebula', toX: 910 }, { x: 916, to: 'rings', toX: 50, reqKills: 1050 }] },
+  { id: 'rings', name: '고리 행성', width: 960, theme: 'rings',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
+    spawns: [{ monster: 'ringowl', count: 9 }], nodes: [{ node: 'startree', x: 90 }, { node: 'novarock', x: 380 }, { node: 'nebpool', x: 700 }],
+    ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'asteroid', toX: 890 }, { x: 936, to: 'comet', toX: 50, reqKills: 1100 }] },
+  { id: 'comet', name: '혜성 꼬리', width: 980, theme: 'comet',
+    platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
+    spawns: [{ monster: 'cometfox', count: 9 }], nodes: [{ node: 'cometbush', x: 250 }, { node: 'startree', x: 410 }, { node: 'novarock', x: 690 }, { node: 'nebpool', x: 880 }],
+    ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 750, top: -48, bottom: 0 }, { x: 880, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'rings', toX: 910 }, { x: 956, to: 'voidedge', toX: 50, reqKills: 1150 }] },
+  { id: 'voidedge', name: '공허의 끝', width: 980, theme: 'voidedge',
+    platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
+    spawns: [{ monster: 'voidimp', count: 9 }], nodes: [{ node: 'nebpool', x: 230 }, { node: 'novarock', x: 380 }, { node: 'cometbush', x: 660 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'comet', toX: 930 }, { x: 952, y: -96, to: 'voidlair', toX: 60, reqKills: 500, key: 'void_key', label: '거신의 궤도' }] },
+  { id: 'voidlair', name: '거신의 궤도', width: 600, theme: 'voidedge', boss: 'nebtitan',
+    platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
+    portals: [{ x: 24, to: 'voidedge', toX: 930, toY: -96 }] },
 ];
 export const MAPS: Record<string, MapDef> = Object.fromEntries(maps.map((m) => [m.id, m]));
 
@@ -580,6 +679,19 @@ export const RECIPES: RecipeDef[] = [
   { item: 'plate_frost', coins: 26000, mats: [['bar_frost', 20], ['yeti_fur', 24], ['pine_cone', 30]], tier: 5 },
   { item: 'legs_frost', coins: 20000, mats: [['bar_frost', 16], ['peng_feather', 24]], tier: 5 },
   { item: 'boots_frost', coins: 18000, mats: [['bar_frost', 12], ['snow_tuft', 30], ['twine', 80]], tier: 5 },
+  // 4월드(모루 6단계)
+  { item: 'anvil_exp5', coins: 200000, mats: [['bar_nova', 30], ['starlog', 100], ['star_sand', 80]], unlock: 6, smithLv: 60, tier: 5 },
+  { item: 'sword_nova', coins: 60000, mats: [['bar_nova', 20], ['meteor_chip', 30], ['void_shard', 10]], tier: 6 },
+  { item: 'bow_nova', coins: 60000, mats: [['bar_nova', 16], ['starlog', 50], ['ring_plume', 30]], tier: 6 },
+  { item: 'wand_nova', coins: 60000, mats: [['bar_nova', 16], ['starlog', 40], ['neb_jelly', 24]], tier: 6 },
+  { item: 'pick_nova', coins: 40000, mats: [['bar_nova', 18], ['starlog', 40], ['bar_frost', 20]], tier: 6 },
+  { item: 'axe_nova', coins: 40000, mats: [['bar_nova', 18], ['starlog', 40], ['bar_frost', 20]], tier: 6 },
+  { item: 'rod_nova', coins: 40000, mats: [['bar_nova', 14], ['starlog', 40], ['fish_neb', 60]], tier: 6 },
+  { item: 'net_nova', coins: 40000, mats: [['bar_nova', 14], ['starlog', 40], ['bug_neb', 60]], tier: 6 },
+  { item: 'helm_nova', coins: 45000, mats: [['bar_nova', 18], ['crater_shell', 26]], tier: 6 },
+  { item: 'plate_nova', coins: 65000, mats: [['bar_nova', 26], ['crater_shell', 30], ['comet_hair', 24]], tier: 6 },
+  { item: 'legs_nova', coins: 50000, mats: [['bar_nova', 20], ['comet_hair', 26]], tier: 6 },
+  { item: 'boots_nova', coins: 45000, mats: [['bar_nova', 16], ['star_sand', 40], ['yeti_fur', 30]], tier: 6 },
   ...([['blue', 2, 'bar_blue', 'willowlog', 'shell', 'glowdust'], ['gold', 3, 'bar_gold', 'moonlog', 'runestone', 'sporecap']] as const).flatMap(([k, tier, bar, log, m1, m2]) => {
     const c = tier === 2 ? 1 : 3;
     return [
@@ -675,14 +787,16 @@ export const WORLD1 = ['town', 'meadow', 'hills', 'mine1', 'mine2', 'forest', 's
 export const WORLD2 = ['oasis', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire'];
 /** 월드마다 순간이동 지도에 오르는 맵(보스방·콜로세움 제외)과 시작 마을 */
 export const WORLD3 = ['snowtown', 'snowfield', 'pinewood', 'frostlake', 'icecave', 'glacier', 'aurora', 'frostpeak'];
+export const WORLD4 = ['nebtown', 'moondust', 'crater', 'nebula', 'asteroid', 'rings', 'comet', 'voidedge'];
 /** spawnX: 마을에서 다시 시작하는 자리 */
 export const WORLDS = [
   { n: 1, name: '1월드 · 이끼 들판', town: 'town', spawnX: 120, maps: WORLD1 },
   { n: 2, name: '2월드 · 노을 사막', town: 'oasis', spawnX: 300, maps: WORLD2 },
   { n: 3, name: '3월드 · 서리 고원', town: 'snowtown', spawnX: 300, maps: WORLD3 },
+  { n: 4, name: '4월드 · 별빛 성운', town: 'nebtown', spawnX: 300, maps: WORLD4 },
 ];
 /** 보스방·콜로세움처럼 순간이동 지도에 오르지 않는 맵이 속한 월드 */
-const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, sandlair: 2, frostlair: 3 };
+const EXTRA_WORLD: Record<string, number> = { lair: 1, arena: 1, sandlair: 2, frostlair: 3, voidlair: 4 };
 export const TOWNS = WORLDS.map((w) => w.town);
 /** 이 맵이 속한 월드(보스방·콜로세움은 이어진 맵을 따라간다) */
 export function worldOf(id: string): number {
@@ -804,6 +918,18 @@ export const CARDS: CardDef[] = [
   { id: 'frostrock', from: 'node', bonus: 'mining', per: 0.12, label: '채광 효율' },
   { id: 'icehole', from: 'node', bonus: 'fishing', per: 0.1, label: '낚시 효율' },
   { id: 'frostbush', from: 'node', bonus: 'catching', per: 0.1, label: '곤충 채집 효율' },
+  { id: 'starling', from: 'monster', bonus: 'hp', per: 0.09, label: '최대 체력' },
+  { id: 'cratermite', from: 'monster', bonus: 'dmg', per: 0.09, label: '공격력' },
+  { id: 'nebjelly', from: 'monster', bonus: 'afk', per: 0.05, label: '방치 효율' },
+  { id: 'meteorite', from: 'monster', bonus: 'dmg', per: 0.1, label: '공격력' },
+  { id: 'ringowl', from: 'monster', bonus: 'drop', per: 0.09, label: '드롭률' },
+  { id: 'cometfox', from: 'monster', bonus: 'hp', per: 0.1, label: '최대 체력' },
+  { id: 'voidimp', from: 'monster', bonus: 'drop', per: 0.1, label: '드롭률' },
+  { id: 'nebtitan', from: 'monster', bonus: 'afk', per: 0.06, label: '방치 효율' },
+  { id: 'startree', from: 'node', bonus: 'chopping', per: 0.12, label: '벌목 효율' },
+  { id: 'novarock', from: 'node', bonus: 'mining', per: 0.14, label: '채광 효율' },
+  { id: 'nebpool', from: 'node', bonus: 'afkSkill', per: 0.04, label: '채집 방치 효율' },
+  { id: 'cometbush', from: 'node', bonus: 'catching', per: 0.12, label: '곤충 채집 효율' },
 ];
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
@@ -852,6 +978,14 @@ const SLEDDER_QUESTS: QuestDef[] = [
   { name: '봉우리의 군주', text: '서리 봉우리에 눈보라를 부르는 군주가 있대. 골렘의 핵을 모으면 옥좌 열쇠가 나온다던데.', goal: { item: 'frost_core', n: 30 }, reward: { item: 'frost_key', xp: 400000 } },
 ];
 
+const ASTRO_QUESTS: QuestDef[] = [
+  { name: '별모래 쓸기', text: '눈 덮인 봉우리를 넘어왔다고? 반가워! 정거장 앞 평원에 별모래톨이 너무 많아져서 착륙장이 막혔어.', goal: { kill: 'starling', n: 60 }, reward: { coins: 60000, xp: 200000 } },
+  { name: '별빛 목재', text: '정거장 벽을 덧대려면 별빛나무 통나무가 필요해.', goal: { item: 'starlog', n: 50 }, reward: { item: 'moon_cake', xp: 300000 } },
+  { name: '안개 속 해파리', text: '성운 안개의 해파리들이 통신 안테나에 엉겨 붙었어. 좀 떼어 줘.', goal: { kill: 'nebjelly', n: 120 }, reward: { coins: 150000, xp: 600000 } },
+  { name: '보랏빛 쇳덩이', text: '신성 주괴는 우주선 선체로 그만이야.', goal: { item: 'bar_nova', n: 20 }, reward: { item: 'chest_small', xp: 900000 } },
+  { name: '궤도의 거신', text: '공허의 끝 너머 궤도를 거신이 돌고 있어. 도깨비들이 모은 공허 조각으로 문을 열 수 있대.', goal: { item: 'void_shard', n: 40 }, reward: { item: 'void_key', xp: 1500000 } },
+];
+
 export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
 export const NPCS: Record<string, NpcDef> = {
   elder: { id: 'elder', name: '촌장 바루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
@@ -860,6 +994,7 @@ export const NPCS: Record<string, NpcDef> = {
   sledder: { id: 'sledder', name: '썰매꾼 노라', look: { hair: 0, hairColor: '#e8b24a', skin: '#f6e6d6', outfit: '#4e8de2' }, quests: SLEDDER_QUESTS },
   // 3월드에도 전직을 맡는 촌장이 있다(3·4차 전직)
   elder3: { id: 'elder3', name: '설원 장로 하윤', look: { hair: 2, hairColor: '#e9eef6', skin: '#e9eef6', outfit: '#6a9ae8' }, quests: [] },
+  astro: { id: 'astro', name: '별지기 루미', look: { hair: 1, hairColor: '#c8a8ff', skin: '#f6e6d6', outfit: '#5a3aa8' }, quests: ASTRO_QUESTS },
   caravan: { id: 'caravan', name: '대상 카림', look: { hair: 2, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
 };
 /** 히든 직업 조건: 초보자로 이 레벨 이상, 이 아이템 1개, 숨은 NPC가 있는 맵에서 */
@@ -931,6 +1066,7 @@ export interface GateDef { to: number; boss: string; bossKills: number; level: n
 export const WORLD_GATES: GateDef[] = [
   { to: 2, boss: 'mossking', bossKills: 1, level: 30, map: 'grove', kills: 400, text: '달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.' },
   { to: 3, boss: 'sandlord', bossKills: 1, level: 60, map: 'sunspire', kills: 600, text: '해탑 유적 끝, 모래에 반쯤 묻힌 문 너머로 차가운 눈바람이 새어 나온다.' },
+  { to: 4, boss: 'frostlord', bossKills: 1, level: 90, map: 'frostpeak', kills: 800, text: '서리 봉우리 끝, 얼음 속에 박힌 문 너머로 별빛이 쏟아진다.' },
 ];
 export const WORLD_GATE = WORLD_GATES[0];
 /** n월드로 가는 문 */
@@ -998,6 +1134,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stone_guard', price: 900, daily: 1 },
   { item: 'hot_cocoa', price: 360, daily: 30 },
   { item: 'trap_wood', price: 3000, daily: 1 },
+  { item: 'moon_cake', price: 600, daily: 30 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
@@ -1190,6 +1327,7 @@ export const SMELTS: SmeltDef[] = [
   { ore: 'ore_gold', bar: 'bar_gold', need: 5, secs: 180 },
   { ore: 'ore_amber', bar: 'bar_amber', need: 6, secs: 300 },
   { ore: 'ore_frost', bar: 'bar_frost', need: 7, secs: 480 },
+  { ore: 'ore_nova', bar: 'bar_nova', need: 8, secs: 720 },
 ];
 /** 용광로 값: 사는 값, 칸·용량 기본값, 업그레이드(코인, 단계마다 upGrow 배) */
 export const FORGE = {
@@ -1198,7 +1336,7 @@ export const FORGE = {
   upMax: { slots: 4, cap: 20, speed: 20, bonus: 10 },
 };
 
-const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'palmlog', 'ore', 'ore_blue', 'ore_gold', 'ore_amber', 'bar_red', 'bar_blue', 'bar_gold', 'bar_amber', 'pinelog', 'ore_frost', 'bar_frost'];
+const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'palmlog', 'ore', 'ore_blue', 'ore_gold', 'ore_amber', 'bar_red', 'bar_blue', 'bar_gold', 'bar_amber', 'pinelog', 'ore_frost', 'bar_frost', 'starlog', 'ore_nova', 'bar_nova'];
 /** 아이템이 속한 묶음 */
 export function stackGroup(id: string): StackGroup {
   const it = ITEMS[id];

@@ -736,3 +736,37 @@ describe('기도', () => {
     expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_harvest' }, 0).ok).toBe(true);
   });
 });
+
+import { WORLD4, SMELTS as SM4, SHOP as SH4, NPCS as NP4 } from '../src/core/data';
+describe('4월드: 별빛 성운', () => {
+  it('눈보라 군주 토벌·Lv.90·서리 봉우리 처치를 채우면 봉우리 끝 문으로 성운 정거장에 간다', () => {
+    const { acc, c } = setup();
+    c.maxWorld = 3; c.mapId = 'frostpeak'; c.level = 90;
+    const gi = ALLMAPS.frostpeak.portals.findIndex((p) => p.gate);
+    expect(ALLMAPS.frostpeak.portals[gi].to).toBe('nebtown');
+    expect(gateChecks(acc, c, 4).map((x) => x.ok)).toEqual([false, true, false]);
+    expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(false);
+    acc.bosses.frostlord = 1; c.kills.frostpeak = WORLD_GATES[2].kills;
+    expect(gateOpen(acc, c, 4)).toBe(true);
+    expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(true);
+    expect(c.mapId).toBe('nebtown'); expect(c.maxWorld).toBe(4);
+    expect(mapUnlocked(c, 'moondust')).toBe(true); expect(mapUnlocked(c, 'crater')).toBe(false);
+    c.mapId = 'moondust'; applyAction(acc, 0, { t: 'respawn' }, 0);
+    expect(c.mapId).toBe('nebtown');
+    expect(orderPool(c)).toContain('star_sand');
+  });
+  it('맵·몬스터·자원·제작법·퀘스트가 모두 이어져 있다', () => {
+    for (const id of WORLD4) { expect(ALLMAPS[id]).toBeTruthy(); expect(worldOf(id)).toBe(4); }
+    expect(worldOf('voidlair')).toBe(4);
+    expect(ALLMAPS.voidlair.boss).toBe('nebtitan');
+    expect(CB.nebtitan).toBeTruthy();
+    for (const id of WORLD4) for (const s of ALLMAPS[id].spawns) { expect(MON[s.monster]).toBeTruthy(); expect(CB[s.monster]).toBeTruthy(); for (const d of MON[s.monster].drops) expect(IT[d.item], d.item).toBeTruthy(); }
+    for (const id of WORLD4) for (const n of ALLMAPS[id].nodes) { expect(ND[n.node]).toBeTruthy(); expect(IT[ND[n.node].item]).toBeTruthy(); expect(CB[n.node]).toBeTruthy(); }
+    for (const id of WORLD4) for (const p of ALLMAPS[id].portals) expect(ALLMAPS[p.to], p.to).toBeTruthy();
+    for (const r of RC.filter((r) => r.tier === 6 || r.unlock === 6)) for (const [m] of r.mats) expect(IT[m], m).toBeTruthy();
+    expect(RC.find((r) => r.item === 'anvil_exp5')?.unlock).toBe(6);
+    expect(SM4.some((x) => x.bar === 'bar_nova')).toBe(true);
+    expect(SH4.some((x) => x.item === 'moon_cake')).toBe(true);
+    for (const q of NP4.astro.quests) { const gl = q.goal as { kill?: string; item?: string }; expect(gl.kill ? MON[gl.kill] : IT[gl.item!]).toBeTruthy(); }
+  });
+});

@@ -136,6 +136,38 @@ export const GEAR: Record<string, GearDef> = {
     'oDDDDDDDDDDo',
     '.oooooooooo.',
   ] },
+  helm_nova: { on: 'head', at: [4, -2], pal: { L: '#f0e0ff', M: '#b48aff', D: '#5a3aa8', G: '#f6c945' }, rows: [
+    '...oooooo...',
+    '..oLMMMMMo..',
+    '.oLMMMMMMDo.',
+    '.oLMMGMMMDo.',
+    'oLMMMMMMMMDo',
+    'oDDDDDDDDDDo',
+    '.oooooooooo.',
+  ] },
+  plate_nova: { on: 'body', at: [6, 10], pal: { L: '#f0e0ff', M: '#b48aff', D: '#5a3aa8', G: '#f6c945' }, rows: [
+    '..oooo..',
+    '.oLMMMo.',
+    '.oLMMDo.',
+    '.oLGMDo.',
+    '.oDDDDo.',
+    '.oLMMDo.',
+    '.oLMMDo.',
+    '.oDDDDo.',
+    '.oLMMDo.',
+    'oDDGDDDo',
+    'oooooooo',
+  ] },
+  // 공허 가면: 뿔 두 개와 노란 눈
+  void_mask: { on: 'head', at: [4, -3], pal: { L: '#c87aff', M: '#3a1a6a', D: '#2a1648', G: '#ffe066' }, rows: [
+    '.oo......oo.',
+    'oLo......oLo',
+    'oLooooooooLo',
+    'oMMMMMMMMMMo',
+    'oMGGMMMMGGMo',
+    'oDDDDDDDDDDo',
+    '.oooooooooo.',
+  ] },
   // 통나무 갑옷: 가슴을 덮는 나무판과 허리띠(팔은 그대로 보이게 몸통 폭만)
   armor_log: { on: 'body', at: [6, 10], pal: WOOD, rows: [
     '..oooo..',

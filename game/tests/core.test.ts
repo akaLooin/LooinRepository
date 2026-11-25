@@ -74,8 +74,8 @@ describe('월드 시뮬레이션', () => {
     for (const map of Object.values(MAPS)) {
       if (!map.spawns.length) continue;
       const { acc, c } = setup();
-      c.mapId = map.id; c.level = 60; c.stats.luk = 4000; // 초보자는 행운이 공격력(2·3월드 몬스터도 제한 시간 안에 잡도록)
-      acc.stamps.stamp_def = 8000; // 강한 맵(2·3월드 포함)에서도 쓰러지지 않게(도달 가능성만 본다)
+      c.mapId = map.id; c.level = 60; c.stats.luk = 30000; // 초보자는 행운이 공격력(2~4월드 몬스터도 제한 시간 안에 잡도록)
+      acc.stamps.stamp_def = 20000; // 강한 맵(2~4월드 포함)에서도 쓰러지지 않게(도달 가능성만 본다)
       const w = new World(acc, c, new Rng(3));
       const seen = new Set<number>();
       for (const m of w.mobs.slice()) {

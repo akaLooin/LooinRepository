@@ -14,7 +14,7 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, WORLD2, WORLD3, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -566,9 +566,12 @@ export class UI {
         const tickets = countItem(c, TP_TICKET) + storageCount(g.acc, TP_TICKET);
         // 월드 탭: 열어 둔 월드만 고를 수 있다
         const mw = c.maxWorld ?? 1, wn = Math.min(this.mapWorld ?? worldOf(c.mapId), mw);
-        const ids = wn === 3 ? [...WORLD3, 'frostlair', 'gate2'] : wn === 2 ? [...WORLD2, 'sandlair', 'gate1', 'gate3'] : [...WORLD1, 'arena', 'lair', 'gate'];
+        const ids = wn === 4 ? [...WORLD4, 'voidlair', 'gateb3'] : wn === 3 ? [...WORLD3, 'frostlair', 'gate2', 'gate4'] : wn === 2 ? [...WORLD2, 'sandlair', 'gate1', 'gate3'] : [...WORLD1, 'arena', 'lair', 'gate'];
         const regions: MapRegion[] = ids.map((id) => {
           if (id === 'gate1' || id === 'gate2') return { id, name: '세계의 문', state: 'mark', sel: false, sub: `${id.slice(4)}월드로` } as MapRegion;
+          if (id === 'gateb3') return { id, name: '세계의 문', state: 'mark', sel: false, sub: '3월드로' } as MapRegion;
+          if (id === 'gate4') { const ok = gateOpen(g.acc, c, 4); return { id, name: '세계의 문', state: mapUnlocked(c, 'frostpeak') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 4월드로' : '조건 확인' } as MapRegion; }
+          if (id === 'voidlair') { const here = c.mapId === id; return { id, name: MAPS.voidlair.name, state: here ? 'here' : mapUnlocked(c, 'voidedge') ? 'mark' : 'locked', sel: false, sub: here ? '현재 위치' : g.acc.bosses.nebtitan ? `토벌 ${g.acc.bosses.nebtitan}회` : '공허 위 · 열쇠' } as MapRegion; }
           if (id === 'gate3') { const ok = gateOpen(g.acc, c, 3); return { id, name: '세계의 문', state: mapUnlocked(c, 'sunspire') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 3월드로' : '조건 확인' } as MapRegion; }
           if (id === 'frostlair') { const here = c.mapId === id; return { id, name: MAPS.frostlair.name, state: here ? 'here' : mapUnlocked(c, 'frostpeak') ? 'mark' : 'locked', sel: false, sub: here ? '현재 위치' : g.acc.bosses.frostlord ? `토벌 ${g.acc.bosses.frostlord}회` : '봉우리 위 · 열쇠' } as MapRegion; }
           if (id === 'sandlair') { const here = c.mapId === id; return { id, name: MAPS.sandlair.name, state: here ? 'here' : mapUnlocked(c, 'sunspire') ? 'mark' : 'locked', sel: false, sub: here ? '현재 위치' : g.acc.bosses.sandlord ? `토벌 ${g.acc.bosses.sandlord}회` : '해탑 위 · 열쇠' } as MapRegion; }
@@ -587,7 +590,7 @@ export class UI {
             <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
           : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
         const wtabs = mw > 1 ? ` <span class="worldsw" role="tablist">${WORLDS.filter((x) => x.n <= mw).map((x) => `<button class="ui-btn sm ${x.n === wn ? 'primary' : ''}" role="tab" aria-selected="${x.n === wn}" data-act="mapworld:${x.n}" title="${x.name}">${x.n}월드</button>`).join('')}</span>` : '';
-        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox">${worldMapSvg(regions, wn)}</div><div class="ui-row mapfoot">${foot}</div>`);
+        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox"${wn === 4 ? ' style="background:#120e2a"' : ''}>${worldMapSvg(regions, wn)}</div><div class="ui-row mapfoot">${foot}</div>`);
       }
 
       case 'gate': {

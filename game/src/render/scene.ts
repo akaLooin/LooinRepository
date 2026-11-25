@@ -246,7 +246,8 @@ function ensureTextures(scene: Phaser.Scene) {
 }
 
 const SNOWY: string[] = ['snowtown', 'snowfield', 'pinewood', 'frostlake', 'icecave', 'glacier', 'aurora', 'frostpeak'];
-const NO_FLOWERS = new Set(['cave', 'mine', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire', ...SNOWY]);
+const SPACE: string[] = ['nebtown', 'moondust', 'crater', 'nebula', 'asteroid', 'rings', 'comet', 'voidedge'];
+const NO_FLOWERS = new Set(['cave', 'mine', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire', ...SNOWY, ...SPACE]);
 export class GameScene extends Phaser.Scene {
   private world: World | null = null;
   private rig: CharRig | null = null;
@@ -263,6 +264,7 @@ export class GameScene extends Phaser.Scene {
   /** 3월드: 내리는 눈송이(화면 기준으로 감싸 돈다) */
   private snow: { img: Img; x: number; y: number; sp: number; ph: number }[] = [];
   private swayers: { img: Img; ph: number }[] = [];
+  private twinkles: { img: Img; ph: number }[] = [];
   private portals: { ring: Img; glow: Img; lock: Img; text: Phaser.GameObjects.Text; idx: number }[] = [];
   private flames: Img[] = [];
   private arrow: Img | null = null;
@@ -328,7 +330,7 @@ export class GameScene extends Phaser.Scene {
     for (const d of this.shotViews.values()) d.destroy();
     this.shotViews.clear();
     this.statics = []; this.mobs = []; this.nodeViews = []; this.dropViews.clear();
-    this.hills = []; this.clouds = []; this.snow = []; this.swayers = []; this.portals = []; this.flames = []; this.npcs = [];
+    this.hills = []; this.clouds = []; this.snow = []; this.swayers = []; this.twinkles = []; this.portals = []; this.flames = []; this.npcs = [];
     const sky = document.getElementById('sky')!;
     if (!w) { sky.style.background = 'linear-gradient(#3b3355, #6a5a8a)'; return; }
 
@@ -344,12 +346,18 @@ export class GameScene extends Phaser.Scene {
     }
     keep(this.add.rectangle(-600, -6, map.width + 1200, 12, Phaser.Display.Color.HexStringToColor(th.mid).color).setOrigin(0, 0).setDepth(3));
     for (let i = 0; i < 6; i++) {
-      const img = keep(this.add.image(0, 0, 'cloud').setDepth(2).setAlpha(map.theme === 'cave' || map.theme === 'mine' || map.theme === 'icecave' ? 0 : map.theme === 'forest' || map.theme === 'grove' || map.theme === 'aurora' ? 0.25 : 0.8).setScale(0.7 + hash(i + 3) * 0.8));
+      const img = keep(this.add.image(0, 0, 'cloud').setDepth(2).setAlpha(map.theme === 'cave' || map.theme === 'mine' || map.theme === 'icecave' || SPACE.includes(map.theme) ? 0 : map.theme === 'forest' || map.theme === 'grove' || map.theme === 'aurora' ? 0.25 : 0.8).setScale(0.7 + hash(i + 3) * 0.8));
       this.clouds.push({ img, x: hash(i + 11) * 700, y: -95 - hash(i + 20) * 90, sp: 3 + hash(i + 40) * 5 });
     }
     // 오로라 언덕: 하늘에 일렁이는 빛의 띠(먼 배경과 함께 천천히 흐른다)
     if (map.theme === 'aurora') for (const [y, col, a] of [[-112, 0x7affc8, 0.22], [-92, 0xff9ae0, 0.14], [-132, 0x9ad8ff, 0.16]] as const) {
       keep(this.add.tileSprite(-600, y, map.width + 1200, 40, 'fx_aurora').setOrigin(0, 0.5).setDepth(0.5).setTint(col).setAlpha(a * 2.2).setTilePosition(y * 3, 0));
+    }
+    // 별빛 성운: 하늘 가득 반짝이는 별(먼 배경처럼 천천히 따라온다)
+    if (SPACE.includes(map.theme)) for (let i = 0; i < 70; i++) {
+      const img = keep(this.add.image(-200 + hash(i + 300) * (map.width + 400), -40 - hash(i + 400) * 200, 'fx_px').setDepth(0.4).setScrollFactor(0.4, 1).setScale(0.12 + hash(i + 500) * 0.22));
+      img.setAlpha(0.35 + hash(i + 600) * 0.6);
+      if (hash(i + 700) > 0.7) this.twinkles.push({ img, ph: hash(i) * 6 });
     }
     if (SNOWY.includes(map.theme)) for (let i = 0; i < 46; i++) {
       const img = keep(this.add.image(0, 0, 'fx_px').setDepth(90).setAlpha(0.55 + hash(i + 70) * 0.4).setScale(0.5 + hash(i + 90) * 0.7));
@@ -387,6 +395,7 @@ export class GameScene extends Phaser.Scene {
       const key = flower ? `deco_flower${Math.floor(hash(seed + i) * 3)}` : 'deco_grass';
       const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70).setScale(ART));
       if (SNOWY.includes(map.theme)) img.setTintFill(0xe4f0fa); // 눈 덮인 풀
+      else if (SPACE.includes(map.theme)) img.setTintFill(Phaser.Display.Color.HexStringToColor(th.grass[2]).color); // 바위 결
       this.swayers.push({ img, ph: hash(i) * 6 });
     }
     // 모닥불
@@ -542,6 +551,7 @@ export class GameScene extends Phaser.Scene {
     this.syncDrops(w);
     this.syncShots(w);
     for (const s of this.swayers) s.img.setRotation(Math.sin(this.time0 * 1.6 + s.ph) * 0.12);
+    for (const s of this.twinkles) s.img.setAlpha(0.3 + 0.7 * Math.abs(Math.sin(this.time0 * 1.3 + s.ph)));
     this.flames.forEach((f, i) => f.setScale(0.9 + Math.sin(this.time0 * 11 + i * 2) * 0.25, 1 + Math.sin(this.time0 * 8 + i * 1.3) * 0.35).setAlpha(0.85));
     // 터치로 지정한 대상 위에 화살표를 띄운다
     const tgt = w.commandTarget();
