@@ -52,6 +52,8 @@ export type WorldEvent =
   | { t: 'heal'; x: number; y: number; amount: number; food?: string }
   | { t: 'kill'; uid: number; x: number; y: number }
   | { t: 'loot'; text: string; item?: string }
+  /** 화면 가운데 경고(잠긴 문 등) */
+  | { t: 'warn'; text: string }
   | { t: 'level'; level: number }
   | { t: 'skill'; name: string; level: number }
   | { t: 'yield'; x: number; y: number; item: string }

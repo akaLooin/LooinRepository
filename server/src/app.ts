@@ -48,7 +48,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('qaccept'), npc: id }),
   z.object({ t: z.literal('qdone'), npc: id }),
   z.object({ t: z.literal('deposit'), id }),
-  z.object({ t: z.literal('withdraw'), id }),
+  z.object({ t: z.literal('withdraw'), id, qty: z.number().int().min(1).max(1e9).optional() }),
   z.object({ t: z.literal('depositAll') }),
   z.object({ t: z.literal('buy'), idx: z.number().int().min(0).max(99), qty: z.number().int().min(1).max(999) }),
   z.object({ t: z.literal('prod'), slot: z.number().int().min(0).max(9), item: id.nullable() }),

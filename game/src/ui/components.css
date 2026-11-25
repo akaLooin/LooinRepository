@@ -16,7 +16,7 @@
   transition: transform var(--m-fast), filter var(--m-fast);
 }
 .ui-btn:active:not(:disabled) { transform: translateY(var(--sp-1)); filter: brightness(.85); }
-.ui-btn:disabled { opacity: .45; cursor: default; }
+.ui-btn:disabled { opacity: .5; filter: grayscale(1) brightness(.85); cursor: default; }
 .ui-btn.primary { background: var(--c-accent); color: var(--c-on-accent); font-weight: 700; }
 .ui-btn.success { background: var(--c-success); color: var(--c-on-success); }
 .ui-btn.danger { background: var(--c-danger); color: var(--c-on-danger); }

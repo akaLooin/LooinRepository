@@ -446,7 +446,7 @@ const maps: MapDef[] = [
     nodes: [{ node: 'silvertree', x: 380 }, { node: 'oak', x: 620 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 510, top: -48, bottom: 0 }, { x: 760, top: -48, bottom: 0 }, { x: 866, top: -48, bottom: 0 }],
     facilities: [],
-    portals: [{ x: 24, to: 'hills', toX: 865 }, { x: 950, y: -48, to: 'lair', toX: 60, reqKills: 60, key: 'forest_key', label: '이끼왕의 둥지' }, { x: 888, y: -48, to: 'swamp', toX: 50, reqKills: 120, label: '안개 늪' }] },
+    portals: [{ x: 24, to: 'hills', toX: 865 }, { x: 950, y: -48, to: 'lair', toX: 60, reqKills: 60, key: 'forest_key', label: '이끼왕의 둥지' }, { x: 835, to: 'swamp', toX: 50, reqKills: 120 }] },
   { id: 'lair', name: '이끼왕의 둥지', width: 560, theme: 'forest', boss: 'mossking',
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'forest', toX: 940, toY: -48 }] },
@@ -454,7 +454,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 420, y: -48, w: 180 }, { x: 470, y: -96, w: 120 }, { x: 690, y: -48, w: 190 }],
     spawns: [{ monster: 'mudturtle', count: 8 }], nodes: [{ node: 'willow', x: 90 }, { node: 'willow', x: 640 }],
     ropes: [{ x: 170, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [{ kind: 'totem', x: 300, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 880, toY: -48 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
+    facilities: [{ kind: 'totem', x: 300, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 835 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
   { id: 'cave', name: '그늘 동굴', width: 900, theme: 'cave',
     platforms: [{ x: 110, y: -48, w: 160 }, { x: 330, y: -48, w: 240 }, { x: 380, y: -96, w: 140 }, { x: 650, y: -48, w: 180 }],
     spawns: [{ monster: 'glowbat', count: 8 }], nodes: [{ node: 'bluerock', x: 300 }, { node: 'willow', x: 620 }],
@@ -494,7 +494,7 @@ const maps: MapDef[] = [
   { id: 'oasis', name: '오아시스 마을', width: 700, theme: 'oasis',
     platforms: [{ x: 420, y: -48, w: 280 }],
     ropes: [{ x: 430, top: -48, bottom: 0 }],
-    spawns: [], nodes: [{ node: 'spring', x: 480 }, { node: 'antbush', x: 620 }], campfireX: 360,
+    spawns: [], nodes: [{ node: 'spring', x: 330 }, { node: 'antbush', x: 395 }], campfireX: 72,
     facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'post', x: 470, y: -48 }, { kind: 'anvil', x: 540, y: -48 }, { kind: 'alchemy', x: 620, y: -48 }],
     portals: [{ x: 24, to: 'grove', toX: 920, label: '세계의 문' }, { x: 676, y: -48, to: 'dunes', toX: 50 }] },
   { id: 'dunes', name: '바람 모래톱', width: 940, theme: 'dunes',
@@ -1108,7 +1108,8 @@ export const PRODUCTS: ProductDef[] = [
 export const ANVIL = { capBase: 60, capPer: 30, spdPer: 0.12, xpPer: 0.15, slotLv: [1, 5, 10] };
 
 /** 잡화점: 하루 수량 제한(현지 날짜 기준으로 다시 채워짐) */
-export interface ShopEntry { item: string; price: number; daily: number }
+/** w: 이 월드에 가 본 캐릭터에게만 판다 */
+export interface ShopEntry { item: string; price: number; daily: number; w?: number }
 export const SHOP: ShopEntry[] = [
   { item: 'berry', price: 8, daily: 60 },
   { item: 'mushroom', price: 35, daily: 25 },
@@ -1125,16 +1126,16 @@ export const SHOP: ShopEntry[] = [
   { item: 'arena_ticket', price: 250, daily: 2 },
   { item: 'tp_ticket', price: 60, daily: 8 },
   { item: 'pet_shard', price: 300, daily: 2 },
-  { item: 'cactus_juice', price: 140, daily: 30 },
-  { item: 'rod_reed', price: 1500, daily: 1 },
-  { item: 'net_cloth', price: 1500, daily: 1 },
-  { item: 'stone_lure', price: 700, daily: 1 },
+  { item: 'cactus_juice', price: 140, daily: 30, w: 2 },
+  { item: 'rod_reed', price: 1500, daily: 1, w: 2 },
+  { item: 'net_cloth', price: 1500, daily: 1, w: 2 },
+  { item: 'stone_lure', price: 700, daily: 1, w: 2 },
   { item: 'stone_mine', price: 500, daily: 1 },
   { item: 'stone_chop', price: 500, daily: 1 },
   { item: 'stone_guard', price: 900, daily: 1 },
-  { item: 'hot_cocoa', price: 360, daily: 30 },
-  { item: 'trap_wood', price: 3000, daily: 1 },
-  { item: 'moon_cake', price: 600, daily: 30 },
+  { item: 'hot_cocoa', price: 360, daily: 30, w: 3 },
+  { item: 'trap_wood', price: 3000, daily: 1, w: 3 },
+  { item: 'moon_cake', price: 600, daily: 30, w: 4 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────

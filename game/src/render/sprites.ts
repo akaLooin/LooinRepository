@@ -1267,6 +1267,7 @@ function buildItems() {
   p = new Paint(12, 12); p.disc(6, 5, 5, 3.5, '#8a6fd1'); p.rect(4, 7, 4, 4, '#f2e6d0'); p.set(4, 3, '#e4d8ff'); p.set(8, 4, '#e4d8ff'); p.outline().save('it_sporecap');
   p = new Paint(12, 12); p.disc(6, 7, 5, 3.5, '#8a6a4a'); p.disc(6, 6, 4, 2, '#a8864a'); p.disc(5, 5.5, 1.2, 0.8, '#6aa84a'); p.rect(1, 8, 10, 2, '#6a4a32'); p.outline().save('it_stew');
   p = new Paint(12, 12); p.disc(6, 7, 5, 3.5, '#d9a066'); p.disc(6, 6, 3.5, 2, '#a8b4ff'); p.set(5, 5, '#ffffff'); p.outline().save('it_moonpie');
+  p = new Paint(12, 12); for (const [x, y] of [[4, 4], [8, 4], [4, 8], [8, 8]] as const) p.disc(x, y, 2.6, 2.6, '#5fb859'); p.disc(6, 6, 1.4, 1.4, '#8fde5d'); p.line(7, 9, 9, 11, '#3a7a30'); p.set(3, 3, '#a8e878'); p.outline().save('it_four_leaf');
   // 4월드 재료·음식
   p = new Paint(12, 12); for (const [x, y, r] of [[4, 8, 2.4], [8, 7, 2.6], [6, 4, 2]] as const) p.disc(x, y, r, r * 0.8, '#f6d76a'); p.set(5, 3, '#ffffff'); p.set(9, 6, '#ffffff'); p.outline('#8a6a20').save('it_star_sand');
   p = new Paint(12, 12); p.disc(6, 7, 5, 4, '#8a7ca0'); p.disc(5, 6, 2, 1.4, '#6a5e7a'); p.disc(8, 8, 1.4, 1, '#6a5e7a'); p.set(4, 4, '#d0c4e0'); p.outline().save('it_crater_shell');
@@ -1376,7 +1377,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['cr_hare', 'cr_fox', 'cr_weasel', 'cr_marten', 'cr_reindeer', 'trap_wood', 'trap_iron', 'trap_frost', 'fur_scarf', 'antler_charm'].map((k) => [k, `it_${k}`])),
   frost_key: 'it_frostkey', anvil_exp4: 'obj_craft', rod_frost: 'wp_rod_frost', net_frost: 'wp_net_frost',
   ...Object.fromEntries(['star_sand', 'crater_shell', 'neb_jelly', 'meteor_chip', 'ring_plume', 'comet_hair', 'void_shard', 'starlog', 'ore_nova', 'bar_nova', 'fish_neb', 'bug_neb', 'moon_cake', 'nova_stew', 'trophy_void', 'void_mask'].map((k) => [k, `it_${k}`])),
-  void_key: 'it_voidkey', anvil_exp5: 'obj_craft', rod_nova: 'wp_rod_nova', net_nova: 'wp_net_nova',
+  four_leaf: 'it_four_leaf',   void_key: 'it_voidkey', anvil_exp5: 'obj_craft', rod_nova: 'wp_rod_nova', net_nova: 'wp_net_nova',
   ...Object.fromEntries(['fish_minnow', 'fish_salt', 'fish_star', 'bug_ant', 'bug_firefly', 'bug_beetle'].map((k) => [k, `it_${k}`])),
   ...Object.fromEntries(['rod_reed', 'rod_palm', 'rod_amber', 'net_cloth', 'net_palm', 'net_amber'].map((k) => [k, `wp_${k}`])),
   ...Object.fromEntries(['blue', 'gold', 'amber', 'frost', 'nova'].flatMap((k) => [[`sword_${k}`, `wp_sword_${k}`], [`bow_${k}`, `wp_bow_${k}`], [`wand_${k}`, `wp_wand_${k}`], [`pick_${k}`, `wp_pick_${k}`], [`axe_${k}`, `wp_axe_${k}`],

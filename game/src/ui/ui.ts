@@ -30,7 +30,7 @@ import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, 
 import { PlayKind, runGame } from './minigames';
 import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
-import { STARS, achieveReady, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
+import { STARS, achieveReady, achieveProgress, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
@@ -41,6 +41,18 @@ import { pixelIcon } from './icons';
 
 type Panel = 'lab' | 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
+/** '을(를)·이(가)·은(는)·와(과)·(으)로'를 앞 글자의 받침에 맞춰 고른다(태그는 건너뛰고 본다) */
+const JOSA: Record<string, [string, string]> = { '을(를)': ['을', '를'], '이(가)': ['이', '가'], '은(는)': ['은', '는'], '와(과)': ['과', '와'], '(으)로': ['으로', '로'], '아(야)': ['아', '야'] };
+export function josa(text: string): string {
+  return text.replace(/([가-힣A-Za-z0-9])((?:<\/?[a-z][^>]*>)*)(을\(를\)|이\(가\)|은\(는\)|와\(과\)|\(으\)로|아\(야\))/g, (_m, ch: string, tags: string, j: string) => {
+    const code = ch.charCodeAt(0);
+    let batchim: boolean, rieul = false;
+    if (code >= 0xac00 && code <= 0xd7a3) { const f = (code - 0xac00) % 28; batchim = f > 0; rieul = f === 8; }
+    else batchim = /[013678lmnLMN]$/.test(ch); // 숫자·영문은 읽는 소리로 대강
+    const [a, b] = JOSA[j];
+    return ch + tags + (j === '(으)로' ? (batchim && !rieul ? a : b) : batchim ? a : b);
+  });
+}
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
 const ui = (key: string, cls = 'ic') => `<img class="px ${cls}" src="${iconUrl(key)}" alt="">`;
@@ -86,6 +98,8 @@ function statInfo(k: StatKey, v: number, cls: ClassId): string[] {
 /** 화면 앞에 띄울 중요 알림인지(잠김·조건·부족·실패) */
 const IMPORTANT = /(열리지|잠겨|열립니다|필요|부족|없습니다|가득|할 수 없|쓸 수 없|아직|못했|맞지 않|최대 단계|이미)/;
 /** 아이콘 칸 + 숫자 배지(글자 대신). tone: ok(초록) / bad(빨강) */
+/** 칸에 들어가는 짧은 수(1.5만, 20만, 3억) */
+const short = (n: number) => n >= 1e8 ? `${+(n / 1e8).toFixed(n < 1e9 ? 1 : 0)}억` : n >= 1e4 ? `${+(n / 1e4).toFixed(n < 1e5 ? 1 : 0)}만` : n.toLocaleString();
 const tile = (src: string, badge: string | number, label: string, cls = '', tone = '') =>
   `<span class="ui-slot sm ${cls}" title="${label}" aria-label="${label}"><img class="px" src="${src}" alt="">${badge !== '' ? `<span class="qty ${tone}">${badge}</span>` : ''}</span>`;
 /** 퀘스트 목표 아이콘 칸(진행도 배지) */
@@ -97,8 +111,8 @@ const goalTile = (q: QuestDef, have: number | null, cls = '') => {
 };
 /** 퀘스트 보상 아이콘 칸들 */
 const rewardTiles = (r: QuestDef['reward']) => [
-  r.coins ? tile(iconUrl(ITEM_ICON.coin), r.coins, `코인 ${r.coins}`) : '',
-  r.xp ? tile(iconUrl('ui_xp'), r.xp, `경험치 ${r.xp}`) : '',
+  r.coins ? tile(iconUrl(ITEM_ICON.coin), short(r.coins), `코인 ${r.coins.toLocaleString()}`) : '',
+  r.xp ? tile(iconUrl('ui_xp'), short(r.xp), `경험치 ${r.xp.toLocaleString()}`) : '',
   r.item ? tile(iconUrl(ITEM_ICON[r.item]), '', ITEMS[r.item].name, 'r2') : '',
 ].join('');
 const icon = (id: string) => `<img class="px" src="${iconUrl(ITEM_ICON[id])}" alt="">`;
@@ -142,6 +156,10 @@ export class UI {
   /** 덫 오두막: 덫을 놓으려고 고른 칸 */
   private trapIdx = -1;
   private kitIdx = -1;
+  private sellArm: string | null = null;
+  private lootHinted = false;
+  private takeAll = false;
+  private delAcc = false;
   private terrPick: string | null = null;
   private recipeSp: string[] = [];
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
@@ -186,7 +204,8 @@ export class UI {
       <div id="notice" role="alert" aria-live="assertive"></div>
       <div id="modal" class="hidden"></div>
       <div id="bottom" class="ui-bottom hidden"><div id="bsum" class="ui-summary"></div><div id="bgauge" class="ui-gauges"></div><nav id="bmenu" class="ui-menu" aria-label="메뉴"></nav></div>
-      <div id="title"></div>`;
+      <div id="title"></div>
+      <div id="rotate" role="alert"><div class="ph"></div><b>화면을 가로로 돌려 주세요</b><span>테일즈토피아는 가로 화면에서 즐길 수 있습니다.</span></div>`;
     this.root.addEventListener('click', (e) => this.onClick(e));
     // 스킬 버튼은 누르는 즉시 발동
     this.root.addEventListener('pointerdown', (e) => {
@@ -240,6 +259,7 @@ export class UI {
     const first = !this.$(id).firstChild;
     this.last[id] = html;
     // 통째로 갈아 끼우면 그림이 다시 그려지며 깜빡이고 스크롤·애니메이션이 처음으로 돌아간다 → 바뀐 곳만 고친다
+    html = josa(html);
     if (first) this.$(id).innerHTML = html; else morph(this.$(id), html);
   }
   private show(id: string, on: boolean) { this.$(id).classList.toggle('hidden', !on); }
@@ -247,7 +267,7 @@ export class UI {
   /** 중요한 알림(잠김·부족·실패 등): 화면 가운데 위쪽에 크게 */
   notice(text: string) {
     const el = this.$('notice');
-    el.textContent = text;
+    el.textContent = josa(text);
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(this.noticeT);
     this.noticeT = window.setTimeout(() => el.classList.remove('show'), 2200);
@@ -260,7 +280,7 @@ export class UI {
     const box = this.$('toasts');
     const d = document.createElement('div');
     d.className = 'ui-toast';
-    d.innerHTML = (item ? icon(item) : '') + esc(text);
+    d.innerHTML = (item ? icon(item) : '') + esc(josa(text));
     box.appendChild(d);
     while (box.children.length > 5) box.firstChild!.remove();
     setTimeout(() => d.remove(), 2600);
@@ -272,7 +292,14 @@ export class UI {
   }
 
   onEvent(e: WorldEvent) {
-    if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
+    if (e.t === 'warn') { this.notice(e.text); this.audio?.play('fail'); }
+    else if (e.t === 'kill' && !this.lootHinted) {
+      // 처음 몇 번은 떨어진 아이템 줍는 법을 알려 준다(기기마다 한 번)
+      this.lootHinted = true;
+      let seen = 0; try { seen = +(localStorage.getItem('hint_loot') ?? 0); localStorage.setItem('hint_loot', String(seen + 1)); } catch { /* 저장소 없음 */ }
+      if (seen < 3) setTimeout(() => this.notice('떨어진 아이템은 누르거나 화면을 쓸어서 주울 수 있습니다'), 700);
+    }
+    else if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
     else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); if (f.kind === 'nest') this.game.act({ t: 'breed', op: 'visit' }); if (f.kind === 'lab') this.game.act({ t: 'lab', op: 'visit' }); this.refresh(true); } }
@@ -343,7 +370,7 @@ export class UI {
     if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
     for (const n of Object.values(NPCS)) {
       const q = currentQuest(c, n.id), qp = questProgress(c, n.id);
-      if (q && qp && c.quests[n.id]?.accepted) lines.push(`<span class="${qp.done ? 'ui-good' : ''}">${q.name} ${qp.done ? `— 완료! ${n.name}에게` : `${qp.have}/${qp.need}`}</span>`);
+      if (q && qp && c.quests[n.id]?.accepted) { const gl = q.goal, what = 'kill' in gl ? `${MONSTERS[gl.kill].name} 처치` : `${ITEMS[gl.item].name} 모으기`; lines.push(`<span class="${qp.done ? 'ui-good' : ''}">${q.name} ${qp.done ? `— 완료! ${n.name}에게` : `· ${what} ${qp.have}/${qp.need}`}</span>`); }
     }
     if (!lines.length && w.map.id === 'town' && currentQuest(c, 'elder')) lines.push(`<span class="ui-muted">마을 사람들에게 말을 걸어 보세요</span>`);
     this.put('quest', lines.join('<br>'));
@@ -431,6 +458,7 @@ export class UI {
         const got = r.items.map((i) => `<div class="ui-slot" aria-label="${i.name} ${i.qty}개">${icon(i.id)}<span class="qty">${i.qty.toLocaleString()}</span></div>`).join('');
         return win('방치 보상', `
           <p><b>${esc(c.name)}</b>이(가) <span class="ui-accent">${dur(r.seconds)}</span> 동안 <b>${r.mapName}</b>에서 ${what}.</p>
+          ${r.capped && r.capped > 60 ? `<p class="ui-xs ui-muted">방치 보상은 최대 ${dur(r.seconds)}까지 쌓입니다. 그 뒤 ${dur(r.capped)}은(는) 쌓이지 않았습니다.</p>` : ''}
           ${kv.length ? `<div class="ui-kv">${kv.join('')}</div>` : ''}
           ${got ? `<h3>획득한 아이템</h3><div class="ui-grid">${got}</div>` : ''}
           ${r.cards.length ? `<p class="ui-accent">${r.cards.map((k) => `★ ${k.name} 카드 ×${k.qty}`).join(' · ')}</p>` : ''}
@@ -443,7 +471,7 @@ export class UI {
       case 'items': {
         const eq = (Object.keys(SLOT_NAMES) as EquipSlot[]).map((s) => {
           const id = c.equipment[s];
-          return `<button class="ui-slot eqslot" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) + upBadge(c.equipUp[s]) : ui(`eq_${s}`, 'sil')}</button>`;
+          return `<button class="ui-slot eqslot" data-act="pick:eq:${s}" aria-selected="${this.sel === `eq:${s}`}" aria-label="${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) + upBadge(c.equipUp[s]) : `${ui(`eq_${s}`, 'sil')}<span class="slotlbl">${SLOT_NAMES[s]}</span>`}</button>`;
         }).join('');
         const eatCd = g.world?.eatT ?? 0;
         const food = c.foods.map((f, i) => `<button class="ui-slot ${f ? '' : 'empty'}" data-act="pick:food:${i}" aria-selected="${this.sel === `food:${i}`}" aria-label="음식 칸 ${i + 1}${f ? `: ${ITEMS[f.id].name} ${f.qty}개` : ' (비어 있음)'}">${f ? `${icon(f.id)}<span class="qty">${f.qty}</span>${eatCd > 0 ? `<span class="cool">${Math.ceil(eatCd)}</span>` : ''}` : ui('eq_food', 'sil')}</button>`).join('');
@@ -486,14 +514,18 @@ export class UI {
             <span class="ui-xs ui-muted">강화한 장비는 창고에 넣거나 팔 수 없습니다.</span>`;
         } else if (this.sel && countItem(c, this.sel)) {
           const it = ITEMS[this.sel], n = c.inventory.reduce((k, s) => k + (s.id === it.id && !s.up ? s.qty : 0), 0);
+          // 팔기: 장비·열쇠·비싼 것·여러 개는 한 번 더 눌러야 판다
+          const sellBtn = (q: number) => {
+            const key = `${it.id}:${q}`, armed = this.sellArm === key, label = q > 1 ? `전부 팔기 ×${q}` : '팔기';
+            return `<button class="ui-btn sm iconbtn ${armed ? 'danger' : ''}" data-act="sell:${it.id}:${q}">${armed ? `정말 팔까요? ${ui('ui_coin', 'tic')} ${(it.sell * q).toLocaleString()}` : `${label} ${ui('ui_coin', 'tic')} ${(it.sell * q).toLocaleString()}`}</button>`;
+          };
           detail = `<div class="ui-row"><span class="ui-slot">${icon(it.id)}</span><div><b>${it.name}</b><div class="ui-xs ui-muted">${it.slot ? SLOT_NAMES[it.slot] : GROUP_NAMES[stackGroup(it.id)]} · ${n} / ${stackCap(c, it.id)}개</div></div></div>
             <span class="ui-sm">${it.desc}</span>
             ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, undefined)}` : ''}
             ${STONE_BY_ID[it.id] ? `<span class="ui-xs ui-muted">장비 탭에서 장착한 장비를 누르면 붙일 수 있습니다. 실패해도 강화 칸 하나를 씁니다.</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
             <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest', 'tool'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
-              ${n ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:1">${ui('ui_coin', 'tic')} ${it.sell}</button>` : ''}
-              ${n > 1 ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:${n}">${ui('ui_coin', 'tic')} 전부 ${it.sell * n}</button>` : ''}</div>`;
+              ${n ? sellBtn(1) : ''}${n > 1 ? sellBtn(n) : ''}</div>`;
         }
         // 왼쪽: 장비 / 홀로웨어(스킨) 탭, 오른쪽: 가방과 상세
         const skins = SKIN_SLOTS.map((s) => {
@@ -546,7 +578,9 @@ export class UI {
           }).join('') + '<p class="ui-xs ui-muted">몬스터 카드는 사냥할 때, 자원 카드는 나무·광맥을 캘 때 드물게 나옵니다. 모은 카드는 모든 캐릭터가 함께 쓰고, 장착은 캐릭터마다 따로 합니다.</p>';
         } else {
           // NPC마다 퀘스트 사슬을 아이콘 칸으로: 끝낸 것 ✓, 지금 것 진행도, 남은 것 잠금
-          body = Object.values(NPCS).map((n) => {
+          // 부탁이 있는 NPC 가운데, 이 캐릭터가 간 월드의 NPC만
+          const npcWorld = (id: string) => { const m = Object.values(MAPS).find((x) => x.facilities.some((f) => f.npc === id)); return m ? worldOf(m.id) : 1; };
+          body = Object.values(NPCS).filter((n) => n.quests.length && npcWorld(n.id) <= (c.maxWorld ?? 1)).map((n) => {
             const st = c.quests[n.id] ?? { idx: 0, accepted: false, prog: 0 };
             const pr = questProgress(c, n.id), cur = n.quests[st.idx];
             const chain = n.quests.map((q, i) => i < st.idx ? goalTile(q, q.goal.n, 'ready done')
@@ -628,7 +662,9 @@ export class UI {
           ${row('ui_sound', '효과음', 'sfx', tog(!!this.audio?.sfxOn))}
           ${row('ui_music', '배경음', 'bgm', tog(!!this.audio?.bgmOn))}
           <p class="ui-xs ${g.netState === 'offline' ? 'ui-bad' : 'ui-muted'}">${g.netState === 'online' ? '서버에 연결됨 — 진행은 서버에 저장됩니다.' : g.netState === 'offline' ? '서버에 연결할 수 없어 이 기기에서 진행 중입니다. 다시 연결되면 서버 기록에 맞춥니다.' : '이 기기에만 저장됩니다(서버 미설정).'}</p>
-          ${row('ui_trash', '계정 삭제', 'delacc')}</div>`);
+          ${row('ui_trash', '<span class="ui-bad">계정 삭제</span>', 'delacc')}
+          ${this.delAcc ? `<div class="ui-tabpanel"><p class="ui-sm ui-bad">모든 캐릭터와 진행이 사라지며 되돌릴 수 없습니다.</p><label class="ui-sm ui-muted" for="delaccword">확인을 위해 <b>삭제</b> 라고 입력하세요</label>
+            <div class="ui-row"><input id="delaccword" class="ui-input ui-grow" maxlength="4" autocomplete="off"><button class="ui-btn danger sm" data-act="delaccgo">계정 삭제</button><button class="ui-btn sm" data-act="delacc">취소</button></div></div>` : ''}</div>`);
       }
 
       case 'npc': {
@@ -636,13 +672,21 @@ export class UI {
         const speaker = (body: string) => `<div class="ui-dialog" role="dialog" aria-label="${npc.name}"><div class="speaker"><div class="face"><img class="px" src="${portraitUrl(npc.look)}" alt=""></div>${npc.name}</div>
           <div class="ui-grow stack">${body}</div><button class="ui-btn sm close" data-act="close" aria-label="닫기">✕</button></div>`;
         const subs = c.cls === 'beginner' ? [] : nextClasses(c.cls);
+        // 전직 창에서도 이 NPC의 부탁을 받거나 끝낼 수 있게(전직을 미뤄도 퀘스트가 막히지 않는다)
+        const questBlock = () => {
+          const q = currentQuest(c, npc.id), p = questProgress(c, npc.id), st = c.quests[npc.id] ?? { idx: 0, accepted: false };
+          if (!q || !p) return '';
+          const btn = !st.accepted ? `<button class="ui-btn primary sm" data-act="qaccept:${npc.id}">수락</button>`
+            : `<button class="ui-btn success sm" data-act="qdone:${npc.id}" ${p.done ? '' : 'disabled'}>완료</button>`;
+          return `<div class="ui-xs ui-muted" style="margin-top:var(--sp-3)">부탁: <b class="ui-accent">${q.name}</b></div><div class="qline">${ui('ui_quest', 'mi')}${goalTile(q, st.accepted ? p.have : null, st.accepted && p.done ? 'ready' : '')}<span class="qarrow" aria-hidden="true">▶</span>${rewardTiles(q.reward)}<span class="ui-grow"></span>${btn}</div>`;
+        };
         if (CLASS_NPCS.includes(npc.id) && subs.length && canSubclass(c)) {
           return speaker(`<p>“${CLASSES[c.cls].name}의 길을 꽤 걸었구먼. 이제 ${classTier(c.cls) + 1}차의 길로 나아갈 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
-            ${subs.map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
+            ${subs.map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}${questBlock()}`);
         }
         if (CLASS_NPCS.includes(npc.id) && c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
           return speaker(`<p>“많이 강해졌구먼! 이제 자네의 길을 정할 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
-            ${(['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
+            ${(['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}${questBlock()}`);
         }
         // 수상한 나그네: 히든 직업. 조건을 대놓고 알려 주지 않고 수수께끼로만
         if (npc.id === HIDDEN_CLASS.npc) {
@@ -655,7 +699,7 @@ export class UI {
             <div class="ui-row line"><div class="ui-grow"><b class="ui-accent">${w.name}</b> <span class="ui-xs ui-accent">히든</span><div class="ui-sm ui-muted">${w.desc}</div></div><button class="ui-btn primary" data-act="class:${h.cls}">전직</button></div>`);
         }
         const q = currentQuest(c, npc.id), p = questProgress(c, npc.id), st = c.quests[npc.id] ?? { idx: 0, accepted: false };
-        if (!q || !p) return speaker('<p>“고맙네! 지금은 부탁할 일이 없다네.”</p>');
+        if (!q || !p) return speaker(npc.quests.length ? '<p>“고맙네! 지금은 부탁할 일이 없다네.”</p>' : `<p>“어서 오게. 지금은 부탁할 일이 없다네.”</p>${CLASS_NPCS.includes(npc.id) ? `<p class="ui-sm ui-muted">이곳에서 다음 단계 전직을 할 수 있습니다(${c.cls === 'beginner' ? `Lv.${CLASS_LEVEL}` : `Lv.${TIER_LEVEL[classTier(c.cls) + 1] ?? '-'}`}).</p>` : ''}`);
         const btn = !st.accepted ? `<button class="ui-btn primary" data-act="qaccept:${npc.id}">수락</button>`
           : `<button class="ui-btn success" data-act="qdone:${npc.id}" ${p.done ? '' : 'disabled'}>완료</button>`;
         return speaker(`<div><b class="ui-accent">${q.name}</b> <span class="ui-xs ui-muted">${st.idx + 1}/${npc.quests.length}</span></div><p>“${q.text}”</p>
@@ -681,7 +725,7 @@ export class UI {
         const r = RECIPES[this.craftSel];
         if (r) {
           const it = ITEMS[r.item];
-          const who = it.wtype ? ` · ${Object.values(CLASSES).filter((k) => k.weapon === it.wtype && k.id !== 'beginner').map((k) => k.name).join('/')}` : '';
+          const who = it.wtype ? ` · ${it.wtype === 'sword' ? '전사·낭만가 계열' : it.wtype === 'bow' ? '궁수 계열' : '마법사 계열'}` : '';
           // 재료: 아이콘 칸에 가진 수/필요 수(가방 + 창고)
           const mats = r.mats.map(([id, n]) => {
             const have = haveMat(g.acc, c, id), st = storageCount(g.acc, id);
@@ -690,6 +734,7 @@ export class UI {
           detail = `<div class="ui-row"><span class="ui-slot">${icon(r.item)}</span><div><b>${it.name}</b><div class="ui-xs ui-muted">${it.slot ? SLOT_NAMES[it.slot] : r.unlock ? `모루 ${r.unlock}단계 열기` : '소모품'}${r.tier && r.tier > 1 ? ` · ${r.tier}단계` : ''}${r.smithLv ? ` · 대장 Lv.${r.smithLv}` : ''}${it.reqLv ? ` · Lv.${it.reqLv}` : ''}${who}</div></div></div>
             <span class="ui-sm ${it.stats ? 'ui-good' : ''}">${it.stats ? statLine(it.id) : it.desc}</span>
             <div class="qline mats">${mats}</div>
+            ${(() => { const lack = r.mats.filter(([id, n]) => haveMat(g.acc, c, id) < n).map(([id, n]) => `${ITEMS[id].name} ${n - haveMat(g.acc, c, id)}개`); if (g.acc.coins < r.coins) lack.push(`코인 ${(r.coins - g.acc.coins).toLocaleString()}`); return lack.length ? `<span class="ui-xs ui-bad">부족: ${lack.join(', ')}</span>` : `<span class="ui-xs ui-muted">재료: ${r.mats.map(([id, n]) => `${ITEMS[id].name} ${n}`).join(', ')}</span>`; })()}
             ${recipeLock(g.acc, c, this.craftSel) ? `<span class="ui-sm ui-bad">${recipeLock(g.acc, c, this.craftSel)}${(r.tier ?? 1) > g.acc.anvilTier ? ' — 기타 탭의 모루 확장으로 열립니다' : ''}</span>` : ''}
             <button class="ui-btn primary block" data-act="craft:${this.craftSel}" ${r.unlock ? '' : `data-hold="${this.craftSel}"`} ${canCraft(g.acc, c, this.craftSel) ? '' : 'disabled'}>${r.unlock ? '확장' : '제작'}</button>
             ${r.unlock ? '' : '<span class="ui-xs ui-muted">길게 누르면 재료가 떨어질 때까지 계속 만듭니다.</span>'}
@@ -711,7 +756,8 @@ export class UI {
           bag += s ? `<button class="ui-slot" data-act="put:${s.id}" aria-label="${ITEMS[s.id].name} ${s.qty}개 맡기기">${icon(s.id)}${s.qty > 1 ? `<span class="qty">${s.qty}</span>` : ''}</button>` : '<div class="ui-slot empty"></div>';
         }
         return win(`창고 <span class="ui-sm ui-muted">${acc.storage.length}/${size}</span>`, `
-          <p class="ui-xs ui-muted">모든 캐릭터가 함께 쓰는 창고입니다. 칸을 누르면 그 아이템을 통째로 옮깁니다. 창고는 한 칸에 개수 제한이 없습니다.</p>
+          <div class="ui-row"><p class="ui-xs ui-muted ui-grow">모든 캐릭터가 함께 쓰는 창고입니다(한 칸 개수 제한 없음). 창고 칸을 누르면 꺼내고, 가방 칸을 누르면 맡깁니다.</p>
+            <span class="ui-xs">꺼내기</span><button class="ui-btn sm ${this.takeAll ? '' : 'primary'}" data-act="takemode:0">한 칸씩</button><button class="ui-btn sm ${this.takeAll ? 'primary' : ''}" data-act="takemode:1">전부</button></div>
           <div class="ui-grid store">${top}</div>
           <div class="ui-row" style="margin:var(--sp-3) 0"><h3 class="ui-grow" style="margin:0">가방 ${c.inventory.length}/${invSize(c)}</h3><button class="ui-btn primary sm" data-act="putall">재료·음식 전부 맡기기</button></div>
           <div class="ui-grid bag">${bag}</div>`);
@@ -719,14 +765,17 @@ export class UI {
 
       case 'shop': {
         const now = Date.now();
+        // 분류 탭: 음식 / 물품 / 우표·강화석. 아직 안 간 월드의 물건은 보이지 않는다
+        const cat = (id: string) => ITEMS[id].kind === 'food' ? 0 : /^(stamp_|stone_)/.test(id) ? 2 : 1;
         const rows = SHOP.map((e, i) => {
+          if ((c.maxWorld ?? 1) < (e.w ?? 1) || cat(e.item) !== tab) return '';
           const it = ITEMS[e.item], left = shopLeft(g.acc, i, now);
           const many = e.daily >= 10 ? `<button class="ui-btn sm" data-act="buy:${i}:10" ${left >= 10 && g.acc.coins >= e.price * 10 ? '' : 'disabled'}>10개</button>` : '';
           return `<div class="ui-row line"><span class="ui-slot">${icon(e.item)}</span><div class="ui-grow"><b>${it.name}</b><div class="ui-xs ui-muted">${it.desc}</div></div>
             <div style="text-align:right"><div class="ui-accent">${icon('coin')} ${e.price.toLocaleString()}</div><div class="ui-xs ${left ? 'ui-muted' : 'ui-bad'}">오늘 ${left}/${e.daily}</div></div>
             <button class="ui-btn primary sm" data-act="buy:${i}:1" ${left && g.acc.coins >= e.price ? '' : 'disabled'}>사기</button>${many}</div>`;
         }).join('');
-        return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
+        return win(`잡화점 <span class="ui-sm">${icon('coin')} ${g.acc.coins.toLocaleString()}</span>`, `${tabs(['음식', '물품', '우표·강화석'], tab, tabAct)}<div class="ui-tabpanel">${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p></div>`);
       }
 
       case 'games': {
@@ -1059,7 +1108,7 @@ export class UI {
         if (tab === 0) {
           // 거품: 솥 4개를 세로줄로, 고른 거품은 오른쪽에 자세히
           if (!BUBBLES[this.bubSel ?? '']) this.bubSel = CAULDRONS[0].bubbles[0].id;
-          const cols = CAULDRONS.map((cd) => `<div class="cauldron"><b class="ui-xs" style="color:${cd.color}">${cd.name}</b>${cd.bubbles.map((b) => {
+          const cols = CAULDRONS.map((cd) => `<div class="cauldron"><b class="ui-xs" style="color:${cd.color}" title="${cd.name}">${cd.name.replace('의 솥', '')}</b>${cd.bubbles.map((b) => {
             const lv = bubbleLv(a, b.id);
             return `<button class="tal ${b.id === this.bubSel ? 'sel' : ''} ${lv ? '' : 'zero'}" data-act="bsel:${b.id}" aria-label="${b.name} 레벨 ${lv}">${ui(`bub_${cd.id}`, 'tic')}<span class="lvp">LV ${lv}</span></button>`;
           }).join('')}</div>`).join('');
@@ -1187,7 +1236,7 @@ export class UI {
       return `<div class="ui-row line"><div class="ui-grow"><b>${s.name}</b> <span class="ui-accent">${t}단계</span>
         <div class="ui-sm ${on && t ? 'ui-good' : 'ui-muted'}">${t ? s.label.replace(/\+%(p?)/, `+${s.v[t - 1]}%$1`) : '세트 효과 없음'}${on ? ' (켜짐)' : ''}</div>
         <div class="ui-xs ui-muted">세트 카드 별 ${stars}${next ? ` / 다음 단계 ${next}` : ' · 최고 단계'}</div></div>
-        <button class="ui-btn sm ${on ? '' : 'primary'}" data-act="cset:${on ? '' : s.id}">${on ? '끄기' : '켜기'}</button></div>`;
+        <button class="ui-btn sm ${on ? '' : 'primary'}" data-act="cset:${on ? '' : s.id}" ${on || t ? '' : 'disabled title="카드를 더 모으면 켤 수 있습니다"'}>${on ? '끄기' : '켜기'}</button></div>`;
     }).join('');
     const presets = c.level >= CARD_PRESET_LV
       ? `<div class="ui-row"><span class="ui-sm ui-grow">카드 프리셋</span>${c.cardPresets.map((_, i) => `<button class="ui-btn sm ${i === c.cardPreset ? 'primary' : ''}" data-act="cpre:${i}">${i + 1}</button>`).join('')}</div>`
@@ -1215,8 +1264,8 @@ export class UI {
   private achieveHtml(): string {
     const acc = this.game.acc;
     return ACHIEVEMENTS.map((d) => {
-      const got = !!acc.achievements[d.id], ready = achieveReady(acc, d.id);
-      return `<div class="ui-row line ${got || ready ? '' : 'ui-muted'}"><span class="ui-slot sm ${got ? 'r3' : ''}">${ui('ui_trophy', 'mi')}</span><div class="ui-grow"><b>${d.name}</b><div class="ui-sm">${d.desc}</div><div class="ui-xs ${got ? 'ui-good' : 'ui-muted'}">보상: ${d.label}</div></div>
+      const got = !!acc.achievements[d.id], ready = achieveReady(acc, d.id), [have, need] = achieveProgress(acc, d.id);
+      return `<div class="ui-row line ${got || ready ? '' : 'ui-muted'}"><span class="ui-slot sm ${got ? 'r3' : ''}">${ui('ui_trophy', 'mi')}</span><div class="ui-grow"><b>${d.name}</b> ${got ? '' : `<span class="ui-xs ui-accent">${Math.min(have, need).toLocaleString()} / ${need.toLocaleString()}</span>`}<div class="ui-sm">${d.desc}</div><div class="ui-xs ${got ? 'ui-good' : 'ui-muted'}">보상: ${d.label}</div></div>
         ${got ? '<span class="ui-good">✓</span>' : `<button class="ui-btn sm ${ready ? 'success' : ''}" data-act="ach:${d.id}" ${ready ? '' : 'disabled'}>받기</button>`}</div>`;
     }).join('');
   }
@@ -1439,7 +1488,8 @@ export class UI {
       return `<button class="ui-menubtn bslot ${this.assigning ? 'drop' : ''} ${low ? 'nomp' : ''}" data-bslot="${i}" aria-label="${i + 1}번 칸${t ? `: ${t.name}` : ' 비어 있음'}">
         ${t ? ui(`tl_${id}`, 'mi') : '<span class="empty-plus">+</span>'}<span class="keyno">${i + 1}</span>${cd > 0 ? `<span class="cool">${Math.ceil(cd)}</span>` : ''}</button>`;
     }).join('');
-    return `<button class="ui-menubtn on" data-act="atk" aria-label="메뉴로">${ui('ui_attacks', 'mi')}<span>${this.assigning ? '완료' : '공격'}</span></button>
+    return `<button class="ui-menubtn ${c.auto ? 'on' : ''}" data-act="auto" aria-pressed="${c.auto}" aria-label="자동">${ui('ui_auto', 'mi')}<span>자동</span></button>
+      <button class="ui-menubtn on" data-act="atk" aria-label="메뉴로">${ui('ui_attacks', 'mi')}<span>${this.assigning ? '완료' : '공격'}</span></button>
       <button class="ui-menubtn page" data-act="bpage" aria-label="공격 바 넘기기">${ui('ui_arrow', 'mi rot')}<span>${page + 1}/${c.attackBars.length}</span></button>${slots}`;
   }
 
@@ -1455,7 +1505,8 @@ export class UI {
       if (this.drag === null && this.panel === 'char') this.attackMode = this.assignPrev;
     } else {
       const id = c.attackBars[c.attackPage][i];
-      if (id && !w.useSkill(id)) this.toast(c.mp < (TALENT[id].active?.mana ?? 0) ? '마나가 부족합니다' : '아직 쓸 수 없습니다');
+      if (!id) { this.notice('빈 칸입니다. 특성 창에서 공격 특성을 이 칸으로 끌어다 놓으세요'); return; }
+      if (!w.useSkill(id)) this.toast(c.mp < (TALENT[id].active?.mana ?? 0) ? '마나가 부족합니다' : '아직 쓸 수 없습니다');
     }
     this.refresh(true);
   }
@@ -1543,6 +1594,7 @@ export class UI {
     this.audio?.play('click');
     const g = this.game, c = g.char;
     const fail = (msg: string | null) => { if (msg) { this.notice(msg); this.audio?.play('fail'); } };
+    if (act !== 'sell') this.sellArm = null;
     switch (act) {
       case 'delask': this.delIdx = +a; break;
       case 'delcancel': this.delIdx = null; break;
@@ -1590,8 +1642,9 @@ export class UI {
         const kind = a as PlayKind, name = kind === 'totem' ? '수호 토템' : GAMES[kind as GameKind].name;
         this.panel = null; this.refresh(true);
         runGame(kind, name, (r) => {
+          if (r.quit && !r.score && !r.kills) { this.toast('그만두었습니다(남은 횟수는 그대로입니다)'); this.open(kind === 'totem' ? 'totem' : 'games'); this.refresh(true); return; }
           const res = kind === 'totem' ? g.act({ t: 'totem', kills: r.kills, survived: r.survived }) : g.act({ t: 'game', kind: kind as GameKind, score: r.score });
-          if (res.ok) this.toast(kind === 'totem' ? `영혼 ${res.n}개를 얻었습니다` : `${name} ${r.score}점! 보상을 받았습니다`); else this.toast(res.err ?? '보상을 받지 못했습니다');
+          if (res.ok) this.toast(kind === 'totem' ? `영혼 ${res.n}개를 얻었습니다` : r.score ? `${name} ${r.score}점! 보상을 받았습니다` : `${name} 0점 · 보상 없음`); else this.toast(res.err ?? '보상을 받지 못했습니다');
           this.open(kind === 'totem' ? 'totem' : 'games'); this.refresh(true);
         });
         break;
@@ -1617,6 +1670,7 @@ export class UI {
         if (!t || !c) break;
         this.panel = null; this.refresh(true);
         runGame('worship', t.name, (r) => {
+          if (r.quit && !r.kills) { this.toast('그만두었습니다(기도력은 그대로입니다)'); this.open('shrine'); this.refresh(true); return; }
           const res = g.act({ t: 'worship', op: 'run', id: t.id, kills: r.kills, survived: r.survived });
           if (res.ok) { this.toast(`${SOUL_NAMES[t.soul]} ${res.n}개를 얻었습니다`); this.audio?.play('coin'); } else this.toast(res.err ?? '보상을 받지 못했습니다');
           this.open('shrine'); this.refresh(true);
@@ -1735,17 +1789,20 @@ export class UI {
       case 'pick': this.sel = b ? `${a}:${b}` : a; break;
       case 'sfx': this.audio?.setSfx(!this.audio.sfxOn); break;
       case 'bgm': this.audio?.setBgm(!this.audio.bgmOn); break;
-      case 'delacc':
-        if (confirm('계정을 삭제할까요? 모든 캐릭터와 진행이 사라지며 되돌릴 수 없습니다.')) {
-          this.panel = null;
-          g.deleteAccount().then(() => { this.toast('계정을 삭제했습니다'); this.refresh(true); }).catch((e) => this.toast((e as Error).message));
-        }
+      case 'delacc': this.delAcc = !this.delAcc; break;
+      case 'delaccgo': {
+        const v = (document.getElementById('delaccword') as HTMLInputElement | null)?.value.trim() ?? '';
+        if (v !== '삭제') { fail('확인 칸에 삭제 라고 입력하세요'); break; }
+        this.panel = null; this.delAcc = false;
+        g.deleteAccount().then(() => { this.toast('계정을 삭제했습니다'); this.refresh(true); }).catch((e) => this.toast((e as Error).message));
         break;
+      }
       // ── 게임 행동: 전부 g.act 로(기기와 서버가 같은 규칙으로 적용) ──
       case 'auto': if (c) { const on = !c.auto; g.act({ t: 'auto', on }); if (!on) g.world?.stopAuto(); } break;
       case 'use': { const r = g.act({ t: 'use', id: a }); fail(r.err ?? null); if (r.ok) { this.toast(`${ITEMS[a].name} 사용!`, a); this.sel = null; } break; }
       case 'put': fail(g.act({ t: 'deposit', id: a }).err ?? null); break;
-      case 'take': fail(g.act({ t: 'withdraw', id: a }).err ?? null); break;
+      case 'take': fail(g.act({ t: 'withdraw', id: a, qty: this.takeAll ? undefined : stackCap(c!, a) }).err ?? null); break;
+      case 'takemode': this.takeAll = a === '1'; break;
       case 'putall': { const r = g.act({ t: 'depositAll' }); this.toast(r.n ? `${r.n}종류를 창고에 맡겼습니다` : '맡길 재료가 없습니다'); break; }
       case 'buy': { const r = g.act({ t: 'buy', idx: +a, qty: +b }); fail(r.err ?? null); if (r.ok) { this.toast(`${ITEMS[SHOP[+a].item].name} ×${b} 구입`, SHOP[+a].item); this.audio?.play('buy'); } break; }
       case 'prod': fail(g.act({ t: 'prod', slot: this.prodSlot, item: a || null }).err ?? null); break;
@@ -1775,7 +1832,14 @@ export class UI {
         break;
       }
       case 'unequip': fail(g.act({ t: 'unequip', slot: a as EquipSlot }).err ?? null); this.sel = null; break;
-      case 'sell': { const r = g.act({ t: 'sell', id: a, qty: +b }); if (r.ok) this.toast(`+${r.n} 코인`, 'coin'); break; }
+      case 'sell': {
+        const it = ITEMS[a], key = `${a}:${b}`;
+        const risky = it.kind === 'equip' || it.kind === 'key' || it.kind === 'unlock' || it.sell * +b >= 500 || +b > 1;
+        if (risky && this.sellArm !== key) { this.sellArm = key; break; }
+        this.sellArm = null;
+        const r = g.act({ t: 'sell', id: a, qty: +b }); if (r.ok) this.toast(`${it.name} 팔기: +${r.n} 코인`, 'coin'); else fail(r.err ?? null);
+        break;
+      }
       case 'stat': g.act({ t: 'stat', stat: a as StatKey }); break;
       case 'talent': g.act({ t: 'talent', id: a }); break;
       case 'qaccept': if (c && g.act({ t: 'qaccept', npc: a }).ok) { this.toast(`퀘스트 수락: ${currentQuest(c, a)!.name}`); this.panel = null; } break;

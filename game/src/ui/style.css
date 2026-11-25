@@ -284,3 +284,32 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .labmap .labtx { font: bold 9px sans-serif; fill: #ffffff; text-anchor: middle; pointer-events: none; }
 .labmap .labtx.dim { fill: #5a5a7a; }
 .labmap .wsub { font-size: 6px; fill: #c8c4e8; text-anchor: middle; }
+
+/* ── 사용성 점검 반영 ── */
+/* 한국어 낱말이 음절 중간에서 끊기지 않게 */
+html, body { word-break: keep-all; overflow-wrap: anywhere; }
+/* 알림은 열린 창 위에 */
+#toasts { z-index: 60; }
+#modal { z-index: 40; }
+/* 창 안을 내려도 탭 줄은 위에 붙어 있다 */
+.ui-win > .body > .ui-tabs { position: sticky; top: calc(-1 * var(--sp-5)); z-index: 3; background: var(--c-surface); padding-top: var(--sp-3); margin-top: calc(-1 * var(--sp-3)); }
+/* 숫자 칸은 줄바꿈하지 않는다 */
+.ui-bar span, .ui-bar .lbl { white-space: nowrap; }
+/* 세로 화면: 가로로 돌려 달라는 안내(안드로이드 앱은 가로 고정) */
+#rotate { display: none; }
+@media (orientation: portrait) and (max-width: 700px) {
+  #rotate { display: flex; position: fixed; inset: 0; z-index: 500; flex-direction: column; align-items: center; justify-content: center; gap: 1em;
+    background: var(--c-bg); color: var(--c-text); font-size: 18px; text-align: center; padding: 2em; pointer-events: auto; }
+  #rotate .ph { width: 64px; height: 110px; border: 5px solid var(--c-accent); border-radius: 12px; animation: rot 2s ease-in-out infinite; }
+}
+@keyframes rot { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+/* 미니게임 상자가 아래 체력 막대를 덮지 않게 */
+.mgwrap { padding-bottom: var(--bar-h); background: rgba(20, 14, 26, .85); }
+.ui-slot .slotlbl { position: absolute; left: 0; right: 0; bottom: 1px; font-size: calc(var(--fs-xs) * .8); line-height: 1; text-align: center; color: var(--c-text-muted); pointer-events: none; white-space: nowrap; overflow: hidden; }
+.ui-slot { position: relative; }
+/* 가방은 늘 4칸씩(넓은 화면에서 2칸으로 줄어들지 않게), 상세는 남는 폭을 쓴다 */
+.invright .ui-grid.bag { flex: none; grid-template-columns: repeat(4, var(--slot)); }
+.invright .ui-detail { flex: 1; width: auto; min-width: 9em; }
+/* 아이템 창은 내용만큼 넓게(상세가 오른쪽에서 잘리지 않게) */
+.ui-win:has(.invlayout) { width: auto; max-width: calc(100vw - var(--sp-5) * 2); }

@@ -38,7 +38,7 @@ export type Action =
   | { t: 'qaccept'; npc: string }
   | { t: 'qdone'; npc: string }
   | { t: 'deposit'; id: string }
-  | { t: 'withdraw'; id: string }
+  | { t: 'withdraw'; id: string; qty?: number }
   | { t: 'depositAll' }
   | { t: 'buy'; idx: number; qty: number }
   | { t: 'prod'; slot: number; item: string | null }
@@ -115,7 +115,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'qaccept': return acceptQuest(c, a.npc) ? ok() : fail('수락할 수 없습니다');
     case 'qdone': return res(completeQuest(acc, c, a.npc));
     case 'deposit': { const n = deposit(acc, c, a.id); return n ? ok(n) : fail('창고가 가득 찼습니다'); }
-    case 'withdraw': { const n = withdraw(acc, c, a.id); return n ? ok(n) : fail('가방에 자리가 없습니다'); }
+    case 'withdraw': { const n = withdraw(acc, c, a.id, a.qty && a.qty > 0 ? a.qty : Infinity); return n ? ok(n) : fail('가방에 자리가 없습니다'); }
     case 'depositAll': return ok(depositAll(acc, c));
     case 'buy': return res(buy(acc, c, a.idx, a.qty, now));
     case 'prod': return res(setProduct(c, a.item, a.slot));

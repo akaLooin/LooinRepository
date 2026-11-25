@@ -20,7 +20,7 @@ for w, f in (("normal", "Galmuri11"), ("bold", "Galmuri11-Bold")):
     out.append(f'@font-face {{ font-family: "Galmuri11"; font-weight: {w}; src: url("../../node_modules/galmuri/dist/{f}.woff2") format("woff2"); font-display: block; }}')
 out.append(":root {")
 out.append("  /* 기준 단위: 화면 높이에 비례. 모든 크기가 이 값을 따른다. */")
-out.append("  --u: clamp(13px, 3.7vh, 28px);")
+out.append("  --u: clamp(13px, min(3.7vh, 2.4vw), 28px);")
 for k, v in t["color"].items():
     out.append(f"  --c-{k}: {v};")
 out.append(f"  --font: {t['font']['sans']};")

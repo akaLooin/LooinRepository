@@ -869,6 +869,7 @@ export function shopLeft(acc: Account, idx: number, now: number): number {
 export function buy(acc: Account, c: Character, idx: number, qty: number, now: number): string | null {
   const e = SHOP[idx];
   if (!e) return '없는 상품';
+  if ((c.maxWorld ?? 1) < (e.w ?? 1)) return `${e.w}월드에 가야 살 수 있습니다`;
   qty = Math.min(qty, shopLeft(acc, idx, now));
   if (qty <= 0) return '오늘은 다 팔렸습니다';
   if (acc.coins < e.price * qty) return '코인이 부족합니다';

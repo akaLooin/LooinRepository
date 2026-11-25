@@ -3,7 +3,7 @@
 export type PlayKind = 'chop' | 'mine' | 'spike' | 'totem' | 'worship';
 /** 기도 토템 디펜스 설정: 혼령 속도 배율·그림·토템이 스스로 쏘는 간격(0이면 안 쏨)·토템 그림 */
 export interface TotemOpts { speed: number; art: string; bolt: number; totem: string }
-export interface PlayResult { score: number; kills: number; survived: boolean }
+export interface PlayResult { score: number; kills: number; survived: boolean; /** 중간에 그만둠 */ quit?: boolean }
 
 import { canvases } from '../render/sprites';
 
@@ -28,8 +28,11 @@ export function runGame(kind: PlayKind, title: string, done: (r: PlayResult) => 
   let alive = true, last = performance.now(), down = false, tapX = -1;
   const g = makeGame(kind, opts);
   hint.textContent = g.hint;
-  const finish = () => { if (!alive) return; alive = false; wrap.remove(); done(g.result()); };
-  wrap.querySelector('[data-mg="quit"]')!.addEventListener('click', finish);
+  const finish = (quit = false) => { if (!alive) return; alive = false; wrap.remove(); done({ ...g.result(), quit }); };
+  // 그만두기는 한 번 더 눌러야 한다
+  const qb = wrap.querySelector<HTMLButtonElement>('[data-mg="quit"]')!;
+  let armed = false;
+  qb.addEventListener('click', () => { if (!armed) { armed = true; qb.textContent = '정말 그만둘까요?'; qb.classList.add('danger'); setTimeout(() => { armed = false; qb.textContent = '그만두기'; qb.classList.remove('danger'); }, 2500); return; } finish(true); });
   const pos = (e: PointerEvent) => { const r = cv.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H]; };
   cv.addEventListener('pointerdown', (e) => { e.preventDefault(); down = true; const [x, y] = pos(e); tapX = x; g.press(x, y); });
   addEventListener('pointerup', () => { if (!down) return; down = false; g.release(); });
@@ -40,7 +43,7 @@ export function runGame(kind: PlayKind, title: string, done: (r: PlayResult) => 
     ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
     g.draw(ctx);
     scoreEl.textContent = g.status();
-    if (g.over()) { setTimeout(finish, 900); g.step = () => {}; }
+    if (g.over()) { setTimeout(() => finish(), 900); g.step = () => {}; }
     requestAnimationFrame(loop);
   };
   void tapX;

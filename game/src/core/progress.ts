@@ -86,21 +86,25 @@ export function alignSign(acc: Account, c: Character, id: string | null): string
 }
 
 // ───────── 업적 ─────────
-const ACH_CHECK: Record<string, (a: Account) => boolean> = {
-  lv10: (a) => a.characters.some((c) => c.level >= 10),
-  lv25: (a) => a.characters.some((c) => c.level >= 25),
-  boss1: (a) => (a.bosses.mossking ?? 0) >= 1,
-  boss10: (a) => (a.bosses.mossking ?? 0) >= 10,
-  party4: (a) => a.characters.length >= 4,
-  cards10: (a) => Object.values(a.cards).reduce((n, v) => n + v, 0) >= 10,
-  stamps5: (a) => STAMPS.filter((s) => (a.stamps[s.id] ?? 0) > 0).length >= 5,
-  forge: (a) => a.forge.owned,
-  rich: (a) => a.coins >= 10_000,
-  smith10: (a) => a.characters.some((c) => c.skills.smithing.lv >= 10),
-  statue10: (a) => a.characters.some((c) => Object.values(c.statues ?? {}).some((xp) => statueLevel(xp).lv >= 10)),
-  tasks10: (a) => Object.values(a.tasks).reduce((n, v) => n + v, 0) >= 10,
-  stars5: (a) => Object.keys(a.stars).length >= 5,
+/** 업적 진행도: [지금, 목표] */
+const best = (a: Account, f: (c: Account['characters'][number]) => number) => Math.max(0, ...a.characters.map(f));
+const ACH_PROG: Record<string, (a: Account) => [number, number]> = {
+  lv10: (a) => [best(a, (c) => c.level), 10],
+  lv25: (a) => [best(a, (c) => c.level), 25],
+  boss1: (a) => [a.bosses.mossking ?? 0, 1],
+  boss10: (a) => [a.bosses.mossking ?? 0, 10],
+  party4: (a) => [a.characters.length, 4],
+  cards10: (a) => [Object.values(a.cards).reduce((n, v) => n + v, 0), 10],
+  stamps5: (a) => [STAMPS.filter((s) => (a.stamps[s.id] ?? 0) > 0).length, 5],
+  forge: (a) => [a.forge.owned ? 1 : 0, 1],
+  rich: (a) => [a.coins, 10_000],
+  smith10: (a) => [best(a, (c) => c.skills.smithing.lv), 10],
+  statue10: (a) => [best(a, (c) => Math.max(0, ...Object.values(c.statues ?? {}).map((xp) => statueLevel(xp).lv))), 10],
+  tasks10: (a) => [Object.values(a.tasks).reduce((n, v) => n + v, 0), 10],
+  stars5: (a) => [Object.keys(a.stars).length, 5],
 };
+export const achieveProgress = (acc: Account, id: string): [number, number] => ACH_PROG[id]?.(acc) ?? [0, 1];
+const ACH_CHECK: Record<string, (a: Account) => boolean> = Object.fromEntries(Object.entries(ACH_PROG).map(([k, f]) => [k, (a: Account) => { const [h, n] = f(a); return h >= n; }]));
 export const achieveReady = (acc: Account, id: string) => !acc.achievements[id] && !!ACH_CHECK[id]?.(acc);
 export function claimAchievement(acc: Account, id: string): string | null {
   const d = ACHIEVEMENTS.find((x) => x.id === id);

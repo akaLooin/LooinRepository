@@ -9,7 +9,7 @@ import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgT
 import { GATHER_INTERVAL } from './world';
 
 export interface AfkReport {
-  seconds: number; mapName: string; mode: 'fight' | 'gather' | 'rest';
+  seconds: number; /** 상한에 걸려 버려진 시간(초) */ capped?: number; mapName: string; mode: 'fight' | 'gather' | 'rest';
   kills: number; xp: number; coins: number; levels: number;
   skill?: { key: SkillKey; name: string; xp: number; levels: number };
   items: { id: string; name: string; qty: number }[];
@@ -129,7 +129,8 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
   c.lastActive = now;
   const map = MAPS[c.mapId], hours = elapsed / 3600;
   const r = afkRates(acc, c);
-  const rep: AfkReport = { seconds: elapsed, mapName: map.name, mode: r.mode, kills: 0, xp: 0, coins: 0, levels: 0, items: [], cards: [], skipped: 0, food: 0 };
+  const away = Math.floor((now - c.lastActive) / 1000);
+  const rep: AfkReport = { seconds: elapsed, capped: Math.max(0, away - elapsed), mapName: map.name, mode: r.mode, kills: 0, xp: 0, coins: 0, levels: 0, items: [], cards: [], skipped: 0, food: 0 };
   const give = (id: string, qty: number) => {
     if (qty <= 0) return;
     const got = addItemSome(c, id, qty);

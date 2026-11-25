@@ -228,7 +228,7 @@ export class Game {
   /** 포탈로 이동(서버에서는 처치 조건·열쇠를 다시 확인) */
   travel(portal: number) {
     const r = this.act({ t: 'travel', portal });
-    if (!r.ok) { this.onEvent({ t: 'loot', text: r.err ?? '이동할 수 없습니다' }); return; }
+    if (!r.ok) { this.onEvent({ t: 'warn', text: r.err ?? '이동할 수 없습니다' }); return; }
     this.enterWorld();
   }
 
@@ -260,7 +260,7 @@ export class Game {
         }
         if (e.t === 'arrive' && e.what === 'portal') {
           const q = w.map.portals[e.idx];
-          if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `아직 열리지 않았습니다(${portalLock(w.char, w.map.id, q)})` }); continue; }
+          if (!w.portalOpen(q)) { const dest = q.label ?? MAPS[q.to]?.name ?? ''; this.onEvent({ t: 'warn', text: `${dest} 문이 아직 잠겨 있습니다 · ${portalLock(w.char, w.map.id, q)?.replace('처치', `이 맵 처치`)}` }); continue; }
           // 세계의 문: 조건을 못 채웠으면 조건 창, 채웠으면 그대로 지난다
           if (q.gate && worldOf(q.to) > worldOf(w.map.id) && !gateOpen(this.acc, w.char, worldOf(q.to))) { this.onEvent({ t: 'gate', to: worldOf(q.to) }); continue; }
           if (!MAPS[q.to]) continue;

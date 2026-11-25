@@ -20,7 +20,7 @@ const best = (acc: Account, f: (c: Account['characters'][number]) => number) => 
 
 export const TASKS: TaskDef[] = [
   { id: 'kill_meadow', group: 'fight', name: '이슬 풀밭 정리', unit: '마리', tiers: [50, 400, 2500], merit: [1, 2, 4], value: (a) => sum(a, (c) => c.kills.meadow ?? 0), recipes: { 2: 'moss_ring' } },
-  { id: 'kill_hills', group: 'fight', name: '돌무더기 언덕 정리', unit: '마리', tiers: [50, 400, 2500], merit: [1, 2, 4], value: (a) => sum(a, (c) => c.kills.hills ?? 0), recipes: { 1: 'bag_leather' } },
+  { id: 'kill_hills', group: 'fight', name: '자갈 언덕 정리', unit: '마리', tiers: [50, 400, 2500], merit: [1, 2, 4], value: (a) => sum(a, (c) => c.kills.hills ?? 0), recipes: { 1: 'bag_leather' } },
   { id: 'kill_forest', group: 'fight', name: '속삭임 숲 정리', unit: '마리', tiers: [50, 400, 2500], merit: [2, 3, 5], value: (a) => sum(a, (c) => c.kills.forest ?? 0) },
   { id: 'boss', group: 'fight', name: '이끼왕 토벌', unit: '번', tiers: [1, 5, 25], merit: [3, 4, 6], value: (a) => a.bosses.mossking ?? 0 },
   { id: 'mining', group: 'skill', name: '광부의 길', unit: 'Lv', tiers: [5, 15, 30], merit: [1, 2, 4], value: (a) => best(a, (c) => c.skills.mining.lv), recipes: { 1: 'pick_red' } },

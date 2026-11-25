@@ -309,7 +309,7 @@ export class GameScene extends Phaser.Scene {
 
   private fitCamera() {
     const { width, height } = this.scale;
-    this.cameras.main.setZoom(Math.min(height / 175, width / 215));
+    this.cameras.main.setZoom(Math.min(height / 200, width / 245)); // 위쪽 발판(y -96)의 문·NPC 이름까지 보이게
   }
 
   /** 맵 전환/캐릭터 전환 시 화면을 새로 구성 */
@@ -573,8 +573,16 @@ export class GameScene extends Phaser.Scene {
       pv.ring.setVisible(open); pv.glow.setVisible(open); pv.lock.setVisible(!open);
       pv.glow.setScale((0.9 + Math.sin(this.time0 * 3 + pv.idx) * 0.1) * ART, ART).setAlpha(0.75 + Math.sin(this.time0 * 4) * 0.2);
       pv.ring.setY((q.y ?? 0) - 22 + Math.sin(this.time0 * 2 + pv.idx) * 1);
-      const txt = !open ? portalLock(w.char, w.map.id, q) ?? '' : q.label ? `${q.label}${q.key ? ` (${ITEMS[q.key].name})` : ''}` : MAPS[q.to].name;
+      const dest = q.label ?? MAPS[q.to].name;
+      const txt = !open ? `${dest}\n${portalLock(w.char, w.map.id, q) ?? ''}` : q.key ? `${dest} (${ITEMS[q.key].name})` : dest;
       if (pv.text.text !== txt) pv.text.setText(txt);
+      // 맵 끝의 문 이름이 화면 밖으로 잘리지 않게 안쪽으로 당긴다
+      const hw = pv.text.displayWidth / 2 + 4, py = q.y ?? 0;
+      if (py <= -96) {
+        // 높은 발판의 문: 화면 위로 잘리지 않게 이름을 문 옆에 붙인다(맵 끝이면 왼쪽)
+        const right = q.x + 16 + hw * 2 < w.map.width;
+        pv.text.setX(right ? q.x + 16 + hw : q.x - 16 - hw).setY(py - 16);
+      } else pv.text.setX(Phaser.Math.Clamp(q.x, hw, w.map.width - hw)).setY(py - (open ? 47 : 53));
     }
 
     // 카메라: 부드럽게 따라가며 맵 경계에서 멈춘다
@@ -587,7 +595,7 @@ export class GameScene extends Phaser.Scene {
     if (p.x > goal + dz) goal = p.x - dz; else if (p.x < goal - dz) goal = p.x + dz;
     const tx = w.map.width > halfW * 2 ? Phaser.Math.Clamp(goal, halfW, w.map.width - halfW) : w.map.width / 2;
     this.camGoal = tx;
-    const base = 52 - halfH;
+    const base = 44 - halfH;
     const ty = base + Math.min(0, (p.y + 50) * 0.7);
     this.camX = smooth(this.camX, tx, dt, 3.6); this.camY = smooth(this.camY, ty, dt, 2.8);
     if (Math.abs(this.camX - tx) > halfW * 2) this.camX = tx;

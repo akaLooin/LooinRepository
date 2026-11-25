@@ -42,12 +42,12 @@ export function postRefresh(acc: Account, c: Character, now: number) {
   const p = c.post, d = today(now);
   if (p.day === d) return;
   p.day = d;
-  const pool = orderPool(c);
+  const pool = [...orderPool(c)];
   const seed = hash((acc.petSeed ^ (c.id * 2654435761)) >>> 0) ^ [...d].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
   p.orders = [];
   for (let i = 0; i < POST_ORDERS && pool.length; i++) {
     const r = hash((seed + i * 977) >>> 0);
-    const item = pool[r % pool.length], sell = Math.max(1, ITEMS[item].sell);
+    const item = pool.splice(r % pool.length, 1)[0], sell = Math.max(1, ITEMS[item].sell); // 같은 날 같은 주문은 한 번만
     const n = Math.max(10, Math.min(250, Math.round(600 / sell)));
     const pts = sell < 15 ? 1 : sell < 50 ? 2 : 3;
     p.orders.push({ item, n, pts, coins: n * sell * 2, done: false });
