@@ -13,7 +13,7 @@ import { Alch, newAlch } from './alchemy';
 import { PostState, newPost } from './post';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -51,7 +51,10 @@ export interface Character {
   /** 석상: 바친 조각 수(레벨은 여기서 계산) */
   statues: Record<string, number>;
   /** 정렬한 별자리 */
-  sign: string | null;
+  /** 정렬한 별자리(칸 수만큼) */
+  aligned: string[];
+  /** 탄생 별자리(만들 때 고름) */
+  birth: string | null;
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
   talentPresets: { talents: Record<string, number>; bars: (string | null)[][] }[];
   talentPreset: number;
@@ -164,7 +167,7 @@ export function newAccount(): Account {
   return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, upTries: 0, owl: newOwl(), alch: newAlch(), build: newBuild(), cook: newCook(), breed: newBreed(Math.floor(Math.random() * 2 ** 31)), lab: newLab(), worship: newWorshipAcc(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
 }
 
-export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
+export function createCharacter(acc: Account, name: string, look: Look, now: number, sign?: string | null): Character | null {
   if (acc.characters.length >= charSlots(acc)) return null;
   const c: Character = {
     id: acc.nextId++, name: name.trim().slice(0, 10) || '모험가', look,
@@ -172,7 +175,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(), traps: newTraps(), worship: newWorshipChar(),
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, aligned: [], birth: BIRTH_SIGNS.includes(sign ?? '') ? sign! : null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1, post: newPost(), traps: newTraps(), worship: newWorshipChar(),
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 }, fishing: { lv: 1, xp: 0 }, catching: { lv: 1, xp: 0 }, trapping: { lv: 1, xp: 0 }, worship: { lv: 1, xp: 0 }, cooking: { lv: 1, xp: 0 }, lab: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -197,6 +200,8 @@ export interface Derived {
   afkFight: number; afkSkill: number;
   atkInterval: number; speed: number; crit: number; critMult: number;
   xpMult: number; dropMult: number; regen: number;
+  /** 카드 드롭률 배율(드롭률 × 카드 드롭률 보너스) */
+  cardMult: number;
   /** 보스(미니보스 포함)에게 주는 피해 배수(지혜) */
   bossMult: number;
   /** 코인 획득 배수 */
@@ -249,12 +254,12 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const wis = c.stats.wis + e.wis + pb.wis, luk = c.stats.luk + e.luk + pb.luk;
   const tl = (id: string) => c.talents[id] ?? 0;
   const cls = CLASSES[c.cls] ?? CLASSES.beginner;
-  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, afkSkill: 0 };
+  const cb = { hp: 0, dmg: 0, drop: 0, afk: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, afkSkill: 0, card: 0 };
   // 우표(효과 값은 % 단위)·후원 계약
   const sb = stampBonus(a), bb = bribeBonus(a);
   const afkAcc = sb.afk / 100 + bb.afk + meritValue(a, 'afk') + pb.afk / 100;
   // 카드는 장착한 것만 효과가 있다
-  for (const cd of CARDS) if (c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
+  for (const cd of CARDS) if (cd.passive || c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
   const maxMp = Math.floor((8 + wis * 1.5 + c.level) * mpMult);
   const work = 1 + tl('worker') * 0.05;
@@ -273,6 +278,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     crit: Math.min(0.75, 0.04 + agi * 0.004 + sb.crit / 100 + critAdd), critMult: 1.5 + str * 0.004 + t2('deadeye') * 0.04 + t2('carnage') * 0.05,
     bossMult: 1 + wis * 0.004,
     xpMult: (1 + luk * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
+    cardMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100) * (1 + cb.card + pb.card / 100),
     coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins') + pb.coins / 100,
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
@@ -939,7 +945,8 @@ export function deserialize(json: string | null): Account | null {
       c.talents ??= {};
       c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost(); c.traps ??= newTraps(); c.skills.trapping ??= { lv: 1, xp: 0 }; c.worship ??= newWorshipChar(); c.skills.worship ??= { lv: 1, xp: 0 }; c.skills.cooking ??= { lv: 1, xp: 0 }; c.skills.lab ??= { lv: 1, xp: 0 };
       c.skills.fishing ??= { lv: 1, xp: 0 }; c.skills.catching ??= { lv: 1, xp: 0 };
-      c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
+      c.statues ??= {}; c.talentPreset ??= 0;
+      { const o = c as Character & { sign?: string | null }; c.aligned ??= o.sign ? [o.sign] : []; c.birth ??= null; delete o.sign; }
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];
       c.talentPoints ??= c.level - 1;

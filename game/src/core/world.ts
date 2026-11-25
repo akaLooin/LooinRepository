@@ -584,7 +584,7 @@ export class World {
   private rollCard(id: string, name: string, base: number, d: Derived, fixed = false) {
     if (!CARD_BY_ID[id]) return;
     const owned = (this.acc.cards[id] ?? 0) > 0;
-    if (!this.rng.chance(fixed ? base : base * (owned ? 1 : CARD_UNOWNED_MULT) * d.dropMult)) return;
+    if (!this.rng.chance(fixed ? base : base * (owned ? 1 : CARD_UNOWNED_MULT) * d.cardMult)) return;
     this.acc.cards[id] = (this.acc.cards[id] ?? 0) + 1;
     this.events.push({ t: 'loot', text: `★ ${name} 카드 획득!` });
   }

@@ -28,7 +28,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const t = Math.max(0, elapsedSec);
 
   // 1) 행동으로만 바뀌는 값
-  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal', 'maxWorld', 'post', 'traps', 'worship'];
+  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'aligned', 'birth', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal', 'maxWorld', 'post', 'traps', 'worship'];
   if (!same(s.skills.worship, claimed.skills.worship)) return '바뀌면 안 되는 값: 기도';
   if (!same(s.skills.cooking, claimed.skills.cooking)) return '바뀌면 안 되는 값: 요리';
   if (!same(s.skills.lab, claimed.skills.lab)) return '바뀌면 안 되는 값: 연구';
@@ -118,7 +118,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
     if (gain === 0) continue;
     const cd = CARD_BY_ID[id];
     const tries = cd?.from === 'node' ? yields(id) * NODE_CARD_CHANCE : dk * CARD_CHANCE;
-    const cap = Math.ceil(tries * CARD_UNOWNED_MULT * d.dropMult * 4) + 1;
+    const cap = Math.ceil(tries * CARD_UNOWNED_MULT * d.cardMult * 4) + 1;
     if (!cd || gain < 0 || gain > (MONSTERS[id]?.boss ? 1 : cap)) return '카드가 너무 많습니다';
   }
   for (const [id, n] of Object.entries(ca.bosses)) {

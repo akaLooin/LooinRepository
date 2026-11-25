@@ -214,11 +214,11 @@ export function buildApp(o: AppOptions) {
 
   app.post('/characters', async (req, rep) => {
     const me = await auth(req, rep); if (!me) return;
-    const b = z.object({ name: z.string().trim().min(1).max(10), look: Look }).safeParse(req.body);
+    const b = z.object({ name: z.string().trim().min(1).max(10), look: Look, sign: z.string().max(20).optional() }).safeParse(req.body);
     if (!b.success) return rep.code(400).send({ error: '이름과 외형을 확인하세요' });
     return withAccount(me, rep, (acc) => {
       if (acc.characters.length >= charSlots(acc)) return { body: { error: '캐릭터 칸이 가득 찼습니다' }, dirty: false };
-      const c = createCharacter(acc, b.data.name, b.data.look, now());
+      const c = createCharacter(acc, b.data.name, b.data.look, now(), b.data.sign);
       return { body: { index: acc.characters.length - 1, account: acc, ok: !!c }, dirty: true };
     });
   });

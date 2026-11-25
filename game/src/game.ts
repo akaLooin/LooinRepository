@@ -130,16 +130,16 @@ export class Game {
 
   get char(): Character | null { return this.acc.characters[this.acc.active] ?? null; }
 
-  async create(name: string, look: Look): Promise<boolean> {
+  async create(name: string, look: Look, sign?: string): Promise<boolean> {
     if (this.online) {
       try {
-        const r = await this.net!.create(name, look);
+        const r = await this.net!.create(name, look, sign);
         if (r.error) { this.onEvent({ t: 'loot', text: r.error }); return false; }
         this.adopt(r.account);
         return true;
       } catch (e) { this.netFail(e); }
     }
-    const c = createCharacter(this.acc, name, look, Date.now());
+    const c = createCharacter(this.acc, name, look, Date.now(), sign);
     this.save();
     return !!c;
   }

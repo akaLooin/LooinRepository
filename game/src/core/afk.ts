@@ -67,7 +67,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   if (node) {
     const swings = Math.ceil(node.hp / d[node.skill]);
     const perHour = (3600 / (swings * GATHER_INTERVAL)) * d.afkSkill;
-    const cards = CARD_BY_ID[node.id] ? [{ id: node.id, name: node.name, perHour: perHour * NODE_CARD_CHANCE * d.dropMult, owned: (acc.cards[node.id] ?? 0) > 0 }] : [];
+    const cards = CARD_BY_ID[node.id] ? [{ id: node.id, name: node.name, perHour: perHour * NODE_CARD_CHANCE * d.cardMult, owned: (acc.cards[node.id] ?? 0) > 0 }] : [];
     return { ...base, mode: 'gather', target: node.name, rate: d.afkSkill, cards,
       skill: { key: node.skill, xpPerHour: perHour * node.xp, item: node.item, perHour } };
   }
@@ -118,7 +118,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
       const ex = r.drops.find((x) => x.id === dr.item);
       if (ex) ex.perHour += per; else r.drops.push({ id: dr.item, perHour: per });
     }
-    if (CARD_BY_ID[m.id] && !m.boss) r.cards.push({ id: m.id, name: m.name, perHour: k * CARD_CHANCE * d.dropMult, owned: (acc.cards[m.id] ?? 0) > 0 });
+    if (CARD_BY_ID[m.id] && !m.boss) r.cards.push({ id: m.id, name: m.name, perHour: k * CARD_CHANCE * d.cardMult, owned: (acc.cards[m.id] ?? 0) > 0 });
   }
   return r;
 }

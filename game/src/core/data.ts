@@ -896,8 +896,9 @@ export const canSubclass = (c: { cls: ClassId; level: number }) => c.cls !== 'be
 
 /** 카드: 계정 전체가 함께 모으는 수집 보너스(장착해야 효과). 1/3/10장에서 단계 상승.
  *  id 는 몬스터 id(몬스터 카드) 또는 자원 id(자원 카드: 채집할 때 드물게) */
-export type CardBonus = 'hp' | 'dmg' | 'drop' | 'afk' | 'mining' | 'chopping' | 'fishing' | 'catching' | 'afkSkill';
-export interface CardDef { id: string; from: 'monster' | 'node'; bonus: CardBonus; per: number; label: string }
+export type CardBonus = 'hp' | 'dmg' | 'drop' | 'afk' | 'mining' | 'chopping' | 'fishing' | 'catching' | 'afkSkill' | 'card';
+/** passive: 장착하지 않아도 효과가 있는 카드(원작의 패시브 카드) */
+export interface CardDef { id: string; from: 'monster' | 'node'; bonus: CardBonus; per: number; label: string; passive?: boolean }
 export const CARDS: CardDef[] = [
   { id: 'mossblob', from: 'monster', bonus: 'hp', per: 0.03, label: '최대 체력' },
   { id: 'pebbler', from: 'monster', bonus: 'dmg', per: 0.03, label: '공격력' },
@@ -930,7 +931,7 @@ export const CARDS: CardDef[] = [
   { id: 'starpool', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
   { id: 'antbush', from: 'node', bonus: 'catching', per: 0.06, label: '곤충 채집 효율' },
   { id: 'glowbush', from: 'node', bonus: 'catching', per: 0.08, label: '곤충 채집 효율' },
-  { id: 'goldbush', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
+  { id: 'goldbush', from: 'node', bonus: 'card', per: 0.06, label: '카드 드롭률' },
   { id: 'snowpuff', from: 'monster', bonus: 'hp', per: 0.07, label: '최대 체력' },
   { id: 'pinekin', from: 'monster', bonus: 'dmg', per: 0.07, label: '공격력' },
   { id: 'penglet', from: 'monster', bonus: 'drop', per: 0.07, label: '드롭률' },
@@ -953,9 +954,11 @@ export const CARDS: CardDef[] = [
   { id: 'nebtitan', from: 'monster', bonus: 'afk', per: 0.06, label: '방치 효율' },
   { id: 'startree', from: 'node', bonus: 'chopping', per: 0.12, label: '벌목 효율' },
   { id: 'novarock', from: 'node', bonus: 'mining', per: 0.14, label: '채광 효율' },
-  { id: 'nebpool', from: 'node', bonus: 'afkSkill', per: 0.04, label: '채집 방치 효율' },
+  { id: 'nebpool', from: 'node', bonus: 'card', per: 0.08, label: '카드 드롭률' },
   { id: 'cometbush', from: 'node', bonus: 'catching', per: 0.12, label: '곤충 채집 효율' },
 ];
+// 보스 카드는 원작처럼 패시브: 장착하지 않아도 효과가 있다
+for (const cd of CARDS) if (cd.from === 'monster' && ['mossking', 'sandlord', 'frostlord', 'nebtitan'].includes(cd.id)) cd.passive = true;
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
 export const NODE_CARD_CHANCE = 1 / 600;
@@ -963,8 +966,11 @@ export const NODE_CARD_CHANCE = 1 / 600;
 export const CARD_CHANCE = 1 / 1500;
 export const CARD_UNOWNED_MULT = 5;
 export const CARD_BOSS_CHANCE = 0.25;
-export const cardTier = (n: number) => (n >= 10 ? 3 : n >= 3 ? 2 : n >= 1 ? 1 : 0);
-export const cardNext = (n: number) => (n >= 10 ? null : n >= 3 ? 10 : n >= 1 ? 3 : 1);
+/** 카드 단계(원작처럼 5단계): 1·3·10·30·100장 */
+export const CARD_TIERS = [1, 3, 10, 30, 100];
+export const CARD_MAX_TIER = CARD_TIERS.length;
+export const cardTier = (n: number) => CARD_TIERS.filter((t) => n >= t).length;
+export const cardNext = (n: number) => CARD_TIERS.find((t) => n < t) ?? null;
 
 export interface QuestDef {
   name: string; text: string;
@@ -1183,7 +1189,7 @@ export const SHOP: ShopEntry[] = [
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
-export type BonusKey = 'str' | 'agi' | 'wis' | 'luk' | 'def' | 'hp' | 'hpPct' | 'drop' | 'dmg' | 'xp' | 'afk' | 'coins' | 'mining' | 'chopping' | 'fishing' | 'catching' | 'acc';
+export type BonusKey = 'str' | 'agi' | 'wis' | 'luk' | 'def' | 'hp' | 'hpPct' | 'drop' | 'dmg' | 'xp' | 'afk' | 'coins' | 'mining' | 'chopping' | 'fishing' | 'catching' | 'acc' | 'card';
 export interface StatueDef { id: string; name: string; item: string; eff: BonusKey; per: number; unit: '' | '%' | '%p'; label: string }
 export const STATUES: StatueDef[] = [
   { id: 'str', name: '힘의 석상', item: 'statue_str', eff: 'str', per: 1, unit: '', label: '힘' },
@@ -1199,17 +1205,42 @@ export const statueNeed = (lv: number) => Math.ceil(2 * Math.pow(1.28, lv));
 
 // ───────── 별자리 ─────────
 /** 별 지도(맵 곳곳의 숨은 조건)를 채우면 별 포인트. 별 포인트로 별자리를 열고, 캐릭터마다 하나를 정렬한다 */
-export interface SignDef { id: string; name: string; eff: BonusKey; v: number; cost: number; label: string }
+export interface SignDef { id: string; name: string; eff: BonusKey; v: number; cost: number; label: string; /** 이 월드의 별자리 */ w: number }
 export const SIGNS: SignDef[] = [
-  { id: 'wanderer', name: '나그네자리', eff: 'luk', v: 4, cost: 1, label: '행운 +4' },
-  { id: 'miner', name: '곡괭이자리', eff: 'mining', v: 10, cost: 1, label: '채광 효율 +10%' },
-  { id: 'lumber', name: '도끼자리', eff: 'chopping', v: 10, cost: 1, label: '벌목 효율 +10%' },
-  { id: 'hunter', name: '사냥꾼자리', eff: 'dmg', v: 5, cost: 2, label: '공격력 +5%' },
-  { id: 'sage', name: '현자자리', eff: 'xp', v: 6, cost: 2, label: '경험치 +6%' },
-  { id: 'magpie', name: '까치자리', eff: 'drop', v: 7, cost: 2, label: '드롭률 +7%' },
-  { id: 'turtle', name: '거북자리', eff: 'def', v: 3, cost: 3, label: '방어력 +3' },
-  { id: 'sleeper', name: '잠꾸러기자리', eff: 'afk', v: 3, cost: 3, label: '방치 효율 +3%p' },
+  { id: 'wanderer', name: '나그네자리', eff: 'luk', v: 4, cost: 1, label: '행운 +4', w: 1 },
+  { id: 'miner', name: '곡괭이자리', eff: 'mining', v: 10, cost: 1, label: '채광 효율 +10%', w: 1 },
+  { id: 'lumber', name: '도끼자리', eff: 'chopping', v: 10, cost: 1, label: '벌목 효율 +10%', w: 1 },
+  { id: 'hunter', name: '사냥꾼자리', eff: 'dmg', v: 5, cost: 2, label: '공격력 +5%', w: 1 },
+  { id: 'sage', name: '현자자리', eff: 'xp', v: 6, cost: 2, label: '경험치 +6%', w: 1 },
+  { id: 'magpie', name: '까치자리', eff: 'drop', v: 7, cost: 2, label: '드롭률 +7%', w: 1 },
+  { id: 'turtle', name: '거북자리', eff: 'def', v: 3, cost: 3, label: '방어력 +3', w: 1 },
+  { id: 'sleeper', name: '잠꾸러기자리', eff: 'afk', v: 3, cost: 3, label: '방치 효율 +3%p', w: 1 },
+  // 2월드: 사막 하늘
+  { id: 'camel', name: '낙타자리', eff: 'hp', v: 120, cost: 2, label: '최대 체력 +120', w: 2 },
+  { id: 'scarab', name: '풍뎅이자리', eff: 'catching', v: 12, cost: 2, label: '곤충 채집 효율 +12%', w: 2 },
+  { id: 'heron', name: '왜가리자리', eff: 'fishing', v: 12, cost: 2, label: '낚시 효율 +12%', w: 2 },
+  { id: 'dune', name: '모래언덕자리', eff: 'agi', v: 8, cost: 3, label: '민첩 +8', w: 2 },
+  { id: 'oasis', name: '샘물자리', eff: 'coins', v: 10, cost: 3, label: '코인 획득 +10%', w: 2 },
+  { id: 'jackal', name: '승냥이자리', eff: 'card', v: 10, cost: 4, label: '카드 드롭률 +10%', w: 2 },
+  // 3월드: 눈 덮인 하늘
+  { id: 'snowowl', name: '눈부엉이자리', eff: 'wis', v: 12, cost: 3, label: '지혜 +12', w: 3 },
+  { id: 'mammoth', name: '매머드자리', eff: 'str', v: 12, cost: 3, label: '힘 +12', w: 3 },
+  { id: 'aurora', name: '오로라자리', eff: 'xp', v: 10, cost: 4, label: '경험치 +10%', w: 3 },
+  { id: 'icicle', name: '고드름자리', eff: 'acc', v: 40, cost: 4, label: '명중 +40', w: 3 },
+  { id: 'hearth', name: '화롯가자리', eff: 'afk', v: 4, cost: 5, label: '방치 효율 +4%p', w: 3 },
+  { id: 'reindeer', name: '순록자리', eff: 'drop', v: 10, cost: 5, label: '드롭률 +10%', w: 3 },
+  // 4월드: 성운 하늘
+  { id: 'comet', name: '혜성자리', eff: 'dmg', v: 10, cost: 4, label: '공격력 +10%', w: 4 },
+  { id: 'nebula', name: '성운자리', eff: 'hpPct', v: 10, cost: 4, label: '최대 체력 +10%', w: 4 },
+  { id: 'orbit', name: '궤도자리', eff: 'luk', v: 20, cost: 5, label: '행운 +20', w: 4 },
+  { id: 'satellite', name: '위성자리', eff: 'mining', v: 20, cost: 5, label: '채광 효율 +20%', w: 4 },
+  { id: 'starseed', name: '별씨앗자리', eff: 'chopping', v: 20, cost: 5, label: '벌목 효율 +20%', w: 4 },
+  { id: 'blackhole', name: '블랙홀자리', eff: 'card', v: 15, cost: 6, label: '카드 드롭률 +15%', w: 4 },
 ];
+/** 별자리 장착 칸: 캐릭터가 간 월드마다 한 칸(1~4) */
+export const signSlots = (c: { maxWorld?: number }) => Math.max(1, Math.min(4, c.maxWorld ?? 1));
+/** 새 캐릭터가 고르는 탄생 별자리(1월드 별자리 가운데 하나, 처음부터 켜져 있고 칸을 차지하지 않는다) */
+export const BIRTH_SIGNS = ['wanderer', 'miner', 'lumber', 'hunter', 'sage', 'magpie'];
 /** 별자리를 쓸 수 있는 캐릭터 레벨 */
 export const SIGN_LV = 10;
 

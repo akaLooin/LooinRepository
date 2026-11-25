@@ -16,7 +16,7 @@ const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 �
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
   TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
@@ -190,7 +190,7 @@ export class UI {
   private drag: { id: string; ghost: HTMLElement } | null = null;
   private prodSlot = 0;
   private creating = false;
-  private draft: { name: string; look: Look } = this.randomDraft();
+  private draft: { name: string; look: Look; sign: string } = this.randomDraft();
   private last: Record<string, string> = {};
 
   constructor(private game: Game) {
@@ -249,7 +249,7 @@ export class UI {
 
   private randomDraft() {
     const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
-    return { name: '', look: { hair: Math.floor(Math.random() * HAIR_STYLES), hairColor: pick(HAIR_COLORS), skin: SKIN_COLORS[0], outfit: pick(OUTFIT_COLORS) } };
+    return { name: '', look: { hair: Math.floor(Math.random() * HAIR_STYLES), hairColor: pick(HAIR_COLORS), skin: SKIN_COLORS[0], outfit: pick(OUTFIT_COLORS) }, sign: pick(BIRTH_SIGNS) };
   }
 
   private $(id: string) { return document.getElementById(id)!; }
@@ -405,6 +405,8 @@ export class UI {
             <input id="cname" class="ui-input" maxlength="10" placeholder="최대 10자" autocomplete="off">
             ${sw('몸 색', 'skin', SKIN_COLORS)}
             <p class="ui-xs ui-muted">겉모습은 장비로 꾸며집니다.</p>
+            <span class="ui-sm ui-muted">탄생 별자리 <span class="ui-xs">(평생 켜져 있음)</span></span>
+            <div class="ui-row" style="flex-wrap:wrap;gap:var(--sp-1)">${BIRTH_SIGNS.map((id) => { const sg = SIGNS.find((x) => x.id === id)!; return `<button class="ui-btn sm ${this.draft.sign === id ? 'primary' : ''}" data-act="birth:${id}" aria-pressed="${this.draft.sign === id}">${sg.name} <span class="ui-xs">${sg.label}</span></button>`; }).join('')}</div>
             <div class="ui-row">${acc.characters.length ? '<button class="ui-btn" data-act="cancelCreate">취소</button>' : ''}
               <span class="ui-grow"></span><button class="ui-btn primary" data-act="create">모험 시작!</button></div>
           </div></div></div>`;
@@ -569,13 +571,13 @@ export class UI {
           body = `<h3 style="margin-top:0">장착 ${c.cardSlots.filter(Boolean).length}/${CARD_SLOTS} <span class="ui-xs ui-muted">— 장착한 카드만 효과가 있습니다(캐릭터마다)</span></h3><div class="ui-grid">${slots}</div><h3>수집</h3>` + CARDS.map((cd) => {
             const n = g.acc.cards[cd.id] ?? 0, tier = cardTier(n), next = cardNext(n), on = c.cardSlots.includes(cd.id);
             const free = c.cardSlots.indexOf(null);
-            const btn = !n ? '' : on ? `<button class="ui-btn sm" data-act="cardoff:${c.cardSlots.indexOf(cd.id)}">빼기</button>`
+            const btn = !n || cd.passive ? '' : on ? `<button class="ui-btn sm" data-act="cardoff:${c.cardSlots.indexOf(cd.id)}">빼기</button>`
               : `<button class="ui-btn sm primary" data-act="cardon:${cd.id}" ${free >= 0 ? '' : 'disabled'}>장착</button>`;
-            return `<div class="ui-row line"><span class="ui-slot ${tier >= 3 ? 'r4' : tier === 2 ? 'r3' : tier === 1 ? 'r2' : 'locked'}"><img class="px" style="${n ? '' : 'filter:brightness(0)'}" src="${cardIcon(cd.id)}" alt=""></span>
-              <div class="ui-grow"><b>${n ? cardName(cd.id) : '???'}</b> <span class="ui-xs ui-muted">${cd.from === 'node' ? '자원' : '몬스터'}</span> <span class="ui-accent">${'★'.repeat(tier)}${'☆'.repeat(3 - tier)}</span>
-              <div class="ui-sm ${on ? 'ui-good' : 'ui-muted'}">${cd.label} +${Math.round(cd.per * Math.max(1, tier) * 100)}%${on ? ' (적용 중)' : ''}</div>
+            return `<div class="ui-row line"><span class="ui-slot ${tier >= 4 ? 'r5' : tier >= 3 ? 'r4' : tier === 2 ? 'r3' : tier === 1 ? 'r2' : 'locked'}"><img class="px" style="${n ? '' : 'filter:brightness(0)'}" src="${cardIcon(cd.id)}" alt=""></span>
+              <div class="ui-grow"><b>${n ? cardName(cd.id) : '???'}</b> <span class="ui-xs ui-muted">${cd.from === 'node' ? '자원' : '몬스터'}</span> <span class="ui-accent">${'★'.repeat(tier)}${'☆'.repeat(CARD_MAX_TIER - tier)}</span>${cd.passive ? ' <span class="ui-xs ui-good">패시브</span>' : ''}
+              <div class="ui-sm ${on || (cd.passive && n) ? 'ui-good' : 'ui-muted'}">${cd.label} +${Math.round(cd.per * Math.max(1, tier) * 100)}%${cd.passive ? (n ? ' (장착하지 않아도 적용)' : '') : on ? ' (적용 중)' : ''}</div>
               <div class="ui-xs ui-muted">${next ? `보유 ${n} / 다음 단계 ${next}` : `보유 ${n} · 최고 단계`}</div></div>${btn}</div>`;
-          }).join('') + '<p class="ui-xs ui-muted">몬스터 카드는 사냥할 때, 자원 카드는 나무·광맥을 캘 때 드물게 나옵니다. 모은 카드는 모든 캐릭터가 함께 쓰고, 장착은 캐릭터마다 따로 합니다.</p>';
+          }).join('') + '<p class="ui-xs ui-muted">몬스터 카드는 사냥할 때, 자원 카드는 나무·광맥을 캘 때 드물게 나옵니다. 모은 카드는 모든 캐릭터가 함께 쓰고, 장착은 캐릭터마다 따로 합니다. 1·3·10·30·100장에서 단계가 오르고, 보스 카드는 패시브라 장착하지 않아도 효과가 있습니다.</p>';
         } else {
           // NPC마다 퀘스트 사슬을 아이콘 칸으로: 끝낸 것 ✓, 지금 것 진행도, 남은 것 잠금
           // 부탁이 있는 NPC 가운데, 이 캐릭터가 간 월드의 NPC만
@@ -1252,18 +1254,19 @@ export class UI {
   private starsHtml(c: Character): string {
     const acc = this.game.acc;
     if (c.level < SIGN_LV) return `<p class="ui-muted">Lv.${SIGN_LV}부터 별을 볼 수 있습니다. 맵 곳곳에 숨은 별 지도를 찾아 별 포인트를 모으고, 별자리를 열어 캐릭터마다 하나씩 정렬합니다.</p>`;
-    const stars = STARS.map((s) => {
+    const stars = STARS.filter((s) => worldOf(s.map) <= (c.maxWorld ?? 1)).map((s) => {
       const found = !!acc.stars[s.id], here = c.mapId === s.map, ok = here && s.check(acc, c);
       return `<div class="ui-row line"><div class="ui-grow"><b>${found || here ? MAPS[s.map].name : '???'}</b><div class="ui-sm ${found ? 'ui-good' : 'ui-muted'}">${found || here ? s.desc : '그 맵에 가면 보입니다'}</div></div>
         ${found ? '<span class="ui-accent">★</span>' : `<button class="ui-btn sm ${ok ? 'success' : ''}" data-act="star:${s.id}" ${ok ? '' : 'disabled'}>찾기</button>`}</div>`;
     }).join('');
-    const signs = SIGNS.map((s) => {
-      const open = acc.signs.includes(s.id), on = c.sign === s.id;
-      const btn = on ? `<button class="ui-btn sm" data-act="sign:">해제</button>` : open ? `<button class="ui-btn sm primary" data-act="sign:${s.id}">정렬</button>`
+    const slots = signSlots(c), mw = c.maxWorld ?? 1;
+    const signs = SIGNS.filter((s) => s.w <= mw).map((s) => {
+      const open = acc.signs.includes(s.id), on = c.aligned.includes(s.id), birth = c.birth === s.id;
+      const btn = on ? `<button class="ui-btn sm" data-act="sign:${s.id}">해제</button>` : open ? `<button class="ui-btn sm primary" data-act="sign:${s.id}" ${c.aligned.length < slots ? '' : 'disabled'}>정렬</button>`
         : `<button class="ui-btn sm" data-act="signopen:${s.id}" ${acc.starPoints >= s.cost ? '' : 'disabled'}>★${s.cost} 열기</button>`;
-      return `<div class="ui-row line"><div class="ui-grow"><b>${s.name}</b>${on ? ' <span class="ui-good ui-xs">정렬 중</span>' : ''}<div class="ui-sm ${open ? '' : 'ui-muted'}">${s.label}</div></div>${btn}</div>`;
-    }).join('');
-    return `<h3 style="margin-top:0">별 지도 <span class="ui-accent">${Object.keys(acc.stars).length}/${STARS.length}</span> · 별 포인트 <span class="ui-accent">${acc.starPoints}</span></h3>${stars}<h3>별자리 <span class="ui-xs ui-muted">캐릭터마다 하나</span></h3>${signs}`;
+      return `<div class="ui-row line"><div class="ui-grow"><b>${s.name}</b> <span class="ui-xs ui-muted">${s.w}월드</span>${on ? ' <span class="ui-good ui-xs">정렬 중</span>' : ''}${birth ? ' <span class="ui-accent ui-xs">탄생 별자리</span>' : ''}<div class="ui-sm ${open || birth ? '' : 'ui-muted'}">${s.label}</div></div>${btn}</div>`;
+    }).join('') + (mw < 4 ? '<p class="ui-xs ui-muted">다음 월드에 가면 그 하늘의 별자리와 별자리 칸이 하나 더 열립니다.</p>' : '');
+    return `<h3 style="margin-top:0">별 지도 <span class="ui-accent">${Object.keys(acc.stars).length}/${STARS.filter((s) => worldOf(s.map) <= (c.maxWorld ?? 1)).length}</span> · 별 포인트 <span class="ui-accent">${acc.starPoints}</span></h3>${stars}<h3>별자리 <span class="ui-xs ui-muted">정렬 ${c.aligned.length}/${slots}칸 · 캐릭터마다</span></h3>${signs}`;
   }
 
   private achieveHtml(): string {
@@ -1614,8 +1617,9 @@ export class UI {
       case 'cancelCreate': this.creating = false; break;
       case 'hair': this.draft.look.hair = (this.draft.look.hair + +a + HAIR_STYLES) % HAIR_STYLES; break;
       case 'look': this.draft.look[a as 'hairColor' | 'skin' | 'outfit'] = b; break;
+      case 'birth': this.draft.sign = a; break;
       case 'create': {
-        g.create(this.draft.name || '모험가', { ...this.draft.look }).then((made) => {
+        g.create(this.draft.name || '모험가', { ...this.draft.look }, this.draft.sign).then((made) => {
           if (made) { this.creating = false; g.select(g.acc.characters.length - 1); }
           this.refresh(true);
         });

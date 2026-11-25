@@ -1,7 +1,7 @@
 // 계정·캐릭터 성장 장치: 석상, 별 지도·별자리, 업적, 가족 보너스, 카드 세트·프리셋.
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
-  ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_MIN, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, STAMPS, STATUES,
+  ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_MIN, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, signSlots, STAMPS, STATUES,
   PETS, baseClass, classLine, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
@@ -17,7 +17,7 @@ import { prayerBonus } from './worship';
 import { postBonus } from './post';
 
 export type Bonus = Record<BonusKey, number>;
-export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, acc: 0 });
+export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, acc: 0, card: 0 });
 
 // ───────── 석상 ─────────
 /** 바친 조각 수 → 레벨과 다음 레벨까지 */
@@ -63,6 +63,25 @@ export const STARS: StarDef[] = [
   { id: 'forest2', map: 'forest', desc: '카드 합계 5장 이상', check: (a) => Object.values(a.cards).reduce((n, v) => n + v, 0) >= 5 },
   { id: 'town1', map: 'town', desc: '우표 5종 수집', check: (a) => STAMPS.filter((s) => (a.stamps[s.id] ?? 0) > 0).length >= 5 },
   { id: 'lair1', map: 'lair', desc: '이끼왕 3번 처치', check: (a) => (a.bosses.mossking ?? 0) >= 3 },
+  // 2월드
+  { id: 'oasis1', map: 'oasis', desc: 'Lv.35 이상 캐릭터로 서 있기', check: (_, c) => c.level >= 35 },
+  { id: 'dunes1', map: 'dunes', desc: '낚시 Lv.10 이상으로 서 있기', check: (_, c) => (c.skills.fishing?.lv ?? 1) >= 10 },
+  { id: 'canyon1', map: 'canyon', desc: '곤충 채집 Lv.10 이상으로 서 있기', check: (_, c) => (c.skills.catching?.lv ?? 1) >= 10 },
+  { id: 'mirage1', map: 'mirage', desc: '카드 합계 40장 이상', check: (a) => Object.values(a.cards).reduce((n, v) => n + v, 0) >= 40 },
+  { id: 'tomb1', map: 'tomb', desc: '연금 거품 5개 이상 Lv.1', check: (a) => Object.values(a.alch?.bubbles ?? {}).filter((v) => v > 0).length >= 5 },
+  { id: 'sunspire1', map: 'sunspire', desc: '사막 거상 3번 처치', check: (a) => (a.bosses.sandlord ?? 0) >= 3 },
+  // 3월드
+  { id: 'snowtown1', map: 'snowtown', desc: 'Lv.65 이상 캐릭터로 서 있기', check: (_, c) => c.level >= 65 },
+  { id: 'pinewood1', map: 'pinewood', desc: '덫 사냥 Lv.10 이상으로 서 있기', check: (_, c) => (c.skills.trapping?.lv ?? 1) >= 10 },
+  { id: 'icecave1', map: 'icecave', desc: '건설 Lv.10 이상', check: (a) => (a.build?.lv ?? 1) >= 10 },
+  { id: 'aurora1', map: 'aurora', desc: '기도 Lv.10 이상으로 서 있기', check: (_, c) => (c.skills.worship?.lv ?? 1) >= 10 },
+  { id: 'frostpeak1', map: 'frostpeak', desc: '눈보라 군주 3번 처치', check: (a) => (a.bosses.frostlord ?? 0) >= 3 },
+  // 4월드
+  { id: 'nebtown1', map: 'nebtown', desc: 'Lv.95 이상 캐릭터로 서 있기', check: (_, c) => c.level >= 95 },
+  { id: 'crater1', map: 'crater', desc: '요리 Lv.10 이상으로 서 있기', check: (_, c) => (c.skills.cooking?.lv ?? 1) >= 10 },
+  { id: 'rings1', map: 'rings', desc: '펫 10마리 이상 기르기', check: (a) => (a.breed?.pets?.length ?? 0) >= 10 },
+  { id: 'comet1', map: 'comet', desc: '연구 Lv.10 이상으로 서 있기', check: (_, c) => (c.skills.lab?.lv ?? 1) >= 10 },
+  { id: 'voidedge1', map: 'voidedge', desc: '성운 거신 3번 처치', check: (a) => (a.bosses.nebtitan ?? 0) >= 3 },
 ];
 export function claimStar(acc: Account, c: Character, id: string): string | null {
   const s = STARS.find((x) => x.id === id);
@@ -84,10 +103,17 @@ export function unlockSign(acc: Account, id: string): string | null {
   acc.signs.push(id);
   return null;
 }
+/** 별자리 정렬/해제(칸 수만큼). id가 null이면 모두 해제 */
 export function alignSign(acc: Account, c: Character, id: string | null): string | null {
-  if (id && !acc.signs.includes(id)) return '아직 열지 않은 별자리';
   if (c.level < SIGN_LV) return `Lv.${SIGN_LV}부터 정렬할 수 있습니다`;
-  c.sign = id;
+  if (!id) { c.aligned = []; return null; }
+  const i = c.aligned.indexOf(id);
+  if (i >= 0) { c.aligned.splice(i, 1); return null; }
+  if (!acc.signs.includes(id)) return '아직 열지 않은 별자리';
+  const s = SIGNS.find((x) => x.id === id);
+  if (!s || s.w > (c.maxWorld ?? 1)) return '아직 가 보지 않은 월드의 별자리';
+  if (c.aligned.length >= signSlots(c)) return `별자리 칸이 가득 찼습니다(${signSlots(c)}칸)`;
+  c.aligned.push(id);
   return null;
 }
 
@@ -162,8 +188,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLv(a, c, s.id) * s.per;
-  const sign = c.sign ? SIGNS.find((x) => x.id === c.sign) : null;
-  if (sign) b[sign.eff] += sign.v;
+  for (const id of new Set([...(c.aligned ?? []), ...(c.birth ? [c.birth] : [])])) { const sg = SIGNS.find((x) => x.id === id); if (sg) b[sg.eff] += sg.v; }
   for (const d of ACHIEVEMENTS) if (a.achievements?.[d.id] && d.eff) b[d.eff] += d.v!;
   if (a.characters) { const best = familyBest(a.characters); for (const k of Object.keys(FAMILY) as (keyof typeof FAMILY)[]) b[FAMILY[k].eff] += familyValue(k, best[k]); }
   // 동료(레벨 × 효과)와 부엉이 보너스

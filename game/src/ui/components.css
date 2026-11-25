@@ -79,7 +79,7 @@
 .ui-slot.locked { opacity: .45; } .ui-slot.locked::after { content: '🔒'; position: absolute; font-size: var(--fs-sm); }
 .ui-slot.short img, .ui-slot.short svg { filter: grayscale(.9) brightness(.6); }
 .ui-slot.ready { border-color: var(--c-text-good); }
-.ui-slot.r2 { border-color: var(--c-rarity-2); } .ui-slot.r3 { border-color: var(--c-rarity-3); } .ui-slot.r4 { border-color: var(--c-rarity-4); }
+.ui-slot.r2 { border-color: var(--c-rarity-2); } .ui-slot.r3 { border-color: var(--c-rarity-3); } .ui-slot.r4 { border-color: var(--c-rarity-4); } .ui-slot.r5 { border-color: var(--c-rarity-5); }
 .ui-slot .cool { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--fs-lg); background: rgba(0,0,0,.6); border-radius: inherit; }
 .ui-slot.round { border-radius: 50%; }
 
