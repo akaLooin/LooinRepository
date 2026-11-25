@@ -5,6 +5,7 @@ import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
 import { trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
+import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, labRange, labSettle, labState } from '../core/lab';
 import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
@@ -38,7 +39,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
+type Panel = 'lab' | 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -274,7 +275,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); if (f.kind === 'nest') this.game.act({ t: 'breed', op: 'visit' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); if (f.kind === 'kitchen') this.game.act({ t: 'cook', op: 'visit' }); if (f.kind === 'nest') this.game.act({ t: 'breed', op: 'visit' }); if (f.kind === 'lab') this.game.act({ t: 'lab', op: 'visit' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.gateWorld = e.to; this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -813,6 +814,46 @@ export class UI {
           }).join('') + `<p class="ui-xs ui-muted">기도문 레벨은 계정 공용이고, 켜는 것은 캐릭터마다입니다. 켠 기도문은 효과와 함께 저주도 걸립니다. 켤 수 있는 수는 기도 Lv.20마다 하나씩 늘어납니다(최대 4).</p>`;
         }
         return win(`기도 토템 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['토템', '기도문'], tab, tabAct, ['obj_shrine', 'soul_star'])}<div class="ui-tabpanel">${body}</div>`);
+      }
+      case 'lab': {
+        const acc = g.acc, lab = acc.lab, now = Date.now();
+        labSettle(acc, now);
+        const st = labState(acc), sk = c.skills.lab, need = skillXpToNext(sk.lv), me = lab.members.find((m) => m.id === c.id);
+        const head = `<div class="ui-row alchhead">${ui('obj_lab', 'mi')}<b class="ui-grow">연구 Lv.<span class="ui-accent">${sk.lv}</span> <span class="ui-xs ui-muted">${esc(c.name)} · ${me ? (st.linked.has(c.id) ? '연결됨' : '연결 안 됨') : '연구실 밖'} · 범위 ${Math.round(labRange(sk.lv, st.on.has('n_link')))}</span></b>
+          <div style="width:24%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div>${me ? '<button class="ui-btn sm" data-act="lableave">나가기</button>' : ''}</div>`;
+        let body = '';
+        if (tab === 0) {
+          let svg = `<svg class="labmap" viewBox="-6 -6 332 192" role="group" aria-label="연구판"><rect x="-6" y="-6" width="332" height="192" fill="#120e2a"/>`;
+          for (let x = 0; x <= 320; x += 20) svg += `<line x1="${x}" y1="0" x2="${x}" y2="180" stroke="#2a2452" stroke-width=".5"/>`;
+          for (let y = 0; y <= 180; y += 20) svg += `<line x1="0" y1="${y}" x2="320" y2="${y}" stroke="#2a2452" stroke-width=".5"/>`;
+          svg += `<circle cx="${LAB.main.x}" cy="${LAB.main.y}" r="${LAB.mainRange}" fill="#7affe8" fill-opacity=".06" stroke="#7affe8" stroke-opacity=".5" stroke-dasharray="3 3"/>`;
+          for (const m of lab.members) if (st.linked.has(m.id)) { const p = LAB_SPOTS[m.spot]; svg += `<circle cx="${p.x}" cy="${p.y}" r="${st.range[m.id]}" fill="#c87aff" fill-opacity=".07" stroke="#c87aff" stroke-opacity=".55" stroke-dasharray="3 3"/>`; }
+          for (const n of LAB_NODES) {
+            const on = st.on.has(n.id), locked = n.jewel && !lab.jewels.includes(n.id);
+            svg += n.jewel
+              ? `<path d="M${n.x} ${n.y - 7} l6 7 l-6 7 l-6 -7Z" fill="${locked ? '#3a3448' : on ? '#ff9ae0' : '#7a5a8a'}" stroke="${on ? '#ffffff' : '#5a4a6a'}" stroke-width="1"><title>${n.name}: ${n.desc}${locked ? ' (잠김)' : ''}</title></path>`
+              : `<rect x="${n.x - 7}" y="${n.y - 7}" width="14" height="14" rx="3" fill="${on ? '#7affe8' : '#3a3a5a'}" stroke="${on ? '#ffffff' : '#5a5a7a'}" stroke-width="1"><title>${n.name}: ${n.desc}</title></rect><rect x="${n.x - 3}" y="${n.y - 3}" width="6" height="6" fill="${on ? '#1a4a5a' : '#2a2a3a'}"/>`;
+          }
+          svg += `<rect x="${LAB.main.x - 12}" y="${LAB.main.y - 14}" width="24" height="28" rx="3" fill="#c8c4d8" stroke="#ffffff"/><rect x="${LAB.main.x - 8}" y="${LAB.main.y - 10}" width="16" height="10" fill="#2a6a7a"/><text x="${LAB.main.x}" y="${LAB.main.y + 26}" class="wsub">본체</text>`;
+          LAB_SPOTS.forEach((p, i) => {
+            const m = lab.members.find((x) => x.spot === i), ch = m ? acc.characters.find((x) => x.id === m.id) : null;
+            const mine = m?.id === c.id, linked = m && st.linked.has(m.id);
+            svg += `<g class="labspot" data-act="labspot:${i}" tabindex="0" role="button" aria-label="${ch ? `${esc(ch.name)}의 자리` : `빈 자리 ${i + 1}`}">
+              <circle cx="${p.x}" cy="${p.y}" r="9" fill="${ch ? ch.look.outfit : '#1e1a3e'}" stroke="${mine ? '#ffe066' : linked ? '#c87aff' : '#5a5a7a'}" stroke-width="${mine ? 2.4 : 1.4}" ${ch ? '' : 'stroke-dasharray="2 2"'}/>
+              ${ch ? `<text x="${p.x}" y="${p.y + 3.5}" class="labtx">${esc(ch.name.slice(0, 1))}</text><text x="${p.x}" y="${p.y + 19}" class="wsub">${esc(ch.name)}</text>` : `<text x="${p.x}" y="${p.y + 3.5}" class="labtx dim">+</text>`}</g>`;
+          });
+          svg += '</svg>';
+          body = `<div class="wmapbox" style="background:#120e2a">${svg}</div><p class="ui-xs ui-muted">빈 자리를 누르면 ${esc(c.name)}이(가) 그 자리에 섭니다. 본체(왼쪽)의 신호 범위나 연결된 캐릭터의 범위에 닿으면 연결되고, 연결된 캐릭터의 범위 안 장치(네모)와 보석(마름모)이 켜집니다. 연결된 캐릭터는 시간마다 연구 경험치를 얻어 범위가 넓어집니다.</p>`;
+        } else {
+          body = LAB_NODES.map((n) => {
+            const on = st.on.has(n.id), locked = n.jewel && !lab.jewels.includes(n.id);
+            const cost = locked && n.cost ? n.cost.map(([s, k]) => `<span class="ui-xs ${(acc.cook.spices[s] ?? 0) >= k ? '' : 'ui-bad'}">${ui(s, 'tic')}${k}</span>`).join(' ') : '';
+            const can = locked && n.cost?.every(([s, k]) => (acc.cook.spices[s] ?? 0) >= k);
+            return `<div class="ui-row line ${on ? '' : 'locked'}">${ui(`lab_${n.id}`, 'mi')}<div class="ui-grow"><b>${n.name}</b> <span class="ui-xs ${on ? 'ui-good' : 'ui-muted'}">${locked ? '잠김' : on ? '켜짐' : '꺼짐(범위 밖)'}</span><div class="ui-sm ${on ? 'ui-good' : 'ui-muted'}">${n.desc}</div>${cost ? `<div class="costrow">${cost}</div>` : ''}</div>
+              ${locked ? `<button class="ui-btn sm primary" data-act="labjewel:${n.id}" ${can ? '' : 'disabled'}>열기</button>` : ''}</div>`;
+          }).join('') + `<p class="ui-xs ui-muted">보석은 요리 향신료로 엽니다. 연 보석도 연결된 캐릭터의 범위 안에 있어야 켜집니다.</p>`;
+        }
+        return win('연구실', `${head}${tabs(['연구판', '장치·보석'], tab, tabAct, ['obj_lab', 'lab_j_ruby'])}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'nest': {
         const acc = g.acc, b = acc.breed, now = Date.now();
@@ -1448,12 +1489,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen', 'nest'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen', 'nest', 'lab'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && ((k !== 'kitchen' && k !== 'nest') || (c.maxWorld ?? 1) >= 4);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0) && (k !== 'shrine' || (c.maxWorld ?? 1) >= 3) && ((k !== 'kitchen' && k !== 'nest' && k !== 'lab') || (c.maxWorld ?? 1) >= 4);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1526,7 +1567,7 @@ export class UI {
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); if (a === 'nest') g.act({ t: 'breed', op: 'visit' }); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); if (a === 'kitchen') g.act({ t: 'cook', op: 'visit' }); if (a === 'nest') g.act({ t: 'breed', op: 'visit' }); if (a === 'lab') g.act({ t: 'lab', op: 'visit' }); break;
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
@@ -1589,6 +1630,9 @@ export class UI {
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
         break;
       }
+      case 'labspot': { const r = g.act({ t: 'lab', op: 'place', spot: +a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
+      case 'lableave': fail(g.act({ t: 'lab', op: 'leave' }).err ?? null); break;
+      case 'labjewel': { const r = g.act({ t: 'lab', op: 'jewel', id: a }); if (r.ok) { this.audio?.play('craft'); this.toast(`${LAB_NODE[a].name}을(를) 열었습니다`); } else fail(r.err ?? null); break; }
       case 'bhatch': { const n0 = g.acc.breed.pets.length; const r = g.act({ t: 'breed', op: 'hatch' }); if (r.ok) { this.audio?.play('coin'); const p = g.acc.breed.pets[n0]; this.toast(`${SPEC[p.sp].name}이(가) 태어났습니다! 힘 ${p.power}`); } else fail(r.err ?? null); break; }
       case 'brel': fail(g.act({ t: 'breed', op: 'release', uid: +a }).err ?? null); break;
       case 'bfence': fail(g.act({ t: 'breed', op: 'fence', uid: +a }).err ?? null); break;

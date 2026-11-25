@@ -7,6 +7,7 @@
 //  · 결과는 계정에 저장된 씨앗으로 정해져 기기와 서버가 같다.
 import { BonusKey } from './data';
 import type { Account } from './state';
+import { labMult } from './lab';
 
 export interface SpeciesDef { id: string; name: string; lv: number; power: number; eff: BonusKey; per: number; unit: string; color: string }
 export const SPECIES: SpeciesDef[] = [
@@ -103,14 +104,14 @@ export function teamPower(b: Breed, tid: string): number {
 }
 export const spicePerLap = (b: Breed, tid: string) => ((b.terr[tid]?.team ?? []).some((u) => petOf(b, u)?.gene === 'forager') ? 2 : 1) * (1 + Math.floor(TERRITORIES.findIndex((t) => t.id === tid) / 2));
 
-export function breedSettle(acc: Pick<Account, 'breed' | 'cook'>, now: number) {
+export function breedSettle(acc: Pick<Account, 'breed' | 'cook'> & Partial<Pick<Account, 'lab' | 'characters'>>, now: number) {
   const b = acc.breed;
   if (!b.t) { b.t = now; return; }
   if (now <= b.t) return;
   const h = (now - b.t) / 3_600_000;
   b.t = now;
   // 알
-  b.eggFrac += eggRate(b) * h;
+  b.eggFrac += eggRate(b) * labMult(acc, 'nest') * h;
   const odds = rarityOdds(b);
   while (b.eggFrac >= 1 && b.eggs.length < nestCap(b)) {
     b.eggFrac -= 1;

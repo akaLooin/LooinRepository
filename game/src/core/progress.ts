@@ -12,6 +12,7 @@ import { alchBonus } from './alchemy';
 import { buildBonus } from './build';
 import { cookBonus } from './cooking';
 import { breedBonus } from './breeding';
+import { labBonus } from './lab';
 import { prayerBonus } from './worship';
 import { postBonus } from './post';
 
@@ -144,7 +145,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLevel(c.statues?.[s.id] ?? 0).lv * s.per;
   const sign = c.sign ? SIGNS.find((x) => x.id === c.sign) : null;
@@ -161,6 +162,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   buildBonus(a.build, (k, v) => { b[k] += v; });
   cookBonus(a.cook, (k, v) => { b[k] += v; });
   breedBonus(a.breed, (k, v) => { b[k] += v; });
+  labBonus(a, (k, v) => { b[k] += v; });
   // 기도문(이 캐릭터가 켠 것: 효과 + 저주)
   prayerBonus(c, a.worship, (k, v) => { b[k] += v; });
   // 토템 축복

@@ -8,6 +8,7 @@
 import { BonusKey, MAPS } from './data';
 import type { Account } from './state';
 import { gainSkillXp } from './state';
+import { labMult } from './lab';
 
 export interface SpiceDef { id: string; name: string; map: string; color: string }
 export const SPICES: SpiceDef[] = [
@@ -78,9 +79,10 @@ export const upSpice = (idx: number, k: KitchenUp, lv: number) => SPICES[(lv + i
 export const recipeCost = (found: number) => 10 + found * 5;
 export const chefMult = (acc: Pick<Account, 'cook' | 'characters'>) =>
   1 + acc.cook.chefs.reduce((s, id) => s + (acc.characters.find((c) => c.id === id)?.skills.cooking?.lv ?? 0), 0) * COOK.chefPer;
-export const kitchenSpeed = (acc: Pick<Account, 'cook' | 'characters'>, k: Kitchen) => (1 + k.spd * COOK.spdPer) * chefMult(acc);
+type CookAcc = Pick<Account, 'cook' | 'characters'> & Partial<Pick<Account, 'lab'>>;
+export const kitchenSpeed = (acc: CookAcc, k: Kitchen) => (1 + k.spd * COOK.spdPer) * chefMult(acc) * labMult(acc, 'kitchen');
 /** 이 주방에서 시간당 나오는 접시 수(행운의 두 배 확률은 평균으로) */
-export const mealsPerHour = (acc: Pick<Account, 'cook' | 'characters'>, k: Kitchen, id: string) =>
+export const mealsPerHour = (acc: CookAcc, k: Kitchen, id: string) =>
   (3600 / COOK.secs[MEAL[id].tier]) * kitchenSpeed(acc, k) * (1 + k.luck * COOK.luckPer);
 export const recipeRate = (k: Kitchen) => 1 + k.fire * COOK.firePer;
 
@@ -100,7 +102,7 @@ export function cookSettle(acc: Account, now: number) {
   const h = (now - k.t) / 3_600_000;
   k.t = now;
   for (const sp of SPICES) {
-    const r = spiceRate(acc, sp);
+    const r = spiceRate(acc, sp) * labMult(acc, 'spice');
     if (r) k.bank[sp.id] = Math.min(r * COOK.bankHours, (k.bank[sp.id] ?? 0) + r * h);
   }
   let xp = 0;

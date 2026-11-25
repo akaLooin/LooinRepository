@@ -903,3 +903,58 @@ describe('번식(번식 둥지)', () => {
     expect(acc.breed.pets.length).toBe(0); expect(acc.breed.fence).toEqual([]);
   });
 });
+
+import { labState as lSt, labMult as lMult, LAB_NODE as LN } from '../src/core/lab';
+import { kitchenSpeed as kSpd } from '../src/core/cooking';
+describe('연구실', () => {
+  const H = 3_600_000;
+  const ready = () => {
+    const { acc, c } = setup(); c.maxWorld = 4; c.mapId = 'nebtown';
+    const c2 = JSON.parse(JSON.stringify(c)); c2.id = c.id + 1; c2.name = '둘째'; acc.characters.push(c2);
+    return { acc, c, c2: acc.characters[1] };
+  };
+  it('4월드 전에는 쓸 수 없다', () => {
+    const { acc, c } = ready(); c.maxWorld = 3;
+    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, H).ok).toBe(false);
+  });
+  it('본체 범위에 선 캐릭터가 연결되고, 그 범위의 장치가 켜져 보너스가 생긴다', () => {
+    const { acc, c } = ready();
+    const xp0 = derive(c, acc).xpMult;
+    expect(applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, H).ok).toBe(true);
+    const st = lSt(acc);
+    expect(st.linked.has(c.id)).toBe(true);
+    expect(st.on.has('n_xp')).toBe(true);
+    expect(derive(c, acc).xpMult).toBeGreaterThan(xp0);
+    // 자동 국자: 주방 속도 ×1.25
+    expect(st.on.has('n_kitchen')).toBe(true);
+    expect(kSpd(acc, acc.cook.kitchens[0])).toBeCloseTo(1.25, 5);
+    // 같은 자리에 다른 캐릭터는 못 선다
+    expect(applyAction(acc, 1, { t: 'lab', op: 'place', spot: 0 }, H).ok).toBe(false);
+  });
+  it('연결은 사슬로 이어지고, 연구 레벨이 오르면 범위가 넓어진다', () => {
+    const { acc, c, c2 } = ready();
+    applyAction(acc, 0, { t: 'lab', op: 'place', spot: 0 }, H);
+    applyAction(acc, 1, { t: 'lab', op: 'place', spot: 3 }, H);
+    expect(lSt(acc).linked.has(c2.id)).toBe(false); // 너무 멀다
+    c2.skills.lab = { lv: 10, xp: 0 };
+    expect(lSt(acc).linked.has(c2.id)).toBe(true);
+    expect(lSt(acc).linked.has(c.id)).toBe(true);
+    // 연결된 캐릭터만 시간마다 연구 경험치
+    c2.skills.lab = { lv: 1, xp: 0 };
+    applyAction(acc, 0, { t: 'lab', op: 'visit' }, H * 3);
+    expect(c.skills.lab.xp + (c.skills.lab.lv - 1) * 1000).toBeGreaterThan(0);
+    expect(c2.skills.lab).toEqual({ lv: 1, xp: 0 });
+    expect(applyAction(acc, 1, { t: 'lab', op: 'leave' }, H * 3).ok).toBe(true);
+    expect(acc.lab.members.length).toBe(1);
+  });
+  it('보석은 향신료로 열고, 범위 안이면 켜진다', () => {
+    const { acc } = ready();
+    applyAction(acc, 0, { t: 'lab', op: 'place', spot: 1 }, H);
+    expect(applyAction(acc, 0, { t: 'lab', op: 'jewel', id: 'j_ruby' }, H).ok).toBe(false);
+    for (const [s, k] of LN.j_ruby.cost!) acc.cook.spices[s] = k;
+    expect(applyAction(acc, 0, { t: 'lab', op: 'jewel', id: 'j_ruby' }, H).ok).toBe(true);
+    expect(acc.cook.spices.sp_salt).toBe(0);
+    expect(lSt(acc).on.has('j_ruby')).toBe(true);
+    expect(lMult(acc, 'labxp')).toBe(1);
+  });
+});

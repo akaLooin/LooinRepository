@@ -4,6 +4,7 @@ import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
+import { labSettle, leaveLab, placeInLab, unlockJewel } from './lab';
 import { BreedUp, breedSettle, hatchEgg, releasePet, toggleFence, toggleTeam, upBreed } from './breeding';
 import { KitchenUp, buyKitchen, claimSpices, cookSettle, levelMeal, setMeal, startRecipe, toggleChef, upKitchen } from './cooking';
 import { finishWorship, togglePrayer, upPrayer } from './worship';
@@ -81,6 +82,7 @@ export type Action =
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
   | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
+  | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
@@ -186,6 +188,14 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'run') { const r = finishWorship(acc, c, a.id, a.kills ?? 0, !!a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
       if (a.op === 'up') return res(upPrayer(acc, c, a.id));
       return res(togglePrayer(acc, c, a.id));
+    }
+    case 'lab': {
+      if ((c.maxWorld ?? 1) < 4) return fail('4월드 성운 정거장의 연구실에서 할 수 있습니다');
+      if (a.op === 'visit') { labSettle(acc, now); return ok(); }
+      if (a.op === 'place') return res(placeInLab(acc, c, a.spot ?? -1, now));
+      if (a.op === 'leave') return res(leaveLab(acc, c, now));
+      if (a.op === 'jewel') return res(unlockJewel(acc, a.id ?? '', now));
+      return fail('없는 행동');
     }
     case 'breed': {
       if ((c.maxWorld ?? 1) < 4) return fail('4월드 성운 정거장의 번식 둥지에서 할 수 있습니다');

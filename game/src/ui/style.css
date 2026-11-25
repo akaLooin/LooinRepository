@@ -276,3 +276,11 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 /* 덫 오두막: 시간 버튼 */
 .trapbtns { gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .trapbtns .ui-btn { line-height: 1.1; min-width: 52px; }
+
+/* 연구실 연구판 */
+.labmap { display: block; width: 100%; height: auto; max-height: min(38vh, 300px); margin: 0 auto; }
+.labmap .labspot { cursor: pointer; }
+.labmap .labspot:hover circle, .labmap .labspot:focus circle { stroke: #ffe066; }
+.labmap .labtx { font: bold 9px sans-serif; fill: #ffffff; text-anchor: middle; pointer-events: none; }
+.labmap .labtx.dim { fill: #5a5a7a; }
+.labmap .wsub { font-size: 6px; fill: #c8c4e8; text-anchor: middle; }

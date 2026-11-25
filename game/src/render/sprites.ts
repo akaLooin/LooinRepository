@@ -986,6 +986,16 @@ function buildObjects() {
   for (const x of [6, 12, 26, 32]) p.line(x, 27, x + 3, 24, '#e0c080');
   p.volume();
   p.outline().save('obj_nest');
+  // 연구실: 화면이 빛나는 기계 + 안테나 + 플라스크
+  p = new Paint(36, 36);
+  p.rect(3, 10, 26, 25, '#8a86a8'); p.rect(3, 10, 26, 2, '#c8c4d8'); p.rect(3, 33, 26, 2, '#54506e');
+  p.rect(6, 14, 20, 11, '#1a3a4a'); for (const [x, y] of [[8, 18], [12, 16], [16, 20], [20, 17], [24, 19]] as const) p.rect(x, y, 2, 1, '#7affe8');
+  p.line(8, 22, 23, 15, '#4ad0ff');
+  for (const [x, c] of [[8, '#e25d4e'], [13, '#f6c945'], [18, '#5fb859']] as const) p.disc(x, 29, 1.6, 1.6, c);
+  p.rect(15, 2, 1, 8, '#54506e'); p.disc(15.5, 2, 2, 2, '#ff6a8a');
+  p.rect(30, 22, 4, 4, '#e8f4fa'); p.disc(32, 30, 4, 4, '#e8f4fa'); p.disc(32, 31, 3, 2.4, '#b48aff');
+  p.volume();
+  p.outline().save('obj_lab');
   // 기도 토템: 얼음 결정이 박힌 흰 돌기둥 + 빛나는 눈 + 위쪽 별
   p = new Paint(24, 44);
   p.rect(6, 10, 12, 34, '#c8d4e4'); p.rect(3, 16, 18, 4, '#8aa0b8'); p.rect(3, 30, 18, 4, '#8aa0b8');
@@ -1485,6 +1495,13 @@ function buildIcons() {
       if (i >= 6) p.set(8, 11, '#e25d4e');
       if (i >= 10) { p.rect(5, 0, 6, 1, '#f6c945'); }
     });
+  }
+  // 연구실 장치·보석
+  for (const [id, col] of [['n_xp', '#7affe8'], ['n_kitchen', '#ff9a3a'], ['n_drop', '#f6c945'], ['n_nest', '#ff9ae0'], ['n_link', '#4ad0ff'], ['n_dmg', '#e25d4e'], ['n_spice', '#b4a8c4'], ['n_afk', '#b48aff']] as const) {
+    icon(`lab_${id}`, (p) => { p.rect(2, 3, 12, 11, '#8a86a8'); p.rect(2, 3, 12, 1, '#c8c4d8'); p.rect(4, 5, 8, 6, '#1a2a3a'); p.disc(8, 8, 2.4, 2.4, col); p.set(7, 7, '#ffffff'); p.rect(5, 12, 2, 1, col); p.rect(9, 12, 2, 1, '#5fb859'); });
+  }
+  for (const [id, col] of [['j_amethyst', '#b48aff'], ['j_ruby', '#e25d4e'], ['j_topaz', '#f6c945'], ['j_emerald', '#5fb859'], ['j_sapphire', '#4a8ae8'], ['j_pearl', '#f4f0fa']] as const) {
+    icon(`lab_${id}`, (p) => { for (let y = 0; y < 13; y++) { const w = y < 4 ? 3 + y * 1.5 : Math.max(0, 9 - (y - 4)); p.rect(Math.round(8 - w), 2 + y, Math.round(w * 2), 1, y < 4 ? mix(col, '#ffffff', 0.35) : col); } p.set(6, 4, '#ffffff'); p.set(7, 5, '#ffffff'); });
   }
   // 건설: 건물 아이콘(지붕 색 + 상징)
   for (const [id, roof, sym] of [['b_woodshed', '#8a5a3c', '#e8c08a'], ['b_minehouse', '#6a7480', '#7ae0ff'], ['b_dock', '#4a8ae8', '#c8ecff'], ['b_greenhouse', '#5fb859', '#f6c945'], ['b_drill', '#d9574a', '#f2f0e6'], ['b_hearth', '#e8833a', '#ffd06a'], ['b_library', '#8a6fd1', '#f2f0e6'], ['b_market', '#f2c14e', '#a8782a'], ['b_tower', '#5a6a8a', '#fff0a8'], ['b_attic', '#3a4a7a', '#c4ccff']] as const) {

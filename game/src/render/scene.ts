@@ -417,7 +417,7 @@ export class GameScene extends Phaser.Scene {
         this.npcs.push({ id: npc.id, img, mark, x: f.x, y: f.y });
         continue;
       }
-      const key = f.kind === 'anvil' ? 'obj_craft' : f.kind === 'storage' ? 'obj_storage' : f.kind === 'forge' ? 'obj_forge' : f.kind === 'stamps' ? 'obj_stamps' : f.kind === 'tasks' ? 'obj_tasks' : f.kind === 'statues' ? 'obj_statues' : f.kind === 'pets' ? 'obj_pets' : f.kind === 'owl' ? 'obj_owl' : f.kind === 'games' ? 'obj_games' : f.kind === 'post' ? 'obj_post' : f.kind === 'traps' ? 'obj_traps' : f.kind === 'build' ? 'obj_build' : f.kind === 'shrine' ? 'obj_shrine' : f.kind === 'kitchen' ? 'obj_kitchen' : f.kind === 'nest' ? 'obj_nest' : f.kind === 'alchemy' ? 'obj_alchemy' : f.kind === 'totem' ? 'obj_totem' : 'obj_shop';
+      const key = f.kind === 'anvil' ? 'obj_craft' : f.kind === 'storage' ? 'obj_storage' : f.kind === 'forge' ? 'obj_forge' : f.kind === 'stamps' ? 'obj_stamps' : f.kind === 'tasks' ? 'obj_tasks' : f.kind === 'statues' ? 'obj_statues' : f.kind === 'pets' ? 'obj_pets' : f.kind === 'owl' ? 'obj_owl' : f.kind === 'games' ? 'obj_games' : f.kind === 'post' ? 'obj_post' : f.kind === 'traps' ? 'obj_traps' : f.kind === 'build' ? 'obj_build' : f.kind === 'shrine' ? 'obj_shrine' : f.kind === 'kitchen' ? 'obj_kitchen' : f.kind === 'nest' ? 'obj_nest' : f.kind === 'lab' ? 'obj_lab' : f.kind === 'alchemy' ? 'obj_alchemy' : f.kind === 'totem' ? 'obj_totem' : 'obj_shop';
       const img = keep(this.add.image(f.x, f.y + 1, key).setOrigin(0.5, 1).setDepth(20).setScale(ART));
       keep(label(this, FACILITY_NAMES[f.kind], 6.5, '#fff3d6').setPosition(f.x, f.y - img.displayHeight - 3).setDepth(22));
     }
