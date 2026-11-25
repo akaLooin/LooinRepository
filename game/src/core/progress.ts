@@ -7,6 +7,7 @@ import {
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
 import { owlValue } from './companions';
+import { blessValue } from './minigames';
 
 export type Bonus = Record<BonusKey, number>;
 export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, acc: 0 });
@@ -137,7 +138,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLevel(c.statues?.[s.id] ?? 0).lv * s.per;
   const sign = c.sign ? SIGNS.find((x) => x.id === c.sign) : null;
@@ -147,6 +148,8 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   // 동료(레벨 × 효과)와 부엉이 보너스
   for (const p of PETS) b[p.eff] += (a.pets?.[p.id] ?? 0) * p.per;
   if (a.owl) { b.dmg += owlValue(a.owl, 'dmg'); b.xp += owlValue(a.owl, 'xp'); b.drop += owlValue(a.owl, 'drop'); b.afk += owlValue(a.owl, 'afk'); }
+  // 토템 축복
+  b.dmg += blessValue(a.totem, 'dmg'); b.xp += blessValue(a.totem, 'xp'); b.afk += blessValue(a.totem, 'afk');
   const set = c.cardSet ? CARD_SETS.find((s) => s.id === c.cardSet) : null;
   if (set && a.cards) { const t = setTier({ cards: a.cards }, set); if (t > 0) b[set.eff] += set.v[t - 1]; }
   return b;

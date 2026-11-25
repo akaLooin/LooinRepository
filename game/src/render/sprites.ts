@@ -516,6 +516,18 @@ function buildObjects() {
   p.rect(12, 4, 12, 3, '#6a7480'); p.rect(10, 3, 5, 2, '#9aa3ad'); p.rect(15, 7, 6, 3, '#555e69'); p.rect(13, 3, 10, 1, '#c9d1d9');
   p.outline().save('obj_craft');
 
+  // 미니게임장: 깃발 달린 작은 천막
+  p = new Paint(34, 30);
+  for (let y = 0; y < 14; y++) p.rect(17 - y, 6 + y, y * 2 + 1, 1, y % 4 < 2 ? '#e25d4e' : '#f2f0e6');
+  p.rect(4, 20, 27, 10, '#c9805a'); p.rect(14, 22, 7, 8, '#5a3a2a'); p.rect(17, 0, 1, 7, '#8a5a3c'); p.rect(18, 0, 6, 4, '#f6c945');
+  p.outline().save('obj_games');
+  // 수호 토템: 새겨진 나무 기둥 + 빛나는 눈
+  p = new Paint(22, 40);
+  p.rect(5, 6, 12, 34, '#8a6a4a'); p.rect(2, 12, 18, 4, '#6a4a32'); p.rect(2, 26, 18, 4, '#6a4a32');
+  p.disc(11, 5, 7, 5, '#5fb88a'); p.rect(7, 18, 3, 3, '#7ef0ff'); p.rect(12, 18, 3, 3, '#7ef0ff'); p.rect(8, 33, 6, 2, '#3a2a1a');
+  p.rect(6, 7, 2, 30, '#a8885a');
+  p.outline().save('obj_totem');
+
   // 동료 둥지: 짚 둥지 + 작은 나무 집
   p = new Paint(32, 26);
   p.rect(6, 6, 20, 12, '#c9805a'); for (let i = 0; i < 12; i++) p.rect(4 + i, 6 - Math.min(i, 11 - i) / 2, 24 - i * 2, 1, '#d9574a');

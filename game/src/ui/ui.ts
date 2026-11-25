@@ -13,6 +13,8 @@ import {
   minibossOpen,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
+import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, playsLeft, spikeOpen, totemRunsLeft } from '../core/minigames';
+import { PlayKind, runGame } from './minigames';
 import { owlCost, owlPerHour, owlSettle, petOfWeek, petReady } from '../core/companions';
 import { STARS, achieveReady, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
@@ -23,7 +25,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -578,6 +580,28 @@ export class UI {
         return win('잡화점', `${rows}<p class="ui-xs ui-muted">판매는 아이템 창에서 합니다. 수량은 매일 다시 채워집니다.</p>`);
       }
 
+      case 'games': {
+        const acc = g.acc, now = Date.now();
+        const rows = (Object.keys(GAMES) as GameKind[]).map((k) => {
+          const d = GAMES[k], left = playsLeft(acc, k, now), open = k !== 'spike' || spikeOpen(acc, now);
+          const r = gameReward(c, k, d.max);
+          const reward = [tile(iconUrl(ITEM_ICON.coin), `~${r.coins}`, `최고 점수면 코인 ${r.coins}`), ...r.items.map(([id, n]) => tile(iconUrl(ITEM_ICON[id]), `~${n}`, ITEMS[id].name)), r.skill ? tile(iconUrl('ui_xp'), `~${r.skill.xp}`, `${SKILL_NAMES[r.skill.key]} 경험치`) : ''].join('');
+          const why = !open ? `매시 정각~${SPIKE_WINDOW}분에 열림` : !left ? '오늘은 끝' : '';
+          return `<div class="ui-row line"><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-muted">최고 ${acc.mini.best[k] ?? 0}점 · 오늘 ${left}판 남음</span><div class="ui-xs ui-muted">${d.desc}</div><div class="qline">${reward}</div></div>
+            <button class="ui-btn ${why ? '' : 'primary'}" data-act="play:${k}" ${why ? 'disabled' : ''}>${why || '시작'}</button></div>`;
+        }).join('');
+        return win('미니게임장', `${rows}<p class="ui-xs ui-muted">보상은 점수에 비례합니다(표시된 값은 최고 점수일 때).</p>`);
+      }
+      case 'totem': {
+        const acc = g.acc, left = totemRunsLeft(acc, Date.now());
+        const rows = (Object.keys(BLESS) as BlessKey[]).map((k) => {
+          const b = BLESS[k], lv = acc.totem.bless[k], max = lv >= b.max, cost = blessCost(acc, k);
+          return `<div class="ui-row line"><div class="ui-grow"><b>${b.name}</b> <span class="ui-xs ui-accent">${lv}/${b.max}</span><div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">+${Math.round(Math.max(1, lv) * b.per * 10) / 10}${b.unit}${lv ? '' : ' (1단계)'}</div></div>
+            <button class="ui-btn sm" data-act="bless:${k}" ${!max && acc.totem.souls >= cost ? '' : 'disabled'}>${max ? '최대' : `영혼 ${cost}`}</button></div>`;
+        }).join('');
+        return win('수호 토템 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="stack"><p class="ui-sm">양쪽에서 다가오는 혼령을 눌러 토템을 지키세요(60초). 잡은 혼령의 절반이 영혼이 되고, 끝까지 지키면 1.5배.</p>
+          <div class="ui-row"><b class="ui-grow">영혼 <span class="ui-accent">${acc.totem.souls}</span> <span class="ui-xs ui-muted">최고 ${acc.totem.best}마리</span></b><button class="ui-btn primary" data-act="play:totem" ${left ? '' : 'disabled'}>${left ? `지키기 (오늘 ${left}번)` : '오늘은 끝'}</button></div></div>${rows}`);
+      }
       case 'pets': {
         const acc = g.acc, now = Date.now(), ready = petReady(acc, now), next = petOfWeek(acc, now);
         const grid = PETS.map((p) => {
@@ -1020,6 +1044,18 @@ export class UI {
       case 'pslot': this.prodSlot = +a; break;
       case 'fslot': this.forgeSel = +a; break;
       case 'ssel': this.stampSel = a; break;
+      case 'play': {
+        if (!c) break;
+        const kind = a as PlayKind, name = kind === 'totem' ? '수호 토템' : GAMES[kind as GameKind].name;
+        this.panel = null; this.refresh(true);
+        runGame(kind, name, (r) => {
+          const res = kind === 'totem' ? g.act({ t: 'totem', kills: r.kills, survived: r.survived }) : g.act({ t: 'game', kind: kind as GameKind, score: r.score });
+          if (res.ok) this.toast(kind === 'totem' ? `영혼 ${res.n}개를 얻었습니다` : `${name} ${r.score}점! 보상을 받았습니다`); else this.toast(res.err ?? '보상을 받지 못했습니다');
+          this.open(kind === 'totem' ? 'totem' : 'games'); this.refresh(true);
+        });
+        break;
+      }
+      case 'bless': fail(g.act({ t: 'bless', k: a as BlessKey }).err ?? null); break;
       case 'pet': { const id = petOfWeek(g.acc, Date.now()), r = g.act({ t: 'pet' }); if (r.ok) this.toast(`${PETS.find((p) => p.id === id)!.name}이(가) 찾아왔습니다! (Lv.${g.acc.pets[id]})`); else fail(r.err ?? null); break; }
       case 'owl': fail(g.act({ t: 'owl', k: a as OwlUp }).err ?? null); break;
       case 'arenaclaim': {

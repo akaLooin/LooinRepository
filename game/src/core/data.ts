@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing';
 export type GatherSkill = 'mining' | 'chopping';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer';
 export type WeaponType = 'sword' | 'bow' | 'wand';
@@ -87,7 +87,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼',
 };
@@ -226,7 +226,7 @@ const maps: MapDef[] = [
     spawns: [{ monster: 'mossblob', count: 8 }],
     nodes: [{ node: 'oak', x: 95 }, { node: 'oak', x: 705 }],
     ropes: [{ x: 205, top: -48, bottom: 0 }, { x: 445, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }],
-    facilities: [],
+    facilities: [{ kind: 'games', x: 660, y: 0 }],
     portals: [{ x: 24, to: 'town', toX: 620, toY: -48 }, { x: 796, to: 'hills', toX: 50, reqKills: 15 }, { x: 590, y: -96, to: 'arena', toX: 60, key: 'arena_ticket', label: '콜로세움' }] },
   { id: 'hills', name: '자갈 언덕', width: 920, theme: 'hills',
     platforms: [{ x: 110, y: -48, w: 180 }, { x: 370, y: -48, w: 140 }, { x: 570, y: -48, w: 230 }, { x: 630, y: -96, w: 140 }],
@@ -250,7 +250,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 420, y: -48, w: 180 }, { x: 470, y: -96, w: 120 }, { x: 690, y: -48, w: 190 }],
     spawns: [{ monster: 'mudturtle', count: 8 }], nodes: [{ node: 'willow', x: 90 }, { node: 'willow', x: 640 }],
     ropes: [{ x: 170, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'forest', toX: 880, toY: -48 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
+    facilities: [{ kind: 'totem', x: 300, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 880, toY: -48 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
   { id: 'cave', name: '그늘 동굴', width: 900, theme: 'cave',
     platforms: [{ x: 110, y: -48, w: 160 }, { x: 330, y: -48, w: 240 }, { x: 380, y: -96, w: 140 }, { x: 650, y: -48, w: 180 }],
     spawns: [{ monster: 'glowbat', count: 8 }], nodes: [{ node: 'bluerock', x: 300 }, { node: 'willow', x: 620 }],

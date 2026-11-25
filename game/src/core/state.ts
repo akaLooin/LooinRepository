@@ -3,6 +3,7 @@ import { bribeBonus, stampBonus } from './stamps';
 import { meritValue, recipeTaskLock } from './tasks';
 import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
+import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
   AFK_BASE, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
@@ -106,6 +107,9 @@ export interface Account {
   pets: Record<string, number>;
   petWeek: number;
   owl: Owl;
+  /** 미니게임 기록(오늘 판수·최고 점수), 토템 디펜스(영혼·축복) */
+  mini: MiniState;
+  totem: TotemState;
   characters: Character[];
   active: number;
   nextId: number;
@@ -114,7 +118,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petWeek: 0, owl: newOwl(), characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petWeek: 0, owl: newOwl(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -170,7 +174,7 @@ export function equipStats(c: Character): Required<ItemStats> {
 
 export type Cards = Record<string, number>;
 /** 능력치 계산에 쓰는 계정 공용 보너스 출처(카드·우표·뇌물 …) */
-export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop' | 'achievements' | 'characters' | 'pets' | 'owl'>>;
+export type AccBonus = Pick<Account, 'cards'> & Partial<Pick<Account, 'stamps' | 'bribes' | 'meritShop' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem'>>;
 const NO_ACC: AccBonus = { cards: {} };
 
 export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
@@ -753,7 +757,7 @@ export function deserialize(json: string | null): Account | null {
     a.stamps ??= {};
     a.bribes ??= 0;
     a.tasks ??= {}; a.merit ??= 0; a.meritShop ??= {};
-    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {}; a.petWeek ??= 0; a.owl ??= newOwl();
+    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {}; a.petWeek ??= 0; a.owl ??= newOwl(); a.mini ??= newMini(); a.totem ??= newTotem();
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];

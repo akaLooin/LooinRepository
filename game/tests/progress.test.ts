@@ -232,3 +232,34 @@ describe('가방 칸 나누기', () => {
     expect(c.inventory.filter((s) => s.id === 'moss').map((s) => s.qty)).toEqual([STACK_BASE - 2]);
   });
 });
+
+import { GAMES, TOTEM } from '../src/core/minigames';
+describe('미니게임·토템', () => {
+  it('미니게임: 점수에 비례한 보상, 점수 상한, 하루 판수', () => {
+    const { acc, c } = setup();
+    const t = new Date('2026-11-25T10:30:00').getTime();
+    const coins = acc.coins;
+    expect(applyAction(acc, 0, { t: 'game', kind: 'chop', score: 9999 }, t).ok).toBe(true);
+    expect(acc.mini.best.chop).toBe(GAMES.chop.max); // 상한
+    expect(acc.coins).toBeGreaterThan(coins);
+    expect(c.skills.chopping.lv).toBeGreaterThan(1);
+    for (let i = 1; i < GAMES.chop.daily; i++) applyAction(acc, 0, { t: 'game', kind: 'chop', score: 10 }, t);
+    expect(applyAction(acc, 0, { t: 'game', kind: 'chop', score: 10 }, t).err).toMatch(/오늘/);
+    expect(applyAction(acc, 0, { t: 'game', kind: 'chop', score: 10 }, t + 86400_000).ok).toBe(true); // 다음 날
+  });
+  it('함정 피하기는 매시 정각~10분, 시간마다 한 번', () => {
+    const { acc } = setup();
+    const at = (m: number) => new Date(`2026-11-25T10:${String(m).padStart(2, '0')}:00`).getTime();
+    expect(applyAction(acc, 0, { t: 'game', kind: 'spike', score: 50 }, at(30)).err).toMatch(/열리지/);
+    expect(applyAction(acc, 0, { t: 'game', kind: 'spike', score: 50 }, at(3)).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'game', kind: 'spike', score: 50 }, at(5)).ok).toBe(false);
+  });
+  it('토템: 혼령 수로 영혼, 끝까지 지키면 1.5배, 영혼으로 축복', () => {
+    const { acc, c } = setup();
+    expect(applyAction(acc, 0, { t: 'totem', kills: 40, survived: true }, 0).n).toBe(30);
+    expect(applyAction(acc, 0, { t: 'totem', kills: 5000, survived: false }, 0).n).toBe(TOTEM.maxKills / 2);
+    const d0 = derive(c, acc).dmg;
+    expect(applyAction(acc, 0, { t: 'bless', k: 'dmg' }, 0).ok).toBe(true);
+    expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+  });
+});
