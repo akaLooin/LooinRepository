@@ -1,17 +1,17 @@
 # Graph Report - LooinRepository  (2026-11-25)
 
 ## Corpus Check
-- 97 files · ~122,761 words
+- 97 files · ~124,426 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 31 file(s) not represented in the graph (top: .xml 10, (none) 9, .csv 2)
 
 ## Summary
-- 1350 nodes · 3458 edges · 87 communities (64 shown, 23 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 119 edges (avg confidence: 0.86)
+- 1350 nodes · 3460 edges · 87 communities (64 shown, 23 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 120 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `df9229e6`
+- Built from commit: `32176951`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -104,15 +104,15 @@
 7. `derive()` - 33 edges
 8. `Character` - 27 edges
 9. `removeItem()` - 26 edges
-10. `boot()` - 23 edges
+10. `buildApp()` - 23 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `장비 겉모습 (game/src/render/gear.ts)` --references--> `remoteGear()`  [INFERRED]
-  replica/design/art-spec.md → game/src/render/gear.ts
 - `권한 모델 (이 게임에서 가장 중요한 결정)` --references--> `computeAfk()`  [INFERRED]
   replica/architecture.md → game/src/core/afk.ts
 - `구조` --references--> `computeAfk()`  [INFERRED]
   replica/backend.md → game/src/core/afk.ts
+- `장비 겉모습 (game/src/render/gear.ts)` --references--> `remoteGear()`  [INFERRED]
+  replica/design/art-spec.md → game/src/render/gear.ts
 - `색` --references--> `ramp()`  [INFERRED]
   replica/design/art-spec.md → game/src/render/sprites.ts
 - `색` --references--> `lineOf()`  [INFERRED]
@@ -125,8 +125,8 @@
 - 2-file cycle: `game/src/core/progress.ts -> game/src/core/state.ts -> game/src/core/progress.ts`
 - 2-file cycle: `game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/stamps.ts`
 - 3-file cycle: `game/src/core/forge.ts -> game/src/core/stamps.ts -> game/src/core/state.ts -> game/src/core/forge.ts`
-- 3-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/progress.ts -> game/src/core/minigames.ts`
 - 3-file cycle: `game/src/core/companions.ts -> game/src/core/state.ts -> game/src/core/progress.ts -> game/src/core/companions.ts`
+- 3-file cycle: `game/src/core/minigames.ts -> game/src/core/state.ts -> game/src/core/progress.ts -> game/src/core/minigames.ts`
 
 ## Communities (87 total, 23 thin omitted)
 
@@ -275,7 +275,7 @@ Cohesion: 0.18
 Nodes (17): arch(), blob(), deco(), FILL, flower(), house(), MapRegion, peak() (+9 more)
 
 ### Community 56 - "Paint"
-Cohesion: 0.31
+Cohesion: 0.32
 Nodes (11): bigEye(), buildAll(), buildIcons(), buildItems(), buildMonsters(), buildObjects(), buildTheme(), buildWeapons() (+3 more)
 
 ### Community 57 - "mannequin.ts"
@@ -392,16 +392,16 @@ Nodes (3): 구조, 멀티 전환을 위한 설계, SaveBackend
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Game` connect `Game` to `World`, `Account`, `ui.ts`, `scene.ts`, `Live`, `main.ts`, `.constructor`, `game.ts`, `Net`, `UI`, `world.ts`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `UI` connect `UI` to `tasks.ts`, `ui.ts`, `forge.ts`, `progress.ts`, `main.ts`, `.panelHtml`, `ui`, `afkRates`?**
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Should `actions.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._
-- **Why does `World` connect `World` to `tasks.ts`, `state.ts`, `Game`, `scene.ts`, `progress.test.ts`, `api.test.ts`, `game.ts`, `world.ts`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+- **Why does `Game` connect `Game` to `World`, `Account`, `ui.ts`, `scene.ts`, `Live`, `main.ts`, `.constructor`, `game.ts`, `Net`, `UI`, `world.ts`?**
+  _High betweenness centrality (0.034) - this node is a cross-community bridge._
 - **Should `game/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07308377896613191 - nodes in this community are weakly interconnected._
-- **Why does `UI` connect `UI` to `tasks.ts`, `ui.ts`, `forge.ts`, `progress.ts`, `main.ts`, `.panelHtml`, `ui`, `afkRates`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `World` connect `World` to `tasks.ts`, `state.ts`, `Game`, `scene.ts`, `progress.test.ts`, `api.test.ts`, `game.ts`, `world.ts`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
 - **Should `server/package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.09686609686609686 - nodes in this community are weakly interconnected._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**

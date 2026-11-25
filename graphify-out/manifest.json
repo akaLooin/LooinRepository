@@ -144,9 +144,9 @@
     "semantic_hash": ""
   },
   "game/src/core/data.ts": {
-    "mtime": 1795576353.6125069,
-    "seen": 1795576796.0439618,
-    "ast_hash": "5769341a7b6dd36c820064954ef15dcd",
+    "mtime": 1795577638.0634756,
+    "seen": 1795577829.0072742,
+    "ast_hash": "0e002d49c01a96e03fb4335e7c16d7d4",
     "semantic_hash": ""
   },
   "game/src/core/rng.ts": {
@@ -156,15 +156,15 @@
     "semantic_hash": ""
   },
   "game/src/core/state.ts": {
-    "mtime": 1795576474.6205142,
-    "seen": 1795576796.0440967,
-    "ast_hash": "320d90a6466e84496895823489c2bc50",
+    "mtime": 1795577638.0641828,
+    "seen": 1795577829.007378,
+    "ast_hash": "3c63ebb95d21533affccde72f9cfece0",
     "semantic_hash": ""
   },
   "game/src/core/world.ts": {
-    "mtime": 1795573268.7221458,
-    "seen": 1795573375.735352,
-    "ast_hash": "8470c5ace6fe19ce7461602f2496c389",
+    "mtime": 1795577638.0651495,
+    "seen": 1795577829.0074046,
+    "ast_hash": "1b746543a7e2adeac3198da99dd00f1c",
     "semantic_hash": ""
   },
   "game/src/game.ts": {
@@ -180,27 +180,27 @@
     "semantic_hash": ""
   },
   "game/src/render/scene.ts": {
-    "mtime": 1795576695.0553584,
-    "seen": 1795576796.0442402,
-    "ast_hash": "4bf924a5f0b509a17f3be000d31fd27d",
+    "mtime": 1795577652.040465,
+    "seen": 1795577829.0075214,
+    "ast_hash": "0ec447eb89bc7bb6c0e4fe5ccf6ff100",
     "semantic_hash": ""
   },
   "game/src/render/sprites.ts": {
-    "mtime": 1795576736.3873172,
-    "seen": 1795576796.0442421,
-    "ast_hash": "955445f47876f8f35ec32eb52c190433",
+    "mtime": 1795577724.8335974,
+    "seen": 1795577829.007523,
+    "ast_hash": "63fd4515e86a56c73e20b05f842a6ce8",
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1795576695.057227,
-    "seen": 1795576796.044304,
-    "ast_hash": "6a159b311d3c15f143fd490a751919a7",
+    "mtime": 1795577652.0434442,
+    "seen": 1795577829.0075853,
+    "ast_hash": "b602e7e502c966a9bb2b12e416dc0d24",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
-    "mtime": 1795576601.6582363,
-    "seen": 1795576796.0443065,
-    "ast_hash": "a030d2b5cba4cc2f811234d7afc218a7",
+    "mtime": 1795577738.4365892,
+    "seen": 1795577829.0076075,
+    "ast_hash": "d7dff99e78e716048092f3809282c11c",
     "semantic_hash": ""
   },
   "game/tsconfig.json": {
@@ -810,9 +810,9 @@
     "semantic_hash": ""
   },
   "game/src/core/sync.ts": {
-    "mtime": 1795576474.623482,
-    "seen": 1795576796.0440981,
-    "ast_hash": "02686cb5368f4c8200790d6dc4b8362d",
+    "mtime": 1795577638.0646217,
+    "seen": 1795577829.0073798,
+    "ast_hash": "e090dcb4df37618ae25938080733ba91",
     "semantic_hash": ""
   },
   "game/src/net.ts": {
@@ -840,9 +840,9 @@
     "semantic_hash": ""
   },
   "server/src/app.ts": {
-    "mtime": 1795573209.1590183,
-    "seen": 1795573375.7358036,
-    "ast_hash": "cb2f1ec66aa1052624b1d296e79c9348",
+    "mtime": 1795577652.0413868,
+    "seen": 1795577829.00782,
+    "ast_hash": "96771787f911fcb270f89cfcbccb9cb5",
     "semantic_hash": ""
   },
   "server/src/index.ts": {
@@ -1062,9 +1062,9 @@
     "semantic_hash": ""
   },
   "game/src/core/tasks.ts": {
-    "mtime": 1795567077.4313915,
-    "seen": 1795567384.1798081,
-    "ast_hash": "515ccea7df50f8898a7a0b4cab131483",
+    "mtime": 1795577765.240585,
+    "seen": 1795577829.0073812,
+    "ast_hash": "8552899a014d2705568c022b2ef4cdac",
     "semantic_hash": ""
   },
   "game/tests/tasks.test.ts": {
