@@ -706,6 +706,14 @@ function buildObjects() {
   for (const [x, y, r] of [[12, 8, 2.4], [20, 5, 3], [15, 1.6, 1.6], [25, 9, 1.8]] as const) { p.disc(x, y, r, r, '#b07aef'); p.set(x - 1, y - 1, '#ffffff'); }
   p.rect(3, 13, 28, 1, '#8a8498');
   p.outline().save('obj_alchemy');
+  // 우체국: 소포가 쌓인 나무 카운터 + 깃발
+  p = new Paint(36, 34);
+  p.rect(2, 18, 32, 15, '#a8744e'); p.rect(2, 18, 32, 2, '#c8945e'); p.rect(4, 22, 28, 1, '#8a5a3c');
+  p.rect(6, 10, 10, 8, '#d8b878'); p.rect(6, 13, 10, 1, '#a8844e'); p.rect(10, 10, 1, 8, '#a8844e');
+  p.rect(18, 6, 12, 12, '#e8c888'); p.rect(18, 11, 12, 1, '#b89458'); p.rect(23, 6, 1, 12, '#b89458');
+  p.rect(32, 2, 1, 16, '#6e4630'); p.rect(33, 2, 3, 3, '#e2574a');
+  p.volume();
+  p.outline().save('obj_post');
   // 연금술 거품(솥 색) · 약병(내용물 색)
   for (const [k, col] of [['power', '#e2574a'], ['quick', '#5fb859'], ['wise', '#8a6fd1'], ['luck', '#f6c945']] as const) {
     p = new Paint(14, 14); p.disc(7, 7, 6, 6, col); p.disc(7, 7, 4.4, 4.4, mix(col, '#ffffff', 0.35)); p.disc(5, 5, 1.6, 1.4, '#ffffff'); p.set(9, 9, mix(col, '#000000', 0.2));
@@ -898,6 +906,7 @@ function buildItems() {
   p = new Paint(12, 12); p.disc(4, 4, 3.4, 3.4, '#f2a83a'); p.disc(4, 4, 1.4, 1.4, null); p.rect(6, 3, 5, 2, '#f2a83a'); p.rect(9, 5, 1, 2, '#f2a83a'); p.rect(7, 5, 1, 2, '#f2a83a'); p.disc(4, 4, 0.8, 0.8, '#ff7a2a'); p.outline().save('it_sunkey');
   p = new Paint(14, 11); p.rect(1, 4, 12, 6, '#d8b070'); for (const x of [1, 5, 9]) p.rect(x, 1, 3, 4, '#d8b070'); p.rect(1, 9, 12, 1, '#a07a46'); p.disc(7, 6.5, 1.5, 1.5, '#ff7a2a'); p.set(3, 5, '#fff0c8'); p.outline().save('it_sand_crown');
   p = new Paint(12, 14); p.rect(3, 10, 6, 3, '#a07a46'); p.rect(5, 7, 2, 3, '#d8b070'); p.disc(6, 4.5, 4.5, 4, '#f2a83a'); p.disc(6, 4.5, 2.4, 2, '#ffd08a'); p.set(4, 3, '#ffffff'); p.outline().save('it_trophy_sand');
+  p = new Paint(13, 12); p.rect(1, 3, 11, 8, '#d8b878'); p.rect(1, 3, 11, 2, '#e8c888'); p.rect(6, 3, 1, 8, '#a8844e'); p.rect(1, 6, 11, 1, '#a8844e'); p.rect(4, 1, 5, 2, '#e2574a'); p.outline().save('it_parcel');
   // 물고기·곤충
   for (const [k, body, fin, eye] of [['fish_minnow', '#c8d8e0', '#8aa8b8', '#1e1420'], ['fish_salt', '#e8e4d8', '#b8ae9e', '#1e1420'], ['fish_star', '#4a4aa8', '#2a2a78', '#fff6c8']] as const) {
     p = new Paint(13, 10); p.disc(6, 5, 5, 3, body); p.line(10, 5, 12, 2, fin); p.line(10, 5, 12, 8, fin); p.rect(11, 3, 1, 5, fin); p.rect(4, 2, 3, 1, fin); p.set(3, 4, eye); p.rect(4, 6, 4, 1, mix(body, '#000000', 0.15));

@@ -520,3 +520,41 @@ describe('히든 계열 4단계: 낭만가 → 워커 → 테일러 → 라이�
     expect(c2.cls).toBe('guardian'); expect(canSub(c2)).toBe(false);
   });
 });
+
+import { BOX_BY_ID, POST_ORDERS } from '../src/core/post';
+describe('우체국', () => {
+  const ready = () => {
+    const { acc, c } = setup();
+    c.maxWorld = 2; c.mapId = 'oasis'; c.kills.meadow = 100; c.kills.hills = 100;
+    return { acc, c };
+  };
+  it('하루 3건, 기기와 서버가 같은 주문을 받고 날이 바뀌면 새로 받는다', () => {
+    const { acc, c } = ready();
+    const twin = JSON.parse(JSON.stringify(acc));
+    const day1 = new Date(2026, 10, 25, 12).getTime();
+    applyAction(acc, 0, { t: 'post', op: 'refresh' }, day1);
+    applyAction(twin, 0, { t: 'post', op: 'refresh' }, day1);
+    expect(c.post.orders.length).toBe(POST_ORDERS);
+    expect(twin.characters[0].post.orders).toEqual(c.post.orders);
+    const first = JSON.stringify(c.post.orders);
+    applyAction(acc, 0, { t: 'post', op: 'refresh' }, day1 + 3600_000);
+    expect(JSON.stringify(c.post.orders)).toBe(first);
+    applyAction(acc, 0, { t: 'post', op: 'refresh' }, day1 + 86_400_000);
+    expect(c.post.day).not.toBe(twin.characters[0].post.day);
+  });
+  it('배달하면 포인트와 코인, 포인트로 택배 상자를 올리면 능력치가 오른다', () => {
+    const { acc, c } = ready();
+    const now = new Date(2026, 10, 25, 12).getTime();
+    applyAction(acc, 0, { t: 'post', op: 'refresh' }, now);
+    const o = c.post.orders[0];
+    expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(false);
+    addItem(c, o.item, o.n);
+    const coins = acc.coins;
+    expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(true);
+    expect(c.post.pts).toBe(o.pts); expect(acc.coins).toBe(coins + o.coins);
+    expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(false);
+    const str0 = derive(c, acc).str;
+    expect(applyAction(acc, 0, { t: 'post', op: 'box', id: 'x_str' }, now).ok).toBe(true);
+    expect(derive(c, acc).str).toBe(str0 + BOX_BY_ID.x_str.per);
+  });
+});

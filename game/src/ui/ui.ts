@@ -2,6 +2,7 @@
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
+import { BOXES, boxCost } from '../core/post';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
 /** 연금술 효과 이름 */
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중' };
@@ -31,7 +32,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -260,7 +261,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -766,6 +767,29 @@ export class UI {
         }).join('');
         return win('부엉이 횃대 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row"><b class="ui-grow">깃털 <span class="ui-accent">${Math.floor(o.f).toLocaleString()}</span></b><span class="ui-sm ui-muted">시간당 ${Math.round(owlPerHour(o))}개 · 접속하지 않아도 쌓입니다</span></div>${rows}`);
       }
+      case 'post': {
+        const p = c.post, left = p.orders.filter((o) => !o.done).length;
+        const head = `<div class="ui-row alchhead">${ui('it_parcel', 'mi')}<b class="ui-grow">배달 포인트 <span class="ui-accent">${p.pts}</span></b><span class="ui-xs ui-muted">오늘 남은 주문 ${left}/${p.orders.length} · 날이 바뀌면 새 주문</span></div>`;
+        let body = '';
+        if (tab === 0) {
+          body = p.orders.map((o, i) => {
+            const have = haveMat(g.acc, c, o.item);
+            return `<div class="ui-row line ${o.done ? 'done' : ''}"><span class="ui-slot">${icon(o.item)}</span><div class="ui-grow"><b>${ITEMS[o.item].name} ${o.n.toLocaleString()}개</b>
+              <div class="ui-sm ${o.done ? 'ui-muted' : have >= o.n ? 'ui-good' : 'ui-bad'}">${o.done ? '배달 완료' : `가진 수 ${have.toLocaleString()} / ${o.n.toLocaleString()}`}</div></div>
+              <span class="ui-sm">${ui('it_parcel', 'tic')} +${o.pts} · ${ui('ui_coin', 'tic')} ${o.coins.toLocaleString()}</span>
+              <button class="ui-btn sm primary" data-act="post:deliver:${i}" ${!o.done && have >= o.n ? '' : 'disabled'}>${o.done ? '완료' : '배달'}</button></div>`;
+          }).join('') || '<p class="ui-muted">아직 받을 수 있는 주문이 없습니다. 사냥터를 더 열어 보세요.</p>';
+          body += '<p class="ui-xs ui-muted">주문은 이 캐릭터가 갈 수 있는 맵의 재료로만 나옵니다. 가방과 창고의 재료를 함께 씁니다.</p>';
+        } else {
+          body = BOXES.map((b) => {
+            const lv = p.boxes[b.id] ?? 0, max = lv >= b.max, cost = boxCost(lv);
+            return `<div class="ui-row line">${ui('it_parcel', 'mi')}<div class="ui-grow"><b>${b.name}</b> <span class="ui-xs ui-accent">${lv}/${b.max}</span>
+              <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[b.eff]} +${(Math.round(Math.max(1, lv) * b.per * 100) / 100).toLocaleString()}${b.unit}${lv ? '' : ' (1단계)'}</div></div>
+              <button class="ui-btn sm" data-act="post:box:${b.id}" ${!max && p.pts >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui('it_parcel', 'tic')} ${cost}`}</button></div>`;
+          }).join('') + '<p class="ui-xs ui-muted">택배 상자는 캐릭터마다 따로 올립니다.</p>';
+        }
+        return win(`우체국 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['배달 주문', '택배 상자'], tab, tabAct, ['it_parcel', 'it_parcel'])}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'alchemy': {
         const acc = g.acc, a = acc.alch;
         alchSettle(acc, Date.now());
@@ -1204,12 +1228,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1282,7 +1306,7 @@ export class UI {
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'ref': this.refBack = true; this.open(a as Panel); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); break;
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
@@ -1327,6 +1351,11 @@ export class UI {
       case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }
       case 'pshard': { const r = g.act({ t: 'petShard' }); if (r.ok) this.toast(`펫 크리스탈 ${r.n}개를 넣었습니다`); else fail(r.err ?? null); break; }
       case 'bsel': this.bubSel = a; break;
+      case 'post': {
+        const r = a === 'deliver' ? g.act({ t: 'post', op: 'deliver', idx: +b }) : g.act({ t: 'post', op: 'box', id: b });
+        if (r.ok) { this.audio?.play(a === 'deliver' ? 'coin' : 'craft'); if (a === 'deliver') this.toast('배달 완료! 배달 포인트와 코인을 받았습니다', 'coin'); } else fail(r.err ?? null);
+        break;
+      }
       case 'alch': { const r = g.act({ t: 'alch', op: a as 'bubble' | 'vial' | 'liquid', id: b }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'owl': fail(g.act({ t: 'owl', k: a as OwlUp }).err ?? null); break;
       case 'arenaclaim': {

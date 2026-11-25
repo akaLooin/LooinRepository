@@ -9,6 +9,7 @@ import { countItem, removeItem } from './state';
 import { owlValue, petValue } from './companions';
 import { blessValue } from './minigames';
 import { alchBonus } from './alchemy';
+import { postBonus } from './post';
 
 export type Bonus = Record<BonusKey, number>;
 export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, acc: 0 });
@@ -149,6 +150,8 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   // 동료(레벨 × 효과)와 부엉이 보너스
   for (const p of PETS) b[p.eff] += petValue(a, p);
   if (a.owl) { b.dmg += owlValue(a.owl, 'dmg'); b.xp += owlValue(a.owl, 'xp'); b.drop += owlValue(a.owl, 'drop'); b.afk += owlValue(a.owl, 'afk'); }
+  // 우체국 택배 상자(캐릭터마다)
+  postBonus(c, (k, v) => { b[k] += v; });
   // 연금술(거품·약병)
   alchBonus(a.alch, (k, v) => { b[k] += v; });
   // 토템 축복

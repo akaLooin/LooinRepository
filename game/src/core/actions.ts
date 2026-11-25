@@ -1,6 +1,7 @@
 // 플레이어 행동. 기기(낙관적 적용)와 서버(권위)가 같은 함수로 적용한다.
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
 import { applyStone } from './upgrade';
+import { deliver, postRefresh, upBox } from './post';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
@@ -72,6 +73,7 @@ export type Action =
   | { t: 'skinOn'; id: string }
   | { t: 'skinOff'; slot: 'hat' | 'body' }
   | { t: 'owl'; k?: OwlUp }
+  | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number }
   | { t: 'totem'; kills: number; survived: boolean }
@@ -168,6 +170,12 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'bubble') return res(upBubble(acc, c, a.id ?? '', now));
       if (a.op === 'vial') return res(upVial(acc, c, a.id ?? ''));
       return res(upLiquid(acc, a.id as LiquidUp, now));
+    }
+    case 'post': {
+      if (worldOf(c.mapId) < 2 && (c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 우체국에서 할 수 있습니다');
+      if (a.op === 'refresh') { postRefresh(acc, c, now); return ok(); }
+      if (a.op === 'deliver') return res(deliver(acc, c, a.idx ?? -1, now));
+      return res(upBox(c, a.id ?? ''));
     }
     case 'owl': if (!a.k) { owlSettle(acc, now); return ok(); } return res(owlUpgrade(acc, a.k, now));
     case 'arenaClaim': { const r = arenaClaim(acc, c); return typeof r === 'string' ? fail(r) : ok(r.waves); }
