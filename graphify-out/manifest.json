@@ -72,15 +72,15 @@
     "semantic_hash": ""
   },
   "game/data/classes.json": {
-    "mtime": 1795584054.2515273,
-    "seen": 1795585951.0242152,
-    "ast_hash": "9ec7c24fd96e261c9f6741e9b1760c2e",
+    "mtime": 1795599523.0183828,
+    "seen": 1795600137.0453825,
+    "ast_hash": "51631fd6ac4c1985d36d03283f1beda6",
     "semantic_hash": ""
   },
   "game/data/dungeons.json": {
-    "mtime": 1795584054.2625644,
-    "seen": 1795585951.0242162,
-    "ast_hash": "a1979f9280c3703f906b3fc68f97aa03",
+    "mtime": 1795599709.143614,
+    "seen": 1795600137.0453851,
+    "ast_hash": "859f308712903bbbd728ca0a54275378",
     "semantic_hash": ""
   },
   "game/data/monsters.json": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1795585931.282145,
-    "seen": 1795585951.0242426,
-    "ast_hash": "b171946ef6e3d6d6f77ebaefe3879d2f",
+    "mtime": 1795600136.0438247,
+    "seen": 1795600137.0454576,
+    "ast_hash": "e7b239d52e80b74e63698c5e71e01d44",
     "semantic_hash": ""
   },
   "replica/demo-plan.md": {
@@ -273,6 +273,24 @@
     "mtime": 1795597571.8273358,
     "seen": 1795597591.2018132,
     "ast_hash": "3de41b740f22360ed44b56cad29464c8",
+    "semantic_hash": ""
+  },
+  "game/data/items.json": {
+    "mtime": 1795599522.9761825,
+    "seen": 1795600137.0453877,
+    "ast_hash": "6de89a86f54054852020b2156d2def0f",
+    "semantic_hash": ""
+  },
+  "game/data/pets.json": {
+    "mtime": 1795599522.979377,
+    "seen": 1795600137.0453997,
+    "ast_hash": "49eb41e2671efdabaf06ca5d38f31414",
+    "semantic_hash": ""
+  },
+  "game/data/skill_tree.json": {
+    "mtime": 1795599522.977756,
+    "seen": 1795600137.0454016,
+    "ast_hash": "2647efe03b9d94f3379831f38f0f7838",
     "semantic_hash": ""
   }
 }
