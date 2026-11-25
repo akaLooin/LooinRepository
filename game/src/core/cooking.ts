@@ -8,7 +8,7 @@
 import { BonusKey, MAPS } from './data';
 import type { Account } from './state';
 import { gainSkillXp } from './state';
-import { labMult } from './lab';
+import { atStation, labMult, STATION_MAP } from './lab';
 
 export interface SpiceDef { id: string; name: string; map: string; color: string }
 export const SPICES: SpiceDef[] = [
@@ -78,7 +78,7 @@ export const upCost = (lv: number) => Math.ceil(8 * Math.pow(1.32, lv));
 export const upSpice = (idx: number, k: KitchenUp, lv: number) => SPICES[(lv + idx + (k === 'spd' ? 0 : k === 'fire' ? 2 : 4)) % SPICES.length].id;
 export const recipeCost = (found: number) => 10 + found * 5;
 export const chefMult = (acc: Pick<Account, 'cook' | 'characters'>) =>
-  1 + acc.cook.chefs.reduce((s, id) => s + (acc.characters.find((c) => c.id === id)?.skills.cooking?.lv ?? 0), 0) * COOK.chefPer;
+  1 + acc.cook.chefs.reduce((s, id) => s + (atStation(acc, id) ? acc.characters.find((c) => c.id === id)?.skills.cooking?.lv ?? 0 : 0), 0) * COOK.chefPer;
 type CookAcc = Pick<Account, 'cook' | 'characters'> & Partial<Pick<Account, 'lab'>>;
 export const kitchenSpeed = (acc: CookAcc, k: Kitchen) => (1 + k.spd * COOK.spdPer) * chefMult(acc) * labMult(acc, 'kitchen');
 /** 이 주방에서 시간당 나오는 접시 수(행운의 두 배 확률은 평균으로) */
@@ -126,7 +126,7 @@ export function cookSettle(acc: Account, now: number) {
   xp += k.xpFrac;
   const whole = Math.floor(xp);
   k.xpFrac = xp - whole;
-  if (whole > 0) for (const id of k.chefs) { const c = acc.characters.find((x) => x.id === id); if (c) gainSkillXp(c, 'cooking', whole); }
+  if (whole > 0) for (const id of k.chefs) { const c = acc.characters.find((x) => x.id === id); if (c && atStation(acc, id)) gainSkillXp(c, 'cooking', whole); }
 }
 
 const kitchenAt = (acc: Account, idx: number) => acc.cook.kitchens[idx];
@@ -201,7 +201,10 @@ export function toggleChef(acc: Account, charId: number, now: number): string | 
   const k = acc.cook, i = k.chefs.indexOf(charId);
   if (i >= 0) { k.chefs.splice(i, 1); return null; }
   if (k.chefs.length >= k.kitchens.length) return '식탁 자리가 없습니다(주방 수만큼)';
+  if (acc.characters.find((c) => c.id === charId)?.mapId !== STATION_MAP) return '성운 정거장에 있어야 요리할 수 있습니다';
   k.chefs.push(charId);
+  // 한 캐릭터는 한 곳에서만 일한다: 식탁에 서면 연구실에서 물러난다
+  if (acc.lab) acc.lab.members = acc.lab.members.filter((m) => m.id !== charId);
   return null;
 }
 export function cookBonus(k: Cook | undefined, add: (key: BonusKey, v: number) => void) {

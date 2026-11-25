@@ -124,12 +124,11 @@ export function afkRates(acc: Account, c: Character): AfkRates {
 }
 
 export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): AfkReport | null {
-  const elapsed = Math.min(AFK_MAX_SECONDS, Math.floor((now - c.lastActive) / 1000));
+  const away = Math.floor((now - c.lastActive) / 1000), elapsed = Math.min(AFK_MAX_SECONDS, away);
   if (elapsed < AFK_MIN_SECONDS) { c.lastActive = now; return null; }
   c.lastActive = now;
   const map = MAPS[c.mapId], hours = elapsed / 3600;
   const r = afkRates(acc, c);
-  const away = Math.floor((now - c.lastActive) / 1000);
   const rep: AfkReport = { seconds: elapsed, capped: Math.max(0, away - elapsed), mapName: map.name, mode: r.mode, kills: 0, xp: 0, coins: 0, levels: 0, items: [], cards: [], skipped: 0, food: 0 };
   const give = (id: string, qty: number) => {
     if (qty <= 0) return;

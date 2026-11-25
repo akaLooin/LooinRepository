@@ -1,6 +1,6 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
-  ARENA, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
+  ARENA, CRYSTAL_CHANCE, crystalOf, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult } from './data';
 import { Rng } from './rng';
 import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady, foodWait } from './state';
@@ -34,6 +34,8 @@ export interface Mob {
   hitT: number; contactCd: number; respawnT: number; spawnAge: number;
   /** 보스: 다음 내려찍기까지, 내려찍기 예고 남은 시간 */
   slamT: number; windup: number;
+  /** 수정 몬스터로 바뀐 동안 원래 몬스터 */
+  base?: MonsterDef;
 }
 export interface Drop {
   uid: number; coin: boolean; id: string; qty: number;
@@ -596,7 +598,14 @@ export class World {
     for (const m of this.mobs) {
       if (!m.alive) {
         m.respawnT -= dt;
-        if (m.respawnT <= 0) { m.alive = true; m.hp = m.def.hp; m.spawnAge = 0; m.hitT = 0; this.placeMob(m); }
+        if (m.respawnT <= 0) {
+          // 다시 나타날 때 드물게 수정 몬스터로 바뀐다(다음에 다시 나타날 때 원래대로)
+          const base = m.base ?? m.def, cr = MONSTERS[crystalOf(base.id)];
+          m.def = cr && !this.arena && this.rng.chance(CRYSTAL_CHANCE) ? cr : base;
+          m.base = m.def === base ? undefined : base;
+          if (m.base) this.events.push({ t: 'loot', text: `반짝! ${m.def.name}이(가) 나타났습니다!` });
+          m.alive = true; m.hp = m.def.hp; m.spawnAge = 0; m.hitT = 0; this.placeMob(m);
+        }
         continue;
       }
       m.spawnAge += dt; m.hitT = Math.max(0, m.hitT - dt); m.contactCd = Math.max(0, m.contactCd - dt);
@@ -657,6 +666,8 @@ export class World {
       const dr = this.drops[i];
       dr.age += dt;
       if (dr.age > DROP_LIFE && !dr.picked) { this.drops.splice(i, 1); continue; }
+      // 자동 줍기(줍기 자석): 바닥에 닿은 뒤 저절로 날아온다
+      if (!dr.picked && this.acc.autoLoot && dr.age > 0.8 && p.dead <= 0 && (dr.coin || itemRoom(c, dr.id) >= dr.qty)) dr.picked = true;
       if (dr.picked) {
         const dx = p.x - dr.x, dy = p.y - 14 - dr.y, dist = Math.hypot(dx, dy), sp = 220 + (dr.flyT = (dr.flyT ?? 0) + dt) * 400;
         if (dist < 9 || dist < sp * dt) {

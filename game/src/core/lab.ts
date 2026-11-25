@@ -39,6 +39,9 @@ export interface Lab { t: number; members: LabMember[]; jewels: string[] }
 export const newLab = (): Lab => ({ t: 0, members: [], jewels: [] });
 
 type LabAcc = Pick<Account, 'lab' | 'characters'>;
+/** 요리사·연구원은 원작처럼 그 자리(성운 정거장)에 머물러 있어야 일한다. 다른 맵으로 가면 쉬고, 돌아오면 다시 일한다 */
+export const STATION_MAP = 'nebtown';
+export const atStation = (acc: { characters?: Character[] }, id: number) => (acc.characters ?? []).find((c) => c.id === id)?.mapId === STATION_MAP;
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
 const charOf = (acc: LabAcc, id: number): Character | undefined => acc.characters.find((c) => c.id === id);
 export const labRange = (lv: number, link = false) => LAB.baseRange + lv * LAB.perLv + (link ? LAB.linkBonus : 0);
@@ -49,26 +52,27 @@ export function labState(acc: LabAcc | Partial<LabAcc>): LabState {
   const lab = acc.lab, chars = acc.characters ?? [];
   const empty: LabState = { linked: new Set(), on: new Set(), range: {} };
   if (!lab) return empty;
+  const members = lab.members.filter((m) => atStation(acc, m.id));
   const pass = (link: boolean): LabState => {
     const range: Record<number, number> = {};
-    for (const m of lab.members) range[m.id] = labRange(chars.find((c) => c.id === m.id)?.skills.lab?.lv ?? 1, link);
+    for (const m of members) range[m.id] = labRange(chars.find((c) => c.id === m.id)?.skills.lab?.lv ?? 1, link);
     const linked = new Set<number>();
     // 본체에서 시작해 범위가 닿는 캐릭터를 차례로 잇는다(서로의 범위 중 큰 쪽이 닿으면 연결)
     let grew = true;
     while (grew) {
       grew = false;
-      for (const m of lab.members) {
+      for (const m of members) {
         if (linked.has(m.id)) continue;
         const p = LAB_SPOTS[m.spot];
         const ok = dist(p, LAB.main) <= Math.max(LAB.mainRange, range[m.id]) ||
-          [...linked].some((id) => { const o = lab.members.find((x) => x.id === id)!; return dist(p, LAB_SPOTS[o.spot]) <= Math.max(range[id], range[m.id]); });
+          [...linked].some((id) => { const o = members.find((x) => x.id === id)!; return dist(p, LAB_SPOTS[o.spot]) <= Math.max(range[id], range[m.id]); });
         if (ok) { linked.add(m.id); grew = true; }
       }
     }
     const on = new Set<string>();
     for (const n of LAB_NODES) {
       if (n.jewel && !lab.jewels.includes(n.id)) continue;
-      if ([...linked].some((id) => dist(LAB_SPOTS[lab.members.find((x) => x.id === id)!.spot], n) <= range[id])) on.add(n.id);
+      if ([...linked].some((id) => dist(LAB_SPOTS[members.find((x) => x.id === id)!.spot], n) <= range[id])) on.add(n.id);
     }
     return { linked, on, range };
   };
@@ -105,10 +109,14 @@ export function labSettle(acc: Account, now: number) {
 export function placeInLab(acc: Account, c: Character, spot: number, now: number): string | null {
   labSettle(acc, now);
   if (!Number.isInteger(spot) || !LAB_SPOTS[spot]) return '없는 자리';
+  if (c.mapId !== STATION_MAP) return '성운 정거장에 있어야 연구할 수 있습니다';
   const lab = acc.lab, other = lab.members.find((m) => m.spot === spot);
   if (other && other.id !== c.id) return '다른 캐릭터가 서 있는 자리입니다';
   const me = lab.members.find((m) => m.id === c.id);
   if (me) me.spot = spot; else lab.members.push({ id: c.id, spot, frac: 0 });
+  // 한 캐릭터는 한 곳에서만 일한다: 연구실에 서면 식탁에서 물러난다
+  const ci = acc.cook.chefs.indexOf(c.id);
+  if (ci >= 0) acc.cook.chefs.splice(ci, 1);
   return null;
 }
 export function leaveLab(acc: Account, c: Character, now: number): string | null {

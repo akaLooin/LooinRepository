@@ -561,11 +561,12 @@ describe('1월드 마무리', () => {
     expect(equip(c, 'moss_ring')).toBeNull();
     expect(c.equipment.ring).toBe('moss_ring');
   });
-  it('모루: 대장 Lv.5에 두 번째 생산 칸, 2단계 레시피는 모루 확장 후', () => {
+  it('모루: 처음엔 생산 칸 1개, 대장 Lv.25에 두 번째 칸, 2단계 레시피는 모루 확장 후', () => {
     const { acc, c } = setup();
     expect(anvilSlotsOpen(c)).toBe(1);
+    c.skills.smithing.lv = 24;
     expect(setProduct(c, 'twine', 1)).toMatch(/열리지/);
-    c.skills.smithing.lv = 5;
+    c.skills.smithing.lv = 25;
     expect(setProduct(c, 'twine', 1)).toBeNull();
     expect(c.anvil.slots.length).toBe(2);
     setProduct(c, 'twine', 0);

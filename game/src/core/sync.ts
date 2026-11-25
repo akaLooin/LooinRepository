@@ -1,7 +1,7 @@
 // 접속 중 플레이 기록 검증. 기기는 화면에서 전투·채집을 돌리고 주기적으로 결과(캐릭터 상태)를 보낸다.
 // 서버는 "지난 동기화 이후 흐른 시간(서버 시계)" 동안 얻을 수 있는 최대치를 계산해, 넘으면 거절한다.
 // 장비·특성·전직처럼 행동(actions.ts)으로만 바뀌어야 하는 값이 바뀌어 있어도 거절한다.
-import { ARENA, MINIBOSSES, CARD_BY_ID, CARD_CHANCE, CARD_UNOWNED_MULT, NODE_CARD_CHANCE, ITEMS, MAPS, MONSTERS, NODES, PRODUCTS } from './data';
+import { ARENA, crystalOf, MINIBOSSES, CARD_BY_ID, CARD_CHANCE, CARD_UNOWNED_MULT, NODE_CARD_CHANCE, ITEMS, MAPS, MONSTERS, NODES, PRODUCTS } from './data';
 import { Account, Character, anvilCap, anvilRate, derive, skillXpToNext, xpToNext } from './state';
 import { GATHER_INTERVAL } from './world';
 
@@ -50,7 +50,8 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const arena = map.arena ? ARENA.waves.map(([id]) => MONSTERS[id]) : [];
   const killCap = map.spawns.reduce((n, x) => n + x.count, 0) * (3600 / 5);
   const maxKills = Math.floor((killCap * t) / 3600 * SLACK) + PAD_KILLS + (boss ? 1 : 0) + minis.length + (map.arena ? ARENA.waves.reduce((n, [, k]) => n + k, 0) : 0);
-  const mobs = [...map.spawns.map((x) => MONSTERS[x.monster]), ...(boss ? [boss] : []), ...minis, ...arena];
+  const crystals = map.spawns.map((x) => MONSTERS[crystalOf(x.monster)]).filter(Boolean);
+  const mobs = [...map.spawns.map((x) => MONSTERS[x.monster]), ...crystals, ...(boss ? [boss] : []), ...minis, ...arena];
   const maxXpKill = Math.max(0, ...mobs.map((m) => m.xp)) * d.xpMult * 1.05;
   const maxCoinKill = Math.max(0, ...mobs.map((m) => m.coins[1])) * d.coinMult + 1;
   const swings = t / GATHER_INTERVAL * SLACK + 3;

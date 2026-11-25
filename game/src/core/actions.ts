@@ -100,6 +100,10 @@ const res = (err: string | null): ActionResult => (err ? fail(err) : ok());
 export function applyAction(acc: Account, ci: number, a: Action, now: number): ActionResult {
   const c = acc.characters[ci];
   if (!c) return fail('캐릭터가 없습니다');
+  // 맵을 옮기면 요리사·연구원이 자리를 비우게 되므로, 그 전까지 일한 몫을 먼저 정산한다
+  if ((a.t === 'travel' || a.t === 'teleport' || a.t === 'respawn') && (acc.cook.chefs.includes(c.id) || acc.lab.members.some((m) => m.id === c.id))) {
+    cookSettle(acc, now); labSettle(acc, now);
+  }
   switch (a.t) {
     case 'stat': return spendStat(c, a.stat) ? ok() : fail('포인트가 없습니다');
     case 'talent': return learnTalent(c, a.id) ? ok() : fail('특성을 올릴 수 없습니다');

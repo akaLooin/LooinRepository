@@ -1,8 +1,8 @@
 // 계정·캐릭터 성장 장치: 석상, 별 지도·별자리, 업적, 가족 보너스, 카드 세트·프리셋.
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
-  ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, STAMPS, STATUES,
-  PETS, baseClass, cardTier, statueNeed,
+  ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_MIN, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, STAMPS, STATUES,
+  PETS, baseClass, classLine, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
@@ -25,6 +25,12 @@ export function statueLevel(xp: number): { lv: number; into: number; need: numbe
   let lv = 0, left = xp;
   while (left >= statueNeed(lv)) { left -= statueNeed(lv); lv++; }
   return { lv, into: left, need: statueNeed(lv) };
+}
+/** 이 캐릭터에게 적용되는 석상 레벨: 황금 석상이면 계정에서 가장 높은 레벨 */
+export function statueLv(a: Partial<Pick<Account, 'characters' | 'goldStatues'>>, c: Character, id: string): number {
+  const own = statueLevel(c.statues?.[id] ?? 0).lv;
+  if (!a.goldStatues?.includes(id) || !a.characters) return own;
+  return Math.max(own, ...a.characters.map((x) => statueLevel(x.statues?.[id] ?? 0).lv));
 }
 /** 가방에 있는 그 석상의 조각을 모두 바친다 */
 export function offerStatue(acc: Account, c: Character, id: string): number | string {
@@ -119,8 +125,12 @@ export function claimAchievement(acc: Account, id: string): string | null {
 // ───────── 가족 ─────────
 /** 직업별 최고 레벨 */
 export function familyBest(chars: Character[]): Record<keyof typeof FAMILY, number> {
-  const out = { beginner: 0, warrior: 0, archer: 0, mage: 0, wanderer: 0 };
-  for (const c of chars) out[baseClass(c.cls)] = Math.max(out[baseClass(c.cls)], c.level);
+  // 원작처럼 지금 직업뿐 아니라 거쳐 온 모든 직업이 가족 보너스를 준다. 그 단계가 열리는 레벨(9·29·69·129)부터 센다
+  const out = Object.fromEntries(Object.keys(FAMILY).map((k) => [k, 0])) as Record<keyof typeof FAMILY, number>;
+  for (const c of chars) classLine(c.cls).forEach((k, tier) => {
+    const lv = c.level - FAMILY_MIN[tier] + 1;
+    if (lv > 0) out[k] = Math.max(out[k], lv);
+  });
   return out;
 }
 export const familyValue = (cls: keyof typeof FAMILY, lv: number) => (lv > 0 ? (FAMILY[cls].a * lv) / (lv + FAMILY[cls].b) : 0);
@@ -149,9 +159,9 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
   const b = noBonus();
-  for (const s of STATUES) b[s.eff] += statueLevel(c.statues?.[s.id] ?? 0).lv * s.per;
+  for (const s of STATUES) b[s.eff] += statueLv(a, c, s.id) * s.per;
   const sign = c.sign ? SIGNS.find((x) => x.id === c.sign) : null;
   if (sign) b[sign.eff] += sign.v;
   for (const d of ACHIEVEMENTS) if (a.achievements?.[d.id] && d.eff) b[d.eff] += d.v!;

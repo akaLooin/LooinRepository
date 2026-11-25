@@ -51,6 +51,8 @@ export interface MonsterDef {
   scale?: number;
   /** 다른 몬스터 그림을 빌려 쓸 때 그 id, 그리고 물들일 색 */
   art?: string; tint?: number;
+  /** 수정 몬스터(드문 변종) */
+  crystal?: boolean;
 }
 export interface NodeDef {
   id: string; name: string; skill: GatherSkill; reqLv: number;
@@ -108,6 +110,14 @@ const items: ItemDef[] = [
   { id: 'mushroom', name: '숲 버섯', desc: '먹으면 체력 45 회복. 재사용 5초.', kind: 'food', heal: 45, cd: 5, sell: 4 },
   { id: 'twine', name: '노끈', desc: '모루에서 만든 질긴 끈.', kind: 'material', sell: 1 },
   { id: 'nail', name: '쇠못', desc: '모루에서 만든 못.', kind: 'material', sell: 3 },
+  { id: 'brick', name: '구운 벽돌', desc: '모루 옆 화덕에서 구운 단단한 벽돌.', kind: 'material', sell: 5 },
+  { id: 'chainlink', name: '쇠사슬 고리', desc: '모루에서 두드려 만든 고리.', kind: 'material', sell: 8 },
+  { id: 'hide', name: '무두질 가죽', desc: '모루에서 다듬은 질긴 가죽.', kind: 'material', sell: 12 },
+  { id: 'gearwheel', name: '톱니바퀴', desc: '모루에서 깎은 작은 톱니바퀴.', kind: 'material', sell: 18 },
+  { id: 'bracket', name: '쇠 받침쇠', desc: '무언가를 단단히 받쳐 준다.', kind: 'material', sell: 26 },
+  { id: 'screw', name: '보라 나사', desc: '조이면 절대 풀리지 않는다.', kind: 'material', sell: 36 },
+  { id: 'gizmo', name: '잡동 장치', desc: '무엇에 쓰는지는 몰라도 꼭 필요하다.', kind: 'material', sell: 50 },
+  { id: 'cord', name: '엉킨 전선', desc: '풀면 길고, 꼬이면 더 길다.', kind: 'material', sell: 70 },
   { id: 'plank', name: '판자', desc: '모루에서 다듬은 판자.', kind: 'material', sell: 6 },
   { id: 'bag_small', name: '작은 주머니 가방', desc: '사용하면 이 캐릭터의 가방 +4칸.', kind: 'bag', bagSlots: 4, sell: 10 },
   { id: 'bag_leather', name: '튼튼한 가방', desc: '사용하면 이 캐릭터의 가방 +6칸.', kind: 'bag', bagSlots: 6, sell: 30 },
@@ -129,6 +139,9 @@ const items: ItemDef[] = [
   ].map(([k, name]) => ({ id: `stamp_${k}`, name, desc: '우표함에 넣으면 계정 전체에 효과가 생긴다.', kind: 'stamp' as const, sell: 1 })),
   ...[['str', '힘의 조각'], ['agi', '날램의 조각'], ['wis', '슬기의 조각'], ['luk', '행운의 조각'], ['guard', '수호의 조각'], ['feast', '풍요의 조각'], ['fortune', '보물의 조각']]
     .map(([k, name]) => ({ id: `statue_${k}`, name, desc: '석상 받침에 바치면 그 석상이 자란다(캐릭터마다).', kind: 'statue' as const, sell: 2 })),
+  ...[['str', '힘'], ['agi', '날램'], ['wis', '슬기'], ['luk', '행운'], ['guard', '수호'], ['feast', '풍요'], ['fortune', '보물']]
+    .map(([k, name]) => ({ id: `gstatue_${k}`, name: `황금 ${name}의 조각`, desc: '사용하면 그 석상이 황금이 되어, 계정에서 가장 높은 석상 레벨이 모든 캐릭터에게 적용된다. 수정 몬스터가 아주 드물게 떨어뜨린다.', kind: 'tool' as const, sell: 0 })),
+  { id: 'loot_magnet', name: '줍기 자석', desc: '사용하면 떨어진 아이템을 자동으로 줍게 된다(계정 공용, 가방에 자리가 있을 때).', kind: 'tool', sell: 0 },
   { id: 'sculpt_tools', name: '조각 도구', desc: '사용하면 마을의 석상 받침을 쓸 수 있다(계정 공용).', kind: 'tool', sell: 0 },
   { id: 'pants_moss', name: '이끼 바지', desc: '폭신한 이끼를 엮은 바지.', kind: 'equip', slot: 'legs', stats: { def: 2, hp: 8 }, sell: 10 },
   { id: 'shoes_leaf', name: '잎새 신발', desc: '발걸음이 가볍다.', kind: 'equip', slot: 'shoes', stats: { agi: 2, def: 1 }, reqLv: 5, sell: 18 },
@@ -383,7 +396,19 @@ const monsters: MonsterDef[] = [
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
 for (const m of monsters) if (!m.boss && !m.scale) m.drops.push({ item: 'tp_ticket', chance: 0.006, qty: [1, 1] });
-export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries(monsters.map((m) => [m.id, m]));
+// 수정 몬스터: 일반 몬스터가 다시 나타날 때 드물게 수정으로 바뀐다. 더 단단하고, 석상 조각을 잔뜩, 아주 드물게 황금 석상을 떨어뜨린다
+export const CRYSTAL_CHANCE = 1 / 400;
+export const crystalOf = (id: string) => `crystal_${id}`;
+const crystals: MonsterDef[] = monsters.filter((m) => !m.boss && !m.scale).map((m) => {
+  const st = m.drops.filter((d) => d.item.startsWith('statue_')).map((d) => d.item);
+  const pieces = st.length ? st : ['statue_luk'];
+  return {
+    ...m, id: crystalOf(m.id), name: `수정 ${m.name}`, hp: m.hp * 4, xp: m.xp * 6, coins: [m.coins[0] * 6, m.coins[1] * 6] as [number, number],
+    art: m.art ?? m.id, tint: 0x9ae8ff, crystal: true,
+    drops: [...pieces.map((item) => ({ item, chance: 1, qty: [2, 4] as [number, number] })), ...pieces.map((item) => ({ item: `g${item}`, chance: 0.04, qty: [1, 1] as [number, number] }))],
+  };
+});
+export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries([...monsters, ...crystals].map((m) => [m.id, m]));
 /** 순간이동 티켓 */
 export const TP_TICKET = 'tp_ticket';
 
@@ -511,7 +536,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
     spawns: [{ monster: 'mirabird', count: 9 }], nodes: [{ node: 'palm', x: 400 }, { node: 'spring', x: 780 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'canyon', toX: 910 }, { x: 936, to: 'tomb', toX: 50, reqKills: 400 }] },
+    facilities: [{ kind: 'npc', npc: 'stranger', x: 545, y: -96 }], portals: [{ x: 24, to: 'canyon', toX: 910 }, { x: 936, to: 'tomb', toX: 50, reqKills: 400 }] },
   { id: 'tomb', name: '모래 무덤', width: 940, theme: 'tomb',
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
     spawns: [{ monster: 'mumbun', count: 9 }], nodes: [{ node: 'amberrock', x: 420 }, { node: 'glowbush', x: 640 }],
@@ -572,7 +597,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
     spawns: [{ monster: 'aurowisp', count: 9 }], nodes: [{ node: 'frostbush', x: 250 }, { node: 'pine', x: 410 }, { node: 'frostrock', x: 690 }, { node: 'icehole', x: 880 }],
     ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 750, top: -48, bottom: 0 }, { x: 880, top: -96, bottom: -48 }],
-    facilities: [], portals: [{ x: 24, to: 'glacier', toX: 910 }, { x: 956, to: 'frostpeak', toX: 50, reqKills: 850 }] },
+    facilities: [{ kind: 'npc', npc: 'stranger', x: 225, y: -96 }], portals: [{ x: 24, to: 'glacier', toX: 910 }, { x: 956, to: 'frostpeak', toX: 50, reqKills: 850 }] },
   // 서리 봉우리: 오른쪽 위 발판 끝에 눈보라 군주의 옥좌(열쇠)
   { id: 'frostpeak', name: '서리 봉우리', width: 980, theme: 'frostpeak',
     platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
@@ -603,7 +628,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
     spawns: [{ monster: 'nebjelly', count: 9 }], nodes: [{ node: 'nebpool', x: 380 }, { node: 'nebpool', x: 680 }, { node: 'novarock', x: 800 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'crater', toX: 910 }, { x: 936, to: 'asteroid', toX: 50, reqKills: 1000 }] },
+    facilities: [{ kind: 'npc', npc: 'stranger', x: 545, y: -96 }], portals: [{ x: 24, to: 'crater', toX: 910 }, { x: 936, to: 'asteroid', toX: 50, reqKills: 1000 }] },
   { id: 'asteroid', name: '소행성 띠', width: 940, theme: 'asteroid',
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
     spawns: [{ monster: 'meteorite', count: 9 }], nodes: [{ node: 'novarock', x: 420 }, { node: 'novarock', x: 660 }],
@@ -648,8 +673,8 @@ export const RECIPES: RecipeDef[] = [
   { item: 'axe_red', coins: 120, mats: [['bar_red', 6], ['log', 6], ['nail', 4]] },
   { item: 'sword_red', coins: 150, mats: [['bar_red', 8], ['plank', 3], ['nail', 5]] },
   { item: 'anvil_exp', coins: 500, mats: [['plank', 15], ['nail', 25], ['ore', 20]], unlock: 2, smithLv: 5 },
-  { item: 'anvil_exp2', coins: 3000, mats: [['bar_blue', 20], ['runestone', 15], ['plank', 30]], unlock: 3, smithLv: 15, tier: 2 },
-  { item: 'anvil_exp3', coins: 20000, mats: [['bar_amber', 20], ['cactus_spine', 40], ['palmlog', 60]], unlock: 4, smithLv: 30, tier: 3 },
+  { item: 'anvil_exp2', coins: 3000, mats: [['bar_blue', 20], ['runestone', 15], ['plank', 30], ['brick', 20]], unlock: 3, smithLv: 15, tier: 2 },
+  { item: 'anvil_exp3', coins: 20000, mats: [['bar_amber', 20], ['cactus_spine', 40], ['palmlog', 60], ['chainlink', 40]], unlock: 4, smithLv: 30, tier: 3 },
   { item: 'rod_palm', coins: 2500, mats: [['palmlog', 25], ['twine', 40], ['fish_minnow', 30]], tier: 3 },
   { item: 'net_palm', coins: 2500, mats: [['palmlog', 25], ['twine', 40], ['bug_ant', 30]], tier: 3 },
   { item: 'rod_amber', coins: 6000, mats: [['bar_amber', 10], ['palmlog', 20], ['fish_salt', 40]], tier: 4 },
@@ -660,12 +685,12 @@ export const RECIPES: RecipeDef[] = [
   { item: 'pick_amber', coins: 6000, mats: [['bar_amber', 12], ['palmlog', 20], ['nail', 30]], tier: 4 },
   { item: 'axe_amber', coins: 6000, mats: [['bar_amber', 12], ['palmlog', 20], ['nail', 30]], tier: 4 },
   { item: 'helm_amber', coins: 7000, mats: [['bar_amber', 12], ['old_bandage', 20]], tier: 4 },
-  { item: 'plate_amber', coins: 10000, mats: [['bar_amber', 18], ['salt_crystal', 20], ['old_bandage', 20]], tier: 4 },
-  { item: 'legs_amber', coins: 8000, mats: [['bar_amber', 14], ['worm_scale', 16]], tier: 4 },
+  { item: 'plate_amber', coins: 10000, mats: [['bar_amber', 18], ['salt_crystal', 20], ['old_bandage', 20], ['hide', 20]], tier: 4 },
+  { item: 'legs_amber', coins: 8000, mats: [['bar_amber', 14], ['worm_scale', 16], ['hide', 12]], tier: 4 },
   { item: 'boots_amber', coins: 7000, mats: [['bar_amber', 10], ['worm_scale', 12], ['twine', 40]], tier: 4 },
-  { item: 'anvil_exp4', coins: 60000, mats: [['bar_frost', 25], ['pinelog', 80], ['snow_tuft', 60]], unlock: 5, smithLv: 45, tier: 4 },
+  { item: 'anvil_exp4', coins: 60000, mats: [['bar_frost', 25], ['pinelog', 80], ['snow_tuft', 60], ['gearwheel', 40]], unlock: 5, smithLv: 45, tier: 4 },
   { item: 'trap_iron', coins: 12000, mats: [['bar_frost', 8], ['pinelog', 30], ['nail', 40]], tier: 5 },
-  { item: 'trap_frost', coins: 40000, mats: [['bar_frost', 20], ['frost_core', 10], ['cr_fox', 40]], tier: 5 },
+  { item: 'trap_frost', coins: 40000, mats: [['bar_frost', 20], ['frost_core', 10], ['cr_fox', 40], ['bracket', 20]], tier: 5 },
   { item: 'fur_scarf', coins: 15000, mats: [['cr_hare', 60], ['cr_fox', 30], ['twine', 50]], tier: 5 },
   { item: 'antler_charm', coins: 45000, mats: [['cr_reindeer', 30], ['cr_marten', 40], ['aurora_dust', 20]], tier: 5 },
   { item: 'rod_frost', coins: 15000, mats: [['bar_frost', 10], ['pinelog', 30], ['fish_ice', 50]], tier: 5 },
@@ -676,20 +701,20 @@ export const RECIPES: RecipeDef[] = [
   { item: 'pick_frost', coins: 15000, mats: [['bar_frost', 14], ['pinelog', 30], ['nail', 60]], tier: 5 },
   { item: 'axe_frost', coins: 15000, mats: [['bar_frost', 14], ['pinelog', 30], ['nail', 60]], tier: 5 },
   { item: 'helm_frost', coins: 18000, mats: [['bar_frost', 14], ['yeti_fur', 20]], tier: 5 },
-  { item: 'plate_frost', coins: 26000, mats: [['bar_frost', 20], ['yeti_fur', 24], ['pine_cone', 30]], tier: 5 },
+  { item: 'plate_frost', coins: 26000, mats: [['bar_frost', 20], ['yeti_fur', 24], ['pine_cone', 30], ['bracket', 16]], tier: 5 },
   { item: 'legs_frost', coins: 20000, mats: [['bar_frost', 16], ['peng_feather', 24]], tier: 5 },
   { item: 'boots_frost', coins: 18000, mats: [['bar_frost', 12], ['snow_tuft', 30], ['twine', 80]], tier: 5 },
   // 4월드(모루 6단계)
-  { item: 'anvil_exp5', coins: 200000, mats: [['bar_nova', 30], ['starlog', 100], ['star_sand', 80]], unlock: 6, smithLv: 60, tier: 5 },
-  { item: 'sword_nova', coins: 60000, mats: [['bar_nova', 20], ['meteor_chip', 30], ['void_shard', 10]], tier: 6 },
-  { item: 'bow_nova', coins: 60000, mats: [['bar_nova', 16], ['starlog', 50], ['ring_plume', 30]], tier: 6 },
-  { item: 'wand_nova', coins: 60000, mats: [['bar_nova', 16], ['starlog', 40], ['neb_jelly', 24]], tier: 6 },
+  { item: 'anvil_exp5', coins: 200000, mats: [['bar_nova', 30], ['starlog', 100], ['star_sand', 80], ['screw', 60]], unlock: 6, smithLv: 60, tier: 5 },
+  { item: 'sword_nova', coins: 60000, mats: [['bar_nova', 20], ['meteor_chip', 30], ['void_shard', 10], ['cord', 12]], tier: 6 },
+  { item: 'bow_nova', coins: 60000, mats: [['bar_nova', 16], ['starlog', 50], ['ring_plume', 30], ['cord', 12]], tier: 6 },
+  { item: 'wand_nova', coins: 60000, mats: [['bar_nova', 16], ['starlog', 40], ['neb_jelly', 24], ['cord', 12]], tier: 6 },
   { item: 'pick_nova', coins: 40000, mats: [['bar_nova', 18], ['starlog', 40], ['bar_frost', 20]], tier: 6 },
   { item: 'axe_nova', coins: 40000, mats: [['bar_nova', 18], ['starlog', 40], ['bar_frost', 20]], tier: 6 },
   { item: 'rod_nova', coins: 40000, mats: [['bar_nova', 14], ['starlog', 40], ['fish_neb', 60]], tier: 6 },
   { item: 'net_nova', coins: 40000, mats: [['bar_nova', 14], ['starlog', 40], ['bug_neb', 60]], tier: 6 },
   { item: 'helm_nova', coins: 45000, mats: [['bar_nova', 18], ['crater_shell', 26]], tier: 6 },
-  { item: 'plate_nova', coins: 65000, mats: [['bar_nova', 26], ['crater_shell', 30], ['comet_hair', 24]], tier: 6 },
+  { item: 'plate_nova', coins: 65000, mats: [['bar_nova', 26], ['crater_shell', 30], ['comet_hair', 24], ['gizmo', 20]], tier: 6 },
   { item: 'legs_nova', coins: 50000, mats: [['bar_nova', 20], ['comet_hair', 26]], tier: 6 },
   { item: 'boots_nova', coins: 45000, mats: [['bar_nova', 16], ['star_sand', 40], ['yeti_fur', 30]], tier: 6 },
   ...([['blue', 2, 'bar_blue', 'willowlog', 'shell', 'glowdust'], ['gold', 3, 'bar_gold', 'moonlog', 'runestone', 'sporecap']] as const).flatMap(([k, tier, bar, log, m1, m2]) => {
@@ -998,7 +1023,16 @@ export const NPCS: Record<string, NpcDef> = {
   caravan: { id: 'caravan', name: '대상 카림', look: { hair: 2, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
 };
 /** 히든 직업 조건: 초보자로 이 레벨 이상, 이 아이템 1개, 숨은 NPC가 있는 맵에서 */
-export const HIDDEN_CLASS = { cls: 'wanderer' as ClassId, npc: 'stranger', map: 'hills', level: 15, item: 'four_leaf' };
+export const HIDDEN_CLASS = { cls: 'wanderer' as ClassId, npc: 'stranger', map: 'hills', level: CLASS_LEVEL, item: 'four_leaf' };
+/** 히든 계열의 각 단계: 레벨은 기본 직업과 같고(10·30·70·120), 그 월드 어딘가의 나그네를 찾아가 증표를 바쳐야 한다 */
+export const HIDDEN_TIERS: Partial<Record<ClassId, { map: string; item: string; hint: string }>> = {
+  wanderer: { map: 'hills', item: 'four_leaf', hint: '풀밭에서 아주 드물게 잎이 넷 달린 것을 찾으면… 그때 다시 오게.' },
+  fateweaver: { map: 'mirage', item: 'trophy_sand', hint: '모래 거인을 쓰러뜨린 증표를 가져오게. 신기루 너머에서 기다리지.' },
+  taler: { map: 'aurora', item: 'trophy_frost', hint: '눈보라를 다스리던 자의 증표를 가져오게. 오로라 아래에서 기다리지.' },
+  lifeteller: { map: 'nebula', item: 'trophy_void', hint: '별을 삼킨 거신의 증표를 가져오게. 성운 안개 속에서 기다리지.' },
+};
+/** 이 직업이 히든 계열인가 */
+export const isHiddenLine = (cls: ClassId) => classLine(cls)[1] === HIDDEN_CLASS.cls;
 /** 전직을 맡는 NPC */
 export const CLASS_NPC = 'elder';
 /** 전직을 맡는 NPC들(월드마다 한 명) */
@@ -1038,7 +1072,7 @@ export const STONE_BY_ID: Record<string, StoneDef> = Object.fromEntries(STONES.m
 /** 부위별 강화 칸 수 */
 export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, trophy: 0, pickaxe: 3, axe: 3, rod: 3, net: 3 };
 export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ? UP_SLOTS[s] : 0; };
-export const MAX_CHARACTERS = 6;
+export const MAX_CHARACTERS = 11;
 
 // ───────── 덫 사냥(3월드 기술) ─────────
 /** mins: 한 마리 잡히는 데 드는 기본 분, map: 이 맵이 열려야 덫을 놓을 수 있다 */
@@ -1061,12 +1095,12 @@ export const TRAP_NAMES = ['맨손 덫', '나무 덫', '쇠 덫', '서리 덫'];
 export const trapSlots = (lv: number) => Math.min(5, 1 + Math.floor(lv / 10));
 /** 음식 칸 수: 위 칸부터 먹는다 */
 export const FOOD_SLOTS = 3;
-/** 2월드로 가는 세계의 문(달빛 숲 끝): 계정이 이끼왕을 토벌하고, 이 캐릭터가 레벨·달빛 숲 처치를 채워야 한다 */
+/** 다음 월드로 가는 세계의 문: 원작처럼 그 월드 보스를 토벌하기만 하면 열린다(계정 공용) */
 export interface GateDef { to: number; boss: string; bossKills: number; level: number; map: string; kills: number; text: string }
 export const WORLD_GATES: GateDef[] = [
-  { to: 2, boss: 'mossking', bossKills: 1, level: 30, map: 'grove', kills: 400, text: '달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.' },
-  { to: 3, boss: 'sandlord', bossKills: 1, level: 60, map: 'sunspire', kills: 600, text: '해탑 유적 끝, 모래에 반쯤 묻힌 문 너머로 차가운 눈바람이 새어 나온다.' },
-  { to: 4, boss: 'frostlord', bossKills: 1, level: 90, map: 'frostpeak', kills: 800, text: '서리 봉우리 끝, 얼음 속에 박힌 문 너머로 별빛이 쏟아진다.' },
+  { to: 2, boss: 'mossking', bossKills: 1, level: 0, map: 'grove', kills: 0, text: '달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.' },
+  { to: 3, boss: 'sandlord', bossKills: 1, level: 0, map: 'sunspire', kills: 0, text: '해탑 유적 끝, 모래에 반쯤 묻힌 문 너머로 차가운 눈바람이 새어 나온다.' },
+  { to: 4, boss: 'frostlord', bossKills: 1, level: 0, map: 'frostpeak', kills: 0, text: '서리 봉우리 끝, 얼음 속에 박힌 문 너머로 별빛이 쏟아진다.' },
 ];
 export const WORLD_GATE = WORLD_GATES[0];
 /** n월드로 가는 문 */
@@ -1092,7 +1126,8 @@ export const STAR_TAL: Record<string, StarTalDef> = Object.fromEntries(STAR_TALS
 /** 음식 재사용 대기(초). 먹은 음식의 값을 쓴다 */
 export const foodCd = (id: string) => ITEMS[id]?.cd ?? 5;
 export const AFK_MIN_SECONDS = 60;
-export const AFK_MAX_SECONDS = 12 * 3600;
+/** 방치 보상 상한: 1년(원작처럼 사실상 제한 없음) */
+export const AFK_MAX_SECONDS = 365 * 24 * 3600;
 /** 방치 효율 기본값(전투·채집). 능력치·특성·카드로 오른다 */
 export const AFK_BASE = 0.4;
 
@@ -1102,10 +1137,18 @@ export const PRODUCTS: ProductDef[] = [
   { item: 'twine', lv: 1, perHour: 120, xp: 1 },
   { item: 'nail', lv: 3, perHour: 60, xp: 3 },
   { item: 'plank', lv: 6, perHour: 30, xp: 7 },
+  { item: 'brick', lv: 10, perHour: 22, xp: 11 },
+  { item: 'chainlink', lv: 15, perHour: 16, xp: 16 },
+  { item: 'hide', lv: 20, perHour: 12, xp: 22 },
+  { item: 'gearwheel', lv: 27, perHour: 9, xp: 30 },
+  { item: 'bracket', lv: 34, perHour: 7, xp: 40 },
+  { item: 'screw', lv: 42, perHour: 5, xp: 52 },
+  { item: 'gizmo', lv: 52, perHour: 4, xp: 68 },
+  { item: 'cord', lv: 64, perHour: 3, xp: 88 },
 ];
 /** 모루 포인트 한 개당 효과 */
-/** slotLv: 생산 칸이 열리는 대장 레벨 */
-export const ANVIL = { capBase: 60, capPer: 30, spdPer: 0.12, xpPer: 0.15, slotLv: [1, 5, 10] };
+/** slotLv: 생산 칸이 열리는 대장 레벨(원작처럼 처음엔 1칸, 나중에 2칸 더) */
+export const ANVIL = { capBase: 60, capPer: 30, spdPer: 0.12, xpPer: 0.15, slotLv: [1, 25, 55] };
 
 /** 잡화점: 하루 수량 제한(현지 날짜 기준으로 다시 채워짐) */
 /** w: 이 월드에 가 본 캐릭터에게만 판다 */
@@ -1123,6 +1166,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stamp_coins', price: 1500, daily: 1 },
   { item: 'stamp_afk', price: 4000, daily: 1 },
   { item: 'sculpt_tools', price: 1000, daily: 1 },
+  { item: 'loot_magnet', price: 40000, daily: 1, w: 2 },
   { item: 'arena_ticket', price: 250, daily: 2 },
   { item: 'tp_ticket', price: 60, daily: 8 },
   { item: 'pet_shard', price: 300, daily: 2 },
@@ -1188,15 +1232,31 @@ export const ACHIEVEMENTS: AchieveDef[] = [
 ];
 
 // ───────── 가족(직업별 최고 레벨 → 계정 보너스, 레벨 합 → 캐릭터 칸) ─────────
-export const FAMILY: Record<BaseClass, { eff: BonusKey; a: number; b: number; label: string }> = {
+export const FAMILY: Record<ClassId, { eff: BonusKey; a: number; b: number; label: string }> = {
   beginner: { eff: 'afk', a: 4, b: 40, label: '방치 효율' },
   warrior: { eff: 'hpPct', a: 15, b: 50, label: '최대 체력' },
   archer: { eff: 'dmg', a: 10, b: 50, label: '공격력' },
   mage: { eff: 'xp', a: 12, b: 50, label: '경험치' },
   wanderer: { eff: 'drop', a: 8, b: 50, label: '드롭률' },
+  guardian: { eff: 'def', a: 10, b: 80, label: '방어력' },
+  berserker: { eff: 'str', a: 30, b: 80, label: '힘' },
+  sharpshooter: { eff: 'acc', a: 20, b: 80, label: '명중' },
+  ranger: { eff: 'catching', a: 12, b: 80, label: '곤충 채집 효율' },
+  elementalist: { eff: 'mining', a: 12, b: 80, label: '채광 효율' },
+  hexer: { eff: 'wis', a: 30, b: 80, label: '지혜' },
+  fateweaver: { eff: 'coins', a: 15, b: 80, label: '코인 획득' },
+  bastion: { eff: 'hp', a: 400, b: 120, label: '최대 체력(고정)' },
+  warlord: { eff: 'chopping', a: 15, b: 120, label: '벌목 효율' },
+  hawkeye: { eff: 'fishing', a: 15, b: 120, label: '낚시 효율' },
+  pathfinder: { eff: 'drop', a: 6, b: 120, label: '드롭률' },
+  archmage: { eff: 'dmg', a: 8, b: 120, label: '공격력' },
+  oracle: { eff: 'xp', a: 8, b: 120, label: '경험치' },
+  taler: { eff: 'afk', a: 3, b: 120, label: '방치 효율' },
+  lifeteller: { eff: 'luk', a: 40, b: 150, label: '행운' },
 };
-/** 레벨 합이 이만큼이면 캐릭터 칸이 하나씩 늘어난다(기본 2칸) */
-export const FAMILY_SLOTS = [15, 40, 80, 140];
+/** 가족 보너스가 켜지는 캐릭터 레벨(원작처럼 단계마다): 1차 직업 9, 2차 29, 3차 69, 4차 129. 그 아래 레벨은 0 */
+export const FAMILY_MIN = [1, 9, 29, 69, 129];
+export const FAMILY_SLOTS = [15, 40, 80, 140, 220, 320, 450, 600, 800];
 
 // ───────── 카드 세트 ─────────
 /** 세트에 속한 카드의 별 합계로 세트 단계가 정해진다. 캐릭터마다 세트 하나를 켠다 */

@@ -13,7 +13,7 @@ import { Alch, newAlch } from './alchemy';
 import { PostState, newPost } from './post';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, HIDDEN_CLASS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -117,6 +117,10 @@ export interface Account {
   meritShop: Record<string, number>;
   /** 석상 받침을 열었는지(조각 도구) */
   statuesOpen: boolean;
+  /** 자동 줍기(줍기 자석을 쓰면 계정 전체에 켜진다) */
+  autoLoot?: boolean;
+  /** 황금이 된 석상(계정 최고 레벨이 모든 캐릭터에게) */
+  goldStatues?: string[];
   /** 찾은 별 지도, 남은 별 포인트, 연 별자리 */
   stars: Record<string, true>;
   starPoints: number;
@@ -424,11 +428,11 @@ export function advanceClass(c: Character, cls: ClassId): string | null {
   const need = TIER_LEVEL[classTier(cls)];
   if (def.base ? c.cls !== def.base : c.cls !== 'beginner') return '전직할 수 없습니다';
   if (c.level < need) return `레벨 ${need} 필요`;
-  // 히든 직업: 숨은 나그네가 있는 맵에서, 초보자로 더 오래 버티고, 네잎 클로버를 바쳐야 한다
-  if (def.hidden) {
-    const h = HIDDEN_CLASS;
-    if (c.mapId !== h.map || c.level < h.level || countItem(c, h.item) < 1) return '전직할 수 없습니다';
-    removeItem(c, h.item, 1);
+  // 히든 계열: 레벨은 기본 직업과 같고, 그 단계의 나그네가 있는 맵에서 증표를 바쳐야 한다
+  const ht = HIDDEN_TIERS[cls];
+  if (ht) {
+    if (c.mapId !== ht.map || countItem(c, ht.item) < 1) return '전직할 수 없습니다';
+    removeItem(c, ht.item, 1);
   }
   if (def.starter && c.inventory.length >= INVENTORY_SIZE) return '가방이 가득 찼습니다';
   c.cls = cls;
@@ -561,6 +565,8 @@ export function useItem(acc: Account, c: Character, id: string): string | null {
   else if (it.kind === 'pouch') { if (c.pouches.includes(id)) return '이미 사용한 주머니입니다'; c.pouches.push(id); }
   else if (it.kind === 'chest') { if (acc.chests.includes(id)) return '이미 사용한 보관함입니다'; acc.chests.push(id); }
   else if (id === 'sculpt_tools') return useSculptTools(acc, c);
+  else if (id.startsWith('gstatue_')) { const k = id.slice(8); acc.goldStatues ??= []; if (acc.goldStatues.includes(k)) return '이미 황금 석상입니다'; acc.goldStatues.push(k); }
+  else if (id === 'loot_magnet') { if (acc.autoLoot) return '이미 자동 줍기를 얻었습니다'; acc.autoLoot = true; }
   else if (TRAP_KITS[id]) { if (c.traps.tier >= TRAP_KITS[id]) return '이미 같거나 더 좋은 덫을 씁니다'; c.traps.tier = TRAP_KITS[id]; }
   else return '사용할 수 없는 아이템';
   removeItem(c, id, 1);
@@ -968,6 +974,6 @@ export function gateChecks(acc: Pick<Account, 'bosses'>, c: Character, to = 2): 
     { label: `${MONSTERS[g.boss].name} 토벌(계정)`, have: boss, need: g.bossKills, ok: boss >= g.bossKills },
     { label: '캐릭터 레벨', have: c.level, need: g.level, ok: c.level >= g.level },
     { label: `${MAPS[g.map].name} 처치`, have: kills, need: g.kills, ok: kills >= g.kills },
-  ];
+  ].filter((x) => x.need > 0);
 }
 export const gateOpen = (acc: Pick<Account, 'bosses'>, c: Character, to = 2) => gateChecks(acc, c, to).every((x) => x.ok);

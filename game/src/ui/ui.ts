@@ -5,7 +5,7 @@ import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
 import { trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
-import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, labRange, labSettle, labState } from '../core/lab';
+import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, labRange, labSettle, labState } from '../core/lab';
 import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
@@ -16,8 +16,8 @@ const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 �
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -30,7 +30,7 @@ import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, 
 import { PlayKind, runGame } from './minigames';
 import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
-import { STARS, achieveReady, achieveProgress, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
+import { STARS, achieveReady, achieveProgress, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel, statueLv } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
@@ -366,7 +366,7 @@ export class UI {
     if (mbs.length && !w.arena) lines.push(`<span class="ui-accent">⚔ ${mbs.map((m) => `${MONSTERS[m.id].name}(${MAPS[m.map].name})`).join(', ')} 출현 중</span>`);
     // 3월드에서는 눈꽃 마을의 장로에게서도 전직한다
     const promoNpc = NPCS[worldOf(c.mapId) === 3 ? 'elder3' : CLASS_NPC].name;
-    if (canSubclass(c)) lines.push(`<span class="ui-accent">★ ${classTier(c.cls) + 1}차 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
+    if (canSubclass(c)) lines.push(classLine(c.cls).includes(HIDDEN_CLASS.cls) ? `<span class="ui-accent">★ ${classTier(c.cls) + 1}차 전직 가능! 어딘가의 ${NPCS[HIDDEN_CLASS.npc].name}을(를) 찾아가세요</span>` : `<span class="ui-accent">★ ${classTier(c.cls) + 1}차 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
     if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
     for (const n of Object.values(NPCS)) {
       const q = currentQuest(c, n.id), qp = questProgress(c, n.id);
@@ -671,7 +671,7 @@ export class UI {
         const npc = NPCS[this.npcId] ?? NPCS.elder;
         const speaker = (body: string) => `<div class="ui-dialog" role="dialog" aria-label="${npc.name}"><div class="speaker"><div class="face"><img class="px" src="${portraitUrl(npc.look)}" alt=""></div>${npc.name}</div>
           <div class="ui-grow stack">${body}</div><button class="ui-btn sm close" data-act="close" aria-label="닫기">✕</button></div>`;
-        const subs = c.cls === 'beginner' ? [] : nextClasses(c.cls);
+        const subs = c.cls === 'beginner' ? [] : nextClasses(c.cls).filter((id) => !HIDDEN_TIERS[id]);
         // 전직 창에서도 이 NPC의 부탁을 받거나 끝낼 수 있게(전직을 미뤄도 퀘스트가 막히지 않는다)
         const questBlock = () => {
           const q = currentQuest(c, npc.id), p = questProgress(c, npc.id), st = c.quests[npc.id] ?? { idx: 0, accepted: false };
@@ -688,15 +688,19 @@ export class UI {
           return speaker(`<p>“많이 강해졌구먼! 이제 자네의 길을 정할 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
             ${(['warrior', 'archer', 'mage'] as ClassId[]).map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}${questBlock()}`);
         }
-        // 수상한 나그네: 히든 직업. 조건을 대놓고 알려 주지 않고 수수께끼로만
+        // 수상한 나그네: 히든 계열. 월드마다 한 곳에 숨어 있고, 조건을 대놓고 알려 주지 않고 수수께끼로만
         if (npc.id === HIDDEN_CLASS.npc) {
-          const h = HIDDEN_CLASS, ready = c.cls === 'beginner' && c.level >= h.level && countItem(c, h.item) > 0;
-          if (classLine(c.cls).includes(h.cls)) return speaker('<p>“길 위에서 또 만나는군. 바람이 부는 쪽으로 걷게, 동료여.”</p>');
-          if (c.cls !== 'beginner') return speaker('<p>“이미 길을 정했군… 아쉽네. 정해진 길만 있는 건 아니었는데.”</p>');
-          if (!ready) return speaker(`<p>“흠… 아무 길에도 서지 않은 자로구먼.”</p><p class="ui-sm ui-muted">“${c.level < h.level ? '조금 더 오래, 아무 길에도 서지 말고 걸어 보게.' : '풀밭에서 아주 드물게 잎이 넷 달린 것을 찾으면… 그때 다시 오게.'}”</p>`);
-          const w = CLASSES[h.cls];
-          return speaker(`<p>“그래, 그 잎을 찾았군. 네 갈래 길 대신 다섯 번째 길이 있다네.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다 · ${ITEMS[h.item].name} 1개를 바칩니다)</span></p>
-            <div class="ui-row line"><div class="ui-grow"><b class="ui-accent">${w.name}</b> <span class="ui-xs ui-accent">히든</span><div class="ui-sm ui-muted">${w.desc}</div></div><button class="ui-btn primary" data-act="class:${h.cls}">전직</button></div>`);
+          const line = classLine(c.cls), onLine = line.includes(HIDDEN_CLASS.cls);
+          if (!onLine && c.cls !== 'beginner') return speaker('<p>“이미 길을 정했군… 아쉽네. 정해진 길만 있는 건 아니었는데.”</p>');
+          const nextId = c.cls === 'beginner' ? HIDDEN_CLASS.cls : nextClasses(c.cls).find((id) => HIDDEN_TIERS[id]);
+          if (!nextId) return speaker('<p>“이야기의 끝에 닿았군. 이제 자네가 이야기를 들려줄 차례일세.”</p>');
+          const ht = HIDDEN_TIERS[nextId]!, need = TIER_LEVEL[classTier(nextId)];
+          if (c.mapId !== ht.map) return speaker(`<p>“${onLine ? '길 위에서 또 만나는군.' : '흠… 아무 길에도 서지 않은 자로구먼.'} 하지만 다음 이야기는 여기서가 아니라네.”</p><p class="ui-sm ui-muted">“${MAPS[ht.map].name}에서 기다리지.”</p>`);
+          if (c.level < need) return speaker(`<p>“${onLine ? '바람이 부는 쪽으로 계속 걷게, 동료여.' : '흠… 아무 길에도 서지 않은 자로구먼.'}”</p><p class="ui-sm ui-muted">“조금 더 오래 걸어 보게.” (Lv.${need})</p>`);
+          if (countItem(c, ht.item) < 1) return speaker(`<p>“흠… 이제 때가 되었군.”</p><p class="ui-sm ui-muted">“${ht.hint}”</p>`);
+          const w = CLASSES[nextId];
+          return speaker(`<p>“그래, 그걸 찾았군. ${c.cls === 'beginner' ? '네 갈래 길 대신 다섯 번째 길이 있다네.' : '이야기의 다음 장을 펼칠 때일세.'}” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다 · ${ITEMS[ht.item].name} 1개를 바칩니다)</span></p>
+            <div class="ui-row line"><div class="ui-grow"><b class="ui-accent">${w.name}</b> <span class="ui-xs ui-accent">히든 ${classTier(nextId)}차</span><div class="ui-sm ui-muted">${w.desc}</div></div><button class="ui-btn primary" data-act="class:${nextId}">전직</button></div>`);
         }
         const q = currentQuest(c, npc.id), p = questProgress(c, npc.id), st = c.quests[npc.id] ?? { idx: 0, accepted: false };
         if (!q || !p) return speaker(npc.quests.length ? '<p>“고맙네! 지금은 부탁할 일이 없다네.”</p>' : `<p>“어서 오게. 지금은 부탁할 일이 없다네.”</p>${CLASS_NPCS.includes(npc.id) ? `<p class="ui-sm ui-muted">이곳에서 다음 단계 전직을 할 수 있습니다(${c.cls === 'beginner' ? `Lv.${CLASS_LEVEL}` : `Lv.${TIER_LEVEL[classTier(c.cls) + 1] ?? '-'}`}).</p>` : ''}`);
@@ -889,10 +893,10 @@ export class UI {
             const mine = m?.id === c.id, linked = m && st.linked.has(m.id);
             svg += `<g class="labspot" data-act="labspot:${i}" tabindex="0" role="button" aria-label="${ch ? `${esc(ch.name)}의 자리` : `빈 자리 ${i + 1}`}">
               <circle cx="${p.x}" cy="${p.y}" r="9" fill="${ch ? ch.look.outfit : '#1e1a3e'}" stroke="${mine ? '#ffe066' : linked ? '#c87aff' : '#5a5a7a'}" stroke-width="${mine ? 2.4 : 1.4}" ${ch ? '' : 'stroke-dasharray="2 2"'}/>
-              ${ch ? `<text x="${p.x}" y="${p.y + 3.5}" class="labtx">${esc(ch.name.slice(0, 1))}</text><text x="${p.x}" y="${p.y + 19}" class="wsub">${esc(ch.name)}</text>` : `<text x="${p.x}" y="${p.y + 3.5}" class="labtx dim">+</text>`}</g>`;
+              ${ch ? `<text x="${p.x}" y="${p.y + 3.5}" class="labtx">${esc(ch.name.slice(0, 1))}</text><text x="${p.x}" y="${p.y + 19}" class="wsub">${esc(ch.name)}${atStation(acc, ch.id) ? '' : ' (비움)'}</text>` : `<text x="${p.x}" y="${p.y + 3.5}" class="labtx dim">+</text>`}</g>`;
           });
           svg += '</svg>';
-          body = `<div class="wmapbox" style="background:#120e2a">${svg}</div><p class="ui-xs ui-muted">빈 자리를 누르면 ${esc(c.name)}이(가) 그 자리에 섭니다. 본체(왼쪽)의 신호 범위나 연결된 캐릭터의 범위에 닿으면 연결되고, 연결된 캐릭터의 범위 안 장치(네모)와 보석(마름모)이 켜집니다. 연결된 캐릭터는 시간마다 연구 경험치를 얻어 범위가 넓어집니다.</p>`;
+          body = `<div class="wmapbox" style="background:#120e2a">${svg}</div><p class="ui-xs ui-muted">빈 자리를 누르면 ${esc(c.name)}이(가) 그 자리에 섭니다. 본체(왼쪽)의 신호 범위나 연결된 캐릭터의 범위에 닿으면 연결되고, 연결된 캐릭터의 범위 안 장치(네모)와 보석(마름모)이 켜집니다. 연결된 캐릭터는 시간마다 연구 경험치를 얻어 범위가 넓어집니다. 연구원은 성운 정거장에 머물러 있어야 일하고(다른 맵에 가면 자리를 비움), 요리사와 함께 할 수 없습니다.</p>`;
         } else {
           body = LAB_NODES.map((n) => {
             const on = st.on.has(n.id), locked = n.jewel && !lab.jewels.includes(n.id);
@@ -964,7 +968,7 @@ export class UI {
         cookSettle(acc, now);
         const sk = c.skills.cooking, need = skillXpToNext(sk.lv), seated = k.chefs.includes(c.id);
         const head = `<div class="ui-row alchhead">${ui('obj_kitchen', 'mi')}<b class="ui-grow">요리 Lv.<span class="ui-accent">${sk.lv}</span> <span class="ui-xs ui-muted">요리사 ${k.chefs.length}/${k.kitchens.length} · 주방 속도 ×${chefMult(acc).toFixed(2)}</span></b>
-          <div style="width:24%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div><button class="ui-btn sm ${seated ? 'primary' : ''}" data-act="kchef" title="식탁에 앉은 캐릭터는 요리 레벨만큼 모든 주방을 빠르게 하고, 요리 경험치를 얻습니다">${seated ? '식탁에서 일어나기' : '식탁에 앉기'}</button></div>`;
+          <div style="width:24%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div><button class="ui-btn sm ${seated ? 'primary' : ''}" data-act="kchef" title="식탁에 앉은 캐릭터는 성운 정거장에 머무는 동안 요리 레벨만큼 모든 주방을 빠르게 하고 요리 경험치를 얻습니다. 연구원과 함께 할 수 없습니다">${seated ? '식탁에서 일어나기' : '식탁에 앉기'}</button></div>`;
         const spi = (id: string, n?: number) => `${ui(id, 'tic')}${n !== undefined ? n.toLocaleString() : ''}`;
         const hm = (s: number) => { const m = Math.ceil(s / 60); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
         let body = '';
@@ -1181,7 +1185,7 @@ export class UI {
           <span>시간당 음식</span><span>${r.foodPerHour ? f(r.foodPerHour) : '0'}</span></div>
           ${r.drops.length ? `<h3>시간당 아이템</h3><div class="ui-kv">${r.drops.map((dr) => `<span>${icon(dr.id)} ${ITEMS[dr.id].name}</span><span>${dr.perHour >= 10 ? f(dr.perHour) : dr.perHour.toFixed(1)}</span>`).join('')}</div>` : ''}
           ${r.survival < 1 ? '<p class="ui-xs ui-bad">받는 피해가 회복보다 커서 방치 중 자주 쓰러집니다. 방어력을 올리거나 음식 칸에 음식을 넣으세요.</p>' : ''}`;
-        return win('방치 정보', `<p class="ui-xs ui-muted">이 캐릭터를 두고 떠나면 아래 속도로 계속 성장합니다(최대 12시간). AUTO 여부와는 상관없습니다.</p>${body}
+        return win('방치 정보', `<p class="ui-xs ui-muted">이 캐릭터를 두고 떠나면 아래 속도로 계속 성장합니다(최대 1년). AUTO 여부와는 상관없습니다.</p>${body}
           ${c.anvil.slots.filter((sl) => sl.prod).map((sl, i) => `<p class="ui-sm">모루 ${i + 1}번 칸: 시간당 ${ITEMS[sl.prod!].name} ${f(anvilRate(c, c.anvil.slots.indexOf(sl)))}개 (보관 ${sl.stored}/${anvilCap(c)})</p>`).join('')}`);
       }
     }
@@ -1219,13 +1223,14 @@ export class UI {
         ${has ? '<button class="ui-btn primary" data-act="sculpt">조각 도구 쓰기</button>' : '<span class="ui-xs ui-muted">조각 도구는 잡화점에서 팝니다.</span>'}</div>`;
     }
     return STATUES.map((s) => {
-      const st = statueLevel(c.statues[s.id] ?? 0), n = countItem(c, s.item);
-      const val = Math.round(st.lv * s.per * 10) / 10;
-      return `<div class="ui-row line"><span class="ui-slot">${icon(s.item)}</span><div class="ui-grow"><b>${s.name}</b> <span class="ui-accent">Lv.${st.lv}</span>
-          <span class="ui-sm ${st.lv ? 'ui-good' : 'ui-muted'}">${s.label} +${val}${s.unit} (다음 +${Math.round((st.lv + 1) * s.per * 10) / 10}${s.unit})</span>
+      const st = statueLevel(c.statues[s.id] ?? 0), n = countItem(c, s.item), gold = acc.goldStatues?.includes(s.id), eff = statueLv(acc, c, s.id);
+      const val = Math.round(eff * s.per * 10) / 10, gn = countItem(c, `g${s.item}`);
+      return `<div class="ui-row line"><span class="ui-slot">${icon(gold ? `g${s.item}` : s.item)}</span><div class="ui-grow"><b>${gold ? '<span class="ui-accent">황금</span> ' : ''}${s.name}</b> <span class="ui-accent">Lv.${st.lv}</span>${gold && eff > st.lv ? ` <span class="ui-xs ui-good">(계정 최고 Lv.${eff} 적용)</span>` : ''}
+          ${!gold && gn ? `<button class="ui-btn sm success" data-act="use:g${s.item}">황금으로 만들기</button>` : ''}
+          <span class="ui-sm ${eff ? 'ui-good' : 'ui-muted'}">${s.label} +${val}${s.unit} (다음 +${Math.round((st.lv + 1) * s.per * 10) / 10}${s.unit})</span>
           ${bar('skill', st.into, st.need, `${st.into} / ${st.need}`)}</div>
         <button class="ui-btn ${n ? 'primary' : ''} sm" data-act="statue:${s.id}" ${n ? '' : 'disabled'}>바치기 ${n}</button></div>`;
-    }).join('') + '<p class="ui-xs ui-muted">조각은 사냥하며 드물게 얻습니다. 가방에 있는 그 조각을 모두 바칩니다.</p>';
+    }).join('') + '<p class="ui-xs ui-muted">조각은 사냥하며 드물게 얻습니다. 가방에 있는 그 조각을 모두 바칩니다. 드물게 나타나는 수정 몬스터는 조각을 잔뜩 주고, 아주 드물게 황금 조각을 줍니다. 황금 석상은 계정에서 가장 높은 레벨이 모든 캐릭터에게 적용됩니다.</p>';
   }
 
   private cardExtrasHtml(c: Character): string {
@@ -1272,12 +1277,13 @@ export class UI {
 
   private familyHtml(): string {
     const acc = this.game.acc, best = familyBest(acc.characters), lv = familyLevel(acc);
-    const rows = (Object.keys(FAMILY) as BaseClass[]).map((k) => {
+    const unit = (e: string) => (e === 'afk' ? '%p' : ['hp', 'str', 'agi', 'wis', 'luk', 'def', 'acc'].includes(e) ? '' : '%');
+    const rows = (Object.keys(FAMILY) as ClassId[]).map((k) => {
       const v = familyValue(k, best[k]);
-      return `<div class="ui-row line"><b class="ui-grow">${CLASSES[k].name} <span class="ui-xs ui-muted">최고 Lv.${best[k] || '-'}</span></b><span class="ui-sm ${v ? 'ui-good' : 'ui-muted'}">${FAMILY[k].label} +${(Math.round(v * 10) / 10)}${FAMILY[k].eff === 'afk' ? '%p' : '%'}</span></div>`;
+      return `<div class="ui-row line"><b class="ui-grow">${CLASSES[k].name} <span class="ui-xs ui-muted">${best[k] ? `가족 Lv.${best[k]}` : `${classTier(k) ? `${FAMILY_MIN[classTier(k)]}레벨부터` : ''}`}</span></b><span class="ui-sm ${v ? 'ui-good' : 'ui-muted'}">${FAMILY[k].label} +${(Math.round(v * 10) / 10)}${unit(FAMILY[k].eff)}</span></div>`;
     }).join('');
     const next = FAMILY_SLOTS.find((n) => lv < n);
-    return `<p class="ui-sm">직업마다 가장 높은 캐릭터의 레벨이 계정 전체에 보너스를 줍니다.</p>${rows}
+    return `<p class="ui-sm">캐릭터가 거쳐 온 모든 직업이 계정 전체에 보너스를 줍니다. 그 단계가 열리는 레벨(1차 9 · 2차 29 · 3차 69)부터 셉니다.</p>${rows}
       <h3>가족 레벨 <span class="ui-accent">${lv}</span></h3><p class="ui-sm">캐릭터 칸 ${charSlots(acc)}/${MAX_CHARACTERS}${next ? ` · 레벨 합 ${next}이면 한 칸 더` : ''}</p>`;
   }
 

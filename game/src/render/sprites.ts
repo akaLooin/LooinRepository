@@ -1319,6 +1319,11 @@ function buildItems() {
     p.rect(2, 3, 2, 6, '#dfe5ea'); p.rect(8, 6, 2, 4, '#8d97a3');
     p.disc(6, 6, 1.8, 1.8, gem); p.set(5, 5, '#ffffff');
     p.outline().save(`it_statue_${k}`);
+    p = new Paint(12, 12);
+    p.rect(2, 3, 8, 7, '#e8b830'); p.rect(3, 2, 5, 1, '#e8b830'); p.rect(2, 9, 3, 2, '#e8b830'); p.set(10, 5, '#e8b830');
+    p.rect(2, 3, 2, 6, '#fff1a8'); p.rect(8, 6, 2, 4, '#b07a1a');
+    p.disc(6, 6, 1.8, 1.8, gem); p.set(5, 5, '#ffffff'); p.set(9, 2, '#ffffff');
+    p.outline().save(`it_gstatue_${k}`);
   }
   // 조각 도구: 끌 + 망치
   p = new Paint(13, 13);
@@ -1346,6 +1351,16 @@ function buildItems() {
   // 모루 생산품·가방·주머니·열쇠·왕관 아이콘
   p = new Paint(12, 12); p.disc(5.5, 6, 4, 3.6, '#c9a26a'); p.line(2, 5, 9, 7, '#8a6a3c'); p.line(2, 8, 9, 4, '#8a6a3c'); p.outline().save('it_twine');
   p = new Paint(12, 12); p.rect(2, 2, 7, 2, '#c9d1d9'); p.rect(5, 4, 2, 7, '#9aa3ad'); p.set(5, 10, '#6a7480'); p.outline().save('it_nail');
+  p = new Paint(12, 12); p.rect(1, 2, 3, 6, '#d9574a'); p.rect(8, 2, 3, 6, '#d9574a'); p.rect(1, 7, 10, 3, '#d9574a'); p.rect(1, 2, 3, 2, '#e8e8f0'); p.rect(8, 2, 3, 2, '#e8e8f0'); p.rect(2, 8, 8, 1, '#a03a30'); p.outline().save('it_magnet');
+  // 모루 생산품(4~11번째)
+  p = new Paint(12, 10); p.rect(1, 2, 10, 6, '#c2603e'); p.rect(1, 2, 10, 1, '#e08a62'); p.line(1, 5, 10, 5, '#8a3e28'); p.set(5, 3, '#8a3e28'); p.set(5, 4, '#8a3e28'); p.set(3, 6, '#8a3e28'); p.set(8, 6, '#8a3e28'); p.outline().save('it_brick');
+  p = new Paint(12, 12); p.disc(4, 5, 3, 3, '#9aa3ad'); p.disc(4, 5, 1.4, 1.4, null); p.disc(7.5, 7.5, 3, 3, '#c9d1d9'); p.disc(7.5, 7.5, 1.4, 1.4, null); p.outline().save('it_chainlink');
+  p = new Paint(12, 12); p.disc(5.5, 6, 4.6, 4, '#a8744e'); p.set(1, 2, '#a8744e'); p.set(10, 2, '#a8744e'); p.set(1, 10, '#a8744e'); p.set(10, 10, '#a8744e'); p.disc(5, 5, 1.6, 1.2, '#c9946a'); p.outline().save('it_hide');
+  p = new Paint(12, 12); p.disc(5.5, 5.5, 4.6, 4.6, '#c9a26a'); for (const [x, y] of [[5, 0], [5, 10], [0, 5], [10, 5], [1, 1], [9, 1], [1, 9], [9, 9]]) p.set(x, y, '#c9a26a'); p.disc(5.5, 5.5, 1.6, 1.6, '#6b4a3a'); p.outline().save('it_gearwheel');
+  p = new Paint(12, 12); p.rect(1, 8, 10, 2, '#6a7480'); p.rect(1, 2, 2, 7, '#6a7480'); p.rect(1, 2, 1, 7, '#9aa3ad'); p.set(6, 8, '#2f2a3a'); p.set(2, 4, '#2f2a3a'); p.outline().save('it_bracket');
+  p = new Paint(12, 12); p.rect(3, 1, 6, 2, '#a07ad9'); p.rect(5, 3, 2, 8, '#8a6fd1'); p.set(5, 4, '#c9a8ff'); p.set(6, 6, '#c9a8ff'); p.set(5, 8, '#c9a8ff'); p.outline().save('it_screw');
+  p = new Paint(12, 12); p.rect(2, 3, 8, 7, '#5fb8a8'); p.rect(3, 4, 3, 2, '#f6c945'); p.set(8, 4, '#d9574a'); p.set(8, 6, '#7fc4ff'); p.rect(4, 1, 1, 2, '#9aa3ad'); p.rect(7, 1, 1, 2, '#9aa3ad'); p.line(3, 8, 8, 8, '#2f6a5e'); p.outline().save('it_gizmo');
+  p = new Paint(12, 12); p.disc(5.5, 6, 4, 3.6, '#2f2a3a'); p.line(2, 4, 9, 8, '#d9574a'); p.line(2, 8, 9, 3, '#f6c945'); p.line(3, 6, 9, 6, '#4e8de2'); p.outline().save('it_cord');
   p = new Paint(13, 11); p.rect(1, 3, 11, 5, '#d9a066'); p.rect(1, 6, 11, 2, '#b07a4e'); p.set(4, 4, '#8a5a3c'); p.set(9, 5, '#8a5a3c'); p.outline().save('it_plank');
   for (const [k, col] of [['it_bag', '#a8744e'], ['it_bag2', '#6b4a3a']] as const) {
     p = new Paint(12, 12); p.rect(2, 4, 8, 7, col); p.line(4, 4, 4, 2, col); p.line(7, 4, 7, 2, col); p.line(4, 1, 7, 1, col); p.rect(5, 6, 2, 2, '#f6c945'); p.outline().save(k);
@@ -1364,10 +1379,10 @@ export const ITEM_ICON: Record<string, string> = {
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
   moss_ring: 'it_ring', pebble_charm: 'it_charm', anvil_exp: 'obj_craft',
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
-  twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
+  twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
-  ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
+  ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].flatMap((k) => [[`statue_${k}`, `it_statue_${k}`], [`gstatue_${k}`, `it_gstatue_${k}`]])), sculpt_tools: 'it_sculpt', loot_magnet: 'it_magnet',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
   arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
   anvil_exp2: 'obj_craft', anvil_exp3: 'obj_craft',

@@ -378,13 +378,13 @@ describe('별빛 특성', () => {
   });
 });
 describe('세계의 문', () => {
-  it('보스 토벌·레벨·달빛 숲 처치를 모두 채워야 열린다', () => {
+  it('원작처럼 그 월드 보스만 토벌하면 열린다(레벨·처치 조건 없음)', () => {
     const { acc, c } = setup();
     expect(gateOpen(acc, c)).toBe(false);
-    acc.bosses.mossking = 1; c.level = WORLD_GATE.level;
-    expect(gateChecks(acc, c).filter((x) => !x.ok).length).toBe(1);
-    c.kills.grove = WORLD_GATE.kills;
+    expect(gateChecks(acc, c).length).toBe(1);
+    acc.bosses.mossking = 1;
     expect(gateOpen(acc, c)).toBe(true);
+    expect(WORLD_GATE.level + WORLD_GATE.kills).toBe(0);
   });
 });
 
@@ -397,9 +397,9 @@ describe('2월드', () => {
     expect(mapUnlocked(c, 'oasis')).toBe(false);
     const gi = ALLMAPS.grove.portals.findIndex((p) => p.gate);
     // 조건을 못 채우면 거절
-    c.kills.grove = 10;
+    acc.bosses.mossking = 0;
     expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(false);
-    c.kills.grove = 400;
+    acc.bosses.mossking = 1;
     expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(true);
     expect(c.mapId).toBe('oasis'); expect(c.maxWorld).toBe(2);
     expect(mapUnlocked(c, 'oasis')).toBe(true);
@@ -464,12 +464,12 @@ describe('연금술', () => {
 
 import { HIDDEN_CLASS, CLASSES as CLS } from '../src/core/data';
 describe('히든 직업(방랑자 → 운명술사)', () => {
-  it('초보자로 Lv.15 이상, 네잎 클로버를 들고 언덕에서만 전직된다', () => {
+  it('기본 직업과 같은 Lv.10, 네잎 클로버를 들고 언덕에서만 전직된다', () => {
     const { acc, c } = setup();
-    c.level = 12; c.mapId = HIDDEN_CLASS.map;
+    c.level = 9; c.mapId = HIDDEN_CLASS.map;
     addItem(c, HIDDEN_CLASS.item, 1);
     expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(false); // 레벨 부족
-    c.level = 15; c.mapId = 'meadow';
+    c.level = 10; c.mapId = 'meadow';
     expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(false); // 장소가 다름
     c.mapId = HIDDEN_CLASS.map;
     expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(true);
@@ -481,10 +481,12 @@ describe('히든 직업(방랑자 → 운명술사)', () => {
     applyAction(a2, 0, { t: 'class', cls: 'warrior' }, 0);
     expect(applyAction(a2, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(false);
   });
-  it('Lv.30에 운명술사로, 행운이 주력이고 패시브가 붙는다', () => {
+  it('Lv.30에 신기루 평원의 나그네에게 사막 거상 트로피를 바치면 워커로, 행운이 주력이고 패시브가 붙는다', () => {
     const { acc, c } = setup();
     c.level = 30; c.mapId = HIDDEN_CLASS.map; addItem(c, HIDDEN_CLASS.item, 1);
     applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'fateweaver' }, 0).ok).toBe(false); // 증표·장소가 없다
+    c.mapId = 'mirage'; addItem(c, 'trophy_sand', 1);
     expect(applyAction(acc, 0, { t: 'class', cls: 'fateweaver' }, 0).ok).toBe(true);
     expect(CLS[c.cls].main).toBe('luk');
     const drop0 = derive(c, acc).dropMult;
@@ -493,14 +495,15 @@ describe('히든 직업(방랑자 → 운명술사)', () => {
   });
 });
 
-import { TIER_LEVEL, classLine as cline, classTier, canSubclass as canSub } from '../src/core/data';
+import { HIDDEN_TIERS, TIER_LEVEL, classLine as cline, classTier, canSubclass as canSub } from '../src/core/data';
 describe('히든 계열 4단계: 낭만가 → 워커 → 테일러 → 라이프텔러', () => {
   it('단계마다 정해진 레벨에서 차례로 전직하고, 계보의 특성을 모두 쓴다', () => {
     const { acc, c } = setup();
-    c.level = 15; c.mapId = HIDDEN_CLASS.map; addItem(c, HIDDEN_CLASS.item, 1);
+    c.level = 10; c.mapId = HIDDEN_CLASS.map; addItem(c, HIDDEN_CLASS.item, 1);
     expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(true);
     expect(CLS.wanderer.name).toBe('낭만가');
     for (const [cls, tier] of [['fateweaver', 2], ['taler', 3], ['lifeteller', 4]] as const) {
+      const ht = HIDDEN_TIERS[cls]!; c.mapId = ht.map; addItem(c, ht.item, 1);
       c.level = TIER_LEVEL[tier] - 1;
       expect(canSub(c)).toBe(false);
       expect(applyAction(acc, 0, { t: 'class', cls }, 0).ok).toBe(false);
@@ -564,12 +567,12 @@ describe('우체국', () => {
 import { WORLD3, WORLD_GATES, ITEMS as IT, MONSTERS as MON, NODES as ND, RECIPES as RC, CLASSES as CL3, TALENT as TL3, nextClasses as nextC, maxTierOf as maxT, CARD_BY_ID as CB } from '../src/core/data';
 import { orderPool } from '../src/core/post';
 describe('3월드: 서리 고원', () => {
-  it('사막 거상 토벌·Lv.60·해탑 처치를 채우면 해탑 끝 문으로 눈꽃 마을에 간다', () => {
+  it('사막 거상을 토벌하면 해탑 끝 문으로 눈꽃 마을에 간다', () => {
     const { acc, c } = setup();
     c.maxWorld = 2; c.mapId = 'sunspire'; c.level = 60;
     const gi = ALLMAPS.sunspire.portals.findIndex((p) => p.gate);
     expect(ALLMAPS.sunspire.portals[gi].to).toBe('snowtown');
-    expect(gateChecks(acc, c, 3).map((x) => x.ok)).toEqual([false, true, false]);
+    expect(gateChecks(acc, c, 3).map((x) => x.ok)).toEqual([false]);
     expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(false);
     acc.bosses.sandlord = 1; c.kills.sunspire = WORLD_GATES[1].kills;
     expect(gateOpen(acc, c, 3)).toBe(true);
@@ -739,12 +742,12 @@ describe('기도', () => {
 
 import { WORLD4, SMELTS as SM4, SHOP as SH4, NPCS as NP4 } from '../src/core/data';
 describe('4월드: 별빛 성운', () => {
-  it('눈보라 군주 토벌·Lv.90·서리 봉우리 처치를 채우면 봉우리 끝 문으로 성운 정거장에 간다', () => {
+  it('눈보라 군주를 토벌하면 봉우리 끝 문으로 성운 정거장에 간다', () => {
     const { acc, c } = setup();
     c.maxWorld = 3; c.mapId = 'frostpeak'; c.level = 90;
     const gi = ALLMAPS.frostpeak.portals.findIndex((p) => p.gate);
     expect(ALLMAPS.frostpeak.portals[gi].to).toBe('nebtown');
-    expect(gateChecks(acc, c, 4).map((x) => x.ok)).toEqual([false, true, false]);
+    expect(gateChecks(acc, c, 4).map((x) => x.ok)).toEqual([false]);
     expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(false);
     acc.bosses.frostlord = 1; c.kills.frostpeak = WORLD_GATES[2].kills;
     expect(gateOpen(acc, c, 4)).toBe(true);
