@@ -37,6 +37,7 @@ class GrowthService(
     private val brain: Brain,
     private val sim: WorldSimService,
     private val autoHours: Double,
+    private val memory: MemoryService? = null,
 ) {
     private val log = LoggerFactory.getLogger(GrowthService::class.java)
     @Volatile var nextAutoRunAt: Long? = null; private set
@@ -78,7 +79,9 @@ class GrowthService(
             ),
         ).trim()
         require(text.isNotEmpty()) { "성찰 결과가 비어 있습니다" }
-        return repo.addInsight(world.id, text, memories.size)
+        val insight = repo.addInsight(world.id, text, memories.size)
+        runCatching { memory?.synthesizeProfile(world) }
+        return insight
     }
 
     /** 성찰이 필요한가: 마지막 성찰 이후 기억이 5개 이상 늘었을 때. */

@@ -63,6 +63,8 @@ data class Space(
     val name: String,
     val description: String,
     val memberAgentIds: List<String> = emptyList(),
+    /** 커뮤니티 문화: "REDDIT" (r/looin) / "DC" (루인 갤러리). 그 외 공간은 빈 값. */
+    val style: String = "",
 )
 
 @Serializable
@@ -75,6 +77,13 @@ data class Post(
     val body: String,
     val createdAt: Long,
     val commentCount: Int = 0,
+    /** 추천 점수 (레딧: 업보트-다운보트, 디시: 추천) */
+    val score: Int = 0,
+    val views: Int = 0,
+    /** 플레어(레딧) / 말머리(디시) */
+    val tag: String? = null,
+    /** 디시: 비추천 수 */
+    val downs: Int = 0,
 )
 
 @Serializable
@@ -85,6 +94,9 @@ data class Comment(
     val authorName: String,
     val body: String,
     val createdAt: Long,
+    val score: Int = 0,
+    /** 레딧식 답글: 부모 댓글 id */
+    val parentId: String? = null,
 )
 
 @Serializable
@@ -96,7 +108,32 @@ data class Conversation(
     val agentId: String,
     val title: String,
     val updatedAt: Long,
+    val folderId: String? = null,
+    /** CHAT(일반) / NARRATIVE(나의 서사) / PROACTIVE(아카엘이 먼저 말 건 대화) */
+    val kind: String = "CHAT",
+    val unread: Int = 0,
 )
+
+@Serializable
+data class Folder(val id: String, val name: String, val createdAt: Long)
+
+@Serializable
+data class CreateFolderRequest(val name: String)
+
+/** 대화 이름 바꾸기 / 폴더로 옮기기. folderId 가 "" 면 폴더에서 빼기. */
+@Serializable
+data class UpdateConversationRequest(val title: String? = null, val folderId: String? = null)
+
+@Serializable
+data class VoteRequest(val delta: Int)
+
+/** "나의 서사 쌓기" — AI 가 던진 질문 하나. */
+@Serializable
+data class NarrativeQuestion(val conversationId: String, val question: ChatMessage, val answered: Int)
+
+/** 아카엘이 먼저 말을 건 소식함. */
+@Serializable
+data class Inbox(val conversationId: String?, val unread: Int, val latest: List<ChatMessage>)
 
 @Serializable
 enum class ChatRole { USER, ASSISTANT }
@@ -262,10 +299,10 @@ data class CreateAgentRequest(
 )
 
 @Serializable
-data class CreatePostRequest(val title: String, val body: String)
+data class CreatePostRequest(val title: String, val body: String, val tag: String? = null)
 
 @Serializable
-data class CreateCommentRequest(val body: String)
+data class CreateCommentRequest(val body: String, val parentId: String? = null)
 
 /** 커뮤니티의 AI 들이 스스로 활동하게 한다 (글/댓글 생성). */
 @Serializable

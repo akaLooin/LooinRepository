@@ -22,6 +22,29 @@ import world.looin.shared.World
  */
 class MemoryService(private val repo: Repository, private val brain: Brain) {
 
+    /** 쌓인 기억과 이해로 프로필을 다시 정리한다 (서사 답변 뒤, 성찰 뒤). 이름·닉네임은 건드리지 않는다. */
+    suspend fun synthesizeProfile(world: World) {
+        if (!brain.info.online) return
+        val owner = repo.profile(world.id)
+        val out = brain.complete(
+            BrainRequest(
+                stableSystem = Prompts.profileSynthesisSystem(owner),
+                dynamicSystem = Prompts.understandingBlock(repo.latestInsight(world.id), repo.memories(world.id).take(150)),
+                turns = listOf(Turn(ChatRole.USER, "지금 프로필:\n${Prompts.ownerBlock(owner)}\n\n새로 정리한 프로필 JSON:")),
+                effort = Effort.LOW, maxTokens = 3_000, task = Task.PROFILE,
+            ),
+        )
+        val o = JsonExtract.obj(out) ?: return
+        fun pick(key: String, old: String) = o.str(key)?.trim()?.takeIf { it.isNotEmpty() } ?: old
+        repo.saveProfile(
+            world.id,
+            owner.copy(
+                bio = pick("bio", owner.bio), values = pick("values", owner.values), interests = pick("interests", owner.interests),
+                goals = pick("goals", owner.goals), speakingStyle = pick("speakingStyle", owner.speakingStyle),
+            ),
+        )
+    }
+
     suspend fun extractFromExchange(world: World, userText: String, assistantText: String): List<Memory> {
         if (userText.isBlank() || !brain.info.online) return emptyList()
         val owner = repo.profile(world.id)

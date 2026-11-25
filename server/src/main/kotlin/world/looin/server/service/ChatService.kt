@@ -100,7 +100,8 @@ class ChatService(
         var usedBrain: String? = null
         val task = chooseTask(req, history)
         val brainReq = BrainRequest(
-            stableSystem = Prompts.chatSystem(world, owner, agent),
+            stableSystem = Prompts.chatSystem(world, owner, agent) +
+                (if (conv.kind == StoryService.NARRATIVE) "\n\n" + Prompts.NARRATIVE_REPLY_RULE else ""),
             dynamicSystem = Prompts.understandingBlock(repo.latestInsight(world.id), repo.memories(world.id).take(40)),
             turns = history,
             maxTokens = 4_096,
@@ -128,6 +129,9 @@ class ChatService(
             val note = if (attached.isEmpty()) "" else "\n(첨부한 파일: " + attached.joinToString { it.name } + ")"
             runCatching { memory.extractFromExchange(world, req.text + note, sb.toString()) }
                 .onFailure { log.warn("memory extraction failed: {}", it.message) }
+            // 서사 답변은 프로필까지 다시 정리한다
+            if (conv.kind == StoryService.NARRATIVE) runCatching { memory.synthesizeProfile(world) }
+                .onFailure { log.warn("profile synthesis failed: {}", it.message) }
         }
     }
 }

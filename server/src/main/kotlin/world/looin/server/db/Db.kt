@@ -61,6 +61,16 @@ class Db(file: File) {
             "ALTER TABLE messages ADD COLUMN brain TEXT",
             // 이 메시지에 첨부된 파일 id 들 (쉼표로 구분)
             "ALTER TABLE messages ADD COLUMN attachments TEXT",
+            "ALTER TABLE spaces ADD COLUMN style TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE posts ADD COLUMN score INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE posts ADD COLUMN views INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE posts ADD COLUMN tag TEXT",
+            "ALTER TABLE posts ADD COLUMN downs INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE comments ADD COLUMN score INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE comments ADD COLUMN parent_id TEXT",
+            "ALTER TABLE conversations ADD COLUMN folder_id TEXT",
+            "ALTER TABLE conversations ADD COLUMN kind TEXT NOT NULL DEFAULT 'CHAT'",
+            "ALTER TABLE conversations ADD COLUMN unread INTEGER NOT NULL DEFAULT 0",
         )
         private val SCHEMA = """
             CREATE TABLE IF NOT EXISTS users (
@@ -114,7 +124,10 @@ class Db(file: File) {
             CREATE INDEX IF NOT EXISTS idx_usage ON brain_usage(provider, created_at);
             CREATE TABLE IF NOT EXISTS attachments (
               id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
-              name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, text TEXT, created_at INTEGER NOT NULL)
+              name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, text TEXT, created_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS folders (
+              id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+              name TEXT NOT NULL, created_at INTEGER NOT NULL)
         """.trimIndent()
     }
 }

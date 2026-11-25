@@ -26,6 +26,9 @@ import world.looin.shared.BrainSettingsView
 import world.looin.shared.ChatStreamEvent
 import world.looin.shared.CreateAgentRequest
 import world.looin.shared.CreateCommentRequest
+import world.looin.shared.CreateFolderRequest
+import world.looin.shared.UpdateConversationRequest
+import world.looin.shared.VoteRequest
 import world.looin.shared.CreatePostRequest
 import world.looin.shared.LooinJson
 import world.looin.shared.MeetingRequest
@@ -94,7 +97,44 @@ fun Route.apiRoutes(app: App) {
             get("/conversations/{id}/messages") {
                 val w = call.world()
                 val c = repo.conversation(w.id, call.parameters["id"]!!) ?: throw NotFound("conversation not found")
+                repo.markRead(c.id)
                 call.respond(repo.messages(c.id))
+            }
+            get("/conversations") { call.respond(repo.allConversations(call.world().id)) }
+            put("/conversations/{id}") {
+                val w = call.world()
+                val id = call.parameters["id"]!!
+                val r = call.receive<UpdateConversationRequest>()
+                r.folderId?.takeIf { it.isNotBlank() }?.let { fid -> require(repo.folders(w.id).any { it.id == fid }) { "폴더가 없습니다" } }
+                repo.updateConversation(w.id, id, r.title, r.folderId)
+                call.respond(repo.conversation(w.id, id) ?: throw NotFound("conversation not found"))
+            }
+            delete("/conversations/{id}") {
+                call.respond(mapOf("deleted" to repo.deleteConversation(call.world().id, call.parameters["id"]!!)))
+            }
+
+            // ---- 나의 서사 / 아카엘이 먼저 ----
+            post("/narrative/next") { call.respond(app.story.nextQuestion(call.world())) }
+            get("/inbox") { call.respond(app.story.inbox(call.world())) }
+            post("/inbox/now") {
+                // 시험용: 지금 바로 아카엘이 먼저 말을 걸게 한다
+                call.respond(app.story.maybeReachOut(call.world(), force = true) ?: throw IllegalArgumentException("지금은 두뇌가 꺼져 있어요"))
+            }
+
+            // ---- 폴더 ----
+            get("/folders") { call.respond(repo.folders(call.world().id)) }
+            post("/folders") {
+                val r = call.receive<CreateFolderRequest>()
+                require(r.name.isNotBlank()) { "폴더 이름이 비어 있습니다" }
+                call.respond(repo.createFolder(call.world().id, r.name))
+            }
+            put("/folders/{id}") {
+                val r = call.receive<CreateFolderRequest>()
+                require(r.name.isNotBlank()) { "폴더 이름이 비어 있습니다" }
+                call.respond(repo.renameFolder(call.world().id, call.parameters["id"]!!, r.name) ?: throw NotFound("folder not found"))
+            }
+            delete("/folders/{id}") {
+                call.respond(mapOf("deleted" to repo.deleteFolder(call.world().id, call.parameters["id"]!!)))
             }
             post("/chat/stream") {
                 val w = call.world()
@@ -149,7 +189,7 @@ fun Route.apiRoutes(app: App) {
             get("/spaces/{id}/posts") {
                 val w = call.world()
                 val s = repo.space(w.id, call.parameters["id"]!!) ?: throw NotFound("space not found")
-                call.respond(repo.posts(s.id))
+                call.respond(repo.sortedPosts(s.id, call.request.queryParameters["sort"] ?: "new"))
             }
             post("/spaces/{id}/posts") {
                 val w = call.world()
@@ -157,13 +197,15 @@ fun Route.apiRoutes(app: App) {
                 val r = call.receive<CreatePostRequest>()
                 require(r.title.isNotBlank() && r.body.isNotBlank()) { "제목과 본문이 필요합니다" }
                 val ownerName = repo.profile(w.id).let { it.nickname.ifBlank { it.name }.ifBlank { "나" } }
-                val p = repo.createPost(s.id, null, ownerName, r.title.trim(), r.body.trim())
+                val p = repo.createPost(s.id, null, ownerName, r.title.trim(), r.body.trim(), r.tag?.takeIf { it.isNotBlank() })
                 if (s.type == SpaceType.COMMUNITY) app.sim.reactToOwnerPost(w, s, p)
                 call.respond(repo.post(w.id, p.id)!!)
             }
             get("/posts/{id}") {
                 val w = call.world()
-                val p = repo.post(w.id, call.parameters["id"]!!) ?: throw NotFound("post not found")
+                val found = repo.post(w.id, call.parameters["id"]!!) ?: throw NotFound("post not found")
+                repo.addViews(found.id, 1)
+                val p = repo.post(w.id, found.id)!!
                 call.respond(PostDetail(p, repo.comments(p.id)))
             }
             post("/posts/{id}/comments") {
@@ -172,11 +214,24 @@ fun Route.apiRoutes(app: App) {
                 val r = call.receive<CreateCommentRequest>()
                 require(r.body.isNotBlank()) { "댓글이 비어 있습니다" }
                 val ownerName = repo.profile(w.id).let { it.nickname.ifBlank { it.name }.ifBlank { "나" } }
-                repo.createComment(p.id, null, ownerName, r.body.trim())
+                r.parentId?.let { pid -> require(repo.comments(p.id).any { it.id == pid }) { "답글 대상이 없습니다" } }
+                repo.createComment(p.id, null, ownerName, r.body.trim(), r.parentId)
                 // 내 댓글에 글쓴이(AI)가 답한다.
                 val s = repo.space(w.id, p.spaceId)
                 if (s != null && p.authorAgentId != null) app.sim.replyAsAuthor(w, s, p)
                 call.respond(PostDetail(repo.post(w.id, p.id)!!, repo.comments(p.id)))
+            }
+            post("/posts/{id}/vote") {
+                val w = call.world()
+                val p = repo.post(w.id, call.parameters["id"]!!) ?: throw NotFound("post not found")
+                repo.votePost(p.id, call.receive<VoteRequest>().delta.coerceIn(-1, 1))
+                call.respond(repo.post(w.id, p.id)!!)
+            }
+            post("/comments/{id}/vote") {
+                val w = call.world()
+                val c = repo.comment(w.id, call.parameters["id"]!!) ?: throw NotFound("comment not found")
+                repo.voteComment(c.id, call.receive<VoteRequest>().delta.coerceIn(-1, 1))
+                call.respond(repo.comment(w.id, c.id)!!)
             }
             post("/spaces/{id}/tick") {
                 val w = call.world()

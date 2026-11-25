@@ -8,6 +8,7 @@ import world.looin.shared.ChatMessage
 import world.looin.shared.ChatRole
 import world.looin.shared.Comment
 import world.looin.shared.Conversation
+import world.looin.shared.Folder
 import world.looin.shared.Insight
 import world.looin.shared.LooinJson
 import world.looin.shared.Meeting
@@ -110,11 +111,19 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         db.one("SELECT * FROM spaces WHERE world_id = ? AND id = ?", worldId, id) { it.space() }
             ?.let { it.copy(memberAgentIds = members(it.id)) }
 
-    fun createSpace(worldId: String, type: SpaceType, name: String, description: String): Space {
-        val s = Space(newId(), worldId, type, name, description)
-        db.exec("INSERT INTO spaces VALUES (?,?,?,?,?)", s.id, s.worldId, s.type.name, s.name, s.description)
+    fun createSpace(worldId: String, type: SpaceType, name: String, description: String, style: String = ""): Space {
+        val s = Space(newId(), worldId, type, name, description, style = style)
+        db.exec(
+            "INSERT INTO spaces(id, world_id, type, name, description, style) VALUES (?,?,?,?,?,?)",
+            s.id, s.worldId, s.type.name, s.name, s.description, style,
+        )
         return s
     }
+
+    fun updateSpace(spaceId: String, name: String, description: String, style: String) =
+        db.exec("UPDATE spaces SET name = ?, description = ?, style = ? WHERE id = ?", name, description, style, spaceId)
+
+    fun deleteSpace(spaceId: String) = db.exec("DELETE FROM spaces WHERE id = ?", spaceId)
 
     fun addMember(spaceId: String, agentId: String) =
         db.exec("INSERT OR IGNORE INTO space_members(space_id, agent_id) VALUES (?, ?)", spaceId, agentId)
@@ -129,24 +138,56 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         spaceId, limit,
     ) { it.post() }
 
+    /** 정렬: hot(점수를 시간으로 나눔) / top(점수) / best(디시 개념글: 추천 5 이상) / new */
+    fun sortedPosts(spaceId: String, sort: String): List<Post> {
+        val all = posts(spaceId, 300)
+        val now = now()
+        return when (sort) {
+            "hot" -> all.sortedByDescending { (it.score + 1) / Math.pow((now - it.createdAt) / 3_600_000.0 + 2, 1.5) }
+            "top" -> all.sortedByDescending { it.score }
+            "best" -> all.filter { it.score >= 5 }
+            else -> all
+        }.take(100)
+    }
+
+    fun votePost(postId: String, delta: Int) {
+        if (delta >= 0) db.exec("UPDATE posts SET score = score + ? WHERE id = ?", delta, postId)
+        else db.exec("UPDATE posts SET score = score + ?, downs = downs + ? WHERE id = ?", delta, -delta, postId)
+    }
+
+    fun addViews(postId: String, n: Int) = db.exec("UPDATE posts SET views = views + ? WHERE id = ?", n, postId)
+
+    fun voteComment(commentId: String, delta: Int) = db.exec("UPDATE comments SET score = score + ? WHERE id = ?", delta, commentId)
+
+    fun comment(worldId: String, commentId: String): Comment? = db.one(
+        """SELECT c.* FROM comments c JOIN posts p ON c.post_id = p.id JOIN spaces s ON p.space_id = s.id
+           WHERE s.world_id = ? AND c.id = ?""", worldId, commentId,
+    ) { it.comment() }
+
     fun post(worldId: String, postId: String): Post? = db.one(
         """SELECT p.*, (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS cc
            FROM posts p JOIN spaces s ON p.space_id = s.id WHERE s.world_id = ? AND p.id = ?""",
         worldId, postId,
     ) { it.post() }
 
-    fun createPost(spaceId: String, authorAgentId: String?, authorName: String, title: String, body: String): Post {
-        val p = Post(newId(), spaceId, authorAgentId, authorName, title, body, now())
-        db.exec("INSERT INTO posts VALUES (?,?,?,?,?,?,?)", p.id, p.spaceId, p.authorAgentId, p.authorName, p.title, p.body, p.createdAt)
+    fun createPost(spaceId: String, authorAgentId: String?, authorName: String, title: String, body: String, tag: String? = null): Post {
+        val p = Post(newId(), spaceId, authorAgentId, authorName, title, body, now(), tag = tag)
+        db.exec(
+            "INSERT INTO posts(id, space_id, author_agent_id, author_name, title, body, created_at, tag) VALUES (?,?,?,?,?,?,?,?)",
+            p.id, p.spaceId, p.authorAgentId, p.authorName, p.title, p.body, p.createdAt, tag,
+        )
         return p
     }
 
     fun comments(postId: String): List<Comment> =
         db.query("SELECT * FROM comments WHERE post_id = ? ORDER BY created_at", postId) { it.comment() }
 
-    fun createComment(postId: String, authorAgentId: String?, authorName: String, body: String): Comment {
-        val c = Comment(newId(), postId, authorAgentId, authorName, body, now())
-        db.exec("INSERT INTO comments VALUES (?,?,?,?,?,?)", c.id, c.postId, c.authorAgentId, c.authorName, c.body, c.createdAt)
+    fun createComment(postId: String, authorAgentId: String?, authorName: String, body: String, parentId: String? = null): Comment {
+        val c = Comment(newId(), postId, authorAgentId, authorName, body, now(), parentId = parentId)
+        db.exec(
+            "INSERT INTO comments(id, post_id, author_agent_id, author_name, body, created_at, parent_id) VALUES (?,?,?,?,?,?,?)",
+            c.id, c.postId, c.authorAgentId, c.authorName, c.body, c.createdAt, parentId,
+        )
         return c
     }
 
@@ -158,10 +199,56 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
     fun conversation(worldId: String, id: String): Conversation? =
         db.one("SELECT * FROM conversations WHERE world_id = ? AND id = ?", worldId, id) { it.conversation() }
 
-    fun createConversation(worldId: String, agentId: String, title: String): Conversation {
-        val c = Conversation(newId(), agentId, title, now())
-        db.exec("INSERT INTO conversations VALUES (?,?,?,?,?)", c.id, worldId, c.agentId, c.title, c.updatedAt)
+    fun createConversation(worldId: String, agentId: String, title: String, kind: String = "CHAT"): Conversation {
+        val c = Conversation(newId(), agentId, title, now(), kind = kind)
+        db.exec(
+            "INSERT INTO conversations(id, world_id, agent_id, title, updated_at, kind) VALUES (?,?,?,?,?,?)",
+            c.id, worldId, c.agentId, c.title, c.updatedAt, kind,
+        )
         return c
+    }
+
+    fun allConversations(worldId: String): List<Conversation> =
+        db.query("SELECT * FROM conversations WHERE world_id = ? ORDER BY updated_at DESC", worldId) { it.conversation() }
+
+    fun conversationOfKind(worldId: String, kind: String): Conversation? =
+        db.one("SELECT * FROM conversations WHERE world_id = ? AND kind = ? ORDER BY updated_at DESC LIMIT 1", worldId, kind) { it.conversation() }
+
+    fun updateConversation(worldId: String, id: String, title: String?, folderId: String?) {
+        title?.takeIf { it.isNotBlank() }?.let { db.exec("UPDATE conversations SET title = ? WHERE world_id = ? AND id = ?", it.trim().take(60), worldId, id) }
+        folderId?.let { db.exec("UPDATE conversations SET folder_id = ? WHERE world_id = ? AND id = ?", it.ifBlank { null }, worldId, id) }
+    }
+
+    fun deleteConversation(worldId: String, id: String): Boolean =
+        db.exec("DELETE FROM conversations WHERE world_id = ? AND id = ?", worldId, id) > 0
+
+    fun markRead(conversationId: String) = db.exec("UPDATE conversations SET unread = 0 WHERE id = ?", conversationId)
+    fun addUnread(conversationId: String) = db.exec("UPDATE conversations SET unread = unread + 1 WHERE id = ?", conversationId)
+
+    /** 소유자가 마지막으로 말한 시각 (앱을 쓰고 있는지 판단). */
+    fun lastOwnerMessageAt(worldId: String): Long = db.one(
+        "SELECT MAX(m.created_at) FROM messages m JOIN conversations c ON m.conversation_id = c.id WHERE c.world_id = ? AND m.role = 'USER'",
+        worldId,
+    ) { it.getLong(1) } ?: 0L
+
+    // ---------- folders ----------
+    fun folders(worldId: String): List<Folder> =
+        db.query("SELECT * FROM folders WHERE world_id = ? ORDER BY created_at", worldId) { Folder(it.getString("id"), it.getString("name"), it.getLong("created_at")) }
+
+    fun createFolder(worldId: String, name: String): Folder {
+        val f = Folder(newId(), name.trim().take(30), now())
+        db.exec("INSERT INTO folders VALUES (?,?,?,?)", f.id, worldId, f.name, f.createdAt)
+        return f
+    }
+
+    fun renameFolder(worldId: String, id: String, name: String): Folder? {
+        db.exec("UPDATE folders SET name = ? WHERE world_id = ? AND id = ?", name.trim().take(30), worldId, id)
+        return folders(worldId).firstOrNull { it.id == id }
+    }
+
+    fun deleteFolder(worldId: String, id: String): Boolean = db.tx {
+        exec("UPDATE conversations SET folder_id = NULL WHERE world_id = ? AND folder_id = ?", worldId, id)
+        exec("DELETE FROM folders WHERE world_id = ? AND id = ?", worldId, id) > 0
     }
 
     fun messages(conversationId: String): List<ChatMessage> =
@@ -290,13 +377,23 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         getString("id"), getString("world_id"), AgentKind.valueOf(getString("kind")), getString("name"), getString("handle"),
         getString("role"), getString("persona"), getString("avatar"), getLong("created_at"),
     )
-    private fun ResultSet.space() = Space(getString("id"), getString("world_id"), SpaceType.valueOf(getString("type")), getString("name"), getString("description"))
+    private fun ResultSet.space() = Space(
+        getString("id"), getString("world_id"), SpaceType.valueOf(getString("type")), getString("name"), getString("description"),
+        style = getString("style") ?: "",
+    )
     private fun ResultSet.post() = Post(
         getString("id"), getString("space_id"), getString("author_agent_id"), getString("author_name"),
         getString("title"), getString("body"), getLong("created_at"), getInt("cc"),
+        score = getInt("score"), views = getInt("views"), tag = getString("tag"), downs = getInt("downs"),
     )
-    private fun ResultSet.comment() = Comment(getString("id"), getString("post_id"), getString("author_agent_id"), getString("author_name"), getString("body"), getLong("created_at"))
-    private fun ResultSet.conversation() = Conversation(getString("id"), getString("agent_id"), getString("title"), getLong("updated_at"))
+    private fun ResultSet.comment() = Comment(
+        getString("id"), getString("post_id"), getString("author_agent_id"), getString("author_name"), getString("body"), getLong("created_at"),
+        score = getInt("score"), parentId = getString("parent_id"),
+    )
+    private fun ResultSet.conversation() = Conversation(
+        getString("id"), getString("agent_id"), getString("title"), getLong("updated_at"),
+        folderId = getString("folder_id"), kind = getString("kind") ?: "CHAT", unread = getInt("unread"),
+    )
     private fun ResultSet.message() = ChatMessage(
         getString("id"), getString("conversation_id"), ChatRole.valueOf(getString("role")), getString("content"), getLong("created_at"),
         getString("brain"),

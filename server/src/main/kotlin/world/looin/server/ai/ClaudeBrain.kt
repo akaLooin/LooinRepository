@@ -15,6 +15,7 @@ import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.OutputConfig
 import com.anthropic.models.messages.StopReason
 import com.anthropic.models.messages.TextBlockParam
+import com.anthropic.models.messages.WebSearchTool20260209
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -100,6 +101,8 @@ data class ClaudeModels(
         Task.CHAT_LIGHT -> Route(fast, Effort.MEDIUM)
         Task.CHAT, Task.GENERAL, Task.MEETING -> Route(chat, Effort.MEDIUM)
         Task.MEETING_SUMMARY -> Route(chat, Effort.HIGH)
+        Task.NARRATIVE, Task.PROACTIVE -> Route(chat, Effort.MEDIUM)
+        Task.PROFILE -> Route(chat, Effort.LOW)
         Task.CHAT_DEEP, Task.REFLECTION -> Route(deep, Effort.HIGH)
         Task.CHAT_BEST -> Route(best, Effort.HIGH)
     }
@@ -252,6 +255,7 @@ class ClaudeBrain(
                     },
                 ).build(),
             )
+        if (req.webSearch) b.addTool(WebSearchTool20260209.builder().maxUses(3L).build())
         if (useFallbacks && models.supportsFallbacks(model)) {
             // 안전 분류기가 거절하면 서버에서 다른 모델로 이어서 답하게 한다.
             b.putAdditionalHeader("anthropic-beta", "server-side-fallback-2026-07-01")

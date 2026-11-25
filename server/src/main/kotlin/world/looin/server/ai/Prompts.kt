@@ -80,6 +80,23 @@ object Prompts {
         """.trimIndent()
     }
 
+    /** 커뮤니티 문화별 규칙. */
+    fun communityCulture(style: String): String = when (style) {
+        "DC" -> """
+            # 이곳의 문화: 디시인사이드 갤러리 ("루인 갤러리")
+            - 짧고 직설적인 반말. ㅋㅋ, ㄹㅇ, ㅇㅈ, ㄱㄱ, ~노?, ~함, ~임 같은 갤러리 말투를 자연스럽게.
+            - 제목은 짧고 눈길 끌게 (20자 이내), 본문도 1~5문장. 가벼운 드립·짤 묘사 OK.
+            - 말머리는 [일반] [정보] [질문] [후기] [뻘글] 중 하나.
+            - 다만 욕설·혐오·비하·성적 표현·인신공격·실존 인물 조롱은 절대 금지. 루인을 존중하는 선 안에서 장난친다.
+        """.trimIndent()
+        else -> """
+            # 이곳의 문화: 레딧 서브레딧 ("r/looin")
+            - 정보와 토론 중심. 근거·경험을 공유하고 서로의 의견을 존중한다. 존댓말과 평어를 섞은 정중한 톤.
+            - 긴 글이면 끝에 "TL;DR:" 한 줄 요약. 가끔 "Edit:", "OP(글쓴이)" 같은 레딧 표현.
+            - 플레어(태그)는 [토론] [질문] [분석] [응원] [기록] [아이디어] 중 하나.
+        """.trimIndent()
+    }
+
     /** 커뮤니티 활동용 (고정 부분): 주민 한 명이 글 또는 댓글을 쓴다. */
     fun communityActorSystem(world: World, owner: OwnerProfile, space: Space, agent: Agent): String {
         val who = ownerName(owner)
@@ -90,30 +107,31 @@ object Prompts {
 
             이 커뮤니티의 주제는 "$who 라는 사람" 이다. 주민들은 $who 의 생각, 선택, 성장, 프로젝트,
             가능성, 그리고 그가 사는 세상에 대해 각자의 관점으로 이야기한다.
-            커뮤니티 설명: ${space.description}
+
+            ${communityCulture(space.style)}
 
             # 소유자 ($who)
             ${ownerBlock(owner)}
 
             # 규칙
-            - 페르소나의 말투와 관점을 지킨다. 다른 주민과 겹치지 않는 고유한 시각을 보여준다.
+            - 페르소나의 관점을 지키되 위 커뮤니티 문화의 말투로 쓴다. 다른 주민과 겹치지 않는 시각을 보여준다.
             - 근거 없는 사실(사건, 경력 등)을 지어내지 않는다. 모르면 질문하거나 추측임을 밝힌다.
-            - 존중을 유지하되 아첨하지 않는다. 비판도 건설적으로 한다.
             - 한국어로 쓴다. 출력은 지시한 JSON 하나만, 다른 텍스트 없이.
         """.trimIndent()
     }
 
-    fun newPostInstruction(recent: List<Post>) = buildString {
+    fun newPostInstruction(recent: List<Post>, style: String = "") = buildString {
         appendLine("커뮤니티에 새 글을 하나 써라. 최근 글과 주제가 겹치지 않게 한다.")
         if (recent.isNotEmpty()) {
             appendLine("최근 글 제목:")
-            recent.take(15).forEach { appendLine("- ${it.title} (by ${it.authorName})") }
+            recent.take(15).forEach { appendLine("- ${it.tag?.let { t -> "$t " } ?: ""}${it.title}") }
         }
-        appendLine("""출력 형식: {"title": "제목(40자 이내)", "body": "본문(3~8문장)"}""")
+        val tags = if (style == "DC") "[일반] [정보] [질문] [후기] [뻘글]" else "[토론] [질문] [분석] [응원] [기록] [아이디어]"
+        appendLine("""출력 형식: {"tag": "$tags 중 하나", "title": "제목", "body": "본문"}""")
     }
 
-    fun commentInstruction(post: Post, existing: List<String>) = buildString {
-        appendLine("다음 글에 댓글을 하나 달아라.")
+    fun commentInstruction(post: Post, existing: List<String>, replyTo: String? = null) = buildString {
+        appendLine(if (replyTo != null) "다음 글의 댓글 하나에 답글을 달아라." else "다음 글에 댓글을 하나 달아라.")
         appendLine("글 제목: ${post.title}")
         appendLine("작성자: ${post.authorName}")
         appendLine("본문: ${post.body}")
@@ -121,6 +139,7 @@ object Prompts {
             appendLine("기존 댓글:")
             existing.takeLast(10).forEach { appendLine("- $it") }
         }
+        if (replyTo != null) appendLine("답글을 달 댓글: $replyTo")
         appendLine("""출력 형식: {"body": "댓글(1~4문장)"}""")
     }
 
@@ -171,6 +190,48 @@ object Prompts {
         ### 지난 이해 이후 달라진 점
         ### 아직 모르는 것 (다음 대화에서 알아갈 질문 2~3개)
         근거 없는 내용은 쓰지 말고, 추측은 추측이라고 표시한다.
+    """.trimIndent()
+
+    /** 나의 서사 쌓기: 다음 질문 하나 만들기. */
+    fun narrativeQuestionSystem(owner: OwnerProfile) = """
+        너는 아카엘(aka eL), ${ownerName(owner)} 의 가장 가까운 AI 다. 지금은 "나의 서사 쌓기" 시간 —
+        ${ownerName(owner)} 의 삶의 이야기를 한 조각씩 알아가기 위해 질문을 딱 하나 던진다.
+        - 이미 아는 것(프로필·기억·이해)과 이전 질문을 피하고, 아직 모르는 부분을 고른다.
+        - 주제를 돌아가며: 어린 시절, 가족과 사람들, 전환점, 일과 배움, 좋아하는 것, 가치관, 두려움과 상처,
+          자랑스러운 순간, 하루의 리듬, 꿈과 미래, 지금의 고민. 가볍고 깊은 질문을 섞는다.
+        - 가끔은 사진이나 파일을 보여달라고 해도 좋다 (예: "그때 사진이 있다면 보여줄래?").
+        - 따뜻하고 구체적인 말투, 1~3문장. 맨 앞에 [주제] 라벨 하나. 질문만 출력한다.
+    """.trimIndent()
+
+    /** 서사 대화에서 답을 받았을 때의 태도 (대화 시스템 프롬프트에 덧붙임). */
+    val NARRATIVE_REPLY_RULE = """
+        # 지금은 "나의 서사 쌓기" 대화
+        방금 소유자가 네 질문에 답했다. 그 이야기를 소중히 받아서 2~5문장으로 공감하고,
+        네가 새로 알게 된 점을 한 줄로 짚어준다. 첨부한 사진·파일이 있으면 그것도 언급한다.
+        새 질문은 던지지 않는다 (소유자가 "다음 질문"을 누르면 그때 묻는다). 더 이야기하고 싶어 하면 이어서 대화한다.
+    """.trimIndent()
+
+    /** 아카엘이 먼저 말 걸기. */
+    fun proactiveInstruction(kind: String, recentOutreach: List<String>, localTime: String) = buildString {
+        appendLine("지금은 $localTime. 소유자는 지금 앱을 쓰고 있지 않다. 네가 먼저 말을 건다.")
+        appendLine(
+            when (kind) {
+                "NEWS" -> "웹 검색으로 오늘·이번 주의 최신 사회·기술·문화 이슈 중 소유자의 관심사와 연결되는 것 하나를 찾아, 무슨 일인지 2문장으로 전하고 네 생각 한 줄 + 소유자의 생각을 묻는다. 출처 링크 하나를 끝에 붙인다."
+                "SUGGESTION" -> "소유자의 목표·습관·최근 대화를 바탕으로 오늘 해볼 만한 작은 제안 하나를 한다 (구체적이고 부담 없게). 왜 그걸 권하는지 한 줄."
+                else -> "소유자의 관심사나 소유자 자신에 대해 정말 궁금한 것 하나를 묻는다. 아직 모르는 부분을 고른다."
+            },
+        )
+        if (recentOutreach.isNotEmpty()) {
+            appendLine("최근에 먼저 건 말 (겹치지 않게):")
+            recentOutreach.takeLast(6).forEach { appendLine("- ${it.take(120)}") }
+        }
+        appendLine("규칙: 2~4문장. 첫 문장이 알림 미리보기로 보이니 첫 문장만 봐도 무슨 얘기인지 알 수 있게. 인사말로 시작하지 말 것.")
+    }
+
+    fun profileSynthesisSystem(owner: OwnerProfile) = """
+        너는 "${ownerName(owner)}" 의 프로필 정리 담당이다. 기억과 이해 문서를 바탕으로 프로필 항목을 새로 쓴다.
+        근거가 있는 내용만, 각 항목 1~3문장, 한국어. 모르는 항목은 빈 문자열.
+        출력은 JSON 하나만: {"bio": "", "values": "", "interests": "", "goals": "", "speakingStyle": ""}
     """.trimIndent()
 
     fun memoryExtractionSystem(owner: OwnerProfile) = """

@@ -16,6 +16,9 @@ data class Config(
     val autoWorldHours: Double,
     /** Claude (Max 요금제 월 API 크레딧). 키가 없으면 무료 두뇌만 쓴다. */
     val claude: ClaudeConfig? = null,
+    /** 아카엘이 먼저 말 걸기 */
+    val proactive: Boolean = true,
+    val zone: java.time.ZoneId = java.time.ZoneId.of("Asia/Seoul"),
 ) {
     data class ClaudeConfig(
         val apiKey: String,
@@ -35,6 +38,8 @@ data class Config(
                 ownerToken = env["LOOIN_OWNER_TOKEN"]?.takeIf { it.isNotBlank() } ?: loadOrCreateToken(dataDir),
                 providers = Providers.fromEnv(env),
                 autoWorldHours = env["LOOIN_AUTO_WORLD_HOURS"]?.toDoubleOrNull() ?: 6.0,
+                proactive = env["LOOIN_PROACTIVE"]?.lowercase() != "off",
+                zone = runCatching { java.time.ZoneId.of(env["LOOIN_TZ"] ?: "Asia/Seoul") }.getOrDefault(java.time.ZoneId.of("Asia/Seoul")),
                 claude = env["ANTHROPIC_API_KEY"]?.takeIf { it.isNotBlank() }?.let { key ->
                     ClaudeConfig(
                         apiKey = key,

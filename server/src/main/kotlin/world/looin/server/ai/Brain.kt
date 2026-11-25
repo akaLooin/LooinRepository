@@ -12,6 +12,12 @@ enum class Effort { LOW, MEDIUM, HIGH }
 enum class Task {
     CHAT_LIGHT, CHAT, CHAT_DEEP, CHAT_BEST,
     ROUTER, MEMORY, REFLECTION, MEETING, MEETING_SUMMARY, COMMUNITY, GENERAL,
+    /** 나의 서사 쌓기: 질문 만들기 */
+    NARRATIVE,
+    /** 아카엘이 먼저 말 걸기 */
+    PROACTIVE,
+    /** 기억으로 프로필 정리 */
+    PROFILE,
 }
 
 /** 두뇌에 넘기는 첨부 파일. bytes: 사진·PDF 원본, text: 뽑아둔 글자 (텍스트 파일·PDF). */
@@ -28,6 +34,8 @@ data class BrainRequest(
     val effort: Effort = Effort.MEDIUM,
     val maxTokens: Long = 16_000,
     val task: Task = Task.GENERAL,
+    /** 최신 정보가 필요하면 웹 검색을 쓰게 한다 (Claude 에서만). */
+    val webSearch: Boolean = false,
     /** false 면 비싼(유료/한정) 두뇌는 건너뛴다 — 커뮤니티 잡담 같은 배경 활동용. */
     val premium: Boolean = true,
     /** 실제로 답한 두뇌 이름을 알려준다 (기록·학습 데이터 출처 표시용). */

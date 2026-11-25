@@ -28,6 +28,7 @@ import world.looin.server.service.FileService
 import world.looin.server.service.GrowthService
 import world.looin.server.service.MemoryService
 import world.looin.server.service.NotFound
+import world.looin.server.service.StoryService
 import world.looin.server.service.WorldSimService
 import world.looin.shared.ApiError
 import world.looin.shared.LooinJson
@@ -50,7 +51,8 @@ class App(
     val files = FileService(repo, File(config.dataDir, "files"))
     val chat = ChatService(repo, brain, memory, background, files)
     val sim = WorldSimService(repo, brain)
-    val growth = GrowthService(repo, brain, sim, config.autoWorldHours)
+    val growth = GrowthService(repo, brain, sim, config.autoWorldHours, memory)
+    val story = StoryService(repo, brain, config.zone, config.proactive)
 
     init {
         Seed.ensure(repo, config.ownerToken)
@@ -79,6 +81,7 @@ fun main() {
     }
     if (!app.brain.info.online) log.warn("두뇌 키가 아직 없어 오프라인 모드로 시작합니다. 앱의 '나 → 두뇌 설정'에서 키를 넣으면 바로 켜집니다.")
     app.growth.startAutoWorld(app.background)
+    app.story.start(app.background)
     embeddedServer(Netty, port = config.port, host = "0.0.0.0") { module(app) }.start(wait = true)
 }
 

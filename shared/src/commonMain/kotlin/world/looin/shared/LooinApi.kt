@@ -111,7 +111,12 @@ class LooinApi(baseUrl: String, private val token: String) {
 
     // --- 공간 (커뮤니티 / 컴퍼니 / 포럼) ---
     suspend fun spaces(): List<Space> = http.get(url("/spaces")) { auth() }.ok()
-    suspend fun posts(spaceId: String): List<Post> = http.get(url("/spaces/$spaceId/posts")) { auth() }.ok()
+    /** sort: hot / new / top (레딧), new / best (디시 개념글) */
+    suspend fun posts(spaceId: String, sort: String = "new"): List<Post> =
+        http.get(url("/spaces/$spaceId/posts")) { auth(); url { parameters.append("sort", sort) } }.ok()
+    suspend fun votePost(postId: String, delta: Int): Post = http.post(url("/posts/$postId/vote")) { auth(); setBody(VoteRequest(delta)) }.ok()
+    suspend fun voteComment(commentId: String, delta: Int): Comment =
+        http.post(url("/comments/$commentId/vote")) { auth(); setBody(VoteRequest(delta)) }.ok()
     suspend fun post(postId: String): PostDetail = http.get(url("/posts/$postId")) { auth() }.ok()
     suspend fun createPost(spaceId: String, r: CreatePostRequest): Post =
         http.post(url("/spaces/$spaceId/posts")) { auth(); setBody(r) }.ok()
@@ -122,6 +127,20 @@ class LooinApi(baseUrl: String, private val token: String) {
     suspend fun meetings(spaceId: String): List<Meeting> = http.get(url("/spaces/$spaceId/meetings")) { auth() }.ok()
     suspend fun holdMeeting(spaceId: String, r: MeetingRequest): Meeting =
         http.post(url("/spaces/$spaceId/meetings")) { auth(); setBody(r) }.ok()
+
+    // --- 대화 목록 / 폴더 ---
+    suspend fun allConversations(): List<Conversation> = http.get(url("/conversations")) { auth() }.ok()
+    suspend fun updateConversation(id: String, r: UpdateConversationRequest): Conversation =
+        http.put(url("/conversations/$id")) { auth(); setBody(r) }.ok()
+    suspend fun deleteConversation(id: String) { http.delete(url("/conversations/$id")) { auth() }.ok<Map<String, Boolean>>() }
+    suspend fun folders(): List<Folder> = http.get(url("/folders")) { auth() }.ok()
+    suspend fun createFolder(name: String): Folder = http.post(url("/folders")) { auth(); setBody(CreateFolderRequest(name)) }.ok()
+    suspend fun renameFolder(id: String, name: String): Folder = http.put(url("/folders/$id")) { auth(); setBody(CreateFolderRequest(name)) }.ok()
+    suspend fun deleteFolder(id: String) { http.delete(url("/folders/$id")) { auth() }.ok<Map<String, Boolean>>() }
+
+    // --- 나의 서사 / 소식함 ---
+    suspend fun nextNarrativeQuestion(): NarrativeQuestion = http.post(url("/narrative/next")) { auth() }.ok()
+    suspend fun inbox(): Inbox = http.get(url("/inbox")) { auth() }.ok()
 
     // --- 파일 ---
     /** 파일을 서버에 올린다 (최대 25MB). 돌려받은 id 를 SendMessageRequest.attachmentIds 에 넣는다. */
