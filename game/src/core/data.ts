@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catchin
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post' | 'traps';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post' | 'traps' | 'build';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
   | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
@@ -94,7 +94,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
@@ -487,7 +487,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 400, y: -48, w: 300 }],
     ropes: [{ x: 410, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'icehole', x: 330 }], campfireX: 250,
-    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'anvil', x: 460, y: -48 }, { kind: 'npc', npc: 'elder3', x: 540, y: -48 }, { kind: 'traps', x: 612, y: -48 }],
+    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'build', x: 380, y: 0 }, { kind: 'anvil', x: 460, y: -48 }, { kind: 'npc', npc: 'elder3', x: 540, y: -48 }, { kind: 'traps', x: 612, y: -48 }],
     portals: [{ x: 24, to: 'sunspire', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'snowfield', toX: 50 }] },
   { id: 'snowfield', name: '눈송이 벌판', width: 940, theme: 'snowfield',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],

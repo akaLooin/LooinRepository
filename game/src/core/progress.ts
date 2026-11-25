@@ -9,6 +9,7 @@ import { countItem, removeItem } from './state';
 import { owlValue, petValue } from './companions';
 import { blessValue } from './minigames';
 import { alchBonus } from './alchemy';
+import { buildBonus } from './build';
 import { postBonus } from './post';
 
 export type Bonus = Record<BonusKey, number>;
@@ -140,7 +141,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem' | 'alch'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'pets' | 'owl' | 'totem' | 'alch' | 'build'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLevel(c.statues?.[s.id] ?? 0).lv * s.per;
   const sign = c.sign ? SIGNS.find((x) => x.id === c.sign) : null;
@@ -154,6 +155,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   postBonus(c, (k, v) => { b[k] += v; });
   // 연금술(거품·약병)
   alchBonus(a.alch, (k, v) => { b[k] += v; });
+  buildBonus(a.build, (k, v) => { b[k] += v; });
   // 토템 축복
   b.dmg += blessValue(a.totem, 'dmg'); b.xp += blessValue(a.totem, 'xp'); b.afk += blessValue(a.totem, 'afk');
   const set = c.cardSet ? CARD_SETS.find((s) => s.id === c.cardSet) : null;

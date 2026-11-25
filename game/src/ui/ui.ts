@@ -4,6 +4,7 @@ import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
 import { BOXES, boxCost } from '../core/post';
 import { trapLock, trapYield } from '../core/traps';
+import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
 import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
 /** 연금술 효과 이름 */
@@ -34,7 +35,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | null;
+type Panel = 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | null;
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
@@ -267,7 +268,7 @@ export class UI {
     if (e.t === 'loot') this.toast(e.text, e.item ?? (e.text.includes('코인') ? 'coin' : undefined));
     else if (e.t === 'level') this.toast(`레벨 업! Lv.${e.level} (능력치 +3, 특성 +1)`);
     else if (e.t === 'skill') this.toast(`${e.name} 레벨 업! Lv.${e.level}`);
-    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); this.refresh(true); } }
+    else if (e.t === 'arrive' && e.what === 'fac') { const f = this.game.world?.map.facilities[e.idx]; if (f) { this.npcId = f.npc ?? 'elder'; this.open(f.kind); if (f.kind === 'owl' && !this.game.acc.owl.t) this.game.act({ t: 'owl' }); if (f.kind === 'alchemy' && !this.game.acc.alch.t) this.game.act({ t: 'alch', op: 'start' }); if (f.kind === 'post') this.game.act({ t: 'post', op: 'refresh' }); if (f.kind === 'build') this.game.act({ t: 'build', op: 'visit' }); this.refresh(true); } }
     else if (e.t === 'respawn') this.toast('마을에서 다시 깨어났습니다');
     else if (e.t === 'gate') { this.gateWorld = e.to; this.open('gate'); this.refresh(true); }
     else if (e.t === 'boss') this.toast(`${e.name}을(를) 쓰러뜨렸습니다!`);
@@ -777,6 +778,42 @@ export class UI {
         }).join('');
         return win('부엉이 횃대 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="ui-row"><b class="ui-grow">깃털 <span class="ui-accent">${Math.floor(o.f).toLocaleString()}</span></b><span class="ui-sm ui-muted">시간당 ${Math.round(owlPerHour(o))}개 · 접속하지 않아도 쌓입니다</span></div>${rows}`);
       }
+      case 'build': {
+        const acc = g.acc, b = acc.build, now = Date.now();
+        buildSettle(acc, now);
+        const rate = buildRate(b), need = buildXpToNext(b.lv);
+        const hm = (h: number) => (h >= 1 ? `${Math.floor(h)}시간 ${Math.round((h % 1) * 60)}분` : `${Math.max(1, Math.ceil(h * 60))}분`);
+        const head = `<div class="ui-row alchhead">${ui('obj_build', 'mi')}<b class="ui-grow">건설 Lv.<span class="ui-accent">${b.lv}</span> <span class="ui-xs ui-muted">시간당 건설 포인트 ${Math.round(rate).toLocaleString()} · 계정 공용</span></b><div style="width:28%">${bar('skill', b.xp, need, `${b.xp} / ${need}`)}</div></div>`;
+        let body = '';
+        if (tab === 0) {
+          const jobs = Array.from({ length: buildSlots(b) }, (_, i) => {
+            const j = b.jobs[i];
+            if (!j) return `<div class="ui-row line">${ui('obj_build', 'mi')}<span class="ui-grow ui-muted">빈 공사 칸 · 아래에서 지을 건물을 고르세요</span></div>`;
+            const d = BUILDINGS.find((x) => x.id === j.id)!, lv = b.levels[j.id] ?? 0;
+            return `<div class="ui-row line">${ui(`bld_${d.id}`, 'mi')}<div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">Lv.${lv} → ${lv + 1}</span>${bar('xp', Math.floor(j.prog), j.need, `${Math.floor(j.prog).toLocaleString()} / ${j.need.toLocaleString()} · ${hm((j.need - j.prog) / rate)} 남음`)}</div>
+              <button class="ui-btn sm" data-act="build:cancel:${i}" title="공사를 멈추면 넣은 재료는 돌려받지 못합니다">멈추기</button></div>`;
+          }).join('');
+          const free = b.jobs.filter(Boolean).length < buildSlots(b);
+          const list = BUILDINGS.map((d) => {
+            const lv = b.levels[d.id] ?? 0, max = lv >= d.max, busy = b.jobs.some((j) => j?.id === d.id), cost = buildCost(d, lv);
+            const enough = cost.mats.every(([m, n]) => haveMat(acc, c, m) >= n);
+            const mats = max ? '' : cost.mats.map(([m, n]) => `<span class="ui-xs ${haveMat(acc, c, m) >= n ? '' : 'ui-bad'}">${icon(m)}${n.toLocaleString()}</span>`).join(' ') + ` <span class="ui-xs ui-muted">· ${cost.need.toLocaleString()}점(${hm(cost.need / rate)})</span>`;
+            const val = (x: number) => Math.round(x * d.per * 100) / 100;
+            return `<div class="ui-row line ${max ? 'done' : ''}">${ui(`bld_${d.id}`, 'mi')}<div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${lv}/${d.max}</span>
+              <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[d.eff]} +${val(lv)}${d.unit}${max ? '' : ` → +${val(lv + 1)}${d.unit}`}</div><div class="costrow">${mats}</div></div>
+              <button class="ui-btn sm primary" data-act="build:start:${d.id}" ${!max && !busy && free && enough ? '' : 'disabled'}>${max ? '최대' : busy ? '공사 중' : '짓기'}</button></div>`;
+          }).join('');
+          body = `${jobs}<h3>건물</h3>${list}<p class="ui-xs ui-muted">재료는 가방과 창고에서 함께 씁니다. 공사는 접속하지 않아도 진행되고, 다 지어지면 계정의 모든 캐릭터에게 효과가 생깁니다.</p>`;
+        } else {
+          const rc = rateUpCost(b), sc = BUILD.slotCost[b.up.slots];
+          body = `<div class="ui-row line">${ui('ui_up', 'mi')}<div class="ui-grow"><b>튼튼한 비계</b> <span class="ui-xs ui-accent">${b.up.rate}/${BUILD.rateUpMax}</span><div class="ui-sm ui-muted">건설 속도 +${b.up.rate * BUILD.rateUp * 100}%${b.up.rate < BUILD.rateUpMax ? ` → +${(b.up.rate + 1) * BUILD.rateUp * 100}%` : ''}</div></div>
+              <button class="ui-btn sm" data-act="build:rate" ${b.up.rate < BUILD.rateUpMax && acc.coins >= rc ? '' : 'disabled'}>${b.up.rate < BUILD.rateUpMax ? `${ui('ui_coin', 'tic')} ${rc.toLocaleString()}` : '최대'}</button></div>
+            <div class="ui-row line">${ui('obj_build', 'mi')}<div class="ui-grow"><b>공사 칸 늘리기</b> <span class="ui-xs ui-accent">${buildSlots(b)}칸</span><div class="ui-sm ui-muted">여러 건물을 동시에 짓습니다(칸마다 같은 속도)</div></div>
+              <button class="ui-btn sm" data-act="build:slots" ${sc !== undefined && acc.coins >= sc ? '' : 'disabled'}>${sc !== undefined ? `${ui('ui_coin', 'tic')} ${sc.toLocaleString()}` : '최대'}</button></div>
+            <p class="ui-xs ui-muted">건설 레벨은 건물이 완성될 때마다 오르고, 레벨마다 건설 속도가 ${BUILD.ratePerLv * 100}%씩 빨라집니다.</p>`;
+        }
+        return win('공방 마당', `${head}${tabs(['건물', '작업장'], tab, tabAct, ['obj_build', 'ui_up'])}<div class="ui-tabpanel">${body}</div>`);
+      }
       case 'traps': {
         const tr = c.traps, sk = c.skills.trapping, open = trapSlots(sk.lv), now = Date.now(), need = skillXpToNext(sk.lv);
         const head = `<div class="ui-row alchhead">${ui('obj_traps', 'mi')}<b class="ui-grow">덫 사냥 Lv.<span class="ui-accent">${sk.lv}</span> · ${TRAP_NAMES[tr.tier]} <span class="ui-xs ui-muted">잡는 수 ×${TRAP_MULT[tr.tier]}</span></b><div style="width:30%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
@@ -1262,12 +1299,12 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
       if (!m) return '';
-      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3);
+      const known = mapUnlocked(c, m.id) && (k !== 'owl' || acc.owl.t > 0) && (k !== 'alchemy' || acc.alch.t > 0) && (k !== 'post' || (c.maxWorld ?? 1) >= 2) && (k !== 'traps' || (c.maxWorld ?? 1) >= 3) && (k !== 'build' || acc.build.t > 0);
       const tex = k === 'anvil' ? 'obj_craft' : `obj_${k}`;
       return known
         ? `<button class="refbtn" data-act="ref:${k}"><img class="px" src="${iconUrl(tex)}" alt=""><b>${FACILITY_NAMES[k]}</b><span class="ui-xs ui-muted">${m.name}</span></button>`
@@ -1340,7 +1377,7 @@ export class UI {
       case 'chars': this.panel = null; g.leave(); break;
       // 같은 메뉴 버튼을 다시 누르면 닫힌다
       case 'open': this.refBack = false; if (this.panel === a) this.panel = null; else this.open(a as Panel); break;
-      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); break;
+      case 'ref': this.refBack = true; this.open(a as Panel); if (a === 'post') g.act({ t: 'post', op: 'refresh' }); if (a === 'build') g.act({ t: 'build', op: 'visit' }); break;
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
@@ -1385,6 +1422,11 @@ export class UI {
       case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }
       case 'pshard': { const r = g.act({ t: 'petShard' }); if (r.ok) this.toast(`펫 크리스탈 ${r.n}개를 넣었습니다`); else fail(r.err ?? null); break; }
       case 'bsel': this.bubSel = a; break;
+      case 'build': {
+        const r = a === 'start' ? g.act({ t: 'build', op: 'start', id: b }) : a === 'cancel' ? g.act({ t: 'build', op: 'cancel', idx: +b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' });
+        if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
+        break;
+      }
       case 'trappick': this.trapIdx = this.trapIdx === +a ? -1 : +a; break;
       case 'trapset': {
         const r = g.act({ t: 'trap', op: 'set', idx: this.trapIdx, critter: a, time: +b });

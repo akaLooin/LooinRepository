@@ -846,6 +846,15 @@ function buildObjects() {
   p.disc(33, 31, 4.6, 2, '#9aa3ad'); for (const x of [30, 32, 34, 36]) p.rect(x, 27, 1, 3, '#c9d1d9'); p.rect(29, 31, 9, 1, '#6a7480');
   p.volume();
   p.outline().save('obj_traps');
+  // 공방 마당: 반쯤 지은 집 + 비계 + 작은 기중기
+  p = new Paint(42, 40);
+  p.rect(6, 20, 22, 19, '#c8a070'); for (const y of [24, 29, 34]) p.rect(6, y, 22, 1, '#a07a4e');
+  for (let y = 0; y < 9; y++) p.rect(17 - y - 3, 11 + y, (y + 3) * 2 + 1, 1, y < 2 ? '#f4f8fc' : '#6a9ae8');
+  p.rect(14, 29, 6, 10, '#5a3a24');
+  for (const x of [2, 30]) p.rect(x, 12, 2, 27, '#8a6a4a'); p.rect(2, 22, 30, 1, '#8a6a4a'); p.rect(2, 31, 30, 1, '#8a6a4a');
+  p.rect(36, 2, 2, 37, '#e8a83a'); p.rect(24, 2, 16, 2, '#e8a83a'); p.line(26, 4, 26, 14, '#3a3442'); p.rect(24, 14, 5, 4, '#9aa3ad');
+  p.volume();
+  p.outline().save('obj_build');
   // 연금술 거품(솥 색) · 약병(내용물 색)
   for (const [k, col] of [['power', '#e2574a'], ['quick', '#5fb859'], ['wise', '#8a6fd1'], ['luck', '#f6c945']] as const) {
     p = new Paint(14, 14); p.disc(7, 7, 6, 6, col); p.disc(7, 7, 4.4, 4.4, mix(col, '#ffffff', 0.35)); p.disc(5, 5, 1.6, 1.4, '#ffffff'); p.set(9, 9, mix(col, '#000000', 0.2));
@@ -1279,6 +1288,13 @@ function buildIcons() {
   badge('overflow', '#4e8de2', (p) => { p.disc(8, 8, 3, 3, '#a7d8f0'); p.rect(7, 3, 2, 3, '#a7d8f0'); });
   badge('patience', '#8a6fd1', (p) => { p.rect(5, 3, 6, 1, C.white); p.rect(5, 11, 6, 1, C.white); p.line(6, 4, 10, 10, C.gold); p.line(10, 4, 6, 10, C.gold); });
   badge('omen', '#8a6fd1', (p) => { p.disc(8, 7, 3, 3, C.gold); p.disc(9.5, 6, 2.4, 2.4, '#8a6fd1'); });
+  // 건설: 건물 아이콘(지붕 색 + 상징)
+  for (const [id, roof, sym] of [['b_woodshed', '#8a5a3c', '#e8c08a'], ['b_minehouse', '#6a7480', '#7ae0ff'], ['b_dock', '#4a8ae8', '#c8ecff'], ['b_greenhouse', '#5fb859', '#f6c945'], ['b_drill', '#d9574a', '#f2f0e6'], ['b_hearth', '#e8833a', '#ffd06a'], ['b_library', '#8a6fd1', '#f2f0e6'], ['b_market', '#f2c14e', '#a8782a'], ['b_tower', '#5a6a8a', '#fff0a8'], ['b_attic', '#3a4a7a', '#c4ccff']] as const) {
+    icon(`bld_${id}`, (p) => {
+      p.rect(3, 7, 10, 8, '#e8dcc0'); for (let y = 0; y < 6; y++) p.rect(8 - y - 1, 1 + y, (y + 1) * 2, 1, roof);
+      p.rect(6, 10, 4, 5, sym); p.rect(3, 14, 10, 1, '#a8906a'); p.set(7, 2, '#f4f8fc'); p.set(8, 2, '#f4f8fc');
+    });
+  }
   // 3차 직업 특성
   badge('aegis', '#4a5868', (p) => { p.rect(5, 3, 6, 7, C.steel); p.rect(7, 3, 2, 7, C.gold); p.rect(5, 6, 6, 1, C.gold); });
   badge('stalwart', '#4a5868', (p) => { p.rect(7, 3, 2, 8, C.wood); p.line(4, 11, 7, 9, C.wood); p.line(12, 11, 9, 9, C.wood); p.disc(8, 4, 2.4, 2, '#8fde5d'); });

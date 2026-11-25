@@ -3,6 +3,7 @@
 import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
+import { buildSettle, cancelBuild, startBuild, upBuild } from './build';
 import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
@@ -75,6 +76,7 @@ export type Action =
   | { t: 'skinOff'; slot: 'hat' | 'body' }
   | { t: 'owl'; k?: OwlUp }
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
+  | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit'; id?: string; idx?: number }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number }
@@ -172,6 +174,13 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'bubble') return res(upBubble(acc, c, a.id ?? '', now));
       if (a.op === 'vial') return res(upVial(acc, c, a.id ?? ''));
       return res(upLiquid(acc, a.id as LiquidUp, now));
+    }
+    case 'build': {
+      if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 공방 마당에서 할 수 있습니다');
+      if (a.op === 'visit') { buildSettle(acc, now); return ok(); }
+      if (a.op === 'start') return res(startBuild(acc, c, a.id ?? '', now));
+      if (a.op === 'cancel') return res(cancelBuild(acc, a.idx ?? -1, now));
+      return res(upBuild(acc, a.op, now));
     }
     case 'trap': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 덫 오두막에서 할 수 있습니다');

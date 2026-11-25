@@ -653,3 +653,40 @@ describe('덫 사냥', () => {
     expect(cs(acc, 0, claimed, { coins: acc.coins, cards: acc.cards, bosses: acc.bosses } as never, 5)).toMatch(/traps/);
   });
 });
+
+import { BUILDING as BD, buildCost as bCost, buildRate as bRate } from '../src/core/build';
+describe('건설(공방 마당)', () => {
+  it('재료를 넣어 공사를 시작하면 시간이 지나 지어지고, 계정 전체에 효과가 생긴다', () => {
+    const { acc, c } = setup();
+    expect(applyAction(acc, 0, { t: 'build', op: 'start', id: 'b_drill' }, 0).ok).toBe(false); // 3월드 전
+    c.maxWorld = 3;
+    const t0 = 5_000_000;
+    expect(applyAction(acc, 0, { t: 'build', op: 'visit' }, t0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'build', op: 'start', id: 'b_drill' }, t0).ok).toBe(false); // 재료 부족
+    const cost = bCost(BD.b_drill, 0);
+    for (const [m, n] of cost.mats) addItem(c, m, n);
+    const dmg0 = derive(c, acc).dmg;
+    expect(applyAction(acc, 0, { t: 'build', op: 'start', id: 'b_drill' }, t0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'build', op: 'start', id: 'b_drill' }, t0).ok).toBe(false); // 같은 건물 두 번은 안 됨
+    for (const [m] of cost.mats) expect(cnt(c, m)).toBe(0);
+    const hours = cost.need / bRate(acc.build);
+    applyAction(acc, 0, { t: 'build', op: 'visit' }, t0 + hours * 3_600_000 * 0.5);
+    expect(acc.build.levels.b_drill ?? 0).toBe(0);
+    applyAction(acc, 0, { t: 'build', op: 'visit' }, t0 + hours * 3_600_000 + 1000);
+    expect(acc.build.levels.b_drill).toBe(1);
+    expect(acc.build.xp + acc.build.lv).toBeGreaterThan(1);
+    expect(derive(c, acc).dmg).toBeGreaterThan(dmg0);
+    // 다른 캐릭터도 같은 효과
+    expect(deserialize(serialize(acc))!.build.levels.b_drill).toBe(1);
+  });
+  it('비계는 속도를, 공사 칸은 동시에 짓는 수를 늘린다(코인)', () => {
+    const { acc, c } = setup();
+    c.maxWorld = 3; acc.coins = 1_000_000;
+    applyAction(acc, 0, { t: 'build', op: 'visit' }, 1);
+    const r0 = bRate(acc.build);
+    expect(applyAction(acc, 0, { t: 'build', op: 'rate' }, 2).ok).toBe(true);
+    expect(bRate(acc.build)).toBeGreaterThan(r0);
+    expect(applyAction(acc, 0, { t: 'build', op: 'slots' }, 3).ok).toBe(true);
+    expect(acc.build.up.slots).toBe(1);
+  });
+});
