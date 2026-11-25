@@ -9,7 +9,7 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  HIDDEN_CLASS, WORLD2, WORLDS, TOWNS, worldOf, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, WORLD2, WORLDS, TOWNS, worldOf, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -322,7 +322,7 @@ export class UI {
     }
     const mbs = MINIBOSSES.filter((m) => minibossOpen(g.acc, m.id, Date.now()) && mapUnlocked(c, m.map));
     if (mbs.length && !w.arena) lines.push(`<span class="ui-accent">⚔ ${mbs.map((m) => `${MONSTERS[m.id].name}(${MAPS[m.map].name})`).join(', ')} 출현 중</span>`);
-    if (canSubclass(c)) lines.push(`<span class="ui-accent">★ 2차 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
+    if (canSubclass(c)) lines.push(`<span class="ui-accent">★ ${classTier(c.cls) + 1}차 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
     if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${NPCS[CLASS_NPC].name}을(를) 찾아가세요</span>`);
     for (const n of Object.values(NPCS)) {
       const q = currentQuest(c, n.id), qp = questProgress(c, n.id);
@@ -495,16 +495,17 @@ export class UI {
       case 'char': {
         // 탭: 능력치 / 초보자 특성 / 직업 특성(원작처럼 단계별). 왼쪽 깃발로 공격 바 지정
         // 계보: 초보자 → 1차 → 2차. 탭은 능력치 + 계보마다 하나(아직 없는 단계는 잠김)
-        const line = classLine(c.cls), base = baseClass(c.cls), sub = line[2];
-        const hasCls = base !== 'beginner';
+        // 탭: 능력치 · 초보자 · 단계별 직업(이 계열이 갈 수 있는 단계까지) · 별빛
+        const line = classLine(c.cls), base = baseClass(c.cls), tiers = maxTierOf(base), star = 2 + tiers;
         const sp = starTalPoints(g.acc, c);
-        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', hasCls ? CLASSES[base].name : '직업', sub ? CLASSES[sub].name : '2차 직업', `별빛${sp > 0 ? ` ${sp}` : ''}`];
-        const t = (tab === 2 && !hasCls) || (tab === 3 && !sub) ? 1 : tab;
-        const body = t === 0 ? this.statsHtml(c) : t === 4 ? this.starTalHtml(c) : this.talentsHtml(c, t === 1 ? 'beginner' : t === 2 ? base : sub!);
-        const baseIcon = hasCls ? `tl_${base === 'warrior' ? 'cleave' : base === 'archer' ? 'volley' : base === 'wanderer' ? 'fortune' : 'nova'}` : 'ui_lock';
-        const subIcon = sub ? `tl_${TALENTS.find((x) => x.cls === sub)!.id}` : 'ui_lock';
-        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, ['st_str', 'ui_talents', baseIcon, subIcon, 'ui_star'])}
-          ${t > 0 && t < 4 && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
+        const tierName = (k: number) => (line[k] ? CLASSES[line[k]].name : k === 1 ? '직업' : `${k}차 직업`);
+        const tierIcon = (k: number) => (line[k] ? `tl_${TALENTS.find((x) => x.cls === line[k])?.id ?? 'smash'}` : 'ui_lock');
+        const names = [`능력치${c.statPoints ? ` ${c.statPoints}` : ''}`, '초보자', ...Array.from({ length: tiers }, (_, i) => tierName(i + 1)), `별빛${sp > 0 ? ` ${sp}` : ''}`];
+        const icons = ['st_str', 'ui_talents', ...Array.from({ length: tiers }, (_, i) => tierIcon(i + 1)), 'ui_star'];
+        const t = tab > star ? 1 : tab >= 2 && tab < star && !line[tab - 1] ? 1 : tab;
+        const body = t === 0 ? this.statsHtml(c) : t === star ? this.starTalHtml(c) : this.talentsHtml(c, line[t - 1]);
+        return win(`특성 <span class="ui-sm ui-muted">포인트</span> <b class="ui-accent">${c.talentPoints}</b>`, `${tabs(names, t, tabAct, icons)}
+          ${t > 0 && t < star && c.level >= TALENT_PRESET_LV ? `<div class="ui-row" style="justify-content:flex-end"><span class="ui-xs ui-muted">특성 프리셋</span>${c.talentPresets.map((_, i) => `<button class="ui-btn sm ${i === c.talentPreset ? 'primary' : ''}" data-act="tpre:${i}">${i + 1}</button>`).join('')}</div>` : ''}
           <div class="ui-tabpanel talentpanel">${body}</div>`);
       }
 
@@ -612,9 +613,9 @@ export class UI {
         const npc = NPCS[this.npcId] ?? NPCS.elder;
         const speaker = (body: string) => `<div class="ui-dialog" role="dialog" aria-label="${npc.name}"><div class="speaker"><div class="face"><img class="px" src="${portraitUrl(npc.look)}" alt=""></div>${npc.name}</div>
           <div class="ui-grow stack">${body}</div><button class="ui-btn sm close" data-act="close" aria-label="닫기">✕</button></div>`;
-        const subs = (Object.keys(CLASSES) as ClassId[]).filter((id) => CLASSES[id].base === c.cls);
-        if (npc.id === CLASS_NPC && subs.length && c.level >= SUBCLASS_LEVEL) {
-          return speaker(`<p>“${CLASSES[c.cls].name}의 길을 꽤 걸었구먼. 이제 한 갈래를 더 고를 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
+        const subs = c.cls === 'beginner' ? [] : nextClasses(c.cls);
+        if (npc.id === CLASS_NPC && subs.length && canSubclass(c)) {
+          return speaker(`<p>“${CLASSES[c.cls].name}의 길을 꽤 걸었구먼. 이제 ${classTier(c.cls) + 1}차의 길로 나아갈 때일세.” <span class="ui-xs ui-bad">(한 번 고르면 바꿀 수 없습니다)</span></p>
             ${subs.map((id) => `<div class="ui-row line"><div class="ui-grow"><b>${CLASSES[id].name}</b><div class="ui-sm ui-muted">${CLASSES[id].desc}</div></div><button class="ui-btn primary" data-act="class:${id}">전직</button></div>`).join('')}`);
         }
         if (npc.id === CLASS_NPC && c.cls === 'beginner' && c.level >= CLASS_LEVEL) {
@@ -1285,9 +1286,12 @@ export class UI {
       case 'close': if (this.refBack && this.panel !== 'codex') { this.refBack = false; this.open('codex'); break; } this.refBack = false; this.panel = null; this.afk = null; break;
       case 'tab': {
         // 아직 없는 직업 탭은 넘어가지 않고 알려 준다
-        if (a === 'char' && c && ((+b === 2 && baseClass(c.cls) === 'beginner') || (+b === 3 && !classLine(c.cls)[2]))) {
-          this.toast(+b === 2 ? `Lv.${CLASS_LEVEL}에 마을의 ${NPCS[CLASS_NPC].name}에게서 전직하면 열립니다` : `Lv.${SUBCLASS_LEVEL}에 ${NPCS[CLASS_NPC].name}에게서 2차 전직하면 열립니다`);
-          break;
+        if (a === 'char' && c) {
+          const k = +b - 1, tiers = maxTierOf(baseClass(c.cls));
+          if (k >= 1 && k <= tiers && !classLine(c.cls)[k]) {
+            this.toast(k === 1 ? `Lv.${CLASS_LEVEL}에 마을의 ${NPCS[CLASS_NPC].name}에게서 전직하면 열립니다` : `Lv.${TIER_LEVEL[k]}에 ${NPCS[CLASS_NPC].name}에게서 ${k}차 전직하면 열립니다`);
+            break;
+          }
         }
         this.tab[a as Exclude<Panel, null>] = +b; this.craftSel = -1; break;
       }

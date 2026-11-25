@@ -1102,6 +1102,12 @@ function buildIcons() {
   badge('roam', '#2f8a6a', (p) => { p.line(4, 11, 12, 3, C.white); p.disc(5, 4, 1.4, 1.4, C.white); p.disc(11, 10, 1.4, 1.4, C.white); });
   badge('jackpot', '#2f8a6a', (p) => { p.disc(6, 7, 2.4, 2.4, C.gold); p.disc(10, 8, 2.4, 2.4, C.gold); p.set(6, 7, C.wood); p.set(10, 8, C.wood); });
   badge('gatherluck', '#2f8a6a', (p) => { clover(p, 8, 7, '#a8e878'); });
+  badge('narrate', '#2f8a6a', (p) => { p.rect(5, 4, 7, 6, C.white); p.rect(8, 4, 1, 6, '#2f8a6a'); });
+  badge('plot', '#2f8a6a', (p) => { p.line(4, 10, 8, 4, C.gold); p.line(8, 4, 12, 10, C.gold); p.set(8, 7, C.white); });
+  badge('chronicle', '#2f8a6a', (p) => { p.rect(5, 3, 6, 8, '#e8dcc0'); p.rect(5, 3, 6, 1, C.wood); p.rect(5, 10, 6, 1, C.wood); clover(p, 8, 7, '#6ac05a'); });
+  badge('legacy', '#2f8a6a', (p) => { p.rect(4, 6, 8, 5, C.gold); p.rect(6, 4, 4, 2, C.gold); p.set(8, 8, C.white); });
+  icon('tl_talestorm', (p) => { p.disc(7.5, 7.5, 7, 7, '#2f6a8a'); for (let i = 0; i < 3; i++) p.line(2 + i * 4, 3, 5 + i * 4, 12, '#e8dcc0'); clover(p, 7.5, 7.5, '#a8e878'); });
+  icon('tl_lifesong', (p) => { p.disc(7.5, 7.5, 7, 7, '#2f8a6a'); p.rect(6, 3, 3, 9, C.white); p.rect(3, 6, 9, 3, C.white); p.disc(11, 4, 1.6, 1.6, C.gold); p.line(11, 4, 11, 1, C.gold); });
   icon('tl_fortune', (p) => { p.disc(7.5, 7.5, 7, 7, '#2f8a6a'); clover(p, 7.5, 7.5, '#a8e878'); for (const [x, y] of [[2, 2], [13, 3], [12, 13], [2, 12]]) p.set(x, y, C.gold); });
   icon('tl_destiny', (p) => { p.disc(7.5, 7.5, 7, 7, '#3a3a6a'); p.line(1, 12, 14, 3, C.gold); p.line(1, 3, 14, 12, '#c48aff'); p.disc(7.5, 7.5, 2, 2, C.white); });
   icon('tl_smash', (p) => { p.rect(6, 6, 3, 10, C.wood); p.rect(2, 1, 11, 6, C.steel); p.rect(2, 1, 11, 2, C.white); for (const [x, y] of [[1, 9], [13, 10], [12, 13]]) p.rect(x, y, 2, 2, C.gold); });

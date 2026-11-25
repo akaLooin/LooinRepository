@@ -492,3 +492,31 @@ describe('히든 직업(방랑자 → 운명술사)', () => {
     expect(derive(c, acc).dropMult).toBeGreaterThan(drop0);
   });
 });
+
+import { TIER_LEVEL, classLine as cline, classTier, canSubclass as canSub } from '../src/core/data';
+describe('히든 계열 4단계: 낭만가 → 워커 → 테일러 → 라이프텔러', () => {
+  it('단계마다 정해진 레벨에서 차례로 전직하고, 계보의 특성을 모두 쓴다', () => {
+    const { acc, c } = setup();
+    c.level = 15; c.mapId = HIDDEN_CLASS.map; addItem(c, HIDDEN_CLASS.item, 1);
+    expect(applyAction(acc, 0, { t: 'class', cls: 'wanderer' }, 0).ok).toBe(true);
+    expect(CLS.wanderer.name).toBe('낭만가');
+    for (const [cls, tier] of [['fateweaver', 2], ['taler', 3], ['lifeteller', 4]] as const) {
+      c.level = TIER_LEVEL[tier] - 1;
+      expect(canSub(c)).toBe(false);
+      expect(applyAction(acc, 0, { t: 'class', cls }, 0).ok).toBe(false);
+      c.level = TIER_LEVEL[tier];
+      expect(canSub(c)).toBe(true);
+      expect(applyAction(acc, 0, { t: 'class', cls }, 0).ok).toBe(true);
+      expect(classTier(c.cls)).toBe(tier);
+    }
+    expect(cline(c.cls).map((k) => CLS[k].name)).toEqual(['초보자', '낭만가', '워커', '테일러', '라이프텔러']);
+    expect(canSub(c)).toBe(false);
+    // 1차 특성부터 4차 특성까지 배울 수 있다
+    c.talentPoints = 4;
+    for (const id of ['fortune', 'destiny', 'talestorm', 'lifesong']) expect(applyAction(acc, 0, { t: 'talent', id }, 0).ok).toBe(true);
+    // 일반 직업은 여전히 2차까지
+    const { acc: a2, c: c2 } = setup();
+    c2.level = 80; applyAction(a2, 0, { t: 'class', cls: 'warrior' }, 0); applyAction(a2, 0, { t: 'class', cls: 'guardian' }, 0);
+    expect(c2.cls).toBe('guardian'); expect(canSub(c2)).toBe(false);
+  });
+});

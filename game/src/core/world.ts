@@ -319,6 +319,15 @@ export class World {
       pose('attack');
       fx = tgt.x; fy = tgt.y;
       for (const m of live(NOVA_RADIUS, tgt.x, tgt.y)) this.damageMob(m, d, 3 + lv * 0.3, m.x >= tgt.x ? 1 : -1);
+    } else if (id === 'talestorm' || id === 'lifesong') {
+      const hit = live(id === 'talestorm' ? 90 : 120);
+      if (id === 'lifesong') {
+        const before = c.hp;
+        c.hp = Math.min(d.maxHp, c.hp + d.maxHp * (0.4 + lv * 0.03));
+        if (c.hp > before) this.events.push({ t: 'heal', x: p.x, y: p.y - 34, amount: Math.round(c.hp - before) });
+      } else if (!hit.length) return false;
+      pose('attack');
+      for (const m of hit) this.damageMob(m, d, id === 'talestorm' ? 4 + lv * 0.4 : 5 + lv * 0.5, m.x >= p.x ? 1 : -1);
     } else if (id === 'heal') {
       if (c.hp >= d.maxHp) return false;
       const before = c.hp;

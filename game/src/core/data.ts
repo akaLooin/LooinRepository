@@ -8,7 +8,7 @@ export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
 export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
-export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver';
+export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller';
 export type WeaponType = 'sword' | 'bow' | 'wand';
 export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe' | 'rod' | 'net';
 
@@ -509,6 +509,12 @@ export const TALENTS: TalentDef[] = [
   { id: 'destiny', name: '운명의 실', max: 10, cls: 'fateweaver', active: { cooldown: 14, mana: 12 }, desc: (lv) => `가까운 적과 그 주변에 ${300 + lv * 30}% 피해` },
   { id: 'jackpot', name: '대박', max: 10, cls: 'fateweaver', desc: (lv) => `코인 획득 +${lv * 4}%` },
   { id: 'gatherluck', name: '행운의 손', max: 10, cls: 'fateweaver', desc: (lv) => `채집 효율(채광·벌목·낚시·곤충) +${lv * 4}%` },
+  { id: 'talestorm', name: '이야기 폭풍', max: 10, cls: 'taler', active: { cooldown: 16, mana: 18 }, desc: (lv) => `넓은 범위의 모든 적에게 ${400 + lv * 40}% 피해` },
+  { id: 'narrate', name: '이야기꾼', max: 10, cls: 'taler', desc: (lv) => `경험치 +${lv * 3}%` },
+  { id: 'plot', name: '복선', max: 10, cls: 'taler', desc: (lv) => `방치 효율 +${lv}%p` },
+  { id: 'lifesong', name: '생명의 노래', max: 10, cls: 'lifeteller', active: { cooldown: 30, mana: 25 }, desc: (lv) => `체력 ${40 + lv * 3}% 회복 + 넓은 범위의 적에게 ${500 + lv * 50}% 피해` },
+  { id: 'chronicle', name: '연대기', max: 10, cls: 'lifeteller', desc: (lv) => `채집 효율(채광·벌목·낚시·곤충) +${lv * 5}%` },
+  { id: 'legacy', name: '유산', max: 10, cls: 'lifeteller', desc: (lv) => `드롭률·코인 획득 +${lv * 3}%` },
   { id: 'insight', name: '통찰', max: 10, cls: 'mage', desc: (lv) => `경험치 획득 +${lv * 3}%` },
 ];
 export const TALENT: Record<string, TalentDef> = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
@@ -555,19 +561,37 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   sharpshooter: { id: 'sharpshooter', base: 'archer', name: '명사수', desc: '한 발 한 발이 정확하다. 치명타 +8%p, 공격력 +6%.', main: 'agi', acc: 'str', range: 125, weapon: 'bow', perk: { crit: 8, dmg: 6 } },
   ranger: { id: 'ranger', base: 'archer', name: '사냥꾼', desc: '숲을 잘 안다. 드롭률 +12%, 이동 속도 +8.', main: 'agi', acc: 'str', range: 115, weapon: 'bow', perk: { drop: 12, speed: 8 } },
   elementalist: { id: 'elementalist', base: 'mage', name: '원소술사', desc: '원소를 다룬다. 공격력 +14%.', main: 'wis', acc: 'agi', range: 100, weapon: 'wand', perk: { dmg: 14 } },
-  wanderer: { id: 'wanderer', name: '방랑자', hidden: true, desc: '어느 길에도 서지 않은 숨겨진 길. 행운이 공격력과 명중이 되고, 드롭률 +6%.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 6 } },
-  fateweaver: { id: 'fateweaver', base: 'wanderer', name: '운명술사', desc: '운을 엮어 싸운다. 드롭률 +12%, 방치 효율 +3%p, 치명타 +4%p.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 12, afk: 3, crit: 4 } },
+  wanderer: { id: 'wanderer', name: '낭만가', hidden: true, desc: '어느 길에도 서지 않은 숨겨진 길. 행운이 공격력과 명중이 되고, 드롭률 +6%.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 6 } },
+  fateweaver: { id: 'fateweaver', base: 'wanderer', name: '워커', desc: '세상을 걸으며 운을 모은다. 드롭률 +12%, 방치 효율 +3%p, 치명타 +4%p.', main: 'luk', acc: 'luk', range: 30, weapon: 'sword', perk: { drop: 12, afk: 3, crit: 4 } },
+  taler: { id: 'taler', base: 'fateweaver', name: '테일러', desc: '걸어온 길을 이야기로 엮는다. 드롭률 +16%, 방치 효율 +4%p, 치명타 +6%p, 경험치 +6%.', main: 'luk', acc: 'luk', range: 34, weapon: 'sword', perk: { drop: 16, afk: 4, crit: 6, xp: 6 } },
+  lifeteller: { id: 'lifeteller', base: 'taler', name: '라이프텔러', desc: '삶 전체를 이야기하는 자. 드롭률 +22%, 방치 효율 +6%p, 치명타 +8%p, 경험치 +10%, 최대 체력 +10%.', main: 'luk', acc: 'luk', range: 38, weapon: 'sword', perk: { drop: 22, afk: 6, crit: 8, xp: 10, hpPct: 10 } },
   hexer: { id: 'hexer', base: 'mage', name: '주술사', desc: '느긋하게 쌓는다. 경험치 +10%, 방치 효율 +3%p.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', perk: { xp: 10, afk: 3 } },
 };
 export const CLASS_LEVEL = 10;
 /** 2차 전직 레벨 */
 export const SUBCLASS_LEVEL = 30;
-/** 1차 직업(2차 직업이면 그 바탕) */
-export const baseClass = (cls: ClassId): BaseClass => (CLASSES[cls]?.base ?? cls) as BaseClass;
+/** 단계별 전직 레벨(인덱스 = 단계: 1차 10, 2차 30, 3차 70, 4차 120) */
+export const TIER_LEVEL = [0, CLASS_LEVEL, SUBCLASS_LEVEL, 70, 120];
 /** 초보자부터 지금 직업까지의 계보 */
-/** 2차 전직할 수 있는가 */
-export const canSubclass = (c: { cls: ClassId; level: number }) => !CLASSES[c.cls]?.base && c.cls !== 'beginner' && c.level >= SUBCLASS_LEVEL;
-export const classLine = (cls: ClassId): ClassId[] => (cls === 'beginner' ? ['beginner'] : CLASSES[cls]?.base ? ['beginner', CLASSES[cls].base!, cls] : ['beginner', cls]);
+export const classLine = (cls: ClassId): ClassId[] => {
+  const out: ClassId[] = [];
+  for (let k: ClassId | undefined = cls; k && k !== 'beginner'; k = CLASSES[k]?.base) out.unshift(k);
+  return ['beginner', ...out];
+};
+/** 직업 단계(초보자 0, 1차 1, …) */
+export const classTier = (cls: ClassId) => classLine(cls).length - 1;
+/** 1차 직업(그 위 단계라면 계보의 뿌리) */
+export const baseClass = (cls: ClassId): BaseClass => (classLine(cls)[1] ?? 'beginner') as BaseClass;
+/** 이 직업에서 이어지는 다음 단계 직업들 */
+export const nextClasses = (cls: ClassId) => (Object.keys(CLASSES) as ClassId[]).filter((id) => CLASSES[id].base === cls);
+/** 이 1차 직업 계열이 갈 수 있는 가장 높은 단계 */
+export function maxTierOf(base: ClassId): number {
+  let best = Math.max(2, classTier(base));
+  for (const id of Object.keys(CLASSES) as ClassId[]) if (classLine(id)[1] === base) best = Math.max(best, classTier(id));
+  return best;
+}
+/** 다음 단계로 전직할 수 있는가(2차 이상) */
+export const canSubclass = (c: { cls: ClassId; level: number }) => c.cls !== 'beginner' && nextClasses(c.cls).length > 0 && c.level >= TIER_LEVEL[classTier(c.cls) + 1];
 
 /** 카드: 계정 전체가 함께 모으는 수집 보너스(장착해야 효과). 1/3/10장에서 단계 상승.
  *  id 는 몬스터 id(몬스터 카드) 또는 자원 id(자원 카드: 채집할 때 드물게) */
