@@ -4,7 +4,7 @@ import { Action, ActionResult, applyAction } from './core/actions';
 import { AfkReport, computeAfk } from './core/afk';
 import { MAPS } from './core/data';
 import { Rng } from './core/rng';
-import { Account, Character, Look, createCharacter, deleteCharacter, deserialize, newAccount, serialize, portalLock } from './core/state';
+import { Account, Character, Look, createCharacter, deleteCharacter, deserialize, lookOf, newAccount, serialize, portalLock } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
 import { ChatLine, Gear, Live, Net, RemoteInfo, SyncBody } from './net';
 
@@ -91,8 +91,10 @@ export class Game {
   private gearOf(c: Character): Gear {
     const e = c.equipment, g: Gear = {};
     if (e.weapon) g.weapon = e.weapon;
-    if (e.hat) g.hat = e.hat;
-    if (e.body) g.body = e.body;
+    // 다른 사람에게는 홀로웨어(스킨)가 있으면 그 겉모습을 보낸다
+    const look = lookOf(c);
+    if (look.hat) g.hat = look.hat;
+    if (look.body) g.body = look.body;
     return g;
   }
   private lastGear = '';

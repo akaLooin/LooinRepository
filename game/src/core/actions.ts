@@ -1,11 +1,11 @@
 // 플레이어 행동. 기기(낙관적 적용)와 서버(권위)가 같은 함수로 적용한다.
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
-import { claimPet, owlSettle, owlUpgrade } from './companions';
+import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
 import { BlessKey, GameKind, buyBless, finishGame, finishTotem } from './minigames';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnTalent, switchTalentPreset, portalLock, arenaClaim, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
@@ -61,7 +61,11 @@ export type Action =
   | { t: 'cardPreset'; i: number }
   | { t: 'talentPreset'; i: number }
   | { t: 'arenaClaim' }
-  | { t: 'pet' }
+  | { t: 'petPull'; tier: number }
+  | { t: 'petPlus'; id: string }
+  | { t: 'petShard' }
+  | { t: 'skinOn'; id: string }
+  | { t: 'skinOff'; slot: 'hat' | 'body' }
   | { t: 'owl'; k?: OwlUp }
   | { t: 'game'; kind: GameKind; score: number }
   | { t: 'totem'; kills: number; survived: boolean }
@@ -136,7 +140,11 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'cardSet': return res(toggleCardSet(c, a.id));
     case 'cardPreset': return res(switchCardPreset(acc, c, a.i));
     case 'talentPreset': return res(switchTalentPreset(c, a.i));
-    case 'pet': return res(claimPet(acc, now));
+    case 'petPull': { const r = pullPet(acc, a.tier, now); return typeof r === 'string' ? fail(r) : ok(r.crystals); }
+    case 'petPlus': return res(plusPet(acc, a.id));
+    case 'skinOn': return res(setSkin(c, a.id));
+    case 'skinOff': return res(clearSkin(c, a.slot));
+    case 'petShard': { const n = depositShards(acc, c); return n ? ok(n) : fail('펫 크리스탈 조각이 없습니다'); }
     case 'game': return res(finishGame(acc, c, a.kind, a.score, now));
     case 'totem': { const r = finishTotem(acc, a.kills, a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
     case 'bless': return res(buyBless(acc, a.k));

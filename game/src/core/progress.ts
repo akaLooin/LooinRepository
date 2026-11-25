@@ -6,7 +6,7 @@ import {
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
-import { owlValue } from './companions';
+import { owlValue, petValue } from './companions';
 import { blessValue } from './minigames';
 
 export type Bonus = Record<BonusKey, number>;
@@ -146,7 +146,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   for (const d of ACHIEVEMENTS) if (a.achievements?.[d.id] && d.eff) b[d.eff] += d.v!;
   if (a.characters) { const best = familyBest(a.characters); for (const k of Object.keys(FAMILY) as (keyof typeof FAMILY)[]) b[FAMILY[k].eff] += familyValue(k, best[k]); }
   // 동료(레벨 × 효과)와 부엉이 보너스
-  for (const p of PETS) b[p.eff] += (a.pets?.[p.id] ?? 0) * p.per;
+  for (const p of PETS) b[p.eff] += petValue(a, p);
   if (a.owl) { b.dmg += owlValue(a.owl, 'dmg'); b.xp += owlValue(a.owl, 'xp'); b.drop += owlValue(a.owl, 'drop'); b.afk += owlValue(a.owl, 'afk'); }
   // 토템 축복
   b.dmg += blessValue(a.totem, 'dmg'); b.xp += blessValue(a.totem, 'xp'); b.afk += blessValue(a.totem, 'afk');

@@ -190,21 +190,44 @@ describe('콜로세움·미니보스', () => {
   });
 });
 
-import { owlCost, weekKey } from '../src/core/companions';
+import { owlCost } from '../src/core/companions';
+import { PETS, PET_PLUS } from '../src/core/data';
 describe('동료·부엉이', () => {
-  it('동료는 주 1회, 처음엔 없는 동료부터 오고 같은 주엔 다시 안 온다', () => {
+  it('동료: 하루 한 번 무료 뽑기, 크리스탈 간식 뽑기, 겹치면 크리스탈, 결과는 기기·서버가 같다', () => {
     const { acc, c } = setup();
-    const t0 = new Date('2026-11-24T12:00:00').getTime();
+    const t0 = new Date('2026-11-25T12:00:00').getTime();
+    const twin = JSON.parse(JSON.stringify(acc));
     const before = derive(c, acc);
-    expect(applyAction(acc, 0, { t: 'pet' }, t0).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'petPull', tier: -1 }, t0).ok).toBe(true);
     expect(Object.keys(acc.pets)).toHaveLength(1);
-    expect(applyAction(acc, 0, { t: 'pet' }, t0 + 3600_000).ok).toBe(false);
-    const next = t0 + 7 * 86400_000;
-    expect(weekKey(next)).toBe(weekKey(t0) + 1);
-    expect(applyAction(acc, 0, { t: 'pet' }, next).ok).toBe(true);
-    expect(Object.keys(acc.pets)).toHaveLength(2);
-    const after = derive(c, acc);
-    expect(JSON.stringify(after)).not.toBe(JSON.stringify(before));
+    expect(applyAction(acc, 0, { t: 'petPull', tier: -1 }, t0 + 60_000).err).toMatch(/오늘/);
+    expect(applyAction(acc, 0, { t: 'petPull', tier: -1 }, t0 + 86400_000).ok).toBe(true); // 다음 날
+    expect(JSON.stringify(derive(c, acc))).not.toBe(JSON.stringify(before));
+    // 같은 계정 상태면 같은 동료(서버 검증)
+    applyAction(twin, 0, { t: 'petPull', tier: -1 }, t0);
+    expect(Object.keys(twin.pets)).toEqual(Object.keys(acc.pets).slice(0, 1));
+    expect(applyAction(acc, 0, { t: 'petPull', tier: 0 }, t0).err).toMatch(/크리스탈/);
+  });
+  it('간식 뽑기 보장: 10번 안에 희귀 이상, 30번 안에 영웅 이상. 조각을 넣고 + 강화', () => {
+    const { acc, c } = setup();
+    addItem(c, 'pet_shard', 25);
+    expect(applyAction(acc, 0, { t: 'petShard' }, 0).n).toBe(250);
+    acc.petCrystals = 40 * 30;
+    let rare = false, epic = false;
+    for (let i = 0; i < 30; i++) {
+      const owned = new Set(Object.keys(acc.pets));
+      applyAction(acc, 0, { t: 'petPull', tier: 0 }, 0);
+      if (i === 9) rare = Object.keys(acc.pets).some((id) => PETS.find((p) => p.id === id)!.rarity >= 1) || acc.petPity.rare < 10;
+      void owned;
+    }
+    epic = Object.keys(acc.pets).some((id) => PETS.find((p) => p.id === id)!.rarity >= 2);
+    expect(rare).toBe(true); expect(epic).toBe(true);
+    const id = Object.keys(acc.pets)[0], p = PETS.find((x) => x.id === id)!;
+    acc.petCrystals = PET_PLUS[p.rarity];
+    const v0 = derive(c, acc);
+    expect(applyAction(acc, 0, { t: 'petPlus', id }, 0).ok).toBe(true);
+    expect(acc.pets[id]).toBe(2);
+    expect(JSON.stringify(derive(c, acc))).not.toBe(JSON.stringify(v0));
   });
   it('부엉이: 찾아온 뒤부터 깃털이 시간당 쌓이고, 깃털로 보너스', () => {
     const { acc, c } = setup();
@@ -312,5 +335,25 @@ describe('전투·줍기 조작', () => {
     w.drops.push({ uid: 999, coin: false, id: 'moss', qty: 1, x: 300, y: -5, vx: 0, vy: 0, floorY: 0, age: DROP_LIFE - 0.5 });
     for (let i = 0; i < 30; i++) w.step(1 / 30, { move: 0, climb: 0 });
     expect(w.drops.some((d) => d.uid === 999)).toBe(false);
+  });
+});
+
+import { clearSkin, lookOf, setSkin } from '../src/core/state';
+describe('홀로웨어(겉모습 스킨)', () => {
+  it('가방의 모자를 넣으면 겉모습만 바뀌고 능력치는 그대로', () => {
+    const acc = newAccount(); const c = createCharacter(acc, '스킨', 'beginner');
+    addItem(c, 'hat_moss', 1);
+    const before = derive(c, acc);
+    expect(setSkin(c, 'hat_moss')).toBeNull();
+    expect(lookOf(c).hat).toBe('hat_moss');
+    expect(derive(c, acc).def).toBe(before.def);
+    expect(c.inventory.some((s) => s.id === 'hat_moss')).toBe(false);
+    expect(setSkin(c, 'berry')).not.toBeNull();
+    expect(clearSkin(c, 'hat')).toBeNull();
+    expect(lookOf(c).hat).toBe(c.equipment.hat);
+    expect(c.inventory.some((s) => s.id === 'hat_moss')).toBe(true);
+    // 저장 후 다시 불러와도 남는다
+    setSkin(c, 'hat_moss');
+    expect(deserialize(serialize(acc)).characters[0].skins.hat).toBe('hat_moss');
   });
 });

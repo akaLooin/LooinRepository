@@ -17,6 +17,7 @@ const itemCount = (c: Character) => {
   const m: Record<string, number> = {};
   for (const s of c.inventory) m[s.id] = (m[s.id] ?? 0) + s.qty;
   for (const f of c.foods ?? []) if (f) m[f.id] = (m[f.id] ?? 0) + f.qty;
+  for (const id of Object.values(c.skins ?? {})) if (id) m[id] = (m[id] ?? 0) + 1;
   return m;
 };
 
@@ -27,7 +28,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const t = Math.max(0, elapsedSec);
 
   // 1) 행동으로만 바뀌는 값
-  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset'];
+  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'sign', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins'];
   for (const k of fixed) if (!same(s[k], claimed[k])) return `바뀌면 안 되는 값: ${String(k)}`;
   if (!same(s.anvil.pts, claimed.anvil.pts)) return '바뀌면 안 되는 값: 모루 포인트';
   if (!same(s.anvil.slots.map((x) => x.prod), claimed.anvil.slots.map((x) => x.prod).slice(0, s.anvil.slots.length))) return '바뀌면 안 되는 값: 모루 품목';

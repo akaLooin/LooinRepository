@@ -541,7 +541,7 @@ function buildObjects() {
   p.disc(10, 9, 1.2, 1.2, '#1e1420'); p.disc(16, 9, 1.2, 1.2, '#1e1420'); p.rect(12, 11, 2, 2, '#f6c945'); p.rect(6, 2, 2, 4, '#9a7a5a'); p.rect(18, 2, 2, 4, '#9a7a5a');
   p.outline().save('obj_owl');
   // 동료 아이콘(동그란 얼굴 + 귀)
-  for (const [id, col] of [['pup', '#f2e6d0'], ['kit', '#e8a03a'], ['frog', '#5fb859'], ['mole', '#8a6a4a'], ['squirrel', '#c9805a'], ['hedgehog', '#9a8a7a'], ['firefly', '#f6e46a'], ['sloth', '#a89a80']] as const) {
+  for (const [id, col] of [['pup', '#f2e6d0'], ['kit', '#e8a03a'], ['frog', '#5fb859'], ['mole', '#8a6a4a'], ['squirrel', '#c9805a'], ['hedgehog', '#9a8a7a'], ['firefly', '#f6e46a'], ['sloth', '#a89a80'], ['owlet', '#9a7a5a'], ['fox', '#e8833a'], ['dragonling', '#d9574a']] as const) {
     p = new Paint(14, 13);
     p.disc(7, 7.5, 5.5, 4.8, col); p.disc(3, 3, 1.8, 1.8, col); p.disc(11, 3, 1.8, 1.8, col);
     p.set(5, 7, '#1e1420'); p.set(9, 7, '#1e1420'); p.rect(6, 9, 2, 1, '#8a3a3a'); p.set(3, 6, '#ffffff');
@@ -706,6 +706,9 @@ function buildItems() {
   // 콜로세움 입장권
   p = new Paint(13, 10); p.rect(1, 1, 11, 8, '#f6c945'); p.rect(4, 1, 1, 8, '#c98f2a'); p.disc(8.5, 5, 1.8, 1.8, '#d9574a'); p.set(0, 5, null); p.set(12, 5, null); p.rect(2, 2, 1, 6, '#fff1a8');
   p.outline().save('it_ticket');
+  // 펫 크리스탈 조각: 분홍빛 결정
+  p = new Paint(11, 13); p.line(5, 0, 1, 6, '#f29ad8'); p.line(5, 0, 9, 6, '#f29ad8'); p.rect(2, 5, 7, 4, '#f29ad8'); p.line(1, 7, 5, 12, '#d96ab8'); p.line(9, 7, 5, 12, '#d96ab8'); p.rect(3, 8, 5, 2, '#d96ab8'); p.rect(4, 2, 2, 4, '#ffffff');
+  p.outline().save('it_petshard');
   // 순간이동 티켓: 보라 표 + 소용돌이
   p = new Paint(13, 10); p.rect(1, 1, 11, 8, '#8a6fd1'); p.rect(4, 1, 1, 8, '#5a4a9a'); p.disc(8.5, 5, 2.2, 2.2, '#a5d8ff'); p.disc(8.5, 5, 1, 1, '#ffffff'); p.set(0, 5, null); p.set(12, 5, null); p.rect(2, 2, 1, 6, '#c4b4f0');
   p.outline().save('it_tpticket');
@@ -800,7 +803,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
-  arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket',
+  arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard',
   anvil_exp2: 'obj_craft',
   ...Object.fromEntries(['blue', 'gold'].flatMap((k) => [[`sword_${k}`, `wp_sword_${k}`], [`bow_${k}`, `wp_bow_${k}`], [`wand_${k}`, `wp_wand_${k}`], [`pick_${k}`, `wp_pick_${k}`], [`axe_${k}`, `wp_axe_${k}`],
     [`helm_${k}`, `it_helm_${k}`], [`plate_${k}`, `it_plate_${k}`], [`legs_${k}`, `it_legs_${k}`], [`boots_${k}`, `it_boots_${k}`]])),

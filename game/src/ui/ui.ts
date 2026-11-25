@@ -4,18 +4,18 @@ import { AfkReport, afkRates } from '../core/afk';
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
-  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_MAX_LV, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
+  STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
   mapUnlocked, refillTeleports, anvilCap, anvilPointsFree, anvilRate, anvilSlotsOpen, equipCard, recipeLock, unequipCard, buy, collectAnvil, deposit, depositAll, haveMat, invSize, setProduct, shopLeft, spendAnvilPoint,
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
-  minibossOpen, mapQuota, canTeleportTo,
+  minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, playsLeft, spikeOpen, totemRunsLeft } from '../core/minigames';
 import { PlayKind, runGame } from './minigames';
-import { owlCost, owlPerHour, owlSettle, petOfWeek, petReady } from '../core/companions';
+import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
 import { STARS, achieveReady, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel } from '../core/progress';
 import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
@@ -31,7 +31,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 /** 아이콘 그림(메뉴·특성·능력치 등 ui_/tl_/st_ 접두사) */
 const ui = (key: string, cls = 'ic') => `<img class="px ${cls}" src="${iconUrl(key)}" alt="">`;
 const iconHtml = (key: string) => `<img class="px tic" src="${iconUrl(key)}" alt="">`;
-const PET_BONUS_NAMES: Record<string, string> = { hpPct: '최대 체력', drop: '드롭률', xp: '경험치', mining: '채광 효율', chopping: '벌목 효율', def: '방어력', coins: '코인 획득', afk: '방치 효율' };
+const PET_BONUS_NAMES: Record<string, string> = { hpPct: '최대 체력', drop: '드롭률', xp: '경험치', mining: '채광 효율', chopping: '벌목 효율', def: '방어력', coins: '코인 획득', afk: '방치 효율', dmg: '공격력' };
 /** 바뀐 부분만 고치기: 같은 자리의 같은 태그는 속성·글자만 바꾸고, 다르면 그 노드만 갈아 끼운다 */
 function morph(el: HTMLElement, html: string) {
   const tpl = document.createElement('template');
@@ -113,6 +113,9 @@ export class UI {
   private afk: AfkReport | null = null;
   private craftSel = -1;
   private forgeSel = 0;
+  /** 아이템 창 왼쪽 탭: 0 장비, 1 홀로웨어 */
+  private eqTab = 0;
+  private petSel: string | null = null;
   /** 지도에서 고른 맵(한 번 더 누르면 이동) */
   private mapSel: string | null = null;
   /** 삭제 확인 중인 캐릭터 */
@@ -412,6 +415,11 @@ export class UI {
           detail = f ? `<div class="ui-row"><span class="ui-slot">${icon(f.id)}</span><div><b>${ITEMS[f.id].name}</b><div class="ui-xs ui-muted">음식 칸 · ${f.qty}개</div></div></div>
             <span class="ui-sm">${ITEMS[f.id].desc}</span><span class="ui-xs ui-muted">체력이 45% 아래로 떨어지면 자동으로 하나씩 먹습니다.</span>
             <button class="ui-btn" data-act="food::${fi}">가방으로</button>` : '<span class="ui-sm ui-muted">음식을 넣어 두면 체력이 낮을 때 위 칸부터 자동으로 먹습니다.</span>';
+        } else if (this.sel?.startsWith('skin:')) {
+          const slot = this.sel.slice(5) as SkinSlot, id = c.skins[slot];
+          detail = id ? `<div class="ui-row"><span class="ui-slot r3">${icon(id)}</span><div><b>${ITEMS[id].name}</b><div class="ui-xs ui-muted">홀로웨어 ${SLOT_NAMES[slot]} · 겉모습만</div></div></div>
+            <span class="ui-xs ui-muted">능력치는 실제 장비를 따르고, 겉모습만 이 아이템으로 보입니다.</span>
+            <button class="ui-btn" data-act="skinoff:${slot}">가방으로</button>` : '<span class="ui-sm ui-muted">가방의 모자·갑옷을 골라 \'홀로웨어로\'를 누르면 능력치는 그대로 두고 겉모습만 바꿉니다.</span>';
         } else if (this.sel?.startsWith('eq:')) {
           const slot = this.sel.slice(3) as EquipSlot, id = c.equipment[slot];
           if (id) detail = `<div class="ui-row"><span class="ui-slot">${icon(id)}</span><div><b>${ITEMS[id].name}</b><div class="ui-xs ui-muted">${SLOT_NAMES[slot]} · 장착 중</div></div></div>
@@ -423,13 +431,22 @@ export class UI {
             <span class="ui-sm">${it.desc}</span>
             ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
-            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
+            <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}
               <button class="ui-btn sm iconbtn" data-act="sell:${it.id}:1">${ui('ui_coin', 'tic')} ${it.sell}</button>
               ${n > 1 ? `<button class="ui-btn sm iconbtn" data-act="sell:${it.id}:${n}">${ui('ui_coin', 'tic')} 전부 ${it.sell * n}</button>` : ''}</div>`;
         }
+        // 왼쪽: 장비 / 홀로웨어(스킨) 탭, 오른쪽: 가방과 상세
+        const skins = SKIN_SLOTS.map((s) => {
+          const id = c.skins[s];
+          return `<button class="ui-slot eqslot ${id ? 'r3' : ''}" data-act="pick:skin:${s}" aria-selected="${this.sel === `skin:${s}`}" aria-label="홀로웨어 ${SLOT_NAMES[s]}${id ? `: ${ITEMS[id].name}` : ' (비어 있음)'}">${id ? icon(id) : ui(`eq_${s}`, 'sil')}</button>`;
+        }).join('');
+        const left = this.eqTab === 0
+          ? `<div class="ui-grid eqcol">${eq}</div><h3 class="eqsub">${ui('eq_food', 'tic')} 음식</h3><div class="ui-grid eqcol">${food}</div>`
+          : `<div class="ui-grid eqcol">${skins}</div><p class="ui-xs ui-muted">겉모습만 바꾸는 칸입니다. 능력치는 장비 탭의 장비를 따릅니다.</p>`;
         return win(`아이템 <span class="ui-sm ui-muted">${c.inventory.length}/${invSize(c)}</span>`, `
-          <div class="split"><div><h3>${ui('ui_items', 'tic')} 장비 · 음식</h3><div class="ui-grid eq">${eq}${food}</div><h3>${ui('ui_items', 'tic')} 가방</h3><div class="ui-grid bag">${cells}</div></div>
-          <div class="ui-detail">${detail}</div></div>`);
+          <div class="invlayout"><div class="eqpanel"><div class="ui-tabs mini" role="tablist">
+              <button role="tab" aria-selected="${this.eqTab === 0}" data-act="eqtab:0">장비</button><button role="tab" aria-selected="${this.eqTab === 1}" data-act="eqtab:1">홀로웨어</button></div>${left}</div>
+            <div class="invright"><div class="ui-grid bag">${cells}</div><div class="ui-detail">${detail}</div></div></div>`);
       }
 
       case 'char': {
@@ -639,14 +656,31 @@ export class UI {
           <div class="ui-row"><b class="ui-grow">영혼 <span class="ui-accent">${acc.totem.souls}</span> <span class="ui-xs ui-muted">최고 ${acc.totem.best}마리</span></b><button class="ui-btn primary" data-act="play:totem" ${left ? '' : 'disabled'}>${left ? `지키기 (오늘 ${left}번)` : '오늘은 끝'}</button></div></div>${rows}`);
       }
       case 'pets': {
-        const acc = g.acc, now = Date.now(), ready = petReady(acc, now), next = petOfWeek(acc, now);
+        // 원작의 펫: 하루 한 번 무료 뽑기 + 펫 크리스탈로 간식을 사서 뽑기. 가진 동료는 모두 효과, 겹치면 크리스탈, '+' 강화
+        const acc = g.acc, now = Date.now(), freeOk = petFreeReady(acc, now), shards = countItem(c, CRYSTAL_ITEM);
+        const odds = (o: number[]) => o.map((v, k) => (v ? `<span class="rar r${k}">${RARITY_NAMES[k]} ${Math.round(v * 100)}%</span>` : '')).join(' ');
+        const treats = TREATS.map((t, i) => `<div class="ui-row line"><div class="ui-grow"><b>${t.name}</b><div class="ui-xs">${odds(t.odds)}</div></div>
+          <button class="ui-btn sm ${acc.petCrystals >= t.cost ? 'primary' : ''}" data-act="ppull:${i}" ${acc.petCrystals >= t.cost ? '' : 'disabled'}>💎 ${t.cost}</button></div>`).join('');
+        const sel = PETS.find((p) => p.id === this.petSel);
         const grid = PETS.map((p) => {
-          const lv = acc.pets[p.id] ?? 0;
-          return `<div class="ui-row line ${lv ? '' : 'ui-muted'}"><span class="ui-slot sm ${lv ? 'r2' : ''}"><img class="px" style="${lv ? '' : 'filter:brightness(0) invert(.4);opacity:.6'}" src="${iconUrl(`pet_${p.id}`)}" alt=""></span>
-            <div class="ui-grow"><b>${lv ? p.name : '???'}</b> ${lv ? `<span class="ui-accent">Lv.${lv}/${PET_MAX_LV}</span>` : ''}<div class="ui-sm ${lv ? 'ui-good' : ''}">${PET_BONUS_NAMES[p.eff]} +${Math.round(Math.max(1, lv) * p.per * 10) / 10}${p.unit}${lv ? '' : ' (Lv.1)'}</div></div></div>`;
+          const own = petOwned(acc, p.id), plus = petPlus(acc, p.id);
+          return `<button class="ui-slot petcell r${p.rarity} ${own ? '' : 'none'}" data-act="psel:${p.id}" aria-pressed="${this.petSel === p.id}" aria-label="${own ? p.name : '아직 없는 동료'}">
+            <img class="px" style="${own ? '' : 'filter:brightness(0) invert(.4);opacity:.55'}" src="${iconUrl(`pet_${p.id}`)}" alt="">${plus ? '<span class="qty ok">+</span>' : ''}</button>`;
         }).join('');
-        return win('동료 둥지 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="stack"><p class="ui-sm">일주일에 한 번 동료가 찾아옵니다. 모은 동료는 모두 계정 전체에 효과를 주고, 같은 동료가 다시 오면 레벨이 오릅니다.</p>
-          ${ready ? `<button class="ui-btn primary block" data-act="pet">${iconHtml(`pet_${next}`)} 이번 주 동료 맞이하기</button>` : '<span class="ui-sm ui-muted">이번 주 동료는 이미 왔습니다. 다음 주 월요일에 또 찾아옵니다.</span>'}</div>${grid}`);
+        let detail = '<span class="ui-xs ui-muted">동료를 누르면 효과를 볼 수 있습니다. 가지고만 있으면 모든 캐릭터에게 효과가 있습니다.</span>';
+        if (sel) {
+          const own = petOwned(acc, sel.id), plus = petPlus(acc, sel.id), cost = PET_PLUS[sel.rarity];
+          detail = `<div class="ui-row"><span class="ui-slot r${sel.rarity}">${iconHtml(`pet_${sel.id}`)}</span><div><b>${own ? sel.name : '???'}${plus ? ' +' : ''}</b> <span class="rar r${sel.rarity}">${RARITY_NAMES[sel.rarity]}</span>
+            <div class="ui-sm ${own ? 'ui-good' : 'ui-muted'}">${PET_BONUS_NAMES[sel.eff]} +${petValue({ pets: { [sel.id]: plus ? 2 : 1 } }, sel)}${sel.unit}${plus ? '' : ` (+ 강화하면 ${sel.per * 2}${sel.unit})`}</div></div></div>
+            ${own && !plus ? `<button class="ui-btn sm" data-act="pplus:${sel.id}" ${acc.petCrystals >= cost ? '' : 'disabled'}>💎 ${cost} '+' 강화</button>` : ''}`;
+        }
+        return win(`동료 둥지 <span class="ui-sm ui-muted">계정 공용</span> <span class="ui-accent">💎 ${acc.petCrystals.toLocaleString()}</span>`, `<div class="split"><div class="stack">
+            <button class="ui-btn ${freeOk ? 'primary' : ''} block" data-act="ppull:-1" ${freeOk ? '' : 'disabled'}>${freeOk ? '오늘의 무료 뽑기' : '무료 뽑기는 내일 다시'}</button>
+            ${treats}
+            <div class="ui-row"><span class="ui-xs ui-muted ui-grow">간식으로 ${PET_PITY.rare}번 안에 희귀 이상, ${PET_PITY.epic}번 안에 영웅 이상 보장 (지금 ${acc.petPity.rare}/${acc.petPity.epic})</span>
+              ${shards ? `<button class="ui-btn sm" data-act="pshard">${iconHtml(ITEM_ICON[CRYSTAL_ITEM])} 조각 ${shards} 넣기</button>` : ''}</div>
+          </div><div><div class="ui-grid petgrid">${grid}</div><div class="ui-detail" style="margin-top:var(--sp-2)">${detail}</div></div></div>
+          <p class="ui-xs ui-muted">이미 있는 동료가 나오면 펫 크리스탈로 바뀝니다. 크리스탈 조각은 미니보스·콜로세움·잡화점에서 얻습니다.</p>`);
       }
       case 'owl': {
         const acc = g.acc, o = acc.owl;
@@ -1100,7 +1134,20 @@ export class UI {
         break;
       }
       case 'bless': fail(g.act({ t: 'bless', k: a as BlessKey }).err ?? null); break;
-      case 'pet': { const id = petOfWeek(g.acc, Date.now()), r = g.act({ t: 'pet' }); if (r.ok) this.toast(`${PETS.find((p) => p.id === id)!.name}이(가) 찾아왔습니다! (Lv.${g.acc.pets[id]})`); else fail(r.err ?? null); break; }
+      case 'ppull': {
+        const before = { ...g.acc.pets }, r = g.act({ t: 'petPull', tier: +a });
+        if (!r.ok) { fail(r.err ?? null); break; }
+        const got = PETS.find((p) => !before[p.id] && g.acc.pets[p.id]);
+        if (got) { this.petSel = got.id; this.notice(`새 동료! ${RARITY_NAMES[got.rarity]} ${got.name}`); this.audio?.play('card'); }
+        else this.toast(`이미 있는 동료라 펫 크리스탈 ${r.n}개로 바뀌었습니다`);
+        break;
+      }
+      case 'psel': this.petSel = a; break;
+      case 'eqtab': this.eqTab = +a; this.sel = null; break;
+      case 'skinon': { const r = g.act({ t: 'skinOn', id: a }); if (r.ok) { this.toast(`${ITEMS[a].name}을(를) 홀로웨어에 넣었습니다`, a); this.eqTab = 1; this.sel = `skin:${ITEMS[a].slot}`; } else fail(r.err ?? null); break; }
+      case 'skinoff': fail(g.act({ t: 'skinOff', slot: a as SkinSlot }).err ?? null); break;
+      case 'pplus': { const r = g.act({ t: 'petPlus', id: a }); if (r.ok) { this.toast(`${PETS.find((p) => p.id === a)!.name} + 강화!`); this.audio?.play('craft'); } else fail(r.err ?? null); break; }
+      case 'pshard': { const r = g.act({ t: 'petShard' }); if (r.ok) this.toast(`펫 크리스탈 ${r.n}개를 넣었습니다`); else fail(r.err ?? null); break; }
       case 'owl': fail(g.act({ t: 'owl', k: a as OwlUp }).err ?? null); break;
       case 'arenaclaim': {
         const r = g.act({ t: 'arenaClaim' });

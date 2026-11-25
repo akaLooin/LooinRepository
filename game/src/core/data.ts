@@ -153,6 +153,7 @@ const items: ItemDef[] = [
     { id: `boots_${k}`, name: `${n} 장화`, desc: '발걸음이 묵직하다.', kind: 'equip' as const, slot: 'shoes' as const, stats: { def: t === 1 ? 6 : 12, agi: t === 1 ? 3 : 6 }, reqLv: t === 1 ? 18 : 33, sell: t === 1 ? 160 : 480 },
   ]),
   { id: 'tp_ticket', name: '순간이동 티켓', desc: '지도에서 마을이 아닌 맵으로 순간이동할 때 1장을 쓴다.', kind: 'key', sell: 1 },
+  { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
   { id: 'sword_red', name: '붉은쇠 검', desc: '주괴를 두드려 만든 첫 쇠 검.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 13, str: 2 }, reqLv: 8, sell: 60 },
@@ -176,7 +177,7 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) =
 const monsters: MonsterDef[] = [
   { id: 'mossking', name: '이끼왕', hp: 2600, atk: 26, acc: 24, defZero: 60, xp: 900, coins: [300, 400], speed: 14, motion: 'hop', radius: 20, scale: 2.6,
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
-    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
+    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3, 5] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
     drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
@@ -185,9 +186,9 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'leaf', chance: 0.4, qty: [1, 2] }, { item: 'mushroom', chance: 0.12, qty: [1, 1] }, { item: 'forest_key', chance: 0.004, qty: [1, 1] }, { item: 'stamp_acc', chance: 0.003, qty: [1, 1] }, { item: 'statue_agi', chance: 0.006, qty: [1, 1] }, { item: 'statue_wis', chance: 0.006, qty: [1, 1] }] },
   // 미니보스(정해진 시간에만 나타난다)·콜로세움 챔피언: 다른 몬스터 그림을 크게, 물들여 쓴다
   { id: 'stumpelder', name: '숲의 장로', hp: 4200, atk: 30, acc: 30, defZero: 60, xp: 1200, coins: [600, 900], speed: 10, motion: 'float', radius: 18, scale: 2.2, art: 'leafling', tint: 0x9fffa0,
-    drops: [{ item: 'statue_wis', chance: 0.6, qty: [1, 3] }, { item: 'stamp_drop', chance: 0.15, qty: [1, 1] }, { item: 'arena_ticket', chance: 0.5, qty: [1, 2] }, { item: 'mushroom', chance: 1, qty: [5, 10] }] },
+    drops: [{ item: 'statue_wis', chance: 0.6, qty: [1, 3] }, { item: 'stamp_drop', chance: 0.15, qty: [1, 1] }, { item: 'arena_ticket', chance: 0.5, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [2, 4] }, { item: 'mushroom', chance: 1, qty: [5, 10] }] },
   { id: 'ruinwarden', name: '유적 수호자', hp: 16000, atk: 70, acc: 80, defZero: 120, xp: 5000, coins: [2500, 4000], speed: 8, motion: 'waddle', radius: 20, scale: 2.4, art: 'golemite', tint: 0xffd27a,
-    drops: [{ item: 'statue_fortune', chance: 0.8, qty: [1, 3] }, { item: 'stamp_xp', chance: 0.2, qty: [1, 1] }, { item: 'chest_small', chance: 0.3, qty: [1, 1] }, { item: 'moonpie', chance: 1, qty: [3, 6] }] },
+    drops: [{ item: 'statue_fortune', chance: 0.8, qty: [1, 3] }, { item: 'stamp_xp', chance: 0.2, qty: [1, 1] }, { item: 'chest_small', chance: 0.3, qty: [1, 1] }, { item: 'moonpie', chance: 1, qty: [3, 6] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }] },
   { id: 'champion', name: '콜로세움 챔피언', hp: 9000, atk: 55, acc: 60, defZero: 95, xp: 2500, coins: [0, 0], speed: 18, motion: 'waddle', radius: 18, scale: 2.2, art: 'pebbler', tint: 0xffa0a0, drops: [] },
   // 1월드 후반(숲 오른쪽에서 이어지는 다섯 사냥터)
   { id: 'mudturtle', name: '진흙거북', hp: 300, atk: 26, acc: 34, defZero: 50, xp: 60, coins: [12, 22], speed: 12, motion: 'waddle', radius: 9,
@@ -523,6 +524,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'sculpt_tools', price: 1000, daily: 1 },
   { item: 'arena_ticket', price: 250, daily: 2 },
   { item: 'tp_ticket', price: 60, daily: 8 },
+  { item: 'pet_shard', price: 300, daily: 2 },
 ];
 
 // ───────── 석상(캐릭터마다): 조각을 바쳐 레벨을 올린다 ─────────
@@ -593,19 +595,38 @@ export const CARD_SETS: CardSetDef[] = [
 ];
 export const CARD_PRESET_LV = 15;
 
-// ───────── 동료(계정): 주 1회 무작위로 찾아온다. 모은 동료는 모두 효과, 다시 오면 레벨업 ─────────
-export interface PetDef { id: string; name: string; eff: BonusKey; per: number; unit: '' | '%' | '%p'; color: string }
+// ───────── 동료(계정, 원작의 펫): 하루 한 번 무료 뽑기 + 펫 크리스탈로 간식을 사서 뽑기 ─────────
+// 가지고만 있으면 모든 캐릭터에 효과(장착 없음). 이미 있는 동료가 또 나오면 크리스탈로 바뀐다. 크리스탈로 '+' 강화(효과 2배)
+export type PetRarity = 0 | 1 | 2 | 3;
+export const RARITY_NAMES = ['일반', '희귀', '영웅', '전설'];
+export interface PetDef { id: string; name: string; rarity: PetRarity; eff: BonusKey; per: number; unit: '' | '%' | '%p'; color: string }
 export const PETS: PetDef[] = [
-  { id: 'pup', name: '솜뭉치 강아지', eff: 'hpPct', per: 2, unit: '%', color: '#f2e6d0' },
-  { id: 'kit', name: '얼룩 고양이', eff: 'drop', per: 2, unit: '%', color: '#e8a03a' },
-  { id: 'frog', name: '연잎 개구리', eff: 'xp', per: 2, unit: '%', color: '#5fb859' },
-  { id: 'mole', name: '두더지 광부', eff: 'mining', per: 4, unit: '%', color: '#8a6a4a' },
-  { id: 'squirrel', name: '도토리 다람쥐', eff: 'chopping', per: 4, unit: '%', color: '#c9805a' },
-  { id: 'hedgehog', name: '고슴도치', eff: 'def', per: 1, unit: '', color: '#9a8a7a' },
-  { id: 'firefly', name: '반딧불이', eff: 'coins', per: 2, unit: '%', color: '#f6e46a' },
-  { id: 'sloth', name: '느림보 나무늘보', eff: 'afk', per: 0.5, unit: '%p', color: '#a89a80' },
+  { id: 'pup', name: '솜뭉치 강아지', rarity: 0, eff: 'hpPct', per: 2, unit: '%', color: '#f2e6d0' },
+  { id: 'kit', name: '얼룩 고양이', rarity: 0, eff: 'drop', per: 2, unit: '%', color: '#e8a03a' },
+  { id: 'frog', name: '연잎 개구리', rarity: 0, eff: 'xp', per: 2, unit: '%', color: '#5fb859' },
+  { id: 'mole', name: '두더지 광부', rarity: 1, eff: 'mining', per: 6, unit: '%', color: '#8a6a4a' },
+  { id: 'squirrel', name: '도토리 다람쥐', rarity: 1, eff: 'chopping', per: 6, unit: '%', color: '#c9805a' },
+  { id: 'owlet', name: '아기 부엉이', rarity: 1, eff: 'xp', per: 4, unit: '%', color: '#9a7a5a' },
+  { id: 'hedgehog', name: '고슴도치', rarity: 2, eff: 'def', per: 3, unit: '', color: '#9a8a7a' },
+  { id: 'firefly', name: '반딧불이', rarity: 2, eff: 'coins', per: 6, unit: '%', color: '#f6e46a' },
+  { id: 'fox', name: '여우 탐정', rarity: 2, eff: 'drop', per: 6, unit: '%', color: '#e8833a' },
+  { id: 'sloth', name: '느림보 나무늘보', rarity: 3, eff: 'afk', per: 3, unit: '%p', color: '#a89a80' },
+  { id: 'dragonling', name: '아기 용', rarity: 3, eff: 'dmg', per: 8, unit: '%', color: '#d9574a' },
 ];
-export const PET_MAX_LV = 5;
+/** 간식(뽑기): 값(펫 크리스탈)과 등급별 확률. 무료 뽑기는 첫 간식과 같은 확률 */
+export const TREATS: { name: string; cost: number; odds: [number, number, number, number] }[] = [
+  { name: '풀잎 간식', cost: 40, odds: [0.8, 0.17, 0.03, 0] },
+  { name: '꿀떡 간식', cost: 120, odds: [0.55, 0.32, 0.11, 0.02] },
+  { name: '별빛 간식', cost: 300, odds: [0.25, 0.4, 0.27, 0.08] },
+];
+/** 산 간식으로 뽑은 횟수가 이만큼 쌓이도록 그 등급 이상이 안 나오면 보장 */
+export const PET_PITY = { rare: 10, epic: 30 };
+/** 겹친 동료를 크리스탈로(등급별, 무료 뽑기는 절반) */
+export const PET_RECYCLE = [6, 18, 45, 120];
+/** '+' 강화 값(등급별) */
+export const PET_PLUS = [100, 250, 600, 1500];
+/** 펫 크리스탈 조각(아이템) 하나 = 크리스탈 수 */
+export const CRYSTAL_ITEM = 'pet_shard', CRYSTAL_PER_ITEM = 10;
 
 // ───────── 부엉이 깃털(계정): 시간이 흐르면 깃털이 쌓이고, 깃털로 생산·보너스를 올린다 ─────────
 export type OwlUp = 'rate' | 'dmg' | 'xp' | 'drop' | 'afk';
@@ -632,8 +653,8 @@ export const ARENA = {
   rewards: [
     { waves: 3, coins: 150, items: [['stew', 2]] },
     { waves: 6, coins: 400, items: [['forge_oil', 3], ['statue_luk', 2]] },
-    { waves: 10, coins: 1200, items: [['moonpie', 3], ['statue_fortune', 2]] },
-    { waves: 15, coins: 3000, items: [['stamp_crit', 1], ['chest_small', 1]] },
+    { waves: 10, coins: 1200, items: [['moonpie', 3], ['statue_fortune', 2], ['pet_shard', 2]] },
+    { waves: 15, coins: 3000, items: [['stamp_crit', 1], ['chest_small', 1], ['pet_shard', 5]] },
   ] as { waves: number; coins: number; items: [string, number][] }[],
 };
 /** 처치 수 → 깬 웨이브 수(웨이브 순서대로 센다) */

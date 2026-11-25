@@ -177,6 +177,8 @@ const BASE_PX = [
 /** 게임에서 쓰는 몸: 시안을 좌우로 뒤집는다(밝은 면이 앞=오른쪽에 오도록. 시안은 밝은 면이 왼쪽이라 왼쪽을 보는 듯 읽혔다).
  *  칸 c → 19-c(가운데 축 고정), 연속 좌표 x → 20-x. 팔·다리의 앞/뒤는 자리가 바뀌므로 역할을 맞바꾼다(앞=오른쪽 유지) */
 export const MIRROR = true;
+/** 머리를 몸통 쪽으로 내리는 칸 수: 머리 아래 테두리와 어깨 위 테두리가 두 겹으로 겹쳐 검은 목처럼 보이던 것을 없앤다 */
+export const HEAD_DROP = 1;
 const mx = (x: number) => (MIRROR ? 20 - x : x);
 const BODY_PX = MIRROR ? BASE_PX.map((row) => [...row.slice(0, 20)].reverse().join('') + row.slice(20)) : BASE_PX;
 const CH_TONE: Record<string, number> = { '7': 0, '6': 1, '5': 2, '4': 4, '3': 5, a: 6 };
@@ -279,7 +281,7 @@ function layout(p: Pose) {
     legB: place(PIECES.legB, -p.legB[0], 0, legLift - legUp(p.legB[1])),
     legF: place(PIECES.legF, -p.legF[0], 0, legLift - legUp(p.legF[1])),
     torso: place(PIECES.torso, 0, sway, lift),
-    head: place(PIECES.head, 0, sway + Math.round(p.head * 2), lift),
+    head: place(PIECES.head, 0, sway + Math.round(p.head * 2), lift + HEAD_DROP),
     armB: place(PIECES.armB, armAng(p.armB), sway, lift),
     armF: place(PIECES.armF, armAng(p.armF), sway, lift),
   };
@@ -287,7 +289,7 @@ function layout(p: Pose) {
   const hand = rot(HAND_REST.armF, PIECES.armF.pivot, armAng(p.armF)), handB = rot(HAND_REST.armB, PIECES.armB.pivot, armAng(p.armB));
   const anchors: Anchors = {
     hand: toRoot(hand[0] + sway, hand[1] + lift), handB: toRoot(handB[0] + sway, handB[1] + lift), wpn: p.wpn,
-    head: toRoot(mx(9.5) + sway, 4.5 + lift), headRot: 0, chest: toRoot(mx(9.5) + sway, 14 + lift), lean: p.lean,
+    head: toRoot(mx(9.5) + sway, 4.5 + lift + HEAD_DROP), headRot: 0, chest: toRoot(mx(9.5) + sway, 14 + lift), lean: p.lean,
     off: [sway, lift, Math.round(p.head * 2)],
   };
   return { placed, anchors };

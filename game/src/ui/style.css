@@ -211,3 +211,18 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .mapnode.sel { border-color: var(--c-accent); box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
 .mapnode.unmet img { opacity: .6; }
 .mapgo { margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--c-surface-inset); border: 1px solid var(--c-accent); border-radius: var(--r-md); }
+/* 동료 등급 색 */
+.rar { font-weight: bold; } .rar.r0 { color: #c3c9d2; } .rar.r1 { color: #7fc4ff; } .rar.r2 { color: #c49aff; } .rar.r3 { color: #ffc94a; }
+.petgrid { grid-template-columns: repeat(4, var(--slot)); }
+.petcell { cursor: pointer; } .petcell.r1 { border-color: #4e8de2; } .petcell.r2 { border-color: #8a6fd1; } .petcell.r3 { border-color: #f2c14e; }
+.petcell[aria-pressed="true"] { box-shadow: 0 0 0 var(--sp-1) var(--c-accent); }
+/* 아이템 창: 왼쪽 장비/홀로웨어, 오른쪽 가방·상세 */
+.invlayout { display: flex; gap: var(--sp-4); align-items: flex-start; }
+.eqpanel { flex: none; width: calc(var(--slot) * 3 + var(--sp-2) * 4); background: var(--c-surface-inset); border: 1px solid var(--c-border); border-radius: var(--r-md); padding: var(--sp-2); }
+.ui-grid.eqcol { grid-template-columns: repeat(3, var(--slot)); }
+.ui-tabs.mini { margin-bottom: var(--sp-2); } .ui-tabs.mini button { padding: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); }
+.eqsub { margin: var(--sp-2) 0 var(--sp-1); font-size: var(--fs-sm); }
+.invright { flex: 1; min-width: 0; display: flex; gap: var(--sp-3); align-items: flex-start; }
+.invright .ui-grid.bag { flex: 1; min-width: 0; grid-template-columns: repeat(auto-fill, var(--slot)); }
+.invright .ui-detail { flex: none; width: 11.5em; }
+.invlayout .ui-detail .ui-row { min-width: 0; } .invlayout .ui-detail b { word-break: keep-all; }

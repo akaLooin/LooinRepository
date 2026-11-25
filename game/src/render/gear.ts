@@ -1,6 +1,6 @@
 // 장비 겉모습: 마네킹과 같은 1배 픽셀로 그린 모자·갑옷을 머리·몸통 칸에 맞춰 붙인다.
 // 머리와 몸통은 동작 중에 돌지 않고 칸 단위로만 움직이므로(layout의 sway·lift) 같은 만큼만 옮기면 어긋나지 않는다.
-import { MIRROR, OUTLINE } from './mannequin';
+import { HEAD_DROP, MIRROR, OUTLINE } from './mannequin';
 import { CLASSES, ITEMS } from '../core/data';
 import type { Character } from '../core/state';
 import type { Gear } from '../net';
@@ -121,7 +121,7 @@ export function paintGear(g: GearDef): HTMLCanvasElement {
 /** 붙일 위치(발 기준, 1배 칸): 프레임의 윗몸 이동(off)만큼 따라간다 */
 export function gearPos(g: GearDef, off: [number, number, number]): [number, number] {
   const at0 = MIRROR ? 20 - g.at[0] - Math.max(...g.rows.map((r) => r.length)) : g.at[0];
-  return [at0 + off[0] + (g.on === 'head' ? off[2] : 0) - 10, g.at[1] + off[1] - 26];
+  return [at0 + off[0] + (g.on === 'head' ? off[2] : 0) - 10, g.at[1] + off[1] + (g.on === 'head' ? HEAD_DROP : 0) - 26];
 }
 
 /** 다른 플레이어가 보낸 장비 → 그릴 수 있는 것만(모르는 id·칸이 안 맞는 id는 버리고, 무기가 없으면 직업 기본 무기) */

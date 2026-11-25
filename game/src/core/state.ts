@@ -46,6 +46,8 @@ export interface Character {
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
   talentPresets: { talents: Record<string, number>; bars: (string | null)[][] }[];
   talentPreset: number;
+  /** 홀로웨어(스킨): 겉모습만 바꾸는 칸. 능력치는 실제 장비를 따른다 */
+  skins: Partial<Record<SkinSlot, string>>;
   /** 콜로세움에 들어갈 때의 콜로세움 처치 수(보상은 이번 회차 처치 수로) */
   arenaStart?: number | null;
   auto: boolean; activity: Activity;
@@ -104,8 +106,13 @@ export interface Account {
   miniKills: Record<string, string>;
   arenaBest: number;
   /** 동료 레벨, 마지막으로 동료를 받은 주, 부엉이 깃털 */
+  /** 동료: 가진 동료(1 = 있음, 2 = '+' 강화), 펫 크리스탈, 뽑기 씨앗·횟수, 오늘 무료 뽑기한 날, 보장 계수 */
   pets: Record<string, number>;
-  petWeek: number;
+  petCrystals: number;
+  petSeed: number;
+  petPulls: number;
+  petDaily: string;
+  petPity: { rare: number; epic: number };
   owl: Owl;
   /** 미니게임 기록(오늘 판수·최고 점수), 토템 디펜스(영혼·축복) */
   mini: MiniState;
@@ -118,7 +125,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petWeek: 0, owl: newOwl(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, owl: newOwl(), mini: newMini(), totem: newTotem(), characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number): Character | null {
@@ -129,7 +136,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0,
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {},
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -311,6 +318,30 @@ export function setBarSlot(c: Character, bar: number, slot: number, id: string |
   b[slot] = id;
   return null;
 }
+
+/** 홀로웨어 칸(겉모습이 있는 장비만) */
+export type SkinSlot = 'hat' | 'body';
+export const SKIN_SLOTS: SkinSlot[] = ['hat', 'body'];
+/** 홀로웨어에 넣기: 가방의 모자·갑옷을 스킨 칸으로(있던 스킨은 가방으로) */
+export function setSkin(c: Character, id: string): string | null {
+  const it = ITEMS[id];
+  if (!it || (it.slot !== 'hat' && it.slot !== 'body')) return '홀로웨어에 넣을 수 없는 아이템';
+  if (countItem(c, id) < 1) return '가방에 없습니다';
+  const slot = it.slot as SkinSlot, prev = c.skins[slot];
+  removeItem(c, id, 1);
+  if (prev && !addItem(c, prev, 1)) { addItem(c, id, 1); return '가방이 가득 찼습니다'; }
+  c.skins[slot] = id;
+  return null;
+}
+export function clearSkin(c: Character, slot: SkinSlot): string | null {
+  const id = c.skins[slot];
+  if (!id) return '비어 있습니다';
+  if (!addItem(c, id, 1)) return '가방이 가득 찼습니다';
+  delete c.skins[slot];
+  return null;
+}
+/** 겉으로 보이는 모자·갑옷(스킨이 있으면 스킨) */
+export const lookOf = (c: Pick<Character, 'equipment'> & { skins?: Character['skins'] }) => ({ hat: c.skins?.hat ?? c.equipment.hat, body: c.skins?.body ?? c.equipment.body });
 
 /** 특성 프리셋 바꾸기: 지금 배분·공격 바를 저장하고, 고른 프리셋을 불러온다(포인트 합은 그대로) */
 export function switchTalentPreset(c: Character, i: number): string | null {
@@ -782,7 +813,10 @@ export function deserialize(json: string | null): Account | null {
     a.stamps ??= {};
     a.bribes ??= 0;
     a.tasks ??= {}; a.merit ??= 0; a.meritShop ??= {};
-    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {}; a.petWeek ??= 0; a.owl ??= newOwl(); a.mini ??= newMini(); a.totem ??= newTotem();
+    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {};
+    // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
+    if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
+    a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.owl ??= newOwl(); a.mini ??= newMini(); a.totem ??= newTotem();
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];
@@ -813,6 +847,7 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
+      c.skins ??= {};
       c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];

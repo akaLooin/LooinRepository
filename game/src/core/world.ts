@@ -626,6 +626,9 @@ export class World {
     if (this.drops.length > MAX_DROPS) this.drops.splice(0, this.drops.length - MAX_DROPS);
   }
 
+  /** (x, y) 근처에 떨어진 아이템이 있는가(가방이 차서 못 줍는 것도 포함) */
+  dropNear(x: number, y: number, r = 16): boolean { return this.drops.some((dr) => !dr.picked && dr.age >= 0.3 && Math.hypot(dr.x - x, dr.y - y) <= r); }
+
   /** (x, y) 근처에 떨어진 아이템을 줍는다(캐릭터는 움직이지 않는다). 주운 개수 */
   pickAt(x: number, y: number, r = 16): number {
     if (this.player.dead > 0) return 0;

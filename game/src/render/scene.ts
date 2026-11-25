@@ -7,7 +7,7 @@ import { Game } from '../game';
 import { ART, ITEM_ICON, THEMES, buildAll, buildLook, canvases, frameDefs, portraitUrl } from './sprites';
 import { CLIPS, FH, MQ_SCALE, ROOT_Y, bakeClip } from './mannequin';
 import { GEAR, gearKey, gearPos, remoteGear } from './gear';
-import { Character, currentQuest, portalLock, questProgress } from '../core/state';
+import { Character, currentQuest, lookOf, portalLock, questProgress } from '../core/state';
 import { canSubclass, CLASS_LEVEL, CLASS_NPC, FACILITY_NAMES, ITEMS, NPCS, SMASH_RANGE } from '../core/data';
 
 type Img = Phaser.GameObjects.Image;
@@ -25,7 +25,7 @@ function label(scene: Phaser.Scene, text: string, size = 7, color = '#ffffff') {
 // ───────── 캐릭터 리그 ─────────
 /** 리그가 읽는 값(내 캐릭터는 World.player, 다른 플레이어는 네트워크로 받은 값) */
 type RigPlayer = Pick<Player, 'x' | 'y' | 'vx' | 'vy' | 'onGround' | 'facing' | 'swingT' | 'swingKind' | 'dead' | 'hurtT' | 'rope'>;
-type RigChar = Pick<Character, 'equipment' | 'cls'>;
+type RigChar = Pick<Character, 'equipment' | 'cls'> & { skins?: Character['skins'] };
 class CharRig {
   root: Phaser.GameObjects.Container;
   private body: Phaser.GameObjects.Container;
@@ -94,7 +94,8 @@ class CharRig {
     }
 
     // 장비 겉모습: 머리·몸통이 움직인 칸만큼 따라간다
-    for (const [img, id] of [[this.hat, c.equipment.hat], [this.armor, c.equipment.body]] as const) {
+    const look = lookOf(c);
+    for (const [img, id] of [[this.hat, look.hat], [this.armor, look.body]] as const) {
       const g = id ? GEAR[id] : undefined;
       img.setVisible(!!g);
       if (!g || !id) continue;
@@ -610,13 +611,13 @@ export class GameScene extends Phaser.Scene {
   private onTap(ev: PointerEvent) {
     const w = this.world;
     if (!w || w !== this.game_.world) return;
-    if (this.pickAt(ev) > 0) return;
     const [x, y] = this.toWorld(ev);
+    // 떨어진 아이템을 누르면 줍기만 한다(가방이 차서 못 줍더라도 캐릭터는 움직이지 않는다)
+    if (w.dropNear(x, y)) { w.pickAt(x, y); return; }
     const cmd = w.tap(x, y);
-    if (!cmd) return;
-    // 터치 표시: 가려는 곳에 작은 화살표(대상 지정이면 붉은색)가 톡 떨어진다
-    const tx = cmd.k === 'move' ? cmd.x : x, ty = cmd.k === 'move' ? cmd.y : y;
-    const col = cmd.k === 'move' ? 0xffffff : 0xff8a7a;
+    // 터치 표시: 빈 바닥으로 걸어갈 때만 작은 화살표(몬스터·NPC·시설·포탈은 표시하지 않는다)
+    if (!cmd || cmd.k !== 'move') return;
+    const tx = cmd.x, ty = cmd.y, col = 0xffffff;
     const arrow = this.add.triangle(tx, ty - 10, 0, 0, 7, 0, 3.5, 5, col).setOrigin(0.5, 1).setStrokeStyle(1, 0x1e1420).setDepth(88).setAlpha(0);
     this.tweens.add({ targets: arrow, y: ty - 2, alpha: 1, duration: 160, ease: 'Quad.easeIn' });
     this.tweens.add({ targets: arrow, alpha: 0, delay: 520, duration: 260, onComplete: () => arrow.destroy() });
