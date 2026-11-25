@@ -92,7 +92,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('breed'), op: z.enum(['visit', 'hatch', 'release', 'fence', 'team', 'up']), uid: z.number().int().min(0).max(1e9).optional(), terr: id.optional(), k: z.enum(['nest', 'speed', 'rarity', 'fence']).optional() }),
   z.object({ t: z.literal('cook'), op: z.enum(['visit', 'claim', 'meal', 'recipe', 'up', 'buy', 'lvl', 'chef']), idx: z.number().int().min(0).max(9).optional(), id: z.string().max(40).optional(), sp: z.array(id).max(4).optional(), k: z.enum(['spd', 'fire', 'luck']).optional() }),
   z.object({ t: z.literal('build'), op: z.enum(['start', 'cancel', 'rate', 'slots', 'visit']), id: id.optional(), idx: z.number().int().min(0).max(5).optional() }),
-  z.object({ t: z.literal('trap'), op: z.enum(['set', 'collect', 'cancel']), idx: z.number().int().min(0).max(4), critter: id.optional(), time: z.number().int().min(0).max(3).optional() }),
+  z.object({ t: z.literal('trap'), op: z.enum(['set', 'collect', 'cancel']), idx: z.number().int().min(0).max(4), critter: id.optional(), time: z.number().int().min(0).max(4).optional(), box: id.optional() }),
   z.object({ t: z.literal('post'), op: z.enum(['refresh', 'deliver', 'box']), idx: z.number().int().min(0).max(9).optional(), id: id.optional() }),
   z.object({ t: z.literal('owl'), k: z.enum(['rate', 'dmg', 'xp', 'drop', 'afk']).optional() }),
   z.object({ t: z.literal('talentPreset'), i: z.number().int().min(0).max(3) }),

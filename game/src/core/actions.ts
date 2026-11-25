@@ -85,7 +85,7 @@ export type Action =
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up'; uid?: number; terr?: string; k?: BreedUp }
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
-  | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
+  | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number; box?: string }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
   | { t: 'game'; kind: GameKind; score: number };
 
@@ -231,7 +231,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     }
     case 'trap': {
       if ((c.maxWorld ?? 1) < 3) return fail('3월드 눈꽃 마을의 덫 오두막에서 할 수 있습니다');
-      if (a.op === 'set') return res(setTrap(c, a.idx, a.critter ?? '', a.time ?? 0, now));
+      if (a.op === 'set') return res(setTrap(c, a.idx, a.critter ?? '', a.time ?? 0, now, a.box ?? 'tb_card'));
       if (a.op === 'collect') return res(collectTrap(acc, c, a.idx, now));
       return res(cancelTrap(c, a.idx));
     }

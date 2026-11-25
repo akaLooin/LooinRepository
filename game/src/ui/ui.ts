@@ -2,14 +2,14 @@
 // 모양은 전부 components.css 의 부품(ui-*)과 tokens.css 의 역할 토큰으로 그린다.
 import { AfkReport, afkRates } from '../core/afk';
 import { upLeft } from '../core/upgrade';
-import { BOXES, boxCost } from '../core/post';
-import { trapLock, trapYield } from '../core/traps';
+import { BOXES, COMPANIES, STREAK_MAX, boxCost, boxValue, orderReward, streakNow } from '../core/post';
+import { boxLock, openBoxes, trapLock, trapYield } from '../core/traps';
 import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, chargeCap, chargeNow, chargeRate, prayerCost, prayerSlots, prayerValue, runSouls, worshipLock } from '../core/worship';
 import { LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, labRange, labSettle, labState } from '../core/lab';
 import { BPet, BREED, BreedUp, GENES, SPEC, SPECIES, TERR, TERRITORIES, breedSettle, breedXpToNext, eggRate, fenceCap, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCostOf } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, rateUpCost } from '../core/build';
-import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
+import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
 /** 연금술 효과 이름 */
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중', hp: '최대 체력', card: '카드 드롭률' };
@@ -155,6 +155,7 @@ export class UI {
   private bubSel: string | null = null;
   /** 덫 오두막: 덫을 놓으려고 고른 칸 */
   private trapIdx = -1;
+  private trapBox = 'tb_card';
   private kitIdx = -1;
   private sellArm: string | null = null;
   private lootHinted = false;
@@ -1051,7 +1052,7 @@ export class UI {
       }
       case 'traps': {
         const tr = c.traps, sk = c.skills.trapping, open = trapSlots(sk.lv), now = Date.now(), need = skillXpToNext(sk.lv);
-        const head = `<div class="ui-row alchhead">${ui('obj_traps', 'mi')}<b class="ui-grow">덫 사냥 Lv.<span class="ui-accent">${sk.lv}</span> · ${TRAP_NAMES[tr.tier]} <span class="ui-xs ui-muted">잡는 수 ×${TRAP_MULT[tr.tier]}</span></b><div style="width:30%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
+        const head = `<div class="ui-row alchhead">${ui('obj_traps', 'mi')}<b class="ui-grow">덫 사냥 Lv.<span class="ui-accent">${sk.lv}</span> · ${TRAP_NAMES[tr.tier]} <span class="ui-xs ui-muted">상자 ${openBoxes(c).length}/${TRAP_BOXES.length}</span></b><div style="width:30%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
         const mmss = (ms: number) => { const s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}시간 ${m}분` : m ? `${m}분 ${s % 60}초` : `${s}초`; };
         const rows = [0, 1, 2, 3, 4].map((i) => {
           if (i >= open) return `<div class="ui-row line locked">${ui('ui_lock', 'mi')}<span class="ui-grow ui-muted">덫 사냥 Lv.${i * 10}에 열리는 칸</span></div>`;
@@ -1059,40 +1060,45 @@ export class UI {
           if (!t) return `<div class="ui-row line ${this.trapIdx === i ? 'sel' : ''}">${ui('obj_traps', 'mi')}<span class="ui-grow ui-muted">빈 덫</span><button class="ui-btn sm ${this.trapIdx === i ? 'primary' : ''}" data-act="trappick:${i}">덫 놓기</button></div>`;
           const left = t.end - now, done = left <= 0, total = Math.max(1, t.end - (t.end - left));
           void total;
-          return `<div class="ui-row line"><span class="ui-slot">${icon(t.critter)}</span><div class="ui-grow"><b>${ITEMS[t.critter].name} ×${t.n}</b> <span class="ui-xs ui-muted">경험치 ${t.xp.toLocaleString()}</span>
+          return `<div class="ui-row line"><span class="ui-slot">${icon(t.critter)}</span><div class="ui-grow"><b>${ITEMS[t.critter].name} ×${t.n}</b> <span class="ui-xs ui-muted">${TRAP_BOX[t.box ?? 'tb_card']?.name ?? ''} · 경험치 ${t.xp.toLocaleString()}</span>${t.shiny ? ` <span class="ui-xs ui-accent">✦ 빛나는 ${t.shiny}마리</span>` : ''}
             <div class="ui-sm ${done ? 'ui-good' : 'ui-muted'}">${done ? '다 잡혔습니다!' : `${mmss(left)} 남음 · 접속하지 않아도 진행`}</div></div>
             ${done ? `<button class="ui-btn sm primary" data-act="trap:collect:${i}">거두기</button>` : `<button class="ui-btn sm" data-act="trap:cancel:${i}" title="덫을 걷으면 잡은 것은 사라집니다">걷기</button>`}</div>`;
         }).join('');
         let pick = '';
         if (this.trapIdx >= 0 && this.trapIdx < open && !tr.slots[this.trapIdx]) {
-          pick = `<div class="ui-row"><b class="ui-grow">${this.trapIdx + 1}번 덫에 무엇을 잡을까요?</b><button class="ui-btn sm" data-act="trappick:${this.trapIdx}">뒤로</button></div>` + CRITTERS.map((cr) => {
+          const bx = TRAP_BOX[this.trapBox] && !boxLock(c, TRAP_BOX[this.trapBox]) ? TRAP_BOX[this.trapBox] : TRAP_BOXES[0];
+          const boxes = TRAP_BOXES.map((b) => { const l = boxLock(c, b); return `<button class="ui-btn sm ${b.id === bx.id ? 'primary' : ''}" data-act="trapbox:${b.id}" ${l ? 'disabled' : ''} title="${b.desc}${l ? ` (${l})` : ''}">${b.name}<br><span class="ui-xs">${l ?? `수 ×${b.qty} · 경험치 ×${b.xp}${b.shiny > 1 ? ` · ✦×${b.shiny}` : ''}`}</span></button>`; }).join('');
+          pick = `<div class="ui-row"><b class="ui-grow">${this.trapIdx + 1}번 덫: 상자를 고르고, 잡을 동물과 시간을 고르세요</b><button class="ui-btn sm" data-act="trappick:${this.trapIdx}">뒤로</button></div>
+            <div class="ui-row trapbtns" style="flex-wrap:wrap">${boxes}</div><p class="ui-xs ui-muted">${bx.name}: ${bx.desc}</p>` + CRITTERS.map((cr) => {
             const lock = trapLock(c, cr.id);
-            const btns = lock ? `<span class="ui-sm ui-bad">${lock}</span>` : TRAP_TIMES.map((tt, k) => `<button class="ui-btn sm" data-act="trapset:${cr.id}:${k}" title="${tt.label} 동안 ${trapYield(c, cr.id, k).n}마리">${tt.label}<br><span class="ui-xs">${trapYield(c, cr.id, k).n}마리</span></button>`).join('');
-            return `<div class="ui-row line ${lock ? 'locked' : ''}"><span class="ui-slot">${icon(cr.id)}</span><div class="ui-grow"><b>${cr.name}</b><div class="ui-xs ui-muted">${MAPS[cr.map].name} · Lv.${cr.lv}</div></div><div class="ui-row trapbtns">${btns}</div></div>`;
+            const btns = lock ? `<span class="ui-sm ui-bad">${lock}</span>` : bx.times.map((k) => { const tt = TRAP_TIMES[k], y = trapYield(c, cr.id, k, bx.id); return `<button class="ui-btn sm" data-act="trapset:${cr.id}:${k}" title="${tt.label} 동안 ${y.n}마리 · 경험치 ${y.xp}">${tt.label}<br><span class="ui-xs">${y.n}마리</span></button>`; }).join('');
+            const sh = g.acc.shinies?.[cr.id] ?? 0, sb = SHINY_BONUS[cr.id];
+            return `<div class="ui-row line ${lock ? 'locked' : ''}"><span class="ui-slot">${icon(cr.id)}</span><div class="ui-grow"><b>${cr.name}</b><div class="ui-xs ui-muted">${MAPS[cr.map].name} · Lv.${cr.lv}${sb ? ` · ✦ ${sh}마리(${ALCH_LABEL[sb.eff]} +${shinyLevel(sh) * sb.per}${sb.unit})` : ''}</div></div><div class="ui-row trapbtns">${btns}</div></div>`;
           }).join('');
         }
-        return win(`덫 오두막 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}<div class="ui-tabpanel">${pick || rows}<p class="ui-xs ui-muted">덫은 캐릭터마다 따로 놓습니다. 길게 놓을수록 시간당 조금 더 잡히고, 덫 꾸러미를 쓰면 잡는 수가 늘어납니다. 거둔 동물은 가방에, 넘치면 창고에 들어갑니다.</p></div>`);
+        return win(`덫 오두막 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}<div class="ui-tabpanel">${pick || rows}<p class="ui-xs ui-muted">덫은 캐릭터마다 따로 놓습니다. 상자마다 잡는 수·경험치·빛나는 동물 확률이 달라 목적에 맞게 고릅니다. 덫 꾸러미와 덫 사냥 레벨로 새 상자가 열립니다. 빛나는 동물(✦)은 계정 전체 보너스가 됩니다. 거둔 동물은 가방에, 넘치면 창고에 들어갑니다.</p></div>`);
       }
       case 'post': {
-        const p = c.post, left = p.orders.filter((o) => !o.done).length;
-        const head = `<div class="ui-row alchhead">${ui('it_parcel', 'mi')}<b class="ui-grow">배달 포인트 <span class="ui-accent">${p.pts}</span></b><span class="ui-xs ui-muted">오늘 남은 주문 ${left}/${p.orders.length} · 날이 바뀌면 새 주문</span></div>`;
+        const acc = g.acc, p = c.post, po = acc.postOff, now = Date.now(), left = po.orders.filter((o) => !o.done).length;
+        const head = `<div class="ui-row alchhead">${ui('it_parcel', 'mi')}<b class="ui-grow">배달 포인트 <span class="ui-accent">${p.pts}</span> <span class="ui-xs ui-muted">${esc(c.name)}</span></b><span class="ui-xs ui-muted">오늘 남은 주문 ${left}/${po.orders.length} · 날이 바뀌면 새 주문</span></div>`;
         let body = '';
         if (tab === 0) {
-          body = p.orders.map((o, i) => {
-            const have = haveMat(g.acc, c, o.item);
-            return `<div class="ui-row line ${o.done ? 'done' : ''}"><span class="ui-slot">${icon(o.item)}</span><div class="ui-grow"><b>${ITEMS[o.item].name} ${o.n.toLocaleString()}개</b>
-              <div class="ui-sm ${o.done ? 'ui-muted' : have >= o.n ? 'ui-good' : 'ui-bad'}">${o.done ? '배달 완료' : `가진 수 ${have.toLocaleString()} / ${o.n.toLocaleString()}`}</div></div>
-              <span class="ui-sm">${ui('it_parcel', 'tic')} +${o.pts} · ${ui('ui_coin', 'tic')} ${o.coins.toLocaleString()}</span>
-              <button class="ui-btn sm primary" data-act="post:deliver:${i}" ${!o.done && have >= o.n ? '' : 'disabled'}>${o.done ? '완료' : '배달'}</button></div>`;
+          body = po.orders.map((o, i) => {
+            const co = COMPANIES.find((x) => x.id === o.company)!, st = streakNow(acc, o.company, now), r = orderReward(acc, o, now);
+            const ok = o.items.every((it) => haveMat(acc, c, it.item) >= it.n);
+            const need = o.items.map((it) => { const have = haveMat(acc, c, it.item); return `<span class="ui-row" style="gap:4px"><span class="ui-slot sm">${icon(it.item)}</span><span class="ui-sm ${o.done ? 'ui-muted' : have >= it.n ? 'ui-good' : 'ui-bad'}">${ITEMS[it.item].name} ${Math.min(have, it.n).toLocaleString()}/${it.n.toLocaleString()}</span></span>`; }).join('');
+            return `<div class="ui-row line ${o.done ? 'done' : ''}"><div class="ui-grow"><b>${co.name}</b> <span class="ui-xs ui-muted">${co.desc}</span>${st ? ` <span class="ui-xs ui-accent">연속 ${st}일</span>` : ''}<div class="ui-row" style="flex-wrap:wrap;gap:8px">${need}</div></div>
+              <span class="ui-sm">${ui('it_parcel', 'tic')} +${r.pts} · ${ui('ui_coin', 'tic')} ${short(r.coins)}</span>
+              <button class="ui-btn sm primary" data-act="post:deliver:${i}" ${!o.done && ok ? '' : 'disabled'}>${o.done ? '완료' : '배달'}</button></div>`;
           }).join('') || '<p class="ui-muted">아직 받을 수 있는 주문이 없습니다. 사냥터를 더 열어 보세요.</p>';
-          body += '<p class="ui-xs ui-muted">주문은 이 캐릭터가 갈 수 있는 맵의 재료로만 나옵니다. 가방과 창고의 재료를 함께 씁니다.</p>';
+          body += `<p class="ui-xs ui-muted">주문은 계정 공용이고, 배달한 캐릭터가 포인트를 받습니다. 같은 회사의 주문을 날마다 이어서 채우면 연속 배달 보너스가 쌓입니다(최대 ${STREAK_MAX}일, 하루 거르면 처음부터). 가방과 창고의 재료를 함께 씁니다.</p>`;
         } else {
           body = BOXES.map((b) => {
             const lv = p.boxes[b.id] ?? 0, max = lv >= b.max, cost = boxCost(lv);
-            return `<div class="ui-row line">${ui('it_parcel', 'mi')}<div class="ui-grow"><b>${b.name}</b> <span class="ui-xs ui-accent">${lv}/${b.max}</span>
-              <div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[b.eff]} +${(Math.round(Math.max(1, lv) * b.per * 100) / 100).toLocaleString()}${b.unit}${lv ? '' : ' (1단계)'}</div></div>
+            const effs = b.effs.map((e) => { const v = boxValue(e, Math.max(lv, e.at + 1)), on = lv > e.at; return `<div class="ui-xs ${on ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[e.eff]} +${(Math.round((on ? boxValue(e, lv) : v) * 100) / 100).toLocaleString()}${e.unit}${on ? '' : ` (${e.at + 1}단계부터)`}</div>`; }).join('');
+            return `<div class="ui-row line">${ui('it_parcel', 'mi')}<div class="ui-grow"><b>${b.name}</b> <span class="ui-xs ui-accent">${lv}/${b.max}</span>${effs}</div>
               <button class="ui-btn sm" data-act="post:box:${b.id}" ${!max && p.pts >= cost ? '' : 'disabled'}>${max ? '최대' : `${ui('it_parcel', 'tic')} ${cost}`}</button></div>`;
-          }).join('') + '<p class="ui-xs ui-muted">택배 상자는 캐릭터마다 따로 올립니다.</p>';
+          }).join('') + '<p class="ui-xs ui-muted">택배 상자는 캐릭터마다 따로 올립니다. 상자마다 효과가 셋이고, 26·101단계에서 둘째·셋째 효과가 열립니다.</p>';
         }
         return win(`우체국 <span class="ui-sm ui-muted">${esc(c.name)}</span>`, `${head}${tabs(['배달 주문', '택배 상자'], tab, tabAct, ['it_parcel', 'it_parcel'])}<div class="ui-tabpanel">${body}</div>`);
       }
@@ -1702,8 +1708,9 @@ export class UI {
       case 'kclaim': { const r = g.act({ t: 'cook', op: 'claim' }); if (r.ok) this.audio?.play('coin'); else fail(r.err ?? null); break; }
       case 'kchef': fail(g.act({ t: 'cook', op: 'chef' }).err ?? null); break;
       case 'trappick': this.trapIdx = this.trapIdx === +a ? -1 : +a; break;
+      case 'trapbox': this.trapBox = a; break;
       case 'trapset': {
-        const r = g.act({ t: 'trap', op: 'set', idx: this.trapIdx, critter: a, time: +b });
+        const r = g.act({ t: 'trap', op: 'set', idx: this.trapIdx, critter: a, time: +b, box: this.trapBox });
         if (r.ok) { this.audio?.play('craft'); this.toast(`${ITEMS[a].name} 덫을 놓았습니다`, a); this.trapIdx = -1; } else fail(r.err ?? null);
         break;
       }

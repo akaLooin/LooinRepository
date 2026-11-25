@@ -543,34 +543,44 @@ describe('우체국', () => {
     c.maxWorld = 2; c.mapId = 'oasis'; c.kills.meadow = 100; c.kills.hills = 100;
     return { acc, c };
   };
-  it('하루 3건, 기기와 서버가 같은 주문을 받고 날이 바뀌면 새로 받는다', () => {
-    const { acc, c } = ready();
+  it('여섯 회사가 계정 공용으로 하루 하나씩, 기기와 서버가 같은 주문을 받고 날이 바뀌면 새로 받는다', () => {
+    const { acc } = ready();
     const twin = JSON.parse(JSON.stringify(acc));
     const day1 = new Date(2026, 10, 25, 12).getTime();
     applyAction(acc, 0, { t: 'post', op: 'refresh' }, day1);
     applyAction(twin, 0, { t: 'post', op: 'refresh' }, day1);
-    expect(c.post.orders.length).toBe(POST_ORDERS);
-    expect(twin.characters[0].post.orders).toEqual(c.post.orders);
-    const first = JSON.stringify(c.post.orders);
+    expect(acc.postOff.orders.length).toBeGreaterThanOrEqual(4);
+    expect(acc.postOff.orders.length).toBeLessThanOrEqual(POST_ORDERS);
+    expect(twin.postOff.orders).toEqual(acc.postOff.orders);
+    const first = JSON.stringify(acc.postOff.orders);
     applyAction(acc, 0, { t: 'post', op: 'refresh' }, day1 + 3600_000);
-    expect(JSON.stringify(c.post.orders)).toBe(first);
+    expect(JSON.stringify(acc.postOff.orders)).toBe(first);
     applyAction(acc, 0, { t: 'post', op: 'refresh' }, day1 + 86_400_000);
-    expect(c.post.day).not.toBe(twin.characters[0].post.day);
+    expect(acc.postOff.day).not.toBe(twin.postOff.day);
   });
-  it('배달하면 포인트와 코인, 포인트로 택배 상자를 올리면 능력치가 오른다', () => {
+  it('배달하면 그 캐릭터가 포인트와 코인을 받고, 날마다 이어 배달하면 연속 보너스, 상자 효과 셋', () => {
     const { acc, c } = ready();
     const now = new Date(2026, 10, 25, 12).getTime();
     applyAction(acc, 0, { t: 'post', op: 'refresh' }, now);
-    const o = c.post.orders[0];
+    const o = acc.postOff.orders[0];
     expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(false);
-    addItem(c, o.item, o.n);
+    for (const it of o.items) addItem(c, it.item, it.n);
     const coins = acc.coins;
     expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(true);
-    expect(c.post.pts).toBe(o.pts); expect(acc.coins).toBe(coins + o.coins);
+    expect(c.post.pts).toBe(o.pts); expect(acc.coins).toBe(coins + Math.round(o.coins * 1.05));
+    expect(acc.postOff.streak[o.company]).toBe(1);
     expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: 0 }, now).ok).toBe(false);
+    // 다음 날 같은 회사를 채우면 연속 2일
+    const next = now + 86_400_000;
+    applyAction(acc, 0, { t: 'post', op: 'refresh' }, next);
+    const o2 = acc.postOff.orders.find((x) => x.company === o.company)!;
+    for (const it of o2.items) acc.storage.push({ id: it.item, qty: it.n });
+    expect(applyAction(acc, 0, { t: 'post', op: 'deliver', idx: acc.postOff.orders.indexOf(o2) }, next).ok).toBe(true);
+    expect(acc.postOff.streak[o.company]).toBe(2);
     const str0 = derive(c, acc).str;
     expect(applyAction(acc, 0, { t: 'post', op: 'box', id: 'x_str' }, now).ok).toBe(true);
-    expect(derive(c, acc).str).toBe(str0 + BOX_BY_ID.x_str.per);
+    expect(derive(c, acc).str).toBe(str0 + BOX_BY_ID.x_str.effs[0].per);
+    expect(BOX_BY_ID.x_str.effs.length).toBe(3);
   });
 });
 
@@ -656,10 +666,20 @@ describe('덫 사냥', () => {
     const short = trapYield(c, 'cr_hare', 0).n / TT[0].min, long = trapYield(c, 'cr_hare', 3).n / TT[3].min;
     expect(long).toBeGreaterThan(short);
     const before = trapYield(c, 'cr_hare', 3).n;
+    // 나무 상자는 나무 덫 꾸러미를 써야 열린다
+    expect(applyAction(acc, 0, { t: 'trap', op: 'set', idx: 0, critter: 'cr_hare', time: 3, box: 'tb_wood' }, 0).ok).toBe(false);
     addItem(c, 'trap_wood', 1);
     expect(applyAction(acc, 0, { t: 'use', id: 'trap_wood' }, 0).ok).toBe(true);
     expect(c.traps.tier).toBe(1);
-    expect(trapYield(c, 'cr_hare', 3).n).toBeGreaterThan(before);
+    expect(trapYield(c, 'cr_hare', 3, 'tb_wood').n).toBeGreaterThan(before);
+    // 상자마다 놓을 수 있는 시간이 다르다(판지 상자는 12시간 불가)
+    expect(applyAction(acc, 0, { t: 'trap', op: 'set', idx: 0, critter: 'cr_hare', time: 3, box: 'tb_card' }, 0).ok).toBe(false);
+    expect(applyAction(acc, 0, { t: 'trap', op: 'set', idx: 0, critter: 'cr_hare', time: 3, box: 'tb_wood' }, 0).ok).toBe(true);
+    // 비단 상자: 적게 잡지만 경험치가 많다, 고기 상자: 빛나는 동물이 잘 잡힌다
+    c.skills.trapping.lv = 30;
+    expect(trapYield(c, 'cr_hare', 2, 'tb_silk').n).toBeLessThan(trapYield(c, 'cr_hare', 2, 'tb_card').n);
+    expect(trapYield(c, 'cr_hare', 2, 'tb_silk').xp).toBeGreaterThan(trapYield(c, 'cr_hare', 2, 'tb_card').xp);
+    expect(trapYield(c, 'cr_hare', 2, 'tb_meat').shinyExp).toBeGreaterThan(trapYield(c, 'cr_hare', 2, 'tb_card').shinyExp * 3);
     expect(CRT.cr_fox.lv).toBeGreaterThan(1);
     // 덫은 서버 행동으로만 바뀐다(동기화로 고칠 수 없다)
     const claimed = JSON.parse(JSON.stringify(c)); claimed.traps.tier = 3;

@@ -1110,7 +1110,28 @@ export const CRITTERS: CritterDef[] = [
 ];
 export const CRITTER: Record<string, CritterDef> = Object.fromEntries(CRITTERS.map((x) => [x.id, x]));
 /** 덫 시간: 길게 놓을수록 시간당 효율이 조금 오른다 */
-export const TRAP_TIMES = [{ min: 20, mult: 1, label: '20분' }, { min: 60, mult: 1.1, label: '1시간' }, { min: 240, mult: 1.25, label: '4시간' }, { min: 720, mult: 1.4, label: '12시간' }];
+export const TRAP_TIMES = [{ min: 20, mult: 1, label: '20분' }, { min: 60, mult: 1.1, label: '1시간' }, { min: 240, mult: 1.25, label: '4시간' }, { min: 720, mult: 1.4, label: '12시간' }, { min: 1440, mult: 1.6, label: '24시간' }];
+/** 덫 상자: 원작처럼 상자마다 잡는 수·경험치·빛나는 동물 확률·놓을 수 있는 시간이 다르다(고르는 재미).
+ *  tier: 덫 꾸러미(나무·쇠·서리)를 써야 열리는 상자, lv: 덫 사냥 레벨로 열리는 상자 */
+export interface TrapBoxDef { id: string; name: string; qty: number; xp: number; shiny: number; times: number[]; tier?: number; lv?: number; desc: string }
+export const TRAP_BOXES: TrapBoxDef[] = [
+  { id: 'tb_card', name: '판지 상자', qty: 1, xp: 1, shiny: 1, times: [0, 1, 2], desc: '평범한 상자' },
+  { id: 'tb_wood', name: '나무 상자', qty: 1.5, xp: 1, shiny: 1, times: [0, 1, 2, 3], tier: 1, desc: '조금 더 많이 잡힌다' },
+  { id: 'tb_silk', name: '비단 상자', qty: 0.7, xp: 2.2, shiny: 1, times: [1, 2, 3], lv: 15, desc: '적게 잡히지만 경험치가 많다' },
+  { id: 'tb_iron', name: '쇠 상자', qty: 2.2, xp: 0.9, shiny: 1, times: [1, 2, 3], tier: 2, desc: '많이 잡히지만 경험치가 조금 적다' },
+  { id: 'tb_meat', name: '고기 상자', qty: 1.2, xp: 0.8, shiny: 4, times: [2, 3], lv: 25, desc: '빛나는 동물이 네 배 잘 잡힌다' },
+  { id: 'tb_frost', name: '서리 상자', qty: 3.2, xp: 1.2, shiny: 1.5, times: [1, 2, 3, 4], tier: 3, desc: '아주 많이 잡힌다' },
+  { id: 'tb_royal', name: '왕실 상자', qty: 2.5, xp: 2.5, shiny: 2.5, times: [3, 4], lv: 45, desc: '오래 놓아야 하지만 모든 것이 좋다' },
+];
+export const TRAP_BOX: Record<string, TrapBoxDef> = Object.fromEntries(TRAP_BOXES.map((b) => [b.id, b]));
+/** 빛나는 동물 기본 확률(한 마리마다) */
+export const SHINY_CHANCE = 0.01;
+/** 빛나는 동물 보너스(계정): 모은 수가 2배가 될 때마다 한 단계 */
+export const SHINY_BONUS: Record<string, { eff: BonusKey; per: number; unit: string }> = {
+  cr_hare: { eff: 'afk', per: 0.2, unit: '%p' }, cr_fox: { eff: 'drop', per: 1, unit: '%' }, cr_weasel: { eff: 'xp', per: 1, unit: '%' },
+  cr_marten: { eff: 'card', per: 1, unit: '%' }, cr_reindeer: { eff: 'coins', per: 2, unit: '%' },
+};
+export const shinyLevel = (n: number) => (n > 0 ? Math.floor(Math.log2(n + 1)) : 0);
 /** 덫 도구 단계별 잡는 수 배율(맨손 · 나무 · 쇠 · 서리) */
 export const TRAP_MULT = [1, 1.5, 2.2, 3.2];
 export const TRAP_KITS: Record<string, number> = { trap_wood: 1, trap_iron: 2, trap_frost: 3 };
