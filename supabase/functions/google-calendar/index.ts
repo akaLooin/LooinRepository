@@ -558,6 +558,9 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
  * eleven event colours are given in the shades Google's apps show (the API still answers older, paler ones); any
  * other colour comes as Google gives it. Without an answer, the eleven.
  */
+/** The alarms an event really has: its list, or (stored before the list existed) its one alarm time. */
+const alarmList = (e: Row) => JSON.stringify(Array.isArray(e.alarms) && e.alarms.length ? [...new Set(e.alarms as number[])].sort((x, y) => x - y) : e.alarm_minutes != null ? [e.alarm_minutes] : []);
+
 /** Every row of a query, page by page (a select alone returns at most 1000). */
 // deno-lint-ignore no-explicit-any
 async function every(make: () => any, key: string): Promise<Row[]> {
@@ -590,7 +593,7 @@ async function removeCopies(db: SupabaseClient, uid: string, dry: boolean, most 
   for (const e of evs) {
     const k = JSON.stringify([e.google_calendar_id, e.title, e.start_date, e.end_date, e.all_day, e.start_time, e.end_time, e.repeat ?? null, e.instance_of ?? null,
       // and everything else written on it (user, 2026-11-25): a different colour, memo, place, alarm or 강조 = not a copy
-      String(e.color ?? "").toUpperCase(), e.memo ?? "", e.location ?? "", e.alarm_minutes ?? null, e.alarms ?? null, !!e.important]);
+      String(e.color ?? "").toUpperCase(), e.memo ?? "", e.location ?? "", alarmList(e), !!e.important]);
     groups.set(k, [...(groups.get(k) ?? []), e]);
   }
   // the one kept: a linked one if there is (it is the real Google event), the oldest of those; copies with no link are
