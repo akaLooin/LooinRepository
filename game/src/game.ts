@@ -2,9 +2,9 @@
 // 서버가 있으면 서버가 기준(방치 보상·행동·플레이 기록 검증), 없거나 끊기면 이 기기에서 그대로 진행한다.
 import { Action, ActionResult, applyAction } from './core/actions';
 import { AfkReport, computeAfk } from './core/afk';
-import { MAPS } from './core/data';
+import { MAPS, worldOf } from './core/data';
 import { Rng } from './core/rng';
-import { Account, Character, Look, createCharacter, deleteCharacter, deserialize, lookOf, newAccount, serialize, portalLock } from './core/state';
+import { Account, Character, Look, createCharacter, deleteCharacter, deserialize, lookOf, newAccount, serialize, portalLock, gateOpen } from './core/state';
 import { Input, World, WorldEvent } from './core/world';
 import { ChatLine, Gear, Live, Net, RemoteInfo, SyncBody } from './net';
 
@@ -261,7 +261,8 @@ export class Game {
         if (e.t === 'arrive' && e.what === 'portal') {
           const q = w.map.portals[e.idx];
           if (!w.portalOpen(q)) { this.onEvent({ t: 'loot', text: `아직 열리지 않았습니다(${portalLock(w.char, w.map.id, q)})` }); continue; }
-          if (q.to === 'world2') { this.onEvent({ t: 'gate' }); continue; }
+          // 세계의 문: 조건을 못 채웠으면 조건 창, 채웠으면 그대로 지난다
+          if (q.gate && worldOf(q.to) > worldOf(w.map.id) && !gateOpen(this.acc, w.char)) { this.onEvent({ t: 'gate' }); continue; }
           if (!MAPS[q.to]) continue;
           this.travel(e.idx);
           return;

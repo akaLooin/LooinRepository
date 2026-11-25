@@ -5,7 +5,7 @@ import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
 import { MiniState, TotemState, newMini, newTotem } from './minigames';
 import {
-  WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  WORLDS, TOWNS, worldOf, WORLD_GATE, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -53,6 +53,8 @@ export interface Character {
   equipUp: Partial<Record<EquipSlot, Upg>>;
   /** 별빛 특성 레벨 */
   starTal: Record<string, number>;
+  /** 세계의 문을 지나 열어 둔 가장 높은 월드 */
+  maxWorld: number;
   /** 콜로세움에 들어갈 때의 콜로세움 처치 수(보상은 이번 회차 처치 수로) */
   arenaStart?: number | null;
   auto: boolean; activity: Activity;
@@ -143,7 +145,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     stats: { str: 1, agi: 1, wis: 1, luk: 1 },
     hp: 1, mp: 1, foods: new Array(FOOD_SLOTS).fill(null), mapId: 'town', x: 120, auto: false, activity: { k: 'none' },
     inventory: [], equipment: { weapon: 'sword_wood' }, bags: [], pouches: [],
-    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {},
+    anvil: { slots: [{ prod: null, stored: 0, frac: 0 }], pts: { cap: 0, spd: 0, xp: 0 } }, cardSlots: new Array(CARD_SLOTS).fill(null), cardPresets: [new Array(CARD_SLOTS).fill(null), new Array(CARD_SLOTS).fill(null)], cardPreset: 0, cardSet: null, statues: {}, sign: null, talentPresets: [{ talents: {}, bars: emptyBars() }, { talents: {}, bars: emptyBars() }], talentPreset: 0, skins: {}, equipUp: {}, starTal: {}, maxWorld: 1,
     skills: { mining: { lv: 1, xp: 0 }, chopping: { lv: 1, xp: 0 }, smithing: { lv: 1, xp: 0 } },
     kills: {}, lastActive: now,
     talentPoints: 0, talents: {}, quests: {},
@@ -719,15 +721,19 @@ export function collectAnvil(acc: Account, c: Character, toStorage: boolean, slo
 // ───────── 지도 순간이동 ─────────
 /** 이 캐릭터가 열어 둔 맵: 앞 맵에서 다음 맵 포탈 조건을 채웠으면 열림 */
 export function mapUnlocked(c: Character, id: string): boolean {
-  if (!WORLD1.includes(id)) return false;
-  // 마을에서 시작해 조건을 채운 문으로만 이어서 닿을 수 있는 맵(열쇠 문·보스방은 제외)
-  const seen = new Set(['town']), q = ['town'];
+  const w = WORLDS.find((x) => x.maps.includes(id));
+  // 다음 월드는 세계의 문을 한 번 지나야 열린다
+  if (!w || w.n > (c.maxWorld ?? 1)) return false;
+  // 그 월드 마을에서 시작해 조건을 채운 문으로만 이어서 닿을 수 있는 맵(열쇠 문·보스방은 제외)
+  const seen = new Set([w.town]), q = [w.town];
   while (q.length) {
     const m = MAPS[q.shift()!];
-    for (const p of m.portals) if (!p.key && WORLD1.includes(p.to) && !seen.has(p.to) && portalReady(c, m.id, p)) { seen.add(p.to); q.push(p.to); }
+    for (const p of m.portals) if (!p.key && !p.gate && w.maps.includes(p.to) && !seen.has(p.to) && portalReady(c, m.id, p)) { seen.add(p.to); q.push(p.to); }
   }
   return seen.has(id);
 }
+/** 맵이 속한 월드의 마을과 부활 자리 */
+export const townOf = (mapId: string) => (worldOf(mapId) === 2 ? { id: 'oasis', x: 300 } : { id: 'town', x: 120 });
 // ───────── 미니보스·콜로세움 ─────────
 export const MINIBOSS_IDS = new Set(MINIBOSSES.map((m) => m.id));
 /** 미니보스 회차 키: 시간마다 / 날마다 */
@@ -780,18 +786,18 @@ export function refillTeleports(acc: Account, now: number) {
 }
 /** 맵의 처치 목표(다음 맵으로 가는 문 조건). 목표가 없으면 0 */
 export function mapQuota(id: string): number {
-  const gate = MAPS[id]?.portals.find((p) => p.reqKills && !p.key && WORLD1.includes(p.to));
+  const gate = MAPS[id]?.portals.find((p) => p.reqKills && !p.key && WORLDS.some((w) => w.maps.includes(p.to)));
   return gate?.reqKills ?? 0;
 }
 /** 순간이동 할 수 있는 맵인가: 열렸고, 그 맵의 처치 목표를 채웠다(마을은 언제나) */
-export const canTeleportTo = (c: Character, id: string) => id === 'town' || (mapUnlocked(c, id) && (c.kills[id] ?? 0) >= mapQuota(id));
+export const canTeleportTo = (c: Character, id: string) => (TOWNS.includes(id) && mapUnlocked(c, id)) || (mapUnlocked(c, id) && (c.kills[id] ?? 0) >= mapQuota(id));
 /** 지도 순간이동: 마을은 무료, 다른 맵은 순간이동 티켓 1장(가방 → 창고 순서로 쓴다) */
 export function teleport(acc: Account, c: Character, id: string, now: number): string | null {
   void now;
   if (!MAPS[id] || !mapUnlocked(c, id)) return '아직 열리지 않은 맵입니다';
   if (c.mapId === id) return '이미 이 맵에 있습니다';
   if (!canTeleportTo(c, id)) return `이 맵의 처치 목표(${mapQuota(id)}마리)를 채워야 순간이동할 수 있습니다`;
-  if (id !== 'town') {
+  if (!TOWNS.includes(id)) {
     if (countItem(c, TP_TICKET) > 0) removeItem(c, TP_TICKET, 1);
     else {
       const st = acc.storage.find((x) => x.id === TP_TICKET);
@@ -799,7 +805,7 @@ export function teleport(acc: Account, c: Character, id: string, now: number): s
       st.qty--; if (st.qty <= 0) acc.storage.splice(acc.storage.indexOf(st), 1);
     }
   }
-  c.mapId = id; c.x = id === 'town' ? 120 : 50; c.y = 0;
+  c.mapId = id; c.x = TOWNS.includes(id) ? townOf(id).x : 50; c.y = 0;
   return null;
 }
 
@@ -876,7 +882,7 @@ export function deserialize(json: string | null): Account | null {
       c.activity ??= { k: 'none' };
       delete (c as unknown as { mode?: string }).mode;
       c.talents ??= {};
-      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {};
+      c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1;
       c.statues ??= {}; c.sign ??= null; c.talentPreset ??= 0;
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];

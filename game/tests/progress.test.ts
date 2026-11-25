@@ -387,3 +387,40 @@ describe('세계의 문', () => {
     expect(gateOpen(acc, c)).toBe(true);
   });
 });
+
+import { canTeleportTo } from '../src/core/state';
+import { MAPS as ALLMAPS, WORLD2, worldOf } from '../src/core/data';
+describe('2월드', () => {
+  it('세계의 문을 지나야 2월드가 열리고, 이후 오아시스는 무료 순간이동·부활 장소', () => {
+    const { acc, c } = setup();
+    c.mapId = 'grove'; c.level = 30; acc.bosses.mossking = 1; c.kills.grove = 400;
+    expect(mapUnlocked(c, 'oasis')).toBe(false);
+    const gi = ALLMAPS.grove.portals.findIndex((p) => p.gate);
+    // 조건을 못 채우면 거절
+    c.kills.grove = 10;
+    expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(false);
+    c.kills.grove = 400;
+    expect(applyAction(acc, 0, { t: 'travel', portal: gi }, 0).ok).toBe(true);
+    expect(c.mapId).toBe('oasis'); expect(c.maxWorld).toBe(2);
+    expect(mapUnlocked(c, 'oasis')).toBe(true);
+    expect(mapUnlocked(c, 'dunes')).toBe(true);
+    expect(mapUnlocked(c, 'canyon')).toBe(false);
+    // 2월드에서 쓰러지면 오아시스에서 깨어난다
+    c.mapId = 'dunes';
+    applyAction(acc, 0, { t: 'respawn' }, 0);
+    expect(c.mapId).toBe('oasis');
+    // 1월드 마을로는 무료, 오아시스로도 무료
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'town' }, 0).ok).toBe(true);
+    expect(canTeleportTo(c, 'oasis')).toBe(true);
+    expect(applyAction(acc, 0, { t: 'teleport', map: 'oasis' }, 0).ok).toBe(true);
+    // 돌아가는 문은 조건 없이 지난다
+    const back = ALLMAPS.oasis.portals.findIndex((p) => p.to === 'grove');
+    expect(applyAction(acc, 0, { t: 'travel', portal: back }, 0).ok).toBe(true);
+    expect(c.mapId).toBe('grove');
+  });
+  it('2월드 맵은 처치 목표로 차례로 이어진다', () => {
+    expect(WORLD2.every((id) => worldOf(id) === 2)).toBe(true);
+    expect(worldOf('sandlair')).toBe(2);
+    for (const id of WORLD2) expect(ALLMAPS[id]).toBeTruthy();
+  });
+});

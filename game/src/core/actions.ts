@@ -1,12 +1,13 @@
 // 플레이어 행동. 기기(낙관적 적용)와 서버(권위)가 같은 함수로 적용한다.
 // 새 행동을 추가할 때는 여기 한 곳만 고치면 클라이언트와 서버가 함께 바뀐다.
 import { applyStone } from './upgrade';
+import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
 import { BlessKey, GameKind, buyBless, finishGame, finishTotem } from './minigames';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
-  equipItem, learnStarTal, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
+  equipItem, gateOpen, townOf, learnStarTal, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
   withdraw,
 } from './state';
 import { buyBribe, collectStamp, upgradeStamp } from './stamps';
@@ -112,6 +113,11 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (!q || !MAPS[q.to]) return fail('없는 포탈');
       const lock = portalLock(c, c.mapId, q);
       if (lock) return fail(`아직 열리지 않았습니다(${lock})`);
+      // 세계의 문: 앞으로(더 높은 월드로) 갈 때만 조건을 본다
+      if (q.gate && worldOf(q.to) > worldOf(c.mapId)) {
+        if (!gateOpen(acc, c)) return fail('세계의 문 조건을 아직 채우지 못했습니다');
+        c.maxWorld = Math.max(c.maxWorld ?? 1, worldOf(q.to));
+      }
       if (q.key) {
         if (countItem(c, q.key) < 1) return fail('열쇠가 필요합니다');
         removeItem(c, q.key, 1);
@@ -121,7 +127,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       c.mapId = q.to; c.x = q.toX; c.y = q.toY ?? 0;
       return ok();
     }
-    case 'respawn': c.mapId = 'town'; c.x = 120; c.y = 0; return ok();
+    case 'respawn': { const t = townOf(c.mapId); c.mapId = t.id; c.x = t.x; c.y = 0; return ok(); }
     case 'auto': c.auto = a.on; return ok();
     case 'barSet': return res(setBarSlot(c, a.bar, a.slot, a.id));
     case 'barPage': if (a.page < 0 || a.page >= c.attackBars.length) return fail('없는 장'); c.attackPage = a.page; return ok();

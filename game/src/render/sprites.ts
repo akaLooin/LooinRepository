@@ -205,8 +205,9 @@ function buildWeapons() {
   sword('sword_red', '#e8836a', '#6a7480');
   sword('sword_blue', '#7fb4ff', '#3a5a9a');
   sword('sword_gold', '#f6d76a', '#b9824f');
+  sword('sword_amber', '#f6a83a', '#8a5a2a');
   // 활(세로로 쥔다)
-  for (const [id, a] of [['bow_wood', '#b9824f'], ['bow_leaf', '#7ccf52'], ['bow_blue', '#5a8ad8'], ['bow_gold', '#e8b84a']] as const) {
+  for (const [id, a] of [['bow_wood', '#b9824f'], ['bow_leaf', '#7ccf52'], ['bow_blue', '#5a8ad8'], ['bow_gold', '#e8b84a'], ['bow_amber', '#e8902a']] as const) {
     const p = new Paint(16, 36);
     for (let y = 2; y < 34; y++) {
       const x = 4 + Math.round(Math.sin(((y - 2) / 31) * Math.PI) * 8);
@@ -218,7 +219,7 @@ function buildWeapons() {
     p.selout().save(hi(`wp_${id}`));
   }
   // 지팡이: 위에 보석 구슬과 받침
-  for (const [id, gem] of [['wand_wood', '#5aa9e6'], ['wand_leaf', '#7ccf52'], ['wand_blue', '#7fb4ff'], ['wand_gold', '#f6d76a']] as const) {
+  for (const [id, gem] of [['wand_wood', '#5aa9e6'], ['wand_leaf', '#7ccf52'], ['wand_blue', '#7fb4ff'], ['wand_gold', '#f6d76a'], ['wand_amber', '#ff9a3a']] as const) {
     const p = new Paint(12, 32);
     p.rect(5, 9, 2, 22, '#8a5a3c'); p.disc(5.5, 5, 4, 4, gem);
     p.volume();
@@ -242,6 +243,7 @@ function buildWeapons() {
   tool('wp_pick_red', '#d9674f', false); tool('wp_axe_red', '#d9674f', true);
   tool('wp_pick_blue', '#6a9ae8', false); tool('wp_axe_blue', '#6a9ae8', true);
   tool('wp_pick_gold', '#f2c14e', false); tool('wp_axe_gold', '#f2c14e', true);
+  tool('wp_pick_amber', '#f0902a', false); tool('wp_axe_amber', '#f0902a', true);
   // 발사체
   let p = new Paint(11, 5);
   p.rect(1, 2, 8, 1, '#b9824f'); p.set(9, 2, '#c9d1d9'); p.set(8, 1, '#c9d1d9'); p.set(8, 3, '#c9d1d9'); p.set(1, 1, '#e9e4f0'); p.set(1, 3, '#e9e4f0');
@@ -372,6 +374,102 @@ function buildMonsters() {
   bigEye(p, 16, 25, 4.5, 5.5); bigEye(p, 24, 25, 4.5, 5.5);
   p.rect(18, 31, 4, 1, '#6a4a3a'); p.set(13, 29, '#f29a9a'); p.set(27, 29, '#f29a9a');
   p.selout().save(hi('mob_shroomkin'));
+
+  // ───── 2월드: 노을 사막 ─────
+  // 선인장꼬마: 통통한 선인장 몸 + 짧은 팔 + 머리 꽃
+  p = new Paint(36, 40);
+  p.rect(10, 8, 16, 28, '#5aae4a'); p.disc(18, 9, 8, 6, '#5aae4a'); p.rect(3, 16, 7, 5, '#5aae4a'); p.rect(3, 10, 4, 8, '#5aae4a'); p.rect(26, 19, 7, 5, '#5aae4a'); p.rect(29, 13, 4, 8, '#5aae4a');
+  p.rect(11, 35, 6, 4, '#c89058'); p.rect(19, 35, 6, 4, '#c89058');
+  p.volume();
+  for (const x of [13, 18, 23]) p.rect(x, 10, 1, 24, '#3e8a3a');
+  for (const [x, y] of [[11, 14], [25, 20], [12, 28], [24, 30], [4, 12], [31, 15]] as const) p.set(x, y, '#f4f0d8');
+  p.disc(18, 3, 3, 2.4, '#ff7aa8'); p.disc(18, 3, 1.2, 1, '#ffe06a');
+  bigEye(p, 15, 18, 4.5, 5.5); bigEye(p, 22, 18, 4.5, 5.5);
+  p.rect(17, 24, 3, 1, '#2a4a20'); p.set(12, 22, '#f29a9a'); p.set(25, 22, '#f29a9a');
+  p.selout().save(hi('mob_cactling'));
+
+  // 꼬마전갈: 납작한 몸 + 집게 + 말아 올린 꼬리
+  p = new Paint(44, 34);
+  p.disc(20, 24, 13, 7, '#c8703e'); p.rect(8, 28, 26, 3, '#a85a30');
+  p.disc(36, 22, 5, 4, '#c8703e'); p.disc(40, 18, 3.5, 3, '#c8703e'); p.disc(39, 25, 3.4, 2.6, '#c8703e');
+  p.disc(8, 18, 4, 4, '#c8703e'); p.disc(6, 12, 4, 4, '#c8703e'); p.disc(9, 6, 4, 3.5, '#c8703e'); p.disc(14, 4, 3, 3, '#d8804a');
+  p.line(16, 4, 19, 8, '#3a2018'); p.line(17, 4, 20, 8, '#3a2018');
+  for (const x of [12, 18, 24, 30]) p.rect(x, 30, 2, 3, '#8a4a28');
+  p.volume();
+  for (const x of [14, 20, 26]) p.rect(x, 20, 1, 8, '#a85a30');
+  bigEye(p, 29, 20, 4, 5); bigEye(p, 34, 19, 3.6, 4.6);
+  p.rect(30, 26, 3, 1, '#4a2010');
+  p.selout().save(hi('mob_scorpip'));
+
+  // 아지랑이새: 둥근 몸 + 불꽃 같은 볏과 꼬리
+  p = new Paint(36, 32);
+  p.disc(17, 18, 11, 10, '#f6c86a'); p.disc(17, 22, 7, 5, '#fff0b8');
+  for (const [x, y, c2] of [[12, 6, '#ff8a3a'], [16, 4, '#ffb04a'], [20, 6, '#ff8a3a']] as const) p.disc(x, y, 2.4, 3.6, c2);
+  p.disc(4, 20, 4, 2.4, '#ff8a3a'); p.disc(3, 16, 3, 2, '#ffb04a');
+  p.volume();
+  p.rect(26, 17, 5, 3, '#f0902a'); p.rect(26, 18, 5, 1, '#c8682a');
+  bigEye(p, 19, 15, 4.5, 5); bigEye(p, 25, 15, 4, 5);
+  p.set(14, 20, '#f29a9a');
+  p.selout().save(hi('mob_mirabird'));
+  p = new Paint(20, 14);
+  p.disc(10, 7, 9, 5, '#ffb04a'); p.line(2, 8, 17, 5, '#ff8a3a'); p.line(6, 10, 16, 8, '#ff8a3a');
+  p.volume(); p.selout().save(hi('mob_mirabird_wing'));
+
+  // 붕대돌이: 둥근 몸에 붕대를 감고 한쪽 눈만
+  p = new Paint(38, 40);
+  p.disc(19, 21, 15, 15, '#e8dcc0'); p.rect(9, 30, 8, 8, '#e8dcc0'); p.rect(21, 30, 8, 8, '#e8dcc0');
+  p.volume();
+  for (const [y, d] of [[10, 1], [15, -1], [21, 1], [27, -1], [32, 1]] as const) p.line(5, y, 33, y + d * 2, '#b8a888');
+  p.disc(20, 18, 4.5, 3, '#2a2028'); bigEye(p, 21, 18, 4, 4.6, '#2a2028'); p.disc(20.5, 18, 1.2, 1.2, '#ffd06a');
+  p.rect(30, 30, 4, 7, '#e8dcc0'); p.rect(31, 36, 2, 3, '#b8a888');
+  p.selout().save(hi('mob_mumbun'));
+
+  // 소금게: 하얀 등딱지에 소금 결정, 큰 집게
+  p = new Paint(44, 32);
+  p.disc(22, 20, 14, 9, '#e8eef2'); p.rect(8, 22, 28, 5, '#c8d4dc');
+  p.disc(5, 14, 5, 4, '#e8eef2'); p.disc(39, 14, 5, 4, '#e8eef2'); p.rect(4, 15, 3, 7, '#c8d4dc'); p.rect(37, 15, 3, 7, '#c8d4dc');
+  for (const x of [10, 15, 28, 33]) p.line(x, 26, x + (x < 22 ? -3 : 3), 31, '#a8b8c4');
+  p.volume();
+  for (const [x, y] of [[16, 13], [22, 11], [28, 14]] as const) { p.rect(x, y - 2, 2, 4, '#ffffff'); p.set(x + 1, y - 3, '#d8f0ff'); }
+  p.line(3, 11, 7, 13, '#8a9aa8'); p.line(37, 13, 41, 11, '#8a9aa8');
+  bigEye(p, 18, 19, 4, 5); bigEye(p, 26, 19, 4, 5);
+  p.rect(20, 24, 4, 1, '#5a6a78');
+  p.selout().save(hi('mob_saltcrab'));
+
+  // 모래벌레: 마디진 몸이 모래에서 솟아오름 + 큰 입
+  p = new Paint(36, 44);
+  for (const [y, r2] of [[36, 10], [28, 9], [20, 8.5], [12, 8]] as const) p.disc(18, y, r2, 5.5, '#d8b070');
+  p.rect(4, 38, 28, 5, '#c8a462');
+  p.volume();
+  for (const y of [32, 24, 16]) p.rect(10, y, 16, 1, '#a8844e');
+  p.disc(18, 9, 5, 3, '#8a3a3a'); for (const x of [14, 17, 20, 22]) p.set(x, 7, '#fff0d8');
+  bigEye(p, 13, 13, 3.6, 4.4); bigEye(p, 23, 13, 3.6, 4.4);
+  for (const x of [6, 11, 25, 30]) p.set(x, 41, '#e8cc90');
+  p.selout().save(hi('mob_duneworm'));
+
+  // 해불꽃: 둥근 불꽃 정령 + 위로 솟는 불길
+  p = new Paint(34, 40);
+  p.disc(17, 25, 12, 11, '#ff8a3a'); p.disc(17, 14, 8, 9, '#ff8a3a'); p.disc(11, 9, 3, 5, '#ff8a3a'); p.disc(23, 8, 3, 5.5, '#ff8a3a'); p.disc(17, 4, 2.4, 4, '#ffb04a');
+  p.volume();
+  p.disc(17, 26, 7, 7, '#ffc86a'); p.disc(17, 27, 4, 4, '#fff0b8');
+  bigEye(p, 13, 22, 4, 5, '#5a1a0a'); bigEye(p, 21, 22, 4, 5, '#5a1a0a');
+  p.rect(16, 29, 3, 1, '#8a2a0a');
+  p.selout().save(hi('mob_sunwisp'));
+  p = new Paint(16, 14);
+  p.disc(8, 8, 6, 4, '#ff8a3a'); p.disc(5, 6, 3, 2, '#ffb04a'); p.disc(10, 9, 2.4, 1.6, '#ffd06a');
+  p.volume(); p.selout().save(hi('mob_sunwisp_wing'));
+
+  // 사막 거상: 사암 블록 몸 + 둥근 머리 + 빛나는 눈과 금 장식
+  p = new Paint(60, 56);
+  p.rect(12, 18, 36, 30, '#d8b070'); p.disc(30, 14, 13, 10, '#e2c482'); p.rect(2, 22, 11, 20, '#c8a462'); p.rect(47, 22, 11, 20, '#c8a462');
+  p.rect(16, 46, 11, 9, '#b08a52'); p.rect(33, 46, 11, 9, '#b08a52');
+  p.volume();
+  p.rect(12, 30, 36, 2, '#a8844e'); p.rect(29, 18, 2, 28, '#a8844e'); p.line(4, 30, 11, 30, '#a8844e'); p.line(49, 30, 56, 30, '#a8844e');
+  p.rect(17, 6, 26, 4, '#f2a83a'); for (const x of [18, 25, 32, 39]) p.rect(x, 3, 3, 4, '#f2a83a'); p.disc(30, 8, 1.6, 1.6, '#4ec8c8');
+  p.disc(24, 15, 2.4, 2, '#ff7a2a'); p.disc(36, 15, 2.4, 2, '#ff7a2a'); p.set(24, 14, '#fff0b8'); p.set(36, 14, '#fff0b8');
+  p.rect(26, 20, 8, 1, '#7a5a32');
+  p.disc(30, 37, 3, 3, '#4ec8c8'); p.set(29, 36, '#c4ffff');
+  p.selout().save(hi('mob_sandlord'));
 }
 
 // ───────── 배경/지형/오브젝트 ─────────
@@ -387,6 +485,15 @@ export const THEMES = {
   grove: { sky: ['#1e2450', '#5a5a9a'], far: '#3a3f7a', mid: '#2c3062', grass: ['#7ab8c8', '#5a96aa', '#3e7488'], dirt: ['#4a4466', '#3a3452', '#2a263e'] },
   arena: { sky: ['#f0c49a', '#fff0d8'], far: '#d8b08a', mid: '#b88a62', grass: ['#d8c49a', '#b8a47a', '#98845a'], dirt: ['#b89a7a', '#987a5a', '#7a5e44'] },
   mine: { sky: ['#2a2622', '#5a4e42'], far: '#4a4036', mid: '#3a322a', grass: ['#8a8a8a', '#6a6a6a', '#4e4e4e'], dirt: ['#6a5a4a', '#54463a', '#40352c'] },
+  // 2월드: 노을 사막
+  oasis: { sky: ['#f6a86a', '#ffe8b8'], far: '#e8b888', mid: '#c89060', grass: ['#9ad06a', '#74b052', '#548e3e'], dirt: ['#e0c088', '#c8a46a', '#a8844e'] },
+  dunes: { sky: ['#8ac8f0', '#fff0c8'], far: '#f0d098', mid: '#e0b070', grass: ['#f2dca0', '#e2c482', '#c8a462'], dirt: ['#e0c088', '#c8a46a', '#a8844e'] },
+  canyon: { sky: ['#f0905a', '#ffd8a8'], far: '#d87850', mid: '#b85a3a', grass: ['#e0905a', '#c87048', '#a85638'], dirt: ['#b8603e', '#984a30', '#783824'] },
+  mirage: { sky: ['#c8e0f8', '#fff8e0'], far: '#f8e0b0', mid: '#e8c890', grass: ['#f6e2b0', '#e8cc90', '#d0b070'], dirt: ['#e8cc98', '#d0b07a', '#b0905a'] },
+  tomb: { sky: ['#6a5a78', '#d8b898'], far: '#a88a70', mid: '#887058', grass: ['#c8b088', '#a8906a', '#88724e'], dirt: ['#a08868', '#806c50', '#62523c'] },
+  saltlake: { sky: ['#a8d8f0', '#f4fbff'], far: '#e4eef4', mid: '#c8dce8', grass: ['#f4f8fa', '#dce8ee', '#bccdd8'], dirt: ['#d8d0c4', '#b8ae9e', '#988c7a'] },
+  starfield: { sky: ['#2a2458', '#a86a8a'], far: '#5a4a7a', mid: '#3e3460', grass: ['#d8b888', '#b89868', '#98784e'], dirt: ['#8a6e58', '#6e5644', '#524034'] },
+  sunspire: { sky: ['#f8b848', '#fff0b8'], far: '#e8a858', mid: '#c88848', grass: ['#e8c47a', '#d0a85e', '#b08a46'], dirt: ['#c8a070', '#a88258', '#866642'] },
 } as const;
 export type ThemeKey = keyof typeof THEMES;
 
@@ -467,7 +574,7 @@ function buildTheme(name: ThemeKey) {
 
 function buildObjects() {
   // 나무(참나무 / 은빛나무): 줄기와 수관을 분리해 수관만 흔든다
-  for (const [id, leaf, trunk] of [['oak', ['#3b8c4f', '#5fb859', '#8fde5d'], ['#8a5a3c', '#6b4530']], ['silvertree', ['#7fa8b8', '#a9d3dc', '#e3f6f5'], ['#b8b0c8', '#8d86a3']], ['willow', ['#6a8a3a', '#8aac4a', '#b8d47a'], ['#6e5a40', '#54442f']], ['moonbirch', ['#4a5aa8', '#7a8ad8', '#c4ccff'], ['#e8e4f0', '#b4aec8']]] as const) {
+  for (const [id, leaf, trunk] of [['oak', ['#3b8c4f', '#5fb859', '#8fde5d'], ['#8a5a3c', '#6b4530']], ['silvertree', ['#7fa8b8', '#a9d3dc', '#e3f6f5'], ['#b8b0c8', '#8d86a3']], ['willow', ['#6a8a3a', '#8aac4a', '#b8d47a'], ['#6e5a40', '#54442f']], ['moonbirch', ['#4a5aa8', '#7a8ad8', '#c4ccff'], ['#e8e4f0', '#b4aec8']], ['palm', ['#3a9a4a', '#5ac05a', '#a8e878'], ['#b8864a', '#8a6034']]] as const) {
     let p = new Paint(18, 30);
     p.rect(6, 0, 6, 28, trunk[0]); p.rect(10, 0, 2, 28, trunk[1]);
     p.rect(4, 26, 10, 3, trunk[0]); p.rect(12, 26, 2, 3, trunk[1]);
@@ -480,6 +587,19 @@ function buildObjects() {
     p.disc(13, 9, 5, 3.5, leaf[2]); p.disc(28, 8, 6, 3.5, leaf[2]); p.disc(21, 15, 5, 2.5, leaf[2]);
     p.outline().save(`node_${id}_top`);
   }
+  // 야자나무 잎: 둥근 수관 대신 늘어진 잎 다발로 다시 그린다
+  {
+    const q = new Paint(44, 36);
+    for (const [dx, dy, len] of [[-1, 0.15, 19], [1, 0.15, 19], [-1, 0.6, 15], [1, 0.6, 15], [-0.45, -0.55, 12], [0.45, -0.55, 12]] as const) {
+      for (let t = 0; t <= len; t++) {
+        const x = 22 + dx * t, y = 16 + dy * t + (t * t) / (len * 1.3);
+        q.disc(x, y, 2.6 - t / len * 1.2, 1.8 - t / len * 0.8, t % 3 ? '#4aaa4a' : '#3a8a3a');
+        q.set(x, y - 1, '#8ade6a');
+      }
+    }
+    q.disc(22, 17, 4, 3, '#3a8a3a'); q.disc(19, 21, 2, 2, '#8a5a2a'); q.disc(24, 21, 2, 2, '#8a5a2a');
+    q.outline().save('node_palm_top');
+  }
   // 광맥
   let p = new Paint(34, 24);
   p.disc(12, 15, 11, 8, '#8d97a3'); p.disc(23, 16, 9, 7, '#7b8591'); p.disc(16, 10, 8, 7, '#a6afb9');
@@ -487,7 +607,7 @@ function buildObjects() {
   p.rect(0, 22, 34, 2, null);
   for (const [x, y] of [[8, 14], [18, 12], [25, 15], [14, 18], [22, 9]]) { p.disc(x, y, 2, 1.6, '#d9574a'); p.set(x - 1, y - 1, '#f6a08a'); }
   p.outline().save('node_redrock');
-  for (const [id, base, gem, hi2] of [['bluerock', ['#6a7480', '#5a636e', '#87909b'], '#4e8de2', '#a5d8ff'], ['goldrock', ['#7d7468', '#665e54', '#9a9184'], '#f2c14e', '#fff1a8']] as const) {
+  for (const [id, base, gem, hi2] of [['bluerock', ['#6a7480', '#5a636e', '#87909b'], '#4e8de2', '#a5d8ff'], ['goldrock', ['#7d7468', '#665e54', '#9a9184'], '#f2c14e', '#fff1a8'], ['amberrock', ['#a08468', '#806a52', '#bca084'], '#f0902a', '#ffd08a']] as const) {
     p = new Paint(34, 24);
     p.disc(12, 15, 11, 8, base[0]); p.disc(23, 16, 9, 7, base[1]); p.disc(16, 10, 8, 7, base[2]);
     p.disc(13, 8, 4, 2.5, mix(base[2], '#ffffff', 0.4)); p.rect(0, 22, 34, 2, null);
@@ -691,11 +811,11 @@ function buildItems() {
     p.outline().save(`it_stamp_${k}`);
   }
   // 광석·주괴·통나무(색만 다른 같은 모양)
-  for (const [k, a, b, gem] of [['ore_blue', '#7b8591', '#5a636e', '#4e8de2'], ['ore_gold', '#8a8070', '#6a6254', '#f2c14e']] as const) {
+  for (const [k, a, b, gem] of [['ore_blue', '#7b8591', '#5a636e', '#4e8de2'], ['ore_gold', '#8a8070', '#6a6254', '#f2c14e'], ['ore_amber', '#a08468', '#806a52', '#f0902a']] as const) {
     p = new Paint(12, 12); p.disc(5.5, 6.5, 4.4, 3.6, a); p.disc(4, 5.5, 1.8, 1.4, gem); p.disc(7.5, 7.5, 1.6, 1.3, gem); p.rect(3, 9, 6, 1, b); p.set(3, 5, '#ffffff');
     p.outline().save(`it_${k}`);
   }
-  for (const [k, a, b, c2] of [['bar_blue', '#4e7ad0', '#a5c8ff', '#2a4a8a'], ['bar_gold', '#e0a83a', '#fff1a8', '#8a5a1e']] as const) {
+  for (const [k, a, b, c2] of [['bar_blue', '#4e7ad0', '#a5c8ff', '#2a4a8a'], ['bar_gold', '#e0a83a', '#fff1a8', '#8a5a1e'], ['bar_amber', '#e8822a', '#ffd08a', '#8a4a18']] as const) {
     p = new Paint(13, 10); p.rect(1, 4, 11, 5, a); p.rect(3, 2, 7, 2, b); p.rect(2, 3, 9, 1, a); p.rect(3, 2, 4, 1, '#ffffff'); p.rect(1, 8, 11, 1, c2);
     p.outline().save(`it_${k}`);
   }
@@ -709,6 +829,20 @@ function buildItems() {
   // 펫 크리스탈 조각: 분홍빛 결정
   p = new Paint(11, 13); p.line(5, 0, 1, 6, '#f29ad8'); p.line(5, 0, 9, 6, '#f29ad8'); p.rect(2, 5, 7, 4, '#f29ad8'); p.line(1, 7, 5, 12, '#d96ab8'); p.line(9, 7, 5, 12, '#d96ab8'); p.rect(3, 8, 5, 2, '#d96ab8'); p.rect(4, 2, 2, 4, '#ffffff');
   p.outline().save('it_petshard');
+  // ───── 2월드 재료·음식·보상 ─────
+  p = new Paint(12, 12); p.line(2, 10, 9, 2, '#6aa84a'); p.line(3, 10, 10, 2, '#4a8a3a'); p.set(10, 1, '#f4f0d8'); p.set(9, 1, '#f4f0d8'); p.set(4, 7, '#a8e878'); p.outline().save('it_cactus_spine');
+  p = new Paint(12, 12); p.disc(4, 8, 3, 2.5, '#b8603e'); p.disc(7, 5, 2.4, 2, '#b8603e'); p.disc(9, 3, 1.8, 1.6, '#c8704a'); p.line(9, 3, 11, 1, '#3a2018'); p.set(3, 7, '#f0a07a'); p.outline().save('it_scorp_tail');
+  p = new Paint(12, 12); p.line(2, 10, 9, 2, '#c8582a'); for (let i = 0; i < 6; i++) { p.line(3 + i, 9 - i, 1 + i, 6 - i, i % 2 ? '#ffb04a' : '#ff8a3a'); p.line(3 + i, 9 - i, 6 + i, 10 - i, '#ffd06a'); } p.outline().save('it_heat_feather');
+  p = new Paint(12, 12); p.rect(2, 3, 8, 7, '#e8dcc0'); p.rect(2, 4, 8, 1, '#b8a888'); p.rect(2, 7, 8, 1, '#b8a888'); p.rect(9, 9, 2, 2, '#e8dcc0'); p.set(3, 3, '#ffffff'); p.outline().save('it_old_bandage');
+  p = new Paint(12, 12); p.rect(4, 1, 4, 10, '#eef6fa'); p.rect(2, 3, 8, 6, '#eef6fa'); p.rect(5, 2, 1, 7, '#ffffff'); p.rect(7, 3, 1, 6, '#c8dce8'); p.outline().save('it_salt_crystal');
+  p = new Paint(12, 12); p.disc(6, 6, 5, 4, '#c8a462'); p.disc(6, 6, 3.4, 2.6, '#e2c482'); p.line(2, 6, 10, 6, '#a8844e'); p.set(4, 4, '#fff0c8'); p.outline().save('it_worm_scale');
+  p = new Paint(12, 12); p.disc(6, 7, 4, 4, '#ff7a2a'); p.disc(6, 6, 3, 3.4, '#ffb04a'); p.disc(6, 6, 1.6, 2, '#fff0a8'); p.set(6, 1, '#ffb04a'); p.set(5, 2, '#ff7a2a'); p.outline().save('it_sun_ember');
+  p = new Paint(13, 11); p.rect(2, 3, 9, 6, '#b8864a'); p.rect(2, 7, 9, 2, '#8a6034'); p.disc(10.5, 5.5, 2, 3, '#e8c88a'); p.set(10, 5, '#8a6034'); p.rect(4, 4, 3, 1, '#e0b070'); p.outline().save('it_palmlog');
+  p = new Paint(10, 13); p.rect(3, 1, 4, 2, '#3a8a3a'); p.rect(2, 3, 6, 9, '#6ac05a'); p.rect(3, 5, 4, 6, '#a8e878'); p.rect(2, 3, 6, 1, '#f4f0d8'); p.outline().save('it_cactus_juice');
+  p = new Paint(13, 11); p.disc(6.5, 7, 6, 3.5, '#a86a3a'); p.disc(6.5, 5.5, 5, 2.4, '#f6e2b0'); for (const x of [3, 6, 9]) p.disc(x + 0.5, 4.5, 1, 0.8, '#7a3a1a'); p.outline().save('it_date_cake');
+  p = new Paint(12, 12); p.disc(4, 4, 3.4, 3.4, '#f2a83a'); p.disc(4, 4, 1.4, 1.4, null); p.rect(6, 3, 5, 2, '#f2a83a'); p.rect(9, 5, 1, 2, '#f2a83a'); p.rect(7, 5, 1, 2, '#f2a83a'); p.disc(4, 4, 0.8, 0.8, '#ff7a2a'); p.outline().save('it_sunkey');
+  p = new Paint(14, 11); p.rect(1, 4, 12, 6, '#d8b070'); for (const x of [1, 5, 9]) p.rect(x, 1, 3, 4, '#d8b070'); p.rect(1, 9, 12, 1, '#a07a46'); p.disc(7, 6.5, 1.5, 1.5, '#ff7a2a'); p.set(3, 5, '#fff0c8'); p.outline().save('it_sand_crown');
+  p = new Paint(12, 14); p.rect(3, 10, 6, 3, '#a07a46'); p.rect(5, 7, 2, 3, '#d8b070'); p.disc(6, 4.5, 4.5, 4, '#f2a83a'); p.disc(6, 4.5, 2.4, 2, '#ffd08a'); p.set(4, 3, '#ffffff'); p.outline().save('it_trophy_sand');
   // 강화석: 둥근 돌에 색 무늬
   for (const [k, base, dark, mark] of [['atk', '#b8bcc8', '#7c8090', '#e2574a'], ['guard', '#b8bcc8', '#7c8090', '#4a8fe2'], ['stat', '#c8bca8', '#8c7c68', '#f6c945'], ['mine', '#a8a4a0', '#6c6864', '#7fd4ff'], ['chop', '#b4a88c', '#786c50', '#6fcf5a']] as const) {
     p = new Paint(12, 11); p.disc(6, 5.5, 5.5, 5, base); p.rect(1, 6, 10, 4, dark); p.disc(6, 5, 4.5, 4, base);
@@ -732,7 +866,7 @@ function buildItems() {
   p = new Paint(12, 12); p.disc(6, 7, 5, 3.5, '#8a6a4a'); p.disc(6, 6, 4, 2, '#a8864a'); p.disc(5, 5.5, 1.2, 0.8, '#6aa84a'); p.rect(1, 8, 10, 2, '#6a4a32'); p.outline().save('it_stew');
   p = new Paint(12, 12); p.disc(6, 7, 5, 3.5, '#d9a066'); p.disc(6, 6, 3.5, 2, '#a8b4ff'); p.set(5, 5, '#ffffff'); p.outline().save('it_moonpie');
   // 투구·갑옷·다리 갑옷·장화(푸른쇠·금빛)
-  for (const [k, a, b, c2] of [['blue', '#6a9ae8', '#3a5a9a', '#c4dcff'], ['gold', '#f2c14e', '#a8782a', '#fff1a8']] as const) {
+  for (const [k, a, b, c2] of [['blue', '#6a9ae8', '#3a5a9a', '#c4dcff'], ['gold', '#f2c14e', '#a8782a', '#fff1a8'], ['amber', '#f0902a', '#9a5420', '#ffd08a']] as const) {
     p = new Paint(13, 12); p.disc(6.5, 6.5, 5.5, 5, a); p.rect(1, 6, 11, 5, a); p.rect(5, 5, 3, 6, b); p.rect(3, 3, 2, 2, c2); p.rect(1, 10, 11, 1, b);
     p.outline().save(`it_helm_${k}`);
     p = new Paint(13, 12); p.rect(3, 1, 7, 10, a); p.rect(0, 1, 3, 5, a); p.rect(10, 1, 3, 5, a); p.rect(5, 1, 3, 1, null); p.rect(6, 3, 1, 7, b); p.rect(3, 5, 7, 1, b); p.rect(4, 2, 1, 3, c2);
@@ -815,8 +949,10 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].map((k) => [`statue_${k}`, `it_statue_${k}`])), sculpt_tools: 'it_sculpt',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
   arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
-  anvil_exp2: 'obj_craft',
-  ...Object.fromEntries(['blue', 'gold'].flatMap((k) => [[`sword_${k}`, `wp_sword_${k}`], [`bow_${k}`, `wp_bow_${k}`], [`wand_${k}`, `wp_wand_${k}`], [`pick_${k}`, `wp_pick_${k}`], [`axe_${k}`, `wp_axe_${k}`],
+  anvil_exp2: 'obj_craft', anvil_exp3: 'obj_craft',
+  ...Object.fromEntries(['cactus_spine', 'scorp_tail', 'heat_feather', 'old_bandage', 'salt_crystal', 'worm_scale', 'sun_ember', 'palmlog', 'ore_amber', 'bar_amber', 'cactus_juice', 'date_cake', 'sand_crown', 'trophy_sand'].map((k) => [k, `it_${k}`])),
+  sun_key: 'it_sunkey',
+  ...Object.fromEntries(['blue', 'gold', 'amber'].flatMap((k) => [[`sword_${k}`, `wp_sword_${k}`], [`bow_${k}`, `wp_bow_${k}`], [`wand_${k}`, `wp_wand_${k}`], [`pick_${k}`, `wp_pick_${k}`], [`axe_${k}`, `wp_axe_${k}`],
     [`helm_${k}`, `it_helm_${k}`], [`plate_${k}`, `it_plate_${k}`], [`legs_${k}`, `it_legs_${k}`], [`boots_${k}`, `it_boots_${k}`]])),
   pants_moss: 'it_pants_moss', pants_red: 'it_pants_red', shoes_leaf: 'it_shoes_leaf', boots_red: 'it_boots_red', trophy_moss: 'it_trophy_moss',
   bar_red: 'it_bar_red', forge_oil: 'it_oil', sword_red: 'wp_sword_red', pick_red: 'wp_pick_red', axe_red: 'wp_axe_red',

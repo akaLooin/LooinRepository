@@ -58,12 +58,15 @@ export interface NodeDef {
 /** solid: 아래가 흙으로 꽉 찬 언덕. 지면에서는 옆으로 지나갈 수 없다(맵 가장자리에 붙여 쓴다) */
 export interface Platform { x: number; y: number; w: number; solid?: boolean }
 export interface PortalDef { x: number; y?: number; to: string; toX: number; toY?: number; reqKills?: number; key?: string; label?: string;
+  /** 세계의 문: 계정·캐릭터 조건(gateChecks)을 채워야 지난다 */
+  gate?: boolean;
   /** 기술 레벨로 여는 문(광산) */
   reqSkill?: { skill: GatherSkill; lv: number } }
 export interface FacilityDef { kind: FacilityKind; x: number; y: number; /** NPC 시설이면 어느 NPC인지 */ npc?: string }
 export interface MapDef {
   id: string; name: string; width: number;
-  theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena';
+  theme: 'town' | 'meadow' | 'hills' | 'forest' | 'swamp' | 'cave' | 'ridge' | 'ruins' | 'grove' | 'mine' | 'arena'
+    | 'oasis' | 'dunes' | 'canyon' | 'mirage' | 'tomb' | 'saltlake' | 'starfield' | 'sunspire';
   /** 콜로세움(웨이브 전투) */
   arena?: boolean;
   /** 지면(y=0)을 제외한 발판. y는 위쪽이 음수. */
@@ -160,6 +163,32 @@ const items: ItemDef[] = [
   { id: 'stone_stat', name: '네 갈래 강화석', desc: '무기·옷·장신구에 붙이면 힘·민첩·지혜·행운 +1. 성공률 60%.', kind: 'stone', sell: 30 },
   { id: 'stone_mine', name: '광맥 강화석', desc: '곡괭이에 붙이면 채광력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
   { id: 'stone_chop', name: '나뭇결 강화석', desc: '도끼에 붙이면 벌목력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
+  // ───── 2월드: 노을 사막 ─────
+  { id: 'cactus_spine', name: '선인장 가시', desc: '끝이 바늘처럼 뾰족하다.', kind: 'material', sell: 44 },
+  { id: 'scorp_tail', name: '전갈 꼬리', desc: '독은 빠졌지만 여전히 따끔하다.', kind: 'material', sell: 52 },
+  { id: 'heat_feather', name: '열기 깃털', desc: '쥐면 손이 따뜻해진다.', kind: 'material', sell: 60 },
+  { id: 'old_bandage', name: '낡은 붕대', desc: '모래 냄새가 밴 오래된 천.', kind: 'material', sell: 70 },
+  { id: 'salt_crystal', name: '소금 결정', desc: '반듯한 육각 결정.', kind: 'material', sell: 80 },
+  { id: 'worm_scale', name: '모래 비늘', desc: '모래처럼 까끌한 비늘.', kind: 'material', sell: 92 },
+  { id: 'sun_ember', name: '태양 불씨', desc: '꺼지지 않는 작은 불꽃.', kind: 'material', sell: 106 },
+  { id: 'palmlog', name: '야자나무 통나무', desc: '섬유질이 질긴 사막 목재.', kind: 'material', sell: 46 },
+  { id: 'ore_amber', name: '호박 광석', desc: '안쪽이 꿀빛으로 빛나는 광석.', kind: 'material', sell: 40 },
+  { id: 'bar_amber', name: '호박 주괴', desc: '용광로에서 호박 광석을 녹였다.', kind: 'material', sell: 160 },
+  { id: 'cactus_juice', name: '선인장 주스', desc: '먹으면 체력 450 회복. 재사용 9초.', kind: 'food', heal: 450, cd: 9, sell: 30 },
+  { id: 'date_cake', name: '대추야자 케이크', desc: '먹으면 체력 800 회복. 재사용 12초.', kind: 'food', heal: 800, cd: 12, sell: 55 },
+  { id: 'sun_key', name: '태양 열쇠', desc: '해탑 꼭대기 거상의 방 문을 연다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
+  { id: 'trophy_sand', name: '사막 거상 트로피', desc: '사막 거상을 쓰러뜨린 증표.', kind: 'equip', slot: 'trophy', stats: { str: 5, agi: 5, wis: 5, luk: 5, def: 6 }, sell: 0 },
+  { id: 'sand_crown', name: '모래 왕관', desc: '거상이 쓰던 사암 왕관. 무겁지만 든든하다.', kind: 'equip', slot: 'hat', stats: { def: 22, hp: 160, str: 6, luk: 6 }, reqLv: 40, sell: 1500 },
+  { id: 'anvil_exp3', name: '모루 확장 III', desc: '만들면 모루 4단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
+  { id: 'sword_amber', name: '호박 검', desc: '꿀빛 칼날에 햇빛이 갇혀 있다.', kind: 'equip', slot: 'weapon', wtype: 'sword', stats: { dmg: 100, str: 14 }, reqLv: 50, sell: 2400 },
+  { id: 'bow_amber', name: '호박 활', desc: '쏠 때마다 따뜻한 바람이 인다.', kind: 'equip', slot: 'weapon', wtype: 'bow', stats: { dmg: 94, agi: 15 }, reqLv: 50, sell: 2400 },
+  { id: 'wand_amber', name: '호박 지팡이', desc: '끝의 호박 속에 불씨가 잠들어 있다.', kind: 'equip', slot: 'weapon', wtype: 'wand', stats: { dmg: 94, wis: 15 }, reqLv: 50, sell: 2400 },
+  { id: 'pick_amber', name: '호박 곡괭이', desc: '채광 효율 +28', kind: 'equip', slot: 'pickaxe', stats: { mining: 28 }, reqLv: 42, sell: 1400 },
+  { id: 'axe_amber', name: '호박 도끼', desc: '벌목 효율 +28', kind: 'equip', slot: 'axe', stats: { chopping: 28 }, reqLv: 42, sell: 1400 },
+  { id: 'helm_amber', name: '호박 투구', desc: '햇빛을 머금은 투구.', kind: 'equip', slot: 'hat', stats: { def: 26, hp: 160 }, reqLv: 48, sell: 1600 },
+  { id: 'plate_amber', name: '호박 갑옷', desc: '모래바람에도 끄떡없다.', kind: 'equip', slot: 'body', stats: { def: 38, hp: 240 }, reqLv: 50, sell: 2000 },
+  { id: 'legs_amber', name: '호박 다리 갑옷', desc: '뜨거운 모래 위에서도 시원하다.', kind: 'equip', slot: 'legs', stats: { def: 26, hp: 160 }, reqLv: 49, sell: 1700 },
+  { id: 'boots_amber', name: '호박 장화', desc: '모래에 빠지지 않는다.', kind: 'equip', slot: 'shoes', stats: { def: 19, agi: 10 }, reqLv: 48, sell: 1600 },
   { id: 'pet_shard', name: '펫 크리스탈 조각', desc: '동료 둥지에 넣으면 펫 크리스탈 10개가 된다.', kind: 'material', sell: 1 },
   { id: 'arena_ticket', name: '콜로세움 입장권', desc: '이슬 풀밭 위쪽 문으로 콜로세움에 들어간다. 들어갈 때 사라진다.', kind: 'key', sell: 0 },
   { id: 'forge_oil', name: '용광로 기름', desc: '용광로 칸에 부으면 그 칸의 광석이 더 빨리 녹는다.', kind: 'material', sell: 5 },
@@ -208,6 +237,24 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'runestone', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.04, qty: [1, 1] }, { item: 'statue_str', chance: 0.006, qty: [1, 1] }, { item: 'stamp_chopping', chance: 0.002, qty: [1, 1] }] },
   { id: 'shroomkin', name: '버섯도깨비', hp: 1700, atk: 80, acc: 94, defZero: 132, xp: 280, coins: [40, 75], speed: 22, motion: 'hop', radius: 9,
     drops: [{ item: 'sporecap', chance: 0.4, qty: [1, 2] }, { item: 'moonpie', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.004, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
+  // ───── 2월드: 노을 사막 ─────
+  { id: 'cactling', name: '선인장꼬마', hp: 2300, atk: 92, acc: 110, defZero: 150, xp: 360, coins: [50, 90], speed: 18, motion: 'hop', radius: 9,
+    drops: [{ item: 'cactus_spine', chance: 0.4, qty: [1, 2] }, { item: 'cactus_juice', chance: 0.05, qty: [1, 1] }, { item: 'statue_str', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
+  { id: 'scorpip', name: '꼬마전갈', hp: 3200, atk: 108, acc: 128, defZero: 170, xp: 470, coins: [60, 110], speed: 26, motion: 'waddle', radius: 9,
+    drops: [{ item: 'scorp_tail', chance: 0.4, qty: [1, 2] }, { item: 'cactus_juice', chance: 0.05, qty: [1, 1] }, { item: 'statue_agi', chance: 0.005, qty: [1, 1] }, { item: 'stone_atk', chance: 0.004, qty: [1, 1] }] },
+  { id: 'mirabird', name: '아지랑이새', hp: 4400, atk: 124, acc: 148, defZero: 192, xp: 610, coins: [75, 135], speed: 32, motion: 'float', radius: 8,
+    drops: [{ item: 'heat_feather', chance: 0.4, qty: [1, 2] }, { item: 'cactus_juice', chance: 0.06, qty: [1, 1] }, { item: 'statue_wis', chance: 0.005, qty: [1, 1] }, { item: 'stamp_xp', chance: 0.002, qty: [1, 1] }] },
+  { id: 'mumbun', name: '붕대돌이', hp: 6000, atk: 142, acc: 170, defZero: 216, xp: 790, coins: [90, 165], speed: 14, motion: 'waddle', radius: 10,
+    drops: [{ item: 'old_bandage', chance: 0.4, qty: [1, 2] }, { item: 'date_cake', chance: 0.04, qty: [1, 1] }, { item: 'statue_guard', chance: 0.005, qty: [1, 1] }, { item: 'stone_stat', chance: 0.003, qty: [1, 1] }] },
+  { id: 'saltcrab', name: '소금게', hp: 8200, atk: 162, acc: 194, defZero: 242, xp: 1020, coins: [110, 200], speed: 20, motion: 'waddle', radius: 10,
+    drops: [{ item: 'salt_crystal', chance: 0.4, qty: [1, 2] }, { item: 'date_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
+  { id: 'duneworm', name: '모래벌레', hp: 11000, atk: 184, acc: 220, defZero: 270, xp: 1320, coins: [135, 240], speed: 24, motion: 'hop', radius: 10,
+    drops: [{ item: 'worm_scale', chance: 0.4, qty: [1, 2] }, { item: 'date_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_luk', chance: 0.005, qty: [1, 1] }, { item: 'stamp_mining', chance: 0.002, qty: [1, 1] }] },
+  { id: 'sunwisp', name: '해불꽃', hp: 15000, atk: 208, acc: 250, defZero: 300, xp: 1700, coins: [160, 290], speed: 30, motion: 'float', radius: 9,
+    drops: [{ item: 'sun_ember', chance: 0.4, qty: [1, 2] }, { item: 'sun_key', chance: 0.004, qty: [1, 1] }, { item: 'date_cake', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
+  { id: 'sandlord', name: '사막 거상', hp: 90000, atk: 210, acc: 250, defZero: 330, xp: 30000, coins: [8000, 12000], speed: 10, motion: 'waddle', radius: 22, scale: 2.8,
+    boss: { slamEvery: 4.5, slamWindup: 1.0, slamRadius: 64, slamDmg: 170, card: 'sandlord' },
+    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
 for (const m of monsters) if (!m.boss && !m.scale) m.drops.push({ item: 'tp_ticket', chance: 0.006, qty: [1, 1] });
@@ -223,6 +270,8 @@ const nodes: NodeDef[] = [
   { id: 'moonbirch', name: '달빛자작', skill: 'chopping', reqLv: 22, hp: 110, xp: 60, item: 'moonlog' },
   { id: 'bluerock', name: '푸른돌 광맥', skill: 'mining', reqLv: 10, hp: 40, xp: 20, item: 'ore_blue' },
   { id: 'goldrock', name: '금빛돌 광맥', skill: 'mining', reqLv: 20, hp: 95, xp: 50, item: 'ore_gold' },
+  { id: 'palm', name: '야자나무', skill: 'chopping', reqLv: 30, hp: 200, xp: 110, item: 'palmlog' },
+  { id: 'amberrock', name: '호박 광맥', skill: 'mining', reqLv: 30, hp: 180, xp: 100, item: 'ore_amber' },
 ];
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
@@ -283,7 +332,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 400, y: -48, w: 220 }, { x: 450, y: -96, w: 130 }, { x: 720, y: -48, w: 200 }],
     spawns: [{ monster: 'shroomkin', count: 9 }], nodes: [{ node: 'moonbirch', x: 90 }, { node: 'moonbirch', x: 660 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 420, top: -48, bottom: 0 }, { x: 520, top: -96, bottom: -48 }, { x: 900, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'ruins', toX: 910 }, { x: 956, to: 'world2', toX: 0, label: '세계의 문' }] },
+    facilities: [], portals: [{ x: 24, to: 'ruins', toX: 910 }, { x: 956, to: 'oasis', toX: 60, label: '세계의 문', gate: true }] },
   { id: 'arena', name: '이슬 콜로세움', width: 640, theme: 'arena', arena: true,
     platforms: [{ x: 120, y: -48, w: 150 }, { x: 370, y: -48, w: 150 }],
     spawns: [], nodes: [], ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 490, top: -48, bottom: 0 }],
@@ -299,6 +348,52 @@ const maps: MapDef[] = [
     spawns: [], nodes: [{ node: 'bluerock', x: 130 }, { node: 'goldrock', x: 300 }, { node: 'goldrock', x: 520 }, { node: 'bluerock', x: 640 }],
     ropes: [{ x: 200, top: -48, bottom: 0 }, { x: 610, top: -48, bottom: 0 }],
     facilities: [], portals: [{ x: 24, to: 'mine1', toX: 650 }] },
+  // ───── 2월드: 노을 사막(오아시스 마을에서 동쪽으로 이어진다) ─────
+  { id: 'oasis', name: '오아시스 마을', width: 700, theme: 'oasis',
+    platforms: [{ x: 420, y: -48, w: 280 }],
+    ropes: [{ x: 430, top: -48, bottom: 0 }],
+    spawns: [], nodes: [], campfireX: 360,
+    facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'anvil', x: 540, y: -48 }],
+    portals: [{ x: 24, to: 'grove', toX: 920, label: '세계의 문' }, { x: 676, y: -48, to: 'dunes', toX: 50 }] },
+  { id: 'dunes', name: '바람 모래톱', width: 940, theme: 'dunes',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
+    spawns: [{ monster: 'cactling', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'palm', x: 650 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'oasis', toX: 650, toY: -48 }, { x: 916, to: 'canyon', toX: 50, reqKills: 300 }] },
+  { id: 'canyon', name: '붉은 협곡', width: 960, theme: 'canyon',
+    platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
+    spawns: [{ monster: 'scorpip', count: 9 }], nodes: [{ node: 'amberrock', x: 410 }, { node: 'amberrock', x: 660 }],
+    ropes: [{ x: 130, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 850, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'dunes', toX: 890 }, { x: 936, to: 'mirage', toX: 50, reqKills: 350 }] },
+  { id: 'mirage', name: '신기루 평원', width: 960, theme: 'mirage',
+    platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
+    spawns: [{ monster: 'mirabird', count: 9 }], nodes: [{ node: 'palm', x: 400 }],
+    ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'canyon', toX: 910 }, { x: 936, to: 'tomb', toX: 50, reqKills: 400 }] },
+  { id: 'tomb', name: '모래 무덤', width: 940, theme: 'tomb',
+    platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
+    spawns: [{ monster: 'mumbun', count: 9 }], nodes: [{ node: 'amberrock', x: 420 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'mirage', toX: 910 }, { x: 916, to: 'saltlake', toX: 50, reqKills: 450 }] },
+  { id: 'saltlake', name: '소금 호수', width: 960, theme: 'saltlake',
+    platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
+    spawns: [{ monster: 'saltcrab', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'amberrock', x: 700 }],
+    ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
+    facilities: [], portals: [{ x: 24, to: 'tomb', toX: 890 }, { x: 936, to: 'starfield', toX: 50, reqKills: 500 }] },
+  { id: 'starfield', name: '별모래 들판', width: 980, theme: 'starfield',
+    platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
+    spawns: [{ monster: 'duneworm', count: 9 }], nodes: [{ node: 'palm', x: 410 }, { node: 'amberrock', x: 690 }],
+    ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 750, top: -48, bottom: 0 }, { x: 880, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'saltlake', toX: 910 }, { x: 956, to: 'sunspire', toX: 50, reqKills: 550 }] },
+  // 해탑 유적: 오른쪽 위 발판 끝에 거상의 방(열쇠)
+  { id: 'sunspire', name: '해탑 유적', width: 980, theme: 'sunspire',
+    platforms: [{ x: 100, y: -48, w: 230 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 140 }, { x: 760, y: -48, w: 220 }, { x: 820, y: -96, w: 160 }],
+    spawns: [{ monster: 'sunwisp', count: 9 }], nodes: [{ node: 'amberrock', x: 380 }],
+    ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 580, top: -96, bottom: -48 }, { x: 780, top: -48, bottom: 0 }, { x: 840, top: -96, bottom: -48 }],
+    facilities: [], portals: [{ x: 24, to: 'starfield', toX: 930 }, { x: 952, y: -96, to: 'sandlair', toX: 60, reqKills: 300, key: 'sun_key', label: '거상의 방' }] },
+  { id: 'sandlair', name: '거상의 방', width: 600, theme: 'sunspire', boss: 'sandlord',
+    platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
+    portals: [{ x: 24, to: 'sunspire', toX: 930, toY: -96 }] },
 ];
 export const MAPS: Record<string, MapDef> = Object.fromEntries(maps.map((m) => [m.id, m]));
 
@@ -321,6 +416,16 @@ export const RECIPES: RecipeDef[] = [
   { item: 'sword_red', coins: 150, mats: [['bar_red', 8], ['plank', 3], ['nail', 5]] },
   { item: 'anvil_exp', coins: 500, mats: [['plank', 15], ['nail', 25], ['ore', 20]], unlock: 2, smithLv: 5 },
   { item: 'anvil_exp2', coins: 3000, mats: [['bar_blue', 20], ['runestone', 15], ['plank', 30]], unlock: 3, smithLv: 15, tier: 2 },
+  { item: 'anvil_exp3', coins: 20000, mats: [['bar_amber', 20], ['cactus_spine', 40], ['palmlog', 60]], unlock: 4, smithLv: 30, tier: 3 },
+  { item: 'sword_amber', coins: 9000, mats: [['bar_amber', 14], ['scorp_tail', 20], ['sun_ember', 6]], tier: 4 },
+  { item: 'bow_amber', coins: 9000, mats: [['bar_amber', 10], ['palmlog', 30], ['heat_feather', 20]], tier: 4 },
+  { item: 'wand_amber', coins: 9000, mats: [['bar_amber', 10], ['palmlog', 25], ['sun_ember', 10]], tier: 4 },
+  { item: 'pick_amber', coins: 6000, mats: [['bar_amber', 12], ['palmlog', 20], ['nail', 30]], tier: 4 },
+  { item: 'axe_amber', coins: 6000, mats: [['bar_amber', 12], ['palmlog', 20], ['nail', 30]], tier: 4 },
+  { item: 'helm_amber', coins: 7000, mats: [['bar_amber', 12], ['old_bandage', 20]], tier: 4 },
+  { item: 'plate_amber', coins: 10000, mats: [['bar_amber', 18], ['salt_crystal', 20], ['old_bandage', 20]], tier: 4 },
+  { item: 'legs_amber', coins: 8000, mats: [['bar_amber', 14], ['worm_scale', 16]], tier: 4 },
+  { item: 'boots_amber', coins: 7000, mats: [['bar_amber', 10], ['worm_scale', 12], ['twine', 40]], tier: 4 },
   ...([['blue', 2, 'bar_blue', 'willowlog', 'shell', 'glowdust'], ['gold', 3, 'bar_gold', 'moonlog', 'runestone', 'sporecap']] as const).flatMap(([k, tier, bar, log, m1, m2]) => {
     const c = tier === 2 ? 1 : 3;
     return [
@@ -381,6 +486,15 @@ export const TELEPORTS_PER_DAY = 5;
 export const TELEPORTS_MAX = 50;
 /** 1월드 맵 순서(앞 맵의 처치 조건을 채우면 다음 맵이 열린다) */
 export const WORLD1 = ['town', 'meadow', 'hills', 'mine1', 'mine2', 'forest', 'swamp', 'cave', 'ridge', 'ruins', 'grove'];
+export const WORLD2 = ['oasis', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire'];
+/** 월드마다 순간이동 지도에 오르는 맵(보스방·콜로세움 제외)과 시작 마을 */
+export const WORLDS = [{ n: 1, name: '1월드 · 이끼 들판', town: 'town', maps: WORLD1 }, { n: 2, name: '2월드 · 노을 사막', town: 'oasis', maps: WORLD2 }];
+export const TOWNS = WORLDS.map((w) => w.town);
+/** 이 맵이 속한 월드(보스방·콜로세움은 이어진 맵을 따라간다) */
+export function worldOf(id: string): number {
+  for (const w of WORLDS) if (w.maps.includes(id)) return w.n;
+  return id === 'sandlair' ? 2 : 1;
+}
 export const ATTACK_BARS = 2;
 export const smashMult = (lv: number) => 1.8 + lv * 0.2;
 export const healPct = (lv: number) => 0.25 + lv * 0.05;
@@ -439,6 +553,16 @@ export const CARDS: CardDef[] = [
   { id: 'moonbirch', from: 'node', bonus: 'afkSkill', per: 0.03, label: '채집 방치 효율' },
   { id: 'bluerock', from: 'node', bonus: 'mining', per: 0.06, label: '채광 효율' },
   { id: 'goldrock', from: 'node', bonus: 'mining', per: 0.08, label: '채광 효율' },
+  { id: 'cactling', from: 'monster', bonus: 'hp', per: 0.05, label: '최대 체력' },
+  { id: 'scorpip', from: 'monster', bonus: 'dmg', per: 0.05, label: '공격력' },
+  { id: 'mirabird', from: 'monster', bonus: 'drop', per: 0.05, label: '드롭률' },
+  { id: 'mumbun', from: 'monster', bonus: 'hp', per: 0.06, label: '최대 체력' },
+  { id: 'saltcrab', from: 'monster', bonus: 'afk', per: 0.03, label: '방치 효율' },
+  { id: 'duneworm', from: 'monster', bonus: 'dmg', per: 0.06, label: '공격력' },
+  { id: 'sunwisp', from: 'monster', bonus: 'drop', per: 0.06, label: '드롭률' },
+  { id: 'sandlord', from: 'monster', bonus: 'afk', per: 0.04, label: '방치 효율' },
+  { id: 'palm', from: 'node', bonus: 'chopping', per: 0.08, label: '벌목 효율' },
+  { id: 'amberrock', from: 'node', bonus: 'mining', per: 0.1, label: '채광 효율' },
 ];
 export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 /** 자원 카드 확률(자원 하나 얻을 때마다) */
@@ -471,10 +595,19 @@ const SMITH_QUESTS: QuestDef[] = [
   { name: '언덕의 광석', text: '좋은 쇠를 뽑으려면 붉은돌 광석이 더 필요해.', goal: { item: 'ore', n: 25 }, reward: { coins: 500, xp: 500 } },
 ];
 
+const CARAVAN_QUESTS: QuestDef[] = [
+  { name: '모래 위의 첫 발', text: '문을 건너왔다고? 대단하군! 우선 모래톱의 선인장꼬마들부터 좀 치워 주게. 짐수레가 못 지나가.', goal: { kill: 'cactling', n: 30 }, reward: { coins: 2000, xp: 3000 } },
+  { name: '따끔한 납품', text: '선인장 가시는 바늘로 쓰기 딱 좋아. 넉넉히 모아 오면 값은 쳐 주지.', goal: { item: 'cactus_spine', n: 25 }, reward: { item: 'cactus_juice', xp: 5000 } },
+  { name: '협곡의 꼬리들', text: '붉은 협곡 전갈들이 짐꾼을 겁줘서 큰일이야.', goal: { kill: 'scorpip', n: 60 }, reward: { coins: 6000, xp: 9000 } },
+  { name: '호박 주괴', text: '호박 광석을 녹이면 꿀빛 주괴가 나오지. 대장장이들이 탐내는 물건이라네.', goal: { item: 'bar_amber', n: 10 }, reward: { item: 'chest_small', xp: 15000 } },
+  { name: '해탑의 불씨', text: '해탑 꼭대기에 거상이 산다더군. 불씨를 모으다 보면 열쇠를 얻을지도 몰라.', goal: { item: 'sun_ember', n: 20 }, reward: { item: 'sun_key', xp: 30000 } },
+];
+
 export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
 export const NPCS: Record<string, NpcDef> = {
   elder: { id: 'elder', name: '촌장 바루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
   smith: { id: 'smith', name: '대장장이 도리', look: { hair: 1, hairColor: '#2f2a3a', skin: '#d9c3ad', outfit: '#d9574a' }, quests: SMITH_QUESTS },
+  caravan: { id: 'caravan', name: '대상 카림', look: { hair: 3, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
 };
 /** 전직을 맡는 NPC */
 export const CLASS_NPC = 'elder';
@@ -571,6 +704,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'arena_ticket', price: 250, daily: 2 },
   { item: 'tp_ticket', price: 60, daily: 8 },
   { item: 'pet_shard', price: 300, daily: 2 },
+  { item: 'cactus_juice', price: 140, daily: 30 },
   { item: 'stone_mine', price: 500, daily: 1 },
   { item: 'stone_chop', price: 500, daily: 1 },
   { item: 'stone_guard', price: 900, daily: 1 },
@@ -763,6 +897,7 @@ export const SMELTS: SmeltDef[] = [
   { ore: 'ore', bar: 'bar_red', need: 3, secs: 40 },
   { ore: 'ore_blue', bar: 'bar_blue', need: 4, secs: 90 },
   { ore: 'ore_gold', bar: 'bar_gold', need: 5, secs: 180 },
+  { ore: 'ore_amber', bar: 'bar_amber', need: 6, secs: 300 },
 ];
 /** 용광로 값: 사는 값, 칸·용량 기본값, 업그레이드(코인, 단계마다 upGrow 배) */
 export const FORGE = {
@@ -771,7 +906,7 @@ export const FORGE = {
   upMax: { slots: 4, cap: 20, speed: 20, bonus: 10 },
 };
 
-const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'ore', 'ore_blue', 'ore_gold', 'bar_red', 'bar_blue', 'bar_gold'];
+const RESOURCE_IDS = ['log', 'silverlog', 'willowlog', 'moonlog', 'palmlog', 'ore', 'ore_blue', 'ore_gold', 'ore_amber', 'bar_red', 'bar_blue', 'bar_gold', 'bar_amber'];
 /** 아이템이 속한 묶음 */
 export function stackGroup(id: string): StackGroup {
   const it = ITEMS[id];

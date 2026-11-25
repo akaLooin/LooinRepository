@@ -261,3 +261,4 @@ img.gic { width: 1em; height: 1em; image-rendering: pixelated; display: block; }
 .gchk { width: 1.4em; height: 1.4em; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--c-border-input); border-radius: var(--r-sm); color: var(--c-text-good); font-weight: 700; }
 .gchk.ok { border-color: var(--c-text-good); }
 .gatebox .ui-bar { margin: 0 0 var(--sp-2); height: .5em; }
+.worldsw { display: inline-flex; gap: var(--sp-1); margin-left: var(--sp-2); vertical-align: middle; }

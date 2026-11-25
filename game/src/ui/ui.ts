@@ -6,7 +6,7 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, ACHIEVEMENTS, FAMILY, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  WORLD2, WORLDS, TOWNS, worldOf, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -129,6 +129,8 @@ export class UI {
   private starSel: string | null = null;
   /** 목차 > 참조에서 연 창이면 닫을 때 목차로 돌아간다 */
   private refBack = false;
+  /** 지도 창에서 보고 있는 월드(없으면 지금 있는 월드) */
+  private mapWorld: number | null = null;
   private petSel: string | null = null;
   /** 지도에서 고른 맵(한 번 더 누르면 이동) */
   private mapSel: string | null = null;
@@ -263,7 +265,7 @@ export class UI {
     else if (e.t === 'arenaEnd') { this.arenaResult = { waves: e.waves, score: e.score }; this.panel = 'arena'; this.refresh(true); }
   }
 
-  private open(p: Panel) { this.panel = p; this.sel = null; this.craftSel = -1; }
+  private open(p: Panel) { this.panel = p; this.sel = null; this.craftSel = -1; if (p === 'map') { this.mapWorld = null; this.mapSel = null; } }
 
   // ───────── 렌더 ─────────
   refresh(force = false) {
@@ -546,22 +548,28 @@ export class UI {
         // 위에서 내려다본 지형 지도. 지역을 누르면 테두리만 빛나고, 한 번 더(또는 아래 이동 버튼) 누르면 순간이동.
         // 마을은 무료, 나머지는 티켓 1장. 처치 목표를 다 채운 맵만 순간이동할 수 있다.
         const tickets = countItem(c, TP_TICKET) + storageCount(g.acc, TP_TICKET);
-        const regions: MapRegion[] = [...WORLD1, 'arena', 'lair', 'gate'].map((id) => {
-          if (id === 'gate') { const ok = gateOpen(g.acc, c); return { id, name: '세계의 문', state: mapUnlocked(c, 'grove') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 2월드 준비 중' : '조건 확인' } as MapRegion; }
+        // 월드 탭: 열어 둔 월드만 고를 수 있다
+        const mw = c.maxWorld ?? 1, wn = Math.min(this.mapWorld ?? worldOf(c.mapId), mw);
+        const ids = wn === 2 ? [...WORLD2, 'sandlair', 'gate1'] : [...WORLD1, 'arena', 'lair', 'gate'];
+        const regions: MapRegion[] = ids.map((id) => {
+          if (id === 'gate1') return { id, name: '세계의 문', state: 'mark', sel: false, sub: '1월드로' } as MapRegion;
+          if (id === 'sandlair') { const here = c.mapId === id; return { id, name: MAPS.sandlair.name, state: here ? 'here' : mapUnlocked(c, 'sunspire') ? 'mark' : 'locked', sel: false, sub: here ? '현재 위치' : g.acc.bosses.sandlord ? `토벌 ${g.acc.bosses.sandlord}회` : '해탑 위 · 열쇠' } as MapRegion; }
+          if (id === 'gate') { const ok = gateOpen(g.acc, c); return { id, name: '세계의 문', state: mapUnlocked(c, 'grove') ? 'mark' : 'locked', sel: false, sub: ok ? '열림 · 2월드로' : '조건 확인' } as MapRegion; }
           const m = MAPS[id], here = c.mapId === id, open = mapUnlocked(c, id), q = mapQuota(id), k = c.kills[id] ?? 0;
           const mark = id === 'arena' || id === 'lair';
           const state: MapRegion['state'] = here ? 'here' : !open ? 'locked' : mark ? 'mark' : canTeleportTo(c, id) ? 'open' : 'unmet';
-          const sub = here ? '현재 위치' : mark ? (id === 'lair' ? (g.acc.bosses.mossking ? `토벌 ${g.acc.bosses.mossking}회` : '숲 끝 · 열쇠') : '풀밭 위쪽 문') : q && k < q ? `처치 ${k.toLocaleString()}/${q}` : id === 'town' ? '무료' : '';
+          const sub = here ? '현재 위치' : mark ? (id === 'lair' ? (g.acc.bosses.mossking ? `토벌 ${g.acc.bosses.mossking}회` : '숲 끝 · 열쇠') : '풀밭 위쪽 문') : q && k < q ? `처치 ${k.toLocaleString()}/${q}` : TOWNS.includes(id) ? '무료' : '';
           return { id, name: m.name, state, sel: this.mapSel === id, sub };
         });
         const pick = this.mapSel && MAPS[this.mapSel] && this.mapSel !== c.mapId ? this.mapSel : null;
-        const can = pick ? canTeleportTo(c, pick) : false, free = pick === 'town';
+        const can = pick ? canTeleportTo(c, pick) : false, free = !!pick && TOWNS.includes(pick);
         // 아래 줄은 늘 같은 높이: 고르기 전에는 안내, 고르면 이동 정보
         const foot = pick ? `<b class="ui-grow">${MAPS[pick].name}</b>
             <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
             <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
           : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
-        return win(`지도 <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox">${worldMapSvg(regions)}</div><div class="ui-row mapfoot">${foot}</div>`);
+        const wtabs = mw > 1 ? ` <span class="worldsw" role="tablist">${WORLDS.filter((x) => x.n <= mw).map((x) => `<button class="ui-btn sm ${x.n === wn ? 'primary' : ''}" role="tab" aria-selected="${x.n === wn}" data-act="mapworld:${x.n}" title="${x.name}">${x.n}월드</button>`).join('')}</span>` : '';
+        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox">${worldMapSvg(regions, wn)}</div><div class="ui-row mapfoot">${foot}</div>`);
       }
 
       case 'gate': {
@@ -572,7 +580,7 @@ export class UI {
           ${bar(x.ok ? 'xp' : 'hp', Math.min(x.have, x.need), x.need, '')}`).join('');
         return win('세계의 문', `<div class="gatebox"><div class="gateart" aria-hidden="true"></div><div class="ui-grow">
           <p class="ui-sm" style="margin-top:0">달빛 숲 끝에 오래된 문이 서 있다. 문 너머로 따뜻한 모래바람이 불어온다.</p>${rows}
-          <p class="ui-sm ${open ? 'ui-good' : 'ui-muted'}">${open ? '문이 열렸습니다! 2월드는 아직 길을 닦는 중입니다. 곧 이 문으로 건너갈 수 있습니다.' : '모든 조건을 채우면 이 캐릭터가 문을 지날 수 있습니다. 이끼왕 토벌은 계정 공용입니다.'}</p></div></div>`);
+          <p class="ui-sm ${open ? 'ui-good' : 'ui-muted'}">${open ? '문이 열렸습니다! 문으로 들어가면 2월드 오아시스 마을로 건너갑니다. 한 번 건너가면 지도에서 2월드로 순간이동할 수 있습니다.' : '모든 조건을 채우면 이 캐릭터가 문을 지날 수 있습니다. 이끼왕 토벌은 계정 공용입니다.'}</p></div></div>`);
       }
 
       case 'chat':
@@ -1319,6 +1327,7 @@ export class UI {
         if (i >= 0) fail(g.act({ t: 'barSet', bar: this.quickPage, slot: i, id: null }).err ?? null);
         break;
       }
+      case 'mapworld': this.mapWorld = +a; this.mapSel = null; break;
       case 'mapsel': {
         // 같은 맵을 한 번 더 누르면 이동
         if (this.mapSel !== a) { this.mapSel = a; break; }

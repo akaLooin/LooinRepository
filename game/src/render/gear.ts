@@ -83,6 +83,28 @@ export const GEAR: Record<string, GearDef> = {
     'oDDGDDDo',
     'oooooooo',
   ] },
+  helm_amber: { on: 'head', at: [4, -2], pal: { L: '#ffd08a', M: '#f0902a', D: '#9a5420', G: '#4ec8c8' }, rows: [
+    '...oooooo...',
+    '..oLMMMMMo..',
+    '.oLMMMMMMDo.',
+    '.oLMMGMMMDo.',
+    'oLMMMMMMMMDo',
+    'oDDDDDDDDDDo',
+    '.oooooooooo.',
+  ] },
+  plate_amber: { on: 'body', at: [6, 10], pal: { L: '#ffd08a', M: '#f0902a', D: '#9a5420', G: '#4ec8c8' }, rows: [
+    '..oooo..',
+    '.oLMMMo.',
+    '.oLMMDo.',
+    '.oLGMDo.',
+    '.oDDDDo.',
+    '.oLMMDo.',
+    '.oLMMDo.',
+    '.oDDDDo.',
+    '.oLMMDo.',
+    'oDDGDDDo',
+    'oooooooo',
+  ] },
   // 통나무 갑옷: 가슴을 덮는 나무판과 허리띠(팔은 그대로 보이게 몸통 폭만)
   armor_log: { on: 'body', at: [6, 10], pal: WOOD, rows: [
     '..oooo..',

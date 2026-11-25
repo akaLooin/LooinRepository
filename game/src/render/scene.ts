@@ -243,6 +243,7 @@ function ensureTextures(scene: Phaser.Scene) {
   texturesReady = true;
 }
 
+const NO_FLOWERS = new Set(['cave', 'mine', 'dunes', 'canyon', 'mirage', 'tomb', 'saltlake', 'starfield', 'sunspire']);
 export class GameScene extends Phaser.Scene {
   private world: World | null = null;
   private rig: CharRig | null = null;
@@ -368,8 +369,8 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < Math.floor(map.width / 14); i++) {
       const s = surfaces[Math.floor(hash(seed + i * 3) * surfaces.length)];
       const x = s.x + 6 + hash(seed + i * 7) * (s.w - 12);
-      // 동굴·광산에는 꽃이 피지 않는다
-      const flower = hash(seed + i * 5) > 0.72 && map.theme !== 'cave' && map.theme !== 'mine';
+      // 동굴·광산·사막(오아시스 빼고)에는 꽃이 피지 않는다
+      const flower = hash(seed + i * 5) > 0.72 && !NO_FLOWERS.has(map.theme);
       const key = flower ? `deco_flower${Math.floor(hash(seed + i) * 3)}` : 'deco_grass';
       const img = keep(this.add.image(x, s.y + 1, key).setOrigin(0.5, 1).setDepth(hash(seed + i * 9) > 0.5 ? 12 : 70).setScale(ART));
       this.swayers.push({ img, ph: hash(i) * 6 });
