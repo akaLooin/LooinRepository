@@ -11,9 +11,9 @@ import { charSlots, progressBonus, useSculptTools } from './progress';
 import { Owl, newOwl } from './companions';
 import { Alch, newAlch } from './alchemy';
 import { PostState, newPost } from './post';
-import { MiniState, TotemState, newMini, newTotem } from './minigames';
+import { MiniState, TotemState, legacyTotemSouls, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -283,11 +283,11 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
     // 기술 효율: 힘 → 채광, 지혜 → 벌목(대장 생산 속도는 민첩, anvilRate)
-    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + str * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100),
-    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100),
+    mining: (1 + e.mining + c.skills.mining.lv * 0.35 + str * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100) * classSkillMult(c, 'mining'),
+    chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100) * classSkillMult(c, 'chopping'),
     // 2월드 기술: 민첩 → 낚시, 행운 → 곤충 채집
-    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing) * (1 + pb.fishing / 100),
-    catching: (1 + e.catching + (c.skills.catching?.lv ?? 1) * 0.35 + luk * 0.05) * work * (1 + cb.catching) * (1 + pb.catching / 100),
+    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing) * (1 + pb.fishing / 100) * classSkillMult(c, 'fishing'),
+    catching: (1 + e.catching + (c.skills.catching?.lv ?? 1) * 0.35 + luk * 0.05) * work * (1 + cb.catching) * (1 + pb.catching / 100) * classSkillMult(c, 'catching'),
   };
 }
 
@@ -913,6 +913,8 @@ export function deserialize(json: string | null): Account | null {
     // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
     if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
     a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.build ??= newBuild(); a.cook ??= newCook(); a.breed ??= newBreed(Math.floor(Math.random() * 2 ** 31)); a.lab ??= newLab(); a.worship ??= newWorshipAcc(); a.mini ??= newMini(); a.totem ??= newTotem();
+    a.worship.souls = { ...newWorshipAcc().souls, ...a.worship.souls };
+    { const moved = legacyTotemSouls(a.totem); if (moved > 0) { a.worship.souls.moss += moved; a.totem = newTotem(); } }
     for (const c of a.characters) {
       c.cls ??= 'beginner';
       c.bags ??= []; c.pouches ??= [];

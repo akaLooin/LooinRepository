@@ -6,7 +6,7 @@ export type SkillKey = 'mining' | 'chopping' | 'smithing' | 'fishing' | 'catchin
 export type GatherSkill = 'mining' | 'chopping' | 'fishing' | 'catching';
 /** 가방 한 칸에 쌓을 수 있는 양을 나누는 묶음 */
 export type StackGroup = 'material' | 'resource' | 'food' | 'equip' | 'misc';
-export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'totem' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | 'kitchen' | 'nest' | 'lab';
+export type FacilityKind = 'npc' | 'anvil' | 'storage' | 'shop' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'pets' | 'owl' | 'games' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | 'kitchen' | 'nest' | 'lab';
 export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
   | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
@@ -97,7 +97,7 @@ export const STAT_DESC: Record<StatKey, string> = {
   wis: '최대 마나·보스 피해·벌목. 마법사 공격력, 전사 명중', luk: '드롭률·경험치. 초보자 공격력·명중',
 };
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구' };
-export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', totem: '수호 토템', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실' };
+export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
@@ -479,7 +479,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 420, y: -48, w: 180 }, { x: 470, y: -96, w: 120 }, { x: 690, y: -48, w: 190 }],
     spawns: [{ monster: 'mudturtle', count: 8 }], nodes: [{ node: 'willow', x: 90 }, { node: 'willow', x: 640 }],
     ropes: [{ x: 170, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [{ kind: 'totem', x: 300, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 835 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
+    facilities: [{ kind: 'shrine', x: 300, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 835 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
   { id: 'cave', name: '그늘 동굴', width: 900, theme: 'cave',
     platforms: [{ x: 110, y: -48, w: 160 }, { x: 330, y: -48, w: 240 }, { x: 380, y: -96, w: 140 }, { x: 650, y: -48, w: 180 }],
     spawns: [{ monster: 'glowbat', count: 8 }], nodes: [{ node: 'bluerock', x: 300 }, { node: 'willow', x: 620 }],
@@ -541,7 +541,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
     spawns: [{ monster: 'mumbun', count: 9 }], nodes: [{ node: 'amberrock', x: 420 }, { node: 'glowbush', x: 640 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'mirage', toX: 910 }, { x: 916, to: 'saltlake', toX: 50, reqKills: 450 }] },
+    facilities: [{ kind: 'shrine', x: 400, y: 0 }], portals: [{ x: 24, to: 'mirage', toX: 910 }, { x: 916, to: 'saltlake', toX: 50, reqKills: 450 }] },
   { id: 'saltlake', name: '소금 호수', width: 960, theme: 'saltlake',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
     spawns: [{ monster: 'saltcrab', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'saltpool', x: 330 }, { node: 'saltpool', x: 560 }, { node: 'amberrock', x: 700 }],
@@ -633,7 +633,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
     spawns: [{ monster: 'meteorite', count: 9 }], nodes: [{ node: 'novarock', x: 420 }, { node: 'novarock', x: 660 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'nebula', toX: 910 }, { x: 916, to: 'rings', toX: 50, reqKills: 1050 }] },
+    facilities: [{ kind: 'shrine', x: 400, y: 0 }], portals: [{ x: 24, to: 'nebula', toX: 910 }, { x: 916, to: 'rings', toX: 50, reqKills: 1050 }] },
   { id: 'rings', name: '고리 행성', width: 960, theme: 'rings',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
     spawns: [{ monster: 'ringowl', count: 9 }], nodes: [{ node: 'startree', x: 90 }, { node: 'novarock', x: 380 }, { node: 'nebpool', x: 700 }],
@@ -868,6 +868,24 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   oracle: { id: 'oracle', base: 'hexer', name: '예언자', desc: '앞날을 내다보고 기다린다. 경험치 +16%, 방치 효율 +5%p.', main: 'wis', acc: 'agi', range: 100, weapon: 'wand', perk: { xp: 16, afk: 5 } },
   hexer: { id: 'hexer', base: 'mage', name: '주술사', desc: '느긋하게 쌓는다. 경험치 +10%, 방치 효율 +3%p.', main: 'wis', acc: 'agi', range: 95, weapon: 'wand', perk: { xp: 10, afk: 3 } },
 };
+/** 직업과 기술의 연결(원작처럼 계열마다 맡는 기술이 있다): 그 직업을 거친 캐릭터는 이 기술이 빨라진다 */
+export type LinkedSkill = SkillKey | 'build' | 'alchemy' | 'breed';
+export const CLASS_SKILLS: Partial<Record<ClassId, LinkedSkill>> = {
+  warrior: 'mining', guardian: 'build', berserker: 'fishing', bastion: 'build', warlord: 'fishing',
+  archer: 'chopping', ranger: 'trapping', sharpshooter: 'catching', pathfinder: 'breed', hawkeye: 'catching',
+  mage: 'worship', elementalist: 'worship', hexer: 'alchemy', archmage: 'worship', oracle: 'alchemy',
+  wanderer: 'cooking', fateweaver: 'lab', taler: 'cooking', lifeteller: 'lab',
+};
+export const LINKED_NAMES: Record<LinkedSkill, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', build: '건설', alchemy: '연금', breed: '번식' };
+/** 이 캐릭터의 기술 배율: 계보에서 그 기술을 맡은 직업 하나마다 +25%, 그리고 레벨마다 +0.5% */
+export function classSkillMult(c: { cls: ClassId; level: number }, k: LinkedSkill): number {
+  let n = 0;
+  for (let id: ClassId | undefined = c.cls; id && id !== 'beginner'; id = CLASSES[id]?.base) if (CLASS_SKILLS[id] === k) n++;
+  return n ? 1 + n * 0.25 + c.level * 0.005 : 1;
+}
+for (const [id, k] of Object.entries(CLASS_SKILLS) as [ClassId, LinkedSkill][]) CLASSES[id].desc += ` [${LINKED_NAMES[k]} 담당: +25%]`;
+/** 계정 공용 기술: 그 기술을 맡은 캐릭터 가운데 가장 높은 배율 */
+export const accClassSkillMult = (chars: { cls: ClassId; level: number }[], k: LinkedSkill) => Math.max(1, ...chars.map((c) => classSkillMult(c, k)));
 export const CLASS_LEVEL = 10;
 /** 2차 전직 레벨 */
 export const SUBCLASS_LEVEL = 30;

@@ -1473,7 +1473,7 @@ function buildIcons() {
   badge('patience', '#8a6fd1', (p) => { p.rect(5, 3, 6, 1, C.white); p.rect(5, 11, 6, 1, C.white); p.line(6, 4, 10, 10, C.gold); p.line(10, 4, 6, 10, C.gold); });
   badge('omen', '#8a6fd1', (p) => { p.disc(8, 7, 3, 3, C.gold); p.disc(9.5, 6, 2.4, 2.4, '#8a6fd1'); });
   // 기도: 영혼(토템마다 색)
-  for (const [k, col, hi2] of [['snow', '#e8f2fc', '#ffffff'], ['water', '#4a8ae8', '#a8d4ff'], ['ice', '#7ae0ff', '#e0faff'], ['star', '#c48aff', '#fff0a8']] as const) {
+  for (const [k, col, hi2] of [['moss', '#8fde5d', '#e0ffc8'], ['sand', '#e8c47a', '#fff0c8'], ['void', '#6a4ac8', '#c8a8ff'], ['snow', '#e8f2fc', '#ffffff'], ['water', '#4a8ae8', '#a8d4ff'], ['ice', '#7ae0ff', '#e0faff'], ['star', '#c48aff', '#fff0a8']] as const) {
     icon(`soul_${k}`, (p) => { p.disc(8, 9, 5, 5, col); p.disc(8, 4, 3, 3.6, col); p.disc(7, 8, 2, 2, hi2); p.set(6, 8, '#1e1420'); p.set(10, 8, '#1e1420'); p.set(8, 0, hi2); });
   }
   // 요리: 향신료(작은 병) · 요리(접시 위 음식)

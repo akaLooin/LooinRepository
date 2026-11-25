@@ -12,7 +12,7 @@ import { BUILD, BUILDINGS, buildCost, buildRate, buildSettle, buildSlots, buildX
 import { CRITTERS, TRAP_MULT, TRAP_NAMES, TRAP_TIMES, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LiquidUp, VIALS, VIAL_COST, VIAL_MAX, alchSettle, bubbleCost, bubbleLv, bubbleValue, liquidCap, liquidRate, liquidUpCost, vialValue } from '../core/alchemy';
 /** 연금술 효과 이름 */
-const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중' };
+const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중', hp: '최대 체력', card: '카드 드롭률' };
 import {
   ATTACK_SLOTS, CARD_SLOTS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
@@ -26,7 +26,7 @@ import {
   minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot, starTalPoints, foodWait, gateChecks, gateOpen,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
-import { BLESS, BlessKey, GAMES, GameKind, SPIKE_WINDOW, blessCost, gameReward, playsLeft, spikeOpen, totemRunsLeft } from '../core/minigames';
+import { GAMES, GameKind, SPIKE_WINDOW, gameReward, playsLeft, spikeOpen } from '../core/minigames';
 import { PlayKind, runGame } from './minigames';
 import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
@@ -39,7 +39,7 @@ import { ITEM_ICON, iconUrl, portraitUrl } from '../render/sprites';
 import type { Audio } from '../audio';
 import { pixelIcon } from './icons';
 
-type Panel = 'lab' | 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'totem' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
+type Panel = 'lab' | 'nest' | 'kitchen' | 'afk' | 'items' | 'char' | 'codex' | 'map' | 'chat' | 'menu' | 'anvil' | 'npc' | 'storage' | 'shop' | 'afkinfo' | 'forge' | 'stamps' | 'tasks' | 'statues' | 'arena' | 'pets' | 'owl' | 'games' | 'gate' | 'alchemy' | 'post' | 'traps' | 'build' | 'shrine' | null;
 
 /** '을(를)·이(가)·은(는)·와(과)·(으)로'를 앞 글자의 받침에 맞춰 고른다(태그는 건너뛰고 본다) */
 const JOSA: Record<string, [string, string]> = { '을(를)': ['을', '를'], '이(가)': ['이', '가'], '은(는)': ['은', '는'], '와(과)': ['과', '와'], '(으)로': ['으로', '로'], '아(야)': ['아', '야'] };
@@ -796,16 +796,6 @@ export class UI {
         }).join('');
         return win('미니게임장', `${rows}<p class="ui-xs ui-muted">보상은 점수에 비례합니다(표시된 값은 최고 점수일 때).</p>`);
       }
-      case 'totem': {
-        const acc = g.acc, left = totemRunsLeft(acc, Date.now());
-        const rows = (Object.keys(BLESS) as BlessKey[]).map((k) => {
-          const b = BLESS[k], lv = acc.totem.bless[k], max = lv >= b.max, cost = blessCost(acc, k);
-          return `<div class="ui-row line"><div class="ui-grow"><b>${b.name}</b> <span class="ui-xs ui-accent">${lv}/${b.max}</span><div class="ui-sm ${lv ? 'ui-good' : 'ui-muted'}">+${Math.round(Math.max(1, lv) * b.per * 10) / 10}${b.unit}${lv ? '' : ' (1단계)'}</div></div>
-            <button class="ui-btn sm" data-act="bless:${k}" ${!max && acc.totem.souls >= cost ? '' : 'disabled'}>${max ? '최대' : `영혼 ${cost}`}</button></div>`;
-        }).join('');
-        return win('수호 토템 <span class="ui-sm ui-muted">계정 공용</span>', `<div class="stack"><p class="ui-sm">양쪽에서 다가오는 혼령을 눌러 토템을 지키세요(60초). 잡은 혼령의 절반이 영혼이 되고, 끝까지 지키면 1.5배.</p>
-          <div class="ui-row"><b class="ui-grow">영혼 <span class="ui-accent">${acc.totem.souls}</span> <span class="ui-xs ui-muted">최고 ${acc.totem.best}마리</span></b><button class="ui-btn primary" data-act="play:totem" ${left ? '' : 'disabled'}>${left ? `지키기 (오늘 ${left}번)` : '오늘은 끝'}</button></div></div>${rows}`);
-      }
       case 'pets': {
         // 원작의 펫: 하루 한 번 무료 뽑기 + 펫 크리스탈로 간식을 사서 뽑기. 가진 동료는 모두 효과, 겹치면 크리스탈, '+' 강화
         const acc = g.acc, now = Date.now(), freeOk = petFreeReady(acc, now), shards = countItem(c, CRYSTAL_ITEM);
@@ -1549,7 +1539,7 @@ export class UI {
     }).join('');
     // 시설 바로가기: 찾아낸(그 맵이 열린) 시설은 어디서나 연다
     const c = g.char!;
-    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'totem', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen', 'nest', 'lab'];
+    const kinds: FacilityKind[] = ['anvil', 'forge', 'stamps', 'tasks', 'statues', 'pets', 'owl', 'games', 'alchemy', 'post', 'traps', 'build', 'shrine', 'kitchen', 'nest', 'lab'];
     const where = (k: FacilityKind) => Object.values(MAPS).find((m) => m.facilities.some((f) => f.kind === k));
     const refs = kinds.map((k) => {
       const m = where(k);
@@ -1649,17 +1639,16 @@ export class UI {
       case 'ssel': this.stampSel = a; break;
       case 'play': {
         if (!c) break;
-        const kind = a as PlayKind, name = kind === 'totem' ? '수호 토템' : GAMES[kind as GameKind].name;
+        const kind = a as GameKind, name = GAMES[kind].name;
         this.panel = null; this.refresh(true);
         runGame(kind, name, (r) => {
-          if (r.quit && !r.score && !r.kills) { this.toast('그만두었습니다(남은 횟수는 그대로입니다)'); this.open(kind === 'totem' ? 'totem' : 'games'); this.refresh(true); return; }
-          const res = kind === 'totem' ? g.act({ t: 'totem', kills: r.kills, survived: r.survived }) : g.act({ t: 'game', kind: kind as GameKind, score: r.score });
-          if (res.ok) this.toast(kind === 'totem' ? `영혼 ${res.n}개를 얻었습니다` : r.score ? `${name} ${r.score}점! 보상을 받았습니다` : `${name} 0점 · 보상 없음`); else this.toast(res.err ?? '보상을 받지 못했습니다');
-          this.open(kind === 'totem' ? 'totem' : 'games'); this.refresh(true);
+          if (r.quit && !r.score) { this.toast('그만두었습니다(남은 횟수는 그대로입니다)'); this.open('games'); this.refresh(true); return; }
+          const res = g.act({ t: 'game', kind, score: r.score });
+          if (res.ok) this.toast(r.score ? `${name} ${r.score}점! 보상을 받았습니다` : `${name} 0점 · 보상 없음`); else this.toast(res.err ?? '보상을 받지 못했습니다');
+          this.open('games'); this.refresh(true);
         });
         break;
       }
-      case 'bless': fail(g.act({ t: 'bless', k: a as BlessKey }).err ?? null); break;
       case 'ppull': {
         const before = { ...g.acc.pets }, r = g.act({ t: 'petPull', tier: +a });
         if (!r.ok) { fail(r.err ?? null); break; }

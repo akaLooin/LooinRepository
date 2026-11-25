@@ -53,7 +53,7 @@ export function finishGame(acc: Account, c: Character, kind: GameKind, score: nu
   return null;
 }
 
-// ───────── 토템 디펜스 ─────────
+// ───────── (옛) 수호 토템: 기도 시스템으로 합쳐짐. 저장 데이터 옮기기에만 쓴다 ─────────
 export const TOTEM = { daily: 3, seconds: 60, maxKills: 90, hp: 5 };
 export type BlessKey = 'dmg' | 'afk' | 'xp';
 export const BLESS: Record<BlessKey, { name: string; per: number; unit: string; cost: number; grow: number; max: number }> = {
@@ -63,28 +63,10 @@ export const BLESS: Record<BlessKey, { name: string; per: number; unit: string; 
 };
 export interface TotemState { day: string; runs: number; souls: number; best: number; bless: Record<BlessKey, number> }
 export const newTotem = (): TotemState => ({ day: '', runs: 0, souls: 0, best: 0, bless: { dmg: 0, xp: 0, afk: 0 } });
-export function totemRunsLeft(acc: Account, now: number): number {
-  const d = today(now);
-  if (acc.totem.day !== d) { acc.totem.day = d; acc.totem.runs = 0; }
-  return Math.max(0, TOTEM.daily - acc.totem.runs);
-}
-/** 혼령을 잡은 수만큼 영혼(토템을 끝까지 지키면 절반 더) */
-export const totemSouls = (kills: number, survived: boolean) => Math.floor(Math.min(TOTEM.maxKills, Math.max(0, kills)) / 2 * (survived ? 1.5 : 1));
-export function finishTotem(acc: Account, kills: number, survived: boolean, now: number): number | string {
-  if (totemRunsLeft(acc, now) <= 0) return '오늘은 더 할 수 없습니다';
-  const k = Math.min(TOTEM.maxKills, Math.max(0, Math.floor(kills)));
-  const souls = totemSouls(k, survived);
-  acc.totem.runs++; acc.totem.souls += souls; acc.totem.best = Math.max(acc.totem.best, k);
-  return souls;
-}
-export const blessCost = (acc: Account, k: BlessKey) => Math.round(BLESS[k].cost * Math.pow(BLESS[k].grow, acc.totem.bless[k]));
-export const blessValue = (t: TotemState | undefined, k: BlessKey) => (t ? t.bless[k] * BLESS[k].per : 0);
-export function buyBless(acc: Account, k: BlessKey): string | null {
-  const b = BLESS[k];
-  if (!b) return '없는 축복';
-  if (acc.totem.bless[k] >= b.max) return '최대 단계입니다';
-  const cost = blessCost(acc, k);
-  if (acc.totem.souls < cost) return '영혼이 부족합니다';
-  acc.totem.souls -= cost; acc.totem.bless[k]++;
-  return null;
+/** 예전 수호 토템(1월드)의 영혼과 축복은 기도 시스템의 이끼 영혼으로 옮긴다(축복에 쓴 영혼도 돌려준다) */
+export function legacyTotemSouls(t: TotemState | undefined): number {
+  if (!t) return 0;
+  let n = t.souls;
+  for (const k of Object.keys(BLESS) as BlessKey[]) for (let lv = 0; lv < (t.bless?.[k] ?? 0); lv++) n += Math.round(BLESS[k].cost * Math.pow(BLESS[k].grow, lv));
+  return n;
 }

@@ -5,7 +5,7 @@
 //  · 요리 연구: 향신료 1~4가지를 넣고 기다리면 아직 모르는 요리를 찾는다. 넣은 가짓수가 많을수록 높은 단계 요리.
 //  · 요리는 쌓인 개수로 레벨을 올려 계정 전체 보너스가 된다.
 //  · 요리사: 캐릭터를 식탁에 앉히면 요리 레벨만큼 모든 주방이 빨라지고, 그 캐릭터는 요리 경험치를 얻는다.
-import { BonusKey, MAPS } from './data';
+import { BonusKey, MAPS, classSkillMult } from './data';
 import type { Account } from './state';
 import { gainSkillXp } from './state';
 import { atStation, labMult, STATION_MAP } from './lab';
@@ -126,7 +126,7 @@ export function cookSettle(acc: Account, now: number) {
   xp += k.xpFrac;
   const whole = Math.floor(xp);
   k.xpFrac = xp - whole;
-  if (whole > 0) for (const id of k.chefs) { const c = acc.characters.find((x) => x.id === id); if (c && atStation(acc, id)) gainSkillXp(c, 'cooking', whole); }
+  if (whole > 0) for (const id of k.chefs) { const c = acc.characters.find((x) => x.id === id); if (c && atStation(acc, id)) gainSkillXp(c, 'cooking', Math.floor(whole * classSkillMult(c, 'cooking'))); }
 }
 
 const kitchenAt = (acc: Account, idx: number) => acc.cook.kitchens[idx];

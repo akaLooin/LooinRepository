@@ -7,7 +7,6 @@ import {
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
 import { owlValue, petValue } from './companions';
-import { blessValue } from './minigames';
 import { alchBonus } from './alchemy';
 import { buildBonus } from './build';
 import { cookBonus } from './cooking';
@@ -205,7 +204,6 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   // 기도문(이 캐릭터가 켠 것: 효과 + 저주)
   prayerBonus(c, a.worship, (k, v) => { b[k] += v; });
   // 토템 축복
-  b.dmg += blessValue(a.totem, 'dmg'); b.xp += blessValue(a.totem, 'xp'); b.afk += blessValue(a.totem, 'afk');
   const set = c.cardSet ? CARD_SETS.find((s) => s.id === c.cardSet) : null;
   if (set && a.cards) { const t = setTier({ cards: a.cards }, set); if (t > 0) b[set.eff] += set.v[t - 1]; }
   return b;

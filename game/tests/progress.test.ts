@@ -277,13 +277,23 @@ describe('미니게임·토템', () => {
     expect(applyAction(acc, 0, { t: 'game', kind: 'spike', score: 50 }, at(3)).ok).toBe(true);
     expect(applyAction(acc, 0, { t: 'game', kind: 'spike', score: 50 }, at(5)).ok).toBe(false);
   });
-  it('토템: 혼령 수로 영혼, 끝까지 지키면 1.5배, 영혼으로 축복', () => {
+  it('1월드 안개 늪의 이끼 토템이 첫 기도 토템이고, 기도 시스템과 같다(이끼 영혼으로 기도문)', () => {
     const { acc, c } = setup();
-    expect(applyAction(acc, 0, { t: 'totem', kills: 40, survived: true }, 0).n).toBe(30);
-    expect(applyAction(acc, 0, { t: 'totem', kills: 5000, survived: false }, 0).n).toBe(TOTEM.maxKills / 2);
-    const d0 = derive(c, acc).dmg;
-    expect(applyAction(acc, 0, { t: 'bless', k: 'dmg' }, 0).ok).toBe(true);
+    c.mapId = 'swamp';
+    expect(applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_moss', kills: 40, survived: true }, 1000).n).toBeGreaterThan(0);
+    expect(acc.worship.souls.moss).toBeGreaterThan(0);
+    acc.worship.souls.moss = 1000;
+    expect(applyAction(acc, 0, { t: 'worship', op: 'up', id: 'p_valor' }, 1000).ok).toBe(true);
+    expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 1000).ok).toBe(true);
+    const d0 = derive(c, { ...acc, worship: { ...acc.worship, prayers: {} } }).dmg;
     expect(derive(c, acc).dmg).toBeGreaterThan(d0);
+  });
+  it('예전 수호 토템 영혼·축복은 이끼 영혼으로 옮겨진다', () => {
+    const { acc } = setup();
+    acc.totem.souls = 50; acc.totem.bless.dmg = 2;
+    const b = deserialize(serialize(acc))!;
+    expect(b.worship.souls.moss).toBe(50 + 20 + Math.round(20 * 1.35));
+    expect(b.totem.souls).toBe(0);
   });
 });
 
@@ -702,18 +712,18 @@ describe('기도', () => {
     const t0 = 10_000_000;
     const cap0 = cCap(c);
     expect(cNow(c, t0)).toBe(cap0);
-    c.mapId = 'snowtown';
-    expect(applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_snow', kills: 40, survived: true }, t0).ok).toBe(false); // 그 맵이 아님
-    c.mapId = 'snowfield';
-    const r = applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_snow', kills: 40, survived: true }, t0);
+    c.mapId = 'forest';
+    expect(applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_moss', kills: 40, survived: true }, t0).ok).toBe(false); // 그 맵이 아님
+    c.mapId = 'swamp';
+    const r = applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_moss', kills: 40, survived: true }, t0);
     expect(r.ok).toBe(true); expect(r.n).toBe(Math.floor(20 * 1.5 * 1.01));
-    expect(acc.worship.souls.snow).toBe(r.n);
+    expect(acc.worship.souls.moss).toBe(r.n);
     expect(c.skills.worship.lv > 1 || c.skills.worship.xp > 0).toBe(true);
-    expect(cNow(c, t0)).toBeCloseTo(cap0 - WT.wt_snow.cost);
+    expect(cNow(c, t0)).toBeCloseTo(cap0 - WT.wt_moss.cost);
     // 기도력이 모자라면 거절, 시간이 지나면 다시 찬다
     let runs = 0;
-    while (applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_snow', kills: 0, survived: false }, t0).ok) runs++;
-    expect(runs).toBe(Math.floor((cap0 - WT.wt_snow.cost) / WT.wt_snow.cost));
+    while (applyAction(acc, 0, { t: 'worship', op: 'run', id: 'wt_moss', kills: 0, survived: false }, t0).ok) runs++;
+    expect(runs).toBe(Math.floor((cap0 - WT.wt_moss.cost) / WT.wt_moss.cost));
     expect(cNow(c, t0 + 10 * 3_600_000)).toBe(cCap(c));
     // 혼령 수 상한, 높은 토템은 기도 레벨이 필요
     c.mapId = 'frostlake';
@@ -722,9 +732,9 @@ describe('기도', () => {
   it('기도문은 영혼으로 배우고(계정 공용), 캐릭터마다 켜면 효과와 저주가 함께 걸린다', () => {
     const { acc, c } = ready();
     expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 0).ok).toBe(false); // 아직 안 배움
-    acc.worship.souls.snow = pCost(0);
+    acc.worship.souls.moss = pCost(0);
     expect(applyAction(acc, 0, { t: 'worship', op: 'up', id: 'p_valor' }, 0).ok).toBe(true);
-    expect(acc.worship.souls.snow).toBe(0);
+    expect(acc.worship.souls.moss).toBe(0);
     const d0 = derive(c, acc);
     expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 0).ok).toBe(true);
     const d1 = derive(c, acc);
@@ -732,7 +742,7 @@ describe('기도', () => {
     expect(PR.p_valor.eff).toBe('dmg');
     // 켤 수 있는 수는 기도 레벨로
     expect(pSlots(1)).toBe(1); expect(pSlots(40)).toBe(3);
-    acc.worship.souls.snow = 9999; c.skills.worship.lv = 5;
+    acc.worship.souls.moss = 9999; c.skills.worship.lv = 5;
     applyAction(acc, 0, { t: 'worship', op: 'up', id: 'p_harvest' }, 0);
     expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_harvest' }, 0).ok).toBe(false);
     expect(applyAction(acc, 0, { t: 'worship', op: 'toggle', id: 'p_valor' }, 0).ok).toBe(true); // 끄기

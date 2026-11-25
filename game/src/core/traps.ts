@@ -1,7 +1,7 @@
 // 덫 사냥(3월드 기술, 캐릭터마다): 눈꽃 마을 덫 오두막에서 덫을 놓으면, 접속하지 않아도 시간이 지나 동물이 잡힌다.
 //  · 덫을 놓는 순간 잡힐 수와 경험치가 정해진다(기기·서버가 같은 값). 시간이 다 되면 거둔다.
 //  · 길게 놓을수록 시간당 효율이 조금 오른다. 덫 도구(나무·쇠·서리)로 잡는 수가 늘고, 덫 칸은 덫 사냥 레벨로 늘어난다.
-import { CRITTER, ITEMS, TRAP_MULT, TRAP_TIMES, trapSlots } from './data';
+import { CRITTER, ITEMS, TRAP_MULT, TRAP_TIMES, classSkillMult, trapSlots } from './data';
 import type { Account, Character } from './state';
 import { addItemSome, gainSkillXp, mapUnlocked, storageSize } from './state';
 
@@ -12,7 +12,7 @@ export const newTraps = (): Traps => ({ tier: 0, slots: [] });
 /** 이 캐릭터가 이 동물에 덫을 놓으면 잡힐 수 */
 export function trapYield(c: Character, critter: string, time: number): { n: number; xp: number } {
   const cr = CRITTER[critter], t = TRAP_TIMES[time], lv = c.skills.trapping?.lv ?? 1;
-  const n = Math.max(1, Math.floor((t.min / cr.mins) * t.mult * TRAP_MULT[c.traps?.tier ?? 0] * (1 + lv * 0.02)));
+  const n = Math.max(1, Math.floor((t.min / cr.mins) * t.mult * TRAP_MULT[c.traps?.tier ?? 0] * (1 + lv * 0.02) * classSkillMult(c, 'trapping')));
   return { n, xp: Math.round(n * cr.xp * t.mult) };
 }
 /** 덫을 놓을 수 없는 이유(없으면 null) */

@@ -12,7 +12,7 @@ import { LiquidUp, alchSettle, upBubble, upLiquid, upVial } from './alchemy';
 import { worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
-import { BlessKey, GameKind, buyBless, finishGame, finishTotem } from './minigames';
+import { GameKind, finishGame } from './minigames';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
   equipItem, gateOpen, townOf, learnStarTal, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
@@ -87,9 +87,7 @@ export type Action =
   | { t: 'cook'; op: 'visit' | 'claim' | 'meal' | 'recipe' | 'up' | 'buy' | 'lvl' | 'chef'; idx?: number; id?: string; sp?: string[]; k?: KitchenUp }
   | { t: 'trap'; op: 'set' | 'collect' | 'cancel'; idx: number; critter?: string; time?: number }
   | { t: 'alch'; op: 'start' | 'bubble' | 'vial' | 'liquid'; id?: string }
-  | { t: 'game'; kind: GameKind; score: number }
-  | { t: 'totem'; kills: number; survived: boolean }
-  | { t: 'bless'; k: BlessKey };
+  | { t: 'game'; kind: GameKind; score: number };
 
 export interface ActionResult { ok: boolean; err?: string; n?: number }
 const ok = (n?: number): ActionResult => ({ ok: true, n });
@@ -177,8 +175,6 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'skinOff': return res(clearSkin(c, a.slot));
     case 'petShard': { const n = depositShards(acc, c); return n ? ok(n) : fail('펫 크리스탈 조각이 없습니다'); }
     case 'game': return res(finishGame(acc, c, a.kind, a.score, now));
-    case 'totem': { const r = finishTotem(acc, a.kills, a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
-    case 'bless': return res(buyBless(acc, a.k));
     case 'alch': {
       // 처음 솥을 찾은 순간부터 액체가 쌓인다
       if (a.op === 'start') { alchSettle(acc, now); return ok(); }
@@ -188,7 +184,6 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       return res(upLiquid(acc, a.id as LiquidUp, now));
     }
     case 'worship': {
-      if ((c.maxWorld ?? 1) < 3) return fail('3월드의 기도 토템에서 할 수 있습니다');
       if (a.op === 'run') { const r = finishWorship(acc, c, a.id, a.kills ?? 0, !!a.survived, now); return typeof r === 'number' ? ok(r) : fail(r); }
       if (a.op === 'up') return res(upPrayer(acc, c, a.id));
       return res(togglePrayer(acc, c, a.id));

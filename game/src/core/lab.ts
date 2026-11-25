@@ -3,7 +3,7 @@
 //  · 캐릭터의 연결 범위는 그 캐릭터의 연구 레벨만큼 넓어진다. 연결된 캐릭터는 시간마다 연구 경험치를 얻는다.
 //  · 연구판의 장치·보석은 연결된 캐릭터의 범위 안에 들어오면 켜진다. 장치는 처음부터 있고, 보석은 향신료로 연다.
 //  · 장치 중에는 주방·둥지·향신료를 빠르게 하는 것도 있다(요리·번식과 이어짐).
-import { BonusKey } from './data';
+import { BonusKey, classSkillMult } from './data';
 import type { Account, Character } from './state';
 import { gainSkillXp } from './state';
 
@@ -101,7 +101,7 @@ export function labSettle(acc: Account, now: number) {
     if (!st.linked.has(m.id)) continue;
     const c = charOf(acc, m.id);
     if (!c) continue;
-    const x = h * LAB.xpPerHour * mult + m.frac, whole = Math.floor(x);
+    const x = h * LAB.xpPerHour * mult * classSkillMult(c, 'lab') + m.frac, whole = Math.floor(x);
     m.frac = x - whole;
     if (whole > 0) gainSkillXp(c, 'lab', whole);
   }
