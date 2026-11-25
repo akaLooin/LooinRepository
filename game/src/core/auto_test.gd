@@ -6,6 +6,9 @@ extends Node
 var main: Node
 var shots_dir := ""
 var god := false
+var hard := false
+var _hold := 0
+var charge_fired := 0
 var run: DungeonRun = null
 var k := 0
 var _shot_marks: Dictionary = {}
@@ -15,6 +18,8 @@ var _wall := 0
 
 func begin(args: PackedStringArray) -> void:
 	god = args.has("--god")
+	if args.has("--hard"):
+		hard = true
 	if args.has("--unit"):
 		var f := MetaTests.run()
 		get_tree().quit(1 if f > 0 else 0)
@@ -24,13 +29,16 @@ func begin(args: PackedStringArray) -> void:
 		shots_dir = args[i + 1]
 		DirAccess.make_dir_recursive_absolute(shots_dir)
 	GameState.data = GameState.new_save()   # 자동 테스트는 항상 새 세이브로
+	GameState.autoplay = true
+	if args.has("--charge"):
+		GameState.data["settings"]["charge_attack"] = true
 	if args.has("--touch"):
 		GameState.data["settings"]["show_touch"] = "on"
 	InputRouter.scripted = _bot_input
 	if shots_dir != "":
 		_menu_tour()
 	else:
-		main.go("dungeon", { "dungeon": "dgn_01", "seed": 7 })
+		main.go("dungeon", { "dungeon": "dgn_01", "seed": 7, "difficulty": "hard" if hard else "normal" })
 
 
 func _menu_tour() -> void:
@@ -41,7 +49,7 @@ func _menu_tour() -> void:
 	Meta.add_item("eq_top_03")
 	Meta.learn("cls_tbd_01", "sk_mp2")
 	Meta.learn("cls_tbd_01", "sk_mp3")
-	for scr in ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "books"]:
+	for scr in ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "books"]:
 		main.go(scr, { "sel": "i3" } if scr in ["equip", "enhance"] else {})
 		await _frames(20)
 		await shot("menu_" + scr)
@@ -81,7 +89,7 @@ func on_screen(screen: String, node: Node) -> void:
 			break
 	await _frames(10)
 	await shot("result")
-	print("[autotest] save: lv=%d gold=%d" % [GameState.char_data()["lv"], GameState.data["account"]["gold"]])
+	print("[autotest] save: lv=%d gold=%d charge_fired=%d" % [GameState.char_data()["lv"], GameState.data["account"]["gold"], charge_fired])
 	var errs := DataDB.errors.size()
 	print("[autotest] DONE data_errors=%d" % errs)
 	get_tree().quit(0 if errs == 0 else 2)
@@ -154,6 +162,18 @@ func _bot_input() -> Dictionary:
 		f["jump_p"] = true
 	if absf(dx) < 36.0 and absf(dy) < 44.0 and k % 5 == 0:
 		f["attack_p"] = true
+	if p.charge_mode:
+		# 원작식: 공격을 길게 눌렀다 떼서 필살기
+		if p.mp >= 1.0 and absf(dx) < 60.0 and p.state in ["idle", "run"]:
+			_hold += 1
+			f["attack_p"] = false
+			f["attack_h"] = _hold < 40
+			if _hold >= 40:
+				if p.charge_level() > 0:
+					charge_fired += 1
+				_hold = 0
+			return f
+		_hold = 0
 	if p.mp >= 3.0 and k % 10 == 0:
 		f["skill3_p"] = true
 	elif p.mp >= 2.0 and p.mp < 3.0 and k % 300 == 0:

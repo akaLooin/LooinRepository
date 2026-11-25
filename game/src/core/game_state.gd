@@ -9,6 +9,8 @@ const LEVEL_CAP := 20
 var data: Dictionary = {}
 var current_class := "cls_tbd_01"
 var last_result: Dictionary = {}
+## 자동 테스트 중이면 true (대화 자동 넘김)
+var autoplay := false
 
 
 func _ready() -> void:
@@ -34,8 +36,8 @@ static func new_save() -> Dictionary:
 			"inventory": [ { "uid": "i1", "item": "eq_wpn_01", "enh": 0 }, { "uid": "i2", "item": "eq_top_01", "enh": 0 } ],
 			"next_uid": 3, "pets": [] },
 		"characters": { "cls_tbd_01": c },
-		"progress": { "cleared": {} },
-		"settings": { "show_touch": "auto", "show_hitboxes": false },
+		"progress": { "cleared": {}, "missions": {}, "seen": {} },
+		"settings": { "show_touch": "auto", "show_hitboxes": false, "charge_attack": false, "layout": {} },
 	}
 
 
@@ -68,9 +70,10 @@ func _migrate(d: Dictionary) -> Dictionary:
 	for k in base:
 		if not d.has(k):
 			d[k] = base[k]
-	for k in base["account"]:
-		if not d["account"].has(k):
-			d["account"][k] = base["account"][k]
+	for sec in ["account", "progress", "settings"]:
+		for k in base[sec]:
+			if not d[sec].has(k):
+				d[sec][k] = base[sec][k]
 	return d
 
 
@@ -176,7 +179,7 @@ func apply_rewards(result: Dictionary) -> Dictionary:
 		cd["lv"] = int(cd["lv"]) + 1
 		receipt["level_ups"] += 1
 	if result.get("cleared", false):
-		var key: String = result["dungeon"] + ":normal"
+		var key: String = result["dungeon"] + ":" + String(result.get("difficulty", "normal"))
 		var prev: Dictionary = data["progress"]["cleared"].get(key, {})
 		if prev.is_empty() or RankCalc.rank_value(result["rank"]) > RankCalc.rank_value(prev["best_rank"]):
 			data["progress"]["cleared"][key] = { "best_rank": result["rank"], "best_time": result["time"] }

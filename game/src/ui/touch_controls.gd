@@ -22,28 +22,94 @@ var _pad_origin := Vector2.ZERO
 var _pad_pos := Vector2.ZERO
 var _btn_touch: Dictionary = {}   # touch index -> button id
 var _font: Font
+## 버튼 배치: { id: [dx, dy, scale] } (기본 위치 기준 오프셋). "pad" 는 이동 패드.
+var layout: Dictionary = {}
+var edit_mode := false
+var selected := ""
+var _drag_from := Vector2.ZERO
+var _drag_start_off := Vector2.ZERO
+var _dragging := false
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font = get_theme_default_font()
+	layout = (GameState.data["settings"].get("layout", {}) as Dictionary).duplicate(true)
+
+
+func _off(id: String) -> Vector2:
+	var l: Array = layout.get(id, [0, 0, 1.0])
+	return Vector2(float(l[0]), float(l[1]))
+
+
+func _scale(id: String) -> float:
+	return float(layout.get(id, [0, 0, 1.0])[2])
+
+
+func _set_off(id: String, off: Vector2) -> void:
+	layout[id] = [roundf(off.x), roundf(off.y), _scale(id)]
+
+
+func change_scale(id: String, delta: float) -> void:
+	var o := _off(id)
+	layout[id] = [o.x, o.y, clampf(_scale(id) + delta, 0.6, 1.8)]
+	queue_redraw()
+
+
+func pad_home() -> Vector2:
+	return Vector2(56, get_viewport_rect().size.y - 52) + _off("pad")
+
+
+func _btn_radius(b: Array) -> float:
+	return float(b[4]) * _scale(b[0])
 
 
 func _btn_center(b: Array) -> Vector2:
 	var sz := get_viewport_rect().size
-	return Vector2(sz.x - float(b[2]), sz.y - float(b[3]))
+	return Vector2(sz.x - float(b[2]), sz.y - float(b[3])) + _off(b[0])
 
 
 func _hit_button(p: Vector2) -> String:
 	for b in BUTTONS:
-		if p.distance_to(_btn_center(b)) <= float(b[4]) + 6.0:
+		if p.distance_to(_btn_center(b)) <= _btn_radius(b) + 6.0:
 			return b[0]
 	return ""
 
 
+func _edit_input(event: InputEvent) -> void:
+	var pos := Vector2(-1, -1)
+	var pressed := false
+	var released := false
+	if event is InputEventScreenTouch or event is InputEventMouseButton:
+		pos = event.position
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventScreenDrag or event is InputEventMouseMotion:
+		pos = event.position
+	else:
+		return
+	if pressed:
+		var id := _hit_button(pos)
+		if id == "" and pos.distance_to(pad_home()) <= PAD_R + 6.0:
+			id = "pad"
+		if id != "":
+			selected = id
+			_dragging = true
+			_drag_from = pos
+			_drag_start_off = _off(id)
+	elif released:
+		_dragging = false
+	elif _dragging and selected != "":
+		_set_off(selected, _drag_start_off + (pos - _drag_from))
+	queue_redraw()
+
+
 func _input(event: InputEvent) -> void:
 	if not visible:
+		return
+	if edit_mode:
+		_edit_input(event)
 		return
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
@@ -83,14 +149,14 @@ func set_state(mp_v: float, potions_v: int, learned_v: Array = [true, true, true
 
 func _draw() -> void:
 	var sz := get_viewport_rect().size
-	var pad_c := _pad_origin if _pad_touch != -1 else Vector2(56, sz.y - 52)
+	var pad_c := _pad_origin if _pad_touch != -1 else pad_home()
 	draw_circle(pad_c, PAD_R, Color(Tk.PAPER, 0.12))
 	draw_arc(pad_c, PAD_R, 0, TAU, 24, Color(Tk.PAPER, 0.35), 1.0)
 	var knob := pad_c + (InputRouter.touch_axis * PAD_R if _pad_touch != -1 else Vector2.ZERO)
 	draw_circle(knob, 10, Color(Tk.PAPER, 0.35))
 	for b in BUTTONS:
 		var c := _btn_center(b)
-		var r := float(b[4])
+		var r := _btn_radius(b)
 		var col := Color(Tk.PAPER, 0.18)
 		var enabled := true
 		if String(b[0]).begins_with("skill"):
@@ -109,3 +175,7 @@ func _draw() -> void:
 		var fs := 11
 		var w := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(_font, c + Vector2(-w / 2.0, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Tk.TEXT, 0.9 if enabled else 0.4))
+		if edit_mode and selected == b[0]:
+			draw_arc(c, r + 3, 0, TAU, 32, Tk.GOLD, 2.0)
+	if edit_mode and selected == "pad":
+		draw_arc(pad_home(), PAD_R + 3, 0, TAU, 32, Tk.GOLD, 2.0)

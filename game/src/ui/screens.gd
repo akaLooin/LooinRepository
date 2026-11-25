@@ -15,7 +15,7 @@ static func title(router: Node) -> MenuScreen:
 	box.add_child(sub)
 	box.add_child(UiKit.button("책을 펼친다", func(): router.go("select"), true))
 	box.add_child(UiKit.button("옵션", func(): router.go("options")))
-	var v := UiKit.label("프로토타입 v0.2 · 임시 캐릭터", Tk.TEXT_DIM)
+	var v := UiKit.label("프로토타입 v0.3 · 임시 캐릭터", Tk.TEXT_DIM)
 	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(v)
 	return s
@@ -35,16 +35,22 @@ static func town(router: Node) -> MenuScreen:
 	box.add_child(UiKit.label("골드 %d · 포션 %d · 부활 %d · 페이지 조각 %d" % [acc["gold"], acc["potions"], acc["revives"], acc["pages"]], Tk.TEXT_DIM))
 	box.add_child(UiKit.button("책 고르기 (던전)", func(): router.go("books"), true))
 	var grid := GridContainer.new()
-	grid.columns = 3
+	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 4)
 	grid.add_theme_constant_override("v_separation", 4)
 	box.add_child(grid)
-	for e in [["캐릭터·가방", "equip"], ["스킬", "skills"], ["강화", "enhance"], ["상점", "shop"], ["펫", "pets"], ["옵션", "options"]]:
+	var mcount := Meta.claimable_count()
+	for e in [["캐릭터·가방", "equip"], ["스킬", "skills"], ["강화", "enhance"], ["상점", "shop"], ["펫", "pets"],
+			["미션" + (" (%d)" % mcount if mcount > 0 else ""), "missions"], ["옵션", "options"]]:
 		var target: String = e[1]
 		var b := UiKit.button(e[0], func(): router.go(target))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(b)
 	box.add_child(UiKit.button("등장인물 바꾸기", func(): router.go("select")))
+	# 스토리: 처음 들어왔을 때 / 1장 첫 클리어 후
+	var dlg := DialogBox.show_once(s, "intro")
+	if dlg == null and GameState.data["progress"]["cleared"].has("dgn_01:normal"):
+		DialogBox.show_once(s, DataDB.get_row("dungeons", "dgn_01")["dialogs"]["after_first_clear"])
 	return s
 
 
@@ -56,21 +62,31 @@ static func books(router: Node) -> MenuScreen:
 	for did in DataDB.tables["dungeons"]:
 		var d: Dictionary = DataDB.tables["dungeons"][did]
 		var best: Dictionary = GameState.data["progress"]["cleared"].get(did + ":normal", {})
-		var info := "최고 랭크 %s" % best["best_rank"] if not best.is_empty() else "미클리어"
+		var info := "클리어" if not best.is_empty() else "미클리어"
 		box.add_child(UiKit.label("「%s」 %s" % [d["book"], d["name"]]))
 		box.add_child(UiKit.label("권장 Lv%d · %s" % [d["rec_lv"], info], Tk.TEXT_DIM))
-		box.add_child(UiKit.button("보통 난이도로 입장", func(): router.go("dungeon", { "dungeon": did }), true))
-		var hard := UiKit.button("어려움 (데모 이후)", func(): pass)
-		hard.disabled = true
-		box.add_child(hard)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		box.add_child(row)
+		for diff_id in d.get("difficulties", { "normal": { "name": "보통" } }):
+			var dd: Dictionary = d["difficulties"][diff_id]
+			var open := Meta.difficulty_unlocked(did, diff_id)
+			var rec: Dictionary = GameState.data["progress"]["cleared"].get("%s:%s" % [did, diff_id], {})
+			var txt := "%s%s" % [dd["name"], (" · 최고 %s" % rec["best_rank"]) if not rec.is_empty() else ""]
+			if not open:
+				txt = "%s (보통 클리어 후)" % dd["name"]
+			var b := UiKit.button(txt, func(): router.go("dungeon", { "dungeon": did, "difficulty": diff_id }), diff_id == "normal")
+			b.disabled = not open
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(b)
 	box.add_child(UiKit.button("열람실로", func(): router.go("town")))
 	return s
 
 
-static func options(router: Node) -> MenuScreen:
+static func options(router: Node, args: Dictionary = {}) -> MenuScreen:
 	var s := MenuScreen.new()
 	s.router = router
-	var box := s.make_center(240)
+	var box := s.make_center(260)
 	var st: Dictionary = GameState.data["settings"]
 	box.add_child(UiKit.label("옵션", Tk.GOLD))
 	var modes := { "auto": "자동", "on": "항상 표시", "off": "숨김" }
@@ -80,14 +96,20 @@ static func options(router: Node) -> MenuScreen:
 		st["show_touch"] = order[(i + 1) % order.size()]
 		GameState.save_game()
 		router.go("options")))
+	box.add_child(UiKit.button("터치 버튼 위치·크기 편집", func(): router.go("layout")))
+	box.add_child(UiKit.button("필살기: %s" % ("공격 길게 눌러 충전 (원작식)" if st.get("charge_attack", false) else "필살기 버튼 1·2·3"), func():
+		st["charge_attack"] = not st.get("charge_attack", false)
+		GameState.save_game()
+		router.go("options")))
 	box.add_child(UiKit.button("판정 상자 표시: %s" % ("켜짐" if st.get("show_hitboxes", false) else "꺼짐"), func():
 		st["show_hitboxes"] = not st.get("show_hitboxes", false)
 		GameState.save_game()
 		router.go("options")))
 	box.add_child(UiKit.button("세이브 초기화", func():
 		GameState.reset_save()
-		router.go("options")))
-	box.add_child(UiKit.label("버튼 위치 편집은 다음 단계(M5)에서 추가됩니다.", Tk.TEXT_DIM))
+		router.go("options", { "msg": "세이브를 초기화했습니다" })))
+	if args.get("msg", "") != "":
+		box.add_child(UiKit.label(args["msg"], Tk.EXP))
 	box.add_child(UiKit.button("돌아가기", func(): router.go("town")))
 	return s
 

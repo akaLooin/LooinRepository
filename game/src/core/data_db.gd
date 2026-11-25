@@ -1,7 +1,7 @@
 extends Node
 ## 정적 게임 데이터 로더. res://data/*.json 을 읽고 id 참조 무결성을 검사한다.
 
-const FILES := ["classes", "attacks", "skills", "monsters", "dungeons", "items", "skill_tree", "pets"]
+const FILES := ["classes", "attacks", "skills", "monsters", "dungeons", "items", "skill_tree", "pets", "dialogs", "missions"]
 
 var tables: Dictionary = {}
 var errors: PackedStringArray = []
@@ -69,6 +69,8 @@ func _validate() -> void:
 		var stages: Dictionary = d["stages"]
 		for row in d.get("drops", {}).get("table", []):
 			_need("items", row[0], did)
+		for k in d.get("dialogs", {}):
+			_need("dialogs", d["dialogs"][k], did)
 		if d.has("first_clear_pet"):
 			_need("pets", d["first_clear_pet"], did)
 		if not stages.has(d["first_stage"]):

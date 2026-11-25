@@ -8,6 +8,8 @@ const COMBO_TIMEOUT := 90
 
 var dungeon_id := ""
 var dungeon: Dictionary = {}
+var difficulty := "normal"
+var diff: Dictionary = { "hp": 1.0, "atk": 1.0, "reward": 1.0 }
 var stage_id := ""
 var stage: Dictionary = {}
 var width := 900
@@ -52,9 +54,11 @@ func _ready() -> void:
 	_font = ThemeDB.fallback_font
 
 
-func start(dgn_id: String, seed_v: int = -1) -> void:
+func start(dgn_id: String, seed_v: int = -1, diff_id: String = "normal") -> void:
 	dungeon_id = dgn_id
 	dungeon = DataDB.get_row("dungeons", dgn_id)
+	difficulty = diff_id
+	diff = dungeon.get("difficulties", {}).get(diff_id, diff)
 	rng.seed = seed_v if seed_v >= 0 else int(Time.get_unix_time_from_system() * 1000.0) % 2147483647
 	run_id = "%s-%d-%d" % [dgn_id, Time.get_unix_time_from_system(), rng.randi() % 100000]
 	show_hitboxes = bool(GameState.data["settings"].get("show_hitboxes", false))
@@ -123,6 +127,12 @@ func _load_stage(id: String) -> void:
 	wave = 0
 	_spawn_wave()
 	hud.show_title(stage["title"])
+	if stage["waves"].size() > 0 and DataDB.get_row("monsters", stage["waves"][0][0][0]).get("boss", false):
+		var dlg_id: String = dungeon.get("dialogs", {}).get("pre_boss", "")
+		if dlg_id != "":
+			var dlg := DialogBox.show_once(overlay, dlg_id, func(): paused = false)
+			if dlg:
+				paused = true
 	cam.limit_left = 0
 	cam.limit_right = width
 	cam.limit_top = 0
@@ -142,6 +152,9 @@ func spawn_monster(id: String, at: Vector2) -> Enemy:
 	var e: Enemy = Boss.new() if mon.get("boss", false) else Enemy.new()
 	e.world = self
 	e.setup(id)
+	e.max_hp = int(e.max_hp * float(diff.get("hp", 1.0)))
+	e.hp = e.max_hp
+	e.atk *= float(diff.get("atk", 1.0))
 	e.position = at
 	e.invuln = 30
 	world_layer.add_child(e)
@@ -491,9 +504,18 @@ func _finish(cleared: bool) -> void:
 		"run_id": run_id, "dungeon": dungeon_id, "cleared": cleared,
 		"time": snappedf(t_sec, 0.1), "hits_taken": hits_taken, "max_combo": max_combo,
 		"score": sc, "rank": RankCalc.rank_of(sc) if cleared else "-",
-		"exp": exp_gain if cleared else exp_gain / 3, "gold": gold_gain if cleared else gold_gain / 3,
+		"difficulty": difficulty,
+		"exp": int((exp_gain if cleared else exp_gain / 3) * float(diff.get("reward", 1.0))),
+		"gold": int((gold_gain if cleared else gold_gain / 3) * float(diff.get("reward", 1.0))),
 		"path": stage_path,
-		"drops": Meta.roll_drops(dungeon.get("drops", {}), rng) if cleared else [],
+		"drops": Meta.roll_drops(_drop_table(), rng) if cleared else [],
 		"pet": dungeon.get("first_clear_pet", "") if cleared else "",
 	}
 	finished.emit(result)
+
+
+func _drop_table() -> Dictionary:
+	var t: Dictionary = dungeon.get("drops", {}).duplicate()
+	if diff.has("drop_rolls"):
+		t["rolls"] = int(diff["drop_rolls"])
+	return t

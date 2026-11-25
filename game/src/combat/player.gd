@@ -5,6 +5,7 @@ extends Fighter
 const BUFFER := 8
 const POTION_HEAL := 0.3
 const MP_MAX := 3.0
+const CHARGE_START := 24   # 공격 버튼을 이만큼(틱) 누르고 있으면 충전 시작
 
 var cls: Dictionary = {}
 var move: Dictionary = {}
@@ -22,6 +23,9 @@ var skill_mul: Dictionary = {}
 var mp_gain_mul := 1.0
 var back_bonus := 0.0
 var extra_air_jumps := 0
+var charge_mode := false
+var hold := 0
+var _charge_fire := 0
 
 
 func setup(class_id: String, st: Dictionary) -> void:
@@ -42,6 +46,7 @@ func setup(class_id: String, st: Dictionary) -> void:
 	mp_gain_mul = float(st.get("mp_gain_mul", 1.0))
 	back_bonus = float(st.get("back_bonus", 0.0))
 	extra_air_jumps = int(st.get("air_jumps", 0))
+	charge_mode = bool(GameState.data["settings"].get("charge_attack", false))
 
 
 func air_jumps() -> int:
@@ -64,7 +69,25 @@ func _atk(id: String) -> Dictionary:
 	return DataDB.get_row("attacks", id)
 
 
+## 충전 중이면 지금 놓았을 때 나갈 필살기 단계(0 = 없음)
+func charge_level() -> int:
+	if not charge_mode or hold < CHARGE_START:
+		return 0
+	var lvl := mini(int(mp), 3)
+	while lvl > 0 and not skill_learned(lvl - 1):
+		lvl -= 1
+	return lvl
+
+
 func think(f: Dictionary) -> void:
+	_charge_fire = 0
+	if charge_mode:
+		if f["attack_h"]:
+			hold += 1
+		else:
+			if hold >= CHARGE_START:
+				_charge_fire = charge_level()
+			hold = 0
 	if f["attack_p"]:
 		atk_buffer = BUFFER
 	elif atk_buffer > 0:
@@ -100,7 +123,7 @@ func _tick_common_states() -> bool:
 func _try_skill(f: Dictionary) -> bool:
 	var skills: Array = cls["skills"]
 	for i in range(3):
-		if f["skill%d_p" % (i + 1)] and skill_learned(i):
+		if (f["skill%d_p" % (i + 1)] or _charge_fire == i + 1) and skill_learned(i):
 			var sk: Dictionary = DataDB.get_row("skills", skills[i])
 			if mp >= float(sk["mp_cost"]):
 				mp -= float(sk["mp_cost"])
@@ -309,6 +332,11 @@ func _draw() -> void:
 	px(2, -24 + crouch, 1, 2, Tk.INK)
 	# 무기: 리본 달린 책갈피 검
 	_draw_blade(crouch)
+	var cl := charge_level()
+	if hold >= CHARGE_START:
+		for i in range(3):
+			var col := Tk.MP if i < cl else Color(Tk.TEXT_DIM, 0.5)
+			draw_rect(Rect2(-7 + i * 5, -36, 4, 3), col)
 	draw_debug_boxes()
 
 

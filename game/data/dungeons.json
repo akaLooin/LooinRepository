@@ -482,6 +482,26 @@
         ]
       ]
     },
-    "first_clear_pet": "pet_bookworm"
+    "first_clear_pet": "pet_bookworm",
+    "difficulties": {
+      "normal": {
+        "name": "보통",
+        "hp": 1.0,
+        "atk": 1.0,
+        "reward": 1.0
+      },
+      "hard": {
+        "name": "어려움",
+        "hp": 1.7,
+        "atk": 1.5,
+        "reward": 1.6,
+        "drop_rolls": 3,
+        "unlock": "normal"
+      }
+    },
+    "dialogs": {
+      "pre_boss": "pre_boss_01",
+      "after_first_clear": "after_ch1"
+    }
   }
 }

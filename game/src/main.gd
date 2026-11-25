@@ -37,7 +37,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 		"books":
 			current = Screens.books(self)
 		"options":
-			current = Screens.options(self)
+			current = Screens.options(self, args)
 		"select":
 			current = MetaScreens.select(self)
 		"equip":
@@ -50,6 +50,12 @@ func go(screen: String, args: Dictionary = {}) -> void:
 			current = MetaScreens.shop(self, args)
 		"pets":
 			current = MetaScreens.pets(self, args)
+		"missions":
+			current = MetaScreens.missions(self, args)
+		"layout":
+			var le := LayoutEditor.new()
+			le.router = self
+			current = le
 		"result":
 			GameState.last_result = args
 			current = Screens.result(self, args)
@@ -58,7 +64,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 			current = run
 			add_child(run)
 			run.finished.connect(func(r: Dictionary): go("result", r))
-			run.start(args["dungeon"], int(args.get("seed", -1)))
+			run.start(args["dungeon"], int(args.get("seed", -1)), args.get("difficulty", "normal"))
 			if autotest:
 				autotest.on_dungeon(run)
 			return

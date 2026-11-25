@@ -93,7 +93,7 @@ func _draw() -> void:
 		draw_rect(Rect2(r.position, Vector2(r.size.x * fill, r.size.y)), col)
 		draw_rect(r, Tk.INK, false, 1.0)
 	# 남은 시간/진행
-	_text(Vector2(vw / 2.0, 14), "%s  %d:%02d" % [run.dungeon["book"], run.ticks / 3600, (run.ticks / 60) % 60], Tk.TEXT_DIM, 11, true)
+	_text(Vector2(vw / 2.0, 14), "%s%s  %d:%02d" % [run.dungeon["book"], " (어려움)" if run.difficulty == "hard" else "", run.ticks / 3600, (run.ticks / 60) % 60], Tk.TEXT_DIM, 11, true)
 	# 콤보
 	if run.combo >= 2:
 		_text(Vector2(vw - 70, 60), "%d" % run.combo, Tk.GOLD, 22)

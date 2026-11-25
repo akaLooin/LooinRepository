@@ -258,3 +258,36 @@ static func pets(router: Node, args: Dictionary) -> MenuScreen:
 			router.go("pets"), pid != cur)
 		right.add_child(b)
 	return s
+
+
+# ---------- S18 미션 ----------
+
+static func missions(router: Node, args: Dictionary) -> MenuScreen:
+	var s := MenuScreen.new()
+	s.router = router
+	var acc: Dictionary = GameState.data["account"]
+	var cols := s.make_split("미션 — 열람 일지", "골드 %d · 페이지 %d" % [acc["gold"], acc["pages"]], func(): router.go("town"), 130)
+	var left: VBoxContainer = cols[0]
+	var right: VBoxContainer = cols[1]
+	left.add_child(UiKit.label("목표를 이루면\n보상을 받을 수 있어요.", Tk.TEXT_DIM))
+	left.add_child(UiKit.label("받을 수 있는 보상: %d" % Meta.claimable_count(), Tk.GOLD))
+	_msg(left, args)
+	for mid in DataDB.tables["missions"]:
+		var m: Dictionary = DataDB.tables["missions"][mid]
+		var st := Meta.mission_state(mid)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		right.add_child(row)
+		var info := UiKit.label("%s — %s\n보상: %s" % [m["name"], m["desc"], Meta.reward_text(m["reward"])],
+			Tk.TEXT if st != "claimed" else Tk.TEXT_DIM)
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(info)
+		var label: String = { "open": "진행 중", "done": "받기", "claimed": "완료" }[st]
+		var b := UiKit.button(label, func():
+			var why := Meta.claim_mission(mid)
+			GameState.save_game()
+			router.go("missions", { "msg": why if why != "" else "%s 보상을 받았습니다" % m["name"], "ok": why == "" }), st == "done")
+		b.custom_minimum_size = Vector2(54, 16)
+		b.disabled = st != "done"
+		row.add_child(b)
+	return s

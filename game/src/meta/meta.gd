@@ -257,3 +257,72 @@ static func roll_drops(drops: Dictionary, rng: RandomNumberGenerator) -> Array:
 				out.append(row[0])
 				break
 	return out
+
+
+# ---------- 미션 ----------
+
+static func mission_done(mid: String) -> bool:
+	var c: Dictionary = DataDB.get_row("missions", mid)["cond"]
+	var cls := GameState.current_class
+	match c["type"]:
+		"clear":
+			return GameState.data["progress"]["cleared"].has("%s:%s" % [c["dungeon"], c.get("difficulty", "normal")])
+		"level":
+			for k in GameState.data["characters"]:
+				if int(GameState.data["characters"][k]["lv"]) >= int(c["value"]):
+					return true
+			return false
+		"skill":
+			return skill_lv(cls, c["skill"]) > 0
+		"enhance":
+			for it in inv():
+				if int(it["enh"]) >= int(c["value"]):
+					return true
+			return false
+		"equip_grade":
+			var order := ["common", "rare", "epic"]
+			for slot in SLOTS:
+				var it := equipped(cls, slot)
+				if not it.is_empty() and order.find(item_def(it["item"])["grade"]) >= order.find(c["grade"]):
+					return true
+			return false
+	return false
+
+
+static func mission_state(mid: String) -> String:
+	if GameState.data["progress"]["missions"].get(mid, "") == "claimed":
+		return "claimed"
+	return "done" if mission_done(mid) else "open"
+
+
+static func claim_mission(mid: String) -> String:
+	if mission_state(mid) != "done":
+		return "아직 완료하지 않았습니다"
+	var r: Dictionary = DataDB.get_row("missions", mid)["reward"]
+	for k in r:
+		acc()[k] = int(acc().get(k, 0)) + int(r[k])
+	GameState.data["progress"]["missions"][mid] = "claimed"
+	return ""
+
+
+static func claimable_count() -> int:
+	var n := 0
+	for mid in DataDB.tables["missions"]:
+		if mission_state(mid) == "done":
+			n += 1
+	return n
+
+
+static func reward_text(r: Dictionary) -> String:
+	var names := { "gold": "골드", "pages": "페이지 조각", "potions": "포션", "revives": "부활 책갈피" }
+	var parts: PackedStringArray = []
+	for k in r:
+		parts.append("%s %d" % [names.get(k, k), int(r[k])])
+	return ", ".join(parts)
+
+
+static func difficulty_unlocked(did: String, diff: String) -> bool:
+	var dd: Dictionary = DataDB.get_row("dungeons", did).get("difficulties", {}).get(diff, {})
+	if not dd.has("unlock"):
+		return true
+	return GameState.data["progress"]["cleared"].has("%s:%s" % [did, dd["unlock"]])

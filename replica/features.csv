@@ -8,7 +8,7 @@ feature,area,priority,original,clone,notes
 공중 콤보·띄우기·다운·기상 무적,combat-attack,must,yes,yes,[DEMO] 히트스톱 포함
 크리티컬 / 백어택 / 더블어택 판정,combat-attack,must,yes,partial,[DEMO] 데미지 텍스트로 표기 / 빌드: 더블어택 없음
 MP 게이지 (타격 시 충전 3칸),combat-skill,must,yes,yes,[DEMO]
-MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 / 리디자인=단계별 스킬 버튼 / 빌드: 버튼 방식. 홀드 방식 옵션은 미구현
+MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 / 리디자인=단계별 스킬 버튼 / 빌드: 버튼 방식 + 원작식 홀드 충전 옵션
 필살기 컷인 연출,combat-skill,should,yes,partial,[DEMO] 픽셀 컷인 오리지널 연출 / 빌드: 3단만 컷인
 반격(카운터): MP 소모로 피격 탈출,combat-skill,should,yes,yes,[DEMO]
 스킬 트리 + 스킬 포인트,growth,must,yes,yes,"[DEMO] 1차 트리만 / 빌드: 필살기 3 + 패시브 5, 선행·레벨 조건, 무료 초기화"
@@ -26,7 +26,7 @@ MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 /
 펫 (전투 보조 + 펫 필살기),companion,should,yes,partial,"[DEMO] 1종 오리지널 펫 / 빌드: 1종, 자동 공격 + 능력치 보너스. 펫 필살기 없음"
 펫 진화/먹이,companion,could,yes,no,
 월드맵 → 대륙 → 던전 선택,dungeon,must,yes,partial,[DEMO] 1개 대륙(지역) / 빌드: 책 목록 화면
-던전 난이도 (보통/어려움/챔피언),dungeon,must,yes,partial,[DEMO] 보통/어려움 / 빌드: 보통만
+던전 난이도 (보통/어려움/챔피언),dungeon,must,yes,yes,"[DEMO] 보통/어려움 / 빌드: 보통/어려움, 어려움은 보통 클리어 후 해금"
 던전 내 스테이지 분기 (포탈 선택),dungeon,should,yes,yes,[DEMO] 1개 던전에서 체험
 보스전 (패턴 / 페이즈),dungeon,must,yes,yes,[DEMO] 보스 3종 / 빌드: 보스 1종 2페이즈+그로기
 던전 결과 화면 (랭크·경험치·골드),dungeon,must,yes,yes,[DEMO]
@@ -41,11 +41,11 @@ MP 1/2/3단 필살기,combat-skill,must,yes,yes,[DEMO] 원작=공격키 홀드 /
 캐릭터 다수 (20+),roster,must,yes,no,데모 2명 + 1명 잠금 예고 / 전부 오리지널 캐릭터
 캐릭터 선택·교체 (계정 공유 인벤토리),roster,must,yes,partial,[DEMO] / 빌드: 선택 화면 + 슬롯 4개(1개만 플레이 가능)
 마을(로비) 화면,meta,must,yes,partial,[DEMO] 오리지널 허브 마을 / 빌드: 열람실 메뉴 8개
-퀘스트/미션 (일일·메인),meta,should,yes,no,[DEMO] 메인 미션 5개
+퀘스트/미션 (일일·메인),meta,should,yes,partial,"[DEMO] 메인 미션 5개 / 빌드: 메인 미션 6개, 일일 없음"
 칭호 / 업적,meta,could,yes,no,
 출석 보상,meta,could,yes,no,
-스토리 컷신 / 대화,story,should,yes,no,[DEMO] 오리지널 세계관 대사 박스
-옵션 (사운드/진동/버튼 배치),settings,must,yes,partial,[DEMO] 버튼 위치·크기 커스텀 / 빌드: 터치 표시/판정 상자/초기화. 버튼 배치 편집 없음
+스토리 컷신 / 대화,story,should,yes,yes,[DEMO] 오리지널 세계관 대사 박스 / 빌드: 대화 상자: 인트로·보스 전·1장 클리어 후
+옵션 (사운드/진동/버튼 배치),settings,must,yes,partial,[DEMO] 버튼 위치·크기 커스텀 / 빌드: 버튼 배치 편집·홀드식 필살기·터치 표시. 사운드 없음
 로컬 저장 (오프라인),system,must,yes,yes,[DEMO]
 게임패드 / 키보드 입력,system,should,yes,yes,PC 단계 필수
 캐시샵 / 가챠,economy,could,yes,skip,BM은 온라인 이후 별도 설계

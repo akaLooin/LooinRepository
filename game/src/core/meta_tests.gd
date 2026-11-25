@@ -74,6 +74,20 @@ static func run() -> int:
 	for i in range(200):
 		cnt += Meta.roll_drops(DataDB.get_row("dungeons", "dgn_01")["drops"], rng).size()
 	ck.call(cnt > 100 and cnt < 400, "drop rate sane (%d per 200 runs)" % cnt)
+	# 미션: 조건 달성 → 받기 1회만, 보상 지급
+	GameState.data = GameState.new_save()
+	ck.call(Meta.mission_state("msn_02") == "open", "level mission open at lv1")
+	GameState.char_data(cls)["lv"] = 3
+	ck.call(Meta.mission_state("msn_02") == "done", "level mission done at lv3")
+	var pot := int(GameState.data["account"]["potions"])
+	ck.call(Meta.claim_mission("msn_02") == "" and int(GameState.data["account"]["potions"]) == pot + 2, "claim gives reward")
+	ck.call(Meta.claim_mission("msn_02") != "", "cannot claim twice")
+	# 어려움은 보통 클리어 후 열림
+	ck.call(not Meta.difficulty_unlocked("dgn_01", "hard"), "hard locked before normal clear")
+	GameState.apply_rewards({ "run_id": "t2", "dungeon": "dgn_01", "difficulty": "normal", "cleared": true, "time": 99.0, "rank": "B", "exp": 1, "gold": 1 })
+	ck.call(Meta.difficulty_unlocked("dgn_01", "hard") and Meta.mission_state("msn_01") == "done", "normal clear unlocks hard + mission")
+	GameState.apply_rewards({ "run_id": "t3", "dungeon": "dgn_01", "difficulty": "hard", "cleared": true, "time": 99.0, "rank": "C", "exp": 1, "gold": 1 })
+	ck.call(Meta.mission_state("msn_06") == "done", "hard clear recorded separately")
 	for c in checks:
 		print("  %s %s" % ["ok  " if c[0] else "FAIL", c[1]])
 		if not c[0]:
