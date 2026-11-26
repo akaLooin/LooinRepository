@@ -1,18 +1,18 @@
-# Graph Report - LooinRepository  (2026-11-25)
+# Graph Report - LooinRepository  (2026-11-26)
 
 ## Corpus Check
-- 56 files · ~35,303 words
+- 58 files · ~41,377 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 134 file(s) not represented in the graph (top: .import 52, .gd 36, .uid 36)
-- WARNING: 134 of 245 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- Unclassified: 206 file(s) not represented in the graph (top: .import 104, .gd 45, .uid 45)
+- WARNING: 206 of 370 files seen (56%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 381 nodes · 518 edges · 37 communities (31 shown, 6 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.95)
+- 410 nodes · 569 edges · 38 communities (31 shown, 7 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3e34a903`
+- Built from commit: `c053b8a9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -53,18 +53,19 @@
 - 아트 규격서 — 테일즈토피아 RPG
 - 게임 진행 흐름 — 원작 방식 대응표
 - 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형)
+- Icon
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
 2. `replica-recon` - 12 edges
-3. `render_song()` - 11 edges
-4. `compare()` - 10 edges
-5. `sfx()` - 10 edges
-6. `Recon map: {{app}} ({{platform}})` - 10 edges
-7. `Recon map: 그랜드체이스 (PC 원작 / Classic) → 모바일 픽셀 리디자인 (Android 우선)` - 10 edges
-8. `read_png()` - 9 edges
-9. `load_reviews()` - 9 edges
-10. `replica-build` - 9 edges
+3. `Icon` - 11 edges
+4. `render_song()` - 11 edges
+5. `compare()` - 10 edges
+6. `sfx()` - 10 edges
+7. `Recon map: {{app}} ({{platform}})` - 10 edges
+8. `Recon map: 그랜드체이스 (PC 원작 / Classic) → 모바일 픽셀 리디자인 (Android 우선)` - 10 edges
+9. `read_png()` - 9 edges
+10. `load_reviews()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `4. 시스템 인터페이스 ("API")` --references--> `load()`  [INFERRED]
@@ -73,7 +74,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (37 total, 6 thin omitted)
+## Communities (38 total, 7 thin omitted)
 
 ### Community 0 - "listing.py"
 Cohesion: 0.33
@@ -100,8 +101,8 @@ Cohesion: 0.15
 Nodes (12): Output, replica-recon, Step 1: scope, Step 2: list the sources, Step 3: screen inventory, Step 4: user flows, Step 5: components, Step 6: inferred data model (+4 more)
 
 ### Community 6 - "concept_field_battle.py"
-Cohesion: 0.23
-Nodes (12): blend_px(), book_platform(), C(), dither_grad(), frame(), ink_tree(), lerp(), puddle() (+4 more)
+Cohesion: 0.15
+Nodes (17): C(), down_frame(), frame(), stamp(), sword(), blend_px(), book_platform(), C() (+9 more)
 
 ### Community 7 - "Recon map: {{app}} ({{platform}})"
 Cohesion: 0.18
@@ -196,17 +197,17 @@ Cohesion: 0.40
 Nodes (4): 게임 진행 흐름 — 원작 방식 대응표, 로비에서 할 수 있는 것 (성장·관리), 한 판의 흐름, 화면 이동도
 
 ### Community 36 - "캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형)"
-Cohesion: 0.33
-Nodes (5): 게임 설계 제안 (1차 직업 「기사」), 구현 메모, 의뢰 내용 요약, 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형), 확정 사항 (2026-11-26)
+Cohesion: 0.17
+Nodes (11): 검술, 게임 설계 제안 (1차 직업 「기사」), 구현 메모, 디자인 v0.9, 수호, 스킬 트리 v0.9 (1차 「기사」), 은빛, 의뢰 내용 요약 (+3 more)
 
 ## Knowledge Gaps
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `load()` connect `json` to `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
 - **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
@@ -215,5 +216,7 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
   _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
+- **Should `concept_field_battle.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.1455026455026455 - nodes in this community are weakly interconnected._
 - **Should `sys` be split into smaller, more focused modules?**
   _Cohesion score 0.11231884057971014 - nodes in this community are weakly interconnected._
