@@ -256,7 +256,13 @@ export function LabScreen() {
       <ValueRow title="강제 동기화" value="" onPress={supabase ? async () => { await syncNow(); notice("동기화했어요"); } : undefined} divider={false} />
       <AppText variant="helper" color="textMuted">{line}</AppText>
       {sync.rejected.length ? (
-        <AppText variant="helper" color="danger" style={{ marginTop: 8 }}>{`서버가 받지 않은 변경 ${sync.rejected.length}개 (예: 종료한 카테고리에 추가한 할 일, 다른 사람이 쓰는 ID)`}</AppText>
+        <>
+          <AppText variant="helper" color="danger" style={{ marginTop: 8 }}>{`서버가 받지 않은 변경 ${sync.rejected.length}개 (예: 종료한 카테고리에 추가한 할 일, 다른 사람이 쓰는 ID)`}</AppText>
+          {/* why (user, 2026-11-26: a new event never reached the server): the last few reasons as the server said them */}
+          {sync.rejected.slice(-3).map((r, i) => (
+            <AppText key={i} variant="small" color="textMuted" style={{ marginTop: 4 }} selectable>{`${r.table === "events" ? "일정" : r.table === "todos" ? "할 일" : r.table}: ${r.error.slice(0, 160)}`}</AppText>
+          ))}
+        </>
       ) : null}
       {toast}
     </Page>
