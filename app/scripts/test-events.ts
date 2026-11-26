@@ -215,3 +215,11 @@ t("보기 설정: hidden Google calendars leave the 달력 tab only", () => {
   assert.deepEqual(shownOnCalendar(all, ["work"]).map((e) => e.id), ["a", "c"]);
   assert.equal(shownOnCalendar(all, []), all);
 });
+
+t("공개 범위: an event category's visibility round-trips, missing = not sent (나만 on the server)", () => {
+  const k = { id: "k", title: "회사", color: "#111111", sortOrder: 1 };
+  assert.equal("visibility" in toRow.event_categories(k, "u"), false);
+  assert.equal(toRow.event_categories({ ...k, visibility: "friends" }, "u").visibility, "friends");
+  assert.equal(fromRow.event_categories({ id: "k", title: "회사", visibility: "public" }).visibility, "public");
+  assert.equal(fromRow.event_categories({ id: "k", title: "회사", visibility: "odd" }).visibility, undefined);
+});

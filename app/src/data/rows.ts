@@ -63,7 +63,9 @@ export const toRow = {
     // "new" = make a meeting, "" = take it off (the server asks Google and keeps the link it makes)
     ...(e.meetLink !== undefined ? { meet_link: e.meetLink } : {}),
   }),
-  event_categories: (k: EventCategory, user_id: string): Row => ({ id: k.id, user_id, title: k.title, color: k.color, sort_order: k.sortOrder }),
+  event_categories: (k: EventCategory, user_id: string): Row => ({ id: k.id, user_id, title: k.title, color: k.color, sort_order: k.sortOrder,
+    // 공개 범위 (SQL 20261129000000): sent once set
+    ...(k.visibility ? { visibility: k.visibility } : {}) }),
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,5 +113,6 @@ export const fromRow = {
     ...(Array.isArray(r.attachments) && r.attachments.length ? { attachments: r.attachments.filter((a: R) => a && a.url).map((a: R) => ({ title: String(a.title ?? "첨부파일"), url: String(a.url) })) } : {}),
     ...(r.instance_of ? { instanceOf: String(r.instance_of) } : {}),
   }),
-  event_categories: (r: R): EventCategory => ({ id: r.id, title: r.title, color: r.color ?? "#4A90E2", sortOrder: Number(r.sort_order ?? 0) }),
+  event_categories: (r: R): EventCategory => ({ id: r.id, title: r.title, color: r.color ?? "#4A90E2", sortOrder: Number(r.sort_order ?? 0),
+    ...(r.visibility === "public" || r.visibility === "followers" || r.visibility === "friends" || r.visibility === "private" ? { visibility: r.visibility } : {}) }),
 };

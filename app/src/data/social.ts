@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase";
 import { addDays, today, type Day } from "../lib/dates";
 import { groupReactions, toFeedItem, toFriendView, toPerson, type FeedItem, type FriendView, type Person, type Reaction } from "../lib/friend";
 import { getDB, sessionUserId } from "./store";
+import { fromRow } from "./rows";
 
 export type { FeedItem, FriendView, Person, Reaction } from "../lib/friend";
 export type Notice = {
@@ -96,8 +97,18 @@ export async function getPerson(id: string): Promise<Person | null> {
 }
 
 export async function friendMonth(id: string, from: Day, to: Day): Promise<FriendView | null> {
-  if (isDemo()) return toFriendView(demoRange(id, from, to));
-  return toFriendView(await rpc<unknown>("friend_range", { uid: id, from_day: from, to_day: to }));
+  if (isDemo()) {
+    const v = toFriendView(demoRange(id, from, to));
+    return v && v.person.isFriend ? { ...v, events: [{ id: "demo-ev-1", title: "영화 보기", startDate: today(), endDate: today(), allDay: false, startTime: "19:00", endTime: "21:00", color: "#3DA5F4", memo: "" }] } : v;
+  }
+  const [view, events] = await Promise.all([
+    rpc<unknown>("friend_range", { uid: id, from_day: from, to_day: to }),
+    // their events (SQL 20261129000000); none before it is run
+    supabase ? supabase.rpc("friend_events", { owner: id, from_day: from, to_day: to }).then((r) => (r.error ? [] : (r.data as unknown[]) ?? [])) : Promise.resolve([]),
+  ]);
+  const v = toFriendView(view);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return v ? { ...v, events: (events as any[]).map((e) => fromRow.events(e)) } : v;
 }
 
 export async function followList(kind: ListKind, id = sessionUserId() ?? DEMO_ME): Promise<Person[]> {

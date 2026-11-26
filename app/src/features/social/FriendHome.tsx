@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 import { AppText, Calendar, CalendarHeader, CategoryPill, ChevronLeft, ChevronRight, Heart, Megaphone, ProfileHeader, StoredImage, TodoRow, useToast, MoodMark } from "../../components";
 import type { Diary } from "../../data/types";
 import { cheer, friendMonth, react, type FriendView, type Reaction } from "../../data/social";
+import { eventsOn, eventTimeLabel, expandEvents } from "../../lib/events";
 import { isVirtual, todosForDay } from "../../data/store";
 import { usePrefs } from "../../data/prefs";
 import { nextReaction } from "../../lib/friend";
@@ -107,6 +108,8 @@ export function FriendHome({ id }: { id: string }) {
   const dayTodos = fdb ? todosForDay(fdb, selected).sort((a, b) => a.sortOrder - b.sortOrder) : [];
   const shown = fdb ? [...fdb.categories].sort((a, b) => a.sortOrder - b.sortOrder).filter((cat) => dayTodos.some((t) => t.categoryId === cat.id)) : [];
   const diary: Diary | undefined = fdb?.diaries.find((d) => d.date === selected);
+  // their events of the day they share (공개 범위 per 일정 카테고리; title and time only)
+  const dayEvents = current?.events?.length ? eventsOn(expandEvents(current.events, selected, selected), selected) : [];
 
   const setReactions = (targetId: string, target: "todo" | "diary", list: Reaction[]) =>
     setMonths((x) => {
@@ -213,7 +216,16 @@ export function FriendHome({ id }: { id: string }) {
             {p.followsMe === "accepted" ? "나를 팔로우하는 사람이에요. 나도 팔로우하면 친구가 돼서 반응하고 응원할 수 있어요" : "서로 팔로우하면 친구가 돼요. 친구에게만 반응하고 응원할 수 있어요"}
           </AppText>
         ) : null}
-        {current && shown.length === 0 ? <AppText variant="body" color="textMuted" style={{ paddingVertical: 16 }}>이날 보이는 할 일이 없어요</AppText> : null}
+        {dayEvents.map((e) => (
+          <View key={e.id} accessible accessibilityLabel={`일정 ${e.title}, ${eventTimeLabel(e, prefs.use24h, parseDay(selected).y)}`}
+            style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, paddingHorizontal: 12, borderRadius: tokens.radius.md, backgroundColor: e.color + "26", borderLeftWidth: 3, borderLeftColor: e.color }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="body" weight={600} numberOfLines={1}>{e.title}</AppText>
+              <AppText variant="small" color="textMuted">{eventTimeLabel(e, prefs.use24h, parseDay(selected).y)}</AppText>
+            </View>
+          </View>
+        ))}
+        {current && shown.length === 0 && !dayEvents.length ? <AppText variant="body" color="textMuted" style={{ paddingVertical: 16 }}>이날 보이는 할 일·일정이 없어요</AppText> : null}
         {shown.map((cat) => (
           <View key={cat.id} style={{ gap: 2 }}>
             {DESIGN_TRIAL ? (

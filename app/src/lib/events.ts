@@ -60,7 +60,12 @@ export type EventRepeat = {
   every?: number;
 };
 
-export type EventCategory = { id: string; title: string; color: string; sortOrder: number };
+/** 공개 범위 (2026-11-26): who else sees its events; private (나만) by default */
+export type EventVisibility = "public" | "followers" | "friends" | "private";
+export const EVENT_VISIBILITY: { key: EventVisibility; label: string }[] = [
+  { key: "private", label: "나만" }, { key: "friends", label: "친구" }, { key: "followers", label: "팔로워" }, { key: "public", label: "전체" },
+];
+export type EventCategory = { id: string; title: string; color: string; sortOrder: number; visibility?: EventVisibility };
 
 export const REPEAT_LABELS: Record<EventRepeat["kind"], string> = { daily: "매일", weekly: "매주", monthly: "매월", yearly: "매년" };
 const WD = ["일", "월", "화", "수", "목", "금", "토"];

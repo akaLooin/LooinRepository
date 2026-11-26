@@ -11,7 +11,9 @@ export type Person = {
 };
 export type Reaction = { kind: "emoji" | "sticker"; value: string; mine?: boolean; nickname?: string };
 /** A friend's month as the app uses it: their visible things in the same shape as mine, plus reactions per to-do. */
-export type FriendView = { person: Person; db: DB; reactions: Record<string, Reaction[]>; diaryReactions: Record<string, Reaction[]> };
+export type FriendView = { person: Person; db: DB; reactions: Record<string, Reaction[]>; diaryReactions: Record<string, Reaction[]>;
+  /** their events I may see (공개 범위 of each 일정 카테고리, 2026-11-26) */
+  events?: import("./events").CalEvent[] };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type R = any;
