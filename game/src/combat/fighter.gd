@@ -34,6 +34,8 @@ var flash := 0
 var dead := false
 var remove_me := false
 
+var down_len := DOWN_FRAMES
+var getup_len := GETUP_FRAMES
 var def_down := 0.0     # 방어 약화 비율
 var def_down_t := 0     # 남은 틱
 var sprite: Dictionary = {}     # data/sprites.json 항목 (+ 로드된 "tex")
@@ -143,15 +145,15 @@ func _tick_common_states() -> bool:
 					set_state("dead")
 				else:
 					set_state("down")
-					invuln = DOWN_FRAMES + GETUP_FRAMES
+					invuln = down_len + getup_len
 			return true
 		"down":
 			vel.x *= 0.7
-			if t >= DOWN_FRAMES:
+			if t >= down_len:
 				set_state("getup")
 			return true
 		"getup":
-			if t >= GETUP_FRAMES:
+			if t >= getup_len:
 				invuln = GETUP_INVULN
 				on_getup()
 				set_state("idle")
@@ -279,6 +281,8 @@ func draw_sprite() -> bool:
 		return false
 	var anims: Dictionary = sprite["anims"]
 	var key := anim_name()
+	if state == "atk" and anims.has(cur_atk_id):
+		key = cur_atk_id
 	if not anims.has(key):
 		key = "idle"
 	var a: Dictionary = anims[key]

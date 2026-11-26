@@ -28,6 +28,19 @@ func _ready() -> void:
 	add_child(_pause_btn)
 
 
+var _por_cache: Texture2D = null
+var _por_tried := false
+
+
+func _portrait() -> Texture2D:
+	if not _por_tried:
+		_por_tried = true
+		var path: String = DataDB.tables.get("sprites", {}).get(GameState.current_class, {}).get("portrait", "")
+		if path != "" and ResourceLoader.exists(path):
+			_por_cache = load(path)
+	return _por_cache
+
+
 func show_title(t: String) -> void:
 	_title = t
 	_title_t = 150
@@ -73,10 +86,11 @@ func _draw() -> void:
 	draw_rect(Rect2(6, 6, 26, 26), Color("3f2b4f"))
 	for c in [Vector2(5, 5), Vector2(30, 5), Vector2(5, 30), Vector2(30, 30)]:
 		draw_rect(Rect2(c, Vector2(3, 3)), Color("fff1b8"))
-	draw_rect(Rect2(13, 10, 12, 10), Tk.P_SKIN)
-	draw_rect(Rect2(12, 9, 14, 4), Tk.P_HAIR)
-	draw_rect(Rect2(10, 21, 18, 9), Tk.P_COAT)
-	draw_rect(Rect2(13, 21, 12, 2), Tk.P_SCARF)
+	var por := _portrait()
+	if por:
+		draw_texture_rect_region(por, Rect2(6, 6, 26, 26), Rect2(3, 1, 26, 26))
+	else:
+		draw_rect(Rect2(13, 10, 12, 10), Tk.P_SKIN)
 	_text(Vector2(7, 44), "Lv%d" % int(GameState.char_data()["lv"]), Color("fff1b8"), 11)
 	# HP: 붉은 잉크가 든 유리관
 	var hw := 120.0
@@ -102,11 +116,13 @@ func _draw() -> void:
 			draw_rect(Rect2(bx + 1, 20, 16, 2), Color("a9dcff"))
 		draw_colored_polygon(PackedVector2Array([Vector2(bx + 5, 32), Vector2(bx + 9, 28), Vector2(bx + 13, 32)]), Tk.INK)
 	if p.gold_need > 0:
-		var gk := 1.0 if (p.gold_ready or p.gold_attack) else float(p.gold_count) / float(p.gold_need)
+		var gk := 1.0 if (p.gold_ready or p.gold_attack) else float(p.gold_count) / float(p.call("_cur_gold_need"))
 		draw_rect(Rect2(38, 34, 62, 4), Tk.INK)
 		draw_rect(Rect2(39, 35, 60 * gk, 2), Tk.GOLD if gk >= 1.0 else Tk.GOLD.darkened(0.35))
 		if gk >= 1.0 and (run.ticks / 10) % 2 == 0:
 			_text(Vector2(104, 40), "금빛!", Tk.GOLD, 11)
+	if p.buff_t > 0:
+		_text(Vector2(38, 52), "맹세 %d초" % int(ceil(p.buff_t / 60.0)), Tk.GOLD, 11)
 	if p.charge_mode and p.charge_level() > 0:
 		_text(Vector2(104, 30), "충전 %d" % p.charge_level(), Tk.MP, 11)
 	# 상단 중앙: 장 두루마리 + 페이지 진행 점
@@ -175,9 +191,11 @@ func _draw() -> void:
 		draw_rect(Rect2(vw - pw, 96, pw, 60), Color(Tk.PAPER, 0.92))
 		draw_rect(Rect2(vw - pw, 96, 3, 60), Tk.PAPER_DIM)
 		if kk > 0.3:
-			draw_rect(Rect2(vw * 0.18, 106, 46, 40), Tk.P_COAT)
-			draw_rect(Rect2(vw * 0.18 + 12, 110, 22, 18), Tk.P_SKIN)
-			draw_rect(Rect2(vw * 0.18 + 10, 108, 26, 6), Tk.P_HAIR)
+			var por2 := _portrait()
+			if por2:
+				var sl := clampf((kk - 0.3) * 4.0, 0.0, 1.0)
+				draw_rect(Rect2(vw * 0.12 - 2, 94, 68, 64), Color(Tk.GOLD, 0.6 * sl))
+				draw_texture_rect_region(por2, Rect2(vw * 0.12 + (1.0 - sl) * 30.0, 96, 64, 60), Rect2(0, 1, 32, 30))
 			_text(Vector2(vw * 0.55, 132), _cutin, Tk.RIBBON, 22, true)
 	if not run.touch.visible and run.ticks < 600:
 		_text(Vector2(vw / 2.0, vh - 8), "←→ 이동  ↓+X 아래로  Z 공격  X 점프  C 대시  A/S/D 필살기  Q 포션  Esc 일시정지", Color(Tk.TEXT_DIM, 0.8), 11, true)

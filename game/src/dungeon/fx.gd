@@ -39,6 +39,12 @@ func _draw() -> void:
 		"slash":
 			draw_rect(rect, Color(color, a * 0.55))
 			draw_rect(Rect2(rect.position.x, rect.position.y + rect.size.y / 2.0 - 1, rect.size.x, 2), Color(Tk.TEXT, a))
+		"bigslash":
+			var k := float(life) / float(max_life)
+			var w := 340.0 * (1.0 - k * 0.3)
+			draw_rect(Rect2(-w / 2.0, -6 * k - 2, w, 12 * k + 4), Color(color, a * 0.9))
+			draw_rect(Rect2(-w / 2.0, -1, w, 2), Color(Tk.GOLD, a))
+			draw_rect(Rect2(-w / 2.0 - 10, -18 * k, w + 20, 36 * k), Color(color, a * 0.2))
 		"blade":
 			draw_rect(Rect2(-1, -12, 2, 12), Color(color, 0.95))
 			draw_rect(Rect2(-1, -24, 2, 12), Color(color, 0.35))

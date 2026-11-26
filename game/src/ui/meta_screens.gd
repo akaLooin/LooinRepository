@@ -220,33 +220,76 @@ static func skills(router: Node, args: Dictionary) -> MenuScreen:
 	var tree_id: String = DataDB.get_row("classes", cls)["skill_tree"]
 	var tree: Dictionary = DataDB.get_row("skill_tree", tree_id)
 	var nodes: Dictionary = tree["nodes"]
-	var sel: String = args.get("sel", "sk_mp1")
+	var tab: String = args.get("tab", "mp")
+	var sel: String = args.get("sel", "")
+	if sel == "" or nodes.get(sel, {}).get("tab", "") != tab:
+		for sid in nodes:
+			if nodes[sid]["tab"] == tab:
+				sel = sid
+				break
+	var go := func(extra: Dictionary):
+		var a2 := { "tab": tab, "sel": sel }
+		a2.merge(extra, true)
+		router.go("skills", a2)
 	var cols := s.make_split("스킬 트리", "", func(): router.go("town"), 236)
 	var left: VBoxContainer = cols[0]
 	var right: VBoxContainer = cols[1]
-	# 왼쪽: 트리 그림
+	# 탭
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 2)
+	left.add_child(tabs)
+	for tb in tree["tabs"]:
+		var key: String = tb[0]
+		var learned := 0
+		for sid in nodes:
+			if nodes[sid]["tab"] == key and Meta.skill_lv(cls, sid) > 0:
+				learned += 1
+		var b := UiKit.button("%s %d" % [tb[1], learned], func(): router.go("skills", { "tab": key }), key == tab)
+		b.custom_minimum_size = Vector2(0, 18)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tabs.add_child(b)
+	# 트리 그림
 	var canvas := SkillTreeCanvas.new()
 	canvas.cls = cls
+	canvas.tab = tab
 	canvas.nodes = nodes
-	canvas.columns = tree.get("columns", [])
-	canvas.custom_minimum_size = Vector2(220, 200)
+	canvas.columns = tree.get("tab_cols", {}).get(tab, [])
+	canvas.custom_minimum_size = Vector2(220, 196)
 	left.add_child(canvas)
+	var lo := Meta.loadout(cls)
 	for sid in nodes:
 		var n: Dictionary = nodes[sid]
-		var p: Array = n.get("pos", [0, 0])
+		if n["tab"] != tab:
+			continue
 		var lv := Meta.skill_lv(cls, sid)
-		var tile := UiParts.icon_tile(UiKit.tex("skill_" + sid), func(): router.go("skills", { "sel": sid }), sid == sel, 34.0,
-			Tk.MP if n["kind"] == "active" else Tk.GOLD, lv == 0 and Meta.can_learn(cls, sid) != "")
+		var frame: Color = Tk.MP if n["kind"] == "active" else (Tk.RIBBON if n["kind"] == "combo" else Tk.GOLD)
+		var tile := UiParts.icon_tile(UiKit.tex("skill_" + sid), func(): go.call({ "sel": sid }), sid == sel, 36.0,
+			frame, lv == 0 and Meta.can_learn(cls, sid) != "")
 		tile.pips = lv
 		tile.pips_max = int(n["max"])
-		tile.position = canvas.node_pos(p) - Vector2(17, 17)
+		if n["kind"] == "active" and lo.has(sid):
+			tile.badge = "E"
+		tile.position = canvas.node_pos(n["pos"]) - Vector2(18, 18)
 		canvas.add_child(tile)
-	# 오른쪽: 선택한 스킬 설명
+
+	# 오른쪽 위: SP + 필살기 장착 칸
 	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 4)
 	right.add_child(top)
 	top.add_child(UiKit.label("남은 SP", Tk.TEXT_DIM))
-	top.add_child(UiKit.label(" %d" % Meta.sp_left(cls), Tk.GOLD, 16, true, true))
-	top.add_child(UiKit.label(" / %d" % Meta.sp_total(cls), Tk.TEXT_DIM))
+	top.add_child(UiKit.label("%d" % Meta.sp_left(cls), Tk.GOLD, 16, true, true))
+	top.add_child(UiKit.label("/ %d" % Meta.sp_total(cls), Tk.TEXT_DIM))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(sp)
+	top.add_child(UiKit.label("장착", Tk.TEXT_DIM, 11))
+	for i in range(3):
+		var sid: String = lo[i]
+		var t := UiParts.icon_tile(UiKit.tex("skill_" + sid), func(): router.go("skills", { "tab": "mp", "sel": sid }), false, 26.0,
+			Color("b8323f"), Meta.skill_lv(cls, sid) == 0)
+		t.corner = str(i + 1)
+		top.add_child(t)
+	# 선택한 노드 카드
 	var n: Dictionary = nodes.get(sel, {})
 	if not n.is_empty():
 		var card := UiKit.paper_panel()
@@ -258,32 +301,61 @@ static func skills(router: Node, args: Dictionary) -> MenuScreen:
 		head.add_theme_constant_override("separation", 6)
 		cv.add_child(head)
 		var lv := Meta.skill_lv(cls, sel)
-		var ic := UiParts.icon_tile(UiKit.tex("skill_" + sel), func(): pass, false, 36.0, Tk.MP if n["kind"] == "active" else Tk.GOLD)
-		head.add_child(ic)
+		var frame: Color = Tk.MP if n["kind"] == "active" else (Tk.RIBBON if n["kind"] == "combo" else Tk.GOLD)
+		head.add_child(UiParts.icon_tile(UiKit.tex("skill_" + sel), func(): pass, false, 38.0, frame))
 		var hv := VBoxContainer.new()
 		hv.add_theme_constant_override("separation", 0)
 		head.add_child(hv)
-		hv.add_child(UiKit.label(n["name"], Tk.INK, 14, false, true))
-		var kind_txt := "필살기 · MP %d칸" % int(DataDB.get_row("skills", sel)["mp_cost"]) if n["kind"] == "active" else "패시브"
-		hv.add_child(UiKit.label("%s · Lv %d / %d" % [kind_txt, lv, n["max"]], Tk.LEATHER, 11))
-		cv.add_child(_wrap(UiKit.label(n["desc"], Tk.INK, 12), 200))
+		hv.add_child(UiKit.label(n["name"], Tk.INK, 15, false, true))
+		var kind_txt := ""
+		match n["kind"]:
+			"active":
+				kind_txt = "필살기 · MP %d칸" % int(DataDB.get_row("skills", sel)["mp_cost"])
+			"combo":
+				kind_txt = "검술 동작"
+			_:
+				kind_txt = "패시브"
+		hv.add_child(UiKit.label("%s · Lv %d / %d · SP %d" % [kind_txt, lv, n["max"], int(n.get("cost", 1))], Tk.LEATHER, 11))
+		cv.add_child(_wrap(UiKit.label(n["desc"], Tk.INK, 12), 210))
+		if n["kind"] == "active" and int(n["max"]) > 1:
+			cv.add_child(UiKit.label("레벨당 피해 +12%%  (지금 +%d%%)" % (12 * maxi(0, lv - 1)), Color("5a4a3a"), 11))
 		var why := Meta.can_learn(cls, sel)
-		var req := "배울 수 있어요" if why == "" else why
-		cv.add_child(UiKit.label("조건: Lv%d%s · %s" % [n["req_lv"], (" · " + ", ".join(PackedStringArray((n["pre"] as Array).map(func(x): return nodes[x]["name"])))) if not (n["pre"] as Array).is_empty() else "", req],
-			Color("3f6a3a") if why == "" else Tk.RIBBON.darkened(0.2), 11))
-		var b := UiKit.button("배우기 (+1)" if lv == 0 else "레벨 올리기 (+1)", func():
+		var pre_names: PackedStringArray = []
+		for x in n["pre"]:
+			pre_names.append(nodes[x]["name"])
+		var req := "Lv%d" % int(n["req_lv"])
+		if not pre_names.is_empty():
+			req += " · " + ", ".join(pre_names)
+		cv.add_child(UiKit.label("조건: %s — %s" % [req, "배울 수 있어요" if why == "" else why], Color("3f6a3a") if why == "" else Tk.RIBBON.darkened(0.2), 11))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		cv.add_child(row)
+		var b := UiKit.button("배우기" if lv == 0 else "레벨 올리기", func():
 			var w := Meta.learn(cls, sel)
 			GameState.save_game()
 			Sfx.play("skill" if w == "" else "hurt", 0.0)
-			router.go("skills", { "sel": sel, "msg": w if w != "" else "%s Lv%d" % [n["name"], Meta.skill_lv(cls, sel)], "ok": w == "" }), true)
+			go.call({ "msg": w if w != "" else "%s Lv%d" % [n["name"], Meta.skill_lv(cls, sel)], "ok": w == "" }), true)
 		b.disabled = why != ""
-		cv.add_child(b)
+		row.add_child(b)
+		if n["kind"] == "active":
+			var tier := int(DataDB.get_row("skills", sel)["tier"])
+			var on: bool = lo[tier - 1] == sel
+			var eb := UiKit.button("장착됨 (MP %d칸)" % tier if on else "MP %d칸에 장착" % tier, func():
+				var w := Meta.equip_skill(cls, sel)
+				GameState.save_game()
+				Sfx.play("coin" if w == "" else "hurt", 0.0)
+				go.call({ "msg": w if w != "" else "MP %d칸에 「%s」 장착" % [tier, n["name"]], "ok": w == "" }))
+			eb.disabled = on or lv == 0
+			row.add_child(eb)
 	_msg(right, args)
-	right.add_child(UiParts.hsep(6))
-	right.add_child(UiKit.button("스킬 초기화 (무료)", func():
+	var bottom := HBoxContainer.new()
+	bottom.add_theme_constant_override("separation", 4)
+	right.add_child(bottom)
+	bottom.add_child(UiKit.button("스킬 초기화 (무료)", func():
 		Meta.reset_skills(cls)
 		GameState.save_game()
-		router.go("skills", { "sel": sel, "msg": "SP를 모두 돌려받았어요" })))
+		router.go("skills", { "tab": tab, "msg": "SP를 모두 돌려받았어요" })))
+	bottom.add_child(UiKit.label("배운 노드 %d / %d" % [(GameState.char_data(cls)["skills"] as Dictionary).size(), nodes.size()], Tk.TEXT_DIM, 11))
 	return s
 
 

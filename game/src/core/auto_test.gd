@@ -45,6 +45,14 @@ func begin(args: PackedStringArray) -> void:
 	var li := args.find("--lv")
 	if li >= 0:
 		_gear_up(int(args[li + 1]))
+	if args.has("--alltree"):
+		# 스킬 트리 전체를 배운 상태로 (검증용)
+		var cls0 := GameState.current_class
+		for sid in Meta.tree(cls0):
+			GameState.char_data(cls0)["skills"][sid] = int(Meta.tree(cls0)[sid]["max"])
+	var lo := args.find("--loadout")
+	if lo >= 0:
+		GameState.char_data(GameState.current_class)["loadout"] = String(args[lo + 1]).split(",")
 	InputRouter.scripted = _bot_input
 	if shots_dir != "":
 		_menu_tour()
@@ -70,7 +78,7 @@ func _gear_up(lv: int) -> void:
 			var uid := Meta.add_item(best)
 			Meta.find(uid)["enh"] = 2
 			Meta.equip(cls, uid)
-	for sid in ["sk_mp2", "sk_mp3", "ps_atk", "ps_atk", "ps_hp", "ps_hp", "ps_atk", "ps_hp"]:
+	for sid in ["sk_mp2", "sk_mp3", "ps_atk", "ps_atk", "ps_hp", "ps_hp", "ps_def", "ps_atk", "ps_hp", "ps_def"]:
 		Meta.learn(cls, sid)
 	var st := GameState.stats()
 	print("[autotest] lv=%d hp=%d atk=%d def=%d" % [lv, st["hp"], st["atk"], st["def"]])
@@ -85,6 +93,14 @@ func _menu_tour() -> void:
 	Meta.learn("cls_silver", "sk_mp2")
 	Meta.learn("cls_silver", "sk_mp3")
 	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map", "room", "loading"]
+	if shots_dir.contains("skilltabs"):
+		GameState.char_data()["lv"] = 12
+		for sid in ["sk_rush", "sk_mp2", "sk_thrust", "cb_up", "cb_down", "ps_atk", "ps_atk", "ps_crit", "ps_hp", "ps_def", "ps_gold", "ps_goldpow", "ps_cut", "ps_mpgain"]:
+			Meta.learn("cls_silver", sid)
+		for tb in ["mp", "sword", "guard", "silver"]:
+			main.go("skills", { "tab": tb })
+			await _frames(20)
+			await shot("skills_" + tb)
 	if dungeon_id != "dgn_01":
 		tour = ["map"]
 		for d in ["dgn_01", "dgn_02"]:
@@ -112,7 +128,7 @@ func shot(name: String) -> void:
 
 func on_dungeon(r: DungeonRun) -> void:
 	run = r
-	r.finished.connect(func(_res): print("[autotest] used ", JSON.stringify(r.player.used)))
+	r.finished.connect(func(_res): print("[autotest] used ", JSON.stringify(r.player.used), " buff_ok=", r.player.buff_t >= 0))
 	run.player.god = god
 	k = 0
 
@@ -206,6 +222,15 @@ func _bot_input() -> Dictionary:
 		f["jump_p"] = true
 	if absf(dx) < 36.0 and absf(dy) < 44.0 and k % 5 == 0:
 		f["attack_p"] = true
+		# 배운 콤보 동작도 섞어 쓴다
+		if p.on_ground and k % 45 == 0:
+			f["y"] = -1
+		elif not p.on_ground and k % 15 == 0:
+			f["y"] = 1
+	if p.state == "dash" and k % 3 == 0:
+		f["attack_p"] = true
+	if k % 140 == 0 and p.on_ground and absf(dx) < 80.0:
+		f["dash_p"] = true
 	if p.charge_mode:
 		# 원작식: 공격을 길게 눌렀다 떼서 필살기
 		if p.mp >= 1.0 and absf(dx) < 60.0 and p.state in ["idle", "run"]:

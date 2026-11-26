@@ -65,12 +65,14 @@ func _draw() -> void:
 		draw_rect(Rect2(-2, -1, 4, 2), Tk.INK)
 		draw_rect(Rect2(-5, -12, 3, 6), Color("b48f55"))
 		return
-	if kind == "slash":
+	if kind == "slash" or kind == "goldslash":
 		var dir := 1.0 if vel.x >= 0.0 else -1.0
+		var c1 := Color("fff1b8") if kind == "goldslash" else Color("f4f8fc")
+		var c2 := Tk.GOLD if kind == "goldslash" else Color("b4c0cf", 0.8)
 		for i in range(5):
 			var k := absf(i - 2.0)
-			draw_rect(Rect2((4.0 - k * 3.0) * dir - 2.0, -22 + i * 5, 4, 5), Color("f4f8fc"))
-			draw_rect(Rect2((1.0 - k * 3.0) * dir - 2.0, -22 + i * 5, 3, 5), Color("b4c0cf", 0.8))
+			draw_rect(Rect2((4.0 - k * 3.0) * dir - 2.0, -22 + i * 5, 4, 5), c1)
+			draw_rect(Rect2((1.0 - k * 3.0) * dir - 2.0, -22 + i * 5, 3, 5), c2)
 		return
 	if kind == "sword":
 		draw_rect(Rect2(-2, -30, 4, 26), Color("f4f8fc"))

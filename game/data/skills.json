@@ -20,7 +20,8 @@
         0.3,
         360
       ]
-    }
+    },
+    "tier": 1
   },
   "sk_mp2": {
     "name": "은빛 수호",
@@ -31,7 +32,8 @@
     "guard": {
       "frames": 72,
       "refund": 1
-    }
+    },
+    "tier": 2
   },
   "sk_mp3": {
     "name": "은빛 깃털비",
@@ -41,6 +43,74 @@
     "cutin": true,
     "rain": {
       "sword_mul": 3.2
+    },
+    "tier": 3
+  },
+  "sk_rush": {
+    "name": "기사의 돌격",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_rush",
+    "invuln": 30,
+    "cutin": false,
+    "rush": 6.0
+  },
+  "sk_crescent": {
+    "name": "은빛 반월",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_crescent",
+    "invuln": 26,
+    "cutin": false
+  },
+  "sk_thrust": {
+    "name": "천 번의 찌르기",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_thrust",
+    "invuln": 46,
+    "cutin": false
+  },
+  "sk_cross": {
+    "name": "십자 단죄",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_cross",
+    "invuln": 40,
+    "cutin": false,
+    "leap": 4.6,
+    "waves": {
+      "mul": 1.2,
+      "speed": 4.0,
+      "hitstop": 5,
+      "hitstun": 26,
+      "kb": [
+        2.0,
+        0.0
+      ],
+      "launch": 3.0
     }
+  },
+  "sk_oath": {
+    "name": "기사단의 맹세",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_oath",
+    "invuln": 44,
+    "cutin": true,
+    "buff": {
+      "frames": 900,
+      "atk_pct": 0.3,
+      "armor": true,
+      "gold_need": 4
+    }
+  },
+  "sk_dawn": {
+    "name": "새벽 가르기",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_dawn",
+    "invuln": 80,
+    "cutin": true
   }
 }

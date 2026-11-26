@@ -3,7 +3,7 @@ extends Node
 
 const SAVE_DIR := "user://save"
 const SAVE_PATH := "user://save/slot0.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 const LEVEL_CAP := 20
 
 var data: Dictionary = {}
@@ -23,7 +23,7 @@ func _notification(what: int) -> void:
 
 
 static func new_char() -> Dictionary:
-	return { "lv": 1, "exp": 0, "equip": {}, "skills": { "sk_mp1": 1 }, "pet": "" }
+	return { "lv": 1, "exp": 0, "equip": {}, "skills": { "sk_mp1": 1 }, "pet": "", "loadout": ["sk_mp1", "sk_mp2", "sk_mp3"] }
 
 
 static func new_save() -> Dictionary:
@@ -78,6 +78,12 @@ func _migrate(d: Dictionary) -> Dictionary:
 				if sid in ["ps_mp", "ps_back", "ps_air"]:
 					sk.erase(sid)
 		d["version"] = 3
+	if int(d.get("version", 1)) < 4:
+		# v3 -> v4: 필살기 장착 칸 추가 (스킬 트리 확장)
+		for cls in d["characters"]:
+			if not d["characters"][cls].has("loadout"):
+				d["characters"][cls]["loadout"] = ["sk_mp1", "sk_mp2", "sk_mp3"]
+		d["version"] = 4
 	for k in base:
 		if not d.has(k):
 			d[k] = base[k]
@@ -143,8 +149,7 @@ func stats(cls: String = "") -> Dictionary:
 		var ist := Meta.item_stats(it)
 		for k in ist:
 			st[k] = float(st.get(k, 0.0)) + float(ist[k])
-	var pct := { "atk_pct": 0.0, "hp_pct": 0.0, "mp_gain_pct": 0.0, "back_pct": 0.0, "air_jumps": 0.0,
-		"cut_proj": 0.0, "ranged_cut": 0.0, "firm": 0.0, "gold_hits": 0.0 }
+	var pct := { "atk_pct": 0.0, "hp_pct": 0.0, "def_pct": 0.0, "crit_add": 0.0, "mp_gain_pct": 0.0, "back_pct": 0.0 }
 	var nodes := Meta.tree(cls)
 	for sid in cd["skills"]:
 		var eff: Dictionary = nodes.get(sid, {}).get("effect", {})
@@ -159,19 +164,16 @@ func stats(cls: String = "") -> Dictionary:
 	for sid in cd["skills"]:
 		if nodes.get(sid, {}).get("kind", "") == "active":
 			var atk_id: String = DataDB.get_row("skills", sid)["attack"]
-			skill_mul[atk_id] = 1.0 + 0.15 * (int(cd["skills"][sid]) - 1)
+			skill_mul[atk_id] = 1.0 + 0.12 * (int(cd["skills"][sid]) - 1)
 	return {
 		"hp": int(st["hp"] * (1.0 + pct["hp_pct"])),
 		"atk": int(st["atk"] * (1.0 + pct["atk_pct"])),
-		"def": int(st["def"]),
-		"crit": float(st["crit"]),
+		"def": int(st["def"] * (1.0 + pct["def_pct"])),
+		"crit": float(st["crit"]) + pct["crit_add"],
 		"mp_gain_mul": 1.0 + pct["mp_gain_pct"],
 		"back_bonus": pct["back_pct"],
-		"air_jumps": int(pct["air_jumps"]),
-		"cut_proj": pct["cut_proj"] > 0.0,
-		"ranged_cut": minf(0.6, pct["ranged_cut"]),
-		"firm": pct["firm"] > 0.0,
-		"gold_hits": int(pct["gold_hits"]),
+		"fx": pct,
+		"loadout": Meta.loadout(cls).duplicate(),
 		"skill_mul": skill_mul,
 		"skills": (cd["skills"] as Dictionary).duplicate(),
 		"pet": pet_id,

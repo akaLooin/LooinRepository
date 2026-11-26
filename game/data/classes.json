@@ -42,6 +42,12 @@
     "gold": {
       "hits": 8,
       "mul": 1.6
+    },
+    "moves": {
+      "up": "atk_up",
+      "down": "atk_down",
+      "combo5": "atk_g5",
+      "dash2": "atk_dash2"
     }
   }
 }

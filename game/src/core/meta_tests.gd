@@ -66,7 +66,7 @@ static func run() -> int:
 	var v1 := { "version": 1, "account": { "gold": 77, "potions": 1, "revives": 0, "pages": 2, "applied_runs": [] },
 		"characters": { "cls_silver": { "lv": 4, "exp": 3 } }, "progress": { "cleared": {} }, "settings": {} }
 	var m := GameState._migrate(v1)
-	ck.call(int(m["version"]) == 3 and int(m["account"]["gold"]) == 77 and int(m["characters"]["cls_silver"]["lv"]) == 4, "migration keeps progress")
+	ck.call(int(m["version"]) == 4 and int(m["account"]["gold"]) == 77 and int(m["characters"]["cls_silver"]["lv"]) == 4, "migration keeps progress")
 	ck.call(m["characters"]["cls_silver"]["equip"]["weapon"] == "i1" and m["account"]["inventory"].size() == 2, "migration grants starter gear")
 	# 드롭 굴림
 	var cnt := 0
@@ -94,6 +94,29 @@ static func run() -> int:
 	var m3 := GameState._migrate(v2)
 	ck.call(m3["characters"].has("cls_silver") and not m3["characters"].has("cls_tbd_01") and int(m3["characters"]["cls_silver"]["lv"]) == 6, "v2 save moves to Silver")
 	ck.call(not m3["characters"]["cls_silver"]["skills"].has("ps_air") and int(m3["characters"]["cls_silver"]["skills"]["sk_mp1"]) == 2, "removed passives refunded")
+	# 스킬 트리 v4: SP 비용·장착 칸
+	GameState.data = GameState.new_save()
+	var c0 := "cls_silver"
+	GameState.char_data(c0)["lv"] = 1
+	ck.call(Meta.sp_total(c0) == 3 and Meta.sp_left(c0) == 2, "sp: 2 per level + 1, mp1 costs 1")
+	ck.call(Meta.can_learn(c0, "sk_rush") != "", "rush needs Lv2")
+	GameState.char_data(c0)["lv"] = 2
+	ck.call(Meta.learn(c0, "sk_rush") == "" and Meta.sp_left(c0) == 2, "rush costs 2 SP")
+	ck.call(Meta.loadout(c0)[0] == "sk_mp1", "mp1 slot keeps learned skill")
+	ck.call(Meta.equip_skill(c0, "sk_rush") == "" and Meta.loadout(c0)[0] == "sk_rush", "equip rush into MP1 slot")
+	ck.call(Meta.equip_skill(c0, "sk_dawn") != "", "cannot equip unlearned")
+	GameState.char_data(c0)["lv"] = 3
+	ck.call(Meta.learn(c0, "sk_mp2") == "" and Meta.loadout(c0)[1] == "sk_mp2", "learned tier-2 fills empty slot")
+	ck.call(Meta.learn(c0, "cb_up") == "" and GameState.stats(c0)["fx"].get("move_up", 0.0) > 0.0, "combo move flag reaches stats")
+	var d0: int = GameState.stats(c0)["def"]
+	GameState.char_data(c0)["lv"] = 10
+	Meta.learn(c0, "ps_def")
+	ck.call(GameState.stats(c0)["def"] > d0, "def passive raises defense")
+	Meta.reset_skills(c0)
+	ck.call(Meta.loadout(c0) == ["sk_mp1", "sk_mp2", "sk_mp3"] and Meta.sp_spent(c0) == 1, "reset restores default loadout")
+	var v3 := { "version": 3, "account": GameState.new_save()["account"], "characters": { "cls_silver": { "lv": 3, "exp": 0, "equip": {}, "skills": { "sk_mp1": 1 }, "pet": "" } },
+		"progress": { "cleared": {} }, "settings": {} }
+	ck.call(GameState._migrate(v3)["characters"]["cls_silver"]["loadout"].size() == 3, "v3 save gets loadout")
 	for c in checks:
 		print("  %s %s" % ["ok  " if c[0] else "FAIL", c[1]])
 		if not c[0]:

@@ -224,9 +224,9 @@ func _draw() -> void:
 	# 장서표 초상 틀
 	draw_rect(Rect2(4, 4, 32, 24), Tk.GOLD.darkened(0.3))
 	draw_rect(Rect2(5, 5, 30, 22), Color("3f2b4f"))
-	draw_rect(Rect2(14, 8, 12, 10), Tk.P_SKIN)
-	draw_rect(Rect2(13, 7, 14, 4), Tk.P_HAIR)
-	draw_rect(Rect2(11, 18, 18, 8), Tk.P_COAT)
+	var pp: String = DataDB.tables.get("sprites", {}).get(GameState.current_class, {}).get("portrait", "")
+	if pp != "" and ResourceLoader.exists(pp):
+		draw_texture_rect_region(load(pp), Rect2(5, 5, 30, 22), Rect2(1, 2, 30, 22))
 	# 장소 이름표
 	for sp in _spots:
 		var r: Rect2 = sp[0]

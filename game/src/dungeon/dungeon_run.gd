@@ -453,10 +453,10 @@ func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionar
 	pr.size = Vector2(12, 14) if kind == "wave" else Vector2(6, 6)
 	if kind == "page":
 		pr.life = 90
-	elif kind == "slash":
+	elif kind == "slash" or kind == "goldslash":
 		pr.size = Vector2(12, 24)
 		pr.life = 70
-		pr.pierce = true
+		pr.pierce = kind == "slash"
 	elif kind == "sword":
 		pr.size = Vector2(36, 40)
 		pr.life = 120
@@ -602,6 +602,12 @@ func _longest_path(st_id: String) -> int:
 	for n in dungeon["stages"][st_id]["next"]:
 		best = maxi(best, _longest_path(n[0]))
 	return best + 1
+
+
+## 새벽 가르기: 화면을 가로지르는 거대한 빛줄기 (연출)
+func flash_slash(at: Vector2, dir: int) -> void:
+	_add_fx("bigslash", at, { "color": Color("f4f8fc"), "life": 22, "size": float(dir) })
+	Sfx.play("crit", 0.0)
 
 
 ## 은빛 깃털비의 떨어지는 칼날 (연출)

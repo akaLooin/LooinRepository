@@ -13,13 +13,13 @@
     "anims": {
       "idle": {
         "row": 0,
-        "frames": 2,
-        "fps": 3
+        "frames": 4,
+        "fps": 4
       },
       "run": {
         "row": 1,
-        "frames": 4,
-        "fps": 10
+        "frames": 6,
+        "fps": 12
       },
       "air": {
         "row": 2,
@@ -27,31 +27,130 @@
         "col": 0
       },
       "dash": {
-        "row": 2,
-        "frames": 1,
-        "col": 1
+        "row": 3,
+        "frames": 1
       },
       "atk": {
-        "row": 3,
+        "row": 4,
         "frames": 3,
         "phased": true
       },
-      "hurt": {
+      "atk_g1": {
         "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g2": {
+        "row": 5,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g3": {
+        "row": 6,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g4": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g5": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_up": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_down": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_air": {
+        "row": 11,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_dash": {
+        "row": 12,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_dash2": {
+        "row": 13,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_counter": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_mp1": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_mp2": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_mp3": {
+        "row": 15,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_rush": {
+        "row": 14,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_crescent": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_thrust": {
+        "row": 14,
+        "frames": 3,
+        "fps": 20
+      },
+      "atk_cross": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_oath": {
+        "row": 15,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_dawn": {
+        "row": 15,
+        "frames": 3,
+        "phased": true
+      },
+      "guard": {
+        "row": 16,
+        "frames": 1
+      },
+      "hurt": {
+        "row": 17,
         "frames": 1,
         "col": 0
       },
       "down": {
-        "row": 4,
+        "row": 17,
         "frames": 1,
         "col": 1
-      },
-      "guard": {
-        "row": 5,
-        "frames": 1,
-        "col": 0
       }
-    }
+    },
+    "portrait": "res://assets/sprites/portrait_silver.png"
   },
   "mon_inkblob": {
     "sheet": "res://assets/sprites/mon_inkblob.png",

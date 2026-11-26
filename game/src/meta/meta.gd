@@ -196,14 +196,20 @@ static func skill_lv(cls: String, sid: String) -> int:
 	return int(GameState.char_data(cls)["skills"].get(sid, 0))
 
 
+## 레벨마다 SP 2, 시작할 때 1
 static func sp_total(cls: String) -> int:
-	return int(GameState.char_data(cls)["lv"]) + 1
+	return int(GameState.char_data(cls)["lv"]) * 2 + 1
+
+
+static func node_cost(cls: String, sid: String) -> int:
+	return int(tree(cls).get(sid, {}).get("cost", 1))
 
 
 static func sp_spent(cls: String) -> int:
 	var n := 0
-	for sid in GameState.char_data(cls)["skills"]:
-		n += int(GameState.char_data(cls)["skills"][sid])
+	var sk: Dictionary = GameState.char_data(cls)["skills"]
+	for sid in sk:
+		n += int(sk[sid]) * node_cost(cls, sid)
 	return n
 
 
@@ -222,8 +228,8 @@ static func can_learn(cls: String, sid: String) -> String:
 	for p in node["pre"]:
 		if skill_lv(cls, p) < 1:
 			return "%s 먼저" % tree(cls)[p]["name"]
-	if sp_left(cls) <= 0:
-		return "SP 부족"
+	if sp_left(cls) < int(node.get("cost", 1)):
+		return "SP %d 필요" % int(node.get("cost", 1))
 	return ""
 
 
@@ -231,11 +237,36 @@ static func learn(cls: String, sid: String) -> String:
 	var why := can_learn(cls, sid)
 	if why == "":
 		GameState.char_data(cls)["skills"][sid] = skill_lv(cls, sid) + 1
+		# 그 칸에 장착된 필살기가 아직 안 배운 것이면 새로 배운 것을 자동 장착
+		var node: Dictionary = tree(cls)[sid]
+		if node["kind"] == "active":
+			var tier := int(DataDB.get_row("skills", sid)["tier"])
+			var lo: Array = loadout(cls)
+			if skill_lv(cls, lo[tier - 1]) <= 0:
+				lo[tier - 1] = sid
 	return why
 
 
 static func reset_skills(cls: String) -> void:
-	GameState.char_data(cls)["skills"] = { DataDB.get_row("classes", cls)["skills"][0]: 1 }
+	var c: Dictionary = DataDB.get_row("classes", cls)
+	GameState.char_data(cls)["skills"] = { c["skills"][0]: 1 }
+	GameState.char_data(cls)["loadout"] = (c["skills"] as Array).duplicate()
+
+
+## 필살기 장착: MP 칸(1~3)마다 배운 필살기 하나
+static func loadout(cls: String) -> Array:
+	var cd := GameState.char_data(cls)
+	if not cd.has("loadout") or (cd["loadout"] as Array).size() != 3:
+		cd["loadout"] = (DataDB.get_row("classes", cls)["skills"] as Array).duplicate()
+	return cd["loadout"]
+
+
+static func equip_skill(cls: String, sid: String) -> String:
+	if skill_lv(cls, sid) <= 0:
+		return "먼저 배워야 해요"
+	var tier := int(DataDB.get_row("skills", sid)["tier"])
+	loadout(cls)[tier - 1] = sid
+	return ""
 
 
 # ---------- 펫 ----------
