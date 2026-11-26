@@ -343,12 +343,15 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
     // event labels (Google's 24 colours) are written only with eventLabelVersion=1 in the address (Google, July 2026);
     // with it the old colorId is ignored, so it goes only when a label is set or the calendar's colour is wanted
     // (no label, no colorId). Any other colour goes as the old colorId, without it.
-    if (body.eventLabelId || (body.eventLabelId === null && body.colorId == null)) {
+    // a new event with the calendar's colour has no label to take off: nothing about labels is sent (user, 2026-11-26:
+    // events added in 립마크 did not reach Google)
+    if (method === "POST" && !body.eventLabelId) delete body.eventLabelId;
+    else if (body.eventLabelId || (body.eventLabelId === null && body.colorId == null)) {
       path += "&eventLabelVersion=1";
       if (!body.eventLabelId) body.eventLabelId = ""; // "" takes the label off
     } else delete body.eventLabelId;
     let r = await g(token, path, { method, body: JSON.stringify(body) });
-    if (!r.ok && r.status === 400 && body.eventLabelId) {
+    if (!r.ok && r.status === 400 && "eventLabelId" in body) {
       // Google refused the label: the nearest old colour instead, and say so
       const { eventLabelId: _l, ...rest } = body;
       r = await g(token, path.replace("&eventLabelVersion=1", ""), { method, body: JSON.stringify({ ...rest, colorId: fallback ?? null }) });
