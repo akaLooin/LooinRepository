@@ -1,7 +1,7 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
   arenaOf, CRYSTAL_CHANCE, crystalOf, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
-  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult, isHealFood } from './data';
+  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult, isHealFood, bossDefAt } from './data';
 import { Rng } from './rng';
 import { multiKill } from './progress';
 import { meritValue } from './tasks';
@@ -144,7 +144,7 @@ export class World {
       }
     }
     if (this.map.boss) {
-      const def = MONSTERS[this.map.boss], plat = this.platforms[0];
+      const def = bossDefAt(MONSTERS[this.map.boss], this.acc.bossTier?.[this.map.boss] ?? 0), plat = this.platforms[0];
       this.mobs.push({ uid: this.uid++, def, plat, x: this.map.width * 0.68, y: 0, dir: -1, hp: def.hp, alive: true, t: 0, moving: true,
         hitT: 0, contactCd: 0, respawnT: 0, spawnAge: 1, slamT: def.boss!.slamEvery, windup: 0 });
     }
@@ -574,6 +574,8 @@ export class World {
     if (MINIBOSS_IDS.has(m.def.id)) { this.acc.miniKills[m.def.id] = minibossKey(m.def.id, Date.now()); this.events.push({ t: 'miniboss', name: m.def.name }); }
     if (m.def.boss) {
       this.acc.bosses[m.def.id] = (this.acc.bosses[m.def.id] ?? 0) + 1;
+      const bt = this.acc.bossTier?.[m.def.id] ?? 0;
+      this.acc.bossBest ??= {}; this.acc.bossBest[m.def.id] = Math.max(this.acc.bossBest[m.def.id] ?? -1, bt);
       this.events.push({ t: 'boss', name: m.def.name });
     }
     // 멀티킬: 3월드에 간 계정은 처치 기록 단계만큼 한 번에 여러 마리로 센다(보스는 1)

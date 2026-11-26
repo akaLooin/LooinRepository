@@ -92,6 +92,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('breed'), op: z.enum(['visit', 'hatch', 'release', 'fence', 'team', 'up', 'keeper', 'arena', 'fight']), uid: z.number().int().min(0).max(1e9).optional(), terr: id.optional(), k: z.enum(['nest', 'speed', 'rarity', 'fence']).optional() }),
   z.object({ t: z.literal('cook'), op: z.enum(['visit', 'claim', 'meal', 'recipe', 'up', 'buy', 'lvl', 'chef', 'ladle']), idx: z.number().int().min(0).max(9).optional(), id: z.string().max(40).optional(), sp: z.array(id).max(4).optional(), k: z.enum(['spd', 'fire', 'luck']).optional() }),
   z.object({ t: z.literal('miniUp'), id }),
+  z.object({ t: z.literal('bossTier'), id, tier: z.number().int().min(0).max(2) }),
   z.object({ t: z.literal('tackle'), id }),
   z.object({ t: z.literal('bag'), op: z.enum(['sort', 'lock', 'junk']), id: id.optional() }),
   z.object({ t: z.literal('daily'), i: z.number().int().min(0).max(9).optional() }),

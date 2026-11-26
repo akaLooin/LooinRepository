@@ -1044,7 +1044,7 @@ function buildObjects() {
     p.outline().save(`vial_${k}`);
   }
   // 동료 아이콘(동그란 얼굴 + 귀)
-  for (const [id, col] of [['pup', '#f2e6d0'], ['kit', '#e8a03a'], ['frog', '#5fb859'], ['mole', '#8a6a4a'], ['squirrel', '#c9805a'], ['hedgehog', '#9a8a7a'], ['firefly', '#f6e46a'], ['sloth', '#a89a80'], ['owlet', '#9a7a5a'], ['fox', '#e8833a'], ['dragonling', '#d9574a']] as const) {
+  for (const [id, col] of [['pup', '#f2e6d0'], ['kit', '#e8a03a'], ['frog', '#5fb859'], ['mole', '#8a6a4a'], ['squirrel', '#c9805a'], ['hedgehog', '#9a8a7a'], ['firefly', '#f6e46a'], ['sloth', '#a89a80'], ['owlet', '#9a7a5a'], ['fox', '#e8833a'], ['dragonling', '#d9574a'], ['bunny', '#f4f0f8'], ['duckling', '#f6d84a'], ['piglet', '#f0a8b8'], ['beetle', '#5a3a2a'], ['penguin', '#3a4a6a'], ['lamb', '#ece4d8'], ['raccoon', '#7a7a8a'], ['bear', '#a8703a'], ['otter', '#8a5a3a'], ['clover', '#6ad06a'], ['phoenix', '#ff8a3a'], ['starcat', '#5a4ab8']] as const) {
     p = new Paint(14, 13);
     p.disc(7, 7.5, 5.5, 4.8, col); p.disc(3, 3, 1.8, 1.8, col); p.disc(11, 3, 1.8, 1.8, col);
     p.set(5, 7, '#1e1420'); p.set(9, 7, '#1e1420'); p.rect(6, 9, 2, 1, '#8a3a3a'); p.set(3, 6, '#ffffff');

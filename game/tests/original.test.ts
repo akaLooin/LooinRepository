@@ -372,3 +372,51 @@ describe('가방 편의·초기화', () => {
     expect(c.stats.str).toBe(1); expect(c.statPoints).toBe(4);
   });
 });
+
+describe('추가 NPC·퀘스트', async () => {
+  const D = await import('../src/core/data');
+  const S = await import('../src/core/state');
+  it('NPC 19명 이상, 퀘스트 80개 이상, 모든 목표·보상 id가 있다', () => {
+    const npcs = Object.values(D.NPCS);
+    expect(npcs.length).toBeGreaterThanOrEqual(19);
+    expect(npcs.reduce((a, n) => a + n.quests.length, 0)).toBeGreaterThanOrEqual(80);
+    for (const n of npcs) {
+      if (n.quests.length) expect(Object.values(D.MAPS).some((m) => m.facilities.some((f) => f.npc === n.id)), n.id).toBe(true);
+      for (const q of n.quests) {
+        const g = q.goal;
+        if ('kill' in g) expect(D.MONSTERS[g.kill], g.kill).toBeTruthy();
+        if ('item' in g) expect(D.ITEMS[g.item], g.item).toBeTruthy();
+        if (q.reward.item) expect(D.ITEMS[q.reward.item], q.reward.item).toBeTruthy();
+      }
+    }
+  });
+  it('레벨·기술 목표 퀘스트를 완료할 수 있다', () => {
+    const { acc, c } = setup();
+    S.acceptQuest(c, 'miner');
+    expect(S.questProgress(c, 'miner')!.done).toBe(false);
+    c.skills.mining.lv = 5;
+    expect(S.questProgress(c, 'miner')!.done).toBe(true);
+    expect(S.completeQuest(acc, c, 'miner')).toBeNull();
+    S.acceptQuest(c, 'scholar');
+    c.level = 10;
+    expect(S.completeQuest(acc, c, 'scholar')).toBeNull();
+    expect(D.questGoalText({ lv: 10 })).toBe('레벨 10 달성');
+  });
+});
+
+describe('보스 난이도', async () => {
+  const D = await import('../src/core/data');
+  const S = await import('../src/core/state');
+  it('아래 단계를 깨야 다음 난이도가 열리고, 난이도마다 체력·드롭이 커진다', () => {
+    const { acc } = setup();
+    expect(S.setBossTier(acc, 'mossking', 1)).not.toBeNull();
+    acc.bossBest.mossking = 0;
+    expect(S.setBossTier(acc, 'mossking', 1)).toBeNull();
+    expect(S.setBossTier(acc, 'mossking', 2)).not.toBeNull();
+    const base = D.MONSTERS.mossking, hard = D.bossDefAt(base, 2);
+    expect(hard.id).toBe('mossking');
+    expect(hard.hp).toBe(base.hp * 40);
+    expect(hard.drops[0].chance).toBeGreaterThanOrEqual(base.drops[0].chance);
+    expect(applyAction(acc, 0, { t: 'bossTier', id: 'mossking', tier: 0 }, Date.now()).ok).toBe(true);
+  });
+});

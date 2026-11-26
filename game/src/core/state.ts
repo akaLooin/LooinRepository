@@ -19,7 +19,7 @@ import { fixBreed } from './breeding';
 import { fixLab } from './lab';
 import { MiniState, TotemState, legacyTotemSouls, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, isHealFood, goldenValue, WEIGHTS, LINES, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, arenaOf, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  BOSS_TIERS, TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, isHealFood, goldenValue, WEIGHTS, LINES, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, arenaOf, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -116,6 +116,8 @@ export interface Account {
   shop: { day: string; bought: Record<string, number> };
   /** 보스 처치 수 */
   bosses: Record<string, number>;
+  /** 보스 난이도: 고른 단계, 깬 최고 단계 */
+  bossTier: Record<string, number>; bossBest: Record<string, number>;
   /** 모루 단계(모루 확장으로 오른다, 계정 공용) */
   anvilTier: number;
   /** 옵션(원작처럼 모든 캐릭터 공용) */
@@ -192,7 +194,7 @@ export interface Account {
 export const emptyBars = () => Array.from({ length: ATTACK_BARS }, () => new Array<string | null>(ATTACK_SLOTS).fill(null));
 
 export function newAccount(): Account {
-  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, upTries: 0, owl: newOwl(), alch: newAlch(), build: newBuild(), cook: newCook(), breed: newBreed(Math.floor(Math.random() * 2 ** 31)), lab: newLab(), worship: newWorshipAcc(), mini: newMini(), totem: newTotem(), postOff: newPostOffice(), shrines: newShrines(), arcade: newArcade(), poppy: newPoppy(), characters: [], active: -1, nextId: 1 };
+  return { version: 1, coins: 0, cards: {}, storage: [], chests: [], shop: { day: '', bought: {} }, bosses: {}, bossTier: {}, bossBest: {}, anvilTier: 1, options: { autoAttacks: true }, teleports: { n: 5, day: '' }, forge: newForge(), stamps: {}, bribes: 0, tasks: {}, merit: 0, meritShop: {}, statuesOpen: false, stars: {}, starPoints: 0, signs: [], achievements: {}, miniKills: {}, arenaBest: 0, pets: {}, petCrystals: 0, petSeed: Math.floor(Math.random() * 2 ** 31), petPulls: 0, petDaily: '', petPity: { rare: 0, epic: 0 }, upTries: 0, owl: newOwl(), alch: newAlch(), build: newBuild(), cook: newCook(), breed: newBreed(Math.floor(Math.random() * 2 ** 31)), lab: newLab(), worship: newWorshipAcc(), mini: newMini(), totem: newTotem(), postOff: newPostOffice(), shrines: newShrines(), arcade: newArcade(), poppy: newPoppy(), characters: [], active: -1, nextId: 1 };
 }
 
 export function createCharacter(acc: Account, name: string, look: Look, now: number, sign?: string | null): Character | null {
@@ -516,8 +518,10 @@ export const currentQuest = (c: Character, npc = 'elder') => NPCS[npc]?.quests[q
 export function questProgress(c: Character, npc = 'elder'): { have: number; need: number; done: boolean } | null {
   const q = currentQuest(c, npc), st = qs(c, npc);
   if (!q) return null;
-  const have = 'kill' in q.goal ? st.prog : countItem(c, q.goal.item);
-  return { have: Math.min(have, q.goal.n), need: q.goal.n, done: st.accepted && have >= q.goal.n };
+  const g = q.goal;
+  const need = 'lv' in g ? g.lv : g.n;
+  const have = 'kill' in g ? st.prog : 'item' in g ? countItem(c, g.item) : 'lv' in g ? c.level : (c.skills[g.skill]?.lv ?? 1);
+  return { have: Math.min(have, need), need, done: st.accepted && have >= need };
 }
 /** 처치를 모든 NPC의 진행 중인 처치 퀘스트에 반영 */
 export function noteKill(c: Character, monster: string, n = 1) {
@@ -909,6 +913,14 @@ export function minibossKey(id: string, now: number): string {
   return mb.when === 'hourly' ? `${today(now)}T${d.getHours()}` : today(now);
 }
 /** 지금 나와 있는가(시간 창 안이고 이번 회차에 아직 안 잡음) */
+/** 보스 난이도 고르기: 바로 아래 단계를 한 번 깨야 열린다 */
+export function setBossTier(acc: Account, id: string, tier: number): string | null {
+  if (!MONSTERS[id]?.boss) return '보스가 아닙니다';
+  if (!Number.isInteger(tier) || tier < 0 || tier >= BOSS_TIERS.length) return '없는 난이도';
+  if (tier > 0 && (acc.bossBest[id] ?? -1) < tier - 1) return `${BOSS_TIERS[tier - 1].name} 난이도를 먼저 깨야 합니다`;
+  acc.bossTier[id] = tier;
+  return null;
+}
 export function minibossOpen(acc: Pick<Account, 'miniKills'>, id: string, now: number): boolean {
   const mb = MINIBOSSES.find((m) => m.id === id);
   if (!mb) return false;
@@ -1018,7 +1030,7 @@ export function deserialize(json: string | null): Account | null {
     a.stamps ??= {};
     a.bribes ??= 0;
     a.tasks ??= {}; a.merit ??= 0; a.meritShop ??= {};
-    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.arenaBest ??= 0; a.pets ??= {};
+    a.statuesOpen ??= false; a.stars ??= {}; a.starPoints ??= 0; a.signs ??= []; a.achievements ??= {}; a.miniKills ??= {}; a.bossTier ??= {}; a.bossBest ??= {}; a.arenaBest ??= 0; a.pets ??= {};
     // 주 1회 동료(레벨 1~5)였던 형식 → 가진 동료(3레벨 이상은 '+')
     if ('petWeek' in a) { for (const k of Object.keys(a.pets)) a.pets[k] = a.pets[k] >= 3 ? 2 : 1; delete (a as unknown as { petWeek?: number }).petWeek; }
     a.petCrystals ??= 0; a.petSeed ??= Math.floor(Math.random() * 2 ** 31); a.petPulls ??= 0; a.petDaily ??= ''; a.petPity ??= { rare: 0, epic: 0 }; a.upTries ??= 0; a.owl ??= newOwl(); a.alch ??= newAlch(); a.build ??= newBuild(); a.cook ??= newCook(); a.breed ??= newBreed(Math.floor(Math.random() * 2 ** 31)); a.lab ??= newLab(); a.worship ??= newWorshipAcc(); a.mini ??= newMini(); a.totem ??= newTotem(); a.postOff ??= newPostOffice(); fixAlch(a.alch); fixBuild(a.build); fixBreed(a.breed); fixLab(a.lab); a.cook.tries ??= 0; a.cook.ladles ??= 0; a.cook.ladleFrac ??= 0; a.shrines ??= newShrines(); a.arcade ??= newArcade(); a.poppy ??= newPoppy();

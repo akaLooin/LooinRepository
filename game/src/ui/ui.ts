@@ -12,7 +12,7 @@ import { CHIPS, LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, chipSlots, labRa
 import { ARENA_COOLDOWN, ARENA_TEAM, BPet, BREED, BreedUp, GENES, RAR_NAMES, SPEC, SPECIES, TERR, TERRITORIES, arenaPower, arenaWave, breedLevel, breedSettle, dnaOf, eggRate, fenceCap, keeperMult, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCost as breedUpCost, winChance } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
 import { FLAG_MAX, LICKS, flagCost, lickCost, SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
-import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
+import { BOSS_TIERS, questGoalText, SKILL_NAMES_Q, CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID_BY, LiquidId, LiquidUp, SIGIL, SIGILS, sigilLv, VIALS, VIAL_COST, VIAL_FIND, VIAL_MAX, alchSettle, bigSlots, brewNeed, brewRate, bubbleCost, bubbleFound, bubbleLv, bubbleValue, liquidCap, liquidOpen, liquidRate, liquidUpCost, vialValue, workPower } from '../core/alchemy';
 /** 연금술 효과 이름 */
 const SPECIAL_DESC: Record<string, string> = { b_refinery: '소금을 정제(레벨마다 소금 한 가지)', b_printer: '자원 복사(레벨 + 1칸)', b_talentlib: '특성 최대 레벨을 늘리는 책', b_drone: '모든 캐릭터의 덫 칸 +1(레벨마다)', b_collider: '입자를 모아 원자 올리기', b_prayertower: '기도 토템이 혼령을 더 자주 쏘고 영혼 +4%(레벨마다)' };
@@ -108,11 +108,15 @@ const short = (n: number) => n >= 1e8 ? `${+(n / 1e8).toFixed(n < 1e9 ? 1 : 0)}�
 const tile = (src: string, badge: string | number, label: string, cls = '', tone = '') =>
   `<span class="ui-slot sm ${cls}" title="${label}" aria-label="${label}"><img class="px" src="${src}" alt="">${badge !== '' ? `<span class="qty ${tone}">${badge}</span>` : ''}</span>`;
 /** 퀘스트 목표 아이콘 칸(진행도 배지) */
+const SKILL_GOAL_ICON: Partial<Record<string, string>> = { mining: 'ore', chopping: 'log', smithing: 'bar_red', fishing: 'fish_minnow', catching: 'bug_ant' };
+const goalNeed = (g: QuestDef['goal']) => 'lv' in g ? g.lv : g.n;
 const goalTile = (q: QuestDef, have: number | null, cls = '') => {
-  const g = q.goal, kill = 'kill' in g;
-  const src = kill ? iconUrl(`mob_${g.kill}`) : iconUrl(ITEM_ICON[g.item]);
-  const label = kill ? `${MONSTERS[g.kill].name} ${g.n}마리 처치` : `${ITEMS[g.item].name} ${g.n}개`;
-  return tile(src, have === null ? `×${g.n}` : `${Math.min(have, g.n)}/${g.n}`, label, cls, have === null ? '' : have >= g.n ? 'ok' : '');
+  const g = q.goal, n = goalNeed(g);
+  const src = 'kill' in g ? iconUrl(`mob_${g.kill}`) : 'item' in g ? iconUrl(ITEM_ICON[g.item])
+    : 'lv' in g ? iconUrl('ui_up') : SKILL_GOAL_ICON[g.skill] ? iconUrl(ITEM_ICON[SKILL_GOAL_ICON[g.skill]!]) : iconUrl('ui_star');
+  const label = questGoalText(g);
+  const badgeTxt = 'lv' in g ? `Lv${n}` : 'skill' in g ? `${SKILL_NAMES_Q[g.skill]}${n}` : `×${n}`;
+  return tile(src, have === null ? badgeTxt : `${Math.min(have, n)}/${n}`, label, cls, have === null ? '' : have >= n ? 'ok' : '');
 };
 /** 퀘스트 보상 아이콘 칸들 */
 const rewardTiles = (r: QuestDef['reward']) => [
@@ -388,7 +392,7 @@ export class UI {
     if (c.cls === 'beginner' && c.level >= CLASS_LEVEL) lines.push(`<span class="ui-accent">★ 전직 가능! 마을의 ${promoNpc}을(를) 찾아가세요</span>`);
     for (const n of Object.values(NPCS)) {
       const q = currentQuest(c, n.id), qp = questProgress(c, n.id);
-      if (q && qp && c.quests[n.id]?.accepted) { const gl = q.goal, what = 'kill' in gl ? `${MONSTERS[gl.kill].name} 처치` : `${ITEMS[gl.item].name} 모으기`; lines.push(`<span class="${qp.done ? 'ui-good' : ''}">${q.name} ${qp.done ? `— 완료! ${n.name}에게` : `· ${what} ${qp.have}/${qp.need}`}</span>`); }
+      if (q && qp && c.quests[n.id]?.accepted) { const what = questGoalText(q.goal); lines.push(`<span class="${qp.done ? 'ui-good' : ''}">${q.name} ${qp.done ? `— 완료! ${n.name}에게` : `· ${what} ${qp.have}/${qp.need}`}</span>`); }
     }
     if (!lines.length && w.map.id === 'town' && currentQuest(c, 'elder')) lines.push(`<span class="ui-muted">마을 사람들에게 말을 걸어 보세요</span>`);
     this.put('quest', lines.join('<br>'));
@@ -617,7 +621,7 @@ export class UI {
           body = Object.values(NPCS).filter((n) => n.quests.length && npcWorld(n.id) <= (c.maxWorld ?? 1)).map((n) => {
             const st = c.quests[n.id] ?? { idx: 0, accepted: false, prog: 0 };
             const pr = questProgress(c, n.id), cur = n.quests[st.idx];
-            const chain = n.quests.map((q, i) => i < st.idx ? goalTile(q, q.goal.n, 'ready done')
+            const chain = n.quests.map((q, i) => i < st.idx ? goalTile(q, goalNeed(q.goal), 'ready done')
               : i === st.idx ? goalTile(q, st.accepted ? pr!.have : null, st.accepted ? 'cur' : 'cur new')
               : '<span class="ui-slot sm locked" aria-label="잠긴 퀘스트"></span>').join('<span class="qlink" aria-hidden="true"></span>');
             const now = cur ? `<b>${cur.name}</b> ${st.accepted ? '' : '<span class="ui-xs ui-accent">!</span>'}` : '<span class="ui-good">모두 완료</span>';
@@ -660,7 +664,13 @@ export class UI {
         const pick = this.mapSel && MAPS[this.mapSel] && this.mapSel !== c.mapId ? this.mapSel : null;
         const can = pick ? canTeleportTo(c, pick) : false, free = !!pick && TOWNS.includes(pick);
         // 아래 줄은 늘 같은 높이: 고르기 전에는 안내, 고르면 이동 정보
-        const foot = pick ? `<b class="ui-grow">${MAPS[pick].name}</b>
+        // 보스 방: 난이도 고르기(아래 단계를 한 번 깨면 다음 단계가 열린다)
+        const bossId = pick ? MAPS[pick].boss : undefined;
+        const tiers = bossId ? `<span class="ui-row" style="gap:2px">${BOSS_TIERS.map((t, i) => {
+          const open = i === 0 || (g.acc.bossBest?.[bossId] ?? -1) >= i - 1, on = (g.acc.bossTier?.[bossId] ?? 0) === i;
+          return `<button class="ui-btn sm ${on ? 'primary' : ''}" data-act="bosstier:${bossId}:${i}" ${open ? '' : 'disabled'} aria-pressed="${on}" title="체력 ×${t.hp} · 공격 ×${t.atk} · 경험치 ×${t.xp} · 드롭 ×${t.drop}">${open ? t.name : ui('ui_lock', 'tic')}</button>`;
+        }).join('')}</span>` : '';
+        const foot = pick ? `<b class="ui-grow">${MAPS[pick].name}</b>${tiers}
             <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
             <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
           : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
@@ -1923,6 +1933,7 @@ export class UI {
       }
       case 'dclaim': { const r = g.act({ t: 'daily', i: +a }); if (r.ok) { this.audio?.play('coin'); this.toast('일일 과제 보상: 공로 +1과 코인'); } else fail(r.err ?? null); break; }
       case 'tackle': fail(g.act({ t: 'tackle', id: a }).err ?? null); break;
+      case 'bosstier': { const r = g.act({ t: 'bossTier', id: a, tier: Number(b) }); if (!r.ok) fail(r.err ?? null); break; }
       case 'miniup': { const r = g.act({ t: 'miniUp', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'popup': { const r = g.act({ t: 'poppy', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'bkeeper': fail(g.act({ t: 'breed', op: 'keeper' }).err ?? null); break;

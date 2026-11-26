@@ -596,7 +596,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 420, y: -48, w: 180 }, { x: 470, y: -96, w: 120 }, { x: 690, y: -48, w: 190 }],
     spawns: [{ monster: 'mudturtle', count: 8 }], nodes: [{ node: 'willow', x: 90 }, { node: 'willow', x: 640 }],
     ropes: [{ x: 170, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 570, top: -96, bottom: -48 }, { x: 860, top: -48, bottom: 0 }],
-    facilities: [{ kind: 'shrine', x: 300, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 835 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
+    facilities: [{ kind: 'shrine', x: 300, y: 0 }, { kind: 'npc', npc: 'ranger', x: 600, y: 0 }], portals: [{ x: 24, to: 'forest', toX: 835 }, { x: 916, to: 'cave', toX: 50, reqKills: 150 }] },
   { id: 'cave', name: '그늘 동굴', width: 900, theme: 'cave',
     platforms: [{ x: 110, y: -48, w: 160 }, { x: 330, y: -48, w: 240 }, { x: 380, y: -96, w: 140 }, { x: 650, y: -48, w: 180 }],
     spawns: [{ monster: 'glowbat', count: 8 }], nodes: [{ node: 'bluerock', x: 300 }, { node: 'willow', x: 620 }],
@@ -606,7 +606,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 120, y: -48, w: 180 }, { x: 160, y: -96, w: 120 }, { x: 420, y: -48, w: 200 }, { x: 700, y: -48, w: 200 }, { x: 740, y: -96, w: 130 }],
     spawns: [{ monster: 'gusthopper', count: 9 }], nodes: [{ node: 'moonbirch', x: 640 }],
     ropes: [{ x: 140, top: -48, bottom: 0 }, { x: 220, top: -96, bottom: -48 }, { x: 600, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 810, top: -96, bottom: -48 }],
-    facilities: [], portals: [{ x: 24, to: 'cave', toX: 850 }, { x: 936, to: 'ruins', toX: 50, reqKills: 220 }] },
+    facilities: [{ kind: 'npc', npc: 'scholar', x: 560, y: 0 }], portals: [{ x: 24, to: 'cave', toX: 850 }, { x: 936, to: 'ruins', toX: 50, reqKills: 220 }] },
   { id: 'ruins', name: '잊힌 유적', width: 960, theme: 'ruins',
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 160 }, { x: 690, y: -48, w: 220 }, { x: 720, y: -96, w: 150 }],
     spawns: [{ monster: 'golemite', count: 8 }], nodes: [{ node: 'bluerock', x: 420 }, { node: 'goldrock', x: 650 }],
@@ -640,7 +640,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 160, y: -48, w: 200 }, { x: 440, y: -48, w: 200 }],
     spawns: [], nodes: [{ node: 'redrock', x: 120 }, { node: 'redrock', x: 260 }, { node: 'bluerock', x: 420 }, { node: 'bluerock', x: 600 }],
     ropes: [{ x: 180, top: -48, bottom: 0 }, { x: 620, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'hills', toX: 700, toY: -96 }, { x: 676, to: 'mine2', toX: 50, reqSkill: { skill: 'mining', lv: 15 } }] },
+    facilities: [{ kind: 'npc', npc: 'miner', x: 600, y: 0 }], portals: [{ x: 24, to: 'hills', toX: 700, toY: -96 }, { x: 676, to: 'mine2', toX: 50, reqSkill: { skill: 'mining', lv: 15 } }] },
   { id: 'mine2', name: '깊은 광산', width: 700, theme: 'mine',
     platforms: [{ x: 180, y: -48, w: 180 }, { x: 430, y: -48, w: 200 }],
     spawns: [], nodes: [{ node: 'bluerock', x: 130 }, { node: 'goldrock', x: 300 }, { node: 'goldrock', x: 520 }, { node: 'bluerock', x: 640 }],
@@ -651,7 +651,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 420, y: -48, w: 280 }],
     ropes: [{ x: 430, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'spring', x: 330 }, { node: 'antbush', x: 395 }], campfireX: 72,
-    facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'post', x: 470, y: -48 }, { kind: 'anvil', x: 540, y: -48 }, { kind: 'alchemy', x: 620, y: -48 }, { kind: 'arcade', x: 740, y: 0 }, { kind: 'poppy', x: 810, y: 0 }],
+    facilities: [{ kind: 'storage', x: 120, y: 0 }, { kind: 'shop', x: 190, y: 0 }, { kind: 'npc', npc: 'caravan', x: 270, y: 0 }, { kind: 'npc', npc: 'alchemist', x: 360, y: 0 }, { kind: 'post', x: 470, y: -48 }, { kind: 'anvil', x: 540, y: -48 }, { kind: 'alchemy', x: 620, y: -48 }, { kind: 'arcade', x: 740, y: 0 }, { kind: 'poppy', x: 810, y: 0 }],
     portals: [{ x: 24, to: 'grove', toX: 920, label: '세계의 문' }, { x: 676, y: -48, to: 'dunes', toX: 50 }] },
   { id: 'dunes', name: '바람 모래톱', width: 940, theme: 'dunes',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
@@ -662,7 +662,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
     spawns: [{ monster: 'scorpip', count: 9 }], nodes: [{ node: 'amberrock', x: 410 }, { node: 'amberrock', x: 660 }],
     ropes: [{ x: 130, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 850, top: -96, bottom: -48 }],
-    facilities: [], portals: [{ x: 24, to: 'dunes', toX: 890 }, { x: 936, to: 'mirage', toX: 50, reqKills: 350 }] },
+    facilities: [{ kind: 'npc', npc: 'digger', x: 580, y: 0 }], portals: [{ x: 24, to: 'dunes', toX: 890 }, { x: 936, to: 'mirage', toX: 50, reqKills: 350 }] },
   { id: 'mirage', name: '신기루 평원', width: 960, theme: 'mirage',
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
     spawns: [{ monster: 'mirabird', count: 9 }], nodes: [{ node: 'palm', x: 400 }, { node: 'spring', x: 780 }],
@@ -677,7 +677,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
     spawns: [{ monster: 'saltcrab', count: 9 }], nodes: [{ node: 'palm', x: 90 }, { node: 'saltpool', x: 330 }, { node: 'saltpool', x: 560 }, { node: 'amberrock', x: 700 }],
     ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'tomb', toX: 890 }, { x: 936, to: 'starfield', toX: 50, reqKills: 500 }] },
+    facilities: [{ kind: 'npc', npc: 'fisher', x: 600, y: 0 }], portals: [{ x: 24, to: 'tomb', toX: 890 }, { x: 936, to: 'starfield', toX: 50, reqKills: 500 }] },
   { id: 'starfield', name: '별모래 들판', width: 980, theme: 'starfield',
     platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
     spawns: [{ monster: 'duneworm', count: 9 }], nodes: [{ node: 'glowbush', x: 250 }, { node: 'palm', x: 410 }, { node: 'amberrock', x: 690 }, { node: 'starpool', x: 880 }],
@@ -697,7 +697,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 400, y: -48, w: 300 }],
     ropes: [{ x: 410, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'icehole', x: 330 }], campfireX: 250,
-    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'build', x: 380, y: 0 }, { kind: 'anvil', x: 460, y: -48 }, { kind: 'npc', npc: 'elder3', x: 540, y: -48 }, { kind: 'traps', x: 612, y: -48 }],
+    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'sledder', x: 210, y: 0 }, { kind: 'npc', npc: 'monk', x: 300, y: 0 }, { kind: 'build', x: 380, y: 0 }, { kind: 'anvil', x: 460, y: -48 }, { kind: 'npc', npc: 'elder3', x: 540, y: -48 }, { kind: 'traps', x: 612, y: -48 }],
     portals: [{ x: 24, to: 'sunspire', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'snowfield', toX: 50 }] },
   { id: 'snowfield', name: '눈송이 벌판', width: 940, theme: 'snowfield',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
@@ -713,12 +713,12 @@ const maps: MapDef[] = [
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
     spawns: [{ monster: 'penglet', count: 9 }], nodes: [{ node: 'icehole', x: 380 }, { node: 'icehole', x: 680 }, { node: 'frostrock', x: 800 }],
     ropes: [{ x: 160, top: -48, bottom: 0 }, { x: 450, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [{ kind: 'shrine', x: 240, y: 0 }], portals: [{ x: 24, to: 'pinewood', toX: 910 }, { x: 936, to: 'icecave', toX: 50, reqKills: 700 }] },
+    facilities: [{ kind: 'shrine', x: 240, y: 0 }, { kind: 'npc', npc: 'hunter3', x: 600, y: 0 }], portals: [{ x: 24, to: 'pinewood', toX: 910 }, { x: 936, to: 'icecave', toX: 50, reqKills: 700 }] },
   { id: 'icecave', name: '고드름 동굴', width: 940, theme: 'icecave',
     platforms: [{ x: 100, y: -48, w: 240 }, { x: 150, y: -96, w: 140 }, { x: 460, y: -48, w: 180 }, { x: 700, y: -48, w: 200 }],
     spawns: [{ monster: 'icicle', count: 9 }], nodes: [{ node: 'frostrock', x: 420 }, { node: 'frostrock', x: 660 }],
     ropes: [{ x: 120, top: -48, bottom: 0 }, { x: 230, top: -96, bottom: -48 }, { x: 480, top: -48, bottom: 0 }, { x: 870, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'frostlake', toX: 910 }, { x: 916, to: 'glacier', toX: 50, reqKills: 750 }] },
+    facilities: [{ kind: 'npc', npc: 'icefisher', x: 560, y: 0 }], portals: [{ x: 24, to: 'frostlake', toX: 910 }, { x: 916, to: 'glacier', toX: 50, reqKills: 750 }] },
   { id: 'glacier', name: '빙하 절벽', width: 960, theme: 'glacier',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
     spawns: [{ monster: 'yetiling', count: 9 }], nodes: [{ node: 'pine', x: 90 }, { node: 'frostrock', x: 380 }, { node: 'icehole', x: 700 }],
@@ -743,7 +743,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 400, y: -48, w: 300 }],
     ropes: [{ x: 410, top: -48, bottom: 0 }],
     spawns: [], nodes: [{ node: 'nebpool', x: 370 }],
-    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'astro', x: 220, y: 0 }, { kind: 'kitchen', x: 292, y: 0 }, { kind: 'anvil', x: 440, y: -48 }, { kind: 'lab', x: 515, y: -48 }, { kind: 'nest', x: 594, y: -48 }],
+    facilities: [{ kind: 'storage', x: 100, y: 0 }, { kind: 'shop', x: 160, y: 0 }, { kind: 'npc', npc: 'astro', x: 220, y: 0 }, { kind: 'kitchen', x: 292, y: 0 }, { kind: 'npc', npc: 'engineer', x: 360, y: 0 }, { kind: 'anvil', x: 440, y: -48 }, { kind: 'lab', x: 515, y: -48 }, { kind: 'nest', x: 594, y: -48 }],
     portals: [{ x: 24, to: 'frostpeak', toX: 930, label: '세계의 문' }, { x: 676, y: -48, to: 'moondust', toX: 50 }, { x: 640, to: 'rift', toX: 60, label: '별의 균열' }] },
   { id: 'moondust', name: '달먼지 평원', width: 940, theme: 'moondust',
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 200 }, { x: 460, y: -96, w: 130 }, { x: 700, y: -48, w: 190 }],
@@ -754,7 +754,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 110, y: -48, w: 220 }, { x: 150, y: -96, w: 140 }, { x: 450, y: -48, w: 170 }, { x: 700, y: -48, w: 210 }, { x: 740, y: -96, w: 130 }],
     spawns: [{ monster: 'cratermite', count: 9 }], nodes: [{ node: 'novarock', x: 420 }, { node: 'novarock', x: 660 }, { node: 'cometbush', x: 900 }],
     ropes: [{ x: 130, top: -48, bottom: 0 }, { x: 260, top: -96, bottom: -48 }, { x: 470, top: -48, bottom: 0 }, { x: 720, top: -48, bottom: 0 }, { x: 850, top: -96, bottom: -48 }],
-    facilities: [], portals: [{ x: 24, to: 'moondust', toX: 890 }, { x: 936, to: 'nebula', toX: 50, reqKills: 950 }] },
+    facilities: [{ kind: 'npc', npc: 'chef', x: 580, y: 0 }], portals: [{ x: 24, to: 'moondust', toX: 890 }, { x: 936, to: 'nebula', toX: 50, reqKills: 950 }] },
   { id: 'nebula', name: '성운 안개', width: 960, theme: 'nebula',
     platforms: [{ x: 140, y: -48, w: 200 }, { x: 430, y: -48, w: 220 }, { x: 480, y: -96, w: 130 }, { x: 720, y: -48, w: 190 }],
     spawns: [{ monster: 'nebjelly', count: 9 }], nodes: [{ node: 'nebpool', x: 380 }, { node: 'nebpool', x: 680 }, { node: 'novarock', x: 800 }],
@@ -769,7 +769,7 @@ const maps: MapDef[] = [
     platforms: [{ x: 130, y: -48, w: 200 }, { x: 420, y: -48, w: 240 }, { x: 470, y: -96, w: 140 }, { x: 740, y: -48, w: 170 }],
     spawns: [{ monster: 'ringowl', count: 9 }], nodes: [{ node: 'startree', x: 90 }, { node: 'novarock', x: 380 }, { node: 'nebpool', x: 700 }],
     ropes: [{ x: 150, top: -48, bottom: 0 }, { x: 440, top: -48, bottom: 0 }, { x: 590, top: -96, bottom: -48 }, { x: 880, top: -48, bottom: 0 }],
-    facilities: [], portals: [{ x: 24, to: 'asteroid', toX: 890 }, { x: 936, to: 'comet', toX: 50, reqKills: 1100 }] },
+    facilities: [{ kind: 'npc', npc: 'oracle', x: 600, y: 0 }], portals: [{ x: 24, to: 'asteroid', toX: 890 }, { x: 936, to: 'comet', toX: 50, reqKills: 1100 }] },
   { id: 'comet', name: '혜성 꼬리', width: 980, theme: 'comet',
     platforms: [{ x: 120, y: -48, w: 210 }, { x: 160, y: -96, w: 130 }, { x: 450, y: -48, w: 200 }, { x: 730, y: -48, w: 200 }, { x: 770, y: -96, w: 130 }],
     spawns: [{ monster: 'cometfox', count: 9 }], nodes: [{ node: 'cometbush', x: 250 }, { node: 'startree', x: 410 }, { node: 'novarock', x: 690 }, { node: 'nebpool', x: 880 }],
@@ -1252,11 +1252,27 @@ export const CARD_MAX_TIER = CARD_TIERS.length;
 export const cardTier = (n: number) => CARD_TIERS.filter((t) => n >= t).length;
 export const cardNext = (n: number) => CARD_TIERS.find((t) => n < t) ?? null;
 
+// ───────── 보스 난이도(원작처럼 같은 보스를 더 어렵게: 체력·공격 대신 경험치·드롭이 크게) ─────────
+export const BOSS_TIERS = [
+  { name: '보통', hp: 1, atk: 1, xp: 1, drop: 1 },
+  { name: '어려움', hp: 6, atk: 2, xp: 4, drop: 2.5 },
+  { name: '지옥', hp: 40, atk: 4.5, xp: 15, drop: 6 },
+];
+/** 난이도를 적용한 보스 정의(같은 id, 이름에 난이도 표시) */
+export function bossDefAt(def: MonsterDef, tier: number): MonsterDef {
+  const t = BOSS_TIERS[tier] ?? BOSS_TIERS[0];
+  if (tier <= 0 || !def.boss) return def;
+  return { ...def, name: `${def.name} (${t.name})`, hp: Math.round(def.hp * t.hp), atk: Math.round(def.atk * t.atk), xp: Math.round(def.xp * t.xp),
+    acc: Math.round(def.acc * (1 + tier * 0.25)), defZero: Math.round(def.defZero * (1 + tier * 0.5)), coins: [def.coins[0] * t.xp, def.coins[1] * t.xp],
+    drops: def.drops.map((d) => ({ ...d, chance: Math.min(1, d.chance * t.drop) })), boss: { ...def.boss, slamDmg: Math.round(def.boss.slamDmg * t.atk) } };
+}
+
 export interface QuestDef {
   name: string; text: string;
-  goal: { kill: string; n: number } | { item: string; n: number };
+  goal: { kill: string; n: number } | { item: string; n: number } | { lv: number } | { skill: SkillKey; n: number };
   reward: { coins?: number; xp?: number; item?: string };
 }
+export const SKILL_NAMES_Q: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '채집', trapping: '덫', worship: '기도', cooking: '요리', lab: '연구', alchemy: '연금', construction: '건설', breeding: '번식' };
 const ELDER_QUESTS: QuestDef[] = [
   { name: '첫 걸음', text: '풀밭의 이끼방울이 너무 늘었어. 조금만 정리해 주겠나?', goal: { kill: 'mossblob', n: 5 }, reward: { coins: 30, xp: 20 } },
   { name: '장작 모으기', text: '모닥불이 꺼지려 해. 풀밭의 참나무를 베어 통나무를 가져다 주게.', goal: { item: 'log', n: 8 }, reward: { coins: 40, xp: 40 } },
@@ -1297,6 +1313,102 @@ const ASTRO_QUESTS: QuestDef[] = [
   { name: '궤도의 거신', text: '공허의 끝 너머 궤도를 거신이 돌고 있어. 도깨비들이 모은 공허 조각으로 문을 열 수 있대.', goal: { item: 'void_shard', n: 40 }, reward: { item: 'void_key', xp: 1500000 } },
 ];
 
+
+// ───────── 추가 NPC들(월드마다 여럿, 처치·수집·레벨·기술 퀘스트) ─────────
+const Q = (name: string, text: string, goal: QuestDef['goal'], reward: QuestDef['reward']): QuestDef => ({ name, text, goal, reward });
+const RANGER_QUESTS: QuestDef[] = [
+  Q('사냥 입문', '활을 쥐는 법부터 알려 주지. 풀밭의 이끼방울 열다섯 마리면 충분해.', { kill: 'mossblob', n: 15 }, { coins: 80, xp: 60 }),
+  Q('늪의 등껍질', '진흙거북 등껍질은 방패 재료로 좋아.', { item: 'shell', n: 15 }, { coins: 300, xp: 400 }),
+  Q('어둠 속 박쥐', '그늘 동굴 반딧박쥐가 사냥감을 다 쫓아 버려.', { kill: 'glowbat', n: 60 }, { item: 'tp_ticket', xp: 1500 }),
+  Q('능선의 깃털', '바람메뚜기 깃털로 화살 깃을 달아야겠어.', { item: 'feather', n: 30 }, { coins: 1500, xp: 2500 }),
+  Q('유적의 돌덩이', '돌골렘을 쓰러뜨려 봐. 진짜 사냥꾼이라면.', { kill: 'golemite', n: 100 }, { item: 'stone_atk', xp: 5000 }),
+  Q('버섯 숲의 왕', '달빛 숲 버섯도깨비를 정리해 주면 상자를 하나 주지.', { kill: 'shroomkin', n: 150 }, { item: 'chest_small', xp: 9000 }),
+];
+const MINER_QUESTS: QuestDef[] = [
+  Q('곡괭이질', '광석 캐는 손맛을 좀 알아야지. 채광 Lv.5가 되면 다시 오게.', { skill: 'mining', n: 5 }, { coins: 100, xp: 100 }),
+  Q('푸른 광맥', '푸른 광석이 필요해.', { item: 'ore_blue', n: 30 }, { item: 'stone_mine', xp: 800 }),
+  Q('녹여 보기', '용광로에서 붉은 주괴를 뽑아 오게.', { item: 'bar_red', n: 10 }, { coins: 800, xp: 1200 }),
+  Q('숙련 광부', '채광 Lv.20. 그쯤 되면 진짜 광부지.', { skill: 'mining', n: 20 }, { coins: 3000, xp: 4000 }),
+  Q('황금 광맥', '유적 깊은 곳 황금 광석을 캐 오게.', { item: 'ore_gold', n: 40 }, { item: 'stone_tool2', xp: 8000 }),
+  Q('대장의 길', '대장 기술도 함께 키워야 해. 대장 Lv.15!', { skill: 'smithing', n: 15 }, { item: 'chest_small', xp: 12000 }),
+];
+const SCHOLAR_QUESTS: QuestDef[] = [
+  Q('견문 넓히기', '모험가라면 레벨 10은 넘어야지.', { lv: 10 }, { coins: 200, xp: 0, item: 'tp_ticket' }),
+  Q('숲의 기록', '은빛나무 통나무에 글을 새겨 기록을 남기려 하네.', { item: 'silverlog', n: 25 }, { coins: 500, xp: 1000 }),
+  Q('달빛 자작', '달빛자작 통나무가 더 필요하다네.', { item: 'moonlog', n: 40 }, { coins: 1500, xp: 3000 }),
+  Q('성장 일지', '레벨 30. 그 정도면 이 세계를 이해하기 시작한 거지.', { lv: 30 }, { item: 'stone_stat', xp: 0 }),
+  Q('룬의 해독', '돌골렘의 룬석을 모아 오게. 해독해 보겠네.', { item: 'runestone', n: 40 }, { coins: 5000, xp: 8000 }),
+  Q('포자의 비밀', '버섯도깨비 포자갓도 연구 대상이야.', { item: 'sporecap', n: 50 }, { item: 'gold_mushroom', xp: 12000 }),
+  Q('현자의 경지', '레벨 50이 되면 내가 아는 모든 걸 알려 주지.', { lv: 50 }, { item: 'chest_small', xp: 0 }),
+];
+const FISHER_QUESTS: QuestDef[] = [
+  Q('첫 낚시', '오아시스 샘에서 피라미를 낚아 와.', { item: 'fish_minnow', n: 20 }, { coins: 1500, xp: 2000 }),
+  Q('낚시꾼의 손', '낚시 Lv.10이면 제법이지.', { skill: 'fishing', n: 10 }, { coins: 4000, xp: 6000 }),
+  Q('짠물고기', '소금 호수 물고기는 염장하기 좋아.', { item: 'fish_salt', n: 40 }, { item: 'stone_lure', xp: 10000 }),
+  Q('별 물고기', '별빛 웅덩이의 반짝이는 놈을 잡아 봐.', { item: 'fish_star', n: 50 }, { coins: 15000, xp: 20000 }),
+  Q('물가의 달인', '낚시 Lv.30!', { skill: 'fishing', n: 30 }, { item: 'chest_small', xp: 40000 }),
+];
+const DIGGER_QUESTS: QuestDef[] = [
+  Q('전갈 꼬리', '전갈 꼬리로 독을 연구하는 중이야.', { item: 'scorp_tail', n: 30 }, { coins: 3000, xp: 4000 }),
+  Q('무덤 파기', '모래 무덤 붕대돌이가 발굴을 방해해.', { kill: 'mumbun', n: 120 }, { coins: 8000, xp: 12000 }),
+  Q('낡은 붕대', '붕대에는 옛 글씨가 적혀 있어.', { item: 'old_bandage', n: 40 }, { item: 'stone_stat', xp: 18000 }),
+  Q('모래벌레 비늘', '별모래 들판 모래벌레 비늘은 반짝반짝해.', { item: 'worm_scale', n: 50 }, { coins: 20000, xp: 30000 }),
+  Q('호박 채광', '채광 Lv.35. 호박 광맥 깊은 곳까지 파려면.', { skill: 'mining', n: 35 }, { item: 'chest_small', xp: 50000 }),
+  Q('해탑 탐사', '해불꽃을 정리하고 해탑 유적을 조사해야 해.', { kill: 'sunwisp', n: 200 }, { item: 'gold_pie', xp: 80000 }),
+];
+const ALCHEMIST_QUESTS: QuestDef[] = [
+  Q('솥 젓기', '연금 Lv.5가 되면 다음 비법을 알려 주지.', { skill: 'alchemy', n: 5 }, { coins: 3000, xp: 5000 }),
+  Q('아지랑이 깃', '열기 깃털이 약재로 쓰여.', { item: 'heat_feather', n: 40 }, { coins: 8000, xp: 12000 }),
+  Q('소금 결정', '소금게 결정은 정화제로 그만이야.', { item: 'salt_crystal', n: 50 }, { item: 'stone_guard', xp: 20000 }),
+  Q('벌레 채집', '반딧불이를 모아 와. 빛 물약을 만들 거야.', { item: 'bug_firefly', n: 40 }, { coins: 15000, xp: 25000 }),
+  Q('대연금술사', '연금 Lv.25!', { skill: 'alchemy', n: 25 }, { item: 'chest_small', xp: 60000 }),
+];
+const HUNTER3_QUESTS: QuestDef[] = [
+  Q('솔방울 사냥', '전나무 숲 솔방울이가 너무 많아.', { kill: 'pinekin', n: 120 }, { coins: 20000, xp: 50000 }),
+  Q('고드름 조각', '고드름이 조각은 화살촉으로 쓴다.', { item: 'icicle_shard', n: 50 }, { coins: 40000, xp: 80000 }),
+  Q('예티 털', '아기 예티 털로 따뜻한 망토를 짜 주지.', { item: 'yeti_fur', n: 60 }, { item: 'stone_stat2', xp: 120000 }),
+  Q('덫 놓기', '덫 Lv.10이면 설원의 사냥꾼이라 할 만하지.', { skill: 'trapping', n: 10 }, { coins: 60000, xp: 150000 }),
+  Q('오로라 나비', '오로라나비를 잡아 오로라 가루를 모아 와.', { kill: 'aurowisp', n: 250 }, { item: 'gold_cocoa', xp: 250000 }),
+  Q('서리 골렘', '봉우리의 서리 골렘을 쓰러뜨려라.', { kill: 'frostgolem', n: 300 }, { item: 'chest_small', xp: 400000 }),
+];
+const MONK_QUESTS: QuestDef[] = [
+  Q('고요한 기도', '기도 Lv.5. 마음을 가라앉히게.', { skill: 'worship', n: 5 }, { coins: 15000, xp: 40000 }),
+  Q('건설의 기초', '건설 Lv.10이 되면 사원을 함께 짓세.', { skill: 'construction', n: 10 }, { coins: 30000, xp: 70000 }),
+  Q('서리 광석', '서리 광석을 바치게.', { item: 'ore_frost', n: 80 }, { item: 'stone_guard2', xp: 100000 }),
+  Q('눈꽃 수행', '레벨 90. 수행의 길은 멀다네.', { lv: 90 }, { coins: 100000, xp: 0 }),
+  Q('빙하 통나무', '서리전나무 통나무로 사원 기둥을 세우세.', { item: 'frostlog', n: 60 }, { coins: 120000, xp: 200000 }),
+  Q('깨달음', '기도 Lv.25.', { skill: 'worship', n: 25 }, { item: 'chest_small', xp: 350000 }),
+];
+const ICEFISHER_QUESTS: QuestDef[] = [
+  Q('얼음 구멍', '얼음 구멍 물고기를 낚아 와.', { item: 'fish_ice', n: 60 }, { coins: 30000, xp: 60000 }),
+  Q('펭귄 깃털', '꼬마펭귄 깃털로 낚시찌를 만들지.', { item: 'peng_feather', n: 60 }, { item: 'stone_lure', xp: 100000 }),
+  Q('깊은 물', '깊은 웅덩이 물고기는 귀해.', { item: 'fish_deep', n: 40 }, { coins: 80000, xp: 180000 }),
+  Q('설원의 강태공', '낚시 Lv.45!', { skill: 'fishing', n: 45 }, { item: 'chest_small', xp: 300000 }),
+];
+const ENGINEER_QUESTS: QuestDef[] = [
+  Q('운석 조각', '운석돌이 조각으로 회로를 만들 수 있어.', { item: 'meteor_chip', n: 60 }, { coins: 80000, xp: 250000 }),
+  Q('연구원 등록', '연구 Lv.5가 되면 연구소 출입증을 줄게.', { skill: 'lab', n: 5 }, { coins: 120000, xp: 300000 }),
+  Q('구덩이 껍질', '구덩이 벌레 껍질은 단열재로 좋아.', { item: 'crater_shell', n: 80 }, { item: 'stone_atk2', xp: 450000 }),
+  Q('신성 광석', '신성 광석이 대량으로 필요해.', { item: 'ore_nova', n: 120 }, { coins: 300000, xp: 600000 }),
+  Q('수석 연구원', '연구 Lv.20.', { skill: 'lab', n: 20 }, { item: 'chest_small', xp: 900000 }),
+  Q('궤도 정리', '소행성 띠 운석돌이를 치워 줘.', { kill: 'meteorite', n: 400 }, { item: 'gold_feast', xp: 1400000 }),
+];
+const CHEF_QUESTS: QuestDef[] = [
+  Q('첫 요리', '요리 Lv.5부터 시작이지.', { skill: 'cooking', n: 5 }, { coins: 100000, xp: 250000 }),
+  Q('해파리 젤리', '성운해파리 젤리는 디저트로 최고야.', { item: 'neb_jelly', n: 80 }, { coins: 150000, xp: 400000 }),
+  Q('번식가 친구', '번식 Lv.10이면 좋은 재료를 길러 주겠지.', { skill: 'breeding', n: 10 }, { item: 'stone_stat2', xp: 600000 }),
+  Q('성운 물고기', '성운 웅덩이 물고기를 가져와.', { item: 'fish_neb', n: 80 }, { coins: 400000, xp: 800000 }),
+  Q('별빛 주방장', '요리 Lv.25!', { skill: 'cooking', n: 25 }, { item: 'gold_mooncake', xp: 1200000 }),
+];
+const ORACLE_QUESTS: QuestDef[] = [
+  Q('고리의 깃', '고리부엉이 깃털을 바치거라.', { item: 'ring_plume', n: 80 }, { coins: 200000, xp: 600000 }),
+  Q('혜성 사냥', '혜성여우를 쫓아라.', { kill: 'cometfox', n: 400 }, { coins: 400000, xp: 1000000 }),
+  Q('별의 운명', '레벨 150. 별이 너를 부른다.', { lv: 150 }, { item: 'stone_stat3', xp: 0 }),
+  Q('혜성의 털', '혜성 털로 점괘를 짠다.', { item: 'comet_hair', n: 100 }, { coins: 800000, xp: 1800000 }),
+  Q('공허의 조각', '공허 조각을 더 모아라.', { item: 'void_shard', n: 120 }, { item: 'chest_small', xp: 2500000 }),
+  Q('운명의 끝', '레벨 200. 이제 네 이야기는 전설이 된다.', { lv: 200 }, { item: 'gold_feast', xp: 0 }),
+];
+
 export interface NpcDef { id: string; name: string; look: { hair: number; hairColor: string; skin: string; outfit: string }; quests: QuestDef[] }
 export const NPCS: Record<string, NpcDef> = {
   elder: { id: 'elder', name: '촌장 바루', look: { hair: 2, hairColor: '#e9e4f0', skin: '#efe6f6', outfit: '#8a6fd1' }, quests: ELDER_QUESTS },
@@ -1307,7 +1419,26 @@ export const NPCS: Record<string, NpcDef> = {
   elder3: { id: 'elder3', name: '설원 장로 하윤', look: { hair: 2, hairColor: '#e9eef6', skin: '#e9eef6', outfit: '#6a9ae8' }, quests: [] },
   astro: { id: 'astro', name: '별지기 루미', look: { hair: 1, hairColor: '#c8a8ff', skin: '#f6e6d6', outfit: '#5a3aa8' }, quests: ASTRO_QUESTS },
   caravan: { id: 'caravan', name: '대상 카림', look: { hair: 2, hairColor: '#3a2a1a', skin: '#c9946a', outfit: '#e0a83a' }, quests: CARAVAN_QUESTS },
+  ranger: { id: 'ranger', name: '사냥꾼 미르', look: { hair: 0, hairColor: '#6a4a2a', skin: '#e8cfb4', outfit: '#4a8a4a' }, quests: RANGER_QUESTS },
+  miner: { id: 'miner', name: '광부 투크', look: { hair: 1, hairColor: '#8a8a8a', skin: '#c9a88a', outfit: '#7a5a3a' }, quests: MINER_QUESTS },
+  scholar: { id: 'scholar', name: '학자 에반', look: { hair: 2, hairColor: '#4a3a6a', skin: '#f0dcc8', outfit: '#3a6ab0' }, quests: SCHOLAR_QUESTS },
+  fisher: { id: 'fisher', name: '어부 하산', look: { hair: 0, hairColor: '#2a2a2a', skin: '#b8865a', outfit: '#3aa0b0' }, quests: FISHER_QUESTS },
+  digger: { id: 'digger', name: '발굴가 오즈', look: { hair: 1, hairColor: '#d8b070', skin: '#d8a878', outfit: '#a87a4a' }, quests: DIGGER_QUESTS },
+  alchemist: { id: 'alchemist', name: '연금술사 니아', look: { hair: 2, hairColor: '#5ad0a0', skin: '#f0dcc8', outfit: '#6a3a8a' }, quests: ALCHEMIST_QUESTS },
+  hunter3: { id: 'hunter3', name: '설원 사냥꾼 카이', look: { hair: 0, hairColor: '#f0f0f0', skin: '#e8d8c8', outfit: '#7a9ab0' }, quests: HUNTER3_QUESTS },
+  monk: { id: 'monk', name: '수도승 다온', look: { hair: 1, hairColor: '#1a1a1a', skin: '#f0dcc8', outfit: '#e0a040' }, quests: MONK_QUESTS },
+  icefisher: { id: 'icefisher', name: '얼음낚시꾼 보리', look: { hair: 0, hairColor: '#a06a3a', skin: '#f0dcc8', outfit: '#e05a5a' }, quests: ICEFISHER_QUESTS },
+  engineer: { id: 'engineer', name: '기술자 제트', look: { hair: 1, hairColor: '#ff9a3a', skin: '#f0dcc8', outfit: '#5a6a7a' }, quests: ENGINEER_QUESTS },
+  chef: { id: 'chef', name: '요리사 모모', look: { hair: 2, hairColor: '#ffd0e0', skin: '#f6e6d6', outfit: '#f0f0f0' }, quests: CHEF_QUESTS },
+  oracle: { id: 'oracle', name: '점성술사 세라', look: { hair: 2, hairColor: '#e0d0ff', skin: '#e8dcf0', outfit: '#2a1a5a' }, quests: ORACLE_QUESTS },
 };
+/** 퀘스트 목표 한 줄 설명 */
+export function questGoalText(g: QuestDef['goal']): string {
+  if ('kill' in g) return `${MONSTERS[g.kill]?.name ?? g.kill} ${g.n}마리 처치`;
+  if ('item' in g) return `${ITEMS[g.item]?.name ?? g.item} ${g.n}개`;
+  if ('lv' in g) return `레벨 ${g.lv} 달성`;
+  return `${SKILL_NAMES_Q[g.skill]} Lv.${g.n} 달성`;
+}
 /** 히든 직업 조건: 초보자로 이 레벨 이상, 이 아이템 1개, 숨은 NPC가 있는 맵에서 */
 export const HIDDEN_CLASS = { cls: 'wanderer' as ClassId, npc: 'stranger', map: 'hills', level: CLASS_LEVEL, item: 'four_leaf' };
 /** 히든 계열의 각 단계: 레벨은 기본 직업과 같고(10·30·70·120), 그 월드 어딘가의 나그네를 찾아가 증표를 바쳐야 한다 */
@@ -1696,6 +1827,18 @@ export const PETS: PetDef[] = [
   { id: 'fox', name: '여우 탐정', rarity: 2, eff: 'drop', per: 6, unit: '%', color: '#e8833a' },
   { id: 'sloth', name: '느림보 나무늘보', rarity: 3, eff: 'afk', per: 3, unit: '%p', color: '#a89a80' },
   { id: 'dragonling', name: '아기 용', rarity: 3, eff: 'dmg', per: 8, unit: '%', color: '#d9574a' },
+  { id: 'bunny', name: '구름 토끼', rarity: 0, eff: 'agi', per: 3, unit: '', color: '#f4f0f8' },
+  { id: 'duckling', name: '노랑 오리', rarity: 0, eff: 'fishing', per: 4, unit: '%', color: '#f6d84a' },
+  { id: 'piglet', name: '분홍 돼지', rarity: 0, eff: 'coins', per: 3, unit: '%', color: '#f0a8b8' },
+  { id: 'beetle', name: '장수풍뎅이', rarity: 1, eff: 'catching', per: 6, unit: '%', color: '#5a3a2a' },
+  { id: 'penguin', name: '꼬마 펭귄', rarity: 1, eff: 'hp', per: 40, unit: '', color: '#3a4a6a' },
+  { id: 'lamb', name: '양털 양', rarity: 1, eff: 'wis', per: 4, unit: '', color: '#ece4d8' },
+  { id: 'raccoon', name: '너구리 도둑', rarity: 2, eff: 'card', per: 5, unit: '%', color: '#7a7a8a' },
+  { id: 'bear', name: '꿀곰', rarity: 2, eff: 'str', per: 6, unit: '', color: '#a8703a' },
+  { id: 'otter', name: '수달', rarity: 2, eff: 'acc', per: 15, unit: '', color: '#8a5a3a' },
+  { id: 'clover', name: '네잎 요정', rarity: 2, eff: 'luk', per: 6, unit: '', color: '#6ad06a' },
+  { id: 'phoenix', name: '불사조 병아리', rarity: 3, eff: 'xp', per: 8, unit: '%', color: '#ff8a3a' },
+  { id: 'starcat', name: '별무늬 고양이', rarity: 3, eff: 'drop', per: 10, unit: '%', color: '#5a4ab8' },
 ];
 /** 간식(뽑기): 값(펫 크리스탈)과 등급별 확률. 무료 뽑기는 첫 간식과 같은 확률 */
 export const TREATS: { name: string; cost: number; odds: [number, number, number, number] }[] = [

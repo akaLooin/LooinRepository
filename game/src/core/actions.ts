@@ -5,7 +5,7 @@ import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook, buyLick, buyFlag } from './build';
 import { placeObol, takeObol } from './obols';
-import { sellJunk, setTackle, sortBag, toggleLock } from './state';
+import { setBossTier, sellJunk, setTackle, sortBag, toggleLock } from './state';
 import { today } from './state';
 import { arcadeSettle, poppySettle, shootBall, upPoppy } from './arcade';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
@@ -93,6 +93,7 @@ export type Action =
   | { t: 'daily'; i?: number }
   | { t: 'bag'; op: 'sort' | 'lock' | 'junk'; id?: string }
   | { t: 'miniUp'; id: string }
+  | { t: 'bossTier'; id: string; tier: number }
   | { t: 'tackle'; id: string }
   | { t: 'poppy'; op: 'visit' | 'up'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel' | 'chip' | 'chipOn'; spot?: number; id?: string }
@@ -245,6 +246,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     }
     case 'tackle': return res(setTackle(c, a.id));
     case 'miniUp': return res(buyMiniUp(acc, a.id));
+    case 'bossTier': return res(setBossTier(acc, a.id, a.tier));
     case 'bag': { if (a.op === 'sort') { sortBag(c); return ok(); } if (a.op === 'lock') return res(toggleLock(c, a.id ?? '')); return ok(sellJunk(acc, c)); }
     case 'daily': { if (a.i === undefined) { dailyRefresh(acc, today(now)); return ok(); } return res(claimDaily(acc, a.i, today(now))); }
     case 'arcade': {
