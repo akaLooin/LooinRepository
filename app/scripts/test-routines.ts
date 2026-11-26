@@ -1,6 +1,6 @@
 // npx tsx scripts/test-routines.ts
 import assert from "node:assert/strict";
-import { occursOn, ruleLabel, periodLabel, routineStatus } from "../src/lib/routines";
+import { occursOn, ruleLabel, ruleOf, periodLabel, routineStatus } from "../src/lib/routines";
 
 const t = (name: string, fn: () => void) => { fn(); console.log("ok", name); };
 
@@ -47,4 +47,13 @@ t("labels", () => {
   assert.equal(periodLabel("2026-09-27"), "2026. 9. 27 ~");
   assert.equal(routineStatus({ startDate: "2026-09-27" }, "2026-11-03"), "active");
   assert.equal(routineStatus({ startDate: "2026-09-27", endDate: "2026-10-01" }, "2026-11-03"), "finished");
+});
+
+t("ruleOf keeps only the repeat (a routine's old start date never rides along into a save)", () => {
+  const r = ruleOf({ repeatType: "weekly", weekdays: [1], startDate: "2026-11-29", title: "x" } as never);
+  assert.equal("startDate" in r, false);
+  assert.equal("title" in r, false);
+  assert.deepEqual(r.weekdays, [1]);
+  const saved = { ...ruleOf({ repeatType: "daily", startDate: "2026-11-29" } as never), startDate: "2026-11-25" };
+  assert.equal(saved.startDate, "2026-11-25");
 });

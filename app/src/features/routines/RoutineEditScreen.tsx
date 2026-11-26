@@ -8,7 +8,7 @@ import {
 } from "../../components";
 import { deleteRoutine, saveRoutine, updateTodo, useDB } from "../../data/store";
 import { addDays, parseDay, today, weekday, type Day } from "../../lib/dates";
-import { ruleLabel, type RepeatRule, type RepeatType } from "../../lib/routines";
+import { ruleLabel, ruleOf, type RepeatRule, type RepeatType } from "../../lib/routines";
 import { fontFamily, ScaledRoot, tokens, useTheme, visibleOn } from "../../theme";
 import { DatePickSheet } from "../home/TodoSheets";
 import { DESIGN_TRIAL } from "../../lib/variant";
@@ -40,7 +40,9 @@ export function RoutineEditScreen() {
   const [title, setTitle] = useState(existing?.title ?? source?.title ?? "");
   const [startDate, setStart] = useState<Day>(existing?.startDate ?? source?.date ?? today());
   const [endDate, setEnd] = useState<Day | undefined>(existing?.endDate);
-  const [rule, setRule] = useState<RepeatRule>(existing ?? { repeatType: "daily" });
+  // only the repeat itself: the whole routine here once carried its old start date into the save, so a new start date
+  // went back to the old one (user, 2026-11-26)
+  const [rule, setRule] = useState<RepeatRule>(() => (existing ? ruleOf(existing) : { repeatType: "daily" }));
   const [time, setTime] = useState<string | undefined>(existing?.timeOfDay ?? (source?.remindAt ? hhmm(new Date(source.remindAt)) : undefined));
   const [memo, setMemo] = useState(existing?.memo ?? source?.memo ?? "");
   const [manualAdd, setManual] = useState(existing?.manualAdd ?? false);
@@ -52,7 +54,7 @@ export function RoutineEditScreen() {
   const save = () => {
     if (!title.trim()) return setError("이름을 입력해 주세요");
     if (!cat) return setError("카테고리를 찾을 수 없어요");
-    const rid = saveRoutine({ id: existing?.id, categoryId, title: title.trim(), startDate, endDate, ...rule, timeOfDay: time, memo, manualAdd });
+    const rid = saveRoutine({ ...ruleOf(rule), id: existing?.id, categoryId, title: title.trim(), startDate, endDate, timeOfDay: time, memo, manualAdd });
     // the to-do it was made from stands for the routine on its own day (no second copy there)
     if (source?.date && !existing) updateTodo(source.id, { routineId: rid, routineDate: source.date });
     goBack(source ? "/" : "/routines");
@@ -79,7 +81,7 @@ export function RoutineEditScreen() {
             {sec("언제부터 언제까지")}
             <FieldGroup>
               <FieldRow title="시작" value={fmt(startDate)} onPress={() => setSheet("start")} />
-              <FieldRow title="끝" value={endDate ? fmt(endDate) : "계속"} onPress={() => (endDate ? setSheet("end") : setEnd(addDays(startDate, 30)))} />
+              <FieldRow title="끝" value={endDate ? fmt(endDate) : "계속"} onPress={() => setSheet("end")} />
             </FieldGroup>
             {endDate ? (
               <Pressable onPress={() => setEnd(undefined)} accessibilityRole="button" style={{ alignSelf: "flex-start", paddingVertical: 4 }}>

@@ -14,6 +14,11 @@ export type RepeatRule = {
 
 export type RoutineSpan = RepeatRule & { startDate: Day; endDate?: Day };
 
+/** Only the repeat of a routine (a whole routine passed in keeps none of its dates or title). */
+export const ruleOf = (r: RepeatRule): RepeatRule => ({
+  repeatType: r.repeatType, intervalDays: r.intervalDays, weekdays: r.weekdays, monthDays: r.monthDays, yearMonth: r.yearMonth, yearDay: r.yearDay,
+});
+
 const DAY_MS = 86400000;
 const serial = (d: Day) => Math.round(Date.parse(d + "T00:00:00Z") / DAY_MS);
 
