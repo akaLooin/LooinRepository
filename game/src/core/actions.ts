@@ -17,7 +17,7 @@ import { LiquidUp, alchSettle, assignAlch, toggleBig, upBubble, upLiquid, upVial
 import { TALENT, classLine, worldOf } from './data';
 import { ClassId, EquipSlot, MAPS, NODES, OwlUp, StatKey } from './data';
 import { depositShards, owlSettle, owlUpgrade, plusPet, pullPet } from './companions';
-import { GameKind, finishGame } from './minigames';
+import { GameKind, buyMiniUp, finishGame } from './minigames';
 import {
   Account, Activity, acceptQuest, advanceClass, buy, collectAnvil, completeQuest, countItem, craft, deposit, depositAll, equipCard,
   equipItem, gateOpen, townOf, learnStarTal, learnTalent, switchTalentPreset, portalLock, arenaClaim, setSkin, clearSkin, setBarSlot, teleport, removeItem, sellItem, setFood, setProduct, spendAnvilPoint, spendStat, unequipCard, unequipItem, useItem,
@@ -92,6 +92,7 @@ export type Action =
   | { t: 'arcade'; op: 'visit' | 'shoot' }
   | { t: 'daily'; i?: number }
   | { t: 'bag'; op: 'sort' | 'lock' | 'junk'; id?: string }
+  | { t: 'miniUp'; id: string }
   | { t: 'poppy'; op: 'visit' | 'up'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel' | 'chip' | 'chipOn'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up' | 'keeper' | 'arena' | 'fight'; uid?: number; terr?: string; k?: BreedUp }
@@ -241,6 +242,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       }
       return fail('없는 행동');
     }
+    case 'miniUp': return res(buyMiniUp(acc, a.id));
     case 'bag': { if (a.op === 'sort') { sortBag(c); return ok(); } if (a.op === 'lock') return res(toggleLock(c, a.id ?? '')); return ok(sellJunk(acc, c)); }
     case 'daily': { if (a.i === undefined) { dailyRefresh(acc, today(now)); return ok(); } return res(claimDaily(acc, a.i, today(now))); }
     case 'arcade': {

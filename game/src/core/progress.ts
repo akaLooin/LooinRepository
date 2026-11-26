@@ -18,6 +18,7 @@ import { shinyBonus } from './traps';
 import { shrineBonus } from './shrines';
 import { obolBonus } from './obols';
 import { arcadeBonus, poppyBonus } from './arcade';
+import { miniBonus } from './minigames';
 
 export type Bonus = Record<BonusKey, number>;
 export const noBonus = (): Bonus => ({ str: 0, agi: 0, wis: 0, luk: 0, def: 0, hp: 0, hpPct: 0, drop: 0, dmg: 0, xp: 0, afk: 0, coins: 0, mining: 0, chopping: 0, fishing: 0, catching: 0, acc: 0, card: 0 });
@@ -225,7 +226,7 @@ export function switchCardPreset(acc: Account, c: Character, i: number): string 
 
 // ───────── 합계 ─────────
 /** 이 캐릭터가 받는 석상·별자리·업적·가족·카드 세트 보너스 합 */
-export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'shinies' | 'shrines' | 'famObols' | 'arcade' | 'poppy' | 'riftBest' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
+export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | 'achievements' | 'characters' | 'goldStatues' | 'shinies' | 'shrines' | 'famObols' | 'arcade' | 'poppy' | 'riftBest' | 'mini' | 'pets' | 'owl' | 'totem' | 'alch' | 'build' | 'worship' | 'cook' | 'breed' | 'lab'>>): Bonus {
   const b = noBonus();
   for (const s of STATUES) b[s.eff] += statueLv(a, c, s.id) * s.per;
   for (const id of new Set([...(c.aligned ?? []), ...(c.birth ? [c.birth] : [])])) { const sg = SIGNS.find((x) => x.id === id); if (sg) b[sg.eff] += sg.v; }
@@ -240,6 +241,7 @@ export function progressBonus(c: Character, a: Partial<Pick<Account, 'cards' | '
   { const m = labMult(a, 'shrines'); shrineBonus(c, a, (k, v) => { b[k] += v * m; }); }
   chipBonus(c, a, (k, v) => { b[k] += v; });
   arcadeBonus(a.arcade, (k, v) => { b[k] += v; });
+  miniBonus(a.mini, (k, v) => { b[k] += v; });
   for (const r of RIFT_BONUS) if ((a.riftBest ?? 0) >= r.waves) b[r.eff] += r.v;
   poppyBonus(a.poppy, (k, v) => { b[k] += v; });
   b.dmg += deathBonus(a);

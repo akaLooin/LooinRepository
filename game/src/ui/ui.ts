@@ -31,7 +31,7 @@ import {
   anyTalentFree, tabFree, talentMax, today,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
-import { GAMES, GameKind, SPIKE_WINDOW, gameReward, playsLeft, spikeOpen } from '../core/minigames';
+import { GAMES, GameKind, MINI_UPS, SPIKE_WINDOW, gameReward, miniUpCost, playsLeft, spikeOpen } from '../core/minigames';
 import { PlayKind, runGame } from './minigames';
 import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
@@ -828,7 +828,10 @@ export class UI {
           return `<div class="ui-row line"><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-muted">최고 ${acc.mini.best[k] ?? 0}점 · 오늘 ${left}판 남음</span><div class="ui-xs ui-muted">${d.desc}</div><div class="qline">${reward}</div></div>
             <button class="ui-btn ${why ? '' : 'primary'}" data-act="play:${k}" ${why ? 'disabled' : ''}>${why || '시작'}</button></div>`;
         }).join('');
-        return win('미니게임장', `${rows}<p class="ui-xs ui-muted">보상은 점수에 비례합니다(표시된 값은 최고 점수일 때).</p>`);
+        const shop = MINI_UPS.map((u) => { const lv = acc.mini.up?.[u.id] ?? 0, max = lv >= u.max, cost = miniUpCost(u, lv);
+          return `<div class="ui-row line"><div class="ui-grow"><b>${u.name}</b> <span class="ui-xs ui-accent">${lv}/${u.max}</span> <span class="ui-xs ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[u.eff]} +${Math.round(lv * u.per * 10) / 10}${u.unit}</span></div>
+            <button class="ui-btn sm" data-act="miniup:${u.id}" ${!max && (acc.mini.pts ?? 0) >= cost ? '' : 'disabled'}>${max ? '최대' : `${cost}점`}</button></div>`; }).join('');
+        return win('미니게임장', `${tabs(['놀이', `포인트 상점 ${acc.mini.pts ?? 0}`], tab, tabAct)}<div class="ui-tabpanel">${tab === 1 ? `${shop}<p class="ui-xs ui-muted">미니게임 점수가 그대로 포인트로 쌓입니다. 보너스는 계정 공용입니다.</p>` : `${rows}<p class="ui-xs ui-muted">보상은 점수에 비례합니다(표시된 값은 최고 점수일 때). 점수는 미니게임 포인트로도 쌓입니다.</p>`}</div>`);
       }
       case 'pets': {
         // 원작의 펫: 하루 한 번 무료 뽑기 + 펫 크리스탈로 간식을 사서 뽑기. 가진 동료는 모두 효과, 겹치면 크리스탈, '+' 강화
@@ -1910,6 +1913,7 @@ export class UI {
         break;
       }
       case 'dclaim': { const r = g.act({ t: 'daily', i: +a }); if (r.ok) { this.audio?.play('coin'); this.toast('일일 과제 보상: 공로 +1과 코인'); } else fail(r.err ?? null); break; }
+      case 'miniup': { const r = g.act({ t: 'miniUp', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'popup': { const r = g.act({ t: 'poppy', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'bkeeper': fail(g.act({ t: 'breed', op: 'keeper' }).err ?? null); break;
       case 'barteam': fail(g.act({ t: 'breed', op: 'arena', uid: +a }).err ?? null); break;

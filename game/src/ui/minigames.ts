@@ -1,6 +1,6 @@
 // 미니게임 화면: 화면 위에 덮는 전용 창(캔버스)에서 돌리고, 끝나면 점수를 돌려준다.
 // 규칙·보상은 core/minigames.ts, 여기는 조작과 그림만.
-export type PlayKind = 'chop' | 'mine' | 'spike' | 'totem' | 'worship';
+export type PlayKind = 'chop' | 'mine' | 'spike' | 'darts' | 'totem' | 'worship';
 /** 기도 토템 디펜스 설정: 혼령 속도 배율·그림·토템이 스스로 쏘는 간격(0이면 안 쏨)·토템 그림 */
 export interface TotemOpts { speed: number; art: string; bolt: number; totem: string }
 export interface PlayResult { score: number; kills: number; survived: boolean; /** 중간에 그만둠 */ quit?: boolean }
@@ -60,6 +60,7 @@ function makeGame(kind: PlayKind, opts?: TotemOpts): Game {
   if (kind === 'chop') return timingGame();
   if (kind === 'mine') return chargeGame();
   if (kind === 'spike') return spikeGame();
+  if (kind === 'darts') return dartsGame();
   return totemGame(opts ?? { speed: 1, art: 'mob_glowbat', bolt: 0, totem: 'obj_totem' });
 }
 
@@ -266,5 +267,34 @@ function totemGame(o: TotemOpts): Game {
     status: () => `${Math.max(0, Math.ceil(WAVES * (WAVE_T + PAUSE) - t))}초 · 혼령 ${kills}`,
     over: () => done,
     result: () => ({ score: kills, kills, survived: hp > 0 }),
+  };
+}
+
+/** 다트: 과녁 위를 8자로 흔들리는 조준점이 가운데에 올 때 누른다(10발, 점점 빨라진다) */
+function dartsGame(): Game {
+  let t = 0, shots = 0, score = 0, done = false, msg = '', msgT = 0;
+  const hits: { x: number; y: number }[] = [];
+  const CX = 180, CY = 100, R = 70;
+  const aim = () => { const sp = 1.4 + shots * 0.15; return { x: CX + Math.sin(t * sp) * R * 0.95, y: CY + Math.sin(t * sp * 2) * R * 0.5 }; };
+  return {
+    hint: '조준점이 과녁 가운데에 왔을 때 누르세요. 가운데일수록 점수가 높습니다(10발).',
+    step(dt) { if (done) return; t += dt; msgT = Math.max(0, msgT - dt); },
+    press() {
+      if (done) return;
+      const a = aim(), d = Math.hypot(a.x - CX, a.y - CY), pts = d < 8 ? 10 : d < 20 ? 7 : d < 35 ? 4 : d < 55 ? 2 : 0;
+      score += pts; shots++; hits.push(a); msg = pts >= 10 ? '한가운데!' : pts ? `+${pts}` : '빗나감'; msgT = 0.7;
+      if (shots >= 10) done = true;
+    },
+    release() {},
+    draw(c) {
+      for (const [r, col] of [[R, '#e9e4f0'], [55, '#d9574a'], [35, '#e9e4f0'], [20, '#d9574a'], [8, '#f2c14e']] as const) { c.fillStyle = col; c.beginPath(); c.arc(CX, CY, r, 0, Math.PI * 2); c.fill(); }
+      for (const h of hits) { c.fillStyle = '#2a2230'; c.fillRect(h.x - 1.5, h.y - 1.5, 3, 3); }
+      if (!done) { const a = aim(); c.strokeStyle = '#2a8a3a'; c.lineWidth = 2; c.beginPath(); c.arc(a.x, a.y, 6, 0, Math.PI * 2); c.moveTo(a.x - 9, a.y); c.lineTo(a.x + 9, a.y); c.moveTo(a.x, a.y - 9); c.lineTo(a.x, a.y + 9); c.stroke(); }
+      if (msgT > 0) text(c, msg, CX, 24, C.ok, 14);
+      if (done) text(c, `끝! ${score}점`, CX, 190, C.ok, 16);
+    },
+    status: () => `${score}점 · ${Math.min(10, shots)}/10발`,
+    over: () => done,
+    result: () => ({ score, kills: 0, survived: true }),
   };
 }
