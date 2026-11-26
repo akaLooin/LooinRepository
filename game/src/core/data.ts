@@ -1454,7 +1454,17 @@ export interface CardSetDef { id: string; name: string; cards: string[]; tiers: 
 export const CARD_SETS: CardSetDef[] = [
   { id: 'w1', name: '첫 숲 세트', cards: ['mossblob', 'pebbler', 'leafling', 'mossking', 'oak', 'redrock', 'silvertree'], tiers: [3, 8, 14, 21], eff: 'afk', v: [1, 2, 3, 5], label: '방치 효율 +%p' },
   { id: 'w1b', name: '깊은 숲 세트', cards: ['mudturtle', 'glowbat', 'gusthopper', 'golemite', 'shroomkin', 'willow', 'moonbirch', 'bluerock', 'goldrock'], tiers: [4, 10, 18, 27], eff: 'drop', v: [3, 6, 10, 15], label: '드롭률 +%' },
+  // 원작처럼 월드마다·자원·보스 세트(별 합계로 5단계)
+  { id: 'w2', name: '노을 사막 세트', cards: ['cactling', 'scorpip', 'mirabird', 'mumbun', 'saltcrab', 'duneworm', 'sunwisp'], tiers: [4, 10, 17, 25, 35], eff: 'coins', v: [4, 8, 13, 19, 26], label: '코인 획득 +%' },
+  { id: 'w3', name: '서리 고원 세트', cards: ['snowpuff', 'pinekin', 'penglet', 'icicle', 'yetiling', 'aurowisp', 'frostgolem'], tiers: [4, 10, 17, 25, 35], eff: 'xp', v: [3, 6, 10, 15, 20], label: '경험치 +%' },
+  { id: 'w4', name: '별빛 성운 세트', cards: ['starling', 'cratermite', 'nebjelly', 'meteorite', 'ringowl', 'cometfox', 'voidimp'], tiers: [4, 10, 17, 25, 35], eff: 'dmg', v: [3, 6, 10, 15, 20], label: '공격력 +%' },
+  { id: 'res1', name: '쉬운 자원 세트', cards: ['oak', 'redrock', 'silvertree', 'willow', 'moonbirch', 'bluerock', 'goldrock'], tiers: [4, 10, 17, 25, 35], eff: 'mining', v: [5, 10, 16, 23, 30], label: '채광 효율 +%' },
+  { id: 'res2', name: '보통 자원 세트', cards: ['palm', 'amberrock', 'spring', 'saltpool', 'starpool', 'antbush', 'glowbush', 'goldbush'], tiers: [4, 10, 18, 28, 40], eff: 'chopping', v: [5, 10, 16, 23, 30], label: '벌목 효율 +%' },
+  { id: 'res3', name: '어려운 자원 세트', cards: ['pine', 'frostrock', 'icehole', 'frostbush', 'startree', 'novarock', 'nebpool', 'cometbush'], tiers: [4, 10, 18, 28, 40], eff: 'fishing', v: [5, 10, 16, 23, 30], label: '낚시 효율 +%' },
+  { id: 'boss', name: '보스 세트', cards: ['mossking', 'sandlord', 'frostlord', 'nebtitan'], tiers: [2, 5, 9, 14, 20], eff: 'hpPct', v: [3, 6, 10, 15, 20], label: '최대 체력 +%' },
 ];
+// 깊은 지역 세트(월드마다)
+DEEP_MOBS.forEach((list, wi) => CARD_SETS.push({ id: `deep${wi + 1}`, name: `${wi + 1}월드 깊은 지역 세트`, cards: list, tiers: [5, 12, 22, 34, 48].map((t) => Math.min(t, list.length * 5)), eff: (['afk', 'card', 'drop', 'dmg'] as BonusKey[])[wi], v: wi === 0 ? [1, 2, 3, 4, 6] : [3, 6, 10, 15, 20], label: ['방치 효율 +%p', '카드 드롭률 +%', '드롭률 +%', '공격력 +%'][wi] }));
 export const CARD_PRESET_LV = 15;
 
 // ───────── 동료(계정, 원작의 펫): 하루 한 번 무료 뽑기 + 펫 크리스탈로 간식을 사서 뽑기 ─────────

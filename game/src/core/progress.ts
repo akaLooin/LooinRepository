@@ -2,7 +2,7 @@
 // 효과는 모두 BonusKey 로 모아 derive() 에서 한 번에 더한다.
 import {
   ACHIEVEMENTS, BonusKey, CARD_PRESET_LV, CARD_SETS, CARD_SLOTS, CardSetDef, FAMILY, FAMILY_MIN, FAMILY_SLOTS, ITEMS, MAX_CHARACTERS, SIGNS, SIGN_LV, signSlots, STAMPS, STATUES,
-  MAPS, PETS, RIFT_BONUS, baseClass, classLine, cardTier, statueNeed,
+  MAPS, PETS, RIFT_BONUS, WORLDS, baseClass, classLine, cardTier, statueNeed,
 } from './data';
 import type { Account, Character } from './state';
 import { countItem, removeItem } from './state';
@@ -138,6 +138,43 @@ const ACH_PROG: Record<string, (a: Account) => [number, number]> = {
   tasks10: (a) => [Object.values(a.tasks).reduce((n, v) => n + v, 0), 10],
   stars5: (a) => [Object.keys(a.stars).length, 5],
 };
+// ───────── 원작처럼 월드마다 많은 업적(조건과 보상을 표로 만든다) ─────────
+{
+  type P = (a: Account) => number;
+  const add = (id: string, name: string, desc: string, f: P, need: number, reward: { eff?: BonusKey; v?: number; merit?: number; label: string }) => {
+    ACHIEVEMENTS.push({ id, name, desc, ...reward }); ACH_PROG[id] = (a) => [f(a), need];
+  };
+  const R: { eff: BonusKey; v: number; unit: string }[] = [
+    { eff: 'dmg', v: 2, unit: '%' }, { eff: 'xp', v: 2, unit: '%' }, { eff: 'drop', v: 2, unit: '%' }, { eff: 'coins', v: 3, unit: '%' }, { eff: 'hpPct', v: 3, unit: '%' },
+    { eff: 'mining', v: 4, unit: '%' }, { eff: 'chopping', v: 4, unit: '%' }, { eff: 'card', v: 2, unit: '%' }, { eff: 'luk', v: 5, unit: '' }, { eff: 'afk', v: 0.5, unit: '%p' },
+  ];
+  const NAME: Record<string, string> = { dmg: '공격력', xp: '경험치', drop: '드롭률', coins: '코인', hpPct: '최대 체력', mining: '채광 효율', chopping: '벌목 효율', card: '카드 드롭률', luk: '행운', afk: '방치 효율' };
+  let ri = 0;
+  const rw = (merit = 0) => { const r = R[ri++ % R.length]; return merit && ri % 3 === 0 ? { merit, label: `공로 +${merit}` } : { eff: r.eff, v: r.v, label: `${NAME[r.eff]} +${r.v}${r.unit}` }; };
+  const sum = (o: Record<string, number> | undefined) => Object.values(o ?? {}).reduce((n, v) => n + v, 0);
+  for (const lv of [50, 75, 100, 125, 150, 200]) add(`lv${lv}`, `Lv.${lv}의 벽`, `캐릭터 하나가 Lv.${lv}`, (a) => best(a, (c) => c.level), lv, rw(2));
+  for (const [boss, nm] of [['mossking', '이끼왕'], ['sandlord', '사막 거상'], ['frostlord', '눈보라 군주'], ['nebtitan', '성운 거신']] as const)
+    for (const n of boss === 'mossking' ? [100] : [1, 10, 100]) add(`boss_${boss}_${n}`, n === 1 ? `${nm} 토벌` : `${nm} ${n}번`, `${nm} ${n}번 처치`, (a) => a.bosses[boss] ?? 0, n, rw(3));
+  for (const w of WORLDS) for (const n of [1000, 10000, 100000]) add(`kills_w${w.n}_${n}`, `${w.n}월드 사냥꾼 ${n.toLocaleString()}`, `${w.n}월드 맵에서 계정 처치 ${n.toLocaleString()}`, (a) => w.maps.reduce((s, m) => s + a.characters.reduce((t, c) => t + (c.kills[m] ?? 0), 0), 0), n, rw(2));
+  const SK: [string, string][] = [['mining', '채광'], ['chopping', '벌목'], ['smithing', '대장'], ['fishing', '낚시'], ['catching', '곤충 채집'], ['trapping', '덫 사냥'], ['worship', '기도'], ['cooking', '요리'], ['lab', '연구'], ['alchemy', '연금'], ['construction', '건설'], ['breeding', '번식']];
+  for (const [k, nm] of SK) for (const lv of [25, 50]) add(`sk_${k}_${lv}`, `${nm} 장인 ${lv}`, `${nm} Lv.${lv}`, (a) => best(a, (c) => c.skills[k as 'mining']?.lv ?? 1), lv, rw(2));
+  for (const n of [50, 200, 500]) add(`cards_${n}`, `카드 수집가 ${n}`, `카드 합계 ${n}장`, (a) => sum(a.cards), n, rw());
+  for (const n of [3, 8]) add(`cardsets_${n}`, `세트 완성 ${n}`, `카드 세트 ${n}개를 1단계 이상`, (a) => CARD_SETS.filter((s) => setTier(a, s) > 0).length, n, rw());
+  for (const n of [15, 30, 50]) add(`stamps_${n}`, `우표 수집가 ${n}`, `우표 ${n}종 수집`, (a) => STAMPS.filter((s) => (a.stamps[s.id] ?? 0) > 0).length, n, rw(2));
+  for (const n of [8, 11]) add(`party_${n}`, `대가족 ${n}`, `캐릭터 ${n}명`, (a) => a.characters.length, n, rw(3));
+  for (const n of [1e6, 1e8, 1e10]) add(`rich_${n}`, `큰손 ${n >= 1e8 ? `${n / 1e8}억` : `${n / 1e4}만`}`, `코인 ${n.toLocaleString()} 보유`, (a) => a.coins, n, rw());
+  for (const w of WORLDS) { const last = w.maps[w.maps.length - 1]; add(`deep_${w.n}`, `${w.n}월드 끝까지`, `${w.n}월드 깊은 지역의 마지막 맵에 닿기`, (a) => (a.characters.some((c) => (c.kills[last] ?? 0) > 0) ? 1 : 0), 1, rw(3)); }
+  for (const n of [5, 15]) add(`obols_${n}`, `오볼 ${n}개`, `개인·가족 오볼판에 오볼 ${n}개`, (a) => (a.famObols ?? []).filter(Boolean).length + Math.max(0, ...a.characters.map((c) => (c.obols ?? []).filter(Boolean).length)), n, rw());
+  for (const n of [10, 100]) add(`shiny_${n}`, `빛나는 덫 ${n}`, `빛나는 동물 ${n}마리`, (a) => sum(a.shinies), n, rw());
+  for (const n of [10, 30, 52]) add(`meals_${n}`, `미식가 ${n}`, `요리 ${n}가지 발견`, (a) => a.cook?.found.length ?? 0, n, rw());
+  for (const n of [5, 20]) add(`pets_${n}`, `펫 친구 ${n}`, `번식 펫 ${n}마리`, (a) => a.breed?.pets.length ?? 0, n, rw());
+  for (const n of [5, 15]) add(`rift_${n}`, `균열 ${n}`, `별의 균열 웨이브 ${n}`, (a) => a.riftBest ?? 0, n, rw(3));
+  for (const n of [25, 100]) add(`arcade_${n}`, `오락실 단골 ${n}`, `오락실 보너스 합계 ${n}`, (a) => sum(a.arcade?.up), n, rw());
+  for (const n of [1, 7]) add(`gold_${n}`, `황금 석상 ${n}`, `황금 석상 ${n}개`, (a) => a.goldStatues?.length ?? 0, n, rw(2));
+  for (const n of [10, 40]) add(`bubbles_${n}`, `거품 발견 ${n}`, `연금 거품 ${n}개 발견`, (a) => Object.values(a.alch?.found ?? {}).reduce((s, v) => s + v, 0), n, rw());
+  for (const n of [3, 10]) add(`builds_${n}`, `건축가 ${n}`, `건물 ${n}종 짓기`, (a) => Object.values(a.build?.levels ?? {}).filter((v) => v > 0).length, n, rw(2));
+  for (const n of [5, 20]) add(`post_${n}`, `연속 배달 ${n}`, `한 회사의 연속 배달 ${n}일`, (a) => Math.max(0, ...Object.values(a.postOff?.streak ?? {})), n, rw());
+}
 export const achieveProgress = (acc: Account, id: string): [number, number] => ACH_PROG[id]?.(acc) ?? [0, 1];
 const ACH_CHECK: Record<string, (a: Account) => boolean> = Object.fromEntries(Object.entries(ACH_PROG).map(([k, f]) => [k, (a: Account) => { const [h, n] = f(a); return h >= n; }]));
 export const achieveReady = (acc: Account, id: string) => !acc.achievements[id] && !!ACH_CHECK[id]?.(acc);

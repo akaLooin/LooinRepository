@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applyAction } from '../src/core/actions';
 import { AFK_MAX_SECONDS, CRYSTAL_CHANCE, FAMILY, FAMILY_MIN, MAX_CHARACTERS, MONSTERS, PRODUCTS, crystalOf, statueNeed } from '../src/core/data';
 import { familyBest, statueLv } from '../src/core/progress';
-import { addItem, createCharacter, derive, newAccount } from '../src/core/state';
+import { addItem, createCharacter, derive, invSize, newAccount } from '../src/core/state';
 import { chefMult } from '../src/core/cooking';
 import { labState, nearestSpot } from '../src/core/lab';
 import { computeAfk } from '../src/core/afk';
@@ -308,5 +308,28 @@ describe('균열·시길', () => {
     expect(applyAction(acc, 0, { t: 'alch', op: 'assign', id: `g:${SG[0].id}` }, 1).ok).toBe(true);
     applyAction(acc, 0, { t: 'alch', op: 'start' }, 1 + 30 * 3_600_000);
     expect(sLv(acc.alch, SG[0].id)).toBe(1);
+  });
+});
+
+import { TASKS as TK, tasksOf, MERITS as MR } from '../src/core/tasks';
+describe('작업판(월드마다)·일일 과제·공로 상점', () => {
+  it('월드마다 작업판, 과제마다 10단계, 일일 과제 4개, 큰 배낭으로 가방 칸', () => {
+    for (const w of [1, 2, 3, 4]) expect(tasksOf(w).length).toBeGreaterThan(8);
+    expect(TK.every((t) => t.tiers.length === 10)).toBe(true);
+    const { acc, c } = setup();
+    c.kills.meadow = 10; c.kills.hills = 10; c.kills.forest = 10; c.kills.swamp = 10;
+    const day = new Date(2026, 10, 26, 12).getTime();
+    expect(applyAction(acc, 0, { t: 'daily' }, day).ok).toBe(true);
+    expect(acc.daily!.list.length).toBe(4);
+    const d = acc.daily!.list[0];
+    expect(applyAction(acc, 0, { t: 'daily', i: 0 }, day).ok).toBe(false);
+    c.kills[d.map] = (c.kills[d.map] ?? 0) + d.n;
+    expect(applyAction(acc, 0, { t: 'daily', i: 0 }, day).ok).toBe(true);
+    expect(acc.merit).toBe(1);
+    acc.merit = 100;
+    const bag0 = invSize(c);
+    expect(applyAction(acc, 0, { t: 'merit', id: 'bag' }, day).ok).toBe(true);
+    expect(invSize(c)).toBe(bag0 + 2);
+    expect(MR.length).toBeGreaterThanOrEqual(12);
   });
 });

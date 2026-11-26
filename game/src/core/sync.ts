@@ -29,7 +29,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const t = Math.max(0, elapsedSec);
 
   // 1) 행동으로만 바뀌는 값
-  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'aligned', 'birth', 'obols', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal', 'maxWorld', 'post', 'traps', 'worship'];
+  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'aligned', 'birth', 'obols', 'meritBag', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal', 'maxWorld', 'post', 'traps', 'worship'];
   if (!same(s.skills.worship, claimed.skills.worship)) return '바뀌면 안 되는 값: 기도';
   if (!same(s.skills.cooking, claimed.skills.cooking)) return '바뀌면 안 되는 값: 요리';
   if (!same(s.skills.lab, claimed.skills.lab)) return '바뀌면 안 되는 값: 연구';

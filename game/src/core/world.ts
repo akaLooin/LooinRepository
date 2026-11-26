@@ -4,6 +4,7 @@ import {
   SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult } from './data';
 import { Rng } from './rng';
 import { multiKill } from './progress';
+import { meritValue } from './tasks';
 import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady, foodWait } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
@@ -575,8 +576,11 @@ export class World {
     this.events.push({ t: 'kill', uid: m.uid, x: m.x, y: m.y });
     if (gainXp(c, Math.max(1, Math.round(m.def.xp * d.xpMult)))) this.events.push({ t: 'level', level: c.level });
     this.spawnDrop(true, 'coin', Math.round(this.rng.int(m.def.coins[0], m.def.coins[1]) * d.coinMult), m.x, m.y - 10, m.y);
+    // 공로 상점: 보스 열쇠·몬스터 재료 드롭 보너스
+    const keyM = 1 + meritValue(this.acc, 'key'), matM = 1 + meritValue(this.acc, 'mats');
     for (const dr of m.def.drops) {
-      if (this.rng.chance(dr.chance * d.dropMult)) this.spawnDrop(false, dr.item, this.rng.int(dr.qty[0], dr.qty[1]), m.x, m.y - 10, m.y);
+      const extra = dr.item.endsWith('_key') ? keyM : ITEMS[dr.item]?.kind === 'material' ? matM : 1;
+      if (this.rng.chance(dr.chance * d.dropMult * extra)) this.spawnDrop(false, dr.item, this.rng.int(dr.qty[0], dr.qty[1]), m.x, m.y - 10, m.y);
     }
     this.rollCard(m.def.id, m.def.name, m.def.boss ? CARD_BOSS_CHANCE : CARD_CHANCE, d, !!m.def.boss);
     if (this.aiTarget === m) this.aiTarget = null;

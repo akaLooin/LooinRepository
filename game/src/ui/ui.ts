@@ -28,7 +28,7 @@ import {
   mapUnlocked, refillTeleports, anvilCap, anvilPointsFree, anvilRate, anvilSlotsOpen, equipCard, recipeLock, unequipCard, buy, collectAnvil, deposit, depositAll, haveMat, invSize, setProduct, shopLeft, spendAnvilPoint,
   stackCap, storageCount, storageSize, useItem, withdraw, dmgTaken, hitChance, learnTalent, questProgress, sellItem, setFood, skillXpToNext, spendStat, unequipItem, xpToNext,
   minibossOpen, mapQuota, canTeleportTo, SKIN_SLOTS, SkinSlot, starTalPoints, foodWait, gateChecks, gateOpen,
-  anyTalentFree, tabFree, talentMax,
+  anyTalentFree, tabFree, talentMax, today,
 } from '../core/state';
 import { WorldEvent } from '../core/world';
 import { GAMES, GameKind, SPIKE_WINDOW, gameReward, playsLeft, spikeOpen } from '../core/minigames';
@@ -36,7 +36,7 @@ import { PlayKind, runGame } from './minigames';
 import { MapRegion, worldMapSvg } from './worldmap';
 import { owlCost, owlPerHour, owlSettle, petFreeReady, petOwned, petPlus, petValue } from '../core/companions';
 import { STARS, achieveReady, achieveProgress, charSlots, familyBest, familyLevel, familyValue, setStars, setTier, statueLevel, statueLv, DEATH_TIERS, deathBonus, deathKills, deathMaps, deathRank } from '../core/progress';
-import { MERITS, MeritEff, TASKS, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, meritCost, meritLv, taskDone } from '../core/tasks';
+import { MERITS, MeritEff, TASK_BY_ID, TASK_GROUP_NAMES, TaskGroup, dailyProgress, meritCost, meritLv, taskDone, tasksOf } from '../core/tasks';
 import { STAMP_BY_ID, stampCost, stampValue, stampsOpen } from '../core/stamps';
 import { ForgeUp, forgeBonus, forgeCap, forgeProgress, forgeSettle, forgeSlotsOpen, forgeUpCost, forgeUpMaxed, smeltSeconds } from '../core/forge';
 import { Game } from '../game';
@@ -1289,11 +1289,13 @@ export class UI {
       }
       case 'statues': return win('석상 받침 <span class="ui-sm ui-muted">캐릭터마다</span>', this.statuesHtml(c));
       case 'tasks': {
-        const groups = Object.keys(TASK_GROUP_NAMES) as TaskGroup[];
-        const names = [...groups.map((k) => TASK_GROUP_NAMES[k]), '공로 상점'];
-        const ready = (k: TaskGroup) => TASKS.some((t) => t.group === k && taskDone(g.acc, t.id) < t.tiers.length && t.value(g.acc) >= t.tiers[taskDone(g.acc, t.id)]);
-        const body = tab === 3 ? this.meritHtml() : this.tasksHtml(groups[tab]);
-        return win(`작업판 <span class="ui-sm ui-muted">계정 공용 · 공로</span> <b class="ui-accent">${g.acc.merit}</b>`, `${tabs(names.map((n, i) => (i < 3 && ready(groups[i]) ? `${n} !` : n)), tab, tabAct)}<div class="ui-tabpanel">${body}</div>`);
+        const acc = g.acc, mw = Math.max(1, ...acc.characters.map((x) => x.maxWorld ?? 1));
+        const worlds = [1, 2, 3, 4].filter((w) => w <= mw);
+        const ready = (w: number) => tasksOf(w).some((t) => taskDone(acc, t.id) < t.tiers.length && t.value(acc) >= t.tiers[taskDone(acc, t.id)]);
+        const names = [...worlds.map((w) => `${w}월드${ready(w) ? ' !' : ''}`), '일일', '공로 상점'];
+        const t = Math.min(tab, names.length - 1);
+        const body = t === names.length - 1 ? this.meritHtml() : t === names.length - 2 ? this.dailyHtml() : this.tasksHtml(worlds[t]);
+        return win(`작업판 <span class="ui-sm ui-muted">계정 공용 · 공로</span> <b class="ui-accent">${acc.merit}</b>`, `${tabs(names, t, tabAct)}<div class="ui-tabpanel">${body}</div>`);
       }
       case 'stamps': {
         const names = [...(['combat', 'skill', 'misc'] as StampCat[]).map((k) => STAMP_NAMES[k]), '후원'];
@@ -1431,18 +1433,32 @@ export class UI {
       <h3>가족 레벨 <span class="ui-accent">${lv}</span></h3><p class="ui-sm">캐릭터 칸 ${charSlots(acc)}/${MAX_CHARACTERS}${next ? ` · 레벨 합 ${next}이면 한 칸 더` : ''}</p>`;
   }
 
-  private tasksHtml(group: TaskGroup): string {
+  private tasksHtml(w: number): string {
     const acc = this.game.acc;
-    return TASKS.filter((t) => t.group === group).map((t) => {
-      const done = taskDone(acc, t.id), all = done >= t.tiers.length, v = t.value(acc), goal = t.tiers[Math.min(done, t.tiers.length - 1)];
-      const can = !all && v >= goal;
-      const pips = t.tiers.map((_, i) => `<span class="${i < done ? 'ui-accent' : 'ui-muted'}">${i < done ? '★' : '☆'}</span>`).join('');
-      const unlock = !all ? t.recipes?.[done + 1] : undefined;
-      const reward = all ? '' : `${tile(iconUrl('ui_up'), `+${t.merit[done]}`, `공로 +${t.merit[done]}`)}${unlock ? tile(iconUrl(ITEM_ICON[unlock]), '', `${ITEMS[unlock].name} 레시피`, 'r3') : ''}`;
-      return `<div class="ui-row line"><div class="ui-grow"><b>${t.name}</b> ${pips}
-          ${all ? '<div class="ui-sm ui-good">모두 마침</div>' : bar(can ? 'hp' : 'skill', Math.min(v, goal), goal, `${Math.min(v, goal).toLocaleString()} / ${goal.toLocaleString()} ${t.unit}`)}</div>
-        <div class="qline">${reward}</div>${all ? '' : `<button class="ui-btn ${can ? 'success' : ''} sm" data-act="tclaim:${t.id}" ${can ? '' : 'disabled'}>받기</button>`}</div>`;
-    }).join('') + '<p class="ui-xs ui-muted">모든 캐릭터의 기록을 합쳐 셉니다. 보상으로 공로 포인트와 새 제작 레시피를 얻습니다.</p>';
+    return (Object.keys(TASK_GROUP_NAMES) as TaskGroup[]).map((grp) => {
+      const list = tasksOf(w).filter((t) => t.group === grp);
+      if (!list.length) return '';
+      return `<h3>${TASK_GROUP_NAMES[grp]}</h3>` + list.map((t) => {
+        const done = taskDone(acc, t.id), all = done >= t.tiers.length, v = t.value(acc), goal = t.tiers[Math.min(done, t.tiers.length - 1)];
+        const can = !all && v >= goal;
+        const unlock = !all ? t.recipes?.[done + 1] : undefined;
+        const reward = all ? '' : `${tile(iconUrl('ui_up'), `+${t.merit[done]}`, `공로 +${t.merit[done]}`)}${unlock ? tile(iconUrl(ITEM_ICON[unlock]), '', `${ITEMS[unlock].name} 레시피`, 'r3') : ''}`;
+        return `<div class="ui-row line"><div class="ui-grow"><b>${t.name}</b> <span class="ui-xs ui-accent">${done}/${t.tiers.length}단계</span>
+            ${all ? '<div class="ui-sm ui-good">모두 마침</div>' : bar(can ? 'hp' : 'skill', Math.min(v, goal), goal, `${short(Math.min(v, goal))} / ${short(goal)} ${t.unit}`)}</div>
+          <div class="qline">${reward}</div>${all ? '' : `<button class="ui-btn ${can ? 'success' : ''} sm" data-act="tclaim:${t.id}" ${can ? '' : 'disabled'}>받기</button>`}</div>`;
+      }).join('');
+    }).join('') + '<p class="ui-xs ui-muted">모든 캐릭터의 기록을 합쳐 셉니다. 과제마다 10단계이고, 보상으로 공로 포인트와 새 제작 레시피를 얻습니다.</p>';
+  }
+
+  private dailyHtml(): string {
+    const acc = this.game.acc;
+    if (acc.daily?.day !== today(Date.now())) this.game.act({ t: 'daily' });
+    const list = acc.daily?.list ?? [];
+    return (list.map((d, i) => {
+      const p = Math.min(d.n, dailyProgress(acc, d));
+      return `<div class="ui-row line ${d.done ? 'done' : ''}"><div class="ui-grow"><b>오늘: ${MAPS[d.map].name}에서 ${d.n}마리</b>${d.done ? '' : bar(p >= d.n ? 'hp' : 'skill', p, d.n, `${p} / ${d.n}`)}</div>
+        <button class="ui-btn sm ${p >= d.n && !d.done ? 'success' : ''}" data-act="dclaim:${i}" ${p >= d.n && !d.done ? '' : 'disabled'}>${d.done ? '받음' : '받기'}</button></div>`;
+    }).join('') || '<p class="ui-muted">아직 사냥한 맵이 없어 오늘의 과제가 없습니다.</p>') + '<p class="ui-xs ui-muted">날마다 새로 네 가지(가 본 사냥터에서). 받으면 공로 +1과 코인을 줍니다.</p>';
   }
 
   private meritHtml(): string {
@@ -1872,6 +1888,7 @@ export class UI {
         if (hits.length || coins) { this.audio?.play('coin'); this.toast([...new Set(hits)].map((h) => `${h} +${hits.filter((x) => x === h).length}`).join(', ') + (coins ? `${hits.length ? ' · ' : ''}코인 +${short(coins)}` : '')); }
         break;
       }
+      case 'dclaim': { const r = g.act({ t: 'daily', i: +a }); if (r.ok) { this.audio?.play('coin'); this.toast('일일 과제 보상: 공로 +1과 코인'); } else fail(r.err ?? null); break; }
       case 'popup': { const r = g.act({ t: 'poppy', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'bkeeper': fail(g.act({ t: 'breed', op: 'keeper' }).err ?? null); break;
       case 'barteam': fail(g.act({ t: 'breed', op: 'arena', uid: +a }).err ?? null); break;

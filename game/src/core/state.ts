@@ -61,6 +61,8 @@ export interface Character {
   aligned: string[];
   /** 개인 오볼판 */
   obols: (string | null)[];
+  /** 공로 상점 큰 배낭(계정 공용 값의 사본) */
+  meritBag?: number;
   /** 탄생 별자리(만들 때 고름) */
   birth: string | null;
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
@@ -136,6 +138,8 @@ export interface Account {
   shinies?: Record<string, number>;
   /** 가족 오볼판(계정 공용) */
   famObols?: (string | null)[];
+  /** 일일 과제 */
+  daily?: import('./tasks').Daily;
   /** 별의 균열 최고 기록(웨이브) */
   riftBest?: number;
   /** 찾은 별 지도, 남은 별 포인트, 연 별자리 */
@@ -202,6 +206,7 @@ export function createCharacter(acc: Account, name: string, look: Look, now: num
     attackBars: emptyBars(), attackPage: 0,
   };
   c.hp = derive(c).maxHp; c.mp = derive(c).maxMp;
+  c.meritBag = meritValue(acc, 'bag');
   acc.characters.push(c);
   return c;
 }
@@ -286,7 +291,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   for (const cd of CARDS) if (cd.passive || c.cardSlots?.includes(cd.id)) cb[cd.bonus] += cardTier(cards[cd.id] ?? 0) * cd.per;
   const main = { str, agi, wis, luk }[cls.main], accStat = { str, agi, wis, luk }[cls.acc];
   const maxMp = Math.floor((8 + wis * 1.5 + c.level) * mpMult);
-  const work = 1 + tl('worker') * 0.05;
+  const work = (1 + tl('worker') * 0.05) * (1 + meritValue(a, 'skillxp'));
   const maxHp = Math.floor((40 + c.level * 8 + str * 3 + e.hp + sb.hp + pb.hp) * (1 + pb.hpPct / 100) * (1 + tl('tough') * 0.04) * (1 + cb.hp) * (baseClass(c.cls) === 'warrior' ? 1.15 : 1));
   return {
     str, agi, wis, luk, maxHp, maxMp, mpRegen: (0.5 + maxMp * 0.02) * mpMult * (1 + sl('sl_mp') * 0.05),
@@ -302,7 +307,7 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     crit: Math.min(0.75, 0.04 + agi * 0.004 + sb.crit / 100 + critAdd), critMult: 1.5 + str * 0.004 + t2('deadeye') * 0.04 + t2('carnage') * 0.05,
     bossMult: 1 + wis * 0.004,
     xpMult: (1 + luk * 0.005 + tl('insight') * 0.03) * (1 + sb.xp / 100 + bb.xp + meritValue(a, 'xp') + pb.xp / 100), dropMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100),
-    cardMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100) * (1 + cb.card + pb.card / 100),
+    cardMult: (1 + luk * 0.004) * (1 + cb.drop) * (1 + sb.drop / 100 + bb.drop + meritValue(a, 'drop') + pb.drop / 100) * (1 + cb.card + pb.card / 100 + meritValue(a, 'card')),
     coinMult: 1 + sb.coins / 100 + bb.coins + meritValue(a, 'coins') + pb.coins / 100,
     range: cls.range, ranged: cls.range > 40,
     regen: maxHp * 0.02,
@@ -540,7 +545,8 @@ export function unequipCard(acc: Account, c: Character, slot: number) {
 
 // ───────── 인벤토리 ─────────
 /** 가방 칸 수 */
-export const invSize = (c: Character) => INVENTORY_SIZE + c.bags.reduce((n, id) => n + (ITEMS[id]?.bagSlots ?? 0), 0);
+/** 가방 칸: 기본 + 가방 아이템 + 공로 상점 큰 배낭(계정 값을 캐릭터마다 적어 둔다) */
+export const invSize = (c: Character) => INVENTORY_SIZE + c.bags.reduce((n, id) => n + (ITEMS[id]?.bagSlots ?? 0), 0) + (c.meritBag ?? 0);
 /** 가방 한 칸에 이 아이템을 몇 개까지 쌓을 수 있는가 */
 export function stackCap(c: Character, id: string): number {
   const g: StackGroup = stackGroup(id);
@@ -983,7 +989,7 @@ export function deserialize(json: string | null): Account | null {
       c.talents ??= {};
       c.skins ??= {}; c.equipUp ??= {}; c.starTal ??= {}; c.maxWorld ??= 1; c.post ??= newPost(); { const op = c.post as PostState & { orders?: unknown; day?: unknown }; delete op.orders; delete op.day; } c.traps ??= newTraps(); c.skills.trapping ??= { lv: 1, xp: 0 }; c.worship ??= newWorshipChar(); c.skills.worship ??= { lv: 1, xp: 0 }; c.skills.cooking ??= { lv: 1, xp: 0 }; c.skills.lab ??= { lv: 1, xp: 0 }; c.skills.alchemy ??= { lv: 1, xp: 0 }; c.skills.construction ??= { lv: 1, xp: 0 }; c.skills.breeding ??= { lv: 1, xp: 0 };
       c.skills.fishing ??= { lv: 1, xp: 0 }; c.skills.catching ??= { lv: 1, xp: 0 };
-      c.statues ??= {}; c.talentPreset ??= 0; c.obols ??= [];
+      c.statues ??= {}; c.talentPreset ??= 0; c.obols ??= []; c.meritBag = meritValue(a, 'bag');
       { const o = c as Character & { sign?: string | null }; c.aligned ??= o.sign ? [o.sign] : []; c.birth ??= null; delete o.sign; }
       c.talentPresets ??= [{ talents: { ...c.talents }, bars: c.attackBars.map((b) => b.slice()) }, { talents: {}, bars: emptyBars() }]; c.cardSet ??= null; c.cardPreset ??= 0;
       c.cardPresets ??= [c.cardSlots.slice(), new Array(CARD_SLOTS).fill(null)];
@@ -997,8 +1003,8 @@ export function deserialize(json: string | null): Account | null {
 /** 받은 업적 수 */
 const achCount = (acc: Pick<Account, 'achievements'>) => Object.values(acc.achievements ?? {}).filter(Boolean).length;
 /** 남은 별빛 포인트: 레벨 2마다 1 + 업적마다 1 - 쓴 포인트 */
-export const starTalPoints = (acc: Pick<Account, 'achievements'>, c: Character) =>
-  Math.floor(c.level / 2) + achCount(acc) - Object.values(c.starTal).reduce((n, v) => n + v, 0);
+export const starTalPoints = (acc: Pick<Account, 'achievements'> & Partial<Pick<Account, 'meritShop'>>, c: Character) =>
+  Math.floor(c.level / 2) + achCount(acc) + meritValue(acc, 'stars') - Object.values(c.starTal).reduce((n, v) => n + v, 0);
 export function learnStarTal(acc: Account, c: Character, id: string): string | null {
   const t = STAR_TAL[id];
   if (!t) return '없는 특성';

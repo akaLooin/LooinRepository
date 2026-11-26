@@ -91,6 +91,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('lab'), op: z.enum(['visit', 'place', 'leave', 'jewel', 'chip', 'chipOn']), spot: z.number().int().min(0).max(300).optional(), id: id.optional() }),
   z.object({ t: z.literal('breed'), op: z.enum(['visit', 'hatch', 'release', 'fence', 'team', 'up', 'keeper', 'arena', 'fight']), uid: z.number().int().min(0).max(1e9).optional(), terr: id.optional(), k: z.enum(['nest', 'speed', 'rarity', 'fence']).optional() }),
   z.object({ t: z.literal('cook'), op: z.enum(['visit', 'claim', 'meal', 'recipe', 'up', 'buy', 'lvl', 'chef', 'ladle']), idx: z.number().int().min(0).max(9).optional(), id: z.string().max(40).optional(), sp: z.array(id).max(4).optional(), k: z.enum(['spd', 'fire', 'luck']).optional() }),
+  z.object({ t: z.literal('daily'), i: z.number().int().min(0).max(9).optional() }),
   z.object({ t: z.literal('arcade'), op: z.enum(['visit', 'shoot']) }),
   z.object({ t: z.literal('poppy'), op: z.enum(['visit', 'up']), id: id.optional() }),
   z.object({ t: z.literal('obol'), op: z.enum(['place', 'take']), fam: z.boolean(), idx: z.number().int().min(0).max(20), id: id.optional() }),
@@ -100,7 +101,7 @@ const ActionSchema: z.ZodType<Action> = z.discriminatedUnion('t', [
   z.object({ t: z.literal('post'), op: z.enum(['refresh', 'deliver', 'box']), idx: z.number().int().min(0).max(9).optional(), id: id.optional() }),
   z.object({ t: z.literal('owl'), k: z.enum(['rate', 'dmg', 'xp', 'drop', 'afk']).optional() }),
   z.object({ t: z.literal('talentPreset'), i: z.number().int().min(0).max(3) }),
-  z.object({ t: z.literal('merit'), id: z.enum(['storage', 'afk', 'drop', 'xp', 'teleport', 'coins']) }),
+  z.object({ t: z.literal('merit'), id: z.enum(['storage', 'afk', 'drop', 'xp', 'teleport', 'coins', 'bag', 'card', 'key', 'mats', 'skillxp', 'stars']) }),
   z.object({ t: z.literal('target'), activity: z.union([z.object({ k: z.literal('none') }), z.object({ k: z.literal('fight') }), z.object({ k: z.literal('gather'), node: id })]) }),
 ]) as z.ZodType<Action>;
 // 캐릭터 상태는 모양만 대강 확인하고, 의미 검증은 checkSync 가 한다
