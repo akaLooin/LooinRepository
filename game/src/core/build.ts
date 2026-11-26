@@ -206,7 +206,7 @@ export function rankUpSalt(acc: Account, id: string, now: number): string | null
 
 // ───────── 3D 프린터 ─────────
 /** 복사할 수 있는 자원(채집 자원) */
-export const PRINTABLE = ['log', 'ore', 'willowlog', 'ore_blue', 'moonlog', 'ore_gold', 'palmlog', 'ore_amber', 'pinelog', 'ore_frost', 'starlog', 'ore_nova', 'fish_minnow', 'fish_salt', 'fish_ice', 'bug_ant', 'bug_firefly', 'bug_frost'];
+export const PRINTABLE = ['log', 'ore', 'willowlog', 'ore_blue', 'moonlog', 'ore_gold', 'palmlog', 'ore_amber', 'pinelog', 'ore_frost', 'starlog', 'ore_nova', 'fish_minnow', 'fish_salt', 'fish_ice', 'bug_ant', 'bug_firefly', 'bug_frost', 'birchlog', 'frostlog', 'neblog', 'voidlog', 'ore_ice', 'ore_glacier', 'ore_meteor', 'ore_void', 'fish_frost', 'fish_deep', 'fish_ring', 'fish_void', 'bug_snow', 'bug_aurora', 'bug_ring', 'bug_void'];
 export const printerSlots = (b: Build) => (b.levels.b_printer ?? 0) ? 1 + (b.levels.b_printer ?? 0) : 0;
 /** 프린터 한 칸이 시간당 복사하는 개수: 그 자원을 많이 가진 캐릭터의 가방 기준(본보기) */
 export const printRate = (acc: Pick<Account, 'characters' | 'storage'>, item: string) =>

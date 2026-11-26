@@ -819,7 +819,7 @@ function buildTheme(name: ThemeKey) {
 
 function buildObjects() {
   // 나무(참나무 / 은빛나무): 줄기와 수관을 분리해 수관만 흔든다
-  for (const [id, leaf, trunk] of [['oak', ['#3b8c4f', '#5fb859', '#8fde5d'], ['#8a5a3c', '#6b4530']], ['silvertree', ['#7fa8b8', '#a9d3dc', '#e3f6f5'], ['#b8b0c8', '#8d86a3']], ['willow', ['#6a8a3a', '#8aac4a', '#b8d47a'], ['#6e5a40', '#54442f']], ['moonbirch', ['#4a5aa8', '#7a8ad8', '#c4ccff'], ['#e8e4f0', '#b4aec8']], ['palm', ['#3a9a4a', '#5ac05a', '#a8e878'], ['#b8864a', '#8a6034']], ['pine', ['#2e6a4a', '#3a7a54', '#f4f8fc'], ['#7a5a3c', '#5a4030']], ['startree', ['#3a2a7a', '#6a5ab8', '#f6e08a'], ['#4a3a6a', '#342a52']]] as const) {
+  for (const [id, leaf, trunk] of [['oak', ['#3b8c4f', '#5fb859', '#8fde5d'], ['#8a5a3c', '#6b4530']], ['silvertree', ['#7fa8b8', '#a9d3dc', '#e3f6f5'], ['#b8b0c8', '#8d86a3']], ['willow', ['#6a8a3a', '#8aac4a', '#b8d47a'], ['#6e5a40', '#54442f']], ['moonbirch', ['#4a5aa8', '#7a8ad8', '#c4ccff'], ['#e8e4f0', '#b4aec8']], ['palm', ['#3a9a4a', '#5ac05a', '#a8e878'], ['#b8864a', '#8a6034']], ['pine', ['#2e6a4a', '#3a7a54', '#f4f8fc'], ['#7a5a3c', '#5a4030']], ['snowbirch', ['#c8d8e8', '#e8f0f8', '#ffffff'], ['#e8e4f0', '#8a8a9a']], ['frostpine', ['#3a6a8a', '#5a9ab8', '#e8f6ff'], ['#5a4a3a', '#3a3028']], ['nebtree', ['#6a2a8a', '#a85ad8', '#ffc8f0'], ['#4a3a6a', '#342a52']], ['voidtree', ['#1a1040', '#3a2a7a', '#c87aff'], ['#2a2040', '#1a1428']], ['startree', ['#3a2a7a', '#6a5ab8', '#f6e08a'], ['#4a3a6a', '#342a52']]] as const) {
     let p = new Paint(18, 30);
     p.rect(6, 0, 6, 28, trunk[0]); p.rect(10, 0, 2, 28, trunk[1]);
     p.rect(4, 26, 10, 3, trunk[0]); p.rect(12, 26, 2, 3, trunk[1]);
@@ -863,7 +863,7 @@ function buildObjects() {
   p.rect(0, 22, 34, 2, null);
   for (const [x, y] of [[8, 14], [18, 12], [25, 15], [14, 18], [22, 9]]) { p.disc(x, y, 2, 1.6, '#d9574a'); p.set(x - 1, y - 1, '#f6a08a'); }
   p.outline().save('node_redrock');
-  for (const [id, base, gem, hi2] of [['bluerock', ['#6a7480', '#5a636e', '#87909b'], '#4e8de2', '#a5d8ff'], ['goldrock', ['#7d7468', '#665e54', '#9a9184'], '#f2c14e', '#fff1a8'], ['amberrock', ['#a08468', '#806a52', '#bca084'], '#f0902a', '#ffd08a'], ['frostrock', ['#8aa0b8', '#6a809a', '#a8bed4'], '#7ae0ff', '#e0faff'], ['novarock', ['#6a6088', '#544a70', '#8a80a8'], '#c87aff', '#f0d8ff']] as const) {
+  for (const [id, base, gem, hi2] of [['bluerock', ['#6a7480', '#5a636e', '#87909b'], '#4e8de2', '#a5d8ff'], ['goldrock', ['#7d7468', '#665e54', '#9a9184'], '#f2c14e', '#fff1a8'], ['amberrock', ['#a08468', '#806a52', '#bca084'], '#f0902a', '#ffd08a'], ['frostrock', ['#8aa0b8', '#6a809a', '#a8bed4'], '#7ae0ff', '#e0faff'], ['icerock', ['#a8c8e0', '#7a9ab8', '#d0e8f8'], '#ffffff', '#e0faff'], ['glacrock', ['#6a8ab8', '#4a6a98', '#8aaad8'], '#4ad0ff', '#c8f4ff'], ['meteorrock', ['#6a5a50', '#4a3a30', '#8a7a70'], '#ff7a3a', '#ffd08a'], ['voidrock', ['#2a2040', '#1a1428', '#4a3a6a'], '#c87aff', '#f0d8ff'], ['novarock', ['#6a6088', '#544a70', '#8a80a8'], '#c87aff', '#f0d8ff']] as const) {
     p = new Paint(34, 24);
     p.disc(12, 15, 11, 8, base[0]); p.disc(23, 16, 9, 7, base[1]); p.disc(16, 10, 8, 7, base[2]);
     p.disc(13, 8, 4, 2.5, mix(base[2], '#ffffff', 0.4)); p.rect(0, 22, 34, 2, null);
@@ -872,7 +872,7 @@ function buildObjects() {
   }
 
   // 낚시터: 땅에 고인 물(가장자리 돌·물결·물고기 그림자)
-  for (const [id, water, deep, rim, glint] of [['spring', '#6ac0d8', '#3a8aa8', '#c8a878', '#ffffff'], ['saltpool', '#a8dcec', '#6aaac8', '#f0f4f6', '#ffffff'], ['starpool', '#4a4aa8', '#2a2a78', '#8a7aa8', '#fff6c8'], ['icehole', '#5ab0d8', '#1e5a88', '#eef6fc', '#ffffff'], ['nebpool', '#a86ad8', '#5a2a98', '#8a80a8', '#fff6c8']] as const) {
+  for (const [id, water, deep, rim, glint] of [['spring', '#6ac0d8', '#3a8aa8', '#c8a878', '#ffffff'], ['saltpool', '#a8dcec', '#6aaac8', '#f0f4f6', '#ffffff'], ['starpool', '#4a4aa8', '#2a2a78', '#8a7aa8', '#fff6c8'], ['icehole', '#5ab0d8', '#1e5a88', '#eef6fc', '#ffffff'], ['frostpool', '#7ac8e8', '#3a7aa8', '#e8f0f8', '#ffffff'], ['deeppool', '#2a6a98', '#0e3a68', '#c8d8e8', '#ffffff'], ['ringpool', '#d8a86a', '#a86a3a', '#8a80a8', '#fff6c8'], ['voidpool', '#3a2a6a', '#1a1040', '#5a4a7a', '#c87aff'], ['nebpool', '#a86ad8', '#5a2a98', '#8a80a8', '#fff6c8']] as const) {
     p = new Paint(40, 14);
     p.disc(20, 8, 19, 6, rim); p.disc(20, 8, 16, 4.6, water); p.disc(20, 9, 11, 3, deep);
     p.line(8, 7, 13, 7, glint); p.line(25, 9, 29, 9, glint);
@@ -882,7 +882,7 @@ function buildObjects() {
     p.outline().save(`node_${id}`);
   }
   // 곤충 덤불: 둥근 덤불 + 그 위를 나는 벌레
-  for (const [id, leaf, bug] of [['antbush', ['#7a9a4a', '#a8c46a'], '#3a2a20'], ['glowbush', ['#6a7a5a', '#94a87a'], '#ffb04a'], ['goldbush', ['#5a8a5a', '#8ab87a'], '#f6c945'], ['frostbush', ['#5a8aa0', '#e8f2fa'], '#c8e8ff'], ['cometbush', ['#3a5a8a', '#8ad0f0'], '#fff6c8']] as const) {
+  for (const [id, leaf, bug] of [['antbush', ['#7a9a4a', '#a8c46a'], '#3a2a20'], ['glowbush', ['#6a7a5a', '#94a87a'], '#ffb04a'], ['goldbush', ['#5a8a5a', '#8ab87a'], '#f6c945'], ['frostbush', ['#5a8aa0', '#e8f2fa'], '#c8e8ff'], ['snowbush', ['#8aa8b8', '#ffffff'], '#e8f0ff'], ['aurorabush', ['#3a7a7a', '#7affc0'], '#ff9ae0'], ['ringbush', ['#7a5a3a', '#d8a86a'], '#f6c945'], ['voidbush', ['#2a1a4a', '#5a3a8a'], '#c87aff'], ['cometbush', ['#3a5a8a', '#8ad0f0'], '#fff6c8']] as const) {
     p = new Paint(30, 26);
     p.disc(15, 18, 13, 8, leaf[0]); p.disc(9, 15, 6, 5, leaf[0]); p.disc(21, 14, 7, 6, leaf[0]);
     p.disc(13, 13, 4, 3, leaf[1]); p.disc(21, 11, 4, 3, leaf[1]); p.disc(15, 18, 5, 2.4, leaf[1]);
@@ -1406,6 +1406,19 @@ function buildItems() {
   for (const [k, col] of [['key_str', '#d9574a'], ['key_agi', '#5fb859'], ['key_wis', '#4e8de2'], ['key_luk', '#8fde5d'], ['key_def', '#9aa3ad'], ['key_hp', '#e25d7a'], ['key_dmg', '#ff7a3a'], ['key_mine', '#a8744e']] as const) {
     p = new Paint(12, 12); p.disc(3.5, 3.5, 2.4, 2.4, '#c9d1d9'); p.disc(3.5, 3.5, 1.2, 1.2, null); p.line(5, 5, 7, 7, '#c9d1d9'); p.disc(8, 8, 3, 3, col); p.set(7, 7, '#ffffff'); p.outline().save(`it_${k}`);
   }
+  // 3·4월드 새 채집물: 통나무·광석·물고기·벌레
+  for (const [k, bark, cut] of [['birchlog', '#e8e4f0', '#c8b89a'], ['frostlog', '#5a7a9a', '#c8e0f0'], ['neblog', '#6a3a8a', '#e8b8f0'], ['voidlog', '#2a2040', '#a87ad8']] as const) {
+    p = new Paint(13, 11); p.rect(2, 3, 9, 6, bark); p.rect(2, 7, 9, 2, mix(bark, '#000000', 0.25)); p.disc(10.5, 5.5, 2, 3, cut); p.outline().save(`it_${k}`);
+  }
+  for (const [k, a, gem] of [['ore_ice', '#a8c8e0', '#ffffff'], ['ore_glacier', '#6a8ab8', '#4ad0ff'], ['ore_meteor', '#6a5a50', '#ff7a3a'], ['ore_void', '#2a2040', '#c87aff']] as const) {
+    p = new Paint(12, 10); p.disc(6, 6, 5, 3.6, a); p.disc(4, 5, 1.4, 1.2, gem); p.disc(8, 6, 1.2, 1, gem); p.set(5, 3, '#ffffff'); p.outline().save(`it_${k}`);
+  }
+  for (const [k, body, fin] of [['fish_frost', '#c8e0f0', '#7aa8c8'], ['fish_deep', '#3a6a98', '#1e3a68'], ['fish_ring', '#d8a86a', '#a86a3a'], ['fish_void', '#4a3a7a', '#c87aff']] as const) {
+    p = new Paint(13, 9); p.disc(6, 4.5, 5, 2.6, body); p.rect(10, 2, 2, 5, fin); p.set(3, 4, '#1e1420'); p.outline().save(`it_${k}`);
+  }
+  for (const [k, col] of [['bug_snow', '#e8f0ff'], ['bug_aurora', '#7affc0'], ['bug_ring', '#f6c945'], ['bug_void', '#c87aff']] as const) {
+    p = new Paint(12, 10); p.disc(6, 5, 1.6, 2.6, '#2a2230'); p.disc(3, 4, 2.4, 2, col); p.disc(9, 4, 2.4, 2, col); p.outline().save(`it_${k}`);
+  }
   // 버프 물약(병) · 황금 음식(황금빛 접시)
   for (const [k, col] of [['potion_power', '#e25d4e'], ['potion_wise', '#4e8de2'], ['potion_luck', '#5fb859'], ['potion_card', '#c48aff'], ['potion_miner', '#a8744e'], ['potion_lumber', '#5a8a3a'], ['potion_angler', '#4ab8f0'], ['potion_bug', '#e8c04a']] as const) {
     p = new Paint(12, 12); p.rect(4, 0, 4, 2, '#c9a26a'); p.rect(5, 2, 2, 2, '#e8eef2'); p.disc(6, 7.5, 4, 3.6, '#e8eef2'); p.disc(6, 8, 3.2, 2.8, col); p.set(4, 6, '#ffffff'); p.outline().save(`it_${k}`);
@@ -1443,7 +1456,7 @@ export const ITEM_ICON: Record<string, string> = {
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
   moss_ring: 'it_ring', pebble_charm: 'it_charm', anvil_exp: 'obj_craft',
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
-  ...Object.fromEntries(['ring_sand', 'ring_frost', 'ring_star', 'ring_void', 'ring_sun', 'ring_aurora', 'pend_moss', 'pend_leaf', 'pend_sand', 'pend_salt', 'pend_frost', 'pend_aurora', 'pend_star', 'pend_void', 'cape_moss', 'cape_sand', 'cape_frost', 'cape_star', 'cape_void', 'cape_hero', 'key_str', 'key_agi', 'key_wis', 'key_luk', 'key_def', 'key_hp', 'key_dmg', 'key_mine'].map((k) => [k, `it_${k}`])), ...Object.fromEntries(['potion_power', 'potion_wise', 'potion_luck', 'potion_card', 'potion_miner', 'potion_lumber', 'potion_angler', 'potion_bug', 'gold_berry', 'gold_mushroom', 'gold_stew', 'gold_pie', 'gold_cake', 'gold_cocoa', 'gold_mooncake', 'gold_feast'].map((k) => [k, `it_${k}`])), twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
+  ...Object.fromEntries(['birchlog', 'frostlog', 'neblog', 'voidlog', 'ore_ice', 'ore_glacier', 'ore_meteor', 'ore_void', 'fish_frost', 'fish_deep', 'fish_ring', 'fish_void', 'bug_snow', 'bug_aurora', 'bug_ring', 'bug_void'].map((k) => [k, `it_${k}`])), ...Object.fromEntries(['ring_sand', 'ring_frost', 'ring_star', 'ring_void', 'ring_sun', 'ring_aurora', 'pend_moss', 'pend_leaf', 'pend_sand', 'pend_salt', 'pend_frost', 'pend_aurora', 'pend_star', 'pend_void', 'cape_moss', 'cape_sand', 'cape_frost', 'cape_star', 'cape_void', 'cape_hero', 'key_str', 'key_agi', 'key_wis', 'key_luk', 'key_def', 'key_hp', 'key_dmg', 'key_mine'].map((k) => [k, `it_${k}`])), ...Object.fromEntries(['potion_power', 'potion_wise', 'potion_luck', 'potion_card', 'potion_miner', 'potion_lumber', 'potion_angler', 'potion_bug', 'gold_berry', 'gold_mushroom', 'gold_stew', 'gold_pie', 'gold_cake', 'gold_cocoa', 'gold_mooncake', 'gold_feast'].map((k) => [k, `it_${k}`])), twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', ...Object.fromEntries(['moss', 'cactus', 'snake', 'fur', 'trapper', 'star', 'void', 'titan'].map((k) => [`bag_${k}`, `it_bag_${k}`])), ...Object.fromEntries(['wood', 'iron', 'sand', 'gold', 'ice', 'crystal', 'star', 'cosmic'].map((k) => [`chest_${k}`, `it_chest_${k}`])), forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(STAMPS.filter((st) => st.name).map((st) => [st.id, `it_stamp_${st.eff}`])),

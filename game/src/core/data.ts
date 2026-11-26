@@ -254,6 +254,22 @@ const items: ItemDef[] = [
   { id: 'aurora_dust', name: '오로라 가루', desc: '보는 각도마다 빛의 색이 바뀐다.', kind: 'material', sell: 212 },
   { id: 'frost_core', name: '서리 핵', desc: '쥐면 손끝이 얼얼해지는 푸른 핵.', kind: 'material', sell: 236 },
   { id: 'pinelog', name: '전나무 통나무', desc: '곧고 단단한 북쪽 목재.', kind: 'material', sell: 90 },
+  { id: 'birchlog', name: '눈자작 통나무', desc: '눈자작나무에서 얻는다.', kind: 'material', sell: 130 },
+  { id: 'frostlog', name: '서리 통나무', desc: '서리 전나무에서 얻는다.', kind: 'material', sell: 180 },
+  { id: 'ore_ice', name: '얼음 광석', desc: '얼음 광맥에서 얻는다.', kind: 'material', sell: 120 },
+  { id: 'ore_glacier', name: '빙하 광석', desc: '빙하 광맥에서 얻는다.', kind: 'material', sell: 170 },
+  { id: 'fish_frost', name: '서리 메기', desc: '서리 웅덩이에서 얻는다.', kind: 'material', sell: 140 },
+  { id: 'fish_deep', name: '심해 빙어', desc: '깊은 얼음물에서 얻는다.', kind: 'material', sell: 190 },
+  { id: 'bug_snow', name: '눈벌레', desc: '눈 덤불에서 얻는다.', kind: 'material', sell: 140 },
+  { id: 'bug_aurora', name: '오로라 나비', desc: '오로라 덤불에서 얻는다.', kind: 'material', sell: 190 },
+  { id: 'neblog', name: '성운 통나무', desc: '성운나무에서 얻는다.', kind: 'material', sell: 260 },
+  { id: 'voidlog', name: '공허 통나무', desc: '공허나무에서 얻는다.', kind: 'material', sell: 360 },
+  { id: 'ore_meteor', name: '운석 광석', desc: '운석 광맥에서 얻는다.', kind: 'material', sell: 250 },
+  { id: 'ore_void', name: '공허 광석', desc: '공허 광맥에서 얻는다.', kind: 'material', sell: 350 },
+  { id: 'fish_ring', name: '고리 장어', desc: '고리 웅덩이에서 얻는다.', kind: 'material', sell: 270 },
+  { id: 'fish_void', name: '공허 아귀', desc: '공허 웅덩이에서 얻는다.', kind: 'material', sell: 370 },
+  { id: 'bug_ring', name: '고리 반딧불', desc: '고리 덤불에서 얻는다.', kind: 'material', sell: 270 },
+  { id: 'bug_void', name: '공허 나방', desc: '공허 덤불에서 얻는다.', kind: 'material', sell: 370 },
   { id: 'ore_frost', name: '서리 광석', desc: '안쪽에 얼음 결이 갇혀 있다.', kind: 'material', sell: 84 },
   { id: 'bar_frost', name: '서리 주괴', desc: '용광로에서 서리 광석을 녹였다. 그래도 차갑다.', kind: 'material', sell: 340 },
   { id: 'fish_ice', name: '얼음 송어', desc: '얼음 구멍 아래에서 반짝이는 물고기.', kind: 'material', sell: 110 },
@@ -425,6 +441,20 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }, { item: 'bag_void', chance: 0.12, qty: [1, 1] }, { item: 'gold_feast', chance: 0.15, qty: [1, 3] }, { item: 'bag_titan', chance: 0.04, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
+// 미니보스 확충(원작처럼 월드마다): 그 맵 몬스터를 크게 키운 모습
+const MINI_GEN: [string, string, string, number, 'hourly' | 'daily', number][] = [
+  ['cavelord', '그늘 동굴의 주인', 'golemite', 0xb0a0ff, 'daily', 1],
+  ['canyonbrute', '협곡 깡패', 'scorpip', 0xff9070, 'hourly', 2], ['saltqueen', '소금 여왕', 'saltcrab', 0xe0f0ff, 'daily', 2],
+  ['pineelder', '전나무 노인', 'pinekin', 0x90ffb0, 'hourly', 3], ['glacierking', '빙하의 왕', 'yetiling', 0xa0e0ff, 'daily', 3],
+  ['craterbeast', '구덩이 괴수', 'cratermite', 0xffb070, 'hourly', 4], ['ringlord', '고리의 지배자', 'ringowl', 0xd0a0ff, 'daily', 4],
+];
+for (const [id, name, base, tint, when, w] of MINI_GEN) {
+  const b = monsters.find((m) => m.id === base)!, k = when === 'daily' ? 40 : 14;
+  monsters.push({ ...b, id, name, hp: b.hp * k, atk: Math.round(b.atk * 1.4), acc: b.acc, defZero: Math.round(b.defZero * 1.2), xp: b.xp * k, coins: [b.coins[0] * k, b.coins[1] * k], speed: Math.max(8, b.speed - 6), radius: 18, scale: when === 'daily' ? 2.4 : 2.1, art: b.art ?? b.id, tint,
+    drops: [{ item: ['statue_str', 'statue_agi', 'statue_wis', 'statue_luk', 'statue_guard', 'statue_feast', 'statue_fortune'][w + (when === 'daily' ? 3 : 0)], chance: 0.8, qty: [1, 3] }, { item: 'stone_stat', chance: when === 'daily' ? 0.6 : 0.3, qty: [1, 1] },
+      { item: ['key_str', 'key_agi', 'key_wis', 'key_luk', 'key_def', 'key_hp', 'key_dmg', 'key_mine'][(w * 2 + (when === 'daily' ? 1 : 0)) % 8], chance: when === 'daily' ? 0.25 : 0.08, qty: [1, 1] },
+      { item: ['gold_berry', 'gold_pie', 'gold_cocoa', 'gold_feast'][w - 1], chance: when === 'daily' ? 0.3 : 0.1, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3 * w, 6 * w] }] });
+}
 // ───────── 깊은 지역(원작처럼 월드마다 맵이 많다): 그 월드 마지막 사냥터에서 갈라지는 사냥터 사슬 ─────────
 // 몬스터는 그 월드 몬스터의 더 센 변종(그림은 빌려 쓰고 색을 입힌다)
 interface DeepDef { w: number; base: string[]; top: string; n: number; from: string; grow: number }
@@ -492,6 +522,22 @@ const nodes: NodeDef[] = [
   { id: 'novarock', name: '신성 광맥', skill: 'mining', reqLv: 60, hp: 820, xp: 440, item: 'ore_nova' },
   { id: 'nebpool', name: '성운 웅덩이', skill: 'fishing', reqLv: 50, hp: 420, xp: 230, item: 'fish_neb' },
   { id: 'cometbush', name: '혜성 덤불', skill: 'catching', reqLv: 50, hp: 420, xp: 230, item: 'bug_neb' },
+  { id: 'snowbirch', name: '눈자작나무', skill: 'chopping', reqLv: 55, hp: 560, xp: 300, item: 'birchlog' },
+  { id: 'frostpine', name: '서리 전나무', skill: 'chopping', reqLv: 70, hp: 800, xp: 430, item: 'frostlog' },
+  { id: 'icerock', name: '얼음 광맥', skill: 'mining', reqLv: 55, hp: 520, xp: 280, item: 'ore_ice' },
+  { id: 'glacrock', name: '빙하 광맥', skill: 'mining', reqLv: 70, hp: 760, xp: 410, item: 'ore_glacier' },
+  { id: 'frostpool', name: '서리 웅덩이', skill: 'fishing', reqLv: 45, hp: 300, xp: 160, item: 'fish_frost' },
+  { id: 'deeppool', name: '깊은 얼음물', skill: 'fishing', reqLv: 60, hp: 480, xp: 260, item: 'fish_deep' },
+  { id: 'snowbush', name: '눈 덤불', skill: 'catching', reqLv: 45, hp: 300, xp: 160, item: 'bug_snow' },
+  { id: 'aurorabush', name: '오로라 덤불', skill: 'catching', reqLv: 60, hp: 480, xp: 260, item: 'bug_aurora' },
+  { id: 'nebtree', name: '성운나무', skill: 'chopping', reqLv: 75, hp: 1200, xp: 640, item: 'neblog' },
+  { id: 'voidtree', name: '공허나무', skill: 'chopping', reqLv: 90, hp: 1700, xp: 900, item: 'voidlog' },
+  { id: 'meteorrock', name: '운석 광맥', skill: 'mining', reqLv: 75, hp: 1100, xp: 600, item: 'ore_meteor' },
+  { id: 'voidrock', name: '공허 광맥', skill: 'mining', reqLv: 90, hp: 1600, xp: 860, item: 'ore_void' },
+  { id: 'ringpool', name: '고리 웅덩이', skill: 'fishing', reqLv: 65, hp: 620, xp: 330, item: 'fish_ring' },
+  { id: 'voidpool', name: '공허 웅덩이', skill: 'fishing', reqLv: 80, hp: 900, xp: 480, item: 'fish_void' },
+  { id: 'ringbush', name: '고리 덤불', skill: 'catching', reqLv: 65, hp: 620, xp: 330, item: 'bug_ring' },
+  { id: 'voidbush', name: '공허 덤불', skill: 'catching', reqLv: 80, hp: 900, xp: 480, item: 'bug_void' },
 ];
 export const NODES: Record<string, NodeDef> = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
@@ -720,6 +766,15 @@ const maps: MapDef[] = [
     platforms: [], spawns: [], nodes: [], ropes: [], facilities: [],
     portals: [{ x: 24, to: 'voidedge', toX: 930, toY: -96 }] },
 ];
+// 3·4월드 채집 자원 확충: 사냥터마다 한두 개씩
+for (const [map, list] of [['snowfield', ['snowbush']], ['pinewood', ['snowbirch', 'frostpool']], ['frostlake', ['icerock', 'deeppool']], ['icecave', ['glacrock']], ['glacier', ['frostpine', 'aurorabush']], ['aurora', ['icerock']],
+  ['moondust', ['ringbush']], ['crater', ['meteorrock', 'ringpool']], ['nebula', ['nebtree']], ['asteroid', ['voidrock', 'voidpool']], ['rings', ['ringpool', 'voidbush']], ['comet', ['voidtree']]] as [string, string[]][]) {
+  const m = maps.find((x) => x.id === map)!;
+  for (const node of list) {
+    const x = [150, 250, 350, 450, 550, 750, 820].find((cx) => ![...m.nodes.map((n) => n.x), ...m.facilities.map((f) => f.x), ...m.portals.map((p) => p.x)].some((o) => Math.abs(o - cx) < 60));
+    if (x !== undefined) m.nodes.push({ node, x });
+  }
+}
 // 깊은 지역 맵: 그 월드 사냥터의 지형을 빌려 이어 붙인다
 const MAP_PRE = ['깊은', '오래된', '잊힌', '숨은', '메아리', '고요한', '험한', '안쪽', '끝없는', '버려진', '흐린', '어두운', '높은', '젖은', '마른', '뒤틀린', '빛나는', '서늘한', '마지막'];
 const WORLD_HUNT: Record<number, string[]> = {
@@ -1142,6 +1197,22 @@ export const CARDS: CardDef[] = [
   { id: 'novarock', from: 'node', bonus: 'mining', per: 0.14, label: '채광 효율' },
   { id: 'nebpool', from: 'node', bonus: 'card', per: 0.08, label: '카드 드롭률' },
   { id: 'cometbush', from: 'node', bonus: 'catching', per: 0.12, label: '곤충 채집 효율' },
+  { id: 'snowbirch', from: 'node', bonus: 'chopping', per: 0.12, label: '벌목 효율' },
+  { id: 'frostpine', from: 'node', bonus: 'chopping', per: 0.12, label: '벌목 효율' },
+  { id: 'icerock', from: 'node', bonus: 'mining', per: 0.12, label: '채광 효율' },
+  { id: 'glacrock', from: 'node', bonus: 'mining', per: 0.12, label: '채광 효율' },
+  { id: 'frostpool', from: 'node', bonus: 'fishing', per: 0.12, label: '낚시 효율' },
+  { id: 'deeppool', from: 'node', bonus: 'fishing', per: 0.12, label: '낚시 효율' },
+  { id: 'snowbush', from: 'node', bonus: 'catching', per: 0.12, label: '곤충 채집 효율' },
+  { id: 'aurorabush', from: 'node', bonus: 'catching', per: 0.12, label: '곤충 채집 효율' },
+  { id: 'nebtree', from: 'node', bonus: 'chopping', per: 0.15, label: '벌목 효율' },
+  { id: 'voidtree', from: 'node', bonus: 'chopping', per: 0.15, label: '벌목 효율' },
+  { id: 'meteorrock', from: 'node', bonus: 'mining', per: 0.15, label: '채광 효율' },
+  { id: 'voidrock', from: 'node', bonus: 'mining', per: 0.15, label: '채광 효율' },
+  { id: 'ringpool', from: 'node', bonus: 'fishing', per: 0.15, label: '낚시 효율' },
+  { id: 'voidpool', from: 'node', bonus: 'fishing', per: 0.15, label: '낚시 효율' },
+  { id: 'ringbush', from: 'node', bonus: 'catching', per: 0.15, label: '곤충 채집 효율' },
+  { id: 'voidbush', from: 'node', bonus: 'catching', per: 0.15, label: '곤충 채집 효율' },
 ];
 // 보스 카드는 원작처럼 패시브: 장착하지 않아도 효과가 있다
 for (const cd of CARDS) if (cd.from === 'monster' && ['mossking', 'sandlord', 'frostlord', 'nebtitan'].includes(cd.id)) cd.passive = true;
@@ -1651,6 +1722,13 @@ export function arenaWaves(kills: number, def: ArenaDef = ARENA): number {
 export const MINIBOSSES: { id: string; map: string; x: number; when: 'hourly' | 'daily'; window: number }[] = [
   { id: 'stumpelder', map: 'forest', x: 560, when: 'hourly', window: 15 },
   { id: 'ruinwarden', map: 'ruins', x: 580, when: 'daily', window: 0 },
+  { id: 'cavelord', map: 'cave', x: 560, when: 'daily', window: 0 },
+  { id: 'canyonbrute', map: 'canyon', x: 560, when: 'hourly', window: 15 },
+  { id: 'saltqueen', map: 'saltlake', x: 560, when: 'daily', window: 0 },
+  { id: 'pineelder', map: 'pinewood', x: 560, when: 'hourly', window: 15 },
+  { id: 'glacierking', map: 'glacier', x: 560, when: 'daily', window: 0 },
+  { id: 'craterbeast', map: 'crater', x: 560, when: 'hourly', window: 15 },
+  { id: 'ringlord', map: 'rings', x: 560, when: 'daily', window: 0 },
 ];
 /** 특성 프리셋(특성 배분 + 공격 바 두 벌)을 쓰는 레벨 */
 export const TALENT_PRESET_LV = 15;
