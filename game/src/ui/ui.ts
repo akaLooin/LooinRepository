@@ -671,7 +671,7 @@ export class UI {
           return `<button class="ui-btn sm ${on ? 'primary' : ''}" data-act="bosstier:${bossId}:${i}" ${open ? '' : 'disabled'} aria-pressed="${on}" title="체력 ×${t.hp} · 공격 ×${t.atk} · 경험치 ×${t.xp} · 드롭 ×${t.drop}">${open ? t.name : ui('ui_lock', 'tic')}</button>`;
         }).join('')}</span>` : '';
         const foot = pick ? `<b class="ui-grow">${MAPS[pick].name}</b>${tiers}
-            <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
+            <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? (mapQuota(pick) ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : '아직 갈 수 없는 곳입니다(열쇠·길 필요)') : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
             <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
           : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
         const wtabs = mw > 1 ? ` <span class="worldsw" role="tablist">${WORLDS.filter((x) => x.n <= mw).map((x) => `<button class="ui-btn sm ${x.n === wn ? 'primary' : ''}" role="tab" aria-selected="${x.n === wn}" data-act="mapworld:${x.n}" title="${x.name}">${x.n}월드</button>`).join('')}</span>` : '';
