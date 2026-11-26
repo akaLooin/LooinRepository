@@ -72,15 +72,15 @@
     "semantic_hash": ""
   },
   "composeApp/build.gradle.kts": {
-    "mtime": 1795566657.876711,
-    "seen": 1795566841.9735665,
-    "ast_hash": "22357e894a62447a5e4e326e2be702e9",
+    "mtime": 1795657693.1624458,
+    "seen": 1795657868.3867967,
+    "ast_hash": "a07bb3104dd49680e69b83cab28071f1",
     "semantic_hash": ""
   },
   "composeApp/src/androidMain/kotlin/world/looin/app/MainActivity.kt": {
-    "mtime": 1795566525.2038345,
-    "seen": 1795566841.9735732,
-    "ast_hash": "812915ac9d12be464ccb0077bc695d8b",
+    "mtime": 1795657693.1563318,
+    "seen": 1795657868.3868039,
+    "ast_hash": "cbf8c6aebe798bd9d382d6418aa7e2b1",
     "semantic_hash": ""
   },
   "composeApp/src/androidMain/kotlin/world/looin/app/Settings.android.kt": {
@@ -90,15 +90,15 @@
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/App.kt": {
-    "mtime": 1795566284.5239162,
-    "seen": 1795566841.9735758,
-    "ast_hash": "709d68301aa921ea336221c42bb09f0d",
+    "mtime": 1795657578.495605,
+    "seen": 1795657868.386807,
+    "ast_hash": "ec32c42d22e594dece0ff49ab0862efd",
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/AppController.kt": {
-    "mtime": 1795566284.5235703,
-    "seen": 1795566841.9735775,
-    "ast_hash": "771971ed7505d7b87747cef937dc13b5",
+    "mtime": 1795657578.4948196,
+    "seen": 1795657868.3868086,
+    "ast_hash": "49209d0bf947f4f2d800e98367a2997b",
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/Settings.kt": {
@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/ui/HomeScreen.kt": {
-    "mtime": 1795566468.728692,
-    "seen": 1795566841.9735909,
-    "ast_hash": "14c9fcfcf3b7a889950a3b51f1171d96",
+    "mtime": 1795657600.0284002,
+    "seen": 1795657868.3868225,
+    "ast_hash": "56c74838363774e9f26998dc91b2b579",
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/ui/MeScreens.kt": {
@@ -174,27 +174,27 @@
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/Config.kt": {
-    "mtime": 1795566046.8003495,
-    "seen": 1795566841.973615,
-    "ast_hash": "41092850fcd4dce48cfa13e41964b175",
+    "mtime": 1795657331.4096866,
+    "seen": 1795657868.3868475,
+    "ast_hash": "bc5787303770710c0146ee2a7a7cf328",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/Main.kt": {
-    "mtime": 1795566046.8007956,
-    "seen": 1795566841.973616,
-    "ast_hash": "bb81548dbb5515b9ff17ec5357d1ee4d",
+    "mtime": 1795657331.4108138,
+    "seen": 1795657868.3868484,
+    "ast_hash": "93f2c3cec8c4221a9f969e5d0440bdf6",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/Routes.kt": {
-    "mtime": 1795566046.8011932,
-    "seen": 1795566841.9736173,
-    "ast_hash": "6c16373c1465ff109719e38eb9b898b9",
+    "mtime": 1795657353.346687,
+    "seen": 1795657868.3868496,
+    "ast_hash": "0da118ae0c8f3eee26e8fa45fb26da29",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/Seed.kt": {
-    "mtime": 1795565881.5561604,
-    "seen": 1795566841.9736185,
-    "ast_hash": "6e8f2dafe54015a833564f3e8d4801dc",
+    "mtime": 1795657245.6305816,
+    "seen": 1795657868.3868506,
+    "ast_hash": "8e38ecb23a49f5c7e86fb7f939d10d3f",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/ai/Brain.kt": {
@@ -216,21 +216,21 @@
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/ai/Prompts.kt": {
-    "mtime": 1795566046.781145,
-    "seen": 1795566841.9736245,
-    "ast_hash": "1e5e8b650f5446b26cd0c4fbb71423e3",
+    "mtime": 1795657331.4069877,
+    "seen": 1795657868.386856,
+    "ast_hash": "b072d7290dfd17ec63324e184cff6fdd",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/db/Db.kt": {
-    "mtime": 1795565827.102465,
-    "seen": 1795566841.9736269,
-    "ast_hash": "0af28ed872702af1b50a03185a7db739",
+    "mtime": 1795657206.9218283,
+    "seen": 1795657868.3868585,
+    "ast_hash": "3114a04539698ff9f6f43b022840f7af",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/db/Repository.kt": {
-    "mtime": 1795565857.0992887,
-    "seen": 1795566841.973628,
-    "ast_hash": "30a2509cb78e9ec7f2eeb91652c85245",
+    "mtime": 1795657231.4063025,
+    "seen": 1795657868.3868594,
+    "ast_hash": "ab63819803427675400ab149f1a311fc",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/service/ChatService.kt": {
@@ -246,15 +246,15 @@
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/service/WorldSimService.kt": {
-    "mtime": 1795565915.774832,
-    "seen": 1795566841.9736362,
-    "ast_hash": "621854676c60659e4135a124915d5cac",
+    "mtime": 1795657297.6821637,
+    "seen": 1795657868.3868682,
+    "ast_hash": "b13273c11d9cd99e8fbf7b42d052aeb7",
     "semantic_hash": ""
   },
   "server/src/test/kotlin/world/looin/server/ApiTest.kt": {
-    "mtime": 1795560866.4684522,
-    "seen": 1795561024.0768452,
-    "ast_hash": "07e876643a342e3e51f890b0c0b3f4f2",
+    "mtime": 1795657493.4148834,
+    "seen": 1795657868.3868692,
+    "ast_hash": "c43df44eb9230902f2d058f3739e1a22",
     "semantic_hash": ""
   },
   "settings.gradle.kts": {
@@ -270,15 +270,15 @@
     "semantic_hash": ""
   },
   "shared/src/commonMain/kotlin/world/looin/shared/LooinApi.kt": {
-    "mtime": 1795566452.3861406,
-    "seen": 1795566841.9736478,
-    "ast_hash": "cb971fe0a247a810f7e1a9ed9e2ae27f",
+    "mtime": 1795657432.9245324,
+    "seen": 1795657868.3868787,
+    "ast_hash": "2791e277d0f624cc614745b069d6dd5f",
     "semantic_hash": ""
   },
   "shared/src/commonMain/kotlin/world/looin/shared/Models.kt": {
-    "mtime": 1795565827.1018639,
-    "seen": 1795566841.9736497,
-    "ast_hash": "303671a4e5de719dbf8206b0a30be1e1",
+    "mtime": 1795657206.919373,
+    "seen": 1795657868.3868797,
+    "ast_hash": "6d1ba87363cde16eb2b180817acdfdbf",
     "semantic_hash": ""
   },
   ".claude/skills/replica-architect/SKILL.md": {
@@ -384,21 +384,21 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1795566839.5888135,
-    "seen": 1795566841.9736855,
-    "ast_hash": "e59d53ed0c8e9c3e56fbbeb9c153ee5e",
+    "mtime": 1795657839.2787457,
+    "seen": 1795657868.3869,
+    "ast_hash": "60b78fc6de5ddeb4e68c36f7f6a4d584",
     "semantic_hash": ""
   },
   "docs/ARCHITECTURE.md": {
-    "mtime": 1795566839.5903215,
-    "seen": 1795566841.9736924,
-    "ast_hash": "0571cd4246e38647b616487e17adaecb",
+    "mtime": 1795657839.2798922,
+    "seen": 1795657868.3869047,
+    "ast_hash": "3bbf9601e6bfa280de3097119b5e1aa8",
     "semantic_hash": ""
   },
   "docs/ROADMAP.md": {
-    "mtime": 1795566839.589547,
-    "seen": 1795566841.9736981,
-    "ast_hash": "72776a7e9f0cf5a7ff1621219d2be525",
+    "mtime": 1795657839.2807264,
+    "seen": 1795657868.3869078,
+    "ast_hash": "dc01ee5f67e5b2cf0d653c88c239e195",
     "semantic_hash": ""
   },
   "site/index.html": {
@@ -468,9 +468,9 @@
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/service/GrowthService.kt": {
-    "mtime": 1795566046.7999692,
-    "seen": 1795566841.9736326,
-    "ast_hash": "01f54df9a05474355234912cd43d3118",
+    "mtime": 1795657331.408551,
+    "seen": 1795657868.3868647,
+    "ast_hash": "b2a76d84657e87e19020b4a017a1e814",
     "semantic_hash": ""
   },
   "server/src/test/kotlin/world/looin/server/ProviderChainTest.kt": {
@@ -708,9 +708,9 @@
     "semantic_hash": ""
   },
   "composeApp/src/androidMain/kotlin/world/looin/app/InboxWorker.kt": {
-    "mtime": 1795566525.2021122,
-    "seen": 1795566841.9735713,
-    "ast_hash": "c1e57afc112b90a9b3d83dfe225d7b6e",
+    "mtime": 1795657693.1530077,
+    "seen": 1795657868.3868027,
+    "ast_hash": "6d6b4c4ca64d715abb48e967307fb441",
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/ui/ChatHub.kt": {
@@ -720,15 +720,15 @@
     "semantic_hash": ""
   },
   "composeApp/src/commonMain/kotlin/world/looin/app/ui/Community.kt": {
-    "mtime": 1795566371.559725,
-    "seen": 1795566841.973588,
-    "ast_hash": "55cc315ed5d1dcb07c0891d62f8e5f8f",
+    "mtime": 1795657839.2591739,
+    "seen": 1795657868.38682,
+    "ast_hash": "65111dcdd9f3bd34398d997958e9d357",
     "semantic_hash": ""
   },
   "composeApp/src/jvmMain/kotlin/world/looin/app/debug/AppTour.kt": {
-    "mtime": 1795566657.876711,
-    "seen": 1795566841.9736,
-    "ast_hash": "297b4124fa398c0e449a74244f721259",
+    "mtime": 1795657785.8383193,
+    "seen": 1795657868.386834,
+    "ast_hash": "ea612f2827ed32c544e6fc54e7c3d4ca",
     "semantic_hash": ""
   },
   "server/src/main/kotlin/world/looin/server/service/StoryService.kt": {
@@ -738,9 +738,27 @@
     "semantic_hash": ""
   },
   "server/src/test/kotlin/world/looin/server/WorldFeaturesTest.kt": {
-    "mtime": 1795566098.4830294,
-    "seen": 1795566841.9736426,
-    "ast_hash": "581e462ba99e16271b7a486ecd990e45",
+    "mtime": 1795657493.690496,
+    "seen": 1795657868.3868752,
+    "ast_hash": "5302345402820e75a1107004576ca326",
+    "semantic_hash": ""
+  },
+  "composeApp/src/commonMain/kotlin/world/looin/app/ui/Notices.kt": {
+    "mtime": 1795657600.0070438,
+    "seen": 1795657868.3868268,
+    "ast_hash": "643ae20f752149b6ae949a73fa8f68fe",
+    "semantic_hash": ""
+  },
+  "server/src/main/kotlin/world/looin/server/service/CommunityPulse.kt": {
+    "mtime": 1795657331.0511336,
+    "seen": 1795657868.3868618,
+    "ast_hash": "d5930d1ed0b3ea0f30036cec8cc9fec6",
+    "semantic_hash": ""
+  },
+  "server/src/test/kotlin/world/looin/server/CommunityLifeTest.kt": {
+    "mtime": 1795657493.6959183,
+    "seen": 1795657868.3868718,
+    "ast_hash": "3e6572eaa890d74a90d8fe84e03a5070",
     "semantic_hash": ""
   }
 }
