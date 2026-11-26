@@ -537,7 +537,7 @@ export class World {
         this.events.push({ t: 'yield', x: t.x, y: t.y - 30, item: t.def.item });
         this.spawnDrop(false, t.def.item, 1, t.x + this.player.facing * -8, t.y - 24, t.y);
         this.rollCard(t.def.id, t.def.name, NODE_CARD_CHANCE, d);
-        const ups = gainSkillXp(c, t.def.skill, t.def.xp);
+        const ups = gainSkillXp(c, t.def.skill, t.def.skill === 'fishing' ? Math.round(t.def.xp * d.fishXp) : t.def.xp);
         if (ups) this.events.push({ t: 'skill', name: SKILL_NAMES[t.def.skill], level: c.skills[t.def.skill].lv });
       }
     }

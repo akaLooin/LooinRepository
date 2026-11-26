@@ -29,7 +29,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   const t = Math.max(0, elapsedSec);
 
   // 1) 행동으로만 바뀌는 값
-  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'aligned', 'birth', 'obols', 'meritBag', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal', 'maxWorld', 'post', 'traps', 'worship'];
+  const fixed: (keyof Character)[] = ['id', 'name', 'look', 'cls', 'stats', 'talents', 'equipment', 'bags', 'pouches', 'cardSlots', 'mapId', 'attackBars', 'statues', 'aligned', 'birth', 'obols', 'meritBag', 'tackle', 'cardSet', 'cardPresets', 'cardPreset', 'talentPresets', 'talentPreset', 'skins', 'equipUp', 'starTal', 'maxWorld', 'post', 'traps', 'worship'];
   if (!same(s.skills.worship, claimed.skills.worship)) return '바뀌면 안 되는 값: 기도';
   if (!same(s.skills.cooking, claimed.skills.cooking)) return '바뀌면 안 되는 값: 요리';
   if (!same(s.skills.lab, claimed.skills.lab)) return '바뀌면 안 되는 값: 연구';
@@ -77,7 +77,7 @@ export function checkSync(acc: Account, ci: number, claimed: Character, ca: Sync
   for (const k of ['mining', 'chopping', 'fishing', 'catching'] as const) {
     const nodes = map.nodes.map((n) => NODES[n.node]).filter((n) => n.skill === k);
     const maxYield = nodes.length ? Math.max(...nodes.map((n) => Math.ceil(d[k] / n.hp))) * swings : 0;
-    const maxXp = maxYield * Math.max(0, ...nodes.map((n) => n.xp));
+    const maxXp = maxYield * Math.max(0, ...nodes.map((n) => n.xp)) * (k === 'fishing' ? d.fishXp : 1);
     const ds = cumXp(claimed.skills[k].lv, claimed.skills[k].xp, skillXpToNext) - cumXp(s.skills[k].lv, s.skills[k].xp, skillXpToNext);
     if (ds < 0 || ds > maxXp + 1) return `${k} 경험치가 너무 많습니다`;
   }

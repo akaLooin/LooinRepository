@@ -19,7 +19,7 @@ import { fixBreed } from './breeding';
 import { fixLab } from './lab';
 import { MiniState, TotemState, legacyTotemSouls, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, isHealFood, goldenValue, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, arenaOf, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, isHealFood, goldenValue, WEIGHTS, LINES, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, arenaOf, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -65,6 +65,8 @@ export interface Character {
   meritBag?: number;
   /** 잠근 아이템 */
   locked?: string[];
+  /** 낚시 도구함: 고른 무게추(낚시 효율)·낚싯줄(낚시 경험치) */
+  tackle?: { w: string; l: string };
   /** 탄생 별자리(만들 때 고름) */
   birth: string | null;
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
@@ -229,6 +231,8 @@ export interface Derived {
   xpMult: number; dropMult: number; regen: number;
   /** 카드 드롭률 배율(드롭률 × 카드 드롭률 보너스) */
   cardMult: number;
+  /** 낚시 경험치 배율(낚싯줄) */
+  fishXp: number;
   /** 보스(미니보스 포함)에게 주는 피해 배수(지혜) */
   bossMult: number;
   /** 코인 획득 배수 */
@@ -321,7 +325,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
     mining: (1 + e.mining + c.skills.mining.lv * 0.35 + str * 0.05) * work * (1 + cb.mining) * (1 + sb.mining / 100) * (1 + pb.mining / 100) * classSkillMult(c, 'mining'),
     chopping: (1 + e.chopping + c.skills.chopping.lv * 0.35 + wis * 0.05) * work * (1 + cb.chopping) * (1 + sb.chopping / 100) * (1 + pb.chopping / 100) * classSkillMult(c, 'chopping'),
     // 2월드 기술: 민첩 → 낚시, 행운 → 곤충 채집
-    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing) * (1 + pb.fishing / 100) * classSkillMult(c, 'fishing'),
+    fishing: (1 + e.fishing + (c.skills.fishing?.lv ?? 1) * 0.35 + agi * 0.05) * work * (1 + cb.fishing) * (1 + pb.fishing / 100) * classSkillMult(c, 'fishing') * (1 + (WEIGHTS.find((x) => x.id === c.tackle?.w)?.v ?? 0) / 100),
+    fishXp: 1 + (LINES.find((x) => x.id === c.tackle?.l)?.v ?? 0) / 100,
     catching: (1 + e.catching + (c.skills.catching?.lv ?? 1) * 0.35 + luk * 0.05) * work * (1 + cb.catching) * (1 + pb.catching / 100) * classSkillMult(c, 'catching'),
   };
 }
@@ -716,6 +721,15 @@ export function sellItem(acc: Account, c: Character, id: string, qty: number): n
   return gain;
 }
 
+/** 낚시 도구 고르기(낚시 레벨로 열린 것만) */
+export function setTackle(c: Character, id: string): string | null {
+  const w = WEIGHTS.find((x) => x.id === id), l = LINES.find((x) => x.id === id), d = w ?? l;
+  if (!d) return '없는 낚시 도구';
+  if ((c.skills.fishing?.lv ?? 1) < d.lv) return `낚시 Lv.${d.lv}에 열립니다`;
+  c.tackle ??= { w: 'w_pebble', l: 'l_twine' };
+  if (w) c.tackle.w = id; else c.tackle.l = id;
+  return null;
+}
 /** 가방 정리: 장비 → 음식 → 재료 순, 같은 종류끼리 이름순(강화한 장비는 앞) */
 export function sortBag(c: Character) {
   const rank = (id: string) => { const k = ITEMS[id]?.kind; return k === 'equip' ? 0 : k === 'food' ? 1 : k === 'material' ? 3 : 2; };

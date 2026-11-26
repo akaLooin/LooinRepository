@@ -70,7 +70,7 @@ export function afkRates(acc: Account, c: Character): AfkRates {
     const perHour = (3600 / (swings * GATHER_INTERVAL)) * d.afkSkill;
     const cards = CARD_BY_ID[node.id] ? [{ id: node.id, name: node.name, perHour: perHour * NODE_CARD_CHANCE * d.cardMult, owned: (acc.cards[node.id] ?? 0) > 0 }] : [];
     return { ...base, mode: 'gather', target: node.name, rate: d.afkSkill, cards,
-      skill: { key: node.skill, xpPerHour: perHour * node.xp, item: node.item, perHour } };
+      skill: { key: node.skill, xpPerHour: perHour * node.xp * (node.skill === 'fishing' ? d.fishXp : 1), item: node.item, perHour } };
   }
   if (!map.spawns.length) return base;
 

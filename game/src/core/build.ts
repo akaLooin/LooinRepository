@@ -50,9 +50,11 @@ export interface Build {
   books: number; bookFrac: number; talentMax: Record<string, number>;
   /** 원자 충돌기: 입자와 원자 레벨 */
   particles: number; atoms: Record<string, number>;
+  /** 소금 핥기(소금으로 사는 보너스)와 톱니판 깃발 */
+  lick: Record<string, number>; flags: number;
 }
 export const newBuild = (): Build => ({ t: 0, lv: 1, xp: 0, levels: {}, jobs: [], up: { rate: 0, slots: 0 }, staff: [], cogFrac: {}, xpFrac: {}, cogs: [], cogBag: [], cogSeq: 0,
-  salts: {}, refine: {}, printer: [], books: 0, bookFrac: 0, talentMax: {}, particles: 0, atoms: {} });
+  salts: {}, refine: {}, printer: [], books: 0, bookFrac: 0, talentMax: {}, particles: 0, atoms: {}, lick: {}, flags: 0 });
 export function fixBuild(b: Build) {
   const d = newBuild();
   for (const k of Object.keys(d) as (keyof Build)[]) if (b[k] === undefined) (b as unknown as Record<string, unknown>)[k] = d[k];
@@ -136,6 +138,7 @@ export function buildBonus(b: Build | undefined, add: (k: BonusKey, v: number) =
   if (!b) return;
   for (const d of BUILDINGS) if (d.per) add(d.eff, (b.levels[d.id] ?? 0) * d.per);
   atomBonus(b, add);
+  for (const d of LICKS) { const lv = b.lick?.[d.id] ?? 0; if (lv) add(d.eff, lv * d.per); }
 }
 
 // ───────── 일꾼·톱니 ─────────
@@ -271,7 +274,7 @@ function specialSettle(acc: Pick<Account, 'build' | 'characters'> & Partial<Pick
     const x = h * 15 * classSkillMult(c, 'build') + (b.xpFrac[c.id] ?? 0), whole = Math.floor(x);
     b.xpFrac[c.id] = x - whole;
     if (whole > 0) gainSkillXp(c, 'construction', whole);
-    b.cogFrac[c.id] = (b.cogFrac[c.id] ?? 0) + h / COG_HOURS;
+    b.cogFrac[c.id] = (b.cogFrac[c.id] ?? 0) + (h / COG_HOURS) * (1 + (b.flags ?? 0) * 0.25);
     while (b.cogFrac[c.id] >= 1 && b.cogBag.length < 30) {
       b.cogFrac[c.id] -= 1; b.cogSeq++;
       // 톱니 힘: 건설 레벨이 높을수록 센 톱니가 나온다(씨앗으로 정해져 기기와 서버가 같다)
@@ -307,4 +310,39 @@ function specialSettle(acc: Pick<Account, 'build' | 'characters'> & Partial<Pick
   if (b.levels.b_talentlib) { b.bookFrac += h / bookHours(b); const n = Math.floor(b.bookFrac); if (n > 0) { b.books = Math.min(50, b.books + n); b.bookFrac -= n; } }
   // 원자 충돌기: 입자(소금 종류마다 더 빨리)
   if (b.levels.b_collider) b.particles += h * (b.levels.b_collider ?? 0) * (1 + Object.values(b.salts).filter((v) => v > 0).length * 0.5);
+}
+
+// ───────── 소금 핥기·깃발 ─────────
+export interface LickDef { id: string; name: string; eff: BonusKey; per: number; unit: string; salt: string; cost: number; max: number }
+export const LICKS: LickDef[] = [
+  { id: 'lk_dmg', name: '짭짤한 힘', eff: 'dmg', per: 1, unit: '%', salt: 'salt_red', cost: 5, max: 20 },
+  { id: 'lk_hp', name: '짭짤한 체력', eff: 'hpPct', per: 1, unit: '%', salt: 'salt_red', cost: 5, max: 20 },
+  { id: 'lk_xp', name: '짭짤한 배움', eff: 'xp', per: 1, unit: '%', salt: 'salt_green', cost: 5, max: 20 },
+  { id: 'lk_drop', name: '짭짤한 행운', eff: 'drop', per: 0.8, unit: '%', salt: 'salt_green', cost: 6, max: 20 },
+  { id: 'lk_card', name: '짭짤한 수집', eff: 'card', per: 1, unit: '%', salt: 'salt_blue', cost: 5, max: 20 },
+  { id: 'lk_afk', name: '짭짤한 낮잠', eff: 'afk', per: 0.2, unit: '%p', salt: 'salt_violet', cost: 5, max: 15 },
+];
+export const lickCost = (d: LickDef, lv: number) => Math.ceil(d.cost * Math.pow(1.4, lv));
+export function buyLick(acc: Account, id: string, now: number): string | null {
+  buildSettle(acc, now);
+  const b = acc.build, d = LICKS.find((x) => x.id === id);
+  if (!d) return '없는 항목';
+  const lv = b.lick[id] ?? 0;
+  if (lv >= d.max) return '최대 단계입니다';
+  const cost = lickCost(d, lv);
+  if ((b.salts[d.salt] ?? 0) < cost) return `${SALT[d.salt].name}이(가) 부족합니다`;
+  b.salts[d.salt] -= cost; b.lick[id] = lv + 1;
+  return null;
+}
+/** 톱니판 깃발: 하나마다 톱니 만드는 속도 +25%(최대 4개, 소금으로) */
+export const FLAG_MAX = 4;
+export const flagCost = (n: number) => ({ salt: SALTS[Math.min(n, SALTS.length - 1)].id, n: 20 * (n + 1) });
+export function buyFlag(acc: Account, now: number): string | null {
+  buildSettle(acc, now);
+  const b = acc.build;
+  if (b.flags >= FLAG_MAX) return '깃발은 4개까지';
+  const c = flagCost(b.flags);
+  if ((b.salts[c.salt] ?? 0) < c.n) return `${SALT[c.salt].name}이(가) 부족합니다`;
+  b.salts[c.salt] -= c.n; b.flags++;
+  return null;
 }

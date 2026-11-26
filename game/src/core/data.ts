@@ -1398,6 +1398,15 @@ export const shinyLevel = (n: number) => (n > 0 ? Math.floor(Math.log2(n + 1)) :
 export const TRAP_MULT = [1, 1.5, 2.2, 3.2];
 export const TRAP_KITS: Record<string, number> = { trap_wood: 1, trap_iron: 2, trap_frost: 3 };
 export const TRAP_NAMES = ['맨손 덫', '나무 덫', '쇠 덫', '서리 덫'];
+/** 낚시 도구함(원작의 무게추·낚싯줄): 낚시 레벨로 열리고, 캐릭터마다 하나씩 고른다 */
+export const WEIGHTS = [
+  { id: 'w_pebble', name: '조약돌 추', lv: 1, v: 0 }, { id: 'w_iron', name: '쇠 추', lv: 10, v: 10 }, { id: 'w_lead', name: '납 추', lv: 20, v: 20 },
+  { id: 'w_gold', name: '금 추', lv: 30, v: 32 }, { id: 'w_frost', name: '얼음 추', lv: 45, v: 45 }, { id: 'w_star', name: '별 추', lv: 60, v: 60 }, { id: 'w_void', name: '공허 추', lv: 80, v: 80 },
+];
+export const LINES = [
+  { id: 'l_twine', name: '노끈 줄', lv: 1, v: 0 }, { id: 'l_silk', name: '명주 줄', lv: 12, v: 10 }, { id: 'l_wire', name: '쇠 줄', lv: 24, v: 20 },
+  { id: 'l_glow', name: '빛나는 줄', lv: 36, v: 32 }, { id: 'l_aurora', name: '오로라 줄', lv: 50, v: 45 }, { id: 'l_comet', name: '혜성 줄', lv: 70, v: 60 },
+];
 /** 덫 칸: 기본 1칸, 덫 사냥 10레벨마다 1칸(최대 5) */
 export const trapSlots = (lv: number, drone = 0) => Math.min(5, 1 + Math.floor(lv / 10)) + drone;
 /** 음식 칸 수: 위 칸부터 먹는다 */

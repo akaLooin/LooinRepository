@@ -11,7 +11,7 @@ import { PRAYERS, PRAYER_MAX, SOUL_NAMES, SoulKind, WTOTEMS, WTOTEM, boltEvery, 
 import { CHIPS, LAB, LAB_NODE, LAB_NODES, LAB_SPOTS, atStation, chipSlots, labRange, labSettle, labState, weeklyJewels } from '../core/lab';
 import { ARENA_COOLDOWN, ARENA_TEAM, BPet, BREED, BreedUp, GENES, RAR_NAMES, SPEC, SPECIES, TERR, TERRITORIES, arenaPower, arenaWave, breedLevel, breedSettle, dnaOf, eggRate, fenceCap, keeperMult, nestCap, placeOf, rarityOdds, shinyNeed, spicePerLap, teamPower, upCost as breedUpCost, winChance } from '../core/breeding';
 import { COOK, KitchenUp, MEAL, MEALS, SPICES, chefMult, cookSettle, mealNeed, mealsPerHour, recipeChance, recipeCost, recipeRate, recipeResult, spiceMapName, spiceRate, upCost, upSpice } from '../core/cooking';
-import { SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
+import { FLAG_MAX, LICKS, flagCost, lickCost, SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRINTABLE, SALT, SALTS, atomCost, bookHours, buildCost, buildRate, buildSettle, buildSlots, buildXpToNext, cogPower, printRate, printerSlots, rankCost, rateUpCost, refineSlots } from '../core/build';
 import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID_BY, LiquidId, LiquidUp, SIGIL, SIGILS, sigilLv, VIALS, VIAL_COST, VIAL_FIND, VIAL_MAX, alchSettle, bigSlots, brewNeed, brewRate, bubbleCost, bubbleFound, bubbleLv, bubbleValue, liquidCap, liquidOpen, liquidRate, liquidUpCost, vialValue, workPower } from '../core/alchemy';
 /** 연금술 효과 이름 */
@@ -21,7 +21,7 @@ import {
   ATTACK_SLOTS, CARD_SLOTS, DEEP_MAPS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
   MONSTERS, NODES, OUTFIT_COLORS, RECIPES, SKILL_NAMES, SKIN_COLORS, SLOT_NAMES, STAT_DESC,
   STAT_NAMES, SkillKey, StatKey, TALENTS, talentTab, BaseClass, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, canSubclass, cardNext, cardTier, CARD_MAX_TIER, QuestDef, TP_TICKET, PETS, PET_PLUS, PET_PITY, TREATS, RARITY_NAMES, CRYSTAL_ITEM, OWL, OwlUp, ARENA, arenaOf, arenaWaves, MINIBOSSES, SMELTS, FORGE, STATUES, SIGNS, SIGN_LV, signSlots, BIRTH_SIGNS, ACHIEVEMENTS, FAMILY, FAMILY_MIN, FAMILY_SLOTS, CARD_SETS, CARD_PRESET_LV, STAMPS, STAMP_NAMES, STAMP_LV, StampCat, StampDef, BRIBES,
-  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL,
+  TIER_LEVEL, classTier, maxTierOf, nextClasses, HIDDEN_CLASS, HIDDEN_TIERS, WORLD2, WORLD3, WORLD4, WORLDS, TOWNS, worldOf, gateTo, STONES, STONE_BY_ID, Upg, upSlotsOf, ItemStats, FacilityKind, FACILITY_NAMES, STAR_TALS, STAR_TAL, WEIGHTS, LINES,
 } from '../core/data';
 import {
   Character, Look, acceptQuest, advanceClass, canCraft, completeQuest, countItem, craft, currentQuest, derive, equipItem,
@@ -560,10 +560,16 @@ export class UI {
         const left = this.eqTab === 0
           ? `<div class="ui-grid eqcol">${eq}</div><h3 class="eqsub">${ui('eq_food', 'tic')} 음식</h3><div class="ui-grid eqcol">${food}</div>`
           : this.eqTab === 1 ? `<div class="ui-grid eqcol">${skins}</div><p class="ui-xs ui-muted">겉모습만 바꾸는 칸입니다. 능력치는 장비 탭의 장비를 따릅니다.</p>`
+          : this.eqTab === 3 ? (() => {
+            const fl = c.skills.fishing?.lv ?? 1, tk = c.tackle ?? { w: 'w_pebble', l: 'l_twine' };
+            const row = (list: { id: string; name: string; lv: number; v: number }[], cur: string, what: string) => list.map((x) => `<button class="ui-btn sm ${cur === x.id ? 'primary' : ''}" data-act="tackle:${x.id}" ${fl >= x.lv ? '' : 'disabled'} title="${fl >= x.lv ? `${what} +${x.v}%` : `낚시 Lv.${x.lv}`}">${x.name}<br><span class="ui-xs">${fl >= x.lv ? `+${x.v}%` : `Lv.${x.lv}`}</span></button>`).join('');
+            return `<h3 class="eqsub" style="margin-top:0">무게추 <span class="ui-xs ui-muted">낚시 효율</span></h3><div class="ui-row" style="flex-wrap:wrap;gap:3px">${row(WEIGHTS, tk.w, '낚시 효율')}</div>
+              <h3 class="eqsub">낚싯줄 <span class="ui-xs ui-muted">낚시 경험치</span></h3><div class="ui-row" style="flex-wrap:wrap;gap:3px">${row(LINES, tk.l, '낚시 경험치')}</div><p class="ui-xs ui-muted">낚시 레벨이 오르면 새 도구가 열립니다. 캐릭터마다 하나씩 고릅니다.</p>`;
+          })()
           : `<h3 class="eqsub" style="margin-top:0">개인 오볼판</h3><div class="ui-grid obgrid">${board(false)}</div><h3 class="eqsub">가족 오볼판 <span class="ui-xs ui-muted">모두에게</span></h3><div class="ui-grid obgrid">${board(true)}</div><p class="ui-xs ui-muted">가방의 오볼을 눌러 끼웁니다. 끼운 오볼을 누르면 뺍니다.</p>`;
         return win(`아이템 <span class="ui-sm ui-muted">${c.inventory.length}/${invSize(c)}</span>`, `
           <div class="invlayout"><div class="eqpanel"><div class="ui-tabs mini" role="tablist">
-              <button role="tab" aria-selected="${this.eqTab === 0}" data-act="eqtab:0">장비</button><button role="tab" aria-selected="${this.eqTab === 1}" data-act="eqtab:1">홀로웨어</button><button role="tab" aria-selected="${this.eqTab === 2}" data-act="eqtab:2">오볼</button></div>${left}</div>
+              <button role="tab" aria-selected="${this.eqTab === 0}" data-act="eqtab:0">장비</button><button role="tab" aria-selected="${this.eqTab === 1}" data-act="eqtab:1">홀로웨어</button><button role="tab" aria-selected="${this.eqTab === 2}" data-act="eqtab:2">오볼</button><button role="tab" aria-selected="${this.eqTab === 3}" data-act="eqtab:3">낚시</button></div>${left}</div>
             <div class="invright"><div class="stack" style="gap:4px"><div class="ui-row" style="gap:4px"><button class="ui-btn sm" data-act="bagsort">정리</button><button class="ui-btn sm ${this.sellArm === 'junk' ? 'danger' : ''}" data-act="bagjunk" title="잠그지 않은 몬스터 재료를 모두 판다">${this.sellArm === 'junk' ? '정말 팔까요?' : '잡템 팔기'}</button></div><div class="ui-grid bag">${cells}</div></div><div class="ui-detail">${detail}</div></div></div>`);
       }
 
@@ -1103,7 +1109,8 @@ export class UI {
           const bag = b.cogBag.map((p, i) => `<button class="ui-slot sm ${this.cogSel === i ? 'r3' : ''}" data-act="cogsel:${i}" aria-label="톱니 힘 ${p}"><b>${p}</b></button>`).join('') || '<span class="ui-xs ui-muted">아직 톱니가 없습니다. 일꾼이 4시간마다 하나씩 만듭니다.</span>';
           body = `<p class="ui-sm" style="margin-top:0">톱니판의 톱니 힘 합 <b class="ui-accent">${cogPower(b)}</b> → 건설 속도 +${cogPower(b) * 2}%</p><div class="ui-grid" style="grid-template-columns:repeat(6,auto);justify-content:start">${board}</div>
             <h3>만든 톱니 <span class="ui-xs ui-muted">${b.cogBag.length}/30 · 고른 뒤 판의 칸을 누르세요</span></h3><div class="ui-row" style="flex-wrap:wrap;gap:3px">${bag}</div>
-            ${this.cogSel >= 0 && b.cogBag[this.cogSel] !== undefined ? `<button class="ui-btn sm" data-act="cogtrash">고른 톱니 버리기</button>` : ''}`;
+            ${this.cogSel >= 0 && b.cogBag[this.cogSel] !== undefined ? `<button class="ui-btn sm" data-act="cogtrash">고른 톱니 버리기</button>` : ''}
+            <div class="ui-row line"><div class="ui-grow"><b>깃발</b> <span class="ui-xs ui-accent">${b.flags}/${FLAG_MAX}</span> <span class="ui-xs ui-muted">깃발마다 톱니 만드는 속도 +25%</span></div>${b.flags < FLAG_MAX ? `<button class="ui-btn sm" data-act="build:flag" ${(b.salts[flagCost(b.flags).salt] ?? 0) >= flagCost(b.flags).n ? '' : 'disabled'}>${SALT[flagCost(b.flags).salt].name} ${flagCost(b.flags).n}</button>` : ''}</div>`;
         } else if (tab === 3) {
           // 정제소
           const open = refineSlots(b);
@@ -1112,7 +1119,9 @@ export class UI {
             return `<div class="ui-row line ${lock ? 'locked' : ''}"><span class="ui-slot sm" style="background:${d.color}"></span><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${short(has)}개 · 등급 ${r?.rank ?? 0}</span>
               <div class="ui-xs ui-muted">${d.hours}시간마다 ${ITEMS[d.item].name} ${d.per}개${d.need ? ` + ${SALT[d.need].name} 1개` : ''} → ${(r?.rank ?? 0) + 1}개 · 재료는 창고에서</div>${r?.on ? bar('xp', Math.floor((r.prog % 1) * 100), 100, '정제 중') : ''}</div>
               ${lock ? `<span class="ui-xs ui-muted">정제소 Lv.${i + 1}</span>` : `<button class="ui-btn sm ${r?.on ? 'primary' : ''}" data-act="build:refine:${d.id}">${r?.on ? '멈추기' : '정제'}</button><button class="ui-btn sm" data-act="build:rank:${d.id}" ${r && has >= cost ? '' : 'disabled'}>등급 ↑ ${cost}</button>`}</div>`;
-          }).join('') + '<p class="ui-xs ui-muted">소금은 원자 충돌기의 입자를 빨리 모으게 하고, 등급이 오르면 한 번에 더 많이 만듭니다.</p>';
+          }).join('') + `<h3>소금 핥기</h3>` + LICKS.map((d) => { const lv = b.lick[d.id] ?? 0, cost = lickCost(d, lv), max = lv >= d.max;
+            return `<div class="ui-row line"><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${lv}/${d.max}</span> <span class="ui-xs ${lv ? 'ui-good' : 'ui-muted'}">${ALCH_LABEL[d.eff]} +${Math.round(lv * d.per * 10) / 10}${d.unit}</span></div>
+              <button class="ui-btn sm" data-act="build:lick:${d.id}" ${!max && (b.salts[d.salt] ?? 0) >= cost ? '' : 'disabled'}>${max ? '최대' : `${SALT[d.salt].name} ${cost}`}</button></div>`; }).join('') + '<p class="ui-xs ui-muted">소금은 원자 충돌기의 입자를 빨리 모으게 하고, 소금 핥기·톱니판 깃발에 씁니다. 등급이 오르면 한 번에 더 많이 만듭니다.</p>';
         } else if (tab === 4) {
           // 3D 프린터 · 특성 도서관 · 원자 충돌기
           const ps = printerSlots(b);
@@ -1896,7 +1905,7 @@ export class UI {
       }
       case 'build': {
         const r = a === 'start' ? g.act({ t: 'build', op: 'start', id: b }) : a === 'cancel' ? g.act({ t: 'build', op: 'cancel', idx: +b })
-          : ['refine', 'rank', 'atom'].includes(a) ? g.act({ t: 'build', op: a as 'refine', id: b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' | 'staff' });
+          : ['refine', 'rank', 'atom', 'lick'].includes(a) ? g.act({ t: 'build', op: a as 'refine', id: b }) : g.act({ t: 'build', op: a as 'rate' | 'slots' | 'staff' | 'flag' });
         if (r.ok) { this.audio?.play('craft'); if (a === 'start') this.toast('공사를 시작했습니다'); } else fail(r.err ?? null);
         break;
       }
@@ -1913,6 +1922,7 @@ export class UI {
         break;
       }
       case 'dclaim': { const r = g.act({ t: 'daily', i: +a }); if (r.ok) { this.audio?.play('coin'); this.toast('일일 과제 보상: 공로 +1과 코인'); } else fail(r.err ?? null); break; }
+      case 'tackle': fail(g.act({ t: 'tackle', id: a }).err ?? null); break;
       case 'miniup': { const r = g.act({ t: 'miniUp', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'popup': { const r = g.act({ t: 'poppy', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
       case 'bkeeper': fail(g.act({ t: 'breed', op: 'keeper' }).err ?? null); break;

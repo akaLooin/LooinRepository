@@ -3,9 +3,9 @@
 import { applyStone } from './upgrade';
 import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
-import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook } from './build';
+import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook, buyLick, buyFlag } from './build';
 import { placeObol, takeObol } from './obols';
-import { sellJunk, sortBag, toggleLock } from './state';
+import { sellJunk, setTackle, sortBag, toggleLock } from './state';
 import { today } from './state';
 import { arcadeSettle, poppySettle, shootBall, upPoppy } from './arcade';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
@@ -86,13 +86,14 @@ export type Action =
   | { t: 'owl'; k?: OwlUp }
   | { t: 'post'; op: 'refresh' | 'deliver' | 'box'; idx?: number; id?: string }
   | { t: 'worship'; op: 'run' | 'up' | 'toggle'; id: string; kills?: number; survived?: boolean }
-  | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit' | 'staff' | 'cog' | 'trash' | 'refine' | 'rank' | 'print' | 'book' | 'atom'; id?: string; idx?: number; slot?: number }
+  | { t: 'build'; op: 'start' | 'cancel' | 'rate' | 'slots' | 'visit' | 'staff' | 'cog' | 'trash' | 'refine' | 'rank' | 'print' | 'book' | 'atom' | 'lick' | 'flag'; id?: string; idx?: number; slot?: number }
   | { t: 'shrine'; op: 'build' | 'place' | 'pick' | 'visit'; id?: string }
   | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
   | { t: 'arcade'; op: 'visit' | 'shoot' }
   | { t: 'daily'; i?: number }
   | { t: 'bag'; op: 'sort' | 'lock' | 'junk'; id?: string }
   | { t: 'miniUp'; id: string }
+  | { t: 'tackle'; id: string }
   | { t: 'poppy'; op: 'visit' | 'up'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel' | 'chip' | 'chipOn'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up' | 'keeper' | 'arena' | 'fight'; uid?: number; terr?: string; k?: BreedUp }
@@ -242,6 +243,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       }
       return fail('없는 행동');
     }
+    case 'tackle': return res(setTackle(c, a.id));
     case 'miniUp': return res(buyMiniUp(acc, a.id));
     case 'bag': { if (a.op === 'sort') { sortBag(c); return ok(); } if (a.op === 'lock') return res(toggleLock(c, a.id ?? '')); return ok(sellJunk(acc, c)); }
     case 'daily': { if (a.i === undefined) { dailyRefresh(acc, today(now)); return ok(); } return res(claimDaily(acc, a.i, today(now))); }
@@ -276,6 +278,8 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       if (a.op === 'print') return res(setPrint(acc, a.slot ?? -1, a.id ?? '', now));
       if (a.op === 'book') { buildSettle(acc, now); const t = TALENT[a.id ?? '']; return res(useBook(acc, a.id ?? '', !!t && (!t.cls || classLine(c.cls).includes(t.cls)))); }
       if (a.op === 'atom') return res(upAtom(acc, a.id ?? '', now));
+      if (a.op === 'lick') return res(buyLick(acc, a.id ?? '', now));
+      if (a.op === 'flag') return res(buyFlag(acc, now));
       return res(upBuild(acc, a.op, now));
     }
     case 'trap': {
