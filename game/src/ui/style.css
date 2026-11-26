@@ -311,11 +311,16 @@ html, body { word-break: keep-all; overflow-wrap: anywhere; }
 /* 가방은 늘 4칸씩(넓은 화면에서 2칸으로 줄어들지 않게), 상세는 남는 폭을 쓴다 */
 .invright .ui-grid.bag { flex: none; grid-template-columns: repeat(4, var(--slot)); }
 .invright .ui-detail { flex: 1; width: auto; min-width: 9em; }
-/* 아이템 창은 내용만큼 넓게(상세가 오른쪽에서 잘리지 않게) */
-.ui-win:has(.invlayout) { width: auto; max-width: calc(100vw - var(--sp-5) * 2); }
 
 /* 오볼판: 작은 칸 5줄 */
 .ui-grid.obgrid { grid-template-columns: repeat(5, auto); justify-content: start; gap: 3px; }
 
 /* 지도: 깊은 지역 목록 */
 .deeplist { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin: 4px 0; }
+
+/* 창은 언제나 가장 넉넉한 크기로 고정: 탭·버튼·내용이 바뀌어도 창 크기가 흔들리지 않는다 */
+#modal .ui-win { width: min(calc(100vw - var(--sp-5) * 2), 64em); height: calc(100% - var(--sp-5)); max-height: none; }
+#modal .ui-win > .body { flex: 1 1 auto; min-height: 0; }
+/* 탭은 개수만큼 똑같이 나누고, 글자가 길어도 폭이 바뀌지 않는다 */
+.ui-tabs button { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; }
+.ui-tabs button span { overflow: hidden; text-overflow: ellipsis; }
