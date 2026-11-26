@@ -1582,7 +1582,7 @@ function buildIcons() {
     icon(`lab_${id}`, (p) => { for (let y = 0; y < 13; y++) { const w = y < 4 ? 3 + y * 1.5 : Math.max(0, 9 - (y - 4)); p.rect(Math.round(8 - w), 2 + y, Math.round(w * 2), 1, y < 4 ? mix(col, '#ffffff', 0.35) : col); } p.set(6, 4, '#ffffff'); p.set(7, 5, '#ffffff'); });
   }
   // 건설: 건물 아이콘(지붕 색 + 상징)
-  for (const [id, roof, sym] of [['b_woodshed', '#8a5a3c', '#e8c08a'], ['b_minehouse', '#6a7480', '#7ae0ff'], ['b_dock', '#4a8ae8', '#c8ecff'], ['b_greenhouse', '#5fb859', '#f6c945'], ['b_drill', '#d9574a', '#f2f0e6'], ['b_hearth', '#e8833a', '#ffd06a'], ['b_library', '#8a6fd1', '#f2f0e6'], ['b_market', '#f2c14e', '#a8782a'], ['b_tower', '#5a6a8a', '#fff0a8'], ['b_attic', '#3a4a7a', '#c4ccff']] as const) {
+  for (const [id, roof, sym] of [['b_woodshed', '#8a5a3c', '#e8c08a'], ['b_minehouse', '#6a7480', '#7ae0ff'], ['b_dock', '#4a8ae8', '#c8ecff'], ['b_greenhouse', '#5fb859', '#f6c945'], ['b_drill', '#d9574a', '#f2f0e6'], ['b_hearth', '#e8833a', '#ffd06a'], ['b_library', '#8a6fd1', '#f2f0e6'], ['b_market', '#f2c14e', '#a8782a'], ['b_tower', '#5a6a8a', '#fff0a8'], ['b_attic', '#3a4a7a', '#c4ccff'], ['b_refinery', '#b84a4a', '#ffffff'], ['b_printer', '#4a6a8a', '#7affe8'], ['b_talentlib', '#6a3ab8', '#f6c945'], ['b_drone', '#5a7a4a', '#d0d0d0'], ['b_collider', '#2a2a5a', '#c87aff'], ['b_prayertower', '#c8d4e4', '#4ad0ff']] as const) {
     icon(`bld_${id}`, (p) => {
       p.rect(3, 7, 10, 8, '#e8dcc0'); for (let y = 0; y < 6; y++) p.rect(8 - y - 1, 1 + y, (y + 1) * 2, 1, roof);
       p.rect(6, 10, 4, 5, sym); p.rect(3, 14, 10, 1, '#a8906a'); p.set(7, 2, '#f4f8fc'); p.set(8, 2, '#f4f8fc');

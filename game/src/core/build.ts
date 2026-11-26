@@ -26,12 +26,12 @@ export const BUILDINGS: BuildingDef[] = [
 BUILDINGS.push(
   { id: 'b_refinery', name: '정제소', eff: 'coins', per: 0, unit: '', max: 10, mats: [['bar_frost', 15], ['brick', 60], ['icicle_shard', 20]], pts: 800 },
   { id: 'b_printer', name: '3D 프린터', eff: 'coins', per: 0, unit: '', max: 5, mats: [['bar_frost', 20], ['gearwheel', 40], ['aurora_dust', 10]], pts: 1200 },
-  { id: 'b_library', name: '특성 도서관', eff: 'coins', per: 0, unit: '', max: 10, mats: [['plank', 200], ['pine_cone', 60], ['runestone', 40]], pts: 1500 },
+  { id: 'b_talentlib', name: '특성 도서관', eff: 'coins', per: 0, unit: '', max: 10, mats: [['plank', 200], ['pine_cone', 60], ['runestone', 40]], pts: 1500 },
   { id: 'b_drone', name: '덫 드론', eff: 'coins', per: 0, unit: '', max: 3, mats: [['bracket', 30], ['cr_fox', 60], ['bar_frost', 20]], pts: 1800 },
   { id: 'b_collider', name: '원자 충돌기', eff: 'coins', per: 0, unit: '', max: 10, mats: [['bar_nova', 10], ['screw', 30], ['frost_core', 20]], pts: 3000 },
-  { id: 'b_tower', name: '기도 탑', eff: 'coins', per: 0, unit: '', max: 15, mats: [['icicle_shard', 30], ['snow_tuft', 60], ['brick', 40]], pts: 700 },
+  { id: 'b_prayertower', name: '기도 탑', eff: 'coins', per: 0, unit: '', max: 15, mats: [['icicle_shard', 30], ['snow_tuft', 60], ['brick', 40]], pts: 700 },
 );
-export const SPECIAL = new Set(['b_refinery', 'b_printer', 'b_library', 'b_drone', 'b_collider', 'b_tower']);
+export const SPECIAL = new Set(['b_refinery', 'b_printer', 'b_talentlib', 'b_drone', 'b_collider', 'b_prayertower']);
 export const BUILDING: Record<string, BuildingDef> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 export const BUILD = { rateBase: 120, ratePerLv: 0.12, rateUp: 0.15, rateUpMax: 10, rateUpCost: 5000, grow: 1.6, slotsBase: 2, slotCost: [60000, 250000] };
 
@@ -224,7 +224,7 @@ export function setPrint(acc: Account, slot: number, item: string, now: number):
 // ───────── 특성 도서관 ─────────
 /** 책 하나로 특성 하나의 최대 레벨 +1(특성마다 최대 +20) */
 export const LIBRARY_MAX = 20;
-export const bookHours = (b: Build) => Math.max(1, 12 - (b.levels.b_library ?? 0));
+export const bookHours = (b: Build) => Math.max(1, 12 - (b.levels.b_talentlib ?? 0));
 export function useBook(acc: Account, talent: string, valid: boolean): string | null {
   const b = acc.build;
   fixBuild(b);
@@ -304,7 +304,7 @@ function specialSettle(acc: Pick<Account, 'build' | 'characters'> & Partial<Pick
     if (whole > 0) { let st = acc.storage.find((s) => s.id === p.item); if (!st) { st = { id: p.item, qty: 0 }; acc.storage.push(st); } st.qty += whole; }
   });
   // 특성 도서관: 책
-  if (b.levels.b_library) { b.bookFrac += h / bookHours(b); const n = Math.floor(b.bookFrac); if (n > 0) { b.books = Math.min(50, b.books + n); b.bookFrac -= n; } }
+  if (b.levels.b_talentlib) { b.bookFrac += h / bookHours(b); const n = Math.floor(b.bookFrac); if (n > 0) { b.books = Math.min(50, b.books + n); b.bookFrac -= n; } }
   // 원자 충돌기: 입자(소금 종류마다 더 빨리)
   if (b.levels.b_collider) b.particles += h * (b.levels.b_collider ?? 0) * (1 + Object.values(b.salts).filter((v) => v > 0).length * 0.5);
 }

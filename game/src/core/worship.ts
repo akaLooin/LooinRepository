@@ -91,7 +91,7 @@ export function finishWorship(acc: Account, c: Character, id: string, kills: num
   if (ch < t.cost) return '기도력이 부족합니다';
   c.worship.charge = ch - t.cost; c.worship.t = now;
   const k = Math.min(t.maxKills, Math.max(0, Math.floor(kills)));
-  const souls = runSouls(c, k, survived, acc.build?.levels.b_tower ?? 0);
+  const souls = runSouls(c, k, survived, acc.build?.levels.b_prayertower ?? 0);
   acc.worship.souls[t.soul] += souls;
   acc.worship.best ??= {}; acc.worship.best[id] = Math.max(acc.worship.best[id] ?? 0, k);
   gainSkillXp(c, 'worship', k * t.xp * (survived ? 1.5 : 1));

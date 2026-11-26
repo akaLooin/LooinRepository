@@ -234,7 +234,7 @@ describe('건설(원작에 맞춤)', () => {
     acc.build.books = 1;
     expect(applyAction(acc, 0, { t: 'build', op: 'book', id: 'smash' }, H * 40).ok).toBe(true);
     expect(acc.build.talentMax.smash).toBe(1);
-    expect(BLD.b_collider && BLD.b_printer && BLD.b_drone && BLD.b_tower).toBeTruthy();
+    expect(BLD.b_collider && BLD.b_printer && BLD.b_drone && BLD.b_prayertower).toBeTruthy();
   });
 });
 

@@ -15,7 +15,7 @@ import { SPECIAL, ATOMS, ATOM_MAX, BUILD, BUILDINGS, COG_SLOTS, LIBRARY_MAX, PRI
 import { CRITTERS, SHINY_BONUS, TRAP_BOX, TRAP_BOXES, TRAP_NAMES, TRAP_TIMES, shinyLevel, trapSlots } from '../core/data';
 import { BUBBLES, BUBBLES_PER, BUBBLE_MAX_LV, CAULDRONS, LIQUID, LIQUIDS, LIQUID_BY, LiquidId, LiquidUp, SIGIL, SIGILS, sigilLv, VIALS, VIAL_COST, VIAL_FIND, VIAL_MAX, alchSettle, bigSlots, brewNeed, brewRate, bubbleCost, bubbleFound, bubbleLv, bubbleValue, liquidCap, liquidOpen, liquidRate, liquidUpCost, vialValue, workPower } from '../core/alchemy';
 /** 연금술 효과 이름 */
-const SPECIAL_DESC: Record<string, string> = { b_refinery: '소금을 정제(레벨마다 소금 한 가지)', b_printer: '자원 복사(레벨 + 1칸)', b_library: '특성 최대 레벨을 늘리는 책', b_drone: '모든 캐릭터의 덫 칸 +1(레벨마다)', b_collider: '입자를 모아 원자 올리기', b_tower: '기도 토템이 혼령을 더 자주 쏘고 영혼 +4%(레벨마다)' };
+const SPECIAL_DESC: Record<string, string> = { b_refinery: '소금을 정제(레벨마다 소금 한 가지)', b_printer: '자원 복사(레벨 + 1칸)', b_talentlib: '특성 최대 레벨을 늘리는 책', b_drone: '모든 캐릭터의 덫 칸 +1(레벨마다)', b_collider: '입자를 모아 원자 올리기', b_prayertower: '기도 토템이 혼령을 더 자주 쏘고 영혼 +4%(레벨마다)' };
 const ALCH_LABEL: Record<string, string> = { dmg: '공격력', hpPct: '최대 체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', drop: '드롭률', xp: '경험치', afk: '방치 효율', coins: '코인 획득', def: '방어력', acc: '명중', hp: '최대 체력', card: '카드 드롭률' };
 import {
   ATTACK_SLOTS, CARD_SLOTS, DEEP_MAPS, CLASS_NPC, CLASS_NPCS, NPCS, TALENT, TELEPORTS_MAX, WORLD1, ANVIL, CARDS, CLASSES, GROUP_NAMES, PRODUCTS, SHOP, STACK_BASE, stackGroup, CLASS_LEVEL, ClassId, EquipSlot, HAIR_COLORS, HAIR_STYLES, ITEMS, MAPS, MAX_CHARACTERS,
@@ -863,7 +863,7 @@ export class UI {
         const head = `<div class="ui-row alchhead">${ui('obj_shrine', 'mi')}<b class="ui-grow">기도 Lv.<span class="ui-accent">${sk.lv}</span> · 기도력 <span class="ui-accent">${Math.floor(ch)}</span> / ${cap} <span class="ui-xs ui-muted">시간당 ${chargeRate(c).toFixed(1)}</span></b><div style="width:26%">${bar('skill', sk.xp, need, `${sk.xp} / ${need}`)}</div></div>`;
         let body = '';
         if (tab === 0) {
-          const towers = acc.build?.levels.b_tower ?? 0, be = boltEvery(c, towers);
+          const towers = acc.build?.levels.b_prayertower ?? 0, be = boltEvery(c, towers);
           body = WTOTEMS.map((t) => {
             const lock = worshipLock(c, t.id), here = c.mapId === t.map;
             const btn = lock ? `<span class="ui-sm ui-bad">${lock}</span>` : !here ? `<span class="ui-xs ui-muted">${MAPS[t.map].name}에서</span>` : `<button class="ui-btn sm primary" data-act="wplay:${t.id}" ${ch >= t.cost ? '' : 'disabled'}>지키기 · 기도력 ${t.cost}</button>`;
@@ -1109,7 +1109,7 @@ export class UI {
             const opts = PRINTABLE.filter((id) => haveMat(acc, c, id) > 0 || p?.item === id).map((id) => `<button class="ui-btn sm ${p?.item === id ? 'primary' : ''}" data-act="print:${i}:${id}">${icon(id)}</button>`).join('');
             return `<div class="ui-row line">${ui('obj_build', 'mi')}<div class="ui-grow"><b>${i + 1}번 프린터</b> <span class="ui-xs ${p ? 'ui-good' : 'ui-muted'}">${p ? `${ITEMS[p.item].name} 시간당 ${printRate(acc, p.item)}개 → 창고` : '쉬는 중'}</span><div class="ui-row" style="flex-wrap:wrap;gap:2px">${opts || '<span class="ui-xs ui-muted">가방이나 창고에 채집 자원이 있어야 고를 수 있습니다</span>'}</div></div>${p ? `<button class="ui-btn sm" data-act="print:${i}:">멈추기</button>` : ''}</div>`;
           }).join('') : '<p class="ui-xs ui-muted">3D 프린터를 지으면 자원을 시간마다 복사합니다(많이 가진 자원일수록 많이).</p>';
-          const lib = b.levels.b_library ? `<p class="ui-sm">책 <b class="ui-accent">${b.books}</b>권 · ${bookHours(b)}시간마다 1권. 특성 창에서 특성을 고르고 '책 쓰기'를 누르면 그 특성의 최대 레벨이 1 오릅니다(최대 +${LIBRARY_MAX}).</p>` : '<p class="ui-xs ui-muted">특성 도서관을 지으면 특성 최대 레벨을 늘리는 책이 쌓입니다.</p>';
+          const lib = b.levels.b_talentlib ? `<p class="ui-sm">책 <b class="ui-accent">${b.books}</b>권 · ${bookHours(b)}시간마다 1권. 특성 창에서 특성을 고르고 '책 쓰기'를 누르면 그 특성의 최대 레벨이 1 오릅니다(최대 +${LIBRARY_MAX}).</p>` : '<p class="ui-xs ui-muted">특성 도서관을 지으면 특성 최대 레벨을 늘리는 책이 쌓입니다.</p>';
           const atoms = b.levels.b_collider ? ATOMS.map((d) => { const lv = b.atoms[d.id] ?? 0, cost = atomCost(d, lv); return `<div class="ui-row line"><div class="ui-grow"><b>${d.name}</b> <span class="ui-xs ui-accent">${lv}/${ATOM_MAX}</span> <span class="ui-xs ui-good">${ALCH_LABEL[d.eff]} +${Math.round(lv * d.per * 10) / 10}${d.unit}</span></div><button class="ui-btn sm" data-act="build:atom:${d.id}" ${lv < ATOM_MAX && b.particles >= cost ? '' : 'disabled'}>입자 ${cost}</button></div>`; }).join('')
             : '<p class="ui-xs ui-muted">원자 충돌기를 지으면 입자를 모아 원자를 올립니다.</p>';
           body = `<h3 style="margin-top:0">3D 프린터</h3>${printer}<h3>특성 도서관</h3>${lib}<h3>원자 충돌기 <span class="ui-xs ui-muted">입자 ${Math.floor(b.particles)}</span></h3>${atoms}
@@ -1839,7 +1839,7 @@ export class UI {
           const res = g.act({ t: 'worship', op: 'run', id: t.id, kills: r.kills, survived: r.survived });
           if (res.ok) { this.toast(`${SOUL_NAMES[t.soul]} ${res.n}개를 얻었습니다`); this.audio?.play('coin'); } else this.toast(res.err ?? '보상을 받지 못했습니다');
           this.open('shrine'); this.refresh(true);
-        }, { speed: t.speed, art: t.art, bolt: boltEvery(c, g.acc.build?.levels.b_tower ?? 0), totem: 'obj_shrine' });
+        }, { speed: t.speed, art: t.art, bolt: boltEvery(c, g.acc.build?.levels.b_prayertower ?? 0), totem: 'obj_shrine' });
         break;
       }
       case 'wup': { const r = g.act({ t: 'worship', op: 'up', id: a }); if (r.ok) this.audio?.play('craft'); else fail(r.err ?? null); break; }
