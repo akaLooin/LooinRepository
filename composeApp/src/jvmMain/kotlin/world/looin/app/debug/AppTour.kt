@@ -30,16 +30,18 @@ fun main(args: Array<String>) {
     scene.render(System.nanoTime()); shot("0_splash")
     pump(4000); shot("1_home")
     val ctl = c!!
-    ctl.tab = Tab.Chat; pump(2500); shot("2_chats")
-    ctl.tab = Tab.Me; pump(2500); shot("3_me")
-    ctl.tab = Tab.Home; pump(800)
-    ctl.push(Route.CommunityHub); pump(1500); shot("4_community_hub")
+    // 새 알림 배너 (앱을 보는 중 새 댓글이 왔을 때)
+    ctl.notices?.items?.firstOrNull()?.let { ctl.banner = it; pump(900); shot("1b_banner"); ctl.banner = null; pump(600) }
+    ctl.push(Route.Notifications); pump(2000); shot("2_notifications"); ctl.pop(); pump(600)
     val spaces = ctl.overview!!.spaces
-    ctl.push(Route.SpaceRoute(spaces.first { it.style == "REDDIT" })); pump(2500); shot("5_reddit")
-    args.getOrNull(3)?.let { ctl.push(Route.PostRoute(it, "REDDIT")); pump(2500); shot("6_reddit_post"); ctl.pop() }
+    ctl.push(Route.SpaceRoute(spaces.first { it.style == "REDDIT" })); pump(3000); shot("3_reddit_all")
+    args.getOrNull(3)?.let { ctl.push(Route.PostRoute(it, "REDDIT")); pump(2500); shot("4_reddit_post"); ctl.pop() }
     ctl.pop(); pump(600)
-    ctl.push(Route.SpaceRoute(spaces.first { it.style == "DC" })); pump(2500); shot("7_dc")
-    args.getOrNull(4)?.let { ctl.push(Route.PostRoute(it, "DC")); pump(2500); shot("8_dc_post") }
+    val dc = spaces.first { it.style == "DC" }
+    ctl.push(Route.SpaceRoute(dc)); pump(2500); shot("5_dc_galleries")
+    val boards = kotlinx.coroutines.runBlocking { ctl.api!!.boards(dc.id) }
+    ctl.push(Route.BoardRoute(dc, boards[1])); pump(2500); shot("6_dc_board")
+    args.getOrNull(4)?.let { ctl.push(Route.PostRoute(it, "DC")); pump(2500); shot("7_dc_post") }
     scene.close()
     println("saved to ${out.absolutePath}")
     kotlin.system.exitProcess(0)

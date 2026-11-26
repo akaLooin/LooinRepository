@@ -38,6 +38,13 @@ class InboxWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx,
                 notify(applicationContext, latest.content, inbox.unread)
                 AppSettings.set(KEY_LAST, latest.id)
             }
+            // 내 글에 달린 댓글, 답글, 커뮤니티 요약
+            val notices = api.notices()
+            val fresh = notices.items.firstOrNull { !it.read }
+            if (fresh != null && fresh.id != AppSettings.get(KEY_LAST_NOTICE)) {
+                notifyNotice(applicationContext, fresh.title, fresh.body, notices.unread)
+                AppSettings.set(KEY_LAST_NOTICE, fresh.id)
+            }
             Result.success()
         } catch (e: Exception) {
             Result.retry()
@@ -48,6 +55,9 @@ class InboxWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx,
 
     companion object {
         private const val KEY_LAST = "last_notified_message"
+        private const val KEY_LAST_NOTICE = "last_notified_notice"
+        private const val CHANNEL_COMMUNITY = "akael_community"
+        const val EXTRA_OPEN_NOTICES = "open_notices"
         private const val CHANNEL = "akael_reach_out"
         const val EXTRA_OPEN_INBOX = "open_inbox"
 
@@ -56,6 +66,31 @@ class InboxWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx,
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
             WorkManager.getInstance(ctx).enqueueUniquePeriodicWork("akael-inbox", ExistingPeriodicWorkPolicy.KEEP, req)
+        }
+
+        fun notifyNotice(ctx: Context, title: String, body: String, unread: Int) {
+            if (Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) return
+            val nm = ctx.getSystemService(NotificationManager::class.java)
+            if (nm.getNotificationChannel(CHANNEL_COMMUNITY) == null) {
+                nm.createNotificationChannel(NotificationChannel(CHANNEL_COMMUNITY, "커뮤니티 댓글 · 요약", NotificationManager.IMPORTANCE_DEFAULT))
+            }
+            val open = PendingIntent.getActivity(
+                ctx, 1,
+                Intent(ctx, MainActivity::class.java).putExtra(EXTRA_OPEN_NOTICES, true).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val n = NotificationCompat.Builder(ctx, CHANNEL_COMMUNITY)
+                .setSmallIcon(R.drawable.ic_stat_akael)
+                .setColor(0xFF00FF7F.toInt())
+                .setContentTitle(title + if (unread > 1) " 외 ${unread - 1}개" else "")
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .build()
+            NotificationManagerCompat.from(ctx).notify(8, n)
         }
 
         fun notify(ctx: Context, text: String, unread: Int) {

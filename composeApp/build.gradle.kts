@@ -42,8 +42,8 @@ android {
         applicationId = "world.looin.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 6
-        versionName = "0.5.0"
+        versionCode = 7
+        versionName = "0.6.0"
     }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1,INDEX.LIST,io.netty.versions.properties}" } }
     buildTypes { getByName("release") { isMinifyEnabled = false } }

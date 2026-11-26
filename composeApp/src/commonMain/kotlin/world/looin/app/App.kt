@@ -38,6 +38,15 @@ fun App(onBackAvailable: (Boolean) -> Unit = {}, controllerOut: (AppController) 
         }
         LaunchedEffect(c.stack.size) { onBackAvailable(c.stack.isNotEmpty()) }
 
+        // 앱을 보는 동안 1분마다 새 알림 확인 → 새 댓글이 오면 위에서 배너가 내려온다
+        LaunchedEffect(c.api) {
+            while (c.api != null) { kotlinx.coroutines.delay(60_000); c.refreshNotices() }
+        }
+        LaunchedEffect(c.banner) { if (c.banner != null) { kotlinx.coroutines.delay(7_000); c.banner = null } }
+        LaunchedEffect(c.openNoticesRequested, c.overview) {
+            if (c.openNoticesRequested && c.overview != null) { c.openNoticesRequested = false; c.push(Route.Notifications) }
+        }
+
         // 알림으로 들어왔으면 소식함 대화로 바로
         LaunchedEffect(c.openInboxRequested, c.overview, c.inbox) {
             val conv = c.inbox?.conversationId
@@ -97,6 +106,8 @@ fun App(onBackAvailable: (Boolean) -> Unit = {}, controllerOut: (AppController) 
                         is Route.SpaceRoute -> SpaceScreen(c, screen.space)
                         is Route.PostRoute -> world.looin.app.ui.CommunityPostScreen(c, screen)
                         Route.CommunityHub -> world.looin.app.ui.CommunityHubScreen(c)
+                        is Route.BoardRoute -> world.looin.app.ui.DcBoardScreen(c, screen.space, screen.board)
+                        Route.Notifications -> world.looin.app.ui.NotificationsScreen(c)
                         Route.NewAgent -> NewAgentScreen(c)
                         Route.BrainSettings -> world.looin.app.ui.BrainSettingsScreen(c)
                         Tab.Home -> HomeScreen(c)
@@ -105,6 +116,15 @@ fun App(onBackAvailable: (Boolean) -> Unit = {}, controllerOut: (AppController) 
                         Tab.Me -> MeScreen(c)
                         else -> Unit
                     }
+                }
+                // 새 알림 배너
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = c.banner != null,
+                    enter = androidx.compose.animation.slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
+                ) {
+                    c.banner?.let { n -> world.looin.app.ui.NoticeBanner(n, onClick = { c.openNotice(n) }) }
                 }
             }
         }

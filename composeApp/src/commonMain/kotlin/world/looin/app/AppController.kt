@@ -18,6 +18,9 @@ sealed interface Route {
     data class SpaceRoute(val space: Space) : Route
     data class PostRoute(val postId: String, val style: String = "") : Route
     data object CommunityHub : Route
+    /** 디시 갤러리 하나 (갤러리 목록 → 갤러리) */
+    data class BoardRoute(val space: Space, val board: world.looin.shared.Board) : Route
+    data object Notifications : Route
     data object NewAgent : Route
     data object BrainSettings : Route
 }
@@ -48,6 +51,11 @@ class AppController(private val scope: CoroutineScope) {
     var restoring by mutableStateOf(false); private set
     /** 아카엘이 먼저 말 건 소식 */
     var inbox: world.looin.shared.Inbox? by mutableStateOf(null); private set
+    /** 앱 안 알림 (내 글 댓글, 답글, 커뮤니티 요약) */
+    var notices: world.looin.shared.Notices? by mutableStateOf(null); private set
+    /** 앱을 보는 중에 새 알림이 오면 위에서 살짝 내려오는 배너 */
+    var banner: world.looin.shared.Notice? by mutableStateOf(null)
+    private val seenNotices = mutableSetOf<String>()
     var overview: WorldOverview? by mutableStateOf(null); private set
     var error: String? by mutableStateOf(null)
     var loading by mutableStateOf(false); private set
@@ -105,7 +113,34 @@ class AppController(private val scope: CoroutineScope) {
     fun refreshInbox() {
         val a = api ?: return
         scope.launch { runCatching { a.inbox() }.onSuccess { inbox = it } }
+        refreshNotices()
     }
+
+    fun refreshNotices() {
+        val a = api ?: return
+        scope.launch {
+            runCatching { a.notices() }.onSuccess { n ->
+                val first = notices == null
+                // 처음 불러올 때는 배너를 띄우지 않고, 그 뒤로 새로 생긴 안 읽은 알림만 배너로
+                val fresh = n.items.firstOrNull { !it.read && it.id !in seenNotices }
+                n.items.forEach { seenNotices += it.id }
+                if (!first && fresh != null) banner = fresh
+                notices = n
+            }
+        }
+    }
+
+    /** 알림을 눌렀을 때: 읽음 처리하고 해당 글/커뮤니티로 */
+    fun openNotice(n: world.looin.shared.Notice) {
+        banner = null
+        run({ it.readNotices(n.id) }) { refreshNotices() }
+        when {
+            n.postId != null -> push(Route.PostRoute(n.postId!!, n.style))
+            n.spaceId != null -> overview?.spaces?.firstOrNull { it.id == n.spaceId }?.let { push(Route.SpaceRoute(it)) }
+        }
+    }
+
+    var openNoticesRequested by mutableStateOf(false)
 
     /** 대화 상대: 아카엘(중심 AI) */
     val core: Agent? get() = overview?.agents?.firstOrNull { it.kind == world.looin.shared.AgentKind.CORE }

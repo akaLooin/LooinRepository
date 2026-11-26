@@ -49,7 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import world.looin.app.AppController
 import world.looin.app.Route
+import world.looin.shared.Board
 import world.looin.shared.Comment
+import world.looin.shared.Digest
 import world.looin.shared.CreateCommentRequest
 import world.looin.shared.CreatePostRequest
 import world.looin.shared.Post
@@ -126,13 +128,44 @@ private fun CommunityDoor(accent: Color, badge: String, title: String, subtitle:
 /** 커뮤니티 공간 화면: 스타일에 따라 레딧/디시 화면으로. */
 @Composable
 fun CommunityFeed(c: AppController, space: Space) {
-    if (space.style == "DC") DcGallery(c, space) else RedditFeed(c, space)
+    if (space.style == "DC") DcGalleryList(c, space) else RedditFeed(c, space)
+}
+
+/** 커뮤니티 요약 카드: 주민들 이야기 · 내가 한 이야기와 반응 · 새로 알게 된 것. 누르면 펼쳐진다. */
+@Composable
+private fun DigestCard(c: AppController, space: Space, accent: Color) {
+    var digest by remember(space.id) { mutableStateOf<Digest?>(null) }
+    var open by remember { mutableStateOf(false) }
+    var making by remember { mutableStateOf(false) }
+    LaunchedEffect(space.id) { c.run({ it.digest(space.id) }) { digest = it } }
+    val d = digest
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).clip(RoundedCornerShape(16.dp))
+            .background(accent.copy(alpha = 0.08f)).clickable { open = !open }.padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("📰 커뮤니티 요약", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            d?.let { Text(timeAgo(it.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        if (d == null) Text("매일 밤 9시쯤 그날의 이야기를 정리해 드려요.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        else if (!open) Text(d.content.lineSequence().firstOrNull { it.isNotBlank() } ?: "", maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+        else MarkdownText(d.content)
+        if (open || d == null) TextButton(onClick = {
+            making = true
+            c.run({ it.makeDigest(space.id) }) { digest = it; making = false; open = true }
+        }, enabled = !making) { Text(if (making) "요약하는 중…" else "지금까지 이야기 요약하기", color = accent) }
+    }
 }
 
 // ───────────────────────── 공통: 글쓰기 / 세계 돌리기 ─────────────────────────
 
 @Composable
-private fun WriteDialog(style: String, onDismiss: () -> Unit, onSubmit: (CreatePostRequest) -> Unit) {
+private fun WriteDialog(
+    style: String, onDismiss: () -> Unit,
+    boards: List<Board> = emptyList(), initialBoard: Board? = null,
+    onSubmit: (CreatePostRequest) -> Unit,
+) {
+    var board by remember { mutableStateOf(initialBoard ?: boards.firstOrNull()) }
     val tags = if (style == "DC") listOf("[일반]", "[정보]", "[질문]", "[후기]", "[뻘글]") else listOf("[토론]", "[질문]", "[분석]", "[응원]", "[기록]", "[아이디어]")
     var tag by remember { mutableStateOf(tags.first()) }
     var title by remember { mutableStateOf("") }
@@ -142,6 +175,9 @@ private fun WriteDialog(style: String, onDismiss: () -> Unit, onSubmit: (CreateP
         title = { Text(if (style == "DC") "글쓰기" else "Create post") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (boards.size > 1) LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(boards) { b -> FilterChip(selected = board?.id == b.id, onClick = { board = b }, label = { Text(b.name) }) }
+                }
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(tags) { t -> FilterChip(selected = tag == t, onClick = { tag = t }, label = { Text(t) }) }
                 }
@@ -150,7 +186,7 @@ private fun WriteDialog(style: String, onDismiss: () -> Unit, onSubmit: (CreateP
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSubmit(CreatePostRequest(title, body, tag)) }, enabled = title.isNotBlank() && body.isNotBlank()) { Text("올리기") }
+            TextButton(onClick = { onSubmit(CreatePostRequest(title, body, tag, board?.id)) }, enabled = title.isNotBlank() && body.isNotBlank()) { Text("올리기") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
     )
@@ -158,20 +194,46 @@ private fun WriteDialog(style: String, onDismiss: () -> Unit, onSubmit: (CreateP
 
 private fun ago(ts: Long): String = timeAgo(ts)
 
+@Composable
+private fun NewBoardDialog(title: String, onDismiss: () -> Unit, onCreate: (String, String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(name, { name = it }, label = { Text("이름") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(desc, { desc = it }, label = { Text("어떤 주제? (주민들이 이걸 보고 글을 써요)") }, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = { TextButton(onClick = { onCreate(name, desc) }, enabled = name.isNotBlank()) { Text("만들기") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+    )
+}
+
 // ───────────────────────── 레딧 스타일 ─────────────────────────
 
 @Composable
 private fun RedditFeed(c: AppController, space: Space) {
     var sort by remember { mutableStateOf("hot") }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
+    var boards by remember { mutableStateOf<List<Board>>(emptyList()) }
+    var board by remember { mutableStateOf<Board?>(null) }   // null = 전체 (r/all)
     var busy by remember { mutableStateOf(false) }
     var writing by remember { mutableStateOf(false) }
+    var newBoard by remember { mutableStateOf(false) }
     val myVotes = remember { mutableStateMapOf<String, Int>() }
-    fun load() = c.run({ it.posts(space.id, sort) }) { posts = it }
-    LaunchedEffect(sort) { load() }
+    fun load() = c.run({ it.posts(space.id, sort, board?.id) }) { posts = it }
+    LaunchedEffect(Unit) { c.run({ it.boards(space.id) }) { boards = it } }
+    LaunchedEffect(sort, board) { load() }
+    val boardName = boards.associate { it.id to it.name }
 
     Column(Modifier.fillMaxSize()) {
-        TopBar(space.name, onBack = { c.pop() }) { TextButton(onClick = { writing = true }) { Text("＋ 글쓰기", color = RedditOrange) } }
+        TopBar(board?.name ?: "r/all · ${space.name}", onBack = { c.pop() }) {
+            BellButton(c)
+            TextButton(onClick = { writing = true }) { Text("＋ 글쓰기", color = RedditOrange) }
+        }
         // 배너
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(18.dp))
@@ -183,15 +245,21 @@ private fun RedditFeed(c: AppController, space: Space) {
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(space.name, fontWeight = FontWeight.Bold)
-                Text("주민 ${space.memberAgentIds.size} · 루인에 대한 모든 것", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(board?.name ?: "r/all", fontWeight = FontWeight.Bold)
+                Text(board?.description ?: "모든 서브레딧의 글 · 주민 ${space.memberAgentIds.size}명", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Button(
-                onClick = { busy = true; c.run({ it.tick(space.id, TickRequest(3)) }) { busy = false; load(); c.refresh() } },
-                enabled = !busy, colors = ButtonDefaults.buttonColors(containerColor = RedditOrange, contentColor = Color.White),
-            ) { Text(if (busy) "활동 중…" else "🌀 새 활동") }
+            TextButton(onClick = { busy = true; c.run({ it.tick(space.id, TickRequest(3)) }) { busy = false; load(); c.refresh() } }, enabled = !busy) {
+                Text(if (busy) "…" else "⏩ 빨리감기", color = RedditOrange, style = MaterialTheme.typography.labelMedium)
+            }
         }
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // 서브레딧 고르기
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+            item { FilterChip(selected = board == null, onClick = { board = null }, label = { Text("r/all") }) }
+            items(boards, key = { it.id }) { b -> FilterChip(selected = board?.id == b.id, onClick = { board = b }, label = { Text(b.name) }) }
+            item { FilterChip(selected = false, onClick = { newBoard = true }, label = { Text("＋ 서브레딧") }) }
+        }
+        if (board == null) DigestCard(c, space, RedditOrange)
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("hot" to "🔥 Hot", "new" to "✨ New", "top" to "📈 Top").forEach { (k, label) ->
                 FilterChip(selected = sort == k, onClick = { sort = k }, label = { Text(label) })
             }
@@ -215,7 +283,7 @@ private fun RedditFeed(c: AppController, space: Space) {
                     }
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("u/${p.authorName} · ${ago(p.createdAt)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${boardName[p.boardId] ?: "r/looin"} · u/${p.authorName} · ${ago(p.createdAt)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(3.dp))
                         p.tag?.let { Flair(it) }
                         Text(p.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -228,9 +296,13 @@ private fun RedditFeed(c: AppController, space: Space) {
             item { Spacer(Modifier.height(24.dp)) }
         }
     }
-    if (writing) WriteDialog("REDDIT", { writing = false }) { r ->
+    if (writing) WriteDialog("REDDIT", { writing = false }, boards = boards, initialBoard = board) { r ->
         writing = false; busy = true
         c.run({ it.createPost(space.id, r) }) { p -> busy = false; load(); c.push(Route.PostRoute(p.id, "REDDIT")) }
+    }
+    if (newBoard) NewBoardDialog("새 서브레딧", { newBoard = false }) { name, desc ->
+        newBoard = false
+        c.run({ it.createBoard(space.id, world.looin.shared.CreateBoardRequest(name, desc)) }) { b -> boards = boards + b; board = b }
     }
 }
 
@@ -332,14 +404,66 @@ private fun RedditPost(c: AppController, postId: String) {
 
 // ───────────────────────── 디시 스타일 ─────────────────────────
 
+/** 디시: 갤러리 목록 (메인 갤 + 주제별 갤). 누르면 그 갤러리로. */
 @Composable
-private fun DcGallery(c: AppController, space: Space) {
+private fun DcGalleryList(c: AppController, space: Space) {
+    var boards by remember { mutableStateOf<List<Board>>(emptyList()) }
+    var newBoard by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { c.run({ it.boards(space.id) }) { boards = it } }
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().background(DcBlue), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { c.pop() }) { Text("←", color = Color.White, fontSize = 20.sp) }
+            Column(Modifier.weight(1f)) {
+                Text("${space.name} · 갤러리 목록", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("갤러리 ${boards.size}개", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+            }
+            BellButton(c)
+        }
+        LazyColumn(Modifier.weight(1f)) {
+            item { DigestCard(c, space, DcBlue) }
+            items(boards, key = { it.id }) { b ->
+                Row(
+                    Modifier.animateItem().fillMaxWidth().clickable { c.push(Route.BoardRoute(space, b)) }.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(42.dp).clip(RoundedCornerShape(10.dp)).background(DcBlue.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+                        Text(b.name.take(2), color = DcBlue, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(b.name, fontWeight = FontWeight.Bold)
+                        Text(b.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("글 ${b.postCount}", style = MaterialTheme.typography.labelMedium, color = DcBlue)
+                        b.lastPostAt?.let { Text(ago(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            }
+            item {
+                TextButton(onClick = { newBoard = true }, modifier = Modifier.padding(8.dp)) { Text("＋ 갤러리 만들기", color = DcBlue) }
+            }
+        }
+    }
+    if (newBoard) NewBoardDialog("갤러리 만들기", { newBoard = false }) { name, desc ->
+        newBoard = false
+        val n = if (name.endsWith("갤러리") || name.endsWith("갤")) name else "$name 갤러리"
+        c.run({ it.createBoard(space.id, world.looin.shared.CreateBoardRequest(n, desc)) }) { b -> boards = boards + b }
+    }
+}
+
+/** 디시 갤러리 하나의 글 목록. */
+@Composable
+fun DcBoardScreen(c: AppController, space: Space, board: Board) {
     var tab by remember { mutableStateOf("new") }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
     var writing by remember { mutableStateOf(false) }
-    fun load() = c.run({ it.posts(space.id, tab) }) { posts = it }
+    var boards by remember { mutableStateOf(listOf(board)) }
+    fun load() = c.run({ it.posts(space.id, tab, board.id) }) { posts = it }
     LaunchedEffect(tab) { load() }
+    LaunchedEffect(Unit) { c.run({ it.boards(space.id) }) { boards = it } }
 
     Column(Modifier.fillMaxSize()) {
         // 디시 특유의 파란 머리띠
@@ -347,11 +471,12 @@ private fun DcGallery(c: AppController, space: Space) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) {
                 TextButton(onClick = { c.pop() }) { Text("←", color = Color.White, fontSize = 20.sp) }
                 Column(Modifier.weight(1f)) {
-                    Text(space.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text("AI 마이너 갤러리", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                    Text(board.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(board.description, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                TextButton(onClick = { load() }) { Text("새로고침", color = Color.White) }
                 TextButton(onClick = { busy = true; c.run({ it.tick(space.id, TickRequest(3)) }) { busy = false; load(); c.refresh() } }, enabled = !busy) {
-                    Text(if (busy) "로딩…" else "새로고침", color = Color.White)
+                    Text(if (busy) "…" else "⏩", color = Color.White)
                 }
             }
             Row {
@@ -392,7 +517,7 @@ private fun DcGallery(c: AppController, space: Space) {
             colors = ButtonDefaults.buttonColors(containerColor = DcBlue, contentColor = Color.White), shape = RoundedCornerShape(10.dp),
         ) { Text("✏ 글쓰기") }
     }
-    if (writing) WriteDialog("DC", { writing = false }) { r ->
+    if (writing) WriteDialog("DC", { writing = false }, boards = boards, initialBoard = board) { r ->
         writing = false; busy = true
         c.run({ it.createPost(space.id, r) }) { p -> busy = false; load(); c.push(Route.PostRoute(p.id, "DC")) }
     }
@@ -408,7 +533,7 @@ private fun DcPost(c: AppController, postId: String) {
     Column(Modifier.fillMaxSize().imePadding()) {
         Row(Modifier.fillMaxWidth().background(DcBlue), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { c.pop() }) { Text("←", color = Color.White, fontSize = 20.sp) }
-            Text("루인 갤러리", color = Color.White, fontWeight = FontWeight.Bold)
+            Text("루인 마이너 갤러리", color = Color.White, fontWeight = FontWeight.Bold)
         }
         val d = detail
         LazyColumn(Modifier.weight(1f)) {

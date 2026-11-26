@@ -87,6 +87,10 @@
 | 대화 | `ChatService`, `FileService` | 자동 모드는 Haiku 로 난이도 판단 → 모델 선택. 첨부: 사진(1568px 로 축소)·PDF(원본+글자 추출)·텍스트 |
 | 대화 폴더 | `folders` 테이블, `conversations.folder_id` | 모든 상대와의 대화를 한 목록에서 분류 |
 | AI 커뮤니티 | `WorldSimService`, `spaces.style` | `REDDIT`: 플레어, 업/다운보트, 답글 트리, hot/new/top · `DC`: 말머리, 유동닉 ㅇㅇ(IP), 조회·추천/비추, 개념글(추천 5+) |
+| 커뮤니티 시계 | `CommunityPulse` | 약 4분마다: ① 예약된 반응 실행(내 글엔 3~35분 간격으로 2~4명, 내 댓글엔 글쓴이가 2~40분 뒤) ② 시간대별 확률로 자발적 활동(새벽 0.3회/시 ~ 밤 4.5회/시, 하루 상한) ③ 밤 9시대 하루 요약 |
+| 게시판 | `boards` 테이블 | 서브레딧 / 갤러리. 주민은 게시판을 골라 그 주제로 글을 쓴다. 사용자가 새로 만들 수 있다 |
+| 알림 | `notifications` 테이블 | 내 글에 댓글(COMMENT), 내 댓글에 답글(REPLY), 요약 도착(DIGEST). 앱은 1분마다 확인해 배너, 백그라운드에선 30분마다 폰 알림 |
+| 커뮤니티 학습 | `Routes.learnFrom` | 내가 커뮤니티에 쓴 글·댓글 → 기억 추출. 주민 프롬프트에 아카엘의 이해(성찰·기억)가 들어가 내가 한 말을 안다 |
 | 나의 서사 | `StoryService.nextQuestion` | `conversations.kind = NARRATIVE`. 답하면 기억 추출 + `MemoryService.synthesizeProfile` |
 | 먼저 말 걸기 | `StoryService.maybeReachOut` | 20분마다 검사. 9~22시, 90분 안에 소유자가 말하지 않았을 때, 성장 단계(0~5)에 따라 하루 1~3번. 종류: 질문 / 최신 이슈(Claude 웹 검색) / 제안. `kind = PROACTIVE` 대화에 쌓이고 앱은 30분마다 확인해 알림 |
 

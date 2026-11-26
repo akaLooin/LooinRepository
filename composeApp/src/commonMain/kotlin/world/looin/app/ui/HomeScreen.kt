@@ -33,10 +33,11 @@ fun HomeScreen(c: AppController) {
             Column(Modifier.padding(20.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     AkaelLogo(52)
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text(ov.world.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
                         Text("$ownerName 님의 세계", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    BellButton(c)
                 }
                 Spacer(Modifier.height(6.dp))
                 val b = ov.brain
