@@ -352,3 +352,23 @@ describe('버프 물약·황금 음식·가방·보관함', () => {
     expect(c.foods.length).toBe(5);
   });
 });
+
+describe('가방 편의·초기화', () => {
+  it('정리·잠금·잡템 팔기, 특성·능력치 초기화 물약', () => {
+    const { acc, c } = setup();
+    addItem(c, 'moss', 20); addItem(c, 'pebble', 10); addItem(c, 'berry', 5); addItem(c, 'log', 5);
+    expect(applyAction(acc, 0, { t: 'bag', op: 'lock', id: 'pebble' }, 0).ok).toBe(true);
+    const r = applyAction(acc, 0, { t: 'bag', op: 'junk' }, 0);
+    expect(r.n).toBeGreaterThan(0);
+    expect(c.inventory.some((x) => x.id === 'moss')).toBe(false);
+    expect(c.inventory.some((x) => x.id === 'pebble')).toBe(true);
+    expect(c.inventory.some((x) => x.id === 'log')).toBe(true); // 자원은 남긴다
+    expect(applyAction(acc, 0, { t: 'bag', op: 'sort' }, 0).ok).toBe(true);
+    c.level = 10; c.stats.str = 5; c.statPoints = 0; c.talents = { smash: 3 };
+    addItem(c, 'talent_reset', 1); addItem(c, 'stat_reset', 1);
+    expect(applyAction(acc, 0, { t: 'use', id: 'talent_reset' }, 0).ok).toBe(true);
+    expect(c.talents).toEqual({});
+    expect(applyAction(acc, 0, { t: 'use', id: 'stat_reset' }, 0).ok).toBe(true);
+    expect(c.stats.str).toBe(1); expect(c.statPoints).toBe(4);
+  });
+});

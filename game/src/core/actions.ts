@@ -5,6 +5,7 @@ import { deliver, postRefresh, upBox } from './post';
 import { cancelTrap, collectTrap, setTrap } from './traps';
 import { buildSettle, cancelBuild, startBuild, upBuild , placeCog, rankUpSalt, setPrint, toggleRefine, toggleStaff, trashCog, upAtom, useBook } from './build';
 import { placeObol, takeObol } from './obols';
+import { sellJunk, sortBag, toggleLock } from './state';
 import { today } from './state';
 import { arcadeSettle, poppySettle, shootBall, upPoppy } from './arcade';
 import { buildShrine, pickShrine, placeShrine, shrineSettle } from './shrines';
@@ -90,6 +91,7 @@ export type Action =
   | { t: 'obol'; op: 'place' | 'take'; fam: boolean; idx: number; id?: string }
   | { t: 'arcade'; op: 'visit' | 'shoot' }
   | { t: 'daily'; i?: number }
+  | { t: 'bag'; op: 'sort' | 'lock' | 'junk'; id?: string }
   | { t: 'poppy'; op: 'visit' | 'up'; id?: string }
   | { t: 'lab'; op: 'visit' | 'place' | 'leave' | 'jewel' | 'chip' | 'chipOn'; spot?: number; id?: string }
   | { t: 'breed'; op: 'visit' | 'hatch' | 'release' | 'fence' | 'team' | 'up' | 'keeper' | 'arena' | 'fight'; uid?: number; terr?: string; k?: BreedUp }
@@ -239,6 +241,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
       }
       return fail('없는 행동');
     }
+    case 'bag': { if (a.op === 'sort') { sortBag(c); return ok(); } if (a.op === 'lock') return res(toggleLock(c, a.id ?? '')); return ok(sellJunk(acc, c)); }
     case 'daily': { if (a.i === undefined) { dailyRefresh(acc, today(now)); return ok(); } return res(claimDaily(acc, a.i, today(now))); }
     case 'arcade': {
       if ((c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 오락실에서 할 수 있습니다');

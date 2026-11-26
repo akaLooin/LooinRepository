@@ -167,6 +167,8 @@ const items: ItemDef[] = [
     .map(([k, name]) => ({ id: `statue_${k}`, name, desc: '석상 받침에 바치면 그 석상이 자란다(캐릭터마다).', kind: 'statue' as const, sell: 2 })),
   ...[['str', '힘'], ['agi', '날램'], ['wis', '슬기'], ['luk', '행운'], ['guard', '수호'], ['feast', '풍요'], ['fortune', '보물'], ['mine', '광부'], ['chop', '나무꾼'], ['xp', '현자'], ['coins', '상인'], ['aim', '명사수'], ['fish', '어부'], ['bug', '곤충학자'], ['rage', '분노'], ['heart', '심장'], ['card', '수집가'], ['sleep', '잠'], ['star', '별'], ['void', '공허']]
     .map(([k, name]) => ({ id: `gstatue_${k}`, name: `황금 ${name}의 조각`, desc: '사용하면 그 석상이 황금이 되어, 계정에서 가장 높은 석상 레벨이 모든 캐릭터에게 적용된다. 수정 몬스터가 아주 드물게 떨어뜨린다.', kind: 'tool' as const, sell: 0 })),
+  { id: 'talent_reset', name: '특성 초기화 물약', desc: '사용하면 이 캐릭터의 모든 특성 포인트를 돌려받는다.', kind: 'tool', sell: 0 },
+  { id: 'stat_reset', name: '능력치 초기화 물약', desc: '사용하면 이 캐릭터가 찍은 능력치를 모두 포인트로 돌려받는다.', kind: 'tool', sell: 0 },
   { id: 'loot_magnet', name: '줍기 자석', desc: '사용하면 떨어진 아이템을 자동으로 줍게 된다(계정 공용, 가방에 자리가 있을 때).', kind: 'tool', sell: 0 },
   { id: 'sculpt_tools', name: '조각 도구', desc: '사용하면 마을의 석상 받침을 쓸 수 있다(계정 공용).', kind: 'tool', sell: 0 },
   { id: 'pants_moss', name: '이끼 바지', desc: '폭신한 이끼를 엮은 바지.', kind: 'equip', slot: 'legs', stats: { def: 2, hp: 8 }, sell: 10 },
@@ -1488,6 +1490,7 @@ export const SHOP: ShopEntry[] = [
   { item: 'stamp_afk', price: 4000, daily: 1 },
   { item: 'sculpt_tools', price: 1000, daily: 1 },
   { item: 'loot_magnet', price: 40000, daily: 1, w: 2 },
+  { item: 'talent_reset', price: 5000, daily: 1 }, { item: 'stat_reset', price: 5000, daily: 1 },
   { item: 'arena_ticket', price: 250, daily: 2 },
   { item: 'potion_power', price: 400, daily: 10 }, { item: 'potion_wise', price: 400, daily: 10 }, { item: 'potion_miner', price: 300, daily: 10 }, { item: 'potion_lumber', price: 300, daily: 10 },
   { item: 'potion_luck', price: 3000, daily: 10, w: 2 }, { item: 'potion_angler', price: 2500, daily: 10, w: 2 }, { item: 'potion_bug', price: 2500, daily: 10, w: 2 }, { item: 'potion_card', price: 30000, daily: 5, w: 3 },

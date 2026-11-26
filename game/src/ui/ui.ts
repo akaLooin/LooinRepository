@@ -126,6 +126,15 @@ const dur = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.fl
 const STAT_LABEL: Record<string, string> = { dmg: '공격력', def: '방어력', hp: '체력', str: '힘', agi: '민첩', wis: '지혜', luk: '행운', mining: '채광', chopping: '벌목', fishing: '낚시', catching: '곤충 채집' };
 const statsText = (s: ItemStats | undefined) => Object.entries(s ?? {}).map(([k, v]) => `${STAT_LABEL[k]} +${v}`).join(', ');
 const statLine = (id: string) => statsText(ITEMS[id].stats);
+/** 장착 중인 장비와 견주기: 오르는 값은 ▲, 내리는 값은 ▼ */
+const compareLine = (c: Character, id: string) => {
+  const it = ITEMS[id]; if (!it?.slot) return '';
+  const slot = it.slot === 'ring' && c.equipment.ring && !c.equipment.ring2 ? 'ring2' : it.slot, cur = c.equipment[slot];
+  const a = (ITEMS[cur ?? '']?.stats ?? {}) as Record<string, number>, b = (it.stats ?? {}) as Record<string, number>, up = (c.equipUp[slot]?.s ?? {}) as Record<string, number>;
+  const keys = [...new Set([...Object.keys(a), ...Object.keys(b), ...Object.keys(up)])];
+  const parts = keys.map((k) => { const d = (b[k] ?? 0) - (a[k] ?? 0) - (up[k] ?? 0); return d ? `<span class="${d > 0 ? 'ui-good' : 'ui-bad'}">${d > 0 ? '▲' : '▼'}${STAT_LABEL[k]} ${Math.abs(d)}</span>` : ''; }).filter(Boolean);
+  return `<span class="ui-xs">${cur ? `지금(${ITEMS[cur].name})과 비교: ` : '빈 칸에 끼우면: '}${parts.join(' ') || '같음'}</span>`;
+};
 /** 강화 기록 한 줄 */
 const upLine = (id: string, up: Upg | undefined) => {
   const max = upSlotsOf(id);
@@ -532,11 +541,11 @@ export class UI {
           };
           detail = `<div class="ui-row"><span class="ui-slot">${icon(it.id)}</span><div><b>${it.name}</b><div class="ui-xs ui-muted">${it.slot ? SLOT_NAMES[it.slot] : GROUP_NAMES[stackGroup(it.id)]} · ${n} / ${stackCap(c, it.id)}개</div></div></div>
             <span class="ui-sm">${it.desc}</span>
-            ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, undefined)}` : ''}
+            ${it.stats ? `<span class="ui-sm ui-good">${statLine(it.id)}</span>${upLine(it.id, undefined)}${compareLine(c, it.id)}` : ''}
             ${STONE_BY_ID[it.id] ? `<span class="ui-xs ui-muted">장비 탭에서 장착한 장비를 누르면 붙일 수 있습니다. 실패해도 강화 칸 하나를 씁니다.</span>` : ''}
             ${it.reqLv ? `<span class="ui-xs ${c.level >= it.reqLv ? 'ui-muted' : 'ui-bad'}">Lv.${it.reqLv} 필요</span>` : ''}
             <div class="ui-row" style="flex-wrap:wrap">${it.slot ? `<button class="ui-btn success iconbtn" data-act="equip:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 장착</button>` : ''}${it.slot === 'hat' || it.slot === 'body' ? `<button class="ui-btn iconbtn" data-act="skinon:${it.id}">${ui(`eq_${it.slot}`, 'tic')} 홀로웨어로</button>` : ''}${it.kind === 'food' ? `<button class="ui-btn success iconbtn" data-act="food:${it.id}">${ui('eq_food', 'tic')} 음식 칸</button>` : ''}${['bag', 'pouch', 'chest', 'tool'].includes(it.kind) ? `<button class="ui-btn success iconbtn" data-act="use:${it.id}">${ui('ui_up', 'tic')} 사용</button>` : ''}${it.kind === 'obol' ? `<button class="ui-btn success iconbtn" data-act="obput:0:${it.id}">개인판에</button><button class="ui-btn iconbtn" data-act="obput:1:${it.id}">가족판에</button>` : ''}
-              ${n ? sellBtn(1) : ''}${n > 1 ? sellBtn(n) : ''}</div>`;
+              ${n ? sellBtn(1) : ''}${n > 1 ? sellBtn(n) : ''}<button class="ui-btn sm ${c.locked?.includes(it.id) ? 'primary' : ''}" data-act="lock:${it.id}" title="잠근 아이템은 '잡템 팔기'에서 빠집니다">${c.locked?.includes(it.id) ? '🔒 잠김' : '잠그기'}</button></div>`;
         }
         // 왼쪽: 장비 / 홀로웨어(스킨) 탭, 오른쪽: 가방과 상세
         const skins = SKIN_SLOTS.map((s) => {
@@ -555,7 +564,7 @@ export class UI {
         return win(`아이템 <span class="ui-sm ui-muted">${c.inventory.length}/${invSize(c)}</span>`, `
           <div class="invlayout"><div class="eqpanel"><div class="ui-tabs mini" role="tablist">
               <button role="tab" aria-selected="${this.eqTab === 0}" data-act="eqtab:0">장비</button><button role="tab" aria-selected="${this.eqTab === 1}" data-act="eqtab:1">홀로웨어</button><button role="tab" aria-selected="${this.eqTab === 2}" data-act="eqtab:2">오볼</button></div>${left}</div>
-            <div class="invright"><div class="ui-grid bag">${cells}</div><div class="ui-detail">${detail}</div></div></div>`);
+            <div class="invright"><div class="stack" style="gap:4px"><div class="ui-row" style="gap:4px"><button class="ui-btn sm" data-act="bagsort">정리</button><button class="ui-btn sm ${this.sellArm === 'junk' ? 'danger' : ''}" data-act="bagjunk" title="잠그지 않은 몬스터 재료를 모두 판다">${this.sellArm === 'junk' ? '정말 팔까요?' : '잡템 팔기'}</button></div><div class="ui-grid bag">${cells}</div></div><div class="ui-detail">${detail}</div></div></div>`);
       }
 
       case 'char': {
@@ -1306,7 +1315,7 @@ export class UI {
       case 'forge': return win('용광로 <span class="ui-sm ui-muted">계정 공용</span>', this.forgeHtml(c));
 
       case 'afkinfo': {
-        const r = afkRates(g.acc, c);
+        const r = afkRates(g.acc, c), w0 = { d: derive(c, g.acc) };
         const f = (n: number) => Math.round(n).toLocaleString();
         let body: string;
         if (r.mode === 'rest') body = '<p class="ui-muted">지금 위치에서는 방치해도 쉬기만 합니다. 사냥터로 가거나 자원을 눌러 대상을 정하세요.</p>';
@@ -1320,6 +1329,9 @@ export class UI {
           <span>시간당 음식</span><span>${r.foodPerHour ? f(r.foodPerHour) : '0'}</span></div>
           ${r.drops.length ? `<h3>시간당 아이템</h3><div class="ui-kv">${r.drops.map((dr) => `<span>${icon(dr.id)} ${ITEMS[dr.id].name}</span><span>${dr.perHour >= 10 ? f(dr.perHour) : dr.perHour.toFixed(1)}</span>`).join('')}</div>` : ''}
           ${r.survival < 1 ? '<p class="ui-xs ui-bad">받는 피해가 회복보다 커서 방치 중 자주 쓰러집니다. 방어력을 올리거나 음식 칸에 음식을 넣으세요.</p>' : ''}`;
+        // 이 맵의 드롭표(몬스터마다 확률)
+        const dropTable = MAPS[c.mapId].spawns.map((sp) => { const m = MONSTERS[sp.monster]; return `<h3>${m.name} <span class="ui-xs ui-muted">체력 ${short(m.hp)} · 경험치 ${short(m.xp)}</span></h3><div class="ui-row" style="flex-wrap:wrap;gap:6px">${m.drops.filter((dr) => ITEMS[dr.item]).map((dr) => `<span class="ui-xs">${icon(dr.item)} ${ITEMS[dr.item].name} ${(Math.min(1, dr.chance * w0.d.dropMult) * 100).toFixed(dr.chance < 0.01 ? 2 : 1)}%</span>`).join('')}</div>`; }).join('');
+        body += dropTable ? `<details><summary class="ui-sm">이 맵의 드롭표 보기</summary>${dropTable}</details>` : '';
         return win('방치 정보', `<p class="ui-xs ui-muted">이 캐릭터를 두고 떠나면 아래 속도로 계속 성장합니다(최대 1년). AUTO 여부와는 상관없습니다.</p>${body}
           ${c.anvil.slots.filter((sl) => sl.prod).map((sl, i) => `<p class="ui-sm">모루 ${i + 1}번 칸: 시간당 ${ITEMS[sl.prod!].name} ${f(anvilRate(c, c.anvil.slots.indexOf(sl)))}개 (보관 ${sl.stored}/${anvilCap(c)})</p>`).join('')}`);
       }
@@ -1828,6 +1840,15 @@ export class UI {
         break;
       }
       case 'psel': this.petSel = a; break;
+      case 'bagsort': fail(g.act({ t: 'bag', op: 'sort' }).err ?? null); break;
+      case 'lock': fail(g.act({ t: 'bag', op: 'lock', id: a }).err ?? null); break;
+      case 'bagjunk': {
+        if (this.sellArm !== 'junk') { this.sellArm = 'junk'; setTimeout(() => { if (this.sellArm === 'junk') { this.sellArm = null; this.refresh(true); } }, 2500); break; }
+        this.sellArm = null;
+        const r = g.act({ t: 'bag', op: 'junk' });
+        if (r.ok) { if (r.n) { this.audio?.play('coin'); this.toast(`잡템을 팔아 코인 +${short(r.n)}`, 'coin'); } else this.toast('팔 잡템이 없습니다'); } else fail(r.err ?? null);
+        break;
+      }
       case 'eqtab': this.eqTab = +a; this.sel = null; break;
       case 'obtake': fail(g.act({ t: 'obol', op: 'take', fam: a === '1', idx: +b }).err ?? null); break;
       case 'obput': {

@@ -63,6 +63,8 @@ export interface Character {
   obols: (string | null)[];
   /** 공로 상점 큰 배낭(계정 공용 값의 사본) */
   meritBag?: number;
+  /** 잠근 아이템 */
+  locked?: string[];
   /** 탄생 별자리(만들 때 고름) */
   birth: string | null;
   /** 특성 프리셋: 특성 배분 + 공격 바 두 벌, 지금 쓰는 번호 */
@@ -624,6 +626,8 @@ export function useItem(acc: Account, c: Character, id: string): string | null {
   else if (it.kind === 'chest') { if (acc.chests.includes(id)) return '이미 사용한 보관함입니다'; acc.chests.push(id); }
   else if (id === 'sculpt_tools') return useSculptTools(acc, c);
   else if (id.startsWith('gstatue_')) { const k = id.slice(8); acc.goldStatues ??= []; if (acc.goldStatues.includes(k)) return '이미 황금 석상입니다'; acc.goldStatues.push(k); }
+  else if (id === 'talent_reset') return resetTalents(c);
+  else if (id === 'stat_reset') return resetStats(c);
   else if (id === 'loot_magnet') { if (acc.autoLoot) return '이미 자동 줍기를 얻었습니다'; acc.autoLoot = true; }
   else if (TRAP_KITS[id]) { if (c.traps.tier >= TRAP_KITS[id]) return '이미 같거나 더 좋은 덫을 씁니다'; c.traps.tier = TRAP_KITS[id]; }
   else return '사용할 수 없는 아이템';
@@ -712,6 +716,41 @@ export function sellItem(acc: Account, c: Character, id: string, qty: number): n
   return gain;
 }
 
+/** 가방 정리: 장비 → 음식 → 재료 순, 같은 종류끼리 이름순(강화한 장비는 앞) */
+export function sortBag(c: Character) {
+  const rank = (id: string) => { const k = ITEMS[id]?.kind; return k === 'equip' ? 0 : k === 'food' ? 1 : k === 'material' ? 3 : 2; };
+  c.inventory.sort((a, b) => rank(a.id) - rank(b.id) || (b.up ? 1 : 0) - (a.up ? 1 : 0) || a.id.localeCompare(b.id));
+}
+/** 잠근 아이템(일괄 판매에서 빠진다) */
+export function toggleLock(c: Character, id: string): string | null {
+  if (!ITEMS[id]) return '없는 아이템';
+  c.locked ??= [];
+  const i = c.locked.indexOf(id);
+  if (i >= 0) c.locked.splice(i, 1); else c.locked.push(id);
+  return null;
+}
+/** 몬스터 재료 일괄 판매: 잠그지 않은 '재료' 가운데 몬스터가 떨어뜨리는 것만(자원·제작품은 남긴다). 번 코인 */
+export function sellJunk(acc: Account, c: Character): number {
+  const junk = new Set(Object.values(MONSTERS).flatMap((m) => m.drops.map((d) => d.item)).filter((id) => ITEMS[id]?.kind === 'material'));
+  let gain = 0;
+  for (const id of [...new Set(c.inventory.filter((s) => !s.up).map((s) => s.id))]) if (junk.has(id) && !c.locked?.includes(id)) gain += sellItem(acc, c, id, countItem(c, id));
+  return gain;
+}
+/** 특성 초기화(물약): 모든 특성 레벨을 돌려받는다(포인트는 탭마다 다시 계산). 공격 바도 비운다 */
+export function resetTalents(c: Character): string | null {
+  if (countItem(c, 'talent_reset') < 1) return '특성 초기화 물약이 없습니다';
+  removeItem(c, 'talent_reset', 1);
+  c.talents = {};
+  c.attackBars = c.attackBars.map((b) => b.map(() => null));
+  return null;
+}
+/** 능력치 초기화(물약): 찍은 능력치를 모두 포인트로 돌려받는다 */
+export function resetStats(c: Character): string | null {
+  if (countItem(c, 'stat_reset') < 1) return '능력치 초기화 물약이 없습니다';
+  removeItem(c, 'stat_reset', 1);
+  for (const k of ['str', 'agi', 'wis', 'luk'] as const) { c.statPoints += c.stats[k] - 1; c.stats[k] = 1; }
+  return null;
+}
 /** 제작 재료는 가방과 계정 창고를 합쳐서 센다 */
 export const haveMat = (acc: Account, c: Character, id: string) => countItem(c, id) + storageCount(acc, id);
 /** 재료 쓰기: 가방에서 먼저, 모자라면 창고에서(모자라면 아무것도 쓰지 않고 false) */
