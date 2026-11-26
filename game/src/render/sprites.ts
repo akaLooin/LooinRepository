@@ -1463,7 +1463,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(OBOLS.map((o) => [o.id, `it_${o.id}`])),
   ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune', 'mine', 'chop', 'xp', 'coins', 'aim', 'fish', 'bug', 'rage', 'heart', 'card', 'sleep', 'star', 'void'].flatMap((k) => [[`statue_${k}`, `it_statue_${k}`], [`gstatue_${k}`, `it_gstatue_${k}`]])), sculpt_tools: 'it_sculpt', loot_magnet: 'it_magnet',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
-  arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
+  arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_atk2: 'it_stone_atk', stone_atk3: 'it_stone_atk', stone_guard2: 'it_stone_guard', stone_guard3: 'it_stone_guard', stone_stat2: 'it_stone_stat', stone_stat3: 'it_stone_stat', stone_acc: 'it_stone_stat', stone_tool2: 'it_stone_mine', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
   anvil_exp2: 'obj_craft', anvil_exp3: 'obj_craft',
   ...Object.fromEntries(['cactus_spine', 'scorp_tail', 'heat_feather', 'old_bandage', 'salt_crystal', 'worm_scale', 'sun_ember', 'palmlog', 'ore_amber', 'bar_amber', 'cactus_juice', 'date_cake', 'sand_crown', 'trophy_sand'].map((k) => [k, `it_${k}`])),
   sun_key: 'it_sunkey', stone_lure: 'it_stone_lure',

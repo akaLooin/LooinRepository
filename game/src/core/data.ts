@@ -208,6 +208,14 @@ const items: ItemDef[] = [
   { id: 'stone_mine', name: '광맥 강화석', desc: '곡괭이에 붙이면 채광력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
   { id: 'stone_lure', name: '미끼 강화석', desc: '낚싯대·잠자리채에 붙이면 낚시·곤충 채집력 +3. 성공률 70%.', kind: 'stone', sell: 20 },
   { id: 'stone_chop', name: '나뭇결 강화석', desc: '도끼에 붙이면 벌목력 +3. 성공률 70%.', kind: 'stone', sell: 15 },
+  { id: 'stone_atk2', name: '날카로움 강화석 II', desc: '무기에 붙이면 공격력 +8. 성공률 50%.', kind: 'stone', sell: 80 },
+  { id: 'stone_atk3', name: '날카로움 강화석 III', desc: '무기에 붙이면 공격력 +20. 성공률 30%.', kind: 'stone', sell: 80 },
+  { id: 'stone_guard2', name: '단단함 강화석 II', desc: '옷에 붙이면 방어력 +6, 체력 +50. 성공률 50%.', kind: 'stone', sell: 80 },
+  { id: 'stone_guard3', name: '단단함 강화석 III', desc: '옷에 붙이면 방어력 +15, 체력 +150. 성공률 30%.', kind: 'stone', sell: 80 },
+  { id: 'stone_stat2', name: '네 갈래 강화석 II', desc: '무기·옷·장신구에 붙이면 네 능력치 +3. 성공률 40%.', kind: 'stone', sell: 80 },
+  { id: 'stone_stat3', name: '네 갈래 강화석 III', desc: '무기·옷·장신구에 붙이면 네 능력치 +8. 성공률 25%.', kind: 'stone', sell: 80 },
+  { id: 'stone_acc', name: '장신구 강화석', desc: '반지·목걸이·망토에 붙이면 행운 +4, 체력 +40. 성공률 60%.', kind: 'stone', sell: 80 },
+  { id: 'stone_tool2', name: '연장 강화석 II', desc: '곡괭이·도끼·낚싯대·잠자리채에 붙이면 채집력 +8. 성공률 50%.', kind: 'stone', sell: 80 },
   // ───── 2월드: 노을 사막 ─────
   { id: 'cactus_spine', name: '선인장 가시', desc: '끝이 바늘처럼 뾰족하다.', kind: 'material', sell: 44 },
   { id: 'scorp_tail', name: '전갈 꼬리', desc: '독은 빠졌지만 여전히 따끔하다.', kind: 'material', sell: 52 },
@@ -412,7 +420,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'sun_ember', chance: 0.4, qty: [1, 2] }, { item: 'sun_key', chance: 0.004, qty: [1, 1] }, { item: 'date_cake', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
   { id: 'sandlord', name: '사막 거상', hp: 90000, atk: 210, acc: 250, defZero: 330, xp: 30000, coins: [8000, 12000], speed: 10, motion: 'waddle', radius: 22, scale: 2.8,
     boss: { slamEvery: 4.5, slamWindup: 1.0, slamRadius: 64, slamDmg: 170, card: 'sandlord' },
-    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }, { item: 'bag_snake', chance: 0.12, qty: [1, 1] }, { item: 'gold_pie', chance: 0.15, qty: [1, 3] }, { item: 'gold_cake', chance: 0.1, qty: [1, 2] }, { item: 'chest_gold', chance: 0.1, qty: [1, 1] }, { item: 'arena_ticket2', chance: 0.5, qty: [1, 2] }] },
+    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }, { item: 'bag_snake', chance: 0.12, qty: [1, 1] }, { item: 'gold_pie', chance: 0.15, qty: [1, 3] }, { item: 'stone_atk2', chance: 0.3, qty: [1, 1] }, { item: 'stone_guard2', chance: 0.3, qty: [1, 1] }, { item: 'stone_acc', chance: 0.3, qty: [1, 1] }, { item: 'gold_cake', chance: 0.1, qty: [1, 2] }, { item: 'chest_gold', chance: 0.1, qty: [1, 1] }, { item: 'arena_ticket2', chance: 0.5, qty: [1, 2] }] },
   // ───── 3월드: 서리 고원 ─────
   { id: 'snowpuff', name: '눈뭉치', hp: 20000, atk: 232, acc: 280, defZero: 330, xp: 2200, coins: [190, 340], speed: 18, motion: 'hop', radius: 9,
     drops: [{ item: 'snow_tuft', chance: 0.4, qty: [1, 2] }, { item: 'hot_cocoa', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
@@ -430,7 +438,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'frost_core', chance: 0.4, qty: [1, 2] }, { item: 'frost_key', chance: 0.004, qty: [1, 1] }, { item: 'pine_soup', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
   { id: 'frostlord', name: '눈보라 군주', hp: 700000, atk: 430, acc: 520, defZero: 600, xp: 250000, coins: [60000, 90000], speed: 10, motion: 'float', radius: 24, scale: 2.8,
     boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 70, slamDmg: 360, card: 'frostlord' },
-    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }, { item: 'bag_trapper', chance: 0.12, qty: [1, 1] }, { item: 'gold_cocoa', chance: 0.15, qty: [1, 3] }, { item: 'gold_mooncake', chance: 0.08, qty: [1, 2] }, { item: 'chest_crystal', chance: 0.1, qty: [1, 1] }, { item: 'arena_ticket3', chance: 0.5, qty: [1, 2] }] },
+    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }, { item: 'bag_trapper', chance: 0.12, qty: [1, 1] }, { item: 'gold_cocoa', chance: 0.15, qty: [1, 3] }, { item: 'stone_stat2', chance: 0.3, qty: [1, 1] }, { item: 'stone_tool2', chance: 0.3, qty: [1, 1] }, { item: 'stone_atk3', chance: 0.08, qty: [1, 1] }, { item: 'gold_mooncake', chance: 0.08, qty: [1, 2] }, { item: 'chest_crystal', chance: 0.1, qty: [1, 1] }, { item: 'arena_ticket3', chance: 0.5, qty: [1, 2] }] },
   // ───── 4월드: 별빛 성운 ─────
   { id: 'starling', name: '별모래톨', hp: 150000, atk: 470, acc: 570, defZero: 620, xp: 13000, coins: [600, 1100], speed: 20, motion: 'hop', radius: 9,
     drops: [{ item: 'star_sand', chance: 0.4, qty: [1, 2] }, { item: 'moon_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
@@ -448,7 +456,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'void_shard', chance: 0.4, qty: [1, 2] }, { item: 'void_key', chance: 0.004, qty: [1, 1] }, { item: 'nova_stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
   { id: 'nebtitan', name: '성운 거신', hp: 5500000, atk: 780, acc: 950, defZero: 1080, xp: 2000000, coins: [400000, 600000], speed: 10, motion: 'float', radius: 26, scale: 3,
     boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 76, slamDmg: 640, card: 'nebtitan' },
-    drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }, { item: 'bag_void', chance: 0.12, qty: [1, 1] }, { item: 'gold_feast', chance: 0.15, qty: [1, 3] }, { item: 'bag_titan', chance: 0.04, qty: [1, 1] }] },
+    drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }, { item: 'bag_void', chance: 0.12, qty: [1, 1] }, { item: 'gold_feast', chance: 0.15, qty: [1, 3] }, { item: 'stone_atk3', chance: 0.2, qty: [1, 1] }, { item: 'stone_guard3', chance: 0.2, qty: [1, 1] }, { item: 'stone_stat3', chance: 0.12, qty: [1, 1] }, { item: 'bag_titan', chance: 0.04, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
 // 미니보스 확충(원작처럼 월드마다): 그 맵 몬스터를 크게 키운 모습
@@ -1341,10 +1349,19 @@ const WEAR: EquipSlot[] = ['hat', 'body', 'legs', 'shoes'];
 export const STONES: StoneDef[] = [
   { item: 'stone_atk', stats: { dmg: 3 }, chance: 0.8, slots: ['weapon'] },
   { item: 'stone_guard', stats: { def: 2, hp: 15 }, chance: 0.8, slots: WEAR },
-  { item: 'stone_stat', stats: { str: 1, agi: 1, wis: 1, luk: 1 }, chance: 0.6, slots: ['weapon', ...WEAR, 'ring'] },
+  { item: 'stone_stat', stats: { str: 1, agi: 1, wis: 1, luk: 1 }, chance: 0.6, slots: ['weapon', ...WEAR, 'ring', 'ring2', 'pendant', 'cape'] },
   { item: 'stone_mine', stats: { mining: 3 }, chance: 0.7, slots: ['pickaxe'] },
   { item: 'stone_lure', stats: { fishing: 3, catching: 3 }, chance: 0.7, slots: ['rod', 'net'] },
   { item: 'stone_chop', stats: { chopping: 3 }, chance: 0.7, slots: ['axe'] },
+  // 원작처럼 상위 강화석(효과는 크고 성공률은 낮다)
+  { item: 'stone_atk2', stats: { dmg: 8 }, chance: 0.5, slots: ['weapon'] },
+  { item: 'stone_atk3', stats: { dmg: 20 }, chance: 0.3, slots: ['weapon'] },
+  { item: 'stone_guard2', stats: { def: 6, hp: 50 }, chance: 0.5, slots: WEAR },
+  { item: 'stone_guard3', stats: { def: 15, hp: 150 }, chance: 0.3, slots: WEAR },
+  { item: 'stone_stat2', stats: { str: 3, agi: 3, wis: 3, luk: 3 }, chance: 0.4, slots: ['weapon', ...WEAR, 'ring', 'ring2', 'pendant', 'cape'] },
+  { item: 'stone_stat3', stats: { str: 8, agi: 8, wis: 8, luk: 8 }, chance: 0.25, slots: ['weapon', ...WEAR, 'ring', 'ring2', 'pendant', 'cape'] },
+  { item: 'stone_acc', stats: { luk: 4, hp: 40 }, chance: 0.6, slots: ['ring', 'ring2', 'pendant', 'cape'] },
+  { item: 'stone_tool2', stats: { mining: 8, chopping: 8, fishing: 8, catching: 8 }, chance: 0.5, slots: ['pickaxe', 'axe', 'rod', 'net'] },
 ];
 export const STONE_BY_ID: Record<string, StoneDef> = Object.fromEntries(STONES.map((s) => [s.item, s]));
 /** 부위별 강화 칸 수 */
