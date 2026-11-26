@@ -19,6 +19,8 @@ data class Config(
     /** 아카엘이 먼저 말 걸기 */
     val proactive: Boolean = true,
     val zone: java.time.ZoneId = java.time.ZoneId.of("Asia/Seoul"),
+    /** 커뮤니티 하나당 하루 최대 AI 활동 수 (0 이면 자동 활동 끔) */
+    val communityDailyCap: Int = 48,
 ) {
     data class ClaudeConfig(
         val apiKey: String,
@@ -39,6 +41,7 @@ data class Config(
                 providers = Providers.fromEnv(env),
                 autoWorldHours = env["LOOIN_AUTO_WORLD_HOURS"]?.toDoubleOrNull() ?: 6.0,
                 proactive = env["LOOIN_PROACTIVE"]?.lowercase() != "off",
+                communityDailyCap = env["LOOIN_COMMUNITY_DAILY"]?.toIntOrNull() ?: 48,
                 zone = runCatching { java.time.ZoneId.of(env["LOOIN_TZ"] ?: "Asia/Seoul") }.getOrDefault(java.time.ZoneId.of("Asia/Seoul")),
                 claude = env["ANTHROPIC_API_KEY"]?.takeIf { it.isNotBlank() }?.let { key ->
                     ClaudeConfig(

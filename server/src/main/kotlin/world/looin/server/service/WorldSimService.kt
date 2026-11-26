@@ -25,9 +25,8 @@ import world.looin.shared.World
 import kotlin.random.Random
 
 /**
- * 세계 시뮬레이션: 커뮤니티 주민들의 자발적 활동(글/댓글)과, 회사·포럼의 회의.
- * 비용을 통제하기 위해 자동 실행은 하지 않고 앱에서 요청할 때만 돌린다.
- * (나중에 스케줄러로 "하루 n번 세계가 움직이게" 할 수 있다.)
+ * 세계 시뮬레이션: 커뮤니티 주민들의 활동(글/댓글/답글/추천)과 회사 회의.
+ * 언제 움직일지는 CommunityPulse 가 정한다 (시간대별로 랜덤하게, 내 글엔 시간차를 두고 반응).
  */
 class WorldSimService(private val repo: Repository, private val brain: Brain) {
     private val log = LoggerFactory.getLogger(WorldSimService::class.java)
@@ -43,105 +42,139 @@ class WorldSimService(private val repo: Repository, private val brain: Brain) {
         return "ㅇㅇ(${listOf(1, 39, 58, 110, 118, 121, 175, 211, 223)[h % 9]}.${h / 9 % 256})"
     }
 
+    private fun members(world: World, space: Space) = repo.agents(world.id).filter { it.id in space.memberAgentIds }
+
+    /** 주민 한 명의 요청. 주민들도 아카엘이 이해한 루인(성찰·기억)을 알고 있다 — 내가 한 말이 커뮤니티에도 퍼진다. */
+    private fun actorRequest(world: World, space: Space, actor: Agent, instruction: String, maxTokens: Long) = BrainRequest(
+        Prompts.communityActorSystem(world, repo.profile(world.id), space, actor),
+        dynamicSystem = Prompts.understandingBlock(repo.latestInsight(world.id), repo.memories(world.id).take(30)),
+        turns = listOf(Turn(ChatRole.USER, instruction)),
+        effort = Effort.LOW, maxTokens = maxTokens, task = Task.COMMUNITY,
+    )
+
+    /** 주민이 글을 하나 쓴다. 게시판(서브레딧/갤러리)을 골라 그 주제에 맞게. */
+    suspend fun writePost(world: World, space: Space, actor: Agent): Post? {
+        val boards = repo.boards(space.id)
+        val board = if (boards.isEmpty()) null else if (Random.nextDouble() < 0.3) boards.first() else boards.random()
+        val recent = repo.posts(space.id, 20, board?.id)
+        val instruction = (board?.let { "게시판: ${it.name} — ${it.description}\n이 게시판 주제에 맞는 글이어야 한다.\n\n" } ?: "") +
+            Prompts.newPostInstruction(recent, space.style)
+        val o = JsonExtract.obj(brain.complete(actorRequest(world, space, actor, instruction, 4_000)))
+        val title = o.str("title")?.trim().orEmpty()
+        val body = o.str("body")?.trim().orEmpty()
+        val tag = o.str("tag")?.trim()?.takeIf { it.startsWith("[") && it.length <= 8 }
+        if (title.isEmpty() || body.isEmpty()) return null
+        repo.logActivity(space.id)
+        return repo.createPost(space.id, actor.id, displayName(space, actor), title, body, tag, board?.id)
+    }
+
+    /** 주민이 댓글(또는 답글)을 단다. 내 글/내 댓글에 달리면 앱 알림이 생긴다. */
+    suspend fun writeComment(world: World, space: Space, actor: Agent, post: Post, parent: Comment?): Comment? {
+        val existing = repo.comments(post.id).map { "${it.authorName}: ${it.body}" }
+        val note = if (parent?.authorAgentId == null && parent != null) "\n(답글 대상은 이 세계의 주인공, 루인 본인이다.)" else ""
+        val body = JsonExtract.obj(
+            brain.complete(actorRequest(world, space, actor, Prompts.commentInstruction(post, existing, parent?.let { "${it.authorName}: ${it.body}" }) + note, 2_000)),
+        ).str("body")?.trim().orEmpty()
+        if (body.isEmpty()) return null
+        val name = if (actor.id == post.authorAgentId) post.authorName else displayName(space, actor)
+        val c = repo.createComment(post.id, actor.id, name, body, parent?.id)
+        repo.logActivity(space.id)
+        when {
+            parent != null && parent.authorAgentId == null -> repo.addNotice(
+                world.id, "REPLY", "↩ ${if (space.style == "DC") name else "u/$name"} 님이 내 댓글에 답글", body, post.id, space.style, space.id,
+            )
+            post.authorAgentId == null -> repo.addNotice(
+                world.id, "COMMENT", "💬 '${post.title.take(24)}'에 새 댓글", "${if (space.style == "DC") name else "u/$name"}: $body", post.id, space.style, space.id,
+            )
+        }
+        return c
+    }
+
+    /** 자발적 활동 한 번: 새 글 / 댓글 / 답글 중 하나. */
+    suspend fun act(world: World, space: Space): Any? {
+        val ms = members(world, space)
+        if (ms.isEmpty()) return null
+        val actor = ms.random()
+        val recent = repo.posts(space.id, 30)
+        val r = Random.nextDouble()
+        return when {
+            recent.size < 3 || r < 0.3 -> writePost(world, space, actor)
+            else -> {
+                val post = pickPostToComment(recent, actor) ?: return writePost(world, space, actor)
+                val comments = repo.comments(post.id)
+                val parent = if (comments.isNotEmpty() && Random.nextDouble() < (if (space.style == "REDDIT") 0.4 else 0.15))
+                    comments.filter { it.authorAgentId != actor.id }.randomOrNull() else null
+                writeComment(world, space, actor, post, parent)
+            }
+        }
+    }
+
+    /** 앱의 "빨리감기": 지금 바로 몇 번 활동시킨다. */
     suspend fun tick(world: World, space: Space, actions: Int): TickResult {
-        val members = repo.agents(world.id).filter { it.id in space.memberAgentIds }
-        if (members.isEmpty()) return TickResult(emptyList(), emptyList())
-        val owner = repo.profile(world.id)
         val newPosts = mutableListOf<Post>()
         val newComments = mutableListOf<Comment>()
-
         repeat(actions.coerceIn(1, 10)) {
-            val actor = members.random()
-            val recent = repo.posts(space.id, 30)
-            // 글이 적으면 새 글 위주, 많으면 댓글 위주로.
-            val writePost = recent.size < 3 || Random.nextDouble() < 0.35
-            val system = Prompts.communityActorSystem(world, owner, space, actor)
-            runCatching {
-                if (writePost) {
-                    val out = brain.complete(
-                        BrainRequest(system, turns = listOf(Turn(ChatRole.USER, Prompts.newPostInstruction(recent, space.style))), effort = Effort.LOW, maxTokens = 4_000, task = Task.COMMUNITY),
-                    )
-                    val o = JsonExtract.obj(out)
-                    val title = o.str("title")?.trim().orEmpty()
-                    val body = o.str("body")?.trim().orEmpty()
-                    val tag = o.str("tag")?.trim()?.takeIf { it.startsWith("[") && it.length <= 8 }
-                    if (title.isNotEmpty() && body.isNotEmpty()) newPosts += repo.createPost(space.id, actor.id, displayName(space, actor), title, body, tag)
-                } else {
-                    val target = pickPostToComment(recent, actor) ?: return@runCatching
-                    val comments = repo.comments(target.id)
-                    val existing = comments.map { "${it.authorName}: ${it.body}" }
-                    // 레딧은 댓글에 답글을 다는 일이 많다
-                    val parent = if (space.style == "REDDIT" && comments.isNotEmpty() && Random.nextDouble() < 0.4)
-                        comments.filter { it.authorAgentId != actor.id }.randomOrNull() else null
-                    val out = brain.complete(
-                        BrainRequest(system, turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(target, existing, parent?.let { "${it.authorName}: ${it.body}" }))), effort = Effort.LOW, maxTokens = 2_000, task = Task.COMMUNITY),
-                    )
-                    val body = JsonExtract.obj(out).str("body")?.trim().orEmpty()
-                    if (body.isNotEmpty()) newComments += repo.createComment(target.id, actor.id, displayName(space, actor), body, parent?.id)
-                }
+            runCatching { act(world, space) }.onSuccess {
+                when (it) { is Post -> newPosts += it; is Comment -> newComments += it }
             }.onFailure { log.warn("tick action failed: {}", it.message) }
         }
-        castVotes(space, members)
+        castVotes(space, members(world, space))
         return TickResult(newPosts, newComments)
     }
 
     /** 주민들의 추천/비추천과 조회수 — AI 를 부르지 않는 가벼운 활동 (비용 없음). */
-    fun castVotes(space: Space, members: List<Agent>) {
+    fun castVotes(space: Space, members: List<Agent>, rounds: Int = members.size.coerceAtMost(8)) {
         val recent = repo.posts(space.id, 30)
         if (recent.isEmpty()) return
-        repeat(members.size.coerceAtMost(8)) {
+        repeat(rounds) {
             val p = recent.random()
             val critic = Random.nextDouble() < if (space.style == "DC") 0.2 else 0.15
             repo.votePost(p.id, if (critic) -1 else 1)
             repo.comments(p.id).randomOrNull()?.let { repo.voteComment(it.id, if (Random.nextDouble() < 0.8) 1 else -1) }
         }
-        if (space.style == "DC") recent.take(15).forEach { repo.addViews(it.id, Random.nextInt(1, 25)) }
+        if (space.style == "DC") recent.take(15).forEach { repo.addViews(it.id, Random.nextInt(0, 6)) }
     }
 
     private fun pickPostToComment(recent: List<Post>, actor: Agent): Post? {
-        val candidates = recent.filter { it.authorAgentId != actor.id }.take(10)
+        val candidates = recent.filter { it.authorAgentId != actor.id }.take(12)
         if (candidates.isEmpty()) return null
-        // 소유자가 쓴 글(authorAgentId == null)에 우선적으로 반응한다.
-        return candidates.firstOrNull { it.authorAgentId == null && it.commentCount < 3 } ?: candidates.random()
+        // 댓글이 적은 글, 그리고 루인이 쓴 글에 더 끌린다
+        return candidates.firstOrNull { it.authorAgentId == null && it.commentCount < 4 && Random.nextDouble() < 0.5 }
+            ?: candidates.minByOrNull { it.commentCount + Random.nextInt(0, 4) }
     }
 
-    /** 소유자가 직접 글을 쓰면 주민 몇 명이 바로 반응한다. */
-    suspend fun reactToOwnerPost(world: World, space: Space, post: Post, reactions: Int = 2): List<Comment> {
-        val members = repo.agents(world.id).filter { it.id in space.memberAgentIds }.shuffled().take(reactions)
-        val owner = repo.profile(world.id)
-        return members.mapNotNull { actor ->
-            runCatching {
-                val existing = repo.comments(post.id).map { "${it.authorName}: ${it.body}" }
-                val out = brain.complete(
-                    BrainRequest(
-                        Prompts.communityActorSystem(world, owner, space, actor),
-                        turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(post, existing))),
-                        effort = Effort.LOW, maxTokens = 2_000, task = Task.COMMUNITY,
-                    ),
-                )
-                JsonExtract.obj(out).str("body")?.trim()?.takeIf { it.isNotEmpty() }
-                    ?.let { repo.createComment(post.id, actor.id, displayName(space, actor), it) }
-            }.getOrNull()
+    // ───────── 내가 글/댓글을 쓰면: 바로가 아니라 사람처럼 시간차를 두고 반응이 온다 ─────────
+
+    /** 내 글: 3분~1시간 반 사이에 주민 2~4명이 띄엄띄엄 댓글을 단다. */
+    fun ownerPosted(world: World, space: Space, post: Post) {
+        val now = System.currentTimeMillis()
+        val ms = members(world, space).shuffled().take(Random.nextInt(2, 5))
+        var t = now
+        ms.forEach { a ->
+            t += Random.nextLong(3, 35) * 60_000L
+            repo.schedule(world.id, space.id, "COMMENT", post.id, null, a.id, t)
         }
     }
 
-    /** 내가 AI 의 글에 댓글을 달면 글쓴이가 답글을 단다. */
-    suspend fun replyAsAuthor(world: World, space: Space, post: Post): Comment? {
-        val author = post.authorAgentId?.let { repo.agent(world.id, it) } ?: return null
-        val owner = repo.profile(world.id)
-        return runCatching {
-            val existing = repo.comments(post.id).map { "${it.authorName}: ${it.body}" }
-            val out = brain.complete(
-                BrainRequest(
-                    Prompts.communityActorSystem(world, owner, space, author),
-                    turns = listOf(Turn(ChatRole.USER, Prompts.commentInstruction(post, existing) + "\n너는 이 글의 작성자다. 마지막 댓글(소유자)에 답하라.")),
-                    effort = Effort.LOW, maxTokens = 2_000, task = Task.COMMUNITY,
-                ),
-            )
-            val lastOwner = repo.comments(post.id).lastOrNull { it.authorAgentId == null }
-            JsonExtract.obj(out).str("body")?.trim()?.takeIf { it.isNotEmpty() }
-                ?.let { repo.createComment(post.id, author.id, post.authorName, it, if (space.style == "REDDIT") lastOwner?.id else null) }
-        }.getOrNull()
+    /** 내 댓글: AI 글쓴이가 2~40분 뒤 답글, 가끔 다른 주민도 끼어든다. */
+    fun ownerCommented(world: World, space: Space, post: Post, comment: Comment) {
+        val now = System.currentTimeMillis()
+        post.authorAgentId?.let { repo.schedule(world.id, space.id, "REPLY", post.id, comment.id, it, now + Random.nextLong(2, 40) * 60_000L) }
+        if (Random.nextDouble() < 0.35) {
+            members(world, space).filter { it.id != post.authorAgentId }.randomOrNull()?.let {
+                repo.schedule(world.id, space.id, "REPLY", post.id, comment.id, it.id, now + Random.nextLong(10, 90) * 60_000L)
+            }
+        }
+    }
+
+    /** 때가 된 예약 반응을 실행한다. */
+    suspend fun runScheduled(world: World, task: Repository.Scheduled) {
+        val space = repo.space(world.id, task.spaceId) ?: return
+        val post = repo.post(world.id, task.postId) ?: return
+        val actor = task.agentId?.let { repo.agent(world.id, it) } ?: members(world, space).randomOrNull() ?: return
+        val parent = task.commentId?.let { id -> repo.comments(post.id).firstOrNull { it.id == id } }
+        writeComment(world, space, actor, post, parent)
+        if (Random.nextDouble() < 0.7) repo.votePost(post.id, 1)
     }
 
     /**

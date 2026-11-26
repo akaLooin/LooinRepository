@@ -7,7 +7,10 @@ import world.looin.shared.AgentKind
 import world.looin.shared.ChatMessage
 import world.looin.shared.ChatRole
 import world.looin.shared.Comment
+import world.looin.shared.Board
 import world.looin.shared.Conversation
+import world.looin.shared.Digest
+import world.looin.shared.Notice
 import world.looin.shared.Folder
 import world.looin.shared.Insight
 import world.looin.shared.LooinJson
@@ -132,15 +135,89 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         db.query("SELECT agent_id FROM space_members WHERE space_id = ?", spaceId) { it.getString(1) }
 
     // ---------- posts / comments ----------
-    fun posts(spaceId: String, limit: Int = 100): List<Post> = db.query(
+    fun posts(spaceId: String, limit: Int = 100, boardId: String? = null): List<Post> = db.query(
         """SELECT p.*, (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS cc
-           FROM posts p WHERE p.space_id = ? ORDER BY p.created_at DESC LIMIT ?""",
-        spaceId, limit,
+           FROM posts p WHERE p.space_id = ? AND (? IS NULL OR p.board_id = ?) ORDER BY p.created_at DESC LIMIT ?""",
+        spaceId, boardId, boardId, limit,
     ) { it.post() }
 
+    // ---------- boards (서브레딧 / 갤러리) ----------
+    fun boards(spaceId: String): List<Board> = db.query(
+        """SELECT b.*, (SELECT COUNT(*) FROM posts p WHERE p.board_id = b.id) AS pc,
+                  (SELECT MAX(created_at) FROM posts p WHERE p.board_id = b.id) AS lp
+           FROM boards b WHERE b.space_id = ? ORDER BY b.created_at, b.rowid""", spaceId,
+    ) { Board(it.getString("id"), it.getString("space_id"), it.getString("name"), it.getString("description"), it.getInt("pc"), it.getLong("lp").takeIf { v -> v > 0 }) }
+
+    fun createBoard(spaceId: String, name: String, description: String): Board {
+        val b = Board(newId(), spaceId, name.trim().take(40), description.trim().take(200))
+        db.exec("INSERT INTO boards VALUES (?,?,?,?,?)", b.id, b.spaceId, b.name, b.description, now())
+        return b
+    }
+
+    fun assignOrphanPosts(spaceId: String, boardId: String) =
+        db.exec("UPDATE posts SET board_id = ? WHERE space_id = ? AND board_id IS NULL", boardId, spaceId)
+
+    // ---------- notifications ----------
+    fun addNotice(worldId: String, kind: String, title: String, body: String, postId: String?, style: String, spaceId: String?): Notice {
+        val n = Notice(newId(), kind, title.take(120), body.take(300), postId, style, spaceId, now(), false)
+        db.exec("INSERT INTO notifications VALUES (?,?,?,?,?,?,?,?,?,0)", n.id, worldId, n.kind, n.title, n.body, postId, style, spaceId, n.createdAt)
+        return n
+    }
+
+    fun notices(worldId: String, limit: Int = 60): List<Notice> = db.query(
+        "SELECT * FROM notifications WHERE world_id = ? ORDER BY created_at DESC LIMIT ?", worldId, limit,
+    ) {
+        Notice(it.getString("id"), it.getString("kind"), it.getString("title"), it.getString("body"), it.getString("post_id"),
+            it.getString("style"), it.getString("space_id"), it.getLong("created_at"), it.getInt("read") == 1)
+    }
+
+    fun unreadNotices(worldId: String): Int = db.count("SELECT COUNT(*) FROM notifications WHERE world_id = ? AND read = 0", worldId)
+
+    fun readNotices(worldId: String, id: String?) =
+        if (id == null) db.exec("UPDATE notifications SET read = 1 WHERE world_id = ?", worldId)
+        else db.exec("UPDATE notifications SET read = 1 WHERE world_id = ? AND id = ?", worldId, id)
+
+    // ---------- digests (커뮤니티 요약) ----------
+    fun latestDigest(spaceId: String): Digest? = db.one(
+        "SELECT * FROM digests WHERE space_id = ? ORDER BY created_at DESC LIMIT 1", spaceId,
+    ) { Digest(it.getString("id"), it.getString("space_id"), it.getString("content"), it.getInt("posts_covered"), it.getLong("created_at")) }
+
+    fun saveDigest(spaceId: String, content: String, postsCovered: Int): Digest {
+        val d = Digest(newId(), spaceId, content, postsCovered, now())
+        db.exec("INSERT INTO digests VALUES (?,?,?,?,?)", d.id, spaceId, content, postsCovered, d.createdAt)
+        return d
+    }
+
+    fun commentsSince(spaceId: String, since: Long): List<Pair<Post, Comment>> = db.query(
+        """SELECT c.*, p.title AS ptitle FROM comments c JOIN posts p ON c.post_id = p.id
+           WHERE p.space_id = ? AND c.created_at >= ? ORDER BY c.created_at""", spaceId, since,
+    ) { rs -> Post(rs.getString("post_id"), spaceId, null, "", rs.getString("ptitle"), "", 0) to rs.comment() }
+
+    // ---------- 예약된 반응 (진짜 사람처럼 시간차를 두고) ----------
+    data class Scheduled(val id: String, val worldId: String, val spaceId: String, val kind: String, val postId: String, val commentId: String?, val agentId: String?, val dueAt: Long)
+
+    fun schedule(worldId: String, spaceId: String, kind: String, postId: String, commentId: String?, agentId: String?, dueAt: Long) =
+        db.exec("INSERT INTO scheduled_actions VALUES (?,?,?,?,?,?,?,?)", newId(), worldId, spaceId, kind, postId, commentId, agentId, dueAt)
+
+    /** 때가 된 예약을 꺼내고 지운다. */
+    fun takeDue(worldId: String, nowMs: Long): List<Scheduled> = db.tx {
+        val due = query("SELECT * FROM scheduled_actions WHERE world_id = ? AND due_at <= ? ORDER BY due_at LIMIT 10", worldId, nowMs) {
+            Scheduled(it.getString("id"), it.getString("world_id"), it.getString("space_id"), it.getString("kind"), it.getString("post_id"),
+                it.getString("comment_id"), it.getString("agent_id"), it.getLong("due_at"))
+        }
+        due.forEach { exec("DELETE FROM scheduled_actions WHERE id = ?", it.id) }
+        due
+    }
+
+    fun pendingCount(worldId: String): Int = db.count("SELECT COUNT(*) FROM scheduled_actions WHERE world_id = ?", worldId)
+
+    fun logActivity(spaceId: String) = db.exec("INSERT INTO activity_log VALUES (?, ?)", spaceId, now())
+    fun activitySince(spaceId: String, since: Long): Int =
+        db.count("SELECT COUNT(*) FROM activity_log WHERE space_id = ? AND created_at >= ?", spaceId, since)
+
     /** 정렬: hot(점수를 시간으로 나눔) / top(점수) / best(디시 개념글: 추천 5 이상) / new */
-    fun sortedPosts(spaceId: String, sort: String): List<Post> {
-        val all = posts(spaceId, 300)
+    fun sortedPosts(spaceId: String, sort: String, boardId: String? = null): List<Post> {
+        val all = posts(spaceId, 300, boardId)
         val now = now()
         return when (sort) {
             "hot" -> all.sortedByDescending { (it.score + 1) / Math.pow((now - it.createdAt) / 3_600_000.0 + 2, 1.5) }
@@ -170,11 +247,11 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         worldId, postId,
     ) { it.post() }
 
-    fun createPost(spaceId: String, authorAgentId: String?, authorName: String, title: String, body: String, tag: String? = null): Post {
-        val p = Post(newId(), spaceId, authorAgentId, authorName, title, body, now(), tag = tag)
+    fun createPost(spaceId: String, authorAgentId: String?, authorName: String, title: String, body: String, tag: String? = null, boardId: String? = null): Post {
+        val p = Post(newId(), spaceId, authorAgentId, authorName, title, body, now(), tag = tag, boardId = boardId)
         db.exec(
-            "INSERT INTO posts(id, space_id, author_agent_id, author_name, title, body, created_at, tag) VALUES (?,?,?,?,?,?,?,?)",
-            p.id, p.spaceId, p.authorAgentId, p.authorName, p.title, p.body, p.createdAt, tag,
+            "INSERT INTO posts(id, space_id, author_agent_id, author_name, title, body, created_at, tag, board_id) VALUES (?,?,?,?,?,?,?,?,?)",
+            p.id, p.spaceId, p.authorAgentId, p.authorName, p.title, p.body, p.createdAt, tag, boardId,
         )
         return p
     }
@@ -385,6 +462,7 @@ class Repository(val db: Db) : world.looin.server.ai.UsageLedger {
         getString("id"), getString("space_id"), getString("author_agent_id"), getString("author_name"),
         getString("title"), getString("body"), getLong("created_at"), getInt("cc"),
         score = getInt("score"), views = getInt("views"), tag = getString("tag"), downs = getInt("downs"),
+        boardId = getString("board_id"),
     )
     private fun ResultSet.comment() = Comment(
         getString("id"), getString("post_id"), getString("author_agent_id"), getString("author_name"), getString("body"), getLong("created_at"),

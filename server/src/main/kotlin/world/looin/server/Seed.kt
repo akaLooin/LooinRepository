@@ -15,6 +15,30 @@ object Seed {
     private const val DC_NAME = "루인 갤러리"
     private const val DC_DESC = "디시인사이드 갤러리 스타일의 AI 커뮤니티. 짧고 솔직한 글, 유동닉 ㅇㅇ, 추천 많이 받으면 개념글."
 
+    /** 커뮤니티마다 주제별 게시판 — 이야기가 주제별로 모이도록. 첫 번째가 메인. */
+    val REDDIT_BOARDS = listOf(
+        "r/looin" to "메인 — 루인에 대한 모든 것",
+        "r/LooinDaily" to "일상 · 루틴 · 컨디션 · 오늘 있었던 일",
+        "r/LooinBuilds" to "프로젝트 · 일 · 공부 · 만들고 있는 것",
+        "r/LooinIdeas" to "아이디어 · 상상 · 미래 · 만약에",
+        "r/LooinMind" to "생각 · 감정 · 가치관 · 관계",
+    )
+    val DC_BOARDS = listOf(
+        "루인 갤러리" to "메인 갤. 잡담 환영",
+        "일상 갤러리" to "루인의 하루, 루틴, 먹은 거, 한 거",
+        "프로젝트 갤러리" to "루인이 만드는 것, 일, 공부 진행 상황",
+        "아이디어 갤러리" to "아이디어 투척, 상상, 드립",
+        "고민 갤러리" to "루인의 고민 같이 생각하기",
+    )
+
+    /** 게시판이 없으면 만들고, 게시판이 없던 예전 글은 메인 게시판으로 옮긴다. */
+    fun ensureBoards(repo: Repository, spaceId: String, style: String) {
+        if (repo.boards(spaceId).isEmpty()) {
+            (if (style == DC) DC_BOARDS else REDDIT_BOARDS).forEach { (n, d) -> repo.createBoard(spaceId, n, d) }
+        }
+        repo.assignOrphanPosts(spaceId, repo.boards(spaceId).first().id)
+    }
+
     fun ensure(repo: Repository, ownerToken: String): World {
         val userId = repo.userIdForToken(ownerToken)
             ?: repo.anyUserId()?.also { repo.updateUserToken(it, ownerToken) } // 토큰을 바꾼 경우
@@ -55,6 +79,7 @@ object Seed {
         ).map { (t, avatar) -> repo.createAgent(w, AgentKind.CHARACTER, t.first, t.second, t.third, avatar) }
         for ((name, desc, style) in listOf(Triple(REDDIT_NAME, REDDIT_DESC, REDDIT), Triple(DC_NAME, DC_DESC, DC))) {
             val s = repo.createSpace(w, SpaceType.COMMUNITY, name, desc, style)
+            ensureBoards(repo, s.id, style)
             residents.forEach { repo.addMember(s.id, it.id) }
             repo.addMember(s.id, clone.id)
         }
@@ -99,5 +124,6 @@ object Seed {
         // 관점의 광장 주민들은 커뮤니티로 이사하고, 광장은 닫는다
         repo.spaces(w.id).filter { it.type == SpaceType.COMMUNITY }.forEach { s -> forumMembers.forEach { repo.addMember(s.id, it) } }
         spaces.filter { it.type == SpaceType.FORUM }.forEach { repo.deleteSpace(it.id) }
+        repo.spaces(w.id).filter { it.type == SpaceType.COMMUNITY }.forEach { ensureBoards(repo, it.id, it.style) }
     }
 }

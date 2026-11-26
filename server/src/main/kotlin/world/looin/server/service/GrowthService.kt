@@ -117,11 +117,9 @@ class GrowthService(
             delay(60_000) // 서버 시작 직후는 피한다
             while (true) {
                 // 두뇌 키가 아직 없으면(오프라인) 이번 회차는 쉰다 — 앱에서 키를 넣으면 다음 회차부터 움직인다.
+                // 커뮤니티 활동은 CommunityPulse 가 시간대별로 맡는다. 여기서는 성찰만.
                 if (brain.info.online) for (world in repo.allWorlds()) {
-                    runCatching {
-                        repo.spaces(world.id).filter { it.type == SpaceType.COMMUNITY }.forEach { sim.tick(world, it, 2) }
-                        if (needsReflection(world)) reflect(world)
-                    }.onFailure { log.warn("auto world failed: {}", it.message) }
+                    runCatching { if (needsReflection(world)) reflect(world) }.onFailure { log.warn("auto reflect failed: {}", it.message) }
                 }
                 nextAutoRunAt = System.currentTimeMillis() + periodMs
                 delay(periodMs)

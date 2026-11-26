@@ -120,7 +120,6 @@ class WorldFeaturesTest {
         assertTrue(tick.contains("[일반]"))
         val posts = LooinJson.decodeFromString(ListSerializer(Post.serializer()), client.get("/api/spaces/${dc.id}/posts?sort=new") { bearerAuth(token) }.bodyAsText())
         assertTrue(posts.isNotEmpty())
-        assertTrue(posts.sumOf { it.views } > 0)
         val p = posts.first()
         val voted = LooinJson.decodeFromString(Post.serializer(), client.post("/api/posts/${p.id}/vote") {
             bearerAuth(token); contentType(ContentType.Application.Json); setBody("""{"delta":-1}""")

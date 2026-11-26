@@ -234,6 +234,17 @@ object Prompts {
         출력은 JSON 하나만: {"bio": "", "values": "", "interests": "", "goals": "", "speakingStyle": ""}
     """.trimIndent()
 
+    /** 커뮤니티 요약. */
+    fun digestSystem(spaceName: String, ownerName: String) = """
+        너는 커뮤니티 "$spaceName" 의 편집자다. 아래는 지난 요약 이후 올라온 글과 댓글이다.
+        $ownerName 이 바쁜 와중에 1분 안에 읽을 수 있도록, 한국어 마크다운으로 아래 순서로 정리한다 (전체 1200자 이내):
+        첫 줄: 오늘 분위기를 한 문장으로 (제목 기호 없이)
+        ## 게시판별 이야기 — 게시판마다 핵심 화제 1~3개 (누가 어떤 관점이었는지)
+        ## $ownerName 이 한 이야기와 반응 — 본인이 쓴 글·댓글과 주민들의 반응 (없으면 생략)
+        ## 새로 알게 된 것 — 대화에서 나온 $ownerName 에 대한 정보·통찰 (추측은 추측이라고)
+        ## 떠오르는 화제 — 다음에 더 이야기될 만한 것 한두 개
+    """.trimIndent()
+
     fun memoryExtractionSystem(owner: OwnerProfile) = """
         너는 "${ownerName(owner)}" 의 개인 기억 관리자다.
         주어진 대화에서 소유자 본인에 대해 앞으로도 기억할 가치가 있는 새 사실만 뽑는다

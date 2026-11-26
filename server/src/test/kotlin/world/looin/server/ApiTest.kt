@@ -105,7 +105,9 @@ class ApiTest {
                 setBody("""{"title":"안녕","body":"첫 글"}""")
             }.bodyAsText(),
         )
-        assertEquals(2, myPost.commentCount)
+        // 반응은 바로 오지 않고 몇 분~한 시간 뒤로 예약된다
+        assertEquals(0, myPost.commentCount)
+        assertTrue(app.repo.pendingCount(ov.world.id) >= 2)
 
         // 회사 회의
         val company = ov.spaces.first { it.type == SpaceType.COMPANY }

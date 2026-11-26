@@ -1,6 +1,8 @@
 package world.looin.server
 
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.launch
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.UserIdPrincipal
 import io.ktor.server.auth.authenticate
@@ -25,7 +27,9 @@ import world.looin.shared.BrainSettingsUpdate
 import world.looin.shared.BrainSettingsView
 import world.looin.shared.ChatStreamEvent
 import world.looin.shared.CreateAgentRequest
+import world.looin.shared.CreateBoardRequest
 import world.looin.shared.CreateCommentRequest
+import world.looin.shared.Notices
 import world.looin.shared.CreateFolderRequest
 import world.looin.shared.UpdateConversationRequest
 import world.looin.shared.VoteRequest
@@ -39,6 +43,11 @@ import world.looin.shared.SpaceType
 import world.looin.shared.TickRequest
 import world.looin.shared.World
 import world.looin.shared.WorldOverview
+
+/** 내가 커뮤니티에 쓴 글·댓글도 아카엘의 기억이 된다 (백그라운드). */
+private fun learnFrom(app: App, world: World, text: String) {
+    app.background.launch { runCatching { app.memory.extractFromExchange(world, text, "") } }
+}
 
 fun Route.apiRoutes(app: App) {
     val repo = app.repo
@@ -189,7 +198,7 @@ fun Route.apiRoutes(app: App) {
             get("/spaces/{id}/posts") {
                 val w = call.world()
                 val s = repo.space(w.id, call.parameters["id"]!!) ?: throw NotFound("space not found")
-                call.respond(repo.sortedPosts(s.id, call.request.queryParameters["sort"] ?: "new"))
+                call.respond(repo.sortedPosts(s.id, call.request.queryParameters["sort"] ?: "new", call.request.queryParameters["board"]))
             }
             post("/spaces/{id}/posts") {
                 val w = call.world()
@@ -197,8 +206,14 @@ fun Route.apiRoutes(app: App) {
                 val r = call.receive<CreatePostRequest>()
                 require(r.title.isNotBlank() && r.body.isNotBlank()) { "제목과 본문이 필요합니다" }
                 val ownerName = repo.profile(w.id).let { it.nickname.ifBlank { it.name }.ifBlank { "나" } }
-                val p = repo.createPost(s.id, null, ownerName, r.title.trim(), r.body.trim(), r.tag?.takeIf { it.isNotBlank() })
-                if (s.type == SpaceType.COMMUNITY) app.sim.reactToOwnerPost(w, s, p)
+                val boards = repo.boards(s.id)
+                val boardId = r.boardId?.takeIf { id -> boards.any { it.id == id } } ?: boards.firstOrNull()?.id
+                val p = repo.createPost(s.id, null, ownerName, r.title.trim(), r.body.trim(), r.tag?.takeIf { it.isNotBlank() }, boardId)
+                if (s.type == SpaceType.COMMUNITY) {
+                    // 반응은 바로가 아니라 몇 분~한 시간 사이에 띄엄띄엄 온다
+                    app.sim.ownerPosted(w, s, p)
+                    learnFrom(app, w, "[커뮤니티 ${s.name}에 쓴 글] ${p.title}\n${p.body}")
+                }
                 call.respond(repo.post(w.id, p.id)!!)
             }
             get("/posts/{id}") {
@@ -215,11 +230,44 @@ fun Route.apiRoutes(app: App) {
                 require(r.body.isNotBlank()) { "댓글이 비어 있습니다" }
                 val ownerName = repo.profile(w.id).let { it.nickname.ifBlank { it.name }.ifBlank { "나" } }
                 r.parentId?.let { pid -> require(repo.comments(p.id).any { it.id == pid }) { "답글 대상이 없습니다" } }
-                repo.createComment(p.id, null, ownerName, r.body.trim(), r.parentId)
-                // 내 댓글에 글쓴이(AI)가 답한다.
+                val mine = repo.createComment(p.id, null, ownerName, r.body.trim(), r.parentId)
                 val s = repo.space(w.id, p.spaceId)
-                if (s != null && p.authorAgentId != null) app.sim.replyAsAuthor(w, s, p)
+                if (s != null && s.type == SpaceType.COMMUNITY) {
+                    app.sim.ownerCommented(w, s, p, mine)
+                    learnFrom(app, w, "[커뮤니티 ${s.name}, 글 '${p.title}'에 단 댓글] ${mine.body}")
+                }
                 call.respond(PostDetail(repo.post(w.id, p.id)!!, repo.comments(p.id)))
+            }
+            get("/spaces/{id}/boards") {
+                val w = call.world()
+                val s = repo.space(w.id, call.parameters["id"]!!) ?: throw NotFound("space not found")
+                call.respond(repo.boards(s.id))
+            }
+            post("/spaces/{id}/boards") {
+                val w = call.world()
+                val s = repo.space(w.id, call.parameters["id"]!!) ?: throw NotFound("space not found")
+                val r = call.receive<CreateBoardRequest>()
+                require(r.name.isNotBlank()) { "게시판 이름이 비어 있습니다" }
+                val name = if (s.style == "REDDIT" && !r.name.startsWith("r/")) "r/" + r.name.trim().replace(" ", "") else r.name.trim()
+                call.respond(repo.createBoard(s.id, name, r.description.ifBlank { "${r.name} 이야기" }))
+            }
+            get("/spaces/{id}/digest") {
+                val w = call.world()
+                val s = repo.space(w.id, call.parameters["id"]!!) ?: throw NotFound("space not found")
+                repo.latestDigest(s.id)?.let { call.respond(it) } ?: call.respond(HttpStatusCode.NoContent)
+            }
+            post("/spaces/{id}/digest") {
+                val w = call.world()
+                val s = repo.space(w.id, call.parameters["id"]!!) ?: throw NotFound("space not found")
+                call.respond(app.pulse.makeDigest(w, s, notify = false))
+            }
+            get("/notifications") {
+                val w = call.world()
+                call.respond(Notices(repo.unreadNotices(w.id), repo.notices(w.id)))
+            }
+            post("/notifications/read") {
+                repo.readNotices(call.world().id, call.request.queryParameters["id"])
+                call.respond(mapOf("ok" to true))
             }
             post("/posts/{id}/vote") {
                 val w = call.world()

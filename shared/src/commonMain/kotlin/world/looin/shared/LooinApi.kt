@@ -112,8 +112,20 @@ class LooinApi(baseUrl: String, private val token: String) {
     // --- 공간 (커뮤니티 / 컴퍼니 / 포럼) ---
     suspend fun spaces(): List<Space> = http.get(url("/spaces")) { auth() }.ok()
     /** sort: hot / new / top (레딧), new / best (디시 개념글) */
-    suspend fun posts(spaceId: String, sort: String = "new"): List<Post> =
-        http.get(url("/spaces/$spaceId/posts")) { auth(); url { parameters.append("sort", sort) } }.ok()
+    suspend fun posts(spaceId: String, sort: String = "new", boardId: String? = null): List<Post> =
+        http.get(url("/spaces/$spaceId/posts")) {
+            auth(); url { parameters.append("sort", sort); boardId?.let { parameters.append("board", it) } }
+        }.ok()
+    suspend fun boards(spaceId: String): List<Board> = http.get(url("/spaces/$spaceId/boards")) { auth() }.ok()
+    suspend fun createBoard(spaceId: String, r: CreateBoardRequest): Board =
+        http.post(url("/spaces/$spaceId/boards")) { auth(); setBody(r) }.ok()
+    suspend fun digest(spaceId: String): Digest? =
+        http.get(url("/spaces/$spaceId/digest")) { auth() }.let { if (it.status.value == 204) null else it.ok<Digest>() }
+    suspend fun makeDigest(spaceId: String): Digest = http.post(url("/spaces/$spaceId/digest")) { auth() }.ok()
+    suspend fun notices(): Notices = http.get(url("/notifications")) { auth() }.ok()
+    suspend fun readNotices(id: String? = null) {
+        http.post(url("/notifications/read")) { auth(); if (id != null) url { parameters.append("id", id) } }.ok<Map<String, Boolean>>()
+    }
     suspend fun votePost(postId: String, delta: Int): Post = http.post(url("/posts/$postId/vote")) { auth(); setBody(VoteRequest(delta)) }.ok()
     suspend fun voteComment(commentId: String, delta: Int): Comment =
         http.post(url("/comments/$commentId/vote")) { auth(); setBody(VoteRequest(delta)) }.ok()

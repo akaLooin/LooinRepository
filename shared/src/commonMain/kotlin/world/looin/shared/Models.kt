@@ -84,7 +84,45 @@ data class Post(
     val tag: String? = null,
     /** 디시: 비추천 수 */
     val downs: Int = 0,
+    /** 어느 게시판(서브레딧/갤러리)에 올라간 글인지 */
+    val boardId: String? = null,
 )
+
+/** 커뮤니티 안의 주제별 게시판: 레딧의 서브레딧, 디시의 갤러리. */
+@Serializable
+data class Board(
+    val id: String,
+    val spaceId: String,
+    val name: String,
+    val description: String,
+    val postCount: Int = 0,
+    val lastPostAt: Long? = null,
+)
+
+@Serializable
+data class CreateBoardRequest(val name: String, val description: String = "")
+
+/** 앱 안 알림: 내 글에 달린 댓글, 내 댓글에 달린 답글, 커뮤니티 요약 도착 등. */
+@Serializable
+data class Notice(
+    val id: String,
+    /** COMMENT / REPLY / DIGEST */
+    val kind: String,
+    val title: String,
+    val body: String,
+    val postId: String?,
+    val style: String,
+    val spaceId: String?,
+    val createdAt: Long,
+    val read: Boolean,
+)
+
+@Serializable
+data class Notices(val unread: Int, val items: List<Notice>)
+
+/** 커뮤니티 요약: 주민들끼리 나눈 이야기, 내가 한 이야기, 거기서 나온 정보. */
+@Serializable
+data class Digest(val id: String, val spaceId: String, val content: String, val postsCovered: Int, val createdAt: Long)
 
 @Serializable
 data class Comment(
@@ -299,7 +337,7 @@ data class CreateAgentRequest(
 )
 
 @Serializable
-data class CreatePostRequest(val title: String, val body: String, val tag: String? = null)
+data class CreatePostRequest(val title: String, val body: String, val tag: String? = null, val boardId: String? = null)
 
 @Serializable
 data class CreateCommentRequest(val body: String, val parentId: String? = null)

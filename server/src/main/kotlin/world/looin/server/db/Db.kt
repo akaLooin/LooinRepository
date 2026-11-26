@@ -66,6 +66,7 @@ class Db(file: File) {
             "ALTER TABLE posts ADD COLUMN views INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE posts ADD COLUMN tag TEXT",
             "ALTER TABLE posts ADD COLUMN downs INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE posts ADD COLUMN board_id TEXT",
             "ALTER TABLE comments ADD COLUMN score INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE comments ADD COLUMN parent_id TEXT",
             "ALTER TABLE conversations ADD COLUMN folder_id TEXT",
@@ -125,6 +126,23 @@ class Db(file: File) {
             CREATE TABLE IF NOT EXISTS attachments (
               id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
               name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, text TEXT, created_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS boards (
+              id TEXT PRIMARY KEY, space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+              name TEXT NOT NULL, description TEXT NOT NULL, created_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS notifications (
+              id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+              kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, post_id TEXT, style TEXT NOT NULL,
+              space_id TEXT, created_at INTEGER NOT NULL, read INTEGER NOT NULL DEFAULT 0);
+            CREATE INDEX IF NOT EXISTS idx_notifications ON notifications(world_id, created_at);
+            CREATE TABLE IF NOT EXISTS digests (
+              id TEXT PRIMARY KEY, space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+              content TEXT NOT NULL, posts_covered INTEGER NOT NULL, created_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS scheduled_actions (
+              id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
+              space_id TEXT NOT NULL, kind TEXT NOT NULL, post_id TEXT NOT NULL, comment_id TEXT, agent_id TEXT,
+              due_at INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS activity_log (
+              space_id TEXT NOT NULL, created_at INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS folders (
               id TEXT PRIMARY KEY, world_id TEXT NOT NULL REFERENCES worlds(id) ON DELETE CASCADE,
               name TEXT NOT NULL, created_at INTEGER NOT NULL)
