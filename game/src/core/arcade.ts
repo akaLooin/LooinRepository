@@ -4,6 +4,7 @@
 //  · 포피: 오아시스 샘에서 저절로 물고기를 낚는다(접속하지 않아도). 물고기로 포피의 낚시 도구를 올리면 계정 보너스가 생긴다.
 import { BonusKey } from './data';
 import type { Account } from './state';
+import { addItem } from './state';
 import { hash } from './companions';
 
 export interface ArcadeBonus { id: string; name: string; eff: BonusKey; per: number; unit: string; max: number }
@@ -35,7 +36,7 @@ export function arcadeSettle(acc: Pick<Account, 'arcade'>, now: number) {
   if (a.balls >= ARC.ballMax) a.frac = 0;
 }
 /** 공 하나 쏘기: 오른 보너스 id 또는 'coins' */
-export function shootBall(acc: Account, now: number): { hit: string; coins: number } | string {
+export function shootBall(acc: Account, now: number, c?: import('./state').Character): { hit: string; coins: number } | string {
   arcadeSettle(acc, now);
   const a = acc.arcade;
   if (a.balls < 1) return '공이 없습니다(30분마다 하나)';
@@ -45,6 +46,11 @@ export function shootBall(acc: Account, now: number): { hit: string; coins: numb
     const coins = 100 * Math.max(1, acc.characters.reduce((m, c) => Math.max(m, c.level), 1));
     acc.coins += coins;
     return { hit: 'coins', coins };
+  }
+  // 가끔 열쇠고리가 나온다
+  if (((r >>> 20) % 1000) / 1000 < 0.04) {
+    const ks = ['key_str', 'key_agi', 'key_wis', 'key_luk', 'key_def', 'key_hp', 'key_dmg', 'key_mine'], id = ks[(r >>> 5) % ks.length];
+    if (c && addItem(c, id, 1)) return { hit: id, coins: 0 };
   }
   const open = ARCADE.filter((b) => (a.up[b.id] ?? 0) < b.max);
   if (!open.length) { acc.coins += 1000; return { hit: 'coins', coins: 1000 }; }

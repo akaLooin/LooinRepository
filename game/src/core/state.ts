@@ -681,11 +681,13 @@ export function equipItem(c: Character, id: string, at?: number): string | null 
   let i = at !== undefined && c.inventory[at]?.id === id ? at : c.inventory.findIndex((s) => s.id === id && !s.up);
   if (i < 0) i = c.inventory.findIndex((s) => s.id === id);
   const st = c.inventory[i];
-  const prev = c.equipment[def.slot], prevUp = c.equipUp[def.slot];
+  // 반지는 두 칸: 첫 칸이 차 있고 둘째 칸이 비면 둘째 칸에
+  const slot: EquipSlot = def.slot === 'ring' && c.equipment.ring && !c.equipment.ring2 ? 'ring2' : def.slot;
+  const prev = c.equipment[slot], prevUp = c.equipUp[slot];
   if (prev && !canReturn(c, prev, prevUp, st.qty === 1)) return '가방이 가득 찼습니다';
   if (st.qty > 1) st.qty--; else c.inventory.splice(i, 1);
-  c.equipment[def.slot] = id;
-  if (st.up) c.equipUp[def.slot] = st.up; else delete c.equipUp[def.slot];
+  c.equipment[slot] = id;
+  if (st.up) c.equipUp[slot] = st.up; else delete c.equipUp[slot];
   if (prev) putBack(c, prev, prevUp);
   c.hp = Math.min(c.hp, derive(c).maxHp);
   return null;

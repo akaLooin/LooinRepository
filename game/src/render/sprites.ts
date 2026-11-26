@@ -1393,6 +1393,19 @@ function buildItems() {
   p = new Paint(12, 12); p.disc(5.5, 6, 4, 3.6, '#c9a26a'); p.line(2, 5, 9, 7, '#8a6a3c'); p.line(2, 8, 9, 4, '#8a6a3c'); p.outline().save('it_twine');
   p = new Paint(12, 12); p.rect(2, 2, 7, 2, '#c9d1d9'); p.rect(5, 4, 2, 7, '#9aa3ad'); p.set(5, 10, '#6a7480'); p.outline().save('it_nail');
   p = new Paint(12, 12); p.rect(1, 2, 3, 6, '#d9574a'); p.rect(8, 2, 3, 6, '#d9574a'); p.rect(1, 7, 10, 3, '#d9574a'); p.rect(1, 2, 3, 2, '#e8e8f0'); p.rect(8, 2, 3, 2, '#e8e8f0'); p.rect(2, 8, 8, 1, '#a03a30'); p.outline().save('it_magnet');
+  // 장신구: 반지(보석 색) · 목걸이 · 망토 · 열쇠고리
+  for (const [k, gem] of [['ring_sand', '#e8c47a'], ['ring_frost', '#7ae0ff'], ['ring_star', '#4e6ad8'], ['ring_void', '#c87aff'], ['ring_sun', '#ff9a3a'], ['ring_aurora', '#7affc0']] as const) {
+    p = new Paint(12, 12); p.disc(5.5, 6.5, 4, 4, '#c9d1d9'); p.disc(5.5, 6.5, 2.4, 2.4, null); p.disc(5.5, 2.5, 2, 1.6, gem); p.set(5, 2, '#ffffff'); p.outline().save(`it_${k}`);
+  }
+  for (const [k, gem] of [['pend_moss', '#5fb859'], ['pend_leaf', '#8fde5d'], ['pend_sand', '#e8c47a'], ['pend_salt', '#e8eef2'], ['pend_frost', '#7ae0ff'], ['pend_aurora', '#7affc0'], ['pend_star', '#f6c945'], ['pend_void', '#c87aff']] as const) {
+    p = new Paint(12, 12); p.line(1, 1, 6, 7, '#c9a26a'); p.line(10, 1, 6, 7, '#c9a26a'); p.disc(6, 8.5, 2.6, 2.6, gem); p.set(5, 7, '#ffffff'); p.outline().save(`it_${k}`);
+  }
+  for (const [k, col] of [['cape_moss', '#5fb859'], ['cape_sand', '#e8a85a'], ['cape_frost', '#9ad8f6'], ['cape_star', '#4e6ad8'], ['cape_void', '#5a3aa8'], ['cape_hero', '#d9574a']] as const) {
+    p = new Paint(12, 12); p.rect(3, 1, 6, 2, '#f6c945'); for (let y = 3; y < 12; y++) p.rect(3 - Math.floor((y - 3) / 3), y, 6 + 2 * Math.floor((y - 3) / 3), 1, col); p.rect(5, 4, 1, 7, mix(col, '#000000', 0.2)); p.outline().save(`it_${k}`);
+  }
+  for (const [k, col] of [['key_str', '#d9574a'], ['key_agi', '#5fb859'], ['key_wis', '#4e8de2'], ['key_luk', '#8fde5d'], ['key_def', '#9aa3ad'], ['key_hp', '#e25d7a'], ['key_dmg', '#ff7a3a'], ['key_mine', '#a8744e']] as const) {
+    p = new Paint(12, 12); p.disc(3.5, 3.5, 2.4, 2.4, '#c9d1d9'); p.disc(3.5, 3.5, 1.2, 1.2, null); p.line(5, 5, 7, 7, '#c9d1d9'); p.disc(8, 8, 3, 3, col); p.set(7, 7, '#ffffff'); p.outline().save(`it_${k}`);
+  }
   // 버프 물약(병) · 황금 음식(황금빛 접시)
   for (const [k, col] of [['potion_power', '#e25d4e'], ['potion_wise', '#4e8de2'], ['potion_luck', '#5fb859'], ['potion_card', '#c48aff'], ['potion_miner', '#a8744e'], ['potion_lumber', '#5a8a3a'], ['potion_angler', '#4ab8f0'], ['potion_bug', '#e8c04a']] as const) {
     p = new Paint(12, 12); p.rect(4, 0, 4, 2, '#c9a26a'); p.rect(5, 2, 2, 2, '#e8eef2'); p.disc(6, 7.5, 4, 3.6, '#e8eef2'); p.disc(6, 8, 3.2, 2.8, col); p.set(4, 6, '#ffffff'); p.outline().save(`it_${k}`);
@@ -1430,7 +1443,7 @@ export const ITEM_ICON: Record<string, string> = {
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
   moss_ring: 'it_ring', pebble_charm: 'it_charm', anvil_exp: 'obj_craft',
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
-  ...Object.fromEntries(['potion_power', 'potion_wise', 'potion_luck', 'potion_card', 'potion_miner', 'potion_lumber', 'potion_angler', 'potion_bug', 'gold_berry', 'gold_mushroom', 'gold_stew', 'gold_pie', 'gold_cake', 'gold_cocoa', 'gold_mooncake', 'gold_feast'].map((k) => [k, `it_${k}`])), twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
+  ...Object.fromEntries(['ring_sand', 'ring_frost', 'ring_star', 'ring_void', 'ring_sun', 'ring_aurora', 'pend_moss', 'pend_leaf', 'pend_sand', 'pend_salt', 'pend_frost', 'pend_aurora', 'pend_star', 'pend_void', 'cape_moss', 'cape_sand', 'cape_frost', 'cape_star', 'cape_void', 'cape_hero', 'key_str', 'key_agi', 'key_wis', 'key_luk', 'key_def', 'key_hp', 'key_dmg', 'key_mine'].map((k) => [k, `it_${k}`])), ...Object.fromEntries(['potion_power', 'potion_wise', 'potion_luck', 'potion_card', 'potion_miner', 'potion_lumber', 'potion_angler', 'potion_bug', 'gold_berry', 'gold_mushroom', 'gold_stew', 'gold_pie', 'gold_cake', 'gold_cocoa', 'gold_mooncake', 'gold_feast'].map((k) => [k, `it_${k}`])), twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
   chest_small: 'obj_storage', ...Object.fromEntries(['moss', 'cactus', 'snake', 'fur', 'trapper', 'star', 'void', 'titan'].map((k) => [`bag_${k}`, `it_bag_${k}`])), ...Object.fromEntries(['wood', 'iron', 'sand', 'gold', 'ice', 'crystal', 'star', 'cosmic'].map((k) => [`chest_${k}`, `it_chest_${k}`])), forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(STAMPS.filter((st) => st.name).map((st) => [st.id, `it_stamp_${st.eff}`])),
@@ -1501,6 +1514,10 @@ function buildIcons() {
   icon('eq_shoes', (p) => { p.rect(3, 4, 4, 7, sil); p.rect(3, 10, 9, 4, sil); p.disc(12, 12, 2, 2, sil); });
   icon('eq_trophy', (p) => { p.rect(4, 2, 8, 6, sil); p.disc(8, 7, 4, 3, sil); p.rect(7, 10, 2, 3, sil); p.rect(4, 13, 8, 2, sil); p.rect(1, 3, 3, 1, sil); p.rect(12, 3, 3, 1, sil); });
   icon('eq_ring', (p) => { p.disc(8, 9, 5, 5, sil); p.disc(8, 9, 3, 3, null); p.disc(8, 3.5, 2, 1.6, sil); });
+  icon('eq_ring2', (p) => { p.disc(8, 9, 5, 5, sil); p.disc(8, 9, 3, 3, null); p.disc(8, 3.5, 2, 1.6, sil); });
+  icon('eq_pendant', (p) => { p.line(3, 2, 8, 9, sil); p.line(13, 2, 8, 9, sil); p.disc(8, 11, 3, 3, sil); });
+  icon('eq_cape', (p) => { p.rect(5, 2, 6, 2, sil); for (let y = 4; y < 15; y++) p.rect(5 - Math.floor((y - 4) / 3), y, 6 + 2 * Math.floor((y - 4) / 3), 1, sil); });
+  icon('eq_keychain', (p) => { p.disc(5, 5, 3, 3, sil); p.disc(5, 5, 1.6, 1.6, null); p.line(7, 7, 12, 12, sil); p.rect(10, 11, 2, 3, sil); });
   icon('eq_pickaxe', (p) => { p.rect(7, 4, 2, 11, sil); p.line(1, 5, 7, 2, sil); p.line(9, 2, 15, 5, sil); p.rect(6, 2, 4, 3, sil); });
   icon('eq_axe', (p) => { p.rect(7, 2, 2, 13, sil); p.disc(11, 6, 4, 4, sil); });
   icon('eq_rod', (p) => { p.line(3, 15, 12, 1, sil); p.line(4, 15, 13, 1, sil); p.line(13, 1, 14, 8, sil); p.disc(14, 10, 1.4, 1.6, sil); });

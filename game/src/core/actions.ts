@@ -243,7 +243,7 @@ export function applyAction(acc: Account, ci: number, a: Action, now: number): A
     case 'arcade': {
       if ((c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 오락실에서 할 수 있습니다');
       if (a.op === 'visit') { arcadeSettle(acc, now); return ok(); }
-      const r = shootBall(acc, now); return typeof r === 'string' ? fail(r) : ok(r.coins);
+      const r = shootBall(acc, now, c); return typeof r === 'string' ? fail(r) : ok(r.coins);
     }
     case 'poppy': {
       if ((c.maxWorld ?? 1) < 2) return fail('2월드 오아시스 마을의 포피에게서 할 수 있습니다');

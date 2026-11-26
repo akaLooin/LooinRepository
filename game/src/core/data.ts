@@ -11,7 +11,7 @@ export type BaseClass = 'beginner' | 'warrior' | 'archer' | 'mage' | 'wanderer';
 export type ClassId = BaseClass | 'guardian' | 'berserker' | 'sharpshooter' | 'ranger' | 'elementalist' | 'hexer' | 'fateweaver' | 'taler' | 'lifeteller'
   | 'bastion' | 'warlord' | 'hawkeye' | 'pathfinder' | 'archmage' | 'oracle';
 export type WeaponType = 'sword' | 'bow' | 'wand';
-export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'trophy' | 'pickaxe' | 'axe' | 'rod' | 'net';
+export type EquipSlot = 'weapon' | 'hat' | 'body' | 'legs' | 'shoes' | 'ring' | 'ring2' | 'pendant' | 'cape' | 'keychain' | 'trophy' | 'pickaxe' | 'axe' | 'rod' | 'net';
 
 export interface ItemStats {
   dmg?: number; def?: number; hp?: number;
@@ -103,7 +103,7 @@ export const STAT_DESC: Record<StatKey, string> = {
 export const SKILL_NAMES: Record<SkillKey, string> = { mining: '채광', chopping: '벌목', smithing: '대장', fishing: '낚시', catching: '곤충 채집', trapping: '덫 사냥', worship: '기도', cooking: '요리', lab: '연구', alchemy: '연금', construction: '건설', breeding: '번식' };
 export const FACILITY_NAMES: Record<FacilityKind, string> = { npc: '촌장', anvil: '모루', storage: '창고', shop: '잡화점', forge: '용광로', stamps: '우표함', tasks: '작업판', statues: '석상 받침', pets: '동료 둥지', owl: '부엉이 횃대', games: '미니게임장', alchemy: '연금 솥', post: '우체국', traps: '덫 오두막', build: '공방 마당', shrine: '기도 토템', kitchen: '별빛 식당', nest: '번식 둥지', lab: '연구실', arcade: '오락실', poppy: '낚시꾼 포피' };
 export const SLOT_NAMES: Record<EquipSlot, string> = {
-  weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
+  weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '반지', ring2: '반지 2', pendant: '목걸이', cape: '망토', keychain: '열쇠고리', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
 
 const STAT_LABEL_FOOD: Record<string, string> = { dmg: '공격력', xp: '경험치', drop: '드롭률', card: '카드 드롭률', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', hpPct: '최대 체력', def: '방어력', coins: '코인 획득', afk: '방치 효율' };
@@ -130,6 +130,15 @@ const items: ItemDef[] = [
   { id: 'pouch_res', name: '자원 주머니', desc: '사용하면 통나무·광석 한 칸에 100개까지.', kind: 'pouch', pouch: { group: 'resource', cap: 100 }, sell: 20 },
   { id: 'pouch_food', name: '도시락 주머니', desc: '사용하면 음식 한 칸에 100개까지.', kind: 'pouch', pouch: { group: 'food', cap: 100 }, sell: 20 },
   { id: 'chest_small', name: '작은 보관함', desc: '사용하면 계정 창고 +8칸.', kind: 'chest', chestSlots: 8, sell: 50 },
+  // 장신구 확충: 반지(두 칸), 목걸이, 망토, 열쇠고리(원작처럼)
+  ...([['ring_sand', '모래 반지', 30, { luk: 8, def: 4 }], ['ring_frost', '서리 반지', 60, { str: 14, hp: 200 }], ['ring_star', '별 반지', 95, { wis: 20, agi: 20 }], ['ring_void', '공허 반지', 120, { luk: 30, dmg: 20 }], ['ring_sun', '태양 반지', 45, { agi: 10, wis: 10 }], ['ring_aurora', '오로라 반지', 75, { luk: 16, hp: 300 }]] as const)
+    .map(([id, name, lv, st]) => ({ id, name, desc: '반지 칸(두 칸)에 낀다.', kind: 'equip' as const, slot: 'ring' as const, stats: { ...st } as ItemStats, reqLv: lv, sell: lv * 40 })),
+  ...([['pend_moss', '이끼 목걸이', 15, { hp: 40, luk: 3 }], ['pend_leaf', '잎사귀 목걸이', 25, { agi: 5, def: 3 }], ['pend_sand', '사막 목걸이', 40, { str: 8, wis: 8 }], ['pend_salt', '소금 결정 목걸이', 55, { def: 10, hp: 200 }], ['pend_frost', '서리 목걸이', 70, { luk: 14, dmg: 8 }], ['pend_aurora', '오로라 목걸이', 85, { wis: 18, hp: 400 }], ['pend_star', '별가루 목걸이', 100, { str: 22, agi: 22 }], ['pend_void', '공허 목걸이', 120, { luk: 30, def: 30 }]] as const)
+    .map(([id, name, lv, st]) => ({ id, name, desc: '목걸이 칸에 건다.', kind: 'equip' as const, slot: 'pendant' as const, stats: { ...st } as ItemStats, reqLv: lv, sell: lv * 40 })),
+  ...([['cape_moss', '이끼 망토', 20, { def: 4, agi: 3 }], ['cape_sand', '모래바람 망토', 45, { def: 10, luk: 6 }], ['cape_frost', '눈보라 망토', 75, { def: 20, hp: 300 }], ['cape_star', '별무리 망토', 105, { def: 32, dmg: 15 }], ['cape_void', '공허 망토', 125, { def: 45, luk: 20 }], ['cape_hero', '영웅의 망토', 60, { str: 12, agi: 12, wis: 12, luk: 12 }]] as const)
+    .map(([id, name, lv, st]) => ({ id, name, desc: '망토 칸에 두른다.', kind: 'equip' as const, slot: 'cape' as const, stats: { ...st } as ItemStats, reqLv: lv, sell: lv * 50 })),
+  ...([['key_str', '힘 열쇠고리', { str: 6 }], ['key_agi', '민첩 열쇠고리', { agi: 6 }], ['key_wis', '지혜 열쇠고리', { wis: 6 }], ['key_luk', '행운 열쇠고리', { luk: 6 }], ['key_def', '방패 열쇠고리', { def: 6 }], ['key_hp', '하트 열쇠고리', { hp: 120 }], ['key_dmg', '칼날 열쇠고리', { dmg: 8 }], ['key_mine', '곡괭이 열쇠고리', { mining: 6, chopping: 6 }]] as const)
+    .map(([id, name, st]) => ({ id, name, desc: '열쇠고리 칸에 단다. 오락실·미니보스·작업판에서 얻는다.', kind: 'equip' as const, slot: 'keychain' as const, stats: { ...st } as ItemStats, sell: 100 })),
   // 버프 물약(음식 칸에서 10분마다 하나씩 먹으며 효과)과 황금 음식(먹지 않고 영구 효과)
   ...([['potion_power', '힘의 물약', 'dmg', 15, '%', '#e25d4e'], ['potion_wise', '지혜의 물약', 'xp', 15, '%', '#4e8de2'], ['potion_luck', '행운의 물약', 'drop', 12, '%', '#5fb859'], ['potion_card', '수집의 물약', 'card', 15, '%', '#c48aff'],
     ['potion_miner', '광부의 물약', 'mining', 30, '%', '#8a6a4a'], ['potion_lumber', '나무꾼의 물약', 'chopping', 30, '%', '#5a8a3a'], ['potion_angler', '낚시꾼의 물약', 'fishing', 30, '%', '#4ab8f0'], ['potion_bug', '곤충꾼의 물약', 'catching', 30, '%', '#e8c04a']] as const)
@@ -449,7 +458,7 @@ const crystals: MonsterDef[] = monsters.filter((m) => !m.boss && !m.scale).map((
   return {
     ...m, id: crystalOf(m.id), name: `수정 ${m.name}`, hp: m.hp * 4, xp: m.xp * 6, coins: [m.coins[0] * 6, m.coins[1] * 6] as [number, number],
     art: m.art ?? m.id, tint: 0x9ae8ff, crystal: true,
-    drops: [{ item: 'gold_berry', chance: 0.05, qty: [1, 1] as [number, number] }, ...pieces.map((item) => ({ item, chance: 1, qty: [2, 4] as [number, number] })), ...pieces.map((item) => ({ item: `g${item}`, chance: 0.04, qty: [1, 1] as [number, number] }))],
+    drops: [{ item: 'gold_berry', chance: 0.05, qty: [1, 1] as [number, number] }, { item: ['key_str', 'key_agi', 'key_wis', 'key_luk', 'key_def', 'key_hp', 'key_dmg', 'key_mine'][m.id.length % 8], chance: 0.04, qty: [1, 1] as [number, number] }, ...pieces.map((item) => ({ item, chance: 1, qty: [2, 4] as [number, number] })), ...pieces.map((item) => ({ item: `g${item}`, chance: 0.04, qty: [1, 1] as [number, number] }))],
   };
 });
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries([...monsters, ...crystals].map((m) => [m.id, m]));
@@ -745,6 +754,26 @@ export const RECIPES: RecipeDef[] = [
   { item: 'armor_log', coins: 60, mats: [['log', 12], ['moss', 5], ['plank', 3]] },
   { item: 'bag_leather', coins: 120, mats: [['moss', 25], ['twine', 15], ['leaf', 5]] },
   { item: 'bag_moss', coins: 800, mats: [['moss', 120], ['twine', 60], ['shell', 20]], tier: 2 },
+  { item: 'pend_moss', coins: 400, mats: [['moss', 60], ['twine', 30]] },
+  { item: 'cape_moss', coins: 700, mats: [['moss', 80], ['leaf', 40], ['twine', 40]], tier: 2 },
+  { item: 'pend_leaf', coins: 1200, mats: [['leaf', 80], ['glowdust', 20], ['brick', 10]], tier: 2 },
+  { item: 'ring_sand', coins: 5000, mats: [['bar_amber', 8], ['salt_crystal', 30]], tier: 3 },
+  { item: 'pend_sand', coins: 8000, mats: [['bar_amber', 10], ['heat_feather', 30], ['chainlink', 20]], tier: 4 },
+  { item: 'cape_sand', coins: 9000, mats: [['hide', 30], ['worm_scale', 30], ['sun_ember', 10]], tier: 4 },
+  { item: 'ring_sun', coins: 12000, mats: [['bar_amber', 16], ['sun_ember', 20]], tier: 4 },
+  { item: 'pend_salt', coins: 15000, mats: [['salt_crystal', 80], ['gearwheel', 20]], tier: 4 },
+  { item: 'cape_hero', coins: 30000, mats: [['hide', 80], ['bar_gold', 30], ['bracket', 20]], tier: 5 },
+  { item: 'ring_frost', coins: 30000, mats: [['bar_frost', 14], ['frost_core', 10]], tier: 5 },
+  { item: 'pend_frost', coins: 35000, mats: [['bar_frost', 16], ['icicle_shard', 40], ['bracket', 20]], tier: 5 },
+  { item: 'cape_frost', coins: 40000, mats: [['yeti_fur', 60], ['snow_tuft', 60], ['hide', 40]], tier: 5 },
+  { item: 'ring_aurora', coins: 50000, mats: [['aurora_dust', 40], ['bar_frost', 20]], tier: 5 },
+  { item: 'pend_aurora', coins: 60000, mats: [['aurora_dust', 50], ['screw', 20]], tier: 5 },
+  { item: 'ring_star', coins: 120000, mats: [['bar_nova', 16], ['meteor_chip', 40]], tier: 6 },
+  { item: 'pend_star', coins: 140000, mats: [['star_sand', 80], ['gizmo', 20]], tier: 6 },
+  { item: 'cape_star', coins: 160000, mats: [['ring_plume', 60], ['comet_hair', 60], ['cord', 20]], tier: 6 },
+  { item: 'ring_void', coins: 300000, mats: [['void_shard', 60], ['bar_nova', 30]], tier: 6 },
+  { item: 'pend_void', coins: 320000, mats: [['void_shard', 80], ['cord', 30]], tier: 6 },
+  { item: 'cape_void', coins: 350000, mats: [['void_shard', 100], ['neb_jelly', 60], ['cord', 40]], tier: 6 },
   { item: 'chest_wood', coins: 1500, mats: [['plank', 80], ['nail', 60], ['willowlog', 40]], tier: 2 },
   { item: 'chest_iron', coins: 4000, mats: [['bar_gold', 20], ['brick', 40], ['chainlink', 20]], tier: 3 },
   { item: 'bag_cactus', coins: 9000, mats: [['cactus_spine', 80], ['hide', 30], ['twine', 100]], tier: 4 },
@@ -1238,7 +1267,7 @@ export const STONES: StoneDef[] = [
 ];
 export const STONE_BY_ID: Record<string, StoneDef> = Object.fromEntries(STONES.map((s) => [s.item, s]));
 /** 부위별 강화 칸 수 */
-export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, trophy: 0, pickaxe: 3, axe: 3, rod: 3, net: 3 };
+export const UP_SLOTS: Record<EquipSlot, number> = { weapon: 4, hat: 3, body: 3, legs: 3, shoes: 3, ring: 2, ring2: 2, pendant: 2, cape: 2, keychain: 0, trophy: 0, pickaxe: 3, axe: 3, rod: 3, net: 3 };
 export const upSlotsOf = (id: string) => { const s = ITEMS[id]?.slot; return s ? UP_SLOTS[s] : 0; };
 export const MAX_CHARACTERS = 11;
 
