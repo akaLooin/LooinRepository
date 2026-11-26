@@ -535,7 +535,10 @@ async function syncOnce(db: SupabaseClient, uid: string, quick = false) {
         await db.from("google_event_links").update({ calendar_id: target.calendar_id, google_id: r.body.id, google_updated: r.body.updated, synced_at: synced }).eq("event_id", e.id);
         stats.pushed++;
       }
-    } else if (!e.deleted_at && e.google_calendar_id && new Date(e.created_at ?? 0) > connectedAt) {
+    // made after connecting, or (made before) changed after connecting with a Google calendar picked for it in the
+    // editor (user, 2026-11-26: an older 립마크 event goes up only when picked for Google by hand; old events with
+    // nothing picked stay in 립마크 as before)
+    } else if (!e.deleted_at && e.google_calendar_id && (new Date(e.created_at ?? 0) > connectedAt || new Date(e.updated_at ?? 0) > connectedAt)) {
       const target = writable(e.google_calendar_id);
       if (!target) continue;
       // never a second copy: an event already linked (or one from Google) is not made again
