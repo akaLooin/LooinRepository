@@ -323,6 +323,14 @@ const items: ItemDef[] = [
   { id: 'boots_nova', name: '신성 장화', desc: '한 걸음마다 별모래가 흩날린다.', kind: 'equip', slot: 'shoes', stats: { def: 54, agi: 26 }, reqLv: 110, sell: 9500 },
   // 덫 사냥: 잡은 동물(재료)과 덫 도구
   { id: 'cr_hare', name: '눈토끼', desc: '덫에 걸린 하얀 토끼. 털이 아주 부드럽다.', kind: 'material', sell: 30 },
+  { id: 'cr_seal', name: '아기물범', desc: '덫에 걸린 아기물범.', kind: 'material', sell: 45 },
+  { id: 'cr_penguin', name: '꼬마펭귄', desc: '덫에 걸린 꼬마펭귄.', kind: 'material', sell: 60 },
+  { id: 'cr_owl', name: '눈올빼미', desc: '덫에 걸린 눈올빼미.', kind: 'material', sell: 70 },
+  { id: 'cr_lynx', name: '설원살쾡이', desc: '덫에 걸린 설원살쾡이.', kind: 'material', sell: 90 },
+  { id: 'cr_bear', name: '얼음곰', desc: '덫에 걸린 얼음곰.', kind: 'material', sell: 140 },
+  { id: 'cr_moonrab', name: '달토끼', desc: '덫에 걸린 달토끼.', kind: 'material', sell: 170 },
+  { id: 'cr_comet', name: '혜성다람쥐', desc: '덫에 걸린 혜성다람쥐.', kind: 'material', sell: 200 },
+  { id: 'cr_voidcat', name: '공허고양이', desc: '덫에 걸린 공허고양이.', kind: 'material', sell: 240 },
   { id: 'cr_fox', name: '서리여우', desc: '꼬리 끝이 얼음처럼 반짝인다.', kind: 'material', sell: 60 },
   { id: 'cr_weasel', name: '얼음족제비', desc: '빙판 위를 미끄러지듯 달린다.', kind: 'material', sell: 110 },
   { id: 'cr_marten', name: '오로라담비', desc: '털 색이 오로라처럼 바뀐다.', kind: 'material', sell: 180 },
@@ -1351,6 +1359,14 @@ export const CRITTERS: CritterDef[] = [
   { id: 'cr_weasel', name: '얼음족제비', map: 'frostlake', lv: 16, mins: 15, xp: 34 },
   { id: 'cr_marten', name: '오로라담비', map: 'aurora', lv: 28, mins: 22, xp: 60 },
   { id: 'cr_reindeer', name: '별빛순록', map: 'frostpeak', lv: 40, mins: 32, xp: 100 },
+  { id: 'cr_seal', name: '아기물범', map: 'frostlake', lv: 12, mins: 12, xp: 26 },
+  { id: 'cr_penguin', name: '꼬마펭귄', map: 'icecave', lv: 20, mins: 17, xp: 42 },
+  { id: 'cr_owl', name: '눈올빼미', map: 'glacier', lv: 24, mins: 20, xp: 52 },
+  { id: 'cr_lynx', name: '설원살쾡이', map: 'aurora', lv: 33, mins: 26, xp: 76 },
+  { id: 'cr_bear', name: '얼음곰', map: 'frostpeak', lv: 46, mins: 38, xp: 120 },
+  { id: 'cr_moonrab', name: '달토끼', map: 'moondust', lv: 52, mins: 42, xp: 150 },
+  { id: 'cr_comet', name: '혜성다람쥐', map: 'comet', lv: 58, mins: 48, xp: 180 },
+  { id: 'cr_voidcat', name: '공허고양이', map: 'voidedge', lv: 65, mins: 55, xp: 220 },
 ];
 export const CRITTER: Record<string, CritterDef> = Object.fromEntries(CRITTERS.map((x) => [x.id, x]));
 /** 덫 시간: 길게 놓을수록 시간당 효율이 조금 오른다 */
@@ -1373,7 +1389,7 @@ export const SHINY_CHANCE = 0.01;
 /** 빛나는 동물 보너스(계정): 모은 수가 2배가 될 때마다 한 단계 */
 export const SHINY_BONUS: Record<string, { eff: BonusKey; per: number; unit: string }> = {
   cr_hare: { eff: 'afk', per: 0.2, unit: '%p' }, cr_fox: { eff: 'drop', per: 1, unit: '%' }, cr_weasel: { eff: 'xp', per: 1, unit: '%' },
-  cr_marten: { eff: 'card', per: 1, unit: '%' }, cr_reindeer: { eff: 'coins', per: 2, unit: '%' },
+  cr_marten: { eff: 'card', per: 1, unit: '%' }, cr_reindeer: { eff: 'coins', per: 2, unit: '%' }, cr_seal: { eff: 'afk', per: 0.2, unit: '%p' }, cr_penguin: { eff: 'xp', per: 1, unit: '%' }, cr_owl: { eff: 'card', per: 1, unit: '%' }, cr_lynx: { eff: 'dmg', per: 1, unit: '%' }, cr_bear: { eff: 'hpPct', per: 1, unit: '%' }, cr_moonrab: { eff: 'luk', per: 2, unit: '' }, cr_comet: { eff: 'coins', per: 2, unit: '%' }, cr_voidcat: { eff: 'drop', per: 1, unit: '%' },
 };
 export const shinyLevel = (n: number) => (n > 0 ? Math.floor(Math.log2(n + 1)) : 0);
 /** 덫 도구 단계별 잡는 수 배율(맨손 · 나무 · 쇠 · 서리) */

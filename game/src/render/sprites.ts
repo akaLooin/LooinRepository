@@ -1260,7 +1260,7 @@ function buildItems() {
   p = new Paint(12, 14); p.rect(3, 10, 6, 3, '#4a7ab8'); p.rect(5, 7, 2, 3, '#a8c8e4'); p.disc(6, 4.5, 4.5, 4, '#8ad0f0'); p.disc(6, 4.5, 2.4, 2, '#e0faff'); p.set(4, 3, '#ffffff'); p.outline().save('it_trophy_frost');
   p = new Paint(12, 11); p.disc(6, 6, 1.4, 3.4, '#5a6a8a'); p.disc(3, 4, 2.6, 2.2, '#e8f2fa'); p.disc(9, 4, 2.6, 2.2, '#e8f2fa'); p.disc(3, 8, 2, 1.6, '#c8e8ff'); p.disc(9, 8, 2, 1.6, '#c8e8ff'); p.set(5, 2, '#5a6a8a'); p.set(7, 2, '#5a6a8a'); p.outline().save('it_bug_frost');
   // 덫 사냥 동물
-  for (const [k, body, ear, eye] of [['cr_hare', '#f4f6fa', '#f2a0b0', '#1e1420'], ['cr_fox', '#e8f2fa', '#8ad0f0', '#1e1420'], ['cr_weasel', '#c8e4f4', '#6aa8d0', '#1e1420'], ['cr_marten', '#8a7ac8', '#7affc8', '#ffffff'], ['cr_reindeer', '#a8845a', '#fff0a8', '#1e1420']] as const) {
+  for (const [k, body, ear, eye] of [['cr_hare', '#f4f6fa', '#f2a0b0', '#1e1420'], ['cr_fox', '#e8f2fa', '#8ad0f0', '#1e1420'], ['cr_weasel', '#c8e4f4', '#6aa8d0', '#1e1420'], ['cr_marten', '#8a7ac8', '#7affc8', '#ffffff'], ['cr_reindeer', '#a8845a', '#fff0a8', '#1e1420'], ['cr_seal', '#e8eef2', '#8aa8b8', '#1e1420'], ['cr_penguin', '#2a2a3a', '#f6c945', '#1e1420'], ['cr_owl', '#f4f6fa', '#f6c945', '#1e1420'], ['cr_lynx', '#c8b8a8', '#3a3a4a', '#1e1420'], ['cr_bear', '#e8f0f8', '#6aa8d0', '#1e1420'], ['cr_moonrab', '#e0dce8', '#c48aff', '#1e1420'], ['cr_comet', '#8ad0f0', '#fff6c8', '#1e1420'], ['cr_voidcat', '#3a2a6a', '#c87aff', '#1e1420']] as const) {
     p = new Paint(13, 12);
     p.disc(7, 8, 5, 3.4, body); p.disc(3.5, 5, 2.8, 2.6, body);
     if (k === 'cr_hare') { p.rect(2, 0, 1, 4, body); p.rect(4, 0, 1, 4, body); p.set(2, 1, ear); p.set(4, 1, ear); }
@@ -1468,7 +1468,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['cactus_spine', 'scorp_tail', 'heat_feather', 'old_bandage', 'salt_crystal', 'worm_scale', 'sun_ember', 'palmlog', 'ore_amber', 'bar_amber', 'cactus_juice', 'date_cake', 'sand_crown', 'trophy_sand'].map((k) => [k, `it_${k}`])),
   sun_key: 'it_sunkey', stone_lure: 'it_stone_lure',
   ...Object.fromEntries(['snow_tuft', 'pine_cone', 'peng_feather', 'icicle_shard', 'yeti_fur', 'aurora_dust', 'frost_core', 'pinelog', 'ore_frost', 'bar_frost', 'hot_cocoa', 'pine_soup', 'frost_crown', 'trophy_frost', 'fish_ice', 'bug_frost'].map((k) => [k, `it_${k}`])),
-  ...Object.fromEntries(['cr_hare', 'cr_fox', 'cr_weasel', 'cr_marten', 'cr_reindeer', 'trap_wood', 'trap_iron', 'trap_frost', 'fur_scarf', 'antler_charm'].map((k) => [k, `it_${k}`])),
+  ...Object.fromEntries(['cr_hare', 'cr_fox', 'cr_weasel', 'cr_marten', 'cr_reindeer', 'cr_seal', 'cr_penguin', 'cr_owl', 'cr_lynx', 'cr_bear', 'cr_moonrab', 'cr_comet', 'cr_voidcat', 'trap_wood', 'trap_iron', 'trap_frost', 'fur_scarf', 'antler_charm'].map((k) => [k, `it_${k}`])),
   frost_key: 'it_frostkey', anvil_exp4: 'obj_craft', rod_frost: 'wp_rod_frost', net_frost: 'wp_net_frost',
   ...Object.fromEntries(['star_sand', 'crater_shell', 'neb_jelly', 'meteor_chip', 'ring_plume', 'comet_hair', 'void_shard', 'starlog', 'ore_nova', 'bar_nova', 'fish_neb', 'bug_neb', 'moon_cake', 'nova_stew', 'trophy_void', 'void_mask'].map((k) => [k, `it_${k}`])),
   four_leaf: 'it_four_leaf',   void_key: 'it_voidkey', anvil_exp5: 'obj_craft', rod_nova: 'wp_rod_nova', net_nova: 'wp_net_nova',
