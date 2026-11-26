@@ -163,9 +163,9 @@ const items: ItemDef[] = [
     ['dmg', '칼날 우표'], ['hp', '심장 우표'], ['def', '방패 우표'], ['acc', '과녁 우표'], ['crit', '별똥 우표'],
     ['mining', '곡괭이 우표'], ['chopping', '도끼 우표'], ['drop', '주머니 우표'], ['coins', '동전 우표'], ['xp', '책 우표'], ['afk', '모래시계 우표'],
   ].map(([k, name]) => ({ id: `stamp_${k}`, name, desc: '우표함에 넣으면 계정 전체에 효과가 생긴다.', kind: 'stamp' as const, sell: 1 })),
-  ...[['str', '힘의 조각'], ['agi', '날램의 조각'], ['wis', '슬기의 조각'], ['luk', '행운의 조각'], ['guard', '수호의 조각'], ['feast', '풍요의 조각'], ['fortune', '보물의 조각']]
+  ...[['str', '힘의 조각'], ['agi', '날램의 조각'], ['wis', '슬기의 조각'], ['luk', '행운의 조각'], ['guard', '수호의 조각'], ['feast', '풍요의 조각'], ['fortune', '보물의 조각'], ['mine', '광부의 조각'], ['chop', '나무꾼의 조각'], ['xp', '현자의 조각'], ['coins', '상인의 조각'], ['aim', '명사수의 조각'], ['fish', '어부의 조각'], ['bug', '곤충학자의 조각'], ['rage', '분노의 조각'], ['heart', '심장의 조각'], ['card', '수집가의 조각'], ['sleep', '잠의 조각'], ['star', '별의 조각'], ['void', '공허의 조각']]
     .map(([k, name]) => ({ id: `statue_${k}`, name, desc: '석상 받침에 바치면 그 석상이 자란다(캐릭터마다).', kind: 'statue' as const, sell: 2 })),
-  ...[['str', '힘'], ['agi', '날램'], ['wis', '슬기'], ['luk', '행운'], ['guard', '수호'], ['feast', '풍요'], ['fortune', '보물']]
+  ...[['str', '힘'], ['agi', '날램'], ['wis', '슬기'], ['luk', '행운'], ['guard', '수호'], ['feast', '풍요'], ['fortune', '보물'], ['mine', '광부'], ['chop', '나무꾼'], ['xp', '현자'], ['coins', '상인'], ['aim', '명사수'], ['fish', '어부'], ['bug', '곤충학자'], ['rage', '분노'], ['heart', '심장'], ['card', '수집가'], ['sleep', '잠'], ['star', '별'], ['void', '공허']]
     .map(([k, name]) => ({ id: `gstatue_${k}`, name: `황금 ${name}의 조각`, desc: '사용하면 그 석상이 황금이 되어, 계정에서 가장 높은 석상 레벨이 모든 캐릭터에게 적용된다. 수정 몬스터가 아주 드물게 떨어뜨린다.', kind: 'tool' as const, sell: 0 })),
   { id: 'loot_magnet', name: '줍기 자석', desc: '사용하면 떨어진 아이템을 자동으로 줍게 된다(계정 공용, 가방에 자리가 있을 때).', kind: 'tool', sell: 0 },
   { id: 'sculpt_tools', name: '조각 도구', desc: '사용하면 마을의 석상 받침을 쓸 수 있다(계정 공용).', kind: 'tool', sell: 0 },
@@ -1401,7 +1401,7 @@ export const gateTo = (n: number) => WORLD_GATES.find((g) => g.to === n) ?? WORL
 
 // ───────── 별빛 특성(캐릭터마다, 직업과 상관없는 공용 특성 탭) ─────────
 // 포인트: 레벨 2마다 1 + 받은 업적마다 1. 쓴 만큼 빠진다(따로 저장하지 않고 계산)
-export interface StarTalDef { id: string; name: string; max: number; icon: string; desc: (lv: number) => string }
+export interface StarTalDef { id: string; name: string; max: number; icon: string; desc: (lv: number) => string; /** 일반 효과(레벨마다 per) */ eff?: BonusKey; per?: number }
 export const STAR_TALS: StarTalDef[] = [
   { id: 'sl_speed', name: '가벼운 발걸음', max: 10, icon: 'st_agi', desc: (lv) => `이동 속도 +${(lv * 1.5).toFixed(1)}%` },
   { id: 'sl_food', name: '알뜰한 식사', max: 10, icon: 'it_berry', desc: (lv) => `음식 재사용 대기 -${lv * 4}%` },
@@ -1414,6 +1414,18 @@ export const STAR_TALS: StarTalDef[] = [
   { id: 'sl_crit', name: '반짝 일격', max: 10, icon: 'st_str', desc: (lv) => `치명타 확률 +${(lv * 0.5).toFixed(1)}%p` },
   { id: 'sl_drop', name: '눈썰미', max: 10, icon: 'ui_items', desc: (lv) => `드롭률 +${lv * 2}%` },
   { id: 'sl_mp', name: '고요한 마음', max: 10, icon: 'ui_mana', desc: (lv) => `마나 회복 +${lv * 5}%` },
+  { id: 'sl_hp', name: '튼튼한 별', max: 20, icon: 'ui_heart', eff: 'hpPct', per: 1, desc: (lv) => `최대 체력 +${Math.round(lv * 1 * 10) / 10}%` },
+  { id: 'sl_def', name: '별빛 갑옷', max: 20, icon: 'st_str', eff: 'def', per: 1, desc: (lv) => `방어력 +${Math.round(lv * 1 * 10) / 10}` },
+  { id: 'sl_acc', name: '별 조준', max: 20, icon: 'st_agi', eff: 'acc', per: 2, desc: (lv) => `명중 +${Math.round(lv * 2 * 10) / 10}` },
+  { id: 'sl_fish', name: '별의 낚싯줄', max: 20, icon: 'it_fish_minnow', eff: 'fishing', per: 4, desc: (lv) => `낚시 효율 +${Math.round(lv * 4 * 10) / 10}%` },
+  { id: 'sl_bug', name: '별의 그물', max: 20, icon: 'it_bug_ant', eff: 'catching', per: 4, desc: (lv) => `곤충 채집 효율 +${Math.round(lv * 4 * 10) / 10}%` },
+  { id: 'sl_card', name: '별 카드', max: 20, icon: 'ui_card', eff: 'card', per: 2, desc: (lv) => `카드 드롭률 +${Math.round(lv * 2 * 10) / 10}%` },
+  { id: 'sl_str', name: '별의 힘', max: 20, icon: 'st_str', eff: 'str', per: 2, desc: (lv) => `힘 +${Math.round(lv * 2 * 10) / 10}` },
+  { id: 'sl_agi', name: '별의 날램', max: 20, icon: 'st_agi', eff: 'agi', per: 2, desc: (lv) => `민첩 +${Math.round(lv * 2 * 10) / 10}` },
+  { id: 'sl_wis', name: '별의 슬기', max: 20, icon: 'st_wis', eff: 'wis', per: 2, desc: (lv) => `지혜 +${Math.round(lv * 2 * 10) / 10}` },
+  { id: 'sl_luk', name: '별의 행운', max: 20, icon: 'st_luk', eff: 'luk', per: 2, desc: (lv) => `행운 +${Math.round(lv * 2 * 10) / 10}` },
+  { id: 'sl_dmg', name: '별똥 일격', max: 20, icon: 'st_str', eff: 'dmg', per: 1, desc: (lv) => `공격력 +${Math.round(lv * 1 * 10) / 10}%` },
+  { id: 'sl_xp2', name: '은하 수업', max: 20, icon: 'ui_xp', eff: 'xp', per: 1, desc: (lv) => `경험치 +${Math.round(lv * 1 * 10) / 10}%` },
 ];
 export const STAR_TAL: Record<string, StarTalDef> = Object.fromEntries(STAR_TALS.map((t) => [t.id, t]));
 /** 음식 재사용 대기(초). 먹은 음식의 값을 쓴다 */
@@ -1490,7 +1502,30 @@ export const STATUES: StatueDef[] = [
   { id: 'guard', name: '수호의 석상', item: 'statue_guard', eff: 'def', per: 0.5, unit: '', label: '방어력' },
   { id: 'feast', name: '풍요의 석상', item: 'statue_feast', eff: 'hp', per: 5, unit: '', label: '최대 체력' },
   { id: 'fortune', name: '보물의 석상', item: 'statue_fortune', eff: 'drop', per: 1.5, unit: '%', label: '드롭률' },
+  { id: 'mine', name: '광부의 석상', item: 'statue_mine', eff: 'mining', per: 2, unit: '%', label: '채광 효율' },
+  { id: 'chop', name: '나무꾼의 석상', item: 'statue_chop', eff: 'chopping', per: 2, unit: '%', label: '벌목 효율' },
+  { id: 'xp', name: '현자의 석상', item: 'statue_xp', eff: 'xp', per: 0.8, unit: '%', label: '경험치' },
+  { id: 'coins', name: '상인의 석상', item: 'statue_coins', eff: 'coins', per: 1.5, unit: '%', label: '코인 획득' },
+  { id: 'aim', name: '명사수의 석상', item: 'statue_aim', eff: 'acc', per: 2, unit: '', label: '명중' },
+  { id: 'fish', name: '어부의 석상', item: 'statue_fish', eff: 'fishing', per: 2, unit: '%', label: '낚시 효율' },
+  { id: 'bug', name: '곤충학자의 석상', item: 'statue_bug', eff: 'catching', per: 2, unit: '%', label: '곤충 채집 효율' },
+  { id: 'rage', name: '분노의 석상', item: 'statue_rage', eff: 'dmg', per: 0.6, unit: '%', label: '공격력' },
+  { id: 'heart', name: '심장의 석상', item: 'statue_heart', eff: 'hpPct', per: 0.8, unit: '%', label: '최대 체력' },
+  { id: 'card', name: '수집가의 석상', item: 'statue_card', eff: 'card', per: 0.8, unit: '%', label: '카드 드롭률' },
+  { id: 'sleep', name: '잠의 석상', item: 'statue_sleep', eff: 'afk', per: 0.15, unit: '%p', label: '방치 효율' },
+  { id: 'star', name: '별의 석상', item: 'statue_star', eff: 'luk', per: 2, unit: '', label: '행운' },
+  { id: 'void', name: '공허의 석상', item: 'statue_void', eff: 'def', per: 1, unit: '', label: '방어력' },
 ];
+/** 새 석상이 나오는 월드(그 월드 몬스터가 드물게 떨어뜨린다) */
+export const STATUE_WORLD: Record<string, number> = { mine: 1, chop: 1, xp: 1, coins: 1, aim: 2, fish: 2, bug: 2, rage: 2, heart: 3, card: 3, sleep: 3, star: 4, void: 4 };
+for (const [k, w] of Object.entries(STATUE_WORLD)) {
+  const mobs = [...new Set(WORLDS[w - 1].maps.flatMap((m) => MAPS[m].spawns.map((x) => x.monster)))];
+  const i = Object.keys(STATUE_WORLD).indexOf(k);
+  for (const id of [mobs[i % mobs.length], mobs[(i + 3) % mobs.length]]) MONSTERS[id]?.drops.push({ item: `statue_${k}`, chance: 0.005, qty: [1, 1] });
+  // 수정 몬스터도 그 조각과 황금 조각을 준다
+  const cr = MONSTERS[`crystal_${mobs[i % mobs.length]}`];
+  if (cr) cr.drops.push({ item: `statue_${k}`, chance: 1, qty: [2, 4] }, { item: `gstatue_${k}`, chance: 0.04, qty: [1, 1] });
+}
 /** 석상 다음 레벨까지 바칠 조각 수 */
 export const statueNeed = (lv: number) => Math.ceil(2 * Math.pow(1.28, lv));
 

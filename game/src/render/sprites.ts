@@ -1354,7 +1354,7 @@ function buildItems() {
   p.rect(6, 8, 1, 3, '#c98f2a'); p.rect(3, 11, 7, 2, '#5fb859'); p.rect(4, 2, 2, 3, '#fff1a8'); p.disc(6.5, 3.5, 1.2, 1.2, '#5fb859');
   p.outline().save('it_trophy_moss');
   // 석상 조각: 깨진 돌 조각 + 석상별 색 결정
-  for (const [k, gem] of [['str', '#d9574a'], ['agi', '#5fb859'], ['wis', '#4e8de2'], ['luk', '#f6c945'], ['guard', '#9aa3ad'], ['feast', '#e25d7a'], ['fortune', '#c98f2a']] as const) {
+  for (const [k, gem] of [['str', '#d9574a'], ['agi', '#5fb859'], ['wis', '#4e8de2'], ['luk', '#f6c945'], ['guard', '#9aa3ad'], ['feast', '#e25d7a'], ['fortune', '#c98f2a'], ['mine', '#8a6a4a'], ['chop', '#5a8a3a'], ['xp', '#4e8de2'], ['coins', '#f6c945'], ['aim', '#3a9a8a'], ['fish', '#4ab8f0'], ['bug', '#e8c04a'], ['rage', '#ff7a3a'], ['heart', '#e25d7a'], ['card', '#c48aff'], ['sleep', '#3a9a8a'], ['star', '#fff1a8'], ['void', '#5a3aa8']] as const) {
     p = new Paint(12, 12);
     p.rect(2, 3, 8, 7, '#b4bcc6'); p.rect(3, 2, 5, 1, '#b4bcc6'); p.rect(2, 9, 3, 2, '#b4bcc6'); p.set(10, 5, '#b4bcc6');
     p.rect(2, 3, 2, 6, '#dfe5ea'); p.rect(8, 6, 2, 4, '#8d97a3');
@@ -1461,7 +1461,7 @@ export const ITEM_ICON: Record<string, string> = {
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(STAMPS.filter((st) => st.name).map((st) => [st.id, `it_stamp_${st.eff}`])),
   ...Object.fromEntries(OBOLS.map((o) => [o.id, `it_${o.id}`])),
-  ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune'].flatMap((k) => [[`statue_${k}`, `it_statue_${k}`], [`gstatue_${k}`, `it_gstatue_${k}`]])), sculpt_tools: 'it_sculpt', loot_magnet: 'it_magnet',
+  ...Object.fromEntries(['str', 'agi', 'wis', 'luk', 'guard', 'feast', 'fortune', 'mine', 'chop', 'xp', 'coins', 'aim', 'fish', 'bug', 'rage', 'heart', 'card', 'sleep', 'star', 'void'].flatMap((k) => [[`statue_${k}`, `it_statue_${k}`], [`gstatue_${k}`, `it_gstatue_${k}`]])), sculpt_tools: 'it_sculpt', loot_magnet: 'it_magnet',
   ...Object.fromEntries(['ore_blue', 'ore_gold', 'bar_blue', 'bar_gold', 'willowlog', 'moonlog', 'shell', 'glowdust', 'feather', 'runestone', 'sporecap', 'stew', 'moonpie'].map((k) => [k, `it_${k}`])),
   arena_ticket: 'it_ticket', tp_ticket: 'it_tpticket', pet_shard: 'it_petshard', stone_atk: 'it_stone_atk', stone_guard: 'it_stone_guard', stone_stat: 'it_stone_stat', stone_mine: 'it_stone_mine', stone_chop: 'it_stone_chop',
   anvil_exp2: 'obj_craft', anvil_exp3: 'obj_craft',

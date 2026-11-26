@@ -257,6 +257,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const e = equipStats(c);
   // 석상·별자리·업적·가족·카드 세트(값은 %·%p 단위)
   const pb = progressBonus(c, a);
+  // 별빛 특성 가운데 일반 효과
+  for (const [id, lv] of Object.entries(c.starTal ?? {})) { const t = STAR_TAL[id]; if (t?.eff && t.per && lv > 0) pb[t.eff] += lv * t.per; }
   // 자동으로 채운 패시브 특성(탭마다 15개)
   for (const [id, lv] of Object.entries(c.talents)) { const t = TALENT[id]; if (t?.eff && t.per && lv > 0) pb[t.eff] += lv * t.per; }
   // 음식 칸: 버프 물약(남아 있는 동안)과 황금 음식(영구)
