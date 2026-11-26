@@ -19,7 +19,7 @@ import { fixBreed } from './breeding';
 import { fixLab } from './lab';
 import { MiniState, TotemState, legacyTotemSouls, newMini, newTotem } from './minigames';
 import {
-  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, arenaOf, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
+  TRAP_KITS, TIER_LEVEL, classTier, classSkillMult, talentTab, isHealFood, goldenValue, BIRTH_SIGNS, HIDDEN_CLASS, HIDDEN_TIERS, WORLDS, TOWNS, worldOf, gateTo, MONSTERS, STAR_TAL, foodCd, Upg, AFK_BASE, TP_TICKET, ARENA, arenaOf, MINIBOSSES, arenaWaves, FOOD_SLOTS, PortalDef, SKILL_NAMES, ANVIL, MAPS, TELEPORTS_MAX, TELEPORTS_PER_DAY, WORLD1, ATTACK_BARS, ATTACK_SLOTS, CARD_SLOTS, CARDS, NPCS, CLASSES, CLASS_LEVEL, SUBCLASS_LEVEL, TALENT_PRESET_LV, baseClass, classLine, ClassId, EquipSlot, INVENTORY_SIZE, PRODUCTS, SHOP, STACK_BASE, STORAGE_SIZE, StackGroup, cardTier, stackGroup, ITEMS, ItemStats, MAX_CHARACTERS, RECIPES, SkillKey, StatKey, TALENT,
 } from './data';
 
 export interface Look { hair: number; hairColor: string; skin: string; outfit: string }
@@ -259,6 +259,8 @@ export function derive(c: Character, a: AccBonus = NO_ACC): Derived {
   const pb = progressBonus(c, a);
   // 자동으로 채운 패시브 특성(탭마다 15개)
   for (const [id, lv] of Object.entries(c.talents)) { const t = TALENT[id]; if (t?.eff && t.per && lv > 0) pb[t.eff] += lv * t.per; }
+  // 음식 칸: 버프 물약(남아 있는 동안)과 황금 음식(영구)
+  for (const f of c.foods ?? []) { const it = f ? ITEMS[f.id] : null; if (!it || !f) continue; if (it.boost) pb[it.boost.eff] += it.boost.v; if (it.golden) pb[it.golden.eff] += goldenValue(it.golden.v, f.qty); }
   // 우표 가운데 능력치·기술 우표는 여기서 더한다
   { const sx = stampBonus(a); for (const k of ['str', 'agi', 'wis', 'luk', 'fishing', 'catching', 'card', 'hpPct'] as const) pb[k] += sx[k]; }
   // 2차 직업 고유 보정과 2차 직업 특성(모두 패시브)
@@ -346,7 +348,15 @@ export function setFood(c: Character, id: string | null, slot = 0): string | nul
   return null;
 }
 /** 음식 칸 전체 회복량 */
-export const foodTotalHeal = (c: Character) => c.foods.reduce((n, f) => n + (f ? (ITEMS[f.id].heal ?? 0) * f.qty : 0), 0);
+export const foodTotalHeal = (c: Character) => c.foods.reduce((n, f) => n + (f && isHealFood(f.id) ? (ITEMS[f.id].heal ?? 0) * f.qty : 0), 0);
+/** 버프 물약 마시는 간격(초) */
+export const BOOST_SECS = 600;
+/** 음식 칸의 버프 물약을 n번씩 마신다(다 마시면 칸이 빈다). 마신 개수 */
+export function drinkBoosts(c: Character, n: number): number {
+  let got = 0;
+  c.foods.forEach((f, i) => { if (!f || !ITEMS[f.id]?.boost) return; const k = Math.min(f.qty, n); f.qty -= k; got += k; if (f.qty <= 0) c.foods[i] = null; });
+  return got;
+}
 
 // ───────── 성장 ─────────
 /** 경험치 지급. 오른 레벨 수를 반환 */

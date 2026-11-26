@@ -1,11 +1,11 @@
 // 현재 맵의 실시간 시뮬레이션(순수 로직). 렌더러는 이 상태를 읽어 그리기만 한다.
 import {
   arenaOf, CRYSTAL_CHANCE, crystalOf, MINIBOSSES, arenaWaves, baseClass, CARD_BY_ID, CARD_BOSS_CHANCE, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, CLEAVE_RANGE, ITEMS, MAPS, MONSTERS, MapDef, MonsterDef, NODES, NOVA_RADIUS, NodeDef, Platform, PortalDef,
-  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult } from './data';
+  SKILL_NAMES, SMASH_RANGE, TALENT, healPct, smashMult, isHealFood } from './data';
 import { Rng } from './rng';
 import { multiKill } from './progress';
 import { meritValue } from './tasks';
-import { Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady, foodWait } from './state';
+import { BOOST_SECS, drinkBoosts, Account, Character, Derived, addItem, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, itemRoom, minibossKey, minibossOpen, MINIBOSS_IDS, noteKill, portalReady, foodWait } from './state';
 
 /** move: 좌우(-1/0/1), climb: 로프 오르내리기(-1 위 / 1 아래) */
 export interface Input { move: number; climb: number }
@@ -370,9 +370,10 @@ export class World {
 
   /** 음식 재사용 대기(초) */
   eatT = 0;
+  boostT = 0;
   /** 음식 칸에서 하나 먹는다 */
   private eat(d: Derived) {
-    const c = this.char, i = c.foods.findIndex(Boolean), f = c.foods[i]!, it = ITEMS[f.id], p = this.player;
+    const c = this.char, i = c.foods.findIndex((x) => x && isHealFood(x.id)), f = c.foods[i]!, it = ITEMS[f.id], p = this.player;
     const before = c.hp;
     c.hp = Math.min(d.maxHp, c.hp + (it.heal ?? 0));
     if (--f.qty <= 0) c.foods[i] = null;
@@ -425,7 +426,12 @@ export class World {
     c.hp = Math.min(d.maxHp, c.hp + d.regen * dt);
     c.mp = Math.min(d.maxMp, c.mp + d.mpRegen * dt);
     this.eatT = Math.max(0, this.eatT - dt);
-    if (c.foods.some(Boolean) && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
+    if (c.foods.some((x) => x && isHealFood(x.id)) && c.hp < d.maxHp * 0.45 && this.eatT <= 0) this.eat(d);
+    // 버프 물약: 10분마다 하나씩 마신다(사냥·채집 중에만)
+    if (this.map.spawns.length || this.map.nodes.length) {
+      this.boostT += dt;
+      if (this.boostT >= BOOST_SECS) { this.boostT -= BOOST_SECS; drinkBoosts(c, 1); }
+    }
     p.hurtT = Math.max(0, p.hurtT - dt);
     this.gatherT = Math.max(0, this.gatherT - dt);
     for (const k in p.cd) p.cd[k] = Math.max(0, p.cd[k] - dt);

@@ -1393,6 +1393,13 @@ function buildItems() {
   p = new Paint(12, 12); p.disc(5.5, 6, 4, 3.6, '#c9a26a'); p.line(2, 5, 9, 7, '#8a6a3c'); p.line(2, 8, 9, 4, '#8a6a3c'); p.outline().save('it_twine');
   p = new Paint(12, 12); p.rect(2, 2, 7, 2, '#c9d1d9'); p.rect(5, 4, 2, 7, '#9aa3ad'); p.set(5, 10, '#6a7480'); p.outline().save('it_nail');
   p = new Paint(12, 12); p.rect(1, 2, 3, 6, '#d9574a'); p.rect(8, 2, 3, 6, '#d9574a'); p.rect(1, 7, 10, 3, '#d9574a'); p.rect(1, 2, 3, 2, '#e8e8f0'); p.rect(8, 2, 3, 2, '#e8e8f0'); p.rect(2, 8, 8, 1, '#a03a30'); p.outline().save('it_magnet');
+  // 버프 물약(병) · 황금 음식(황금빛 접시)
+  for (const [k, col] of [['potion_power', '#e25d4e'], ['potion_wise', '#4e8de2'], ['potion_luck', '#5fb859'], ['potion_card', '#c48aff'], ['potion_miner', '#a8744e'], ['potion_lumber', '#5a8a3a'], ['potion_angler', '#4ab8f0'], ['potion_bug', '#e8c04a']] as const) {
+    p = new Paint(12, 12); p.rect(4, 0, 4, 2, '#c9a26a'); p.rect(5, 2, 2, 2, '#e8eef2'); p.disc(6, 7.5, 4, 3.6, '#e8eef2'); p.disc(6, 8, 3.2, 2.8, col); p.set(4, 6, '#ffffff'); p.outline().save(`it_${k}`);
+  }
+  for (const [k, sym] of [['gold_berry', '#d9574a'], ['gold_mushroom', '#c9805a'], ['gold_stew', '#a8543a'], ['gold_pie', '#e8b84a'], ['gold_cake', '#f2a0c8'], ['gold_cocoa', '#6a4a3a'], ['gold_mooncake', '#e0dce8'], ['gold_feast', '#ff7a3a']] as const) {
+    p = new Paint(12, 12); p.disc(6, 8, 5.5, 3, '#f6c945'); p.disc(6, 7.5, 4, 2, '#fff1a8'); p.disc(6, 5.5, 3, 2.6, sym); p.set(4, 4, '#ffffff'); p.set(10, 2, '#fff1a8'); p.outline().save(`it_${k}`);
+  }
   // 모루 생산품(4~11번째)
   p = new Paint(12, 10); p.rect(1, 2, 10, 6, '#c2603e'); p.rect(1, 2, 10, 1, '#e08a62'); p.line(1, 5, 10, 5, '#8a3e28'); p.set(5, 3, '#8a3e28'); p.set(5, 4, '#8a3e28'); p.set(3, 6, '#8a3e28'); p.set(8, 6, '#8a3e28'); p.outline().save('it_brick');
   p = new Paint(12, 12); p.disc(4, 5, 3, 3, '#9aa3ad'); p.disc(4, 5, 1.4, 1.4, null); p.disc(7.5, 7.5, 3, 3, '#c9d1d9'); p.disc(7.5, 7.5, 1.4, 1.4, null); p.outline().save('it_chainlink');
@@ -1403,11 +1410,14 @@ function buildItems() {
   p = new Paint(12, 12); p.rect(2, 3, 8, 7, '#5fb8a8'); p.rect(3, 4, 3, 2, '#f6c945'); p.set(8, 4, '#d9574a'); p.set(8, 6, '#7fc4ff'); p.rect(4, 1, 1, 2, '#9aa3ad'); p.rect(7, 1, 1, 2, '#9aa3ad'); p.line(3, 8, 8, 8, '#2f6a5e'); p.outline().save('it_gizmo');
   p = new Paint(12, 12); p.disc(5.5, 6, 4, 3.6, '#2f2a3a'); p.line(2, 4, 9, 8, '#d9574a'); p.line(2, 8, 9, 3, '#f6c945'); p.line(3, 6, 9, 6, '#4e8de2'); p.outline().save('it_cord');
   p = new Paint(13, 11); p.rect(1, 3, 11, 5, '#d9a066'); p.rect(1, 6, 11, 2, '#b07a4e'); p.set(4, 4, '#8a5a3c'); p.set(9, 5, '#8a5a3c'); p.outline().save('it_plank');
-  for (const [k, col] of [['it_bag', '#a8744e'], ['it_bag2', '#6b4a3a']] as const) {
+  for (const [k, col] of [['it_bag', '#a8744e'], ['it_bag2', '#6b4a3a'], ['it_bag_moss', '#5fb859'], ['it_bag_cactus', '#4a9a3a'], ['it_bag_snake', '#8a8a3a'], ['it_bag_fur', '#e8e0d0'], ['it_bag_trapper', '#7a5a3a'], ['it_bag_star', '#4e6ad8'], ['it_bag_void', '#5a3aa8'], ['it_bag_titan', '#c87aff']] as const) {
     p = new Paint(12, 12); p.rect(2, 4, 8, 7, col); p.line(4, 4, 4, 2, col); p.line(7, 4, 7, 2, col); p.line(4, 1, 7, 1, col); p.rect(5, 6, 2, 2, '#f6c945'); p.outline().save(k);
   }
   for (const [k, col] of [['it_pouch', '#8fde5d'], ['it_pouch2', '#c9a26a'], ['it_pouch3', '#f2a0c8']] as const) {
     p = new Paint(12, 12); p.disc(5.5, 7, 4, 3.6, col); p.rect(4, 2, 3, 2, col); p.line(3, 4, 8, 4, '#6b4a3a'); p.outline().save(k);
+  }
+  for (const [k, col, band] of [['wood', '#a8744e', '#6b4a3a'], ['iron', '#7b8591', '#4a5260'], ['sand', '#e8c47a', '#a8783a'], ['gold', '#f6c945', '#b08a2a'], ['ice', '#9ad8f6', '#4a8ac8'], ['crystal', '#c8f0ff', '#7ac0e0'], ['star', '#4e6ad8', '#f6c945'], ['cosmic', '#3a2a6a', '#c87aff']] as const) {
+    p = new Paint(12, 12); p.rect(1, 4, 10, 7, col); p.rect(1, 3, 10, 2, band); p.rect(1, 7, 10, 1, band); p.rect(5, 6, 2, 3, '#f6c945'); p.outline().save(`it_chest_${k}`);
   }
   p = new Paint(12, 12); p.disc(3.5, 4, 2.6, 2.6, '#f6c945'); p.set(3, 4, null); p.rect(5, 4, 6, 1, '#f6c945'); p.rect(9, 5, 1, 2, '#f6c945'); p.rect(7, 5, 1, 2, '#f6c945'); p.outline().save('it_key');
   p = new Paint(12, 10); p.rect(1, 4, 10, 5, '#f6c945'); p.set(1, 2, '#f6c945'); p.set(1, 3, '#f6c945'); p.set(5, 1, '#f6c945'); p.rect(5, 2, 2, 2, '#f6c945'); p.set(10, 2, '#f6c945'); p.set(10, 3, '#f6c945'); p.set(3, 6, '#d9574a'); p.set(8, 6, '#7fc4ff'); p.rect(2, 5, 8, 1, '#5fb859'); p.outline().save('it_crown');
@@ -1420,8 +1430,8 @@ export const ITEM_ICON: Record<string, string> = {
   hat_moss: 'it_hat_moss', armor_log: 'it_armor_log', pick_stone: 'wp_pick_stone', axe_stone: 'wp_axe_stone',
   moss_ring: 'it_ring', pebble_charm: 'it_charm', anvil_exp: 'obj_craft',
   coin: 'it_coin', berry: 'it_berry', mushroom: 'it_mushroom',
-  twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
-  chest_small: 'obj_storage', forest_key: 'it_key', moss_crown: 'it_crown',
+  ...Object.fromEntries(['potion_power', 'potion_wise', 'potion_luck', 'potion_card', 'potion_miner', 'potion_lumber', 'potion_angler', 'potion_bug', 'gold_berry', 'gold_mushroom', 'gold_stew', 'gold_pie', 'gold_cake', 'gold_cocoa', 'gold_mooncake', 'gold_feast'].map((k) => [k, `it_${k}`])), twine: 'it_twine', nail: 'it_nail', plank: 'it_plank', ...Object.fromEntries(['brick', 'chainlink', 'hide', 'gearwheel', 'bracket', 'screw', 'gizmo', 'cord'].map((k) => [k, `it_${k}`])), bag_small: 'it_bag', bag_leather: 'it_bag2', pouch_mat: 'it_pouch', pouch_res: 'it_pouch2', pouch_food: 'it_pouch3',
+  chest_small: 'obj_storage', ...Object.fromEntries(['moss', 'cactus', 'snake', 'fur', 'trapper', 'star', 'void', 'titan'].map((k) => [`bag_${k}`, `it_bag_${k}`])), ...Object.fromEntries(['wood', 'iron', 'sand', 'gold', 'ice', 'crystal', 'star', 'cosmic'].map((k) => [`chest_${k}`, `it_chest_${k}`])), forest_key: 'it_key', moss_crown: 'it_crown',
   ...Object.fromEntries(['dmg', 'hp', 'def', 'acc', 'crit', 'mining', 'chopping', 'drop', 'coins', 'xp', 'afk'].map((k) => [`stamp_${k}`, `it_stamp_${k}`])),
   ...Object.fromEntries(STAMPS.filter((st) => st.name).map((st) => [st.id, `it_stamp_${st.eff}`])),
   ...Object.fromEntries(OBOLS.map((o) => [o.id, `it_${o.id}`])),

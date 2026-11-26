@@ -333,3 +333,22 @@ describe('작업판(월드마다)·일일 과제·공로 상점', () => {
     expect(MR.length).toBeGreaterThanOrEqual(12);
   });
 });
+
+import { BOOST_SECS, drinkBoosts, setFood as sFood } from '../src/core/state';
+describe('버프 물약·황금 음식·가방·보관함', () => {
+  it('물약은 음식 칸에 있으면 효과, 10분마다 하나씩 마시고, 황금 음식은 먹지 않고 개수만큼 효과', () => {
+    const { acc, c } = setup();
+    const d0 = derive(c, acc).dmg;
+    addItem(c, 'potion_power', 3);
+    expect(sFood(c, 'potion_power', 0)).toBeNull();
+    expect(derive(c, acc).dmg).toBeCloseTo(d0 * 1.15, 3);
+    expect(drinkBoosts(c, 3)).toBe(3);
+    expect(c.foods[0]).toBeNull();
+    const h0 = derive(c, acc).maxHp;
+    addItem(c, 'gold_berry', 10);
+    sFood(c, 'gold_berry', 1);
+    expect(derive(c, acc).maxHp).toBeGreaterThan(h0);
+    expect(BOOST_SECS).toBe(600);
+    expect(c.foods.length).toBe(5);
+  });
+});

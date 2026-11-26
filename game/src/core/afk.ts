@@ -3,9 +3,9 @@
 // 멀티 전환 시 이 파일은 서버에서 실행되어 보상을 검증/지급한다.
 import {
   AFK_MAX_SECONDS, AFK_MIN_SECONDS, CARD_BY_ID, NODE_CARD_CHANCE, CARD_CHANCE, CARD_UNOWNED_MULT, GatherSkill, ITEMS, MAPS, MONSTERS, NODES, SKILL_NAMES,
-  SkillKey } from './data';
+  SkillKey, isHealFood } from './data';
 import { Rng } from './rng';
-import { Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill, foodWait } from './state';
+import { BOOST_SECS, drinkBoosts, Account, Character, addItemSome, foodTotalHeal, anvilTick, derive, dmgTaken, gainSkillXp, gainXp, hitChance, noteKill, foodWait } from './state';
 import { GATHER_INTERVAL } from './world';
 import { multiKill } from './progress';
 
@@ -88,11 +88,11 @@ export function afkRates(acc: Account, c: Character): AfkRates {
   }
   // 음식: 피해가 회복을 넘으면 그 차이만큼 음식을 먹어 메운다
   // 음식: 칸들의 회복량을 위 칸부터 쓴다. 한 개 평균 회복량으로 개수를 어림한다
-  const totalHeal = foodTotalHeal(c), totalQty = c.foods.reduce((n, f) => n + (f?.qty ?? 0), 0);
+  const totalHeal = foodTotalHeal(c), totalQty = c.foods.reduce((n, f) => n + (f && isHealFood(f.id) ? f.qty : 0), 0);
   const heal = totalQty ? totalHeal / totalQty : 0;
   const deficit = Math.max(0, dps - d.regen);
   // 음식 재사용 대기 때문에 1초에 메울 수 있는 회복량에 한계가 있다(첫 칸 음식 기준)
-  const top = c.foods.find(Boolean);
+  const top = c.foods.find((f) => f && isHealFood(f.id));
   const cd = top ? foodWait(c, top.id) : 5;
   const healRate = heal / cd;
   const foodPerHour = heal > 0 ? Math.min(deficit * 3600, healRate * 3600) / heal : 0;
@@ -155,7 +155,7 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
       let need = Math.max(0, r.dps - r.regen) * 3600 * hours;
       for (let i = 0; i < c.foods.length && need > 0; i++) {
         const f = c.foods[i];
-        if (!f) continue;
+        if (!f || !isHealFood(f.id)) continue;
         const h = ITEMS[f.id].heal ?? 1, n = Math.min(f.qty, Math.ceil(need / h));
         f.qty -= n; rep.food += n; need -= n * h;
         if (f.qty <= 0) c.foods[i] = null;
@@ -178,6 +178,8 @@ export function computeAfk(acc: Account, c: Character, now: number, rng: Rng): A
     n += settle(exp, rng);
     if (n) { acc.cards[cd.id] = (acc.cards[cd.id] ?? 0) + n; rep.cards.push({ name: cd.name, qty: n }); }
   }
+  // 버프 물약: 사냥·채집하는 동안 10분마다 하나씩
+  if (r.mode !== 'rest') drinkBoosts(c, Math.floor(elapsed / BOOST_SECS));
   // 모루 생산은 방치 효율과 무관하게 흐른 시간 그대로
   const a = anvilTick(c, elapsed);
   if (a.made) rep.anvil = { items: a.bySlot, levels: a.levels };

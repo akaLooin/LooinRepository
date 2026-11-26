@@ -31,6 +31,10 @@ export interface ItemDef {
   heal?: number;
   /** 음식: 먹은 뒤 다음 음식을 먹기까지 기다리는 시간(초) */
   cd?: number;
+  /** 버프 물약: 음식 칸에 있으면 효과, 10분마다 하나씩 먹는다 */
+  boost?: { eff: BonusKey; v: number };
+  /** 황금 음식: 음식 칸에 있으면 먹지 않고 영구 효과(개수가 많을수록 조금 더) */
+  golden?: { eff: BonusKey; v: number };
   slot?: EquipSlot; stats?: ItemStats; reqLv?: number; wtype?: WeaponType;
   sell: number;
 }
@@ -102,6 +106,7 @@ export const SLOT_NAMES: Record<EquipSlot, string> = {
   weapon: '무기', hat: '모자', body: '갑옷', legs: '바지', shoes: '신발', ring: '장신구', trophy: '트로피', pickaxe: '곡괭이', axe: '도끼', rod: '낚싯대', net: '잠자리채',
 };
 
+const STAT_LABEL_FOOD: Record<string, string> = { dmg: '공격력', xp: '경험치', drop: '드롭률', card: '카드 드롭률', mining: '채광 효율', chopping: '벌목 효율', fishing: '낚시 효율', catching: '곤충 채집 효율', hpPct: '최대 체력', def: '방어력', coins: '코인 획득', afk: '방치 효율' };
 const items: ItemDef[] = [
   { id: 'moss', name: '이끼 덩이', desc: '촉촉하고 폭신하다.', kind: 'material', sell: 1 },
   { id: 'pebble', name: '조약돌', desc: '손에 쏙 들어오는 돌.', kind: 'material', sell: 3 },
@@ -125,6 +130,18 @@ const items: ItemDef[] = [
   { id: 'pouch_res', name: '자원 주머니', desc: '사용하면 통나무·광석 한 칸에 100개까지.', kind: 'pouch', pouch: { group: 'resource', cap: 100 }, sell: 20 },
   { id: 'pouch_food', name: '도시락 주머니', desc: '사용하면 음식 한 칸에 100개까지.', kind: 'pouch', pouch: { group: 'food', cap: 100 }, sell: 20 },
   { id: 'chest_small', name: '작은 보관함', desc: '사용하면 계정 창고 +8칸.', kind: 'chest', chestSlots: 8, sell: 50 },
+  // 버프 물약(음식 칸에서 10분마다 하나씩 먹으며 효과)과 황금 음식(먹지 않고 영구 효과)
+  ...([['potion_power', '힘의 물약', 'dmg', 15, '%', '#e25d4e'], ['potion_wise', '지혜의 물약', 'xp', 15, '%', '#4e8de2'], ['potion_luck', '행운의 물약', 'drop', 12, '%', '#5fb859'], ['potion_card', '수집의 물약', 'card', 15, '%', '#c48aff'],
+    ['potion_miner', '광부의 물약', 'mining', 30, '%', '#8a6a4a'], ['potion_lumber', '나무꾼의 물약', 'chopping', 30, '%', '#5a8a3a'], ['potion_angler', '낚시꾼의 물약', 'fishing', 30, '%', '#4ab8f0'], ['potion_bug', '곤충꾼의 물약', 'catching', 30, '%', '#e8c04a']] as const)
+    .map(([id, name, eff, v, u]) => ({ id, name, desc: `음식 칸에 넣으면 ${STAT_LABEL_FOOD[eff]} +${v}${u}. 10분마다 하나씩 마신다.`, kind: 'food' as const, boost: { eff: eff as BonusKey, v }, sell: 20 })),
+  ...([['gold_berry', '황금 산딸기', 'hpPct', 2, '%'], ['gold_mushroom', '황금 버섯', 'def', 3, ''], ['gold_stew', '황금 스튜', 'dmg', 1.5, '%'], ['gold_pie', '황금 파이', 'xp', 1.5, '%'],
+    ['gold_cake', '황금 케이크', 'drop', 1.5, '%'], ['gold_cocoa', '황금 코코아', 'coins', 3, '%'], ['gold_mooncake', '황금 달떡', 'afk', 0.5, '%p'], ['gold_feast', '황금 만찬', 'card', 1.5, '%']] as const)
+    .map(([id, name, eff, v, u]) => ({ id, name, desc: `음식 칸에 넣어 두면 먹지 않고 ${STAT_LABEL_FOOD[eff]} +${v}${u}(개수가 많을수록 더). 보스와 수정 몬스터가 드물게 떨어뜨린다.`, kind: 'food' as const, golden: { eff: eff as BonusKey, v }, sell: 200 })),
+  // 원작처럼 가방·보관함이 여럿(월드마다 제작·보스·상점)
+  ...([['bag_moss', '이끼 배낭', 6], ['bag_cactus', '선인장 가죽 가방', 8], ['bag_snake', '뱀가죽 가방', 8], ['bag_fur', '털 배낭', 10], ['bag_trapper', '덫꾼의 자루', 10], ['bag_star', '별빛 가방', 12], ['bag_void', '공허 주머니', 12], ['bag_titan', '거신의 등짐', 14]] as const)
+    .map(([id, name, n]) => ({ id, name, desc: `사용하면 이 캐릭터의 가방 +${n}칸.`, kind: 'bag' as const, bagSlots: n, sell: n * 10 })),
+  ...([['chest_wood', '나무 궤짝', 12], ['chest_iron', '쇠 궤짝', 12], ['chest_sand', '모래 금고', 16], ['chest_gold', '황금 금고', 16], ['chest_ice', '얼음 상자', 20], ['chest_crystal', '수정 상자', 20], ['chest_star', '별빛 보관함', 24], ['chest_cosmic', '우주 보관함', 32]] as const)
+    .map(([id, name, n]) => ({ id, name, desc: `사용하면 계정 창고 +${n}칸.`, kind: 'chest' as const, chestSlots: n, sell: n * 20 })),
   { id: 'anvil_exp', name: '모루 확장 I', desc: '만들면 모루 2단계 레시피가 열린다(계정 공용).', kind: 'unlock', sell: 0 },
   { id: 'moss_ring', name: '이끼 반지', desc: '행운이 깃든 반지.', kind: 'equip', slot: 'ring', stats: { luk: 3, hp: 12 }, reqLv: 6, sell: 40 },
   { id: 'pebble_charm', name: '돌 부적', desc: '단단한 돌을 깎아 만든 부적.', kind: 'equip', slot: 'ring', stats: { def: 3, str: 2 }, reqLv: 8, sell: 60 },
@@ -317,7 +334,7 @@ export const ITEMS: Record<string, ItemDef> = Object.fromEntries(items.map((i) =
 const monsters: MonsterDef[] = [
   { id: 'mossking', name: '이끼왕', hp: 2600, atk: 26, acc: 24, defZero: 60, xp: 900, coins: [300, 400], speed: 14, motion: 'hop', radius: 20, scale: 2.6,
     boss: { slamEvery: 5, slamWindup: 1.1, slamRadius: 56, slamDmg: 40, card: 'mossking' },
-    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3, 5] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }] },
+    drops: [{ item: 'moss_crown', chance: 0.35, qty: [1, 1] }, { item: 'mushroom', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.5, qty: [1, 1] }, { item: 'stamp_crit', chance: 0.25, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.3, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [3, 5] }, { item: 'trophy_moss', chance: 0.08, qty: [1, 1] }, { item: 'gold_berry', chance: 0.2, qty: [1, 3] }, { item: 'gold_mushroom', chance: 0.12, qty: [1, 2] }, { item: 'gold_stew', chance: 0.1, qty: [1, 2] }] },
   { id: 'mossblob', name: '이끼방울', hp: 12, atk: 3, acc: 3, defZero: 6, xp: 4, coins: [1, 3], speed: 16, motion: 'hop', radius: 8,
     drops: [{ item: 'moss', chance: 0.5, qty: [1, 1] }, { item: 'four_leaf', chance: 0.003, qty: [1, 1] }, { item: 'berry', chance: 0.15, qty: [1, 2] }, { item: 'stamp_hp', chance: 0.003, qty: [1, 1] }, { item: 'statue_luk', chance: 0.006, qty: [1, 1] }, { item: 'statue_feast', chance: 0.004, qty: [1, 1] }] },
   { id: 'pebbler', name: '돌콩이', hp: 46, atk: 8, acc: 10, defZero: 16, xp: 12, coins: [3, 7], speed: 22, motion: 'waddle', radius: 8,
@@ -360,7 +377,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'sun_ember', chance: 0.4, qty: [1, 2] }, { item: 'sun_key', chance: 0.004, qty: [1, 1] }, { item: 'date_cake', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_coins', chance: 0.002, qty: [1, 1] }] },
   { id: 'sandlord', name: '사막 거상', hp: 90000, atk: 210, acc: 250, defZero: 330, xp: 30000, coins: [8000, 12000], speed: 10, motion: 'waddle', radius: 22, scale: 2.8,
     boss: { slamEvery: 4.5, slamWindup: 1.0, slamRadius: 64, slamDmg: 170, card: 'sandlord' },
-    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }, { item: 'arena_ticket2', chance: 0.5, qty: [1, 2] }] },
+    drops: [{ item: 'sand_crown', chance: 0.3, qty: [1, 1] }, { item: 'date_cake', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.6, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [5, 8] }, { item: 'trophy_sand', chance: 0.08, qty: [1, 1] }, { item: 'bag_snake', chance: 0.12, qty: [1, 1] }, { item: 'gold_pie', chance: 0.15, qty: [1, 3] }, { item: 'gold_cake', chance: 0.1, qty: [1, 2] }, { item: 'chest_gold', chance: 0.1, qty: [1, 1] }, { item: 'arena_ticket2', chance: 0.5, qty: [1, 2] }] },
   // ───── 3월드: 서리 고원 ─────
   { id: 'snowpuff', name: '눈뭉치', hp: 20000, atk: 232, acc: 280, defZero: 330, xp: 2200, coins: [190, 340], speed: 18, motion: 'hop', radius: 9,
     drops: [{ item: 'snow_tuft', chance: 0.4, qty: [1, 2] }, { item: 'hot_cocoa', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
@@ -378,7 +395,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'frost_core', chance: 0.4, qty: [1, 2] }, { item: 'frost_key', chance: 0.004, qty: [1, 1] }, { item: 'pine_soup', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
   { id: 'frostlord', name: '눈보라 군주', hp: 700000, atk: 430, acc: 520, defZero: 600, xp: 250000, coins: [60000, 90000], speed: 10, motion: 'float', radius: 24, scale: 2.8,
     boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 70, slamDmg: 360, card: 'frostlord' },
-    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }, { item: 'arena_ticket3', chance: 0.5, qty: [1, 2] }] },
+    drops: [{ item: 'frost_crown', chance: 0.3, qty: [1, 1] }, { item: 'pine_soup', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.7, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [8, 12] }, { item: 'trophy_frost', chance: 0.08, qty: [1, 1] }, { item: 'bag_trapper', chance: 0.12, qty: [1, 1] }, { item: 'gold_cocoa', chance: 0.15, qty: [1, 3] }, { item: 'gold_mooncake', chance: 0.08, qty: [1, 2] }, { item: 'chest_crystal', chance: 0.1, qty: [1, 1] }, { item: 'arena_ticket3', chance: 0.5, qty: [1, 2] }] },
   // ───── 4월드: 별빛 성운 ─────
   { id: 'starling', name: '별모래톨', hp: 150000, atk: 470, acc: 570, defZero: 620, xp: 13000, coins: [600, 1100], speed: 20, motion: 'hop', radius: 9,
     drops: [{ item: 'star_sand', chance: 0.4, qty: [1, 2] }, { item: 'moon_cake', chance: 0.05, qty: [1, 1] }, { item: 'statue_feast', chance: 0.005, qty: [1, 1] }, { item: 'stone_guard', chance: 0.004, qty: [1, 1] }] },
@@ -396,7 +413,7 @@ const monsters: MonsterDef[] = [
     drops: [{ item: 'void_shard', chance: 0.4, qty: [1, 2] }, { item: 'void_key', chance: 0.004, qty: [1, 1] }, { item: 'nova_stew', chance: 0.06, qty: [1, 1] }, { item: 'statue_fortune', chance: 0.005, qty: [1, 1] }, { item: 'stamp_drop', chance: 0.002, qty: [1, 1] }] },
   { id: 'nebtitan', name: '성운 거신', hp: 5500000, atk: 780, acc: 950, defZero: 1080, xp: 2000000, coins: [400000, 600000], speed: 10, motion: 'float', radius: 26, scale: 3,
     boss: { slamEvery: 4, slamWindup: 0.9, slamRadius: 76, slamDmg: 640, card: 'nebtitan' },
-    drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }] },
+    drops: [{ item: 'void_mask', chance: 0.3, qty: [1, 1] }, { item: 'nova_stew', chance: 1, qty: [5, 10] }, { item: 'chest_small', chance: 0.5, qty: [1, 1] }, { item: 'stone_stat', chance: 0.8, qty: [1, 2] }, { item: 'pet_shard', chance: 1, qty: [12, 18] }, { item: 'trophy_void', chance: 0.08, qty: [1, 1] }, { item: 'bag_void', chance: 0.12, qty: [1, 1] }, { item: 'gold_feast', chance: 0.15, qty: [1, 3] }, { item: 'bag_titan', chance: 0.04, qty: [1, 1] }] },
 ];
 // 일반 몬스터는 순간이동 티켓을 드물게 떨어뜨린다
 // ───────── 깊은 지역(원작처럼 월드마다 맵이 많다): 그 월드 마지막 사냥터에서 갈라지는 사냥터 사슬 ─────────
@@ -432,7 +449,7 @@ const crystals: MonsterDef[] = monsters.filter((m) => !m.boss && !m.scale).map((
   return {
     ...m, id: crystalOf(m.id), name: `수정 ${m.name}`, hp: m.hp * 4, xp: m.xp * 6, coins: [m.coins[0] * 6, m.coins[1] * 6] as [number, number],
     art: m.art ?? m.id, tint: 0x9ae8ff, crystal: true,
-    drops: [...pieces.map((item) => ({ item, chance: 1, qty: [2, 4] as [number, number] })), ...pieces.map((item) => ({ item: `g${item}`, chance: 0.04, qty: [1, 1] as [number, number] }))],
+    drops: [{ item: 'gold_berry', chance: 0.05, qty: [1, 1] as [number, number] }, ...pieces.map((item) => ({ item, chance: 1, qty: [2, 4] as [number, number] })), ...pieces.map((item) => ({ item: `g${item}`, chance: 0.04, qty: [1, 1] as [number, number] }))],
   };
 });
 export const MONSTERS: Record<string, MonsterDef> = Object.fromEntries([...monsters, ...crystals].map((m) => [m.id, m]));
@@ -727,6 +744,15 @@ export const RECIPES: RecipeDef[] = [
   { item: 'sword_stone', coins: 40, mats: [['pebble', 10], ['log', 5], ['nail', 3]] },
   { item: 'armor_log', coins: 60, mats: [['log', 12], ['moss', 5], ['plank', 3]] },
   { item: 'bag_leather', coins: 120, mats: [['moss', 25], ['twine', 15], ['leaf', 5]] },
+  { item: 'bag_moss', coins: 800, mats: [['moss', 120], ['twine', 60], ['shell', 20]], tier: 2 },
+  { item: 'chest_wood', coins: 1500, mats: [['plank', 80], ['nail', 60], ['willowlog', 40]], tier: 2 },
+  { item: 'chest_iron', coins: 4000, mats: [['bar_gold', 20], ['brick', 40], ['chainlink', 20]], tier: 3 },
+  { item: 'bag_cactus', coins: 9000, mats: [['cactus_spine', 80], ['hide', 30], ['twine', 100]], tier: 4 },
+  { item: 'chest_sand', coins: 20000, mats: [['bar_amber', 30], ['salt_crystal', 50], ['gearwheel', 20]], tier: 4 },
+  { item: 'bag_fur', coins: 40000, mats: [['yeti_fur', 60], ['hide', 60], ['cr_hare', 40]], tier: 5 },
+  { item: 'chest_ice', coins: 90000, mats: [['bar_frost', 40], ['icicle_shard', 80], ['bracket', 30]], tier: 5 },
+  { item: 'bag_star', coins: 200000, mats: [['comet_hair', 60], ['ring_plume', 60], ['cord', 20]], tier: 6 },
+  { item: 'chest_star', coins: 400000, mats: [['bar_nova', 40], ['star_sand', 100], ['gizmo', 30]], tier: 6 },
   { item: 'pouch_mat', coins: 80, mats: [['twine', 20], ['moss', 15]] },
   { item: 'pouch_res', coins: 80, mats: [['twine', 20], ['log', 15]] },
   { item: 'moss_ring', coins: 150, mats: [['moss', 30], ['twine', 10], ['pebble', 5]] },
@@ -1257,7 +1283,11 @@ export const TRAP_NAMES = ['맨손 덫', '나무 덫', '쇠 덫', '서리 덫'];
 /** 덫 칸: 기본 1칸, 덫 사냥 10레벨마다 1칸(최대 5) */
 export const trapSlots = (lv: number, drone = 0) => Math.min(5, 1 + Math.floor(lv / 10)) + drone;
 /** 음식 칸 수: 위 칸부터 먹는다 */
-export const FOOD_SLOTS = 3;
+export const FOOD_SLOTS = 5;
+/** 회복 음식인가(버프 물약·황금 음식이 아닌) */
+export const isHealFood = (id: string) => !!ITEMS[id]?.heal && !ITEMS[id]?.boost && !ITEMS[id]?.golden;
+/** 황금 음식 효과: 개수가 많을수록 조금 더(1 + log10 개수) */
+export const goldenValue = (v: number, qty: number) => v * (1 + Math.log10(Math.max(1, qty)));
 /** 다음 월드로 가는 세계의 문: 원작처럼 그 월드 보스를 토벌하기만 하면 열린다(계정 공용) */
 export interface GateDef { to: number; boss: string; bossKills: number; level: number; map: string; kills: number; text: string }
 export const WORLD_GATES: GateDef[] = [
@@ -1331,6 +1361,8 @@ export const SHOP: ShopEntry[] = [
   { item: 'sculpt_tools', price: 1000, daily: 1 },
   { item: 'loot_magnet', price: 40000, daily: 1, w: 2 },
   { item: 'arena_ticket', price: 250, daily: 2 },
+  { item: 'potion_power', price: 400, daily: 10 }, { item: 'potion_wise', price: 400, daily: 10 }, { item: 'potion_miner', price: 300, daily: 10 }, { item: 'potion_lumber', price: 300, daily: 10 },
+  { item: 'potion_luck', price: 3000, daily: 10, w: 2 }, { item: 'potion_angler', price: 2500, daily: 10, w: 2 }, { item: 'potion_bug', price: 2500, daily: 10, w: 2 }, { item: 'potion_card', price: 30000, daily: 5, w: 3 },
   { item: 'arena_ticket2', price: 6000, daily: 2, w: 2 },
   { item: 'arena_ticket3', price: 60000, daily: 2, w: 3 },
   { item: 'tp_ticket', price: 60, daily: 8 },
@@ -1563,7 +1595,7 @@ export const ARENAS: Record<string, ArenaDef> = {
       { waves: 3, coins: 300000, items: [['moon_cake', 3]] },
       { waves: 6, coins: 800000, items: [['stone_stat', 2], ['pet_shard', 8]] },
       { waves: 10, coins: 2500000, items: [['obol_star_circle_luk', 1], ['pet_shard', 12]] },
-      { waves: 15, coins: 6000000, items: [['obol_star_square_dmg', 1], ['gstatue_fortune', 1]] },
+      { waves: 15, coins: 6000000, items: [['obol_star_square_dmg', 1], ['gstatue_fortune', 1], ['chest_cosmic', 1]] },
     ],
     exit: { map: 'nebtown', x: 640, y: 0 },
   },
