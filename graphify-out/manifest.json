@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "replica/build-log.md": {
-    "mtime": 1795620501.088311,
-    "seen": 1795620568.424417,
-    "ast_hash": "368efc6894114afa13666b5e26d2028f",
+    "mtime": 1795657105.2176013,
+    "seen": 1795657175.1286542,
+    "ast_hash": "26fb1487faf05a5a647b0ab54a528638",
     "semantic_hash": ""
   },
   "replica/demo-plan.md": {
@@ -288,9 +288,9 @@
     "semantic_hash": ""
   },
   "game/data/skill_tree.json": {
-    "mtime": 1795620095.2866654,
-    "seen": 1795620568.4243753,
-    "ast_hash": "dc1cec7ebae49976e2d540d67401a874",
+    "mtime": 1795656685.6824527,
+    "seen": 1795657175.1285772,
+    "ast_hash": "ee459e85c2d5481d986991741e10f1fc",
     "semantic_hash": ""
   },
   "game/data/dialogs.json": {
@@ -462,9 +462,9 @@
     "semantic_hash": ""
   },
   "game/tools/gen_ui.py": {
-    "mtime": 1795605771.1958628,
-    "seen": 1795606439.5753093,
-    "ast_hash": "72f2e4f7cb46b1c956652282b79f86ce",
+    "mtime": 1795656627.331138,
+    "seen": 1795657175.1285903,
+    "ast_hash": "6e6c0f0496a41ca763b725cd5f378870",
     "semantic_hash": ""
   },
   "replica/art-spec.md": {
@@ -480,158 +480,158 @@
     "semantic_hash": ""
   },
   "game/assets/ui/btn_disabled.png": {
-    "mtime": 1795605775.0848525,
-    "seen": 1795606439.575348,
+    "mtime": 1795656627.3967156,
+    "seen": 1795657175.1286783,
     "ast_hash": "703dc878bef1e253e5d696880a2c8ff3",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_focus.png": {
-    "mtime": 1795605775.0849986,
-    "seen": 1795606439.5753748,
+    "mtime": 1795656627.3970292,
+    "seen": 1795657175.1286807,
     "ast_hash": "786699239bb1fdd7c131340bcdc43907",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_leather.png": {
-    "mtime": 1795605775.0838583,
-    "seen": 1795606439.5753787,
+    "mtime": 1795656627.3943903,
+    "seen": 1795657175.1286836,
     "ast_hash": "372979b54237bafa7ffde9b6190cd0b3",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_leather_hover.png": {
-    "mtime": 1795605775.0840077,
-    "seen": 1795606439.5753803,
+    "mtime": 1795656627.3949232,
+    "seen": 1795657175.1286857,
     "ast_hash": "775eedaa51a753b0aed780a113b063dd",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_leather_pressed.png": {
-    "mtime": 1795605775.084222,
-    "seen": 1795606439.575382,
+    "mtime": 1795656627.3952916,
+    "seen": 1795657175.1286883,
     "ast_hash": "3ce4a805db7f520f28adf30b224ea359",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_ribbon.png": {
-    "mtime": 1795605775.0843892,
-    "seen": 1795606439.5753856,
+    "mtime": 1795656627.3956795,
+    "seen": 1795657175.1286907,
     "ast_hash": "614375f45feda92e2ae093a37e444c6e",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_ribbon_hover.png": {
-    "mtime": 1795605775.0845397,
-    "seen": 1795606439.5753868,
+    "mtime": 1795656627.3960562,
+    "seen": 1795657175.1286926,
     "ast_hash": "d086cfc4f21be2f51bfce20907ae334c",
     "semantic_hash": ""
   },
   "game/assets/ui/btn_ribbon_pressed.png": {
-    "mtime": 1795605775.0846903,
-    "seen": 1795606439.5753882,
+    "mtime": 1795656627.3963776,
+    "seen": 1795657175.128695,
     "ast_hash": "b08ab957afb0a5a8b8d944018a2e68cb",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_back.png": {
-    "mtime": 1795605775.0928137,
-    "seen": 1795606439.5753891,
+    "mtime": 1795656627.4041154,
+    "seen": 1795657175.1286972,
     "ast_hash": "6306b1d636374e286c3a8a32edcdd14e",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_bag.png": {
-    "mtime": 1795605775.0868294,
-    "seen": 1795606439.5753899,
+    "mtime": 1795656627.398451,
+    "seen": 1795657175.1286995,
     "ast_hash": "993beea2b202c8ac54b4ec00f755c924",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_char.png": {
-    "mtime": 1795605775.08632,
-    "seen": 1795606439.575391,
+    "mtime": 1795656627.3978982,
+    "seen": 1795657175.128702,
     "ast_hash": "7521ff6f2b9d1beb7d54aee4f1b2d425",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_enhance.png": {
-    "mtime": 1795605775.0882206,
-    "seen": 1795606439.575392,
+    "mtime": 1795656627.399427,
+    "seen": 1795657175.1287045,
     "ast_hash": "4e0e237c2258141f7d5fe6edc0d392c1",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_gold.png": {
-    "mtime": 1795605775.0906775,
-    "seen": 1795606439.5753927,
+    "mtime": 1795656627.402084,
+    "seen": 1795657175.1287065,
     "ast_hash": "78f0b9c9f28fe8ec12a917f95209f36b",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_lock.png": {
-    "mtime": 1795605775.092332,
-    "seen": 1795606439.5753937,
+    "mtime": 1795656627.4034219,
+    "seen": 1795657175.1287088,
     "ast_hash": "9b9c776ad50f19e5224df05baa130a12",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_map.png": {
-    "mtime": 1795605775.090405,
-    "seen": 1795606439.575395,
+    "mtime": 1795656627.4017446,
+    "seen": 1795657175.1287112,
     "ast_hash": "9f44299dceacfa1f62d25c15dcdc520d",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_mission.png": {
-    "mtime": 1795605775.0895553,
-    "seen": 1795606439.575396,
+    "mtime": 1795656627.4007967,
+    "seen": 1795657175.1287131,
     "ast_hash": "2da82f85beed3d4f78ab462f3a9abf53",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_options.png": {
-    "mtime": 1795605775.0899293,
-    "seen": 1795606439.5753968,
+    "mtime": 1795656627.4012465,
+    "seen": 1795657175.1287155,
     "ast_hash": "92745526eb319e223d59fa412e55338c",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_page.png": {
-    "mtime": 1795605775.0909743,
-    "seen": 1795606439.575398,
+    "mtime": 1795656627.4024146,
+    "seen": 1795657175.1287177,
     "ast_hash": "3c8b793f7e8b8356ad01d1ff6ea1d9a1",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_pet.png": {
-    "mtime": 1795605775.0889556,
-    "seen": 1795606439.5753992,
+    "mtime": 1795656627.4002929,
+    "seen": 1795657175.1287198,
     "ast_hash": "964e09dec7a7ccc33530b87dcb2430d3",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_potion.png": {
-    "mtime": 1795605775.0914545,
-    "seen": 1795606439.5753999,
+    "mtime": 1795656627.4027941,
+    "seen": 1795657175.128722,
     "ast_hash": "f9308676b7bbcc922f81fc3d4b6dfa6f",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_revive.png": {
-    "mtime": 1795605775.0919113,
-    "seen": 1795606439.575401,
+    "mtime": 1795656627.4030921,
+    "seen": 1795657175.1287243,
     "ast_hash": "f47d59ddd597e7f0916fb384dc9ef7e0",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_shop.png": {
-    "mtime": 1795605775.0886688,
-    "seen": 1795606439.575402,
+    "mtime": 1795656627.399934,
+    "seen": 1795657175.1287262,
     "ast_hash": "e8e828bf5a86d6cc375a6a5f712b418e",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_skill.png": {
-    "mtime": 1795605775.0877297,
-    "seen": 1795606439.575403,
+    "mtime": 1795656627.399021,
+    "seen": 1795657175.1287284,
     "ast_hash": "f0eafe3cf57fc47ac93d0b338a1b25c9",
     "semantic_hash": ""
   },
   "game/assets/ui/icon_star.png": {
-    "mtime": 1795605775.0926135,
-    "seen": 1795606439.575404,
+    "mtime": 1795656627.4037807,
+    "seen": 1795657175.1287303,
     "ast_hash": "0084b1503de080712e21fc9ce45ca0e3",
     "semantic_hash": ""
   },
   "game/assets/ui/panel_dark.png": {
-    "mtime": 1795605775.079863,
-    "seen": 1795606439.5754051,
+    "mtime": 1795656627.3931005,
+    "seen": 1795657175.128767,
     "ast_hash": "89f89853258d12d7c78d67a1b1378af7",
     "semantic_hash": ""
   },
   "game/assets/ui/panel_paper.png": {
-    "mtime": 1795605775.0836954,
-    "seen": 1795606439.5754058,
+    "mtime": 1795656627.3937736,
+    "seen": 1795657175.128769,
     "ast_hash": "d08b9e2966d5ba4c6087b13d228aba9a",
     "semantic_hash": ""
   },
@@ -663,6 +663,174 @@
     "mtime": 1795620118.4016943,
     "seen": 1795620568.424433,
     "ast_hash": "22dc19b51ce4e6be84b40707602d94fc",
+    "semantic_hash": ""
+  },
+  "game/assets/fonts/Pretendard-OFL.txt": {
+    "mtime": 1795656057.0028439,
+    "seen": 1795657175.1286469,
+    "ast_hash": "4e8973b34c90633a8d8cc5d134702d71",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_bottom_common.png": {
+    "mtime": 1795656627.4073937,
+    "seen": 1795657175.1287322,
+    "ast_hash": "3b613acf3affd25a9408f7267ee2ca20",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_bottom_epic.png": {
+    "mtime": 1795656627.4079623,
+    "seen": 1795657175.1287348,
+    "ast_hash": "d54aad494b660754958df70c2a7ced8e",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_bottom_rare.png": {
+    "mtime": 1795656627.4076765,
+    "seen": 1795657175.1287365,
+    "ast_hash": "cf9df2165b9288c40e524de7c1279e12",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_glove_common.png": {
+    "mtime": 1795656627.4082928,
+    "seen": 1795657175.1287384,
+    "ast_hash": "f4d8715931477de40934c698acb99fc1",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_glove_epic.png": {
+    "mtime": 1795656627.408922,
+    "seen": 1795657175.12874,
+    "ast_hash": "3b0d9f60f67095f208e96bae794d006a",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_glove_rare.png": {
+    "mtime": 1795656627.4086213,
+    "seen": 1795657175.128742,
+    "ast_hash": "7a96496735905287782c2e717a4ebd3b",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_helm_common.png": {
+    "mtime": 1795656627.4054163,
+    "seen": 1795657175.1287436,
+    "ast_hash": "4a7b65d7a439972e25f64a517c625cd5",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_helm_epic.png": {
+    "mtime": 1795656627.4060073,
+    "seen": 1795657175.1287456,
+    "ast_hash": "927366c6a2ca98944fbba3b83111d30d",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_helm_rare.png": {
+    "mtime": 1795656627.4057279,
+    "seen": 1795657175.1287472,
+    "ast_hash": "3e8abfdf2f42fb142a472e4174e8d1d5",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_shoe_common.png": {
+    "mtime": 1795656627.4091592,
+    "seen": 1795657175.1287491,
+    "ast_hash": "411ea61a273f4c0d16ffc0c36d30a174",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_shoe_epic.png": {
+    "mtime": 1795656627.409669,
+    "seen": 1795657175.1287508,
+    "ast_hash": "58224a4dbd85c776d79c0629535cf40a",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_shoe_rare.png": {
+    "mtime": 1795656627.4094005,
+    "seen": 1795657175.128753,
+    "ast_hash": "18fb9761cc9a1582128d9852b9e240e9",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_top_common.png": {
+    "mtime": 1795656627.4063687,
+    "seen": 1795657175.1287549,
+    "ast_hash": "dcb840cccd60c0165c80686ed9e7d227",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_top_epic.png": {
+    "mtime": 1795656627.4071152,
+    "seen": 1795657175.128757,
+    "ast_hash": "97d5aaf84bb0afbd65591b726ad22629",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_top_rare.png": {
+    "mtime": 1795656627.4067678,
+    "seen": 1795657175.1287591,
+    "ast_hash": "f72ccda42e153e29af7eeab4bf113ba6",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_weapon_common.png": {
+    "mtime": 1795656627.4046633,
+    "seen": 1795657175.128761,
+    "ast_hash": "03bc453c56634800ab145aa7ca433eac",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_weapon_epic.png": {
+    "mtime": 1795656627.4051273,
+    "seen": 1795657175.128763,
+    "ast_hash": "6535838b038eac8c043143f9ec316195",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/item_weapon_rare.png": {
+    "mtime": 1795656627.4049098,
+    "seen": 1795657175.1287646,
+    "ast_hash": "bee04fa09c90453c793537276e6aaca2",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_ps_armor.png": {
+    "mtime": 1795656627.4117827,
+    "seen": 1795657175.1287713,
+    "ast_hash": "871307bafa9fc236a811bb4313480047",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_ps_atk.png": {
+    "mtime": 1795656627.410883,
+    "seen": 1795657175.1287735,
+    "ast_hash": "6050b7cc13b4f9b83f6fa0339b400fb3",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_ps_cut.png": {
+    "mtime": 1795656627.4114354,
+    "seen": 1795657175.1287754,
+    "ast_hash": "046bf758e3ce920610cd29f7397857f7",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_ps_firm.png": {
+    "mtime": 1795656627.4120429,
+    "seen": 1795657175.1287775,
+    "ast_hash": "4f8d234f5cad438fddda6097f5ef23eb",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_ps_gold.png": {
+    "mtime": 1795656627.4123466,
+    "seen": 1795657175.1287792,
+    "ast_hash": "a81a9aae1b188e01ff2c41b4614ed000",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_ps_hp.png": {
+    "mtime": 1795656627.411163,
+    "seen": 1795657175.1287813,
+    "ast_hash": "6574b43c2f2a732b5764d803ce178590",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_sk_mp1.png": {
+    "mtime": 1795656627.409951,
+    "seen": 1795657175.1287837,
+    "ast_hash": "a35e61873d47c15612e387d73e8b566c",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_sk_mp2.png": {
+    "mtime": 1795656627.4103138,
+    "seen": 1795657175.1287856,
+    "ast_hash": "a4ca5f324de872e216b4b64f801d7098",
+    "semantic_hash": ""
+  },
+  "game/assets/ui/skill_sk_mp3.png": {
+    "mtime": 1795656627.41062,
+    "seen": 1795657175.1287878,
+    "ast_hash": "7f878758d5fb4829d2ca0a0f8152633e",
     "semantic_hash": ""
   }
 }
