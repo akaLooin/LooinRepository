@@ -192,6 +192,11 @@ export class UI {
   private petSel: string | null = null;
   /** 지도에서 고른 맵(한 번 더 누르면 이동) */
   private mapSel: string | null = null;
+  /** 지도 확대·이동(두 손가락 벌리기/오므리기, 끌기, 휠) */
+  private mapZoom = { s: 1, x: 0, y: 0 };
+  private mapPtrs = new Map<number, { x: number; y: number }>();
+  private mapGest: { s: number; x: number; y: number; d: number; mx: number; my: number; moved: boolean } | null = null;
+  private mapMoved = false;
   /** 삭제 확인 중인 캐릭터 */
   private delIdx: number | null = null;
   private statSel: StatKey | null = null;
@@ -242,6 +247,7 @@ export class UI {
       if (t.id === 'cname') this.draft.name = t.value;
     });
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.initMapGestures();
     // 그림은 브라우저 기본 끌기를 막는다(우리 끌어 놓기를 취소시키므로)
     this.root.addEventListener('dragstart', (e) => e.preventDefault());
     addEventListener('pointermove', (e) => { if (this.drag) { this.drag.ghost.style.left = `${e.clientX}px`; this.drag.ghost.style.top = `${e.clientY}px`; } });
@@ -332,7 +338,7 @@ export class UI {
     else if (e.t === 'arenaEnd') { this.arenaResult = { waves: e.waves, score: e.score }; this.panel = 'arena'; this.refresh(true); }
   }
 
-  private open(p: Panel) { this.panel = p; this.sel = null; this.craftSel = -1; if (p === 'map') { this.mapWorld = null; this.mapSel = null; } }
+  private open(p: Panel) { this.panel = p; this.sel = null; this.craftSel = -1; if (p === 'map') { this.mapWorld = null; this.mapSel = null; this.mapZoom = { s: 1, x: 0, y: 0 }; } }
 
   // ───────── 렌더 ─────────
   refresh(force = false) {
@@ -666,23 +672,28 @@ export class UI {
         // 아래 줄은 늘 같은 높이: 고르기 전에는 안내, 고르면 이동 정보
         // 보스 방: 난이도 고르기(아래 단계를 한 번 깨면 다음 단계가 열린다)
         const bossId = pick ? MAPS[pick].boss : undefined;
-        const tiers = bossId ? `<span class="ui-row" style="gap:2px">${BOSS_TIERS.map((t, i) => {
+        const tiers = bossId ? `<span class="tierrow">${BOSS_TIERS.map((t, i) => {
           const open = i === 0 || (g.acc.bossBest?.[bossId] ?? -1) >= i - 1, on = (g.acc.bossTier?.[bossId] ?? 0) === i;
           return `<button class="ui-btn sm ${on ? 'primary' : ''}" data-act="bosstier:${bossId}:${i}" ${open ? '' : 'disabled'} aria-pressed="${on}" title="체력 ×${t.hp} · 공격 ×${t.atk} · 경험치 ×${t.xp} · 드롭 ×${t.drop}">${open ? t.name : ui('ui_lock', 'tic')}</button>`;
         }).join('')}</span>` : '';
-        const foot = pick ? `<b class="ui-grow">${MAPS[pick].name}</b>${tiers}
+        const foot = pick ? `<b>${MAPS[pick].name}</b>${tiers}
             <span class="ui-sm ${can ? '' : 'ui-bad'}">${!can ? (mapQuota(pick) ? `처치 목표 ${mapQuota(pick)}마리를 채워야 합니다` : '아직 갈 수 없는 곳입니다(열쇠·길 필요)') : free ? '무료' : `${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 1장 (가진 ${tickets})`}</span>
-            <button class="ui-btn primary sm" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
-          : `<span class="ui-xs ui-muted ui-grow">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.</span>`;
+            <button class="ui-btn primary" data-act="tp:${pick}" ${can && (free || tickets > 0) ? '' : 'disabled'}>이동</button>`
+          : `<span class="ui-xs ui-muted">지역을 누르면 고르고, 한 번 더 누르면 이동합니다. 마을은 무료, 다른 곳은 순간이동 티켓 1장.<br>두 손가락으로 벌리거나 오므리면 지도를 확대·축소하고, 끌어서 옮깁니다.</span>`;
         const wtabs = mw > 1 ? ` <span class="worldsw" role="tablist">${WORLDS.filter((x) => x.n <= mw).map((x) => `<button class="ui-btn sm ${x.n === wn ? 'primary' : ''}" role="tab" aria-selected="${x.n === wn}" data-act="mapworld:${x.n}" title="${x.name}">${x.n}월드</button>`).join('')}</span>` : '';
-        // 깊은 지역: 지도 그림 아래 목록으로(그 월드 마지막 사냥터에서 갈라진다)
+        // 깊은 지역: 지도 옆 칸 목록으로(그 월드 마지막 사냥터에서 갈라진다)
         const deep = DEEP_MAPS[wn - 1] ?? [];
         const deepRows = deep.some((id) => mapUnlocked(c, id)) ? `<div class="deeplist"><b class="ui-xs ui-muted">깊은 지역</b>${deep.map((id) => {
           const open = mapUnlocked(c, id), here = c.mapId === id, q = mapQuota(id), k = c.kills[id] ?? 0;
           if (!open) return `<span class="ui-slot sm locked" title="아직 모름">${ui('ui_lock', 'tic')}</span>`;
           return `<button class="ui-btn sm ${this.mapSel === id ? 'primary' : here ? 'success' : ''}" data-act="mapsel:${id}" title="${MAPS[id].name}${q ? ` · 처치 ${k}/${q}` : ''}">${MAPS[id].name}</button>`;
         }).join('')}</div>` : '';
-        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="wmapbox"${wn === 4 ? ' style="background:#120e2a"' : ''}>${worldMapSvg(regions, wn)}</div>${deepRows}<div class="ui-row mapfoot">${foot}</div>`);
+        // 가로 화면: 지도는 왼쪽에 크게, 고른 지역·깊은 지역은 오른쪽 옆 칸에
+        const z = this.mapZoom;
+        const zoomBtns = `<div class="mapzbtn"><button class="ui-btn sm" data-act="mapzoom:in" aria-label="확대">+</button><button class="ui-btn sm" data-act="mapzoom:out" aria-label="축소" ${z.s <= 1 ? 'disabled' : ''}>−</button></div>`;
+        return win(`지도${wtabs} <span class="ui-sm">${iconHtml(ITEM_ICON[TP_TICKET])} 티켓 ${tickets}</span>`, `<div class="maplayout">
+          <div class="wmapbox worldmap"${wn === 4 ? ' style="background:#120e2a"' : ''}><div class="wmapzoom" style="transform:translate(${z.x}px,${z.y}px) scale(${z.s})">${worldMapSvg(regions, wn)}</div>${zoomBtns}</div>
+          <aside class="mapside"><div class="mapfoot">${foot}</div>${deepRows}</aside></div>`);
       }
 
       case 'gate': {
@@ -1785,7 +1796,67 @@ export class UI {
     if (h.made) this.toast(`${ITEMS[RECIPES[h.idx].item].name} ${h.made}개 연속 제작!`, RECIPES[h.idx].item);
   }
 
+  /** 지도 확대·축소·끌기: 두 손가락 벌리기/오므리기, 한 손가락(확대 중) 끌기, PC 휠 */
+  private initMapGestures() {
+    const boxOf = () => this.root.querySelector<HTMLElement>('.worldmap');
+    const local = (e: PointerEvent | WheelEvent) => { const r = boxOf()!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const start = () => {
+      const ps = [...this.mapPtrs.values()], z = this.mapZoom;
+      const mx = ps.reduce((a, p) => a + p.x, 0) / ps.length, my = ps.reduce((a, p) => a + p.y, 0) / ps.length;
+      const d = ps.length > 1 ? Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) : 0;
+      this.mapGest = { s: z.s, x: z.x, y: z.y, d, mx, my, moved: this.mapGest?.moved ?? false };
+    };
+    this.root.addEventListener('pointerdown', (e) => {
+      if (!(e.target as HTMLElement).closest('.worldmap') || (e.target as HTMLElement).closest('.mapzbtn')) return;
+      this.mapPtrs.set(e.pointerId, local(e)); start();
+    });
+    addEventListener('pointermove', (e) => {
+      if (!this.mapPtrs.has(e.pointerId) || !this.mapGest || !boxOf()) return;
+      this.mapPtrs.set(e.pointerId, local(e));
+      const ps = [...this.mapPtrs.values()], g = this.mapGest;
+      const mx = ps.reduce((a, p) => a + p.x, 0) / ps.length, my = ps.reduce((a, p) => a + p.y, 0) / ps.length;
+      let s = g.s;
+      if (ps.length > 1 && g.d > 0) s = g.s * Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y) / g.d;
+      if (!g.moved && (ps.length > 1 || Math.hypot(mx - g.mx, my - g.my) > 8)) g.moved = true;
+      if (!g.moved) return;
+      // 처음 가운데 아래에 있던 지도 점이 지금 가운데 아래에 오도록
+      const qx = (g.mx - g.x) / g.s, qy = (g.my - g.y) / g.s;
+      this.setMapZoom(s, mx - this.clampS(s) * qx, my - this.clampS(s) * qy);
+    });
+    const end = (e: PointerEvent) => {
+      if (!this.mapPtrs.delete(e.pointerId)) return;
+      if (this.mapGest?.moved) this.mapMoved = true;
+      if (this.mapPtrs.size) start(); else { this.mapGest = null; if (this.mapMoved) setTimeout(() => { this.mapMoved = false; }, 350); }
+    };
+    addEventListener('pointerup', end); addEventListener('pointercancel', end);
+    this.root.addEventListener('wheel', (e) => {
+      if (!(e.target as HTMLElement).closest('.worldmap')) return;
+      e.preventDefault();
+      const p = local(e); this.zoomMapAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, p.x, p.y);
+    }, { passive: false });
+  }
+  private clampS(s: number) { return Math.max(1, Math.min(4, s)); }
+  /** 배율·위치를 정하고(지도 밖이 보이지 않게 가둔다) 그림에 바로 반영 */
+  private setMapZoom(s: number, x: number, y: number) {
+    const box = this.root.querySelector<HTMLElement>('.worldmap'), inner = box?.querySelector<HTMLElement>('.wmapzoom');
+    if (!box || !inner) return;
+    s = this.clampS(s);
+    const w = box.clientWidth, h = box.clientHeight;
+    x = Math.min(0, Math.max(w - w * s, x)); y = Math.min(0, Math.max(h - h * s, y));
+    this.mapZoom = { s, x, y };
+    inner.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+    const out = box.querySelector<HTMLButtonElement>('[data-act="mapzoom:out"]'); if (out) out.disabled = s <= 1;
+    // 다음에 창을 다시 그릴 때도 같은 모습이 되도록 캐시를 비운다
+    this.last.modal = '';
+  }
+  private zoomMapAt(f: number, px: number, py: number) {
+    const z = this.mapZoom, s = this.clampS(z.s * f);
+    this.setMapZoom(s, px - (px - z.x) * (s / z.s), py - (py - z.y) * (s / z.s));
+  }
+
   private onClick(e: Event) {
+    // 지도를 끌거나 확대한 손가락을 뗄 때 생기는 클릭은 지역 고르기로 치지 않는다
+    if (this.mapMoved) { this.mapMoved = false; if ((e.target as HTMLElement).closest('.worldmap')) return; }
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
     // 길게 눌러 이미 만들었으면 손을 뗄 때의 한 번은 건너뛴다
     if (this.holdUsed && el?.dataset.hold !== undefined) { this.holdUsed = false; return; }
@@ -2040,7 +2111,12 @@ export class UI {
         if (i >= 0) fail(g.act({ t: 'barSet', bar: this.quickPage, slot: i, id: null }).err ?? null);
         break;
       }
-      case 'mapworld': this.mapWorld = +a; this.mapSel = null; break;
+      case 'mapworld': this.mapWorld = +a; this.mapSel = null; this.mapZoom = { s: 1, x: 0, y: 0 }; break;
+      case 'mapzoom': {
+        const box = this.root.querySelector<HTMLElement>('.worldmap');
+        if (box) { const r = box.getBoundingClientRect(); this.zoomMapAt(a === 'in' ? 1.5 : 1 / 1.5, r.width / 2, r.height / 2); }
+        return;
+      }
       case 'mapsel': {
         // 같은 맵을 한 번 더 누르면 이동
         if (this.mapSel !== a) { this.mapSel = a; break; }

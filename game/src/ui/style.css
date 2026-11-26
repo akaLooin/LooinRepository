@@ -316,13 +316,18 @@ html, body { word-break: keep-all; overflow-wrap: anywhere; }
 .ui-grid.obgrid { grid-template-columns: repeat(5, auto); justify-content: start; gap: 3px; }
 
 /* 지도: 깊은 지역 목록 */
-.deeplist { display: flex; flex-wrap: nowrap; overflow-x: auto; flex: none; gap: 3px; align-items: center; margin: 4px 0; }
-.deeplist > * { flex: none; }
-/* 지도 창: 지도 그림이 남는 높이에 맞춰 줄고, 아래 줄(이동·난이도)은 늘 보인다 */
-#modal .ui-win > .body:has(.wmapbox) { display: flex; flex-direction: column; }
-#modal .body .wmapbox { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
-#modal .body .wmapbox svg { width: 100%; height: 100%; }
-#modal .body .mapfoot { flex: none; }
+.deeplist { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; align-content: flex-start; }
+.deeplist > b { flex: 1 0 100%; }
+/* 지도 창(가로 화면): 지도는 왼쪽에 남는 자리를 다 쓰고, 고른 지역·깊은 지역은 오른쪽 옆 칸 */
+.maplayout { display: flex; gap: var(--sp-2); height: 100%; min-height: 0; }
+#modal .body .worldmap { flex: 1 1 auto; min-width: 0; position: relative; touch-action: none; user-select: none; }
+.worldmap .wmapzoom { width: 100%; height: 100%; transform-origin: 0 0; will-change: transform; }
+.worldmap .wmapzoom svg { width: 100%; height: 100%; display: block; }
+.mapzbtn { position: absolute; right: 6px; bottom: 6px; display: flex; flex-direction: column; gap: 4px; line-height: normal; }
+.mapzbtn .ui-btn { min-width: 2.2em; font-weight: 700; }
+.mapside { flex: 0 0 13.5em; display: flex; flex-direction: column; gap: var(--sp-2); min-height: 0; overflow-y: auto; }
+#modal .mapside .mapfoot { display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-1); margin: 0; min-height: 0; padding: var(--sp-2); flex: none; }
+.mapside .mapfoot .ui-btn.primary { width: 100%; }
 
 /* 창은 언제나 가장 넉넉한 크기로 고정: 탭·버튼·내용이 바뀌어도 창 크기가 흔들리지 않는다 */
 #modal .ui-win { width: min(calc(100vw - var(--sp-5) * 2), 64em); height: calc(100% - var(--sp-5)); max-height: none; }
@@ -330,3 +335,5 @@ html, body { word-break: keep-all; overflow-wrap: anywhere; }
 /* 탭은 개수만큼 똑같이 나누고, 글자가 길어도 폭이 바뀌지 않는다 */
 .ui-tabs button { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; }
 .ui-tabs button span { overflow: hidden; text-overflow: ellipsis; }
+.mapside .tierrow { display: flex; gap: 3px; }
+.mapside .tierrow .ui-btn { flex: 1 1 0; min-width: 0; white-space: nowrap; padding-inline: 2px; }
