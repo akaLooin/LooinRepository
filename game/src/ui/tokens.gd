@@ -44,4 +44,4 @@ const B_SPINE := Color("c79a4b")
 const B_PAGE := Color("ede0bd")
 
 const UI_RADIUS := 3
-const FONT_SIZE := 11
+const FONT_SIZE := 12

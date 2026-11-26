@@ -289,6 +289,25 @@ static func mission_done(mid: String) -> bool:
 	return false
 
 
+## 미션 진행도 [현재, 목표]
+static func mission_progress(mid: String) -> Array:
+	var c: Dictionary = DataDB.get_row("missions", mid)["cond"]
+	if mission_done(mid):
+		return [1, 1]
+	match c["type"]:
+		"level":
+			var best := 0
+			for k in GameState.data["characters"]:
+				best = maxi(best, int(GameState.data["characters"][k]["lv"]))
+			return [best, int(c["value"])]
+		"enhance":
+			var best := 0
+			for it in inv():
+				best = maxi(best, int(it["enh"]))
+			return [best, int(c["value"])]
+	return [0, 1]
+
+
 static func mission_state(mid: String) -> String:
 	if GameState.data["progress"]["missions"].get(mid, "") == "claimed":
 		return "claimed"

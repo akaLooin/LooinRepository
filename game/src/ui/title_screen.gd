@@ -134,16 +134,10 @@ func _draw() -> void:
 		var x := fmod(d.x + sin(_t * 0.02 + i) * 6.0, sz.x)
 		draw_rect(Rect2(x, y, 1, 1), Color(Tk.GOLD, 0.4 + d.z * 0.6))
 	# 로고: 11px 폰트를 3배 정수 확대 → 선명한 픽셀 로고
-	var f := ThemeDB.fallback_font
 	var title := "테일즈토피아"
-	var tw := f.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x * 3.0
 	var ty := 22.0 + sin(_t * 0.03) * 1.5
-	draw_set_transform(Vector2(cx - tw / 2.0, ty), 0.0, Vector2(3, 3))
-	for o in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1), Vector2(1, 1)]:
-		draw_string(f, o * 0.6667 + Vector2(0, 11), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Tk.INK)
-	draw_string(f, Vector2(0, 11), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Tk.GOLD)
-	draw_string(f, Vector2(0, 10.667), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("fff1b8", 0.35))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	UiKit.pixel_text(self, Vector2(cx + 1, ty + 33 + 1), title, Tk.INK, 33, true, Tk.INK, 1.5)
+	UiKit.pixel_text(self, Vector2(cx, ty + 33), title, Tk.GOLD, 33, true, Tk.INK, 1.5)
 	# RPG 리본
 	var rw := 56.0
 	var ry := ty + 40.0
@@ -155,4 +149,4 @@ func _draw() -> void:
 	UiKit.text(self, Vector2(cx, ry + 28), "— 차원의 도서관 —", Tk.PAPER_DIM, 11, true)
 	if not _opened and (_t / 30) % 2 == 0:
 		UiKit.text(self, Vector2(cx, sz.y - 16), "화면을 눌러 책을 펼치세요", Tk.PAPER, 11, true)
-	UiKit.text(self, Vector2(sz.x - 4 - 60, sz.y - 4), "데모 v0.7", Tk.TEXT_DIM, 11, false)
+	UiKit.text(self, Vector2(sz.x - 4 - 60, sz.y - 4), "데모 v0.8", Tk.TEXT_DIM, 11, false)

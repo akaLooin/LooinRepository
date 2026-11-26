@@ -6,13 +6,7 @@ var autotest: AutoTest = null
 
 
 func _ready() -> void:
-	var font := load("res://assets/fonts/Galmuri11.ttf") as FontFile
-	if font:
-		font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-		font.hinting = TextServer.HINTING_NONE
-		font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-		ThemeDB.fallback_font = font
-	ThemeDB.fallback_font_size = Tk.FONT_SIZE
+	UiKit.setup_fonts()
 	var args := OS.get_cmdline_user_args()
 	if args.has("--autotest") or args.has("--shots") or args.has("--unit"):
 		autotest = AutoTest.new()

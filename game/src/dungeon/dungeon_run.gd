@@ -52,7 +52,7 @@ var overlay: Control
 
 
 func _ready() -> void:
-	_font = ThemeDB.fallback_font
+	_font = UiKit.font_pixel if UiKit.font_pixel else ThemeDB.fallback_font
 
 
 func start(dgn_id: String, seed_v: int = -1, diff_id: String = "normal") -> void:

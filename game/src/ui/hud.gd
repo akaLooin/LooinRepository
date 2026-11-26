@@ -138,14 +138,9 @@ func _draw() -> void:
 	# 콤보: 3배 확대 숫자
 	if run.combo >= 2:
 		var cs := str(run.combo)
-		var f := ThemeDB.fallback_font
-		var cw := f.get_string_size(cs, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x * 3.0
+		var cw := UiKit.font_pixel.get_string_size(cs, HORIZONTAL_ALIGNMENT_LEFT, -1, 33).x
 		var cx := vw - 64.0 - cw
-		draw_set_transform(Vector2(cx, 52), 0.0, Vector2(3, 3))
-		for o in [Vector2(-0.34, 0), Vector2(0.34, 0), Vector2(0, -0.34), Vector2(0, 0.34)]:
-			draw_string(f, Vector2(0, 11) + o, cs, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Tk.INK)
-		draw_string(f, Vector2(0, 11), cs, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Tk.CRIT)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		UiKit.pixel_text(self, Vector2(cx, 84), cs, Tk.CRIT, 33, false, Tk.INK, 1.0)
 		_text(Vector2(vw - 60, 84), "HIT", Tk.TEXT, 11)
 		var bar := clampf(float(run.combo_timer) / float(run.COMBO_TIMEOUT), 0.0, 1.0)
 		draw_rect(Rect2(cx, 90, 60, 3), Tk.INK)

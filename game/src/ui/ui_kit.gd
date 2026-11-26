@@ -4,6 +4,50 @@ extends RefCounted
 
 
 const UI_DIR := "res://assets/ui/"
+## 본문 = 프리텐다드(고해상도), 굵게 = 프리텐다드 볼드, 픽셀 = 갈무리(로고·숫자 장식)
+static var font_body: Font
+static var font_bold: Font
+static var font_pixel: Font
+
+
+static func setup_fonts() -> void:
+	var pixel := load("res://assets/fonts/Galmuri11.ttf") as FontFile
+	if pixel:
+		pixel.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+		pixel.hinting = TextServer.HINTING_NONE
+		pixel.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	font_pixel = pixel
+	for pair in [["Pretendard-Medium", "body"], ["Pretendard-Bold", "bold"]]:
+		var f := load("res://assets/fonts/%s.woff" % pair[0]) as FontFile
+		if f == null:
+			continue
+		f.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
+		f.hinting = TextServer.HINTING_LIGHT
+		f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_AUTO
+		if pixel:
+			f.fallbacks = [pixel]
+		if pair[1] == "body":
+			font_body = f
+		else:
+			font_bold = f
+	if font_body == null:
+		font_body = pixel
+	if font_bold == null:
+		font_bold = font_body
+	ThemeDB.fallback_font = font_body
+	ThemeDB.fallback_font_size = Tk.FONT_SIZE
+
+
+## 픽셀 폰트로 크게 (로고·콤보·도장). size 는 11의 배수가 가장 선명하다.
+static func pixel_text(ci: CanvasItem, pos: Vector2, s: String, col: Color, size: int, center: bool = false, outline: Color = Tk.INK, outline_px: float = 1.0) -> void:
+	var f := font_pixel if font_pixel else ThemeDB.fallback_font
+	var x := pos.x
+	if center:
+		x -= f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x / 2.0
+	if outline.a > 0.0:
+		for o in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1), Vector2(1, 1)]:
+			ci.draw_string(f, Vector2(x, pos.y) + o * outline_px, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline)
+	ci.draw_string(f, Vector2(x, pos.y), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 static var _tex_cache: Dictionary = {}
 
 
@@ -124,9 +168,11 @@ static func currency(icon_name: String, value: int) -> HBoxContainer:
 	return h
 
 
-static func label(text: String, color: Color = Tk.TEXT, size: int = Tk.FONT_SIZE, outline: bool = false) -> Label:
+static func label(text: String, color: Color = Tk.TEXT, size: int = Tk.FONT_SIZE, outline: bool = false, bold: bool = false) -> Label:
 	var l := Label.new()
 	l.text = text
+	if bold and font_bold:
+		l.add_theme_font_override("font", font_bold)
 	l.add_theme_color_override("font_color", color)
 	l.add_theme_font_size_override("font_size", size)
 	if outline:
@@ -137,12 +183,12 @@ static func label(text: String, color: Color = Tk.TEXT, size: int = Tk.FONT_SIZE
 
 ## 텍스트 외곽선과 함께 그리기 (커스텀 _draw 용)
 static func text(ci: CanvasItem, pos: Vector2, s: String, col: Color, size: int = 11, center: bool = false, outline: Color = Tk.INK) -> void:
-	var f := ThemeDB.fallback_font
+	var f := font_bold if font_bold else ThemeDB.fallback_font
 	var x := pos.x
 	if center:
 		x -= f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x / 2.0
 	if outline.a > 0.0:
-		for o in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
+		for o in [Vector2(-0.5, 0), Vector2(0.5, 0), Vector2(0, -0.5), Vector2(0, 0.5), Vector2(0.5, 0.5), Vector2(-0.5, -0.5)]:
 			ci.draw_string(f, Vector2(x, pos.y) + o, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline)
 	ci.draw_string(f, Vector2(x, pos.y), s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 

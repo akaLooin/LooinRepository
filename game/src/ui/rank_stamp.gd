@@ -19,10 +19,8 @@ func _draw() -> void:
 	draw_set_transform(c, -0.18, Vector2(sc, sc))
 	draw_arc(Vector2.ZERO, 34, 0, TAU, 40, col, 3.0)
 	draw_arc(Vector2.ZERO, 29, 0, TAU, 40, col, 1.0)
-	var f := ThemeDB.fallback_font
-	var w := f.get_string_size(rank, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-	draw_set_transform(c + Vector2(-w * 1.5 * sc, 16 * sc), 0.0, Vector2(3 * sc, 3 * sc))
-	draw_string(f, Vector2.ZERO, rank, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, col)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	var fsz := int(round(33.0 * sc / 11.0)) * 11
+	UiKit.pixel_text(self, c + Vector2(0, fsz * 0.36), rank, col, fsz, true, Color(0, 0, 0, 0))
 	if _t == 12:
 		Sfx.play("hit", 0.0)

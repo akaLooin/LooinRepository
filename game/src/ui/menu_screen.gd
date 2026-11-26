@@ -30,7 +30,13 @@ func _process(_d: float) -> void:
 
 
 func _draw() -> void:
-	UiKit.draw_shelves(self, get_viewport_rect().size, _t)
+	var sz := get_viewport_rect().size
+	UiKit.draw_shelves(self, sz, _t)
+	draw_rect(Rect2(Vector2.ZERO, sz), Color(Tk.INK, 0.55))
+	for i in range(6):
+		var a := 0.08 * (6 - i) / 6.0
+		draw_rect(Rect2(0, i * 4, sz.x, 4), Color(0, 0, 0, a))
+		draw_rect(Rect2(0, sz.y - (i + 1) * 4, sz.x, 4), Color(0, 0, 0, a))
 
 
 func focus_first() -> void:
@@ -55,7 +61,9 @@ func make_split(title: String, info: String, back: Callable, left_w: float = 190
 	var bb := UiKit.button("", back, false, "back")
 	bb.custom_minimum_size = Vector2(26, 18)
 	head.add_child(bb)
-	head.add_child(UiKit.label(title, Tk.GOLD, 11, true))
+	var rt := UiParts.ribbon_title(title)
+	rt.custom_minimum_size = Vector2(UiKit.font_bold.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 28, 20)
+	head.add_child(rt)
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(sp)

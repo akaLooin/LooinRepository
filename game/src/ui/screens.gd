@@ -6,46 +6,74 @@ extends RefCounted
 static func options(router: Node, args: Dictionary = {}) -> MenuScreen:
 	var s := MenuScreen.new()
 	s.router = router
-	var box := s.make_center(260)
 	var st: Dictionary = GameState.data["settings"]
-	box.add_child(UiKit.label("옵션", Tk.GOLD))
+	var cols := s.make_split("옵션", "", func(): router.go("town"), 220)
+	var left: VBoxContainer = cols[0]
+	var right: VBoxContainer = cols[1]
+	# 소리
+	left.add_child(UiKit.label("소리", Tk.GOLD, 13, true, true))
+	for kind in [["bgm", "배경음"], ["sfx", "효과음"]]:
+		var k: String = kind[0]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		left.add_child(row)
+		var l := UiKit.label(kind[1], Tk.PAPER, 12)
+		l.custom_minimum_size = Vector2(50, 0)
+		row.add_child(l)
+		var sl := HSlider.new()
+		sl.min_value = 0.0
+		sl.max_value = 1.0
+		sl.step = 0.05
+		sl.value = float(st.get(k, 1.0))
+		sl.custom_minimum_size = Vector2(110, 16)
+		sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(sl)
+		var pct := UiKit.label("%d%%" % int(sl.value * 100), Tk.TEXT_DIM, 11)
+		row.add_child(pct)
+		sl.value_changed.connect(func(v: float):
+			st[k] = v
+			pct.text = "%d%%" % int(v * 100)
+			Sfx.refresh_volume()
+			if k == "sfx":
+				Sfx.play("click", 0.0))
+		sl.drag_ended.connect(func(_c): GameState.save_game())
+	left.add_child(UiParts.hsep(6))
+	left.add_child(UiKit.label("조작", Tk.GOLD, 13, true, true))
 	var modes := { "auto": "자동", "on": "항상 표시", "off": "숨김" }
 	var order := ["auto", "on", "off"]
-	box.add_child(UiKit.button("터치 버튼: %s" % modes[st.get("show_touch", "auto")], func():
+	left.add_child(UiKit.button("터치 버튼: %s" % modes[st.get("show_touch", "auto")], func():
 		var i := order.find(st.get("show_touch", "auto"))
 		st["show_touch"] = order[(i + 1) % order.size()]
 		GameState.save_game()
 		router.go("options")))
-	box.add_child(UiKit.button("터치 버튼 위치·크기 편집", func(): router.go("layout")))
-	var steps := [0.0, 0.35, 0.7, 1.0]
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 4)
-	box.add_child(row)
-	for kind in [["bgm", "배경음"], ["sfx", "효과음"]]:
-		var k: String = kind[0]
-		var v := float(st.get(k, 1.0))
-		var b := UiKit.button("%s %d%%" % [kind[1], int(v * 100)], func():
-			var i := steps.find(v)
-			st[k] = steps[(i + 1) % steps.size()] if i >= 0 else 1.0
-			GameState.save_game()
-			Sfx.refresh_volume()
-			router.go("options"))
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(b)
-	box.add_child(UiKit.button("필살기: %s" % ("공격 길게 눌러 충전 (원작식)" if st.get("charge_attack", false) else "필살기 버튼 1·2·3"), func():
+	left.add_child(UiKit.button("터치 버튼 위치·크기 편집", func(): router.go("layout")))
+	left.add_child(UiKit.button("필살기: %s" % ("공격 길게 눌러 충전" if st.get("charge_attack", false) else "필살기 버튼 1·2·3"), func():
 		st["charge_attack"] = not st.get("charge_attack", false)
 		GameState.save_game()
 		router.go("options")))
-	box.add_child(UiKit.button("판정 상자 표시: %s" % ("켜짐" if st.get("show_hitboxes", false) else "꺼짐"), func():
+	# 기타
+	right.add_child(UiKit.label("기타", Tk.GOLD, 13, true, true))
+	right.add_child(UiKit.button("판정 상자 표시: %s" % ("켜짐" if st.get("show_hitboxes", false) else "꺼짐"), func():
 		st["show_hitboxes"] = not st.get("show_hitboxes", false)
 		GameState.save_game()
 		router.go("options")))
-	box.add_child(UiKit.button("세이브 초기화", func():
-		GameState.reset_save()
-		router.go("options", { "msg": "세이브를 초기화했습니다" })))
+	if args.get("confirm_reset", false):
+		right.add_child(UiKit.label("정말 모든 진행을 지울까요?", Tk.DANGER, 12, true, true))
+		var r := HBoxContainer.new()
+		r.add_theme_constant_override("separation", 4)
+		right.add_child(r)
+		r.add_child(UiKit.button("지운다", func():
+			GameState.reset_save()
+			router.go("options", { "msg": "세이브를 초기화했습니다" }), true))
+		r.add_child(UiKit.button("취소", func(): router.go("options")))
+	else:
+		right.add_child(UiKit.button("세이브 초기화", func(): router.go("options", { "confirm_reset": true })))
 	if args.get("msg", "") != "":
-		box.add_child(UiKit.label(args["msg"], Tk.EXP))
-	box.add_child(UiKit.button("돌아가기", func(): router.go("town")))
+		right.add_child(UiKit.label(args["msg"], Tk.EXP, 12, true))
+	right.add_child(UiParts.hsep(10))
+	right.add_child(UiKit.label("테일즈토피아 RPG 데모 v0.8", Tk.TEXT_DIM, 11))
+	right.add_child(UiKit.label("글꼴: 프리텐다드 · 갈무리 (SIL OFL)", Tk.TEXT_DIM, 11))
+	right.add_child(UiKit.label("엔진: Godot (MIT)", Tk.TEXT_DIM, 11))
 	return s
 
 
