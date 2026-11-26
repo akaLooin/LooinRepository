@@ -192,9 +192,9 @@
     "semantic_hash": ""
   },
   "game/src/ui/ui.ts": {
-    "mtime": 1795658551.3865023,
-    "seen": 1795658604.2058983,
-    "ast_hash": "f447bd88360f7f830b1a7688548e87c1",
+    "mtime": 1795661408.4811132,
+    "seen": 1795661531.002691,
+    "ast_hash": "b291b93e7a5eb41c506a6017e4ef3030",
     "semantic_hash": ""
   },
   "game/tests/core.test.ts": {
