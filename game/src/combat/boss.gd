@@ -12,6 +12,7 @@ var summoned := false
 func setup(id: String) -> void:
 	super.setup(id)
 	super_armor = true
+	down_extend = false
 	stagger_max = float(mon.get("stagger", 900))
 	cooldown = 70
 

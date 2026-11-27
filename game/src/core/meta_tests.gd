@@ -117,6 +117,26 @@ static func run() -> int:
 	var v3 := { "version": 3, "account": GameState.new_save()["account"], "characters": { "cls_silver": { "lv": 3, "exp": 0, "equip": {}, "skills": { "sk_mp1": 1 }, "pet": "" } },
 		"progress": { "cleared": {} }, "settings": {} }
 	ck.call(GameState._migrate(v3)["characters"]["cls_silver"]["loadout"].size() == 3, "v3 save gets loadout")
+	# 다운 공격: 쓰러진 몬스터는 맞고, 쓰러진 플레이어는 무적
+	var fake_world := Node.new()
+	fake_world.set_script(null)
+	var e := Enemy.new()
+	e.team = 1
+	e.max_hp = 1000
+	e.hp = 1000
+	e.h = 14.0
+	e.state = "down"
+	var atk_d := { "kb": [1.0, 0.0], "launch": 0.0, "hitstun": 10 }
+	var src := Enemy.new()
+	e.take_hit(src, atk_d, { "dmg": 50 })
+	ck.call(e.hp == 950 and e.state == "down" and e.down_hits == 1, "downed monster takes damage and stays down")
+	for i in range(Fighter.DOWN_HIT_LIMIT):
+		e.take_hit(src, atk_d, { "dmg": 1 })
+	ck.call(e.state == "getup" and e.invuln > 0, "downed monster gets up after hit limit")
+	ck.call(e.hurtbox().size.y < 14.0 or e.state != "down", "downed hurtbox is low")
+	e.free()
+	src.free()
+	fake_world.free()
 	for c in checks:
 		print("  %s %s" % ["ok  " if c[0] else "FAIL", c[1]])
 		if not c[0]:

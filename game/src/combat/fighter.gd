@@ -7,6 +7,10 @@ const MAX_FALL := 7.0
 const DOWN_FRAMES := 40
 const GETUP_FRAMES := 18
 const GETUP_INVULN := 45
+const ENEMY_GETUP_INVULN := 20
+## 쓰러진 적이 이만큼 맞으면 무적으로 일어난다 (무한 다운 공격 방지)
+const DOWN_HIT_LIMIT := 6
+const DOWN_DMG_MUL := 0.8
 
 var world: Node = null
 var team := 0
@@ -34,6 +38,8 @@ var flash := 0
 var dead := false
 var remove_me := false
 
+var down_hits := 0
+var down_extend := true     # 다운 중 맞으면 누워 있는 시간이 늘어나는가 (보스 그로기는 false)
 var down_len := DOWN_FRAMES
 var getup_len := GETUP_FRAMES
 var def_down := 0.0     # 방어 약화 비율
@@ -46,6 +52,9 @@ var _hit_log: Dictionary = {}   # 대상 instance_id -> 마지막으로 맞힌 �
 
 
 func hurtbox() -> Rect2:
+	if state in ["down", "dead"]:
+		var lh := minf(h, 10.0)   # 누워 있으면 판정이 낮아진다
+		return Rect2(position.x - w / 2.0 - 4.0, position.y - lh, w + 8.0, lh)
 	return Rect2(position.x - w / 2.0, position.y - h, w, h)
 
 
@@ -145,7 +154,9 @@ func _tick_common_states() -> bool:
 					set_state("dead")
 				else:
 					set_state("down")
-					invuln = down_len + getup_len
+					down_hits = 0
+					# 플레이어는 쓰러져 있는 동안 무적, 몬스터는 다운 공격을 받는다
+					invuln = down_len + getup_len if team == 0 else 0
 			return true
 		"down":
 			vel.x *= 0.7
@@ -154,7 +165,7 @@ func _tick_common_states() -> bool:
 			return true
 		"getup":
 			if t >= getup_len:
-				invuln = GETUP_INVULN
+				invuln = GETUP_INVULN if team == 0 else ENEMY_GETUP_INVULN
 				on_getup()
 				set_state("idle")
 			return true
@@ -228,6 +239,8 @@ func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
 	if super_armor and not is_down_state():
 		return
 	if is_down_state():
+		if team != 0 and state == "down":
+			_hit_while_down()
 		return
 	var launch := float(a["launch"])
 	if not on_ground or state == "air_hurt":
@@ -242,6 +255,19 @@ func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
 		set_state("hurt")
 	if not flying:
 		facing = -dir
+
+
+## 다운 공격: 살짝 튀어 오르고 조금 더 누워 있는다. 너무 많이 맞으면 무적으로 일어난다.
+func _hit_while_down() -> void:
+	down_hits += 1
+	vel.y = -1.4
+	on_ground = false
+	if down_extend:
+		t = maxi(0, t - 8)
+	if down_hits >= DOWN_HIT_LIMIT and down_extend:
+		down_hits = 0
+		invuln = getup_len + ENEMY_GETUP_INVULN
+		set_state("getup")
 
 
 # ---------- 스프라이트 시트 ----------

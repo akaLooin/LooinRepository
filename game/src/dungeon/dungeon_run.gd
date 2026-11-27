@@ -300,6 +300,10 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 		gold = player.gold_attack
 		if gold:
 			mul *= player.gold_mul
+	if o.team == 1 and o.state == "down":
+		mul *= Fighter.DOWN_DMG_MUL
+		if att == player:
+			player._count("down_hit")
 	var eff_def := o.def * (1.0 - o.def_down) if o.def_down_t > 0 else o.def
 	var res := DamageCalc.resolve(att.atk, eff_def, mul, att.crit, is_back, rng)
 	if o == player and from_pos != null and player.ranged_cut > 0.0:
