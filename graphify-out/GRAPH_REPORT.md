@@ -1,18 +1,18 @@
-# Graph Report - LooinRepository  (2026-11-26)
+# Graph Report - LooinRepository  (2026-11-27)
 
 ## Corpus Check
-- 58 files · ~41,377 words
+- 60 files · ~42,183 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 206 file(s) not represented in the graph (top: .import 104, .gd 45, .uid 45)
-- WARNING: 206 of 370 files seen (56%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- WARNING: 206 of 373 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 410 nodes · 569 edges · 38 communities (31 shown, 7 thin omitted)
+- 422 nodes · 583 edges · 39 communities (32 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c053b8a9`
+- Built from commit: `9227808c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -54,6 +54,7 @@
 - 게임 진행 흐름 — 원작 방식 대응표
 - 캐릭터 시트 — 실버 (슬롯 1 · 근접 입문형)
 - Icon
+- 캐릭터 시트 — 글렌 (슬롯 2 · 원거리 기동형)
 
 ## God Nodes (most connected - your core abstractions)
 1. `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` - 13 edges
@@ -74,7 +75,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (38 total, 7 thin omitted)
+## Communities (39 total, 7 thin omitted)
 
 ### Community 0 - "listing.py"
 Cohesion: 0.33
@@ -185,8 +186,8 @@ Cohesion: 0.27
 Nodes (12): env(), f_of(), lowpass(), music(), noise(), render_song(), save(), sfx() (+4 more)
 
 ### Community 33 - "sys"
-Cohesion: 0.11
-Nodes (8): blob(), hero_down(), hero_frame(), stamp(), px(), sprite(), draw(), stamp()
+Cohesion: 0.09
+Nodes (11): blob(), hero_down(), hero_frame(), stamp(), px(), sprite(), C(), draw() (+3 more)
 
 ### Community 34 - "아트 규격서 — 테일즈토피아 RPG"
 Cohesion: 0.20
@@ -200,6 +201,10 @@ Nodes (4): 게임 진행 흐름 — 원작 방식 대응표, 로비에서 할 �
 Cohesion: 0.17
 Nodes (11): 검술, 게임 설계 제안 (1차 직업 「기사」), 구현 메모, 디자인 v0.9, 수호, 스킬 트리 v0.9 (1차 「기사」), 은빛, 의뢰 내용 요약 (+3 more)
 
+### Community 38 - "캐릭터 시트 — 글렌 (슬롯 2 · 원거리 기동형)"
+Cohesion: 0.29
+Nodes (6): 게임 설계 제안 (1차 「사냥꾼」), 스킬 트리 탭 (약 30노드 목표), 의뢰 내용 요약, 캐릭터 시트 — 글렌 (슬롯 2 · 원거리 기동형), 필살기 후보 (칸마다 3개 중 1개 장착, 실버와 같은 구조), 확인 필요
+
 ## Knowledge Gaps
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -210,13 +215,13 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
-- **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+- **Why does `Icon` connect `Icon` to `sys`?**
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Should `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
+- **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Should `json` be split into smaller, more focused modules?**
   _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
 - **Should `concept_field_battle.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1455026455026455 - nodes in this community are weakly interconnected._
-- **Should `sys` be split into smaller, more focused modules?**
-  _Cohesion score 0.11231884057971014 - nodes in this community are weakly interconnected._
