@@ -1,7 +1,7 @@
 # Graph Report - LooinRepository  (2026-11-28)
 
 ## Corpus Check
-- 64 files · ~53,886 words
+- 64 files · ~53,967 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 277 file(s) not represented in the graph (top: .import 175, .gd 45, .uid 45)
 - WARNING: 277 of 520 files seen (53%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
@@ -12,7 +12,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `960a3111`
+- Built from commit: `0267be84`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
