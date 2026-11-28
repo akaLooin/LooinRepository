@@ -458,6 +458,11 @@
         "row": 11,
         "frames": 1,
         "col": 1
+      },
+      "atk_l_up": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
       }
     }
   }

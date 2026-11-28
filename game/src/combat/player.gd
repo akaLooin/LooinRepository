@@ -388,6 +388,11 @@ func _ground(f: Dictionary) -> void:
 			_count("aim_up")
 		start_attack(sid, _atk(sid))
 		return
+	if atk_buffer > 0 and not elements.is_empty() and f["y"] < 0 and cls["moves"].has("aim_up"):
+		atk_buffer = 0
+		_count("aim_up")
+		start_attack(cls["moves"]["aim_up"], _atk(cls["moves"]["aim_up"]))
+		return
 	if atk_buffer > 0:
 		atk_buffer = 0
 		if f["y"] < 0 and _fx("move_up") > 0.0:

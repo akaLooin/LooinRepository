@@ -161,7 +161,9 @@
     ],
     "dash_attack": "atk_l4",
     "air_attack": "atk_l_air",
-    "moves": {},
+    "moves": {
+      "aim_up": "atk_l_up"
+    },
     "skills": [
       "sk_l_split",
       "sk_l_bang",

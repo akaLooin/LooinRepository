@@ -264,6 +264,10 @@ func _bot_input() -> Dictionary:
 	if not p.elements.is_empty():
 		if k % 300 == 0:
 			f["element_p"] = true
+		if dy < -30.0 and absf(dx) < 90.0 and p.on_ground and k % 8 == 0:
+			f["y"] = -1
+			f["attack_p"] = true
+			return f
 		# 가끔 영창: 공격을 길게 눌렀다 뗀다
 		if k % 400 < 70 and absf(dx) > 60.0 and absf(dx) < 140.0 and only_skill == 0:
 			f["attack_h"] = k % 400 < 66
