@@ -7,7 +7,7 @@ const GRADE_COL := { "common": Color("9aa7b8"), "rare": Color("4fb3ff"), "epic":
 
 static func item_icon(item_id: String) -> Texture2D:
 	var d := Meta.item_def(item_id)
-	return UiKit.tex("item_%s_%s" % [d["slot"], d["grade"]])
+	return UiKit.tex("item_%s_%s" % [d.get("icon", d["slot"]), d["grade"]])
 
 
 ## 아이템 한 칸 (등급 색 테두리 + 아이콘 2배 + 강화 수치 + 착용 표시)

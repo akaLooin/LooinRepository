@@ -189,5 +189,138 @@
         "col": 1
       }
     }
+  },
+  "cls_glenn": {
+    "sheet": "res://assets/sprites/hero_glenn.png",
+    "frame": [
+      48,
+      48
+    ],
+    "origin": [
+      24,
+      44
+    ],
+    "portrait": "res://assets/sprites/portrait_glenn.png",
+    "anims": {
+      "idle": {
+        "row": 0,
+        "frames": 4,
+        "fps": 4
+      },
+      "run": {
+        "row": 1,
+        "frames": 6,
+        "fps": 12
+      },
+      "air": {
+        "row": 2,
+        "frames": 1,
+        "col": 0
+      },
+      "dash": {
+        "row": 3,
+        "frames": 1
+      },
+      "atk": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_shot": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_shot_up": {
+        "row": 5,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_shot_down": {
+        "row": 6,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_shot_air": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_charge": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_backstep": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_bash": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_counter": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_grenade": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_fan": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_net": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_trap": {
+        "row": 11,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_rain": {
+        "row": 13,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_spikes": {
+        "row": 11,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_snipe": {
+        "row": 12,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_hawk": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_g_hunt": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "hurt": {
+        "row": 14,
+        "frames": 1,
+        "col": 0
+      },
+      "down": {
+        "row": 14,
+        "frames": 1,
+        "col": 1
+      }
+    }
   }
 }

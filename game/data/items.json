@@ -7,7 +7,8 @@
     "stats": {
       "atk": 20
     },
-    "price": 200
+    "price": 200,
+    "class": "cls_silver"
   },
   "eq_wpn_02": {
     "name": "푸른 리본 검",
@@ -18,7 +19,8 @@
       "atk": 45,
       "crit": 0.03
     },
-    "price": 900
+    "price": 900,
+    "class": "cls_silver"
   },
   "eq_wpn_03": {
     "name": "잉크를 베는 서문검",
@@ -29,7 +31,8 @@
       "atk": 80,
       "crit": 0.06
     },
-    "price": 2400
+    "price": 2400,
+    "class": "cls_silver"
   },
   "eq_hel_01": {
     "name": "낡은 독서모",
@@ -197,5 +200,43 @@
       "atk": 8
     },
     "price": 2300
+  },
+  "eq_bow_01": {
+    "name": "사냥꾼의 나무 활",
+    "slot": "weapon",
+    "grade": "common",
+    "lv": 1,
+    "stats": {
+      "atk": 22
+    },
+    "price": 200,
+    "class": "cls_glenn",
+    "icon": "bow"
+  },
+  "eq_bow_02": {
+    "name": "녹색 깃 장궁",
+    "slot": "weapon",
+    "grade": "rare",
+    "lv": 3,
+    "stats": {
+      "atk": 47,
+      "crit": 0.04
+    },
+    "price": 900,
+    "class": "cls_glenn",
+    "icon": "bow"
+  },
+  "eq_bow_03": {
+    "name": "황금 깃 사냥활",
+    "slot": "weapon",
+    "grade": "epic",
+    "lv": 5,
+    "stats": {
+      "atk": 84,
+      "crit": 0.07
+    },
+    "price": 2400,
+    "class": "cls_glenn",
+    "icon": "bow"
   }
 }

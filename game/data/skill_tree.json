@@ -580,5 +580,587 @@
         }
       }
     }
+  },
+  "tree_glenn": {
+    "tabs": [
+      [
+        "mp",
+        "필살기"
+      ],
+      [
+        "shoot",
+        "사격"
+      ],
+      [
+        "hunt",
+        "사냥"
+      ],
+      [
+        "trap",
+        "덫"
+      ]
+    ],
+    "tab_cols": {
+      "mp": [
+        "MP 1칸",
+        "MP 2칸",
+        "MP 3칸"
+      ],
+      "shoot": [
+        "",
+        "",
+        ""
+      ],
+      "hunt": [
+        "",
+        "",
+        ""
+      ],
+      "trap": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "nodes": {
+      "sk_g_grenade": {
+        "name": "수류탄 투척",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "포물선으로 던져 땅이나 적에 닿으면 크게 폭발."
+      },
+      "sk_g_fan": {
+        "name": "부채꼴 5연발",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 5,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 2,
+        "desc": "앞으로 부채꼴 모양 화살 5발."
+      },
+      "sk_g_net": {
+        "name": "그물 덫",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          0,
+          2
+        ],
+        "max": 5,
+        "req_lv": 4,
+        "pre": [],
+        "cost": 2,
+        "desc": "그물을 쏘아 맞은 적과 주변을 3초 묶는다."
+      },
+      "sk_g_trap": {
+        "name": "폭발 트랩",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 5,
+        "req_lv": 3,
+        "pre": [
+          "sk_g_grenade"
+        ],
+        "cost": 2,
+        "desc": "발밑에 덫 설치. 적이 닿으면 엄청난 폭발."
+      },
+      "sk_g_rain": {
+        "name": "화살비",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 5,
+        "req_lv": 6,
+        "pre": [
+          "sk_g_fan"
+        ],
+        "cost": 2,
+        "desc": "앞쪽 넓은 범위에 화살 20발을 쏟아붓는다."
+      },
+      "sk_g_spikes": {
+        "name": "덫 지대",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          1,
+          2
+        ],
+        "max": 5,
+        "req_lv": 9,
+        "pre": [
+          "sk_g_net"
+        ],
+        "cost": 2,
+        "desc": "앞쪽 바닥에 가시 덫 3개. 밟은 적을 계속 찌른다."
+      },
+      "sk_g_snipe": {
+        "name": "스나이핑 샷",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 5,
+        "req_lv": 5,
+        "pre": [
+          "sk_g_trap"
+        ],
+        "cost": 3,
+        "desc": "화면 끝까지 꿰뚫는 강력한 화살. (컷인)"
+      },
+      "sk_g_hawk": {
+        "name": "매의 눈",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 5,
+        "req_lv": 11,
+        "pre": [
+          "sk_g_rain"
+        ],
+        "cost": 3,
+        "desc": "15초간 모든 화살 관통, 치명 +30%, 공격 +15%. (컷인)"
+      },
+      "sk_g_hunt": {
+        "name": "사냥 시작",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          2,
+          2
+        ],
+        "max": 5,
+        "req_lv": 14,
+        "pre": [
+          "sk_g_spikes"
+        ],
+        "cost": 3,
+        "desc": "수류탄 → 덫 → 5연발 → 강사를 쉬지 않고 퍼붓는다. (컷인)"
+      },
+      "ps_g_atk": {
+        "name": "활 숙련",
+        "kind": "passive",
+        "tab": "shoot",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "공격력 +3%/레벨",
+        "effect": {
+          "atk_pct": 0.03
+        }
+      },
+      "ps_g_charge": {
+        "name": "강궁",
+        "kind": "passive",
+        "tab": "shoot",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 3,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 1,
+        "desc": "차지 샷 피해 +20%/레벨",
+        "effect": {
+          "charge_pct": 0.2
+        }
+      },
+      "ps_arrowspd": {
+        "name": "바람 깃",
+        "kind": "passive",
+        "tab": "shoot",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 3,
+        "req_lv": 3,
+        "pre": [],
+        "cost": 1,
+        "desc": "화살 속도 +15%/레벨",
+        "effect": {
+          "arrow_spd": 0.15
+        }
+      },
+      "ps_g_crit": {
+        "name": "약점 포착",
+        "kind": "passive",
+        "tab": "shoot",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 5,
+        "req_lv": 5,
+        "pre": [
+          "ps_g_atk"
+        ],
+        "cost": 1,
+        "desc": "치명타 확률 +2%/레벨",
+        "effect": {
+          "crit_add": 0.02
+        }
+      },
+      "cb_multi": {
+        "name": "갈래 화살",
+        "kind": "combo",
+        "tab": "shoot",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 1,
+        "req_lv": 6,
+        "pre": [
+          "ps_g_charge"
+        ],
+        "cost": 2,
+        "desc": "차지 샷이 세 갈래로 나간다",
+        "effect": {
+          "multi": 1
+        }
+      },
+      "cb_rapid": {
+        "name": "속사",
+        "kind": "combo",
+        "tab": "shoot",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 1,
+        "req_lv": 3,
+        "pre": [
+          "ps_arrowspd"
+        ],
+        "cost": 2,
+        "desc": "연사가 4발까지 이어지고 조금 더 빨라진다",
+        "effect": {
+          "rapid": 1
+        }
+      },
+      "cb_airshot": {
+        "name": "공중 연사",
+        "kind": "combo",
+        "tab": "shoot",
+        "pos": [
+          0,
+          2
+        ],
+        "max": 1,
+        "req_lv": 4,
+        "pre": [
+          "ps_g_crit"
+        ],
+        "cost": 2,
+        "desc": "공중에서 화살을 한 번 더 쏠 수 있다",
+        "effect": {
+          "air_chain": 1
+        }
+      },
+      "ps_pierce": {
+        "name": "꿰뚫는 화살",
+        "kind": "passive",
+        "tab": "shoot",
+        "pos": [
+          1,
+          2
+        ],
+        "max": 1,
+        "req_lv": 10,
+        "pre": [
+          "cb_multi"
+        ],
+        "cost": 3,
+        "desc": "모든 화살이 적을 꿰뚫는다",
+        "effect": {
+          "pierce": 1
+        }
+      },
+      "ps_g_hp": {
+        "name": "사냥꾼의 체력",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "최대 HP +5%/레벨",
+        "effect": {
+          "hp_pct": 0.05
+        }
+      },
+      "ps_bash": {
+        "name": "활로 후려치기",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 1,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 1,
+        "desc": "바짝 붙은 적에게 공격하면 활로 후려쳐 밀어낸다",
+        "effect": {
+          "bash": 1
+        }
+      },
+      "ps_stealth": {
+        "name": "숨죽이기",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 3,
+        "req_lv": 3,
+        "pre": [],
+        "cost": 1,
+        "desc": "몬스터가 알아차리는 거리 -10%/레벨",
+        "effect": {
+          "stealth": 0.1
+        }
+      },
+      "ps_g_mp": {
+        "name": "사냥 본능",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 5,
+        "req_lv": 3,
+        "pre": [
+          "ps_g_hp"
+        ],
+        "cost": 1,
+        "desc": "MP 획득량 +8%/레벨",
+        "effect": {
+          "mp_gain_pct": 0.08
+        }
+      },
+      "ps_dodge": {
+        "name": "날렵한 몸놀림",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 1,
+        "req_lv": 6,
+        "pre": [
+          "ps_bash"
+        ],
+        "cost": 2,
+        "desc": "백스텝 샷 중 잠깐 무적, 대시가 빨라진다",
+        "effect": {
+          "dodge": 1
+        }
+      },
+      "ps_far": {
+        "name": "먼 과녁",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 3,
+        "req_lv": 4,
+        "pre": [
+          "ps_stealth"
+        ],
+        "cost": 1,
+        "desc": "멀리 있는 적(약 화면 1/4 이상)에게 피해 +10%/레벨",
+        "effect": {
+          "far": 0.1
+        }
+      },
+      "ps_stick": {
+        "name": "꽂힌 화살",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          2,
+          2
+        ],
+        "max": 3,
+        "req_lv": 5,
+        "pre": [
+          "ps_far"
+        ],
+        "cost": 1,
+        "desc": "꽂힌 화살 하나당 피해 +2%/레벨, 최대 개수 +1/레벨",
+        "effect": {
+          "stick": 1
+        }
+      },
+      "ps_g_last": {
+        "name": "끈질긴 생존",
+        "kind": "passive",
+        "tab": "hunt",
+        "pos": [
+          1,
+          2
+        ],
+        "max": 1,
+        "req_lv": 12,
+        "pre": [
+          "ps_dodge"
+        ],
+        "cost": 3,
+        "desc": "던전마다 한 번, 쓰러질 공격을 HP 1로 버틴다",
+        "effect": {
+          "last_stand": 1
+        }
+      },
+      "ps_trap_pow": {
+        "name": "화약 배합",
+        "kind": "passive",
+        "tab": "trap",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "폭발 피해 +12%/레벨",
+        "effect": {
+          "boom_pct": 0.12
+        }
+      },
+      "ps_trap_dur": {
+        "name": "오래가는 덫",
+        "kind": "passive",
+        "tab": "trap",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 3,
+        "req_lv": 3,
+        "pre": [],
+        "cost": 1,
+        "desc": "덫·그물 지속 시간 +30%/레벨",
+        "effect": {
+          "trap_dur": 0.3
+        }
+      },
+      "ps_snare": {
+        "name": "묶인 사냥감",
+        "kind": "passive",
+        "tab": "trap",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 3,
+        "req_lv": 6,
+        "pre": [],
+        "cost": 1,
+        "desc": "묶인 적에게 피해 +10%/레벨",
+        "effect": {
+          "snare": 0.1
+        }
+      },
+      "ps_trap_radius": {
+        "name": "넓은 폭발",
+        "kind": "passive",
+        "tab": "trap",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 3,
+        "req_lv": 4,
+        "pre": [
+          "ps_trap_pow"
+        ],
+        "cost": 1,
+        "desc": "폭발 범위 +15%/레벨",
+        "effect": {
+          "boom_radius": 0.15
+        }
+      },
+      "ps_trap_count": {
+        "name": "덫 두 개",
+        "kind": "combo",
+        "tab": "trap",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 1,
+        "req_lv": 8,
+        "pre": [
+          "ps_trap_dur"
+        ],
+        "cost": 2,
+        "desc": "폭발 트랩을 두 개 설치한다",
+        "effect": {
+          "trap_count": 1
+        }
+      },
+      "ps_shrapnel": {
+        "name": "파편 수류탄",
+        "kind": "combo",
+        "tab": "trap",
+        "pos": [
+          0,
+          2
+        ],
+        "max": 1,
+        "req_lv": 7,
+        "pre": [
+          "ps_trap_radius"
+        ],
+        "cost": 2,
+        "desc": "수류탄이 터지며 파편 화살 6발이 퍼진다",
+        "effect": {
+          "shrapnel": 1
+        }
+      }
+    }
   }
 }

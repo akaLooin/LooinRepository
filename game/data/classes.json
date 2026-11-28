@@ -45,9 +45,68 @@
     },
     "moves": {
       "up": "atk_up",
-      "down": "atk_down",
+      "dive": "atk_down",
       "combo5": "atk_g5",
       "dash2": "atk_dash2"
-    }
+    },
+    "start_gear": [
+      "eq_wpn_01",
+      "eq_top_01"
+    ]
+  },
+  "cls_glenn": {
+    "name": "글렌 · 사냥꾼",
+    "note": "판타지아 사냥꾼. 활 원거리 기동형 (슬롯 2).",
+    "base": {
+      "hp": 1260,
+      "atk": 105,
+      "def": 46,
+      "crit": 0.06
+    },
+    "growth": {
+      "hp": 80,
+      "atk": 9,
+      "def": 3
+    },
+    "move": {
+      "run": 1.85,
+      "jump": 6.2,
+      "air_jumps": 1,
+      "dash": 4.4,
+      "dash_frames": 12,
+      "gravity": 0.32
+    },
+    "size": [
+      12,
+      26
+    ],
+    "ranged": {
+      "stack_max": 5,
+      "stack_pct": 0.04,
+      "charge_frames": 34
+    },
+    "combo": [
+      "atk_shot",
+      "atk_shot",
+      "atk_shot"
+    ],
+    "dash_attack": "atk_backstep",
+    "air_attack": "atk_shot_air",
+    "moves": {
+      "aim_up": "atk_shot_up",
+      "aim_down": "atk_shot_down",
+      "charge": "atk_charge",
+      "bash": "atk_bash"
+    },
+    "skills": [
+      "sk_g_grenade",
+      "sk_g_trap",
+      "sk_g_snipe"
+    ],
+    "skill_tree": "tree_glenn",
+    "start_gear": [
+      "eq_bow_01",
+      "eq_top_01"
+    ]
   }
 }

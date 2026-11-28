@@ -7,6 +7,8 @@ extends Control
 var router: Node
 var _t := 0
 var _spots: Array = []   # [rect, label, target]
+var _sheet: Texture2D = null
+var _portrait: Texture2D = null
 
 
 func _init() -> void:
@@ -14,6 +16,12 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	var spd: Dictionary = DataDB.tables.get("sprites", {}).get(GameState.current_class, {})
+	if not spd.is_empty():
+		if ResourceLoader.exists(spd["sheet"]):
+			_sheet = load(spd["sheet"])
+		if ResourceLoader.exists(spd.get("portrait", "")):
+			_portrait = load(spd["portrait"])
 	var sz := get_viewport_rect().size
 	_build_spots(sz)
 	_build_topbar()
@@ -210,23 +218,18 @@ func _draw() -> void:
 		for i in range(3):
 			draw_rect(Rect2(s4.position.x + 18 + i * 5, s4.position.y + 8 + (wob if i == 1 else 0), 5, 5), Color("9bd36b"))
 		draw_rect(Rect2(s4.position.x + 29, s4.position.y + 8, 2, 2), Tk.INK)
-	# 플레이어(임시 캐릭터) 서 있는 모습
+	# 지금 고른 인물 (스프라이트 대기 프레임)
 	var px := cx + 74.0
 	var py := 196.0
 	draw_rect(Rect2(px - 10, py, 20, 2), Color(Tk.INK, 0.4))
-	draw_rect(Rect2(px - 4, py - 6, 3, 6), Tk.P_COAT_DARK)
-	draw_rect(Rect2(px + 1, py - 6, 3, 6), Tk.P_COAT_DARK)
-	draw_rect(Rect2(px - 6, py - 19, 12, 13), Tk.P_COAT)
-	draw_rect(Rect2(px - 5, py - 20, 10, 3), Tk.P_SCARF)
-	draw_rect(Rect2(px - 4, py - 27, 8, 7), Tk.P_SKIN)
-	draw_rect(Rect2(px - 5, py - 28, 10, 3), Tk.P_HAIR)
-	draw_rect(Rect2(px + 5, py - 22, 3, 13), Tk.P_BLADE)
+	if _sheet:
+		var fr := (_t / 15) % 4
+		draw_texture_rect_region(_sheet, Rect2(px - 24, py - 44, 48, 48), Rect2(fr * 48, 0, 48, 48))
 	# 장서표 초상 틀
 	draw_rect(Rect2(4, 4, 32, 24), Tk.GOLD.darkened(0.3))
 	draw_rect(Rect2(5, 5, 30, 22), Color("3f2b4f"))
-	var pp: String = DataDB.tables.get("sprites", {}).get(GameState.current_class, {}).get("portrait", "")
-	if pp != "" and ResourceLoader.exists(pp):
-		draw_texture_rect_region(load(pp), Rect2(5, 5, 30, 22), Rect2(1, 2, 30, 22))
+	if _portrait:
+		draw_texture_rect_region(_portrait, Rect2(5, 5, 30, 22), Rect2(1, 2, 30, 22))
 	# 장소 이름표
 	for sp in _spots:
 		var r: Rect2 = sp[0]

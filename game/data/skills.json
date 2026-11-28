@@ -112,5 +112,143 @@
     "attack": "atk_dawn",
     "invuln": 80,
     "cutin": true
+  },
+  "sk_g_grenade": {
+    "name": "수류탄 투척",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_g_grenade",
+    "invuln": 20,
+    "cutin": false,
+    "throw": {
+      "vel": [
+        3.2,
+        -4.0
+      ],
+      "gravity": 0.22,
+      "radius": 36,
+      "mul": 2.6,
+      "hitstop": 7,
+      "hitstun": 34,
+      "kb": [
+        3.0,
+        0.0
+      ],
+      "launch": 4.2,
+      "mp": 0.0
+    }
+  },
+  "sk_g_fan": {
+    "name": "부채꼴 5연발",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_g_fan",
+    "invuln": 20,
+    "cutin": false,
+    "fan": {
+      "count": 5,
+      "spread": 36,
+      "mul": 0.95,
+      "speed": 6.5
+    }
+  },
+  "sk_g_net": {
+    "name": "그물 덫",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_g_net",
+    "invuln": 20,
+    "cutin": false,
+    "net": {
+      "speed": 5.0,
+      "mul": 0.7,
+      "root": 180,
+      "radius": 28
+    }
+  },
+  "sk_g_trap": {
+    "name": "폭발 트랩",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_g_trap",
+    "invuln": 24,
+    "cutin": false,
+    "trap": {
+      "radius": 44,
+      "mul": 4.0,
+      "life": 900,
+      "hitstop": 7,
+      "hitstun": 34,
+      "kb": [
+        3.0,
+        0.0
+      ],
+      "launch": 4.2,
+      "mp": 0.0
+    }
+  },
+  "sk_g_rain": {
+    "name": "화살비",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_g_rain",
+    "invuln": 30,
+    "cutin": false,
+    "arrowrain": {
+      "count": 20,
+      "width": 150,
+      "offset": 90,
+      "mul": 0.75
+    }
+  },
+  "sk_g_spikes": {
+    "name": "덫 지대",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_g_spikes",
+    "invuln": 24,
+    "cutin": false,
+    "spikes": {
+      "count": 3,
+      "gap": 28,
+      "mul": 0.55,
+      "life": 420,
+      "interval": 24
+    }
+  },
+  "sk_g_snipe": {
+    "name": "스나이핑 샷",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_g_snipe",
+    "invuln": 70,
+    "cutin": true,
+    "snipe": {
+      "mul": 7.5,
+      "speed": 15.0
+    }
+  },
+  "sk_g_hawk": {
+    "name": "매의 눈",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_g_hawk",
+    "invuln": 44,
+    "cutin": true,
+    "buff": {
+      "frames": 900,
+      "pierce": true,
+      "crit_add": 0.3,
+      "atk_pct": 0.15
+    }
+  },
+  "sk_g_hunt": {
+    "name": "사냥 시작",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_g_hunt",
+    "invuln": 100,
+    "cutin": true,
+    "hunt": true
   }
 }

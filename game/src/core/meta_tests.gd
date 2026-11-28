@@ -117,6 +117,18 @@ static func run() -> int:
 	var v3 := { "version": 3, "account": GameState.new_save()["account"], "characters": { "cls_silver": { "lv": 3, "exp": 0, "equip": {}, "skills": { "sk_mp1": 1 }, "pet": "" } },
 		"progress": { "cleared": {} }, "settings": {} }
 	ck.call(GameState._migrate(v3)["characters"]["cls_silver"]["loadout"].size() == 3, "v3 save gets loadout")
+	# 글렌: 처음 고르면 시작 장비, 활은 글렌 전용
+	GameState.data = GameState.new_save()
+	var gd := GameState.char_data("cls_glenn")
+	var bow_uid: String = gd["equip"].get("weapon", "")
+	ck.call(bow_uid != "" and Meta.find(bow_uid)["item"] == "eq_bow_01", "Glenn starts with a wooden bow")
+	ck.call(gd["loadout"] == ["sk_g_grenade", "sk_g_trap", "sk_g_snipe"] and int(gd["skills"]["sk_g_grenade"]) == 1, "Glenn default loadout")
+	var sword := Meta.add_item("eq_wpn_01")
+	ck.call(Meta.equip("cls_glenn", sword) != "", "Glenn cannot equip a sword")
+	ck.call(Meta.equip("cls_silver", Meta.add_item("eq_bow_01")) != "", "Silver cannot equip a bow")
+	ck.call(Meta.tree("cls_glenn").size() == 31, "Glenn tree has 31 nodes")
+	GameState.char_data("cls_glenn")["lv"] = 4
+	ck.call(Meta.learn("cls_glenn", "ps_bash") == "" and GameState.stats("cls_glenn")["fx"].get("bash", 0.0) > 0.0, "bash passive reaches stats")
 	# 다운 공격: 쓰러진 몬스터는 맞고, 쓰러진 플레이어는 무적
 	var fake_world := Node.new()
 	fake_world.set_script(null)

@@ -20,7 +20,7 @@ static func _wrap(l: Label, w: float) -> Label:
 
 const SLOT_PREVIEW := [
 	["근접 입문형", "cls_silver", "판타지아"],
-	["원거리 기동형", "", ""],
+	["원거리 기동형", "cls_glenn", "판타지아"],
 	["마법 광역형", "", ""],
 	["쌍검 암살형", "", ""],
 ]

@@ -272,6 +272,23 @@ func _resolve_hits() -> void:
 			if o.team == pr.team or o.dead or o.invuln > 0:
 				continue
 			if pr.rect().intersects(o.hurtbox()):
+				if pr.kind in ["grenade", "trap"]:
+					explode(pr.owner_f, pr.position, pr.data)
+					pr.remove_me = true
+					break
+				if pr.kind == "spike":
+					var last := int(pr.hit_ids.get(o.get_instance_id(), -999))
+					if ticks - last >= int(pr.data.get("interval", 24)):
+						pr.hit_ids[o.get_instance_id()] = ticks
+						_apply_hit(pr.owner_f, o, pr.data, pr.position)
+					continue
+				if pr.kind == "net":
+					for e2 in enemies:
+						if not e2.dead and e2.position.distance_to(pr.position) <= float(pr.data.get("radius", 24)):
+							e2.root_t = int(pr.data["root"])
+					_apply_hit(pr.owner_f, o, pr.data, pr.position)
+					pr.remove_me = true
+					break
 				if pr.pierce:
 					if pr.hit_ids.has(o.get_instance_id()):
 						continue
@@ -300,6 +317,16 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 		gold = player.gold_attack
 		if gold:
 			mul *= player.gold_mul
+	if att == player and o.team == 1:
+		if player.ranged and o.arrows > 0:
+			mul *= 1.0 + o.arrows * player.stack_pct
+		if from_pos != null and absf(o.position.x - player.position.x) > 120.0:
+			mul *= 1.0 + player._fx("far")
+		if o.root_t > 0:
+			mul *= 1.0 + player._fx("snare")
+		if a.get("stick", false):
+			o.arrows = mini(player.stack_max, o.arrows + 1)
+			o.arrows_t = 360
 	if o.team == 1 and o.state == "down":
 		mul *= Fighter.DOWN_DMG_MUL
 		if att == player:
@@ -457,6 +484,22 @@ func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionar
 	pr.size = Vector2(12, 14) if kind == "wave" else Vector2(6, 6)
 	if kind == "page":
 		pr.life = 90
+	elif kind in ["arrow", "rainarrow"]:
+		pr.size = Vector2(8, 10)
+		pr.life = 90
+	elif kind == "snipe":
+		pr.size = Vector2(18, 14)
+		pr.life = 60
+	elif kind == "grenade":
+		pr.size = Vector2(8, 8)
+		pr.life = 240
+	elif kind == "net":
+		pr.size = Vector2(12, 12)
+	elif kind == "trap":
+		pr.size = Vector2(16, 8)
+	elif kind == "spike":
+		pr.size = Vector2(18, 8)
+		pr.pierce = true
 	elif kind == "slash" or kind == "goldslash":
 		pr.size = Vector2(12, 24)
 		pr.life = 70
@@ -617,3 +660,53 @@ func flash_slash(at: Vector2, dir: int) -> void:
 ## 은빛 깃털비의 떨어지는 칼날 (연출)
 func spawn_blade(x: float) -> void:
 	_add_fx("blade", Vector2(x, cam.position.y - 150.0 + rng.randf_range(0, 30)), { "color": Color("f4f8fc"), "life": 26, "vel": Vector2(0, 9) })
+
+
+## 바짝 붙은 적이 앞에 있는가 (활로 후려치기)
+func enemy_near(f: Fighter, dist: float) -> bool:
+	for e in enemies:
+		if e.dead:
+			continue
+		var dx: float = (e.position.x - f.position.x) * f.facing
+		if dx > -4.0 and dx < dist and absf(e.position.y - f.position.y) < 24.0:
+			return true
+	return false
+
+
+## 서 있는 곳 아래의 바닥 높이
+func ground_below(p: Vector2) -> float:
+	var best := 238.0
+	for pl in platforms:
+		var r: Rect2 = pl["rect"]
+		if p.x >= r.position.x and p.x <= r.end.x and r.position.y >= p.y - 2.0 and r.position.y < best:
+			best = r.position.y
+	return best
+
+
+## 은신 패시브: 몬스터가 알아차리는 거리 배율
+func aggro_mul() -> float:
+	return maxf(0.4, 1.0 - player._fx("stealth"))
+
+
+## 폭발: 반경 안의 모든 적에게 피해. data 에 radius, shrapnel
+func explode(owner_f: Fighter, at: Vector2, data: Dictionary) -> void:
+	var rad := float(data.get("radius", 36.0))
+	for e in enemies.duplicate():
+		if e.dead or (owner_f.team == e.team):
+			continue
+		var c: Vector2 = e.position + Vector2(0, -e.h / 2.0)
+		if c.distance_to(at + Vector2(0, -6)) <= rad + e.w / 2.0:
+			_apply_hit(owner_f, e, data, at)
+	_add_fx("ring", at + Vector2(0, -6), { "size": rad, "color": Color("ffb347"), "life": 18 })
+	_add_fx("ring", at + Vector2(0, -6), { "size": rad * 0.6, "color": Tk.GOLD, "life": 12 })
+	for i in range(10):
+		spawn_spark(at + Vector2(0, -6), Color("ffb347") if i % 2 == 0 else Tk.INK, 3.0)
+	shake(4.0)
+	Sfx.play("enemy_die", 0.1)
+	if owner_f == player:
+		player._count("boom")
+	if data.get("shrapnel", false) and owner_f == player:
+		for i in range(6):
+			var a := -PI + PI * i / 5.0
+			spawn_projectile(player, at + Vector2(0, -8), Vector2(cos(a), sin(a)) * 5.0,
+				{ "mul": float(data["mul"]) * 0.25, "hitstop": 2, "hitstun": 16, "kb": [1.0, 0.0], "launch": 0.0, "mp": 0.0 }, "rainarrow")

@@ -110,7 +110,7 @@ func _think_melee(p: Fighter) -> void:
 		facing = 1 if dx > 0 else -1
 		vel.x = 0.0
 		start_attack("mon_melee", melee_attack())
-	elif absf(dx) < 320.0 and absf(dx) > reach * 0.6:
+	elif absf(dx) < 320.0 * world.aggro_mul() and absf(dx) > reach * 0.6:
 		facing = 1 if dx > 0 else -1
 		vel.x = facing * speed
 		if state != "run":
@@ -143,7 +143,7 @@ func _think_ranged(p: Fighter) -> void:
 	var to := target - position
 	vel = to.limit_length(speed) if to.length() > 4.0 else vel * 0.8
 	facing = 1 if p.position.x > position.x else -1
-	if cooldown <= 0 and position.distance_to(p.position) < 220.0 and not p.dead:
+	if cooldown <= 0 and position.distance_to(p.position) < 220.0 * world.aggro_mul() and not p.dead:
 		start_attack("mon_shot", { "startup": 20, "active": 0, "recovery": 30, "cancel": 99, "hitbox": [0, 0, 0, 0],
 			"mul": 0.0, "hitstop": 0, "hitstun": 0, "kb": [0, 0], "launch": 0.0, "mp": 0.0 })
 

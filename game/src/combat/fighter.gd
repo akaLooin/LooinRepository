@@ -38,6 +38,9 @@ var flash := 0
 var dead := false
 var remove_me := false
 
+var arrows := 0          # 꽂힌 화살 수
+var arrows_t := 0
+var root_t := 0          # 그물에 묶인 남은 틱
 var down_hits := 0
 var down_extend := true     # 다운 중 맞으면 누워 있는 시간이 늘어나는가 (보스 그로기는 false)
 var down_len := DOWN_FRAMES
@@ -132,8 +135,18 @@ func tick(input: Dictionary) -> void:
 		drop_timer -= 1
 	if def_down_t > 0:
 		def_down_t -= 1
+	if arrows_t > 0:
+		arrows_t -= 1
+		if arrows_t == 0:
+			arrows = 0
 	if not _tick_common_states():
-		think(input)
+		if root_t > 0:
+			root_t -= 1
+			vel.x = 0.0
+			if flying:
+				vel = Vector2.ZERO
+		else:
+			think(input)
 	physics()
 	queue_redraw()
 
@@ -257,6 +270,24 @@ func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
 		facing = -dir
 
 
+## 꽂힌 화살·그물 같은 상태 표시 (모든 캐릭터 공통)
+func _draw_status() -> void:
+	if facing < 0:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
+	for i in range(arrows):
+		var x := -w * 0.3 + i * 3.0
+		var y := -h * 0.6 - (i % 2) * 3.0
+		draw_line(Vector2(x, y), Vector2(x - 5, y - 3), Color("efe3c2"), 1.0)
+		draw_rect(Rect2(x - 6, y - 4, 2, 2), Tk.GOLD)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if root_t > 0:
+		var r := Rect2(-w / 2.0 - 2, -h - 2, w + 4, h + 4)
+		for k in range(0, int(r.size.x), 4):
+			draw_line(Vector2(r.position.x + k, r.position.y), Vector2(r.position.x + k + 6, r.end.y), Color("c9b28a"), 1.0)
+		for k in range(0, int(r.size.y), 4):
+			draw_line(Vector2(r.position.x, r.position.y + k), Vector2(r.end.x, r.position.y + k), Color("c9b28a"), 1.0)
+
+
 ## 다운 공격: 살짝 튀어 오르고 조금 더 누워 있는다. 너무 많이 맞으면 무적으로 일어난다.
 func _hit_while_down() -> void:
 	down_hits += 1
@@ -345,6 +376,7 @@ func px(x: float, y: float, ww: float, hh: float, c: Color) -> void:
 
 
 func draw_debug_boxes() -> void:
+	_draw_status()
 	if not world.show_hitboxes:
 		return
 	var hb := hurtbox()

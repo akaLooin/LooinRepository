@@ -443,5 +443,436 @@
     "launch": 5.6,
     "lunge": 0.0,
     "mp": 0.0
+  },
+  "atk_shot": {
+    "startup": 7,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 12,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "arrow": {
+      "angle": 0,
+      "speed": 6.5,
+      "mul": 1.2,
+      "hitstop": 3,
+      "hitstun": 18,
+      "kb": [
+        1.2,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.065
+    }
+  },
+  "atk_shot_up": {
+    "startup": 7,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 12,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "arrow": {
+      "angle": -45,
+      "speed": 6.5,
+      "mul": 1.2,
+      "hitstop": 3,
+      "hitstun": 18,
+      "kb": [
+        1.2,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.065
+    }
+  },
+  "atk_shot_down": {
+    "startup": 7,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 12,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "arrow": {
+      "angle": 45,
+      "speed": 6.5,
+      "mul": 1.2,
+      "hitstop": 3,
+      "hitstun": 18,
+      "kb": [
+        1.2,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.065
+    }
+  },
+  "atk_shot_air": {
+    "startup": 6,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 12,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "arrow": {
+      "angle": 0,
+      "speed": 6.5,
+      "mul": 1.2,
+      "hitstop": 3,
+      "hitstun": 18,
+      "kb": [
+        1.2,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.065
+    }
+  },
+  "atk_charge": {
+    "startup": 4,
+    "active": 1,
+    "recovery": 18,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "arrow": {
+      "angle": 0,
+      "speed": 9.0,
+      "mul": 2.4,
+      "hitstop": 7,
+      "hitstun": 30,
+      "kb": [
+        3.0,
+        0.0
+      ],
+      "launch": 2.6,
+      "mp": 0.08,
+      "pierce": true
+    }
+  },
+  "atk_backstep": {
+    "startup": 6,
+    "active": 1,
+    "recovery": 14,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": -3.4,
+    "mp": 0.0,
+    "arrow": {
+      "angle": 0,
+      "speed": 6.5,
+      "mul": 1.1,
+      "hitstop": 3,
+      "hitstun": 18,
+      "kb": [
+        1.2,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.05
+    }
+  },
+  "atk_bash": {
+    "startup": 4,
+    "active": 4,
+    "recovery": 14,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      -26,
+      24,
+      22
+    ],
+    "mul": 0.6,
+    "hitstop": 5,
+    "hitstun": 30,
+    "kb": [
+      4.6,
+      0.0
+    ],
+    "launch": 0.0,
+    "lunge": 0.6,
+    "mp": 0.04
+  },
+  "atk_g_grenade": {
+    "startup": 10,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_fan": {
+    "startup": 8,
+    "active": 1,
+    "recovery": 18,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_net": {
+    "startup": 8,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_trap": {
+    "startup": 14,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_rain": {
+    "startup": 12,
+    "active": 40,
+    "recovery": 14,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_spikes": {
+    "startup": 14,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_snipe": {
+    "startup": 40,
+    "active": 1,
+    "recovery": 24,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_hawk": {
+    "startup": 30,
+    "active": 1,
+    "recovery": 12,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_g_hunt": {
+    "startup": 30,
+    "active": 60,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
   }
 }

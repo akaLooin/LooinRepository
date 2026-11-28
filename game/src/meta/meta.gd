@@ -14,6 +14,7 @@ const SHOP := [
 	{ "kind": "potion", "name": "HP 포션", "price": 50 },
 	{ "kind": "revive", "name": "부활 책갈피", "price": 300 },
 	{ "kind": "page", "name": "페이지 조각 ×3", "price": 120, "amount": 3 },
+	{ "kind": "item", "item": "eq_bow_01" },
 	{ "kind": "item", "item": "eq_hel_01" },
 	{ "kind": "item", "item": "eq_bot_01" },
 	{ "kind": "item", "item": "eq_glv_01" },
@@ -67,6 +68,8 @@ static func equip(cls: String, uid: String) -> String:
 		return "없는 아이템입니다"
 	var d := item_def(it["item"])
 	var cd := GameState.char_data(cls)
+	if d.has("class") and d["class"] != cls:
+		return "%s 전용 장비입니다" % DataDB.get_row("classes", d["class"])["name"].split(" · ")[0]
 	if int(d["lv"]) > int(cd["lv"]):
 		return "레벨 %d 이상 필요합니다" % int(d["lv"])
 	var owner := equipped_by(uid)

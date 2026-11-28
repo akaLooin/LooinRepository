@@ -110,3 +110,53 @@ make("ps_afterglow", lambda i: (i.sword(8, 13, -90, 9, S, G), i.arc(8, 6, 5, 180
 make("ps_goldpow", lambda i: (i.sword(3, 13, -45, 11, Y, G), i.arrow(12, 13, 12, 6, G), i.px(13, 2, Y)))
 make("ps_goldwave", lambda i: (i.arc(4, 8, 5, -70, 70, Y), i.arc(7, 8, 6, -60, 60, G), i.arc(10, 8, 6, -50, 50, Y)))
 print("skill icons done")
+
+
+# ── 글렌 ──
+WOOD = C("a8743c"); WD = C("7a4f2a"); GRN = C("2f5a3a"); GN2 = C("5b9a5a"); ORG = C("ffb347"); RP = C("c9b28a")
+
+
+def bow_shape(i, x, y, col=WOOD):
+    i.arc(x - 4, y, 7, -70, 70, col)
+    i.line(x - 2, y - 6, x - 2, y + 6, Y)
+
+
+def arrow_shape(i, x0, y0, x1, y1):
+    i.line(x0, y0, x1, y1, RP)
+    i.px(x1, y1, W)
+    i.px(x0, y0 - 1, G)
+    i.px(x0, y0 + 1, G)
+
+
+make("sk_g_grenade", lambda i: (i.circle(7, 9, 4, K, C("3a2a22")), i.line(7, 4, 9, 2, S), i.px(10, 1, R), i.px(11, 2, ORG), i.arc(7, 9, 7, 200, 320, ORG)))
+make("sk_g_fan", lambda i: [arrow_shape(i, 2, 8, 2 + 12 * math.cos(math.radians(a)), 8 + 12 * math.sin(math.radians(a))) for a in (-36, -18, 0, 18, 36)])
+make("sk_g_net", lambda i: ([i.line(3 + k, 3, 3 + k, 13, RP) for k in range(0, 11, 3)], [i.line(3, 3 + k, 13, 3 + k, RP) for k in range(0, 11, 3)]))
+make("sk_g_trap", lambda i: (i.line(2, 12, 14, 12, WD), i.line(4, 10, 12, 10, S), i.px(8, 9, R), i.arc(8, 9, 6, 200, 340, ORG), i.arc(8, 9, 4, 210, 330, Y)))
+make("sk_g_rain", lambda i: [arrow_shape(i, x, 1 + (x % 3), x, 8 + (x % 3)) for x in (2, 6, 10, 14)] + [i.line(0, 14, 15, 14, K)])
+make("sk_g_spikes", lambda i: ([i.line(x, 13, x + 1, 7, S) for x in (2, 6, 10)], [i.line(x + 1, 7, x + 2, 13, W) for x in (2, 6, 10)], i.line(0, 14, 15, 14, WD)))
+make("sk_g_snipe", lambda i: (i.circle(8, 8, 6, R), i.line(8, 1, 8, 15, R), i.line(1, 8, 15, 8, R), i.px(8, 8, Y)))
+make("sk_g_hawk", lambda i: (i.line(2, 6, 7, 9, WD), i.line(14, 6, 9, 9, WD), i.circle(8, 9, 2, Y, Y), i.px(8, 8, INK), i.line(3, 5, 6, 7, C("c9a06a")), i.line(13, 5, 10, 7, C("c9a06a"))))
+make("sk_g_hunt", lambda i: (bow_shape(i, 9, 8), arrow_shape(i, 2, 8, 14, 8), i.px(3, 2, ORG), i.px(13, 13, ORG), i.px(2, 13, Y)))
+make("ps_g_atk", lambda i: (bow_shape(i, 10, 8), arrow_shape(i, 1, 8, 13, 8)))
+make("ps_g_charge", lambda i: (bow_shape(i, 11, 8), arrow_shape(i, 3, 8, 14, 8), i.arc(8, 8, 7, 150, 210, Y), i.arc(8, 8, 6, 140, 220, G)))
+make("ps_arrowspd", lambda i: (arrow_shape(i, 5, 8, 15, 8), i.line(0, 5, 4, 5, S), i.line(1, 8, 4, 8, S), i.line(0, 11, 4, 11, S)))
+make("ps_g_crit", lambda i: (i.circle(8, 8, 6, R), i.circle(8, 8, 2, R), arrow_shape(i, 1, 1, 8, 8)))
+make("cb_multi", lambda i: [arrow_shape(i, 2, 8, 2 + 12 * math.cos(math.radians(a)), 8 + 12 * math.sin(math.radians(a))) for a in (-22, 0, 22)])
+make("cb_rapid", lambda i: [arrow_shape(i, 1 + k * 2, 3 + k * 3, 11 + k * 2, 3 + k * 3) for k in range(4)])
+make("cb_airshot", lambda i: (arrow_shape(i, 3, 3, 12, 12), arrow_shape(i, 7, 2, 15, 10), i.line(1, 15, 6, 15, B)))
+make("ps_pierce", lambda i: (arrow_shape(i, 0, 8, 15, 8), i.line(5, 4, 5, 12, S), i.line(10, 4, 10, 12, S)))
+make("ps_g_hp", lambda i: (i.circle(8, 9, 5, R, R), i.line(5, 3, 11, 3, GN2), i.line(8, 1, 8, 5, GN2)))
+make("ps_bash", lambda i: (bow_shape(i, 9, 8), i.arrow(3, 13, 14, 13, Y)))
+make("ps_stealth", lambda i: (i.arc(8, 8, 6, 180, 360, GRN), i.line(2, 8, 14, 8, GRN), i.px(6, 6, Y), i.px(10, 6, Y)))
+make("ps_g_mp", lambda i: (i.circle(8, 9, 5, B, BD), i.line(8, 1, 8, 5, GN2), i.px(7, 2, GN2), i.px(9, 3, GN2)))
+make("ps_dodge", lambda i: (i.arrow(12, 8, 3, 8, W), i.line(8, 4, 14, 4, S), i.line(8, 12, 14, 12, S)))
+make("ps_far", lambda i: (arrow_shape(i, 1, 13, 13, 3), i.circle(13, 3, 2, R)))
+make("ps_stick", lambda i: (i.circle(9, 10, 5, C("6b5a7a"), C("2b1f4a")), arrow_shape(i, 2, 3, 8, 9), arrow_shape(i, 6, 1, 10, 7), arrow_shape(i, 12, 2, 11, 7)))
+make("ps_g_last", lambda i: (i.shield(8, 7, GRN, GN2), i.line(8, 4, 8, 10, Y), i.line(5, 7, 11, 7, Y)))
+make("ps_trap_pow", lambda i: (i.circle(8, 9, 5, K, C("3a2a22")), i.arc(8, 9, 7, 0, 360, ORG), i.px(8, 3, R)))
+make("ps_trap_dur", lambda i: (i.line(2, 12, 14, 12, WD), i.line(4, 10, 12, 10, S), i.circle(8, 5, 3, W), i.line(8, 3, 8, 5, INK), i.line(8, 5, 10, 5, INK)))
+make("ps_snare", lambda i: ([i.line(3 + k, 3, 3 + k, 13, RP) for k in range(0, 11, 5)], [i.line(3, 3 + k, 13, 3 + k, RP) for k in range(0, 11, 5)], i.circle(8, 8, 2, R, R)))
+make("ps_trap_radius", lambda i: (i.circle(8, 8, 6, ORG), i.circle(8, 8, 3, Y), i.arrow(8, 8, 15, 8, W), i.arrow(8, 8, 1, 8, W)))
+make("ps_trap_count", lambda i: (i.line(1, 12, 7, 12, WD), i.line(9, 12, 15, 12, WD), i.px(4, 10, R), i.px(12, 10, R), i.line(2, 11, 6, 11, S), i.line(10, 11, 14, 11, S)))
+make("ps_shrapnel", lambda i: (i.circle(8, 8, 3, K, C("3a2a22")), [i.line(8 + 4 * math.cos(a), 8 + 4 * math.sin(a), 8 + 7 * math.cos(a), 8 + 7 * math.sin(a), ORG) for a in [k * math.pi / 3 for k in range(6)]]))
+print("glenn icons done")

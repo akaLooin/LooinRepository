@@ -39,6 +39,10 @@ func begin(args: PackedStringArray) -> void:
 		GameState.data["settings"]["charge_attack"] = true
 	if args.has("--touch"):
 		GameState.data["settings"]["show_touch"] = "on"
+	var ci := args.find("--class")
+	if ci >= 0:
+		GameState.current_class = args[ci + 1]
+		GameState.char_data()
 	var di := args.find("--dungeon")
 	if di >= 0:
 		dungeon_id = args[di + 1]
@@ -93,6 +97,23 @@ func _menu_tour() -> void:
 	Meta.learn("cls_silver", "sk_mp2")
 	Meta.learn("cls_silver", "sk_mp3")
 	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map", "room", "loading"]
+	if shots_dir.contains("glenntabs"):
+		GameState.current_class = "cls_glenn"
+		GameState.char_data()["lv"] = 12
+		for sid in ["sk_g_fan", "sk_g_trap", "sk_g_rain", "ps_g_atk", "ps_g_charge", "cb_multi", "ps_bash", "ps_far", "ps_stick", "ps_trap_pow", "ps_trap_radius"]:
+			Meta.learn("cls_glenn", sid)
+		for tb in ["mp", "shoot", "hunt", "trap"]:
+			main.go("skills", { "tab": tb })
+			await _frames(20)
+			await shot("gskills_" + tb)
+		main.go("select")
+		await _frames(20)
+		await shot("select2")
+		main.go("town")
+		await _frames(30)
+		await shot("town_glenn")
+		get_tree().quit(0)
+		return
 	if shots_dir.contains("skilltabs"):
 		GameState.char_data()["lv"] = 12
 		for sid in ["sk_rush", "sk_mp2", "sk_thrust", "cb_up", "cb_down", "ps_atk", "ps_atk", "ps_crit", "ps_hp", "ps_def", "ps_gold", "ps_goldpow", "ps_cut", "ps_mpgain"]:
@@ -171,6 +192,9 @@ func _physics_process(_d: float) -> void:
 		"stage2_branch": run.stage_id.ends_with("_2") and not run.portals.is_empty(),
 		"boss": run.stage_id.ends_with("_boss") and run.ticks % 60 == 0 and run.boss() != null and run.boss().hp < run.boss().max_hp * 0.8 and run.boss().state == "atk",
 		"guard": run.player.state == "guard" and run.player.t == 10,
+		"boom": run.fx_list.any(func(fx): return fx.kind == "ring" and fx.life == 10 and fx.color == Color("ffb347")),
+		"trap": run.projectiles.any(func(pr): return pr.kind in ["trap", "spike"] and pr.life % 200 == 100),
+		"arrows": run.projectiles.filter(func(pr): return pr.kind == "arrow").size() >= 3,
 		"rain": run.player.cur_atk_id == "atk_mp3" and run.player.state == "atk" and run.player.t == 62,
 		"slash": run.projectiles.any(func(pr): return pr.kind == "slash" and pr.life == 62),
 		"cutin": run.hud._cutin_t > 0 and run.hud._cutin_t < run.hud._cutin_max - 12,
@@ -211,6 +235,8 @@ func _bot_input() -> Dictionary:
 		return f
 	var dx: float = target.position.x - p.position.x
 	var dy: float = target.position.y - p.position.y
+	if p.ranged:
+		return _bot_ranged(f, p, target, dx, dy)
 	if absf(dx) > 22.0:
 		f["x"] = int(signf(dx))
 	elif p.state in ["idle", "run"] and signi(int(dx)) != p.facing and absf(dx) > 2.0:
@@ -248,6 +274,54 @@ func _bot_input() -> Dictionary:
 			f["skill%d_p" % only_skill] = true
 		return f
 	if p.mp >= 3.0 and k % 10 == 0:
+		f["skill3_p"] = true
+	elif p.mp >= 2.0 and p.mp < 3.0 and k % 120 == 0:
+		f["skill2_p"] = true
+	elif p.mp >= 1.0 and p.mp < 2.0 and k % 200 == 0:
+		f["skill1_p"] = true
+	if p.hp < p.max_hp / 3 and k % 30 == 0:
+		f["potion_p"] = true
+	if p.is_hurt_state() and p.mp >= 1.5 and k % 25 == 0:
+		f["dash_p"] = true
+	return f
+
+
+## 원거리 봇: 거리를 두고 적을 바라보며 쏜다. 위에 있으면 위로, 공중에서 아래면 아래로 조준.
+func _bot_ranged(f: Dictionary, p: Player, target: Fighter, dx: float, dy: float) -> Dictionary:
+	var adx := absf(dx)
+	var want := int(signf(dx))
+	if target is Boss and adx < 80.0 and p.on_ground:
+		var cornered := p.position.x < 50.0 or p.position.x > float(run.width) - 50.0
+		if cornered:
+			# 벽에 몰리면 보스를 뛰어넘는다
+			f["x"] = want
+			f["jump_p"] = k % 10 == 0
+			return f
+		f["x"] = -want
+		if k % 7 == 0 and p.facing == want:
+			f["attack_p"] = true
+		return f
+	if adx < 46.0 and p.on_ground and k % 50 < 25 and target.state not in ["down", "getup"]:
+		f["x"] = -want      # 물러서기
+	elif adx > 170.0 or absf(dy) > 60.0:
+		f["x"] = want
+	elif p.facing != want and p.state in ["idle", "run"]:
+		f["x"] = want        # 돌아보기
+	if dy < -40.0 and adx < 90.0 and k % 20 == 0:
+		f["jump_p"] = true
+	if adx < 210.0 and k % 7 == 0:
+		f["attack_p"] = true
+		if dy < -24.0 and p.on_ground:
+			f["y"] = -1
+		elif dy > 20.0 and not p.on_ground:
+			f["y"] = 1
+	if k % 160 == 0 and adx < 40.0:
+		f["dash_p"] = true
+	if only_skill > 0:
+		if p.mp >= float(only_skill) and k % 40 == 0 and adx < 160.0:
+			f["skill%d_p" % only_skill] = true
+		return f
+	if p.mp >= 3.0 and k % 10 == 0 and adx < 200.0:
 		f["skill3_p"] = true
 	elif p.mp >= 2.0 and p.mp < 3.0 and k % 120 == 0:
 		f["skill2_p"] = true

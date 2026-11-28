@@ -121,8 +121,26 @@ func char_data(cls: String = "") -> Dictionary:
 	if cls == "":
 		cls = current_class
 	if not data["characters"].has(cls):
-		data["characters"][cls] = new_char()
+		data["characters"][cls] = _create_char(cls)
 	return data["characters"][cls]
+
+
+## 처음 고른 인물: 그 클래스의 기본 필살기와 시작 장비(무기·상의)를 준다.
+func _create_char(cls: String) -> Dictionary:
+	var c := new_char()
+	var row: Dictionary = DataDB.tables.get("classes", {}).get(cls, {})
+	if row.is_empty():
+		return c
+	var sk: Array = row["skills"]
+	c["skills"] = { sk[0]: 1 }
+	c["loadout"] = sk.duplicate()
+	for item_id in row.get("start_gear", []):
+		var a: Dictionary = data["account"]
+		var uid := "i%d" % int(a["next_uid"])
+		a["next_uid"] = int(a["next_uid"]) + 1
+		a["inventory"].append({ "uid": uid, "item": item_id, "enh": 0 })
+		c["equip"][DataDB.get_row("items", item_id)["slot"]] = uid
+	return c
 
 
 static func exp_to_next(lv: int) -> int:

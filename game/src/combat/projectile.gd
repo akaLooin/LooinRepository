@@ -37,6 +37,10 @@ func tick() -> void:
 		var want: Vector2 = (world.player.position + Vector2(0, -12) - position).normalized() * vel.length()
 		vel = vel.lerp(want, homing)
 	position += vel
+	if kind == "grenade" and position.y >= world.ground_below(position) - 1.0:
+		remove_me = true
+		world.explode(owner_f, position, data)
+		return
 	if (kind == "bell" or gravity > 0.0) and position.y >= ground_y:
 		remove_me = true
 		world.spawn_dust(Vector2(position.x, ground_y), 4)
@@ -64,6 +68,39 @@ func _draw() -> void:
 		draw_rect(Rect2(-9, -4, 18, 3), Color("6b4f2a"))
 		draw_rect(Rect2(-2, -1, 4, 2), Tk.INK)
 		draw_rect(Rect2(-5, -12, 3, 6), Color("b48f55"))
+		return
+	if kind in ["arrow", "rainarrow", "snipe"]:
+		var a := vel.angle()
+		var ln := 22.0 if kind == "snipe" else 9.0
+		var d := Vector2(cos(a), sin(a))
+		if kind == "snipe":
+			draw_line(-d * 60.0, Vector2.ZERO, Color(Tk.GOLD, 0.35), 6.0)
+		draw_line(-d * ln, Vector2.ZERO, Color("c9a06a"), 2.0 if kind == "snipe" else 1.0)
+		draw_line(Vector2.ZERO, d * 3.0, Color("dfe6ee"), 2.0)
+		draw_line(-d * ln, -d * (ln - 3.0) + Vector2(-d.y, d.x) * 2.0, Tk.GOLD, 1.0)
+		draw_line(-d * ln, -d * (ln - 3.0) - Vector2(-d.y, d.x) * 2.0, Tk.GOLD, 1.0)
+		return
+	if kind == "grenade":
+		draw_circle(Vector2.ZERO, 4, Color("3a2a22"))
+		draw_rect(Rect2(-1, -6, 2, 2), Color("9aa3ad"))
+		if (life / 4) % 2 == 0:
+			draw_rect(Rect2(1, -8, 2, 2), Tk.DANGER)
+		return
+	if kind == "net":
+		for k in range(-5, 6, 3):
+			draw_line(Vector2(k, -6), Vector2(k, 6), Color("c9b28a"), 1.0)
+			draw_line(Vector2(-6, k), Vector2(6, k), Color("c9b28a"), 1.0)
+		return
+	if kind == "trap":
+		var blink := (life / 15) % 2 == 0
+		draw_rect(Rect2(-7, -3, 14, 3), Color("4a3220"))
+		draw_rect(Rect2(-5, -5, 10, 2), Color("9aa3ad"))
+		draw_rect(Rect2(-1, -7, 2, 2), Tk.DANGER if blink else Color("6b2f3a"))
+		return
+	if kind == "spike":
+		for k in range(-6, 7, 3):
+			draw_colored_polygon(PackedVector2Array([Vector2(k - 1, 0), Vector2(k, -6), Vector2(k + 1, 0)]), Color("b4c0cf"))
+		draw_rect(Rect2(-8, -1, 16, 1), Color("4a3220"))
 		return
 	if kind == "slash" or kind == "goldslash":
 		var dir := 1.0 if vel.x >= 0.0 else -1.0
