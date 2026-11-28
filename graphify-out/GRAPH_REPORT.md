@@ -1,18 +1,18 @@
-# Graph Report - LooinRepository  (2026-11-27)
+# Graph Report - LooinRepository  (2026-11-28)
 
 ## Corpus Check
-- 60 files · ~42,183 words
+- 61 files · ~47,860 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 206 file(s) not represented in the graph (top: .import 104, .gd 45, .uid 45)
-- WARNING: 206 of 373 files seen (55%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- Unclassified: 242 file(s) not represented in the graph (top: .import 140, .gd 45, .uid 45)
+- WARNING: 242 of 446 files seen (54%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 422 nodes · 583 edges · 39 communities (32 shown, 7 thin omitted)
+- 439 nodes · 609 edges · 39 communities (32 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9227808c`
+- Built from commit: `eeaccbe6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -102,8 +102,8 @@ Cohesion: 0.15
 Nodes (12): Output, replica-recon, Step 1: scope, Step 2: list the sources, Step 3: screen inventory, Step 4: user flows, Step 5: components, Step 6: inferred data model (+4 more)
 
 ### Community 6 - "concept_field_battle.py"
-Cohesion: 0.15
-Nodes (17): C(), down_frame(), frame(), stamp(), sword(), blend_px(), book_platform(), C() (+9 more)
+Cohesion: 0.10
+Nodes (21): bow(), down_frame(), frame(), stamp(), C(), down_frame(), frame(), stamp() (+13 more)
 
 ### Community 7 - "Recon map: {{app}} ({{platform}})"
 Cohesion: 0.18
@@ -186,7 +186,7 @@ Cohesion: 0.27
 Nodes (12): env(), f_of(), lowpass(), music(), noise(), render_song(), save(), sfx() (+4 more)
 
 ### Community 33 - "sys"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (11): blob(), hero_down(), hero_frame(), stamp(), px(), sprite(), C(), draw() (+3 more)
 
 ### Community 34 - "아트 규격서 — 테일즈토피아 RPG"
@@ -202,8 +202,8 @@ Cohesion: 0.17
 Nodes (11): 검술, 게임 설계 제안 (1차 직업 「기사」), 구현 메모, 디자인 v0.9, 수호, 스킬 트리 v0.9 (1차 「기사」), 은빛, 의뢰 내용 요약 (+3 more)
 
 ### Community 38 - "캐릭터 시트 — 글렌 (슬롯 2 · 원거리 기동형)"
-Cohesion: 0.29
-Nodes (6): 게임 설계 제안 (1차 「사냥꾼」), 스킬 트리 탭 (약 30노드 목표), 의뢰 내용 요약, 캐릭터 시트 — 글렌 (슬롯 2 · 원거리 기동형), 필살기 후보 (칸마다 3개 중 1개 장착, 실버와 같은 구조), 확인 필요
+Cohesion: 0.15
+Nodes (12): 게임 설계 제안 (1차 「사냥꾼」), 구현 메모, 덫, 사격, 사냥, 스킬 트리 (1차 「사냥꾼」, SP 2/레벨, 전부 찍으려면 168), 스킬 트리 탭 (약 30노드 목표), 의뢰 내용 요약 (+4 more)
 
 ## Knowledge Gaps
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
@@ -212,16 +212,16 @@ Nodes (6): 게임 설계 제안 (1차 「사냥꾼」), 스킬 트리 탭 (약 3
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `load()` connect `json` to `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Should `imgdiff.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1206896551724138 - nodes in this community are weakly interconnected._
-- **Why does `Icon` connect `Icon` to `sys`?**
-  _High betweenness centrality (0.018) - this node is a cross-community bridge._
+- **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **Should `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
-- **Why does `4. 시스템 인터페이스 ("API")` connect `Architecture: 테일즈토피아 RPG (그랜드체이스 PvE 코어 기능의 오리지널 재구성)` to `json`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Should `json` be split into smaller, more focused modules?**
   _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
 - **Should `concept_field_battle.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.1455026455026455 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1036036036036036 - nodes in this community are weakly interconnected._
+- **Should `sys` be split into smaller, more focused modules?**
+  _Cohesion score 0.0960591133004926 - nodes in this community are weakly interconnected._
