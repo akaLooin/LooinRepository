@@ -1222,5 +1222,23 @@
     "seen": 1795836896.7039793,
     "ast_hash": "e83493d574ca13871f1d3accc8f140ed",
     "semantic_hash": ""
+  },
+  "replica/concept/lumina_options.py": {
+    "mtime": 1795840291.046269,
+    "seen": 1795840292.8511279,
+    "ast_hash": "e58c7269922d9c801d5ce068e8c373e1",
+    "semantic_hash": ""
+  },
+  "replica/characters/lumina.md": {
+    "mtime": 1795840291.2008634,
+    "seen": 1795840292.8511832,
+    "ast_hash": "840b3668f768b56343c88849c5202436",
+    "semantic_hash": ""
+  },
+  "replica/concept/lumina-options.png": {
+    "mtime": 1795840291.1774862,
+    "seen": 1795840292.8514078,
+    "ast_hash": "c5fc4664548e3e29baabaefd6bf58692",
+    "semantic_hash": ""
   }
 }

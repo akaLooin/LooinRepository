@@ -1,23 +1,23 @@
 # Graph Report - LooinRepository  (2026-11-28)
 
 ## Corpus Check
-- 61 files · ~47,860 words
+- 63 files · ~48,642 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 242 file(s) not represented in the graph (top: .import 140, .gd 45, .uid 45)
-- WARNING: 242 of 446 files seen (54%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- WARNING: 242 of 449 files seen (54%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 439 nodes · 609 edges · 39 communities (32 shown, 7 thin omitted)
+- 451 nodes · 622 edges · 39 communities (32 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eeaccbe6`
+- Built from commit: `732fc1d2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- listing.py
+- 캐릭터 시트 — 루미나 (슬롯 3 · 마법사)
 - imgdiff.py
 - 데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」
 - contrast.py
@@ -77,9 +77,9 @@
 
 ## Communities (39 total, 7 thin omitted)
 
-### Community 0 - "listing.py"
-Cohesion: 0.33
-Nodes (6): has_emoji(), length(), lint(), main(), render(), words()
+### Community 0 - "캐릭터 시트 — 루미나 (슬롯 3 · 마법사)"
+Cohesion: 0.29
+Nodes (6): 게임 설계 제안 (1차 「마법사」), 스킬 트리 탭 (약 30노드 목표), 의뢰 내용 요약, 캐릭터 시트 — 루미나 (슬롯 3 · 마법사), 필살기 후보 (칸마다 3개 중 1개 장착), 확인 필요
 
 ### Community 1 - "imgdiff.py"
 Cohesion: 0.12
@@ -94,8 +94,8 @@ Cohesion: 0.26
 Nodes (9): check(), colours(), default_pairs(), flatten(), luminance(), main(), parse_hex(), ratio() (+1 more)
 
 ### Community 4 - "json"
-Cohesion: 0.10
-Nodes (25): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+17 more)
+Cohesion: 0.08
+Nodes (31): build_patterns(), is_binary(), main(), norm_hex(), render(), sweep(), combine(), load() (+23 more)
 
 ### Community 5 - "replica-recon"
 Cohesion: 0.15
@@ -182,12 +182,12 @@ Cohesion: 0.20
 Nodes (9): 1. 기본 정보  (필수), 2. 게임 속 역할  (필수: 하나 이상 체크), 3. 외형  (필수: 3개 이상), 4. 성격과 이야기  (선택), 5. 능력과 기술  (선택 — 비우면 제가 제안), 6. 전직 방향  (선택), 7. 원작과 겹치지 않게 — 확인  (필수), 8. 기타 요청 (+1 more)
 
 ### Community 32 - "gen_audio.py"
-Cohesion: 0.27
+Cohesion: 0.25
 Nodes (12): env(), f_of(), lowpass(), music(), noise(), render_song(), save(), sfx() (+4 more)
 
 ### Community 33 - "sys"
-Cohesion: 0.10
-Nodes (11): blob(), hero_down(), hero_frame(), stamp(), px(), sprite(), C(), draw() (+3 more)
+Cohesion: 0.08
+Nodes (13): blob(), hero_down(), hero_frame(), stamp(), px(), sprite(), C(), draw() (+5 more)
 
 ### Community 34 - "아트 규격서 — 테일즈토피아 RPG"
 Cohesion: 0.20
@@ -220,8 +220,8 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `데모 기획안 v0.2 — 가제 「테일즈토피아 RPG」` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `json` be split into smaller, more focused modules?**
-  _Cohesion score 0.09988385598141696 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08144796380090498 - nodes in this community are weakly interconnected._
 - **Should `concept_field_battle.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1036036036036036 - nodes in this community are weakly interconnected._
 - **Should `sys` be split into smaller, more focused modules?**
-  _Cohesion score 0.0960591133004926 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08199643493761141 - nodes in this community are weakly interconnected._
