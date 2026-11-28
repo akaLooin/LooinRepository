@@ -237,6 +237,10 @@ func tick_once(input: Dictionary) -> void:
 	_check_progress()
 	_update_camera()
 	touch.set_state(player.mp, int(GameState.data["account"]["potions"]), [player.skill_learned(0), player.skill_learned(1), player.skill_learned(2)])
+	touch.show_element = not player.elements.is_empty()
+	if touch.show_element and touch.element_col != player.ELEM_COL[player.elem()]:
+		touch.element_col = player.ELEM_COL[player.elem()]
+		touch.queue_redraw()
 	hud.queue_redraw()
 
 	if player.dead and player.state == "dead" and player.t == 30 and overlay.get_child_count() == 0:
@@ -272,7 +276,7 @@ func _resolve_hits() -> void:
 			if o.team == pr.team or o.dead or o.invuln > 0:
 				continue
 			if pr.rect().intersects(o.hurtbox()):
-				if pr.kind in ["grenade", "trap"]:
+				if pr.kind in ["grenade", "trap", "meteor"]:
 					explode(pr.owner_f, pr.position, pr.data)
 					pr.remove_me = true
 					break
@@ -344,6 +348,10 @@ func _apply_hit(att: Fighter, o: Fighter, a: Dictionary, from_pos = null) -> voi
 	if att == player and res["back"] and player.back_bonus > 0.0:
 		res["dmg"] = int(res["dmg"] * (1.0 + player.back_bonus))
 	o.take_hit(att, a, res)
+	if att == player and o.team == 1 and not player.elements.is_empty() and not o.dead:
+		var e: String = a.get("elem", player.elem() if a.get("element", false) else "")
+		if e != "":
+			apply_element(o, e, int(res["dmg"]), a)
 	var hs := int(a["hitstop"])
 	att.hitstop = maxi(att.hitstop, hs)
 	o.hitstop = maxi(o.hitstop, hs)
@@ -500,6 +508,11 @@ func spawn_projectile(owner_f: Fighter, at: Vector2, v: Vector2, data: Dictionar
 	elif kind == "spike":
 		pr.size = Vector2(18, 8)
 		pr.pierce = true
+	elif kind in ["orb", "lance"]:
+		pr.size = Vector2(8, 8)
+		pr.life = 110
+	elif kind == "meteor":
+		pr.size = Vector2(24, 24)
 	elif kind == "slash" or kind == "goldslash":
 		pr.size = Vector2(12, 24)
 		pr.life = 70
@@ -697,7 +710,11 @@ func explode(owner_f: Fighter, at: Vector2, data: Dictionary) -> void:
 		var c: Vector2 = e.position + Vector2(0, -e.h / 2.0)
 		if c.distance_to(at + Vector2(0, -6)) <= rad + e.w / 2.0:
 			_apply_hit(owner_f, e, data, at)
-	_add_fx("ring", at + Vector2(0, -6), { "size": rad, "color": Color("ffb347"), "life": 18 })
+			if data.has("freeze") and not e.dead and not (e is Boss):
+				e.root_t = int(data["freeze"])
+				e.frozen = true
+	var ring_col: Color = ELEM_FX.get(data.get("elem", ""), Color("ffb347"))
+	_add_fx("ring", at + Vector2(0, -6), { "size": rad, "color": ring_col, "life": 18 })
 	_add_fx("ring", at + Vector2(0, -6), { "size": rad * 0.6, "color": Tk.GOLD, "life": 12 })
 	for i in range(10):
 		spawn_spark(at + Vector2(0, -6), Color("ffb347") if i % 2 == 0 else Tk.INK, 3.0)
@@ -710,3 +727,129 @@ func explode(owner_f: Fighter, at: Vector2, data: Dictionary) -> void:
 			var a := -PI + PI * i / 5.0
 			spawn_projectile(player, at + Vector2(0, -8), Vector2(cos(a), sin(a)) * 5.0,
 				{ "mul": float(data["mul"]) * 0.25, "hitstop": 2, "hitstun": 16, "kb": [1.0, 0.0], "launch": 0.0, "mp": 0.0 }, "rainarrow")
+
+
+# ───────── 원소 마법 (루미나) ─────────
+
+const ELEM_FX := { "fire": Color("ff7a3c"), "ice": Color("9fd8ff"), "bolt": Color("ffe76a") }
+
+
+## 원소 효과: 불 = 화상, 얼음 = 둔화(+확률 빙결), 번개 = 옆 적에게 연쇄
+func apply_element(o: Fighter, e: String, dmg: int, a: Dictionary) -> void:
+	var dur := 1.0 + player._fx("elem_dur")
+	var staff := 1.0 + (player._fx("staff_elem") if a.get("element", false) else 0.0)
+	match e:
+		"fire":
+			o.burn_t = int(180 * dur)
+			o.burn_dmg = maxi(1, int(dmg * 0.12 * staff * (1.0 + player._fx("burn_pct"))))
+		"ice":
+			o.slow_t = int(150 * dur)
+			var fz := int(a.get("freeze", 0))
+			if fz == 0 and randf() < (0.12 + player._fx("freeze_add")) * staff:
+				fz = 60
+			if fz > 0 and not (o is Boss):
+				o.root_t = int(fz * dur)
+				o.frozen = true
+		"bolt":
+			if not a.get("chained", false):
+				var d := a.duplicate()
+				d["chained"] = true
+				d["mul"] = float(a.get("mul", 1.0)) * 0.5 * staff
+				chain_bolt(player, o.position + Vector2(0, -o.h / 2.0), 90.0, 1 + int(player._fx("chain_add")), d, o)
+
+
+## 화상 같은 지속 피해
+func dot_damage(o: Fighter, dmg: int) -> void:
+	if o.dead or dmg <= 0:
+		return
+	o.hp -= dmg
+	o.flash = 2
+	spawn_number(o.position + Vector2(rng.randf_range(-4, 4), -o.h - 2), str(dmg), ELEM_FX["fire"])
+	if o.hp <= 0:
+		o.hp = 1
+		o.take_hit(player, { "kb": [0.5, 0.0], "launch": 0.0, "hitstun": 0 }, { "dmg": 1 })
+		if o.dead and o.team == 1:
+			exp_gain += int(o.mon["exp"])
+			gold_gain += int(o.mon["gold"])
+			Sfx.play("enemy_die")
+
+
+## 번개가 가까운 적들 사이를 튄다
+func chain_bolt(owner_f: Fighter, from: Vector2, rng_d: float, jumps: int, data: Dictionary, skip: Fighter = null) -> void:
+	var hit: Array = [skip] if skip else []
+	var p := from
+	for j in range(jumps):
+		var best: Fighter = null
+		var bd := rng_d
+		for e in enemies:
+			if e.dead or hit.has(e):
+				continue
+			var c: Vector2 = e.position + Vector2(0, -e.h / 2.0)
+			var dd := c.distance_to(p)
+			if dd < bd:
+				bd = dd
+				best = e
+		if best == null:
+			break
+		var to: Vector2 = best.position + Vector2(0, -best.h / 2.0)
+		_add_fx("bolt", p, { "rect": Rect2(Vector2.ZERO, to - p), "color": ELEM_FX["bolt"], "life": 10 })
+		var d := data.duplicate()
+		d["chained"] = true
+		_apply_hit(owner_f, best, d, p)
+		hit.append(best)
+		p = to
+	if owner_f == player:
+		player._count("chain")
+	Sfx.play("counter", 0.2)
+
+
+## 파이어 뱅: 주변 적에게 마법진을 새기고, 나중에 그 자리마다 폭발 (겹치면 여러 번 맞음)
+var _marks: Array = []
+
+
+func mark_enemies(owner_f: Fighter, n: int, rng_d: float) -> void:
+	_marks.clear()
+	var cands: Array = enemies.filter(func(e): return not e.dead and e.position.distance_to(owner_f.position) < rng_d)
+	cands.sort_custom(func(x, y): return x.position.distance_to(owner_f.position) < y.position.distance_to(owner_f.position))
+	for i in range(mini(n, cands.size())):
+		_marks.append(cands[i])
+		_add_fx("ring", cands[i].position + Vector2(0, -2), { "size": 18.0, "color": ELEM_FX["fire"], "life": 40 })
+
+
+func detonate_marks(owner_f: Fighter, data: Dictionary) -> void:
+	for m in _marks:
+		if is_instance_valid(m) and not m.dead:
+			explode(owner_f, m.position, data)
+	_marks.clear()
+
+
+## 낙뢰 기둥: x 에 떨어져 그 줄의 적에게 피해
+func lightning_column(owner_f: Fighter, x: float, data: Dictionary, big: bool = false) -> void:
+	_add_fx("bolt", Vector2(x, 0), { "rect": Rect2(Vector2.ZERO, Vector2(0, 238)), "color": ELEM_FX["bolt"], "life": 12 if not big else 20 })
+	var half := 14.0 if not big else 22.0
+	for e in enemies.duplicate():
+		if not e.dead and absf(e.position.x - x) < half + e.w / 2.0:
+			_apply_hit(owner_f, e, data, Vector2(x, e.position.y - 40))
+	shake(2.0 if not big else 4.0)
+	Sfx.play("hit", 0.2)
+
+
+## 영겁의 빙하
+func freeze_all(owner_f: Fighter, frames: int) -> void:
+	for e in enemies:
+		if not e.dead:
+			e.root_t = frames
+			e.frozen = true
+	_add_fx("ring", owner_f.position + Vector2(0, -12), { "size": 300.0, "color": ELEM_FX["ice"], "life": 30 })
+
+
+func shatter_all(owner_f: Fighter, data: Dictionary) -> void:
+	for e in enemies.duplicate():
+		if not e.dead:
+			e.root_t = 0
+			e.frozen = false
+			_apply_hit(owner_f, e, data, e.position + Vector2(0, -30))
+			for i in range(6):
+				spawn_spark(e.position + Vector2(0, -e.h / 2.0), ELEM_FX["ice"], 3.0)
+	shake(6.0)
+	Sfx.play("crit", 0.0)

@@ -39,6 +39,17 @@ func _draw() -> void:
 		"slash":
 			draw_rect(rect, Color(color, a * 0.55))
 			draw_rect(Rect2(rect.position.x, rect.position.y + rect.size.y / 2.0 - 1, rect.size.x, 2), Color(Tk.TEXT, a))
+		"bolt":
+			var to := rect.size
+			var n := 6
+			var prev := Vector2.ZERO
+			for i in range(1, n + 1):
+				var p := to * (float(i) / n)
+				if i < n:
+					p += Vector2(-to.y, to.x).normalized() * randf_range(-5, 5)
+				draw_line(prev, p, Color(color, a), 2.0)
+				draw_line(prev, p, Color(1, 1, 1, a), 1.0)
+				prev = p
 		"bigslash":
 			var k := float(life) / float(max_life)
 			var w := 340.0 * (1.0 - k * 0.3)

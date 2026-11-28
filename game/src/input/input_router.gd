@@ -14,6 +14,7 @@ const KEYS := {
 	"skill2": [KEY_S, KEY_2],
 	"skill3": [KEY_D, KEY_3],
 	"potion": [KEY_Q],
+	"element": [KEY_E],
 	"pause": [KEY_ESCAPE, KEY_P],
 }
 const PAD := {
@@ -24,9 +25,10 @@ const PAD := {
 	"skill2": [JOY_BUTTON_LEFT_SHOULDER],
 	"skill3": [JOY_BUTTON_RIGHT_SHOULDER],
 	"potion": [JOY_BUTTON_BACK],
+	"element": [JOY_BUTTON_LEFT_STICK],
 	"pause": [JOY_BUTTON_START],
 }
-const EDGE_ACTIONS := ["attack", "jump", "dash", "skill1", "skill2", "skill3", "potion", "pause"]
+const EDGE_ACTIONS := ["attack", "jump", "dash", "skill1", "skill2", "skill3", "potion", "pause", "element"]
 
 var touch_axis := Vector2.ZERO
 var touch_held: Dictionary = {}

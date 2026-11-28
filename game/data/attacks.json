@@ -874,5 +874,450 @@
     "launch": 0.0,
     "lunge": 0.0,
     "mp": 0.0
+  },
+  "atk_l1": {
+    "startup": 6,
+    "active": 3,
+    "recovery": 14,
+    "cancel": 11,
+    "hitbox": [
+      2,
+      -24,
+      24,
+      18
+    ],
+    "mul": 1.0,
+    "hitstop": 4,
+    "hitstun": 22,
+    "kb": [
+      1.0,
+      0.0
+    ],
+    "launch": 0.0,
+    "lunge": 0.8,
+    "mp": 0.07,
+    "element": true
+  },
+  "atk_l2": {
+    "startup": 6,
+    "active": 3,
+    "recovery": 14,
+    "cancel": 11,
+    "hitbox": [
+      2,
+      -24,
+      26,
+      18
+    ],
+    "mul": 1.05,
+    "hitstop": 4,
+    "hitstun": 22,
+    "kb": [
+      1.0,
+      0.0
+    ],
+    "launch": 0.0,
+    "lunge": 0.8,
+    "mp": 0.07,
+    "element": true
+  },
+  "atk_l3": {
+    "startup": 7,
+    "active": 4,
+    "recovery": 16,
+    "cancel": 13,
+    "hitbox": [
+      0,
+      -28,
+      28,
+      24
+    ],
+    "mul": 1.15,
+    "hitstop": 5,
+    "hitstun": 22,
+    "kb": [
+      1.0,
+      0.0
+    ],
+    "launch": 0.0,
+    "lunge": 0.8,
+    "mp": 0.07,
+    "element": true
+  },
+  "atk_l4": {
+    "startup": 9,
+    "active": 1,
+    "recovery": 18,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "orb": {
+      "speed": 5.5,
+      "mul": 1.8,
+      "size": 1,
+      "hitstop": 5,
+      "hitstun": 26,
+      "kb": [
+        2.0,
+        0.0
+      ],
+      "launch": 2.0,
+      "mp": 0.08
+    }
+  },
+  "atk_l_air": {
+    "startup": 5,
+    "active": 1,
+    "recovery": 14,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "orb": {
+      "speed": 5.0,
+      "mul": 0.9,
+      "size": 1,
+      "hitstop": 5,
+      "hitstun": 26,
+      "kb": [
+        2.0,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.06,
+      "angle": 40
+    }
+  },
+  "atk_lc1": {
+    "startup": 4,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "orb": {
+      "speed": 5.5,
+      "mul": 1.9,
+      "size": 1,
+      "hitstop": 5,
+      "hitstun": 26,
+      "kb": [
+        2.0,
+        0.0
+      ],
+      "launch": 0.0,
+      "mp": 0.06
+    }
+  },
+  "atk_lc2": {
+    "startup": 4,
+    "active": 1,
+    "recovery": 18,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "orb": {
+      "speed": 5.0,
+      "mul": 2.8,
+      "size": 2,
+      "hitstop": 5,
+      "hitstun": 26,
+      "kb": [
+        2.0,
+        0.0
+      ],
+      "launch": 2.6,
+      "mp": 0.06,
+      "pierce": true
+    }
+  },
+  "atk_lc3": {
+    "startup": 4,
+    "active": 1,
+    "recovery": 22,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0,
+    "orb": {
+      "speed": 4.5,
+      "mul": 4.2,
+      "size": 3,
+      "hitstop": 9,
+      "hitstun": 34,
+      "kb": [
+        2.0,
+        0.0
+      ],
+      "launch": 4.0,
+      "mp": 0.06,
+      "pierce": true
+    }
+  },
+  "atk_l_split": {
+    "startup": 10,
+    "active": 30,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_frost": {
+    "startup": 10,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_chain": {
+    "startup": 10,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_bang": {
+    "startup": 10,
+    "active": 44,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_ring": {
+    "startup": 10,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_storm": {
+    "startup": 10,
+    "active": 64,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_meteor": {
+    "startup": 40,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_glacier": {
+    "startup": 40,
+    "active": 50,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
+  },
+  "atk_l_judgment": {
+    "startup": 40,
+    "active": 1,
+    "recovery": 16,
+    "cancel": 99,
+    "hitbox": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "mul": 0.0,
+    "hitstop": 0,
+    "hitstun": 0,
+    "kb": [
+      0,
+      0
+    ],
+    "launch": 0.0,
+    "lunge": 0.0,
+    "mp": 0.0
   }
 }

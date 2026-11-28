@@ -97,6 +97,23 @@ func _menu_tour() -> void:
 	Meta.learn("cls_silver", "sk_mp2")
 	Meta.learn("cls_silver", "sk_mp3")
 	var tour := ["title", "select", "town", "equip", "skills", "enhance", "shop", "pets", "missions", "options", "layout", "map", "room", "loading"]
+	if shots_dir.contains("luminatabs"):
+		GameState.current_class = "cls_lumina"
+		GameState.char_data()["lv"] = 12
+		for sid in ["sk_l_frost", "sk_l_bang", "sk_l_ring", "ps_l_atk", "ps_burn", "ps_swap", "ps_charge_spd", "ps_regen", "ps_shield", "ps_l_hp"]:
+			Meta.learn("cls_lumina", sid)
+		for tb in ["mp", "elem", "mana", "ward"]:
+			main.go("skills", { "tab": tb })
+			await _frames(20)
+			await shot("lskills_" + tb)
+		main.go("select")
+		await _frames(20)
+		await shot("select3")
+		main.go("town")
+		await _frames(30)
+		await shot("town_lumina")
+		get_tree().quit(0)
+		return
 	if shots_dir.contains("glenntabs"):
 		GameState.current_class = "cls_glenn"
 		GameState.char_data()["lv"] = 12
@@ -184,6 +201,12 @@ func _physics_process(_d: float) -> void:
 				print("[autotest] overlay -> ", (b as Button).text)
 				(b as Button).pressed.emit()
 				break
+	if OS.get_cmdline_user_args().has("--trace") and run.ticks < 400 and run.ticks % 40 == 0:
+		print("[t2] t=%d st=%s t=%d vel=%s on_ground=%s invuln=%d root=%d" % [run.ticks, run.player.state, run.player.t, run.player.vel, run.player.on_ground, run.player.invuln, run.player.root_t])
+	if OS.get_cmdline_user_args().has("--trace") and run.ticks % 600 == 0:
+		var al := run.enemies.filter(func(e): return not e.dead)
+		print("[trace] t=%d p=%s st=%s mp=%.1f el=%s alive=%d %s" % [run.ticks, run.player.position, run.player.state, run.player.mp, run.player.elem(), al.size(),
+			str(al.map(func(e): return "%s hp%d @%d,%d st=%s" % [e.mon_id, e.hp, e.position.x, e.position.y, e.state]))])
 	if run.ticks > _deadline or _wall > _deadline * 2:
 		print("[autotest] TIMEOUT stage=", run.stage_id)
 		get_tree().quit(1)
@@ -192,6 +215,7 @@ func _physics_process(_d: float) -> void:
 		"stage2_branch": run.stage_id.ends_with("_2") and not run.portals.is_empty(),
 		"boss": run.stage_id.ends_with("_boss") and run.ticks % 60 == 0 and run.boss() != null and run.boss().hp < run.boss().max_hp * 0.8 and run.boss().state == "atk",
 		"guard": run.player.state == "guard" and run.player.t == 10,
+		"orb": run.projectiles.filter(func(pr): return pr.kind == "orb").size() >= 2,
 		"boom": run.fx_list.any(func(fx): return fx.kind == "ring" and fx.life == 10 and fx.color == Color("ffb347")),
 		"trap": run.projectiles.any(func(pr): return pr.kind in ["trap", "spike"] and pr.life % 200 == 100),
 		"arrows": run.projectiles.filter(func(pr): return pr.kind == "arrow").size() >= 3,
@@ -237,6 +261,14 @@ func _bot_input() -> Dictionary:
 	var dy: float = target.position.y - p.position.y
 	if p.ranged:
 		return _bot_ranged(f, p, target, dx, dy)
+	if not p.elements.is_empty():
+		if k % 300 == 0:
+			f["element_p"] = true
+		# 가끔 영창: 공격을 길게 눌렀다 뗀다
+		if k % 400 < 70 and absf(dx) > 60.0 and absf(dx) < 140.0 and only_skill == 0:
+			f["attack_h"] = k % 400 < 66
+			f["x"] = 0 if absf(dx) < 100.0 else int(signf(dx))
+			return f
 	if absf(dx) > 22.0:
 		f["x"] = int(signf(dx))
 	elif p.state in ["idle", "run"] and signi(int(dx)) != p.facing and absf(dx) > 2.0:

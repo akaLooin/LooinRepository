@@ -322,5 +322,143 @@
         "col": 1
       }
     }
+  },
+  "cls_lumina": {
+    "sheet": "res://assets/sprites/hero_lumina.png",
+    "frame": [
+      48,
+      48
+    ],
+    "origin": [
+      24,
+      44
+    ],
+    "portrait": "res://assets/sprites/portrait_lumina.png",
+    "anims": {
+      "idle": {
+        "row": 0,
+        "frames": 4,
+        "fps": 4
+      },
+      "run": {
+        "row": 1,
+        "frames": 6,
+        "fps": 11
+      },
+      "air": {
+        "row": 2,
+        "frames": 1,
+        "col": 0
+      },
+      "dash": {
+        "row": 3,
+        "frames": 1
+      },
+      "atk": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l1": {
+        "row": 4,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l2": {
+        "row": 5,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l3": {
+        "row": 6,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l4": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_air": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_lc1": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_lc2": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_lc3": {
+        "row": 8,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_counter": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_split": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_frost": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_chain": {
+        "row": 7,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_bang": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_ring": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_storm": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_meteor": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_glacier": {
+        "row": 10,
+        "frames": 3,
+        "phased": true
+      },
+      "atk_l_judgment": {
+        "row": 9,
+        "frames": 3,
+        "phased": true
+      },
+      "hurt": {
+        "row": 11,
+        "frames": 1,
+        "col": 0
+      },
+      "down": {
+        "row": 11,
+        "frames": 1,
+        "col": 1
+      }
+    }
   }
 }

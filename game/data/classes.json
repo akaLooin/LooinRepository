@@ -58,13 +58,13 @@
     "name": "글렌 · 사냥꾼",
     "note": "판타지아 사냥꾼. 활 원거리 기동형 (슬롯 2).",
     "base": {
-      "hp": 1260,
+      "hp": 1400,
       "atk": 105,
-      "def": 46,
+      "def": 54,
       "crit": 0.06
     },
     "growth": {
-      "hp": 80,
+      "hp": 88,
       "atk": 9,
       "def": 3
     },
@@ -108,5 +108,70 @@
       "eq_bow_01",
       "eq_top_01"
     ]
+  },
+  "cls_lumina": {
+    "name": "루미나 · 마법사",
+    "note": "판타지아 마법사. 불·얼음·번개 원소 근거리 마법형 (슬롯 3).",
+    "base": {
+      "hp": 1400,
+      "atk": 124,
+      "def": 52,
+      "crit": 0.05
+    },
+    "growth": {
+      "hp": 88,
+      "atk": 10,
+      "def": 3
+    },
+    "move": {
+      "run": 1.75,
+      "jump": 6.0,
+      "air_jumps": 1,
+      "dash": 0.0,
+      "dash_frames": 10,
+      "gravity": 0.31,
+      "blink": 48
+    },
+    "size": [
+      12,
+      26
+    ],
+    "elements": [
+      "fire",
+      "ice",
+      "bolt"
+    ],
+    "charge": {
+      "levels": [
+        30,
+        60,
+        90
+      ],
+      "attacks": [
+        "atk_lc1",
+        "atk_lc2",
+        "atk_lc3"
+      ]
+    },
+    "combo": [
+      "atk_l1",
+      "atk_l2",
+      "atk_l3",
+      "atk_l4"
+    ],
+    "dash_attack": "atk_l4",
+    "air_attack": "atk_l_air",
+    "moves": {},
+    "skills": [
+      "sk_l_split",
+      "sk_l_bang",
+      "sk_l_meteor"
+    ],
+    "skill_tree": "tree_lumina",
+    "start_gear": [
+      "eq_staff_01",
+      "eq_top_01"
+    ],
+    "shield_base": 0.1
   }
 }

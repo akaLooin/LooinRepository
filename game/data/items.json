@@ -238,5 +238,43 @@
     "price": 2400,
     "class": "cls_glenn",
     "icon": "bow"
+  },
+  "eq_staff_01": {
+    "name": "견습 마법사의 나무 지팡이",
+    "slot": "weapon",
+    "grade": "common",
+    "lv": 1,
+    "stats": {
+      "atk": 24
+    },
+    "price": 200,
+    "class": "cls_lumina",
+    "icon": "staff"
+  },
+  "eq_staff_02": {
+    "name": "자수정 지팡이",
+    "slot": "weapon",
+    "grade": "rare",
+    "lv": 3,
+    "stats": {
+      "atk": 50,
+      "crit": 0.03
+    },
+    "price": 900,
+    "class": "cls_lumina",
+    "icon": "staff"
+  },
+  "eq_staff_03": {
+    "name": "별빛 연구자의 지팡이",
+    "slot": "weapon",
+    "grade": "epic",
+    "lv": 5,
+    "stats": {
+      "atk": 90,
+      "crit": 0.06
+    },
+    "price": 2400,
+    "class": "cls_lumina",
+    "icon": "staff"
   }
 }

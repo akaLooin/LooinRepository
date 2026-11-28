@@ -40,7 +40,11 @@ var remove_me := false
 
 var arrows := 0          # 꽂힌 화살 수
 var arrows_t := 0
-var root_t := 0          # 그물에 묶인 남은 틱
+var root_t := 0          # 그물·빙결로 묶인 남은 틱
+var frozen := false      # 빙결(얼음 그림)
+var burn_t := 0
+var burn_dmg := 0
+var slow_t := 0
 var down_hits := 0
 var down_extend := true     # 다운 중 맞으면 누워 있는 시간이 늘어나는가 (보스 그로기는 false)
 var down_len := DOWN_FRAMES
@@ -135,6 +139,12 @@ func tick(input: Dictionary) -> void:
 		drop_timer -= 1
 	if def_down_t > 0:
 		def_down_t -= 1
+	if burn_t > 0:
+		burn_t -= 1
+		if burn_t % 30 == 0 and team != 0 and not dead:
+			world.dot_damage(self, burn_dmg)
+	if slow_t > 0:
+		slow_t -= 1
 	if arrows_t > 0:
 		arrows_t -= 1
 		if arrows_t == 0:
@@ -142,11 +152,15 @@ func tick(input: Dictionary) -> void:
 	if not _tick_common_states():
 		if root_t > 0:
 			root_t -= 1
+			if root_t == 0:
+				frozen = false
 			vel.x = 0.0
 			if flying:
 				vel = Vector2.ZERO
 		else:
 			think(input)
+			if slow_t > 0:
+				vel.x *= 0.5
 	physics()
 	queue_redraw()
 
@@ -280,7 +294,15 @@ func _draw_status() -> void:
 		draw_line(Vector2(x, y), Vector2(x - 5, y - 3), Color("efe3c2"), 1.0)
 		draw_rect(Rect2(x - 6, y - 4, 2, 2), Tk.GOLD)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if root_t > 0:
+	if burn_t > 0 and (burn_t / 6) % 2 == 0:
+		draw_rect(Rect2(-3, -h - 6, 2, 3), Color("ff7a3c"))
+		draw_rect(Rect2(2, -h - 4, 2, 2), Color("ffd23f"))
+	if slow_t > 0 and not frozen:
+		draw_rect(Rect2(-w / 2.0, -2, w, 2), Color("9fd8ff", 0.8))
+	if root_t > 0 and frozen:
+		draw_rect(Rect2(-w / 2.0 - 2, -h - 2, w + 4, h + 4), Color("bfe8ff", 0.45))
+		draw_rect(Rect2(-w / 2.0 - 2, -h - 2, w + 4, h + 4), Color("e6f6ff", 0.9), false, 1.0)
+	elif root_t > 0:
 		var r := Rect2(-w / 2.0 - 2, -h - 2, w + 4, h + 4)
 		for k in range(0, int(r.size.x), 4):
 			draw_line(Vector2(r.position.x + k, r.position.y), Vector2(r.position.x + k + 6, r.end.y), Color("c9b28a"), 1.0)

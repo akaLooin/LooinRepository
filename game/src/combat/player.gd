@@ -50,6 +50,17 @@ var stack_max := 0
 var stack_pct := 0.0
 var base_crit := 0.0
 var shot_hold := 0
+## 원소 마법사
+const ELEM_COL := { "fire": Color("ff7a3c"), "ice": Color("9fd8ff"), "bolt": Color("ffe76a") }
+const ELEM_NAME := { "fire": "불", "ice": "얼음", "bolt": "번개" }
+var elements: Array = []
+var elem_i := 0
+var swap_t := 0
+var shield := 0.0
+var shield_max := 0.0
+var no_hit_t := 0
+var auto_shield_ready := false
+var cast_hold := 0
 ## 발동 횟수 기록 (자동 테스트 확인용)
 var used: Dictionary = {}
 
@@ -86,6 +97,10 @@ func setup(class_id: String, st: Dictionary) -> void:
 	if ranged:
 		stack_max = int(cls["ranged"]["stack_max"]) + int(_fx("stick"))
 		stack_pct = float(cls["ranged"]["stack_pct"]) + 0.02 * _fx("stick")
+	elements = cls.get("elements", [])
+	shield_max = max_hp * (float(cls.get("shield_base", 0.0)) + _fx("shield_pct"))
+	shield = shield_max
+	auto_shield_ready = _fx("auto_shield") > 0.0
 	combo = (cls["combo"] as Array).duplicate()
 	if _fx("rapid") > 0.0:
 		combo.append(combo[0])
@@ -94,6 +109,20 @@ func setup(class_id: String, st: Dictionary) -> void:
 	if cls.has("gold"):
 		gold_need = maxi(3, int(cls["gold"]["hits"]) + int(_fx("gold_hits")))
 		gold_mul = float(cls["gold"]["mul"]) + _fx("gold_mul_add")
+
+
+func elem() -> String:
+	return elements[elem_i] if not elements.is_empty() else ""
+
+
+## 지금 원소의 공격 배율 (원소 체인지 버프 + 원소 버프)
+func elem_mul() -> float:
+	var m := 1.0
+	if swap_t > 0:
+		m += _fx("swap_buff")
+	if _fx("elem_buff") > 0.0 and elem() == "fire":
+		m += 0.08
+	return m
 
 
 func _fx(k: String) -> float:
@@ -175,6 +204,18 @@ func _atk(id: String) -> Dictionary:
 	return DataDB.get_row("attacks", id)
 
 
+## 루미나 영창 단계 (0 = 아직)
+func cast_level() -> int:
+	if not cls.has("charge"):
+		return 0
+	var lv := 0
+	var spd := 1.0 + _fx("charge_spd")
+	for need in cls["charge"]["levels"]:
+		if cast_hold * spd >= float(need):
+			lv += 1
+	return lv
+
+
 ## 충전 중이면 지금 놓았을 때 나갈 필살기 단계(0 = 없음)
 func charge_level() -> int:
 	if not charge_mode or hold < CHARGE_START:
@@ -206,6 +247,31 @@ func think(f: Dictionary) -> void:
 		crit = base_crit + float(buff.get("crit_add", 0.0))
 	else:
 		crit = base_crit
+	if not elements.is_empty():
+		if f.get("element_p", false):
+			elem_i = (elem_i + 1) % elements.size()
+			swap_t = 180 if _fx("swap_buff") > 0.0 else 0
+			world.banner("원소: %s" % ELEM_NAME[elem()], ELEM_COL[elem()])
+			Sfx.play("portal", 0.0)
+			_count("swap")
+		if swap_t > 0:
+			swap_t -= 1
+		if _fx("mp_regen") > 0.0:
+			gain_mp(_fx("mp_regen") / 60.0)
+		no_hit_t += 1
+		if shield_max > 0.0 and no_hit_t > 300 and shield < shield_max:
+			shield = minf(shield_max, shield + shield_max / 120.0)
+		if cls.has("charge") and not charge_mode:
+			# 인내한 만큼 강한 마법: 누르고 있으면 마법진이 커지고, 떼면 그 단계의 원소 마법
+			if f["attack_h"]:
+				cast_hold += 1
+			else:
+				var lv := cast_level()
+				if lv > 0 and not dead and state in ["idle", "run", "atk", "air"]:
+					var cid: String = cls["charge"]["attacks"][lv - 1]
+					_count("cast%d" % lv)
+					start_attack(cid, _atk(cid))
+				cast_hold = 0
 	if ranged and not charge_mode:
 		# 차지 샷: 공격을 누르고 있다가 떼면 관통 화살
 		if f["attack_h"]:
@@ -331,7 +397,7 @@ func _ground(f: Dictionary) -> void:
 		combo_idx = 0
 		start_attack(combo[0], _atk(combo[0]))
 		return
-	vel.x = float(f["x"]) * float(move["run"])
+	vel.x = float(f["x"]) * float(move["run"]) * (1.1 if _fx("elem_buff") > 0.0 and elem() == "bolt" else 1.0)
 	if f["x"] != 0:
 		facing = f["x"]
 		if state != "run":
@@ -385,6 +451,17 @@ func _air(f: Dictionary) -> void:
 func _start_dash(f: Dictionary) -> void:
 	if f["x"] != 0:
 		facing = f["x"]
+	if move.has("blink"):
+		var dist := float(move["blink"]) * (1.4 if _fx("blink_up") > 0.0 else 1.0)
+		world.spawn_dust(position, 4)
+		position.x = clampf(position.x + facing * dist, w, float(world.width) - w)
+		invuln = maxi(invuln, 24 if _fx("blink_up") > 0.0 else 12)
+		world.spawn_dust(position, 4)
+		Sfx.play("portal", 0.1)
+		_count("blink")
+		set_state("dash")
+		vel = Vector2.ZERO
+		return
 	set_state("dash")
 	vel = Vector2(facing * float(move["dash"]) * (1.25 if _fx("dodge") > 0.0 else 1.0), 0.0)
 	world.spawn_dust(position, 3)
@@ -393,6 +470,8 @@ func _start_dash(f: Dictionary) -> void:
 
 func _dash(f: Dictionary) -> void:
 	vel.x = facing * float(move["dash"]) * (1.0 - float(t) / float(move["dash_frames"]) * 0.4)
+	if move.has("blink"):
+		vel.x = 0.0
 	if not on_ground:
 		vel.y = minf(vel.y, 0.6)   # 공중 대시는 잠깐 수평 유지
 	if atk_buffer > 0:
@@ -507,12 +586,89 @@ func _ranged_skill_effects(a: Dictionary, startup: int) -> void:
 			world.shake(4.0)
 
 
+## 원소 구체 하나. size 1~3
+func fire_orb(od: Dictionary, ang: float = 0.0, e: String = "") -> Projectile:
+	var r := deg_to_rad(ang)
+	var d := od.duplicate()
+	d["mul"] = float(od.get("mul", 1.0)) * attack_mul(cur_atk_id) * elem_mul()
+	if cur_atk_id == "atk_lc3":
+		d["mul"] = float(d["mul"]) * (1.0 + _fx("charge_pct"))
+	d["elem"] = e if e != "" else elem()
+	var pr: Projectile = world.spawn_projectile(self, position + Vector2(facing * 12, -12), Vector2(cos(r) * facing, sin(r)) * float(od.get("speed", 5.0)), d, "orb")
+	pr.orb_size = int(od.get("size", 1))
+	pr.size = Vector2(8, 8) * pr.orb_size
+	pr.pierce = bool(od.get("pierce", false))
+	pr.life = 110
+	return pr
+
+
+func _caster_shots(a: Dictionary, startup: int) -> void:
+	if not a.has("orb") or t != startup:
+		return
+	var od: Dictionary = a["orb"]
+	var multi := _fx("multi") > 0.0 and cur_atk_id in ["atk_lc2", "atk_lc3"]
+	for off in ([-14.0, 0.0, 14.0] if multi else [float(od.get("angle", 0.0))]):
+		fire_orb(od, off)
+	Sfx.play("skill", 0.15)
+
+
+func _caster_skill_effects(a: Dictionary, startup: int) -> void:
+	var act := int(a["active"])
+	var k := t - startup
+	var sm := attack_mul(cur_atk_id)
+	if cur_skill.has("split"):
+		var sd: Dictionary = cur_skill["split"]
+		if k >= 0 and k < int(sd["count"]) * int(sd["gap"]) and k % int(sd["gap"]) == 0:
+			fire_orb({ "speed": sd["speed"], "mul": sd["mul"], "size": 1, "hitstop": 3, "hitstun": 22, "kb": [1.6, 0.0], "launch": 0.0, "mp": 0.0 }, 0.0, sd["elem"])
+	if cur_skill.has("lance") and k == 0:
+		var ld: Dictionary = cur_skill["lance"]
+		var pr := fire_orb({ "speed": ld["speed"], "mul": ld["mul"], "size": 2, "pierce": true, "hitstop": 6, "hitstun": 30, "kb": [1.0, 0.0], "launch": 0.0, "mp": 0.0, "freeze": ld["freeze"] }, 0.0, "ice")
+		pr.kind = "lance"
+	if cur_skill.has("chain") and k == 0:
+		var cd: Dictionary = cur_skill["chain"]
+		world.chain_bolt(self, position + Vector2(0, -14), float(cd["range"]), int(cd["jumps"]) + int(_fx("chain_add")),
+			{ "mul": float(cd["mul"]) * sm * elem_mul(), "hitstop": 5, "hitstun": 28, "kb": [1.2, 0.0], "launch": 0.0, "mp": 0.0, "elem": "bolt" })
+	if cur_skill.has("bang"):
+		var bd: Dictionary = cur_skill["bang"]
+		if k == 0:
+			world.mark_enemies(self, int(bd["targets"]), float(bd["range"]))
+		if k == int(bd["delay"]):
+			world.detonate_marks(self, { "mul": float(bd["mul"]) * sm, "radius": float(bd["radius"]), "hitstop": 6, "hitstun": 30, "kb": [2.4, 0.0], "launch": float(bd["launch"]), "mp": 0.0, "elem": "fire" })
+	if cur_skill.has("ring") and k == 0:
+		var rd: Dictionary = cur_skill["ring"]
+		world.explode(self, position + Vector2(0, -4), { "mul": float(rd["mul"]) * sm, "radius": float(rd["radius"]), "hitstop": 6, "hitstun": 28, "kb": [2.0, 0.0], "launch": 0.0, "mp": 0.0, "elem": "ice", "freeze": rd["freeze"], "fx": "ice" })
+	if cur_skill.has("storm"):
+		var sd2: Dictionary = cur_skill["storm"]
+		if k >= 0 and k < act and k % int(sd2["interval"]) == 0:
+			var x := position.x + facing * float(sd2["offset"]) + randf_range(-float(sd2["width"]) / 2.0, float(sd2["width"]) / 2.0)
+			world.lightning_column(self, x, { "mul": float(sd2["mul"]) * sm, "hitstop": 3, "hitstun": 22, "kb": [0.6, 0.0], "launch": 0.0, "mp": 0.0, "elem": "bolt" })
+	if cur_skill.has("meteor") and k == 0:
+		var md: Dictionary = cur_skill["meteor"]
+		var target := Vector2(position.x + facing * float(md["offset"]), world.ground_below(position))
+		var pr: Projectile = world.spawn_projectile(self, target + Vector2(-facing * 120.0, -230.0), Vector2(facing * 4.0, 7.6),
+			{ "mul": float(md["mul"]) * sm, "radius": md["radius"], "hitstop": 12, "hitstun": 40, "kb": [3.0, 0.0], "launch": float(md["launch"]), "mp": 0.0, "elem": "fire", "fx": "fire" }, "meteor")
+		pr.life = 200
+	if cur_skill.has("glacier"):
+		if k == 0:
+			world.freeze_all(self, act + 10)
+		if k == act - 1:
+			world.shatter_all(self, { "mul": float(cur_skill["glacier"]["mul"]) * sm, "hitstop": 10, "hitstun": 36, "kb": [2.4, 0.0], "launch": 4.0, "mp": 0.0, "elem": "ice" })
+	if cur_skill.has("judgment") and k == 0:
+		for e in world.enemies.duplicate():
+			if not e.dead:
+				world.lightning_column(self, e.position.x, { "mul": float(cur_skill["judgment"]["mul"]) * sm, "hitstop": 10, "hitstun": 36, "kb": [2.0, 0.0], "launch": 3.6, "mp": 0.0, "elem": "bolt" }, true)
+		world.shake(7.0)
+
+
 func _skill_effects(a: Dictionary, startup: int) -> void:
 	_ranged_shots(a, startup)
+	_caster_shots(a, startup)
 	if cur_skill.is_empty() or cur_atk_id != cur_skill.get("attack", ""):
 		return
 	if ranged:
 		_ranged_skill_effects(a, startup)
+	if not elements.is_empty():
+		_caster_skill_effects(a, startup)
 	var act := int(a["active"])
 	if cur_skill.has("projectile") and t == startup:
 		var pd: Dictionary = (cur_skill["projectile"] as Dictionary).duplicate()
@@ -635,6 +791,22 @@ func take_hit(attacker: Fighter, a: Dictionary, res: Dictionary) -> void:
 		res["dmg"] = 0
 	if afterglow_t > 0 and _fx("afterglow") > 0.0:
 		res["dmg"] = int(res["dmg"] * (1.0 - minf(0.5, _fx("afterglow"))))
+	if not elements.is_empty() and int(res["dmg"]) > 0:
+		no_hit_t = 0
+		if _fx("elem_buff") > 0.0 and elem() == "ice":
+			res["dmg"] = int(res["dmg"] * 0.92)
+		if auto_shield_ready and hp - int(res["dmg"]) < max_hp * 0.3 and shield_max > 0.0:
+			auto_shield_ready = false
+			shield = shield_max
+			world.banner("위기의 결계!", Tk.MP)
+		if shield > 0.0:
+			var absorb := minf(shield, float(res["dmg"]))
+			shield -= absorb
+			res["dmg"] = int(float(res["dmg"]) - absorb)
+			if int(res["dmg"]) <= 0:
+				flash = 4
+				world.spawn_number(position + Vector2(0, -h - 4), "방패", Tk.MP)
+				return
 	if last_stand_ready and int(res["dmg"]) >= hp and hp > 1:
 		last_stand_ready = false
 		res["dmg"] = hp - 1
@@ -679,6 +851,16 @@ func _draw() -> void:
 		px(-6, -26, 12, 26, Tk.P_COAT)
 		px(-4, -32, 8, 7, Tk.P_SKIN)
 		px(-5, -33, 10, 3, Tk.P_HAIR)
+	if cls.has("charge") and cast_hold > 8:
+		var lv := cast_level()
+		var col: Color = ELEM_COL.get(elem(), Tk.MP)
+		var r0 := 8.0 + lv * 6.0 + sin(t * 0.3) * 1.0
+		draw_arc(Vector2(0, -2), r0, 0, TAU, 28, Color(col, 0.7), 1.5)
+		draw_arc(Vector2(0, -2), r0 * 0.6, 0, TAU, 20, Color(col, 0.4), 1.0)
+		for i in range(lv):
+			draw_rect(Rect2(-7 + i * 5, -40, 4, 3), col)
+	if shield > 1.0:
+		draw_arc(Vector2(0, -14), 17, 0, TAU, 28, Color(Tk.MP, 0.25 + 0.35 * shield / maxf(1.0, shield_max)), 1.0)
 	if ranged and shot_hold > 6:
 		var need := int(cls["ranged"]["charge_frames"])
 		var k2 := clampf(float(shot_hold) / need, 0.0, 1.0)

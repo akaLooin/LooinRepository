@@ -160,3 +160,59 @@ make("ps_trap_radius", lambda i: (i.circle(8, 8, 6, ORG), i.circle(8, 8, 3, Y), 
 make("ps_trap_count", lambda i: (i.line(1, 12, 7, 12, WD), i.line(9, 12, 15, 12, WD), i.px(4, 10, R), i.px(12, 10, R), i.line(2, 11, 6, 11, S), i.line(10, 11, 14, 11, S)))
 make("ps_shrapnel", lambda i: (i.circle(8, 8, 3, K, C("3a2a22")), [i.line(8 + 4 * math.cos(a), 8 + 4 * math.sin(a), 8 + 7 * math.cos(a), 8 + 7 * math.sin(a), ORG) for a in [k * math.pi / 3 for k in range(6)]]))
 print("glenn icons done")
+
+
+# ── 루미나 ──
+FIRE = C("ff7a3c"); FY = C("ffd23f"); ICE = C("9fd8ff"); IW = C("e6f6ff"); BOLT = C("ffe76a"); PUR = C("8a4fd0"); PR2 = C("c77dff")
+
+
+def flame(i, x, y, s=1.0):
+    for k in range(int(5 * s)):
+        i.line(x - k * 0.5, y - k, x + k * 0.5, y - k, FIRE if k < 3 * s else FY)
+    i.px(x, y - int(5 * s), FY)
+
+
+def bolt_shape(i, x, y, col=BOLT):
+    i.line(x + 2, y, x - 1, y + 5, col)
+    i.line(x - 1, y + 5, x + 2, y + 5, col)
+    i.line(x + 2, y + 5, x - 1, y + 11, col)
+
+
+def flake(i, x, y, r=4):
+    for a in range(0, 180, 60):
+        rr = math.radians(a)
+        i.line(x - math.cos(rr) * r, y - math.sin(rr) * r, x + math.cos(rr) * r, y + math.sin(rr) * r, ICE)
+    i.px(x, y, IW)
+
+
+make("sk_l_split", lambda i: [i.circle(3 + k * 3, 8, 1.5, FIRE, FY) for k in range(4)] + [i.line(0, 8, 2, 8, FY)])
+make("sk_l_frost", lambda i: (i.line(1, 13, 14, 2, IW), i.line(2, 13, 14, 3, ICE), i.px(14, 1, W), flake(i, 4, 4, 3)))
+make("sk_l_chain", lambda i: (bolt_shape(i, 3, 2), bolt_shape(i, 9, 3), i.circle(13, 13, 2, BOLT, Y)))
+make("sk_l_bang", lambda i: (i.circle(5, 10, 3, FIRE), i.circle(11, 10, 3, FIRE), i.circle(8, 5, 3, FIRE), i.px(8, 8, FY)))
+make("sk_l_ring", lambda i: (i.circle(8, 8, 6, ICE), flake(i, 8, 8, 3)))
+make("sk_l_storm", lambda i: (i.line(2, 3, 13, 3, K), i.line(1, 4, 14, 4, K), i.line(3, 2, 12, 2, S), bolt_shape(i, 5, 5), bolt_shape(i, 10, 5)))
+make("sk_l_meteor", lambda i: (i.circle(10, 10, 4, C("6b3a24"), C("a8624a")), i.line(0, 0, 7, 7, FIRE), i.line(1, 0, 8, 6, FY), i.line(0, 2, 6, 8, FIRE)))
+make("sk_l_glacier", lambda i: (i.line(2, 14, 14, 14, ICE), i.line(4, 14, 8, 2, IW), i.line(8, 2, 12, 14, IW), i.line(6, 9, 10, 9, ICE), flake(i, 3, 4, 2)))
+make("sk_l_judgment", lambda i: (bolt_shape(i, 7, 1), bolt_shape(i, 8, 2, Y), i.line(2, 14, 14, 14, BOLT), i.px(3, 12, BOLT), i.px(13, 12, BOLT)))
+make("ps_l_atk", lambda i: (i.line(3, 14, 11, 3, WOOD), i.circle(12, 3, 2, PR2, PUR)))
+make("ps_burn", lambda i: (flame(i, 8, 14, 1.8), flame(i, 4, 14, 1.0), flame(i, 12, 14, 1.0)))
+make("ps_freeze", lambda i: (flake(i, 8, 8, 6), i.circle(8, 8, 2, IW)))
+make("ps_chain", lambda i: (bolt_shape(i, 2, 2), bolt_shape(i, 7, 4), bolt_shape(i, 12, 2)))
+make("ps_swap", lambda i: (i.arc(8, 8, 6, 200, 340, FIRE), i.arc(8, 8, 6, 20, 160, ICE), i.arrow(13, 6, 14, 9, BOLT), i.arrow(3, 10, 2, 7, BOLT)))
+make("ps_elem_dur", lambda i: (i.circle(8, 8, 6, W), i.line(8, 8, 8, 4, INK), i.line(8, 8, 11, 8, INK), i.px(3, 3, FIRE), i.px(13, 3, ICE), i.px(8, 14, BOLT)))
+make("ps_l_crit", lambda i: (i.circle(8, 8, 6, PR2), i.circle(8, 8, 2, PR2, PUR), i.px(8, 8, Y)))
+make("ps_elem_buff", lambda i: (flame(i, 4, 13, 1.0), flake(i, 8, 5, 2), bolt_shape(i, 11, 4)))
+make("ps_charge_spd", lambda i: (i.circle(8, 8, 6, PR2), i.arc(8, 8, 4, 0, 270, Y), i.arrow(8, 8, 13, 3, W)))
+make("ps_regen", lambda i: (i.circle(8, 10, 5, B, BD), i.arrow(8, 6, 8, 1, GN2)))
+make("ps_l_mp", lambda i: (i.circle(8, 9, 5, B, BD), i.arc(8, 9, 7, 0, 300, PR2)))
+make("ps_charge3", lambda i: (i.circle(8, 8, 2, PR2, PUR), i.circle(8, 8, 4, PR2), i.circle(8, 8, 6, Y)))
+make("cb_charge_multi", lambda i: (i.circle(3, 8, 2, PR2, PUR), i.circle(11, 3, 2, FIRE, FY), i.circle(11, 8, 2, ICE, IW), i.circle(11, 13, 2, BOLT, Y)))
+make("ps_combo_elem", lambda i: (i.line(3, 14, 12, 3, WOOD), flame(i, 13, 6, 0.8), i.px(10, 8, ICE)))
+make("ps_l_hp", lambda i: (i.circle(8, 9, 5, R, R), i.px(8, 2, PR2), i.px(7, 3, PR2), i.px(9, 3, PR2)))
+make("ps_shield", lambda i: (i.circle(8, 8, 6, B), i.circle(8, 8, 5, C("4fb3ff", 120)), i.px(6, 5, W)))
+make("ps_l_def", lambda i: (i.line(4, 2, 12, 2, PUR), i.line(3, 3, 3, 13, PUR), i.line(13, 3, 13, 13, PUR), i.line(4, 14, 12, 14, PUR), i.line(5, 5, 11, 11, Y), i.line(11, 5, 5, 11, Y)))
+make("cb_blink2", lambda i: (i.circle(4, 8, 2, PR2), i.circle(12, 8, 2, PR2, PUR), i.arrow(6, 8, 10, 8, W), i.px(1, 5, PR2), i.px(1, 11, PR2)))
+make("ps_auto_shield", lambda i: (i.circle(8, 8, 6, B), i.line(8, 4, 8, 9, R), i.px(8, 11, R)))
+make("ps_l_counter", lambda i: (i.circle(8, 8, 6, PR2), i.arrow(4, 8, 13, 8, W), i.arrow(12, 11, 3, 11, B)))
+make("ps_l_last", lambda i: (i.circle(8, 8, 6, PUR, C("3a2a52")), i.line(8, 4, 8, 12, Y), i.line(5, 7, 11, 7, Y)))
+print("lumina icons done")

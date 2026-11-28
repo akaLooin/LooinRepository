@@ -12,11 +12,15 @@ const BUTTONS := [
 	["skill2", "2", 50, 100, 11],
 	["skill3", "3", 78, 106, 11],
 	["potion", "약", 128, 22, 11],
+	["element", "원소", 120, 58, 11],
 ]
 
 var mp := 0.0
 var potions := 0
 var learned: Array = [true, true, true]
+## 원소 버튼은 원소를 쓰는 인물일 때만. 현재 원소 색
+var show_element := false
+var element_col := Color("ff7a3c")
 var _pad_touch := -1
 var _pad_origin := Vector2.ZERO
 var _pad_pos := Vector2.ZERO
@@ -72,6 +76,8 @@ func _btn_center(b: Array) -> Vector2:
 
 func _hit_button(p: Vector2) -> String:
 	for b in BUTTONS:
+		if b[0] == "element" and not show_element and not edit_mode:
+			continue
 		if p.distance_to(_btn_center(b)) <= _btn_radius(b) + 6.0:
 			return b[0]
 	return ""
@@ -161,6 +167,13 @@ func _draw() -> void:
 		var c := _btn_center(b)
 		var r := _btn_radius(b)
 		var id: String = b[0]
+		if id == "element":
+			if not show_element and not edit_mode:
+				continue
+			draw_circle(c, r, Color(element_col, 0.75))
+			draw_arc(c, r, 0, TAU, 24, Color("fff1b8", 0.8), 1.0)
+			UiKit.text(self, c + Vector2(0, 4), "원소", Tk.TEXT, 10, true)
+			continue
 		var pressed := _btn_touch.values().has(id)
 		if id.begins_with("skill"):
 			var need := int(String(b[1]))

@@ -71,7 +71,7 @@ static func options(router: Node, args: Dictionary = {}) -> MenuScreen:
 	if args.get("msg", "") != "":
 		right.add_child(UiKit.label(args["msg"], Tk.EXP, 12, true))
 	right.add_child(UiParts.hsep(10))
-	right.add_child(UiKit.label("테일즈토피아 RPG 데모 v0.10", Tk.TEXT_DIM, 11))
+	right.add_child(UiKit.label("테일즈토피아 RPG 데모 v0.11", Tk.TEXT_DIM, 11))
 	right.add_child(UiKit.label("글꼴: 프리텐다드 · 갈무리 (SIL OFL)", Tk.TEXT_DIM, 11))
 	right.add_child(UiKit.label("엔진: Godot (MIT)", Tk.TEXT_DIM, 11))
 	return s

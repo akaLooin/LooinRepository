@@ -1162,5 +1162,568 @@
         }
       }
     }
+  },
+  "tree_lumina": {
+    "tabs": [
+      [
+        "mp",
+        "필살기"
+      ],
+      [
+        "elem",
+        "원소"
+      ],
+      [
+        "mana",
+        "마력"
+      ],
+      [
+        "ward",
+        "수호"
+      ]
+    ],
+    "tab_cols": {
+      "mp": [
+        "MP 1칸",
+        "MP 2칸",
+        "MP 3칸"
+      ],
+      "elem": [
+        "",
+        "",
+        ""
+      ],
+      "mana": [
+        "",
+        "",
+        ""
+      ],
+      "ward": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "nodes": {
+      "sk_l_split": {
+        "name": "파이어 스플릿",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "화염구 5개를 연속으로 앞으로 발사. 맞은 적은 불탄다."
+      },
+      "sk_l_frost": {
+        "name": "서리 창",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 5,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 2,
+        "desc": "꿰뚫는 얼음 창. 맞은 적을 1.5초 얼린다."
+      },
+      "sk_l_chain": {
+        "name": "연쇄 번개",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          0,
+          2
+        ],
+        "max": 5,
+        "req_lv": 4,
+        "pre": [],
+        "cost": 2,
+        "desc": "가장 가까운 적에게 번개, 4명까지 튄다."
+      },
+      "sk_l_bang": {
+        "name": "파이어 뱅",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 5,
+        "req_lv": 3,
+        "pre": [
+          "sk_l_split"
+        ],
+        "cost": 2,
+        "desc": "주변 적 5명에게 화염 마법진. 잠시 뒤 터지며, 마법진이 겹칠수록 더 큰 피해."
+      },
+      "sk_l_ring": {
+        "name": "눈보라 고리",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 5,
+        "req_lv": 6,
+        "pre": [
+          "sk_l_frost"
+        ],
+        "cost": 2,
+        "desc": "주변을 휩쓰는 냉기 고리. 맞은 적을 2초 얼린다."
+      },
+      "sk_l_storm": {
+        "name": "뇌운 지대",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          1,
+          2
+        ],
+        "max": 5,
+        "req_lv": 9,
+        "pre": [
+          "sk_l_chain"
+        ],
+        "cost": 2,
+        "desc": "앞쪽에 먹구름을 불러 낙뢰를 계속 떨어뜨린다."
+      },
+      "sk_l_meteor": {
+        "name": "메테오",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 5,
+        "req_lv": 5,
+        "pre": [
+          "sk_l_bang"
+        ],
+        "cost": 3,
+        "desc": "기를 모아 거대한 운석을 떨어뜨린다. (컷인)"
+      },
+      "sk_l_glacier": {
+        "name": "영겁의 빙하",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 5,
+        "req_lv": 11,
+        "pre": [
+          "sk_l_ring"
+        ],
+        "cost": 3,
+        "desc": "화면의 모든 적을 얼렸다가 한꺼번에 깨뜨린다. (컷인)"
+      },
+      "sk_l_judgment": {
+        "name": "천둥 심판",
+        "kind": "active",
+        "tab": "mp",
+        "pos": [
+          2,
+          2
+        ],
+        "max": 5,
+        "req_lv": 14,
+        "pre": [
+          "sk_l_storm"
+        ],
+        "cost": 3,
+        "desc": "화면의 모든 적에게 거대한 벼락. (컷인)"
+      },
+      "ps_l_atk": {
+        "name": "마력 증폭",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "공격력 +3%/레벨",
+        "effect": {
+          "atk_pct": 0.03
+        }
+      },
+      "ps_burn": {
+        "name": "타오르는 불꽃",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 3,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 1,
+        "desc": "화상 피해 +30%/레벨",
+        "effect": {
+          "burn_pct": 0.3
+        }
+      },
+      "ps_freeze": {
+        "name": "얼어붙는 손끝",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 3,
+        "req_lv": 3,
+        "pre": [],
+        "cost": 1,
+        "desc": "얼음 공격의 빙결 확률 +8%/레벨",
+        "effect": {
+          "freeze_add": 0.08
+        }
+      },
+      "ps_chain": {
+        "name": "갈라지는 번개",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 3,
+        "req_lv": 4,
+        "pre": [
+          "ps_l_atk"
+        ],
+        "cost": 1,
+        "desc": "번개가 튀는 횟수 +1/레벨",
+        "effect": {
+          "chain_add": 1
+        }
+      },
+      "ps_swap": {
+        "name": "원소 체인지",
+        "kind": "combo",
+        "tab": "elem",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 1,
+        "req_lv": 5,
+        "pre": [
+          "ps_burn"
+        ],
+        "cost": 2,
+        "desc": "원소를 바꾸면 3초간 그 원소 피해 +20%",
+        "effect": {
+          "swap_buff": 0.2
+        }
+      },
+      "ps_elem_dur": {
+        "name": "오래가는 원소",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 3,
+        "req_lv": 6,
+        "pre": [
+          "ps_freeze"
+        ],
+        "cost": 1,
+        "desc": "화상·둔화·빙결 시간 +20%/레벨",
+        "effect": {
+          "elem_dur": 0.2
+        }
+      },
+      "ps_l_crit": {
+        "name": "마력 집중",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          0,
+          2
+        ],
+        "max": 5,
+        "req_lv": 7,
+        "pre": [
+          "ps_chain"
+        ],
+        "cost": 1,
+        "desc": "치명타 확률 +2%/레벨",
+        "effect": {
+          "crit_add": 0.02
+        }
+      },
+      "ps_elem_buff": {
+        "name": "원소 버프",
+        "kind": "passive",
+        "tab": "elem",
+        "pos": [
+          1,
+          2
+        ],
+        "max": 1,
+        "req_lv": 10,
+        "pre": [
+          "ps_swap"
+        ],
+        "cost": 3,
+        "desc": "불: 공격 +8% · 얼음: 받는 피해 -8% · 번개: 이동 +10% (지금 원소에 따라)",
+        "effect": {
+          "elem_buff": 1
+        }
+      },
+      "ps_charge_spd": {
+        "name": "빠른 영창",
+        "kind": "passive",
+        "tab": "mana",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 3,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 1,
+        "desc": "차지 속도 +15%/레벨",
+        "effect": {
+          "charge_spd": 0.15
+        }
+      },
+      "ps_regen": {
+        "name": "마나 회복",
+        "kind": "passive",
+        "tab": "mana",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 5,
+        "req_lv": 3,
+        "pre": [],
+        "cost": 1,
+        "desc": "MP가 저절로 찬다 (레벨당 초당 +0.012칸)",
+        "effect": {
+          "mp_regen": 0.012
+        }
+      },
+      "ps_l_mp": {
+        "name": "마나 순환",
+        "kind": "passive",
+        "tab": "mana",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 5,
+        "req_lv": 4,
+        "pre": [],
+        "cost": 1,
+        "desc": "MP 획득량 +8%/레벨",
+        "effect": {
+          "mp_gain_pct": 0.08
+        }
+      },
+      "ps_charge3": {
+        "name": "인내의 대가",
+        "kind": "passive",
+        "tab": "mana",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 3,
+        "req_lv": 6,
+        "pre": [
+          "ps_charge_spd"
+        ],
+        "cost": 1,
+        "desc": "차지 3단 피해 +20%/레벨",
+        "effect": {
+          "charge_pct": 0.2
+        }
+      },
+      "cb_charge_multi": {
+        "name": "세 갈래 영창",
+        "kind": "combo",
+        "tab": "mana",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 1,
+        "req_lv": 8,
+        "pre": [
+          "ps_regen"
+        ],
+        "cost": 2,
+        "desc": "차지 2·3단이 세 갈래로 나간다",
+        "effect": {
+          "multi": 1
+        }
+      },
+      "ps_combo_elem": {
+        "name": "원소 실린 지팡이",
+        "kind": "passive",
+        "tab": "mana",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 3,
+        "req_lv": 5,
+        "pre": [
+          "ps_l_mp"
+        ],
+        "cost": 1,
+        "desc": "1~3타의 원소 효과 확률·위력 +15%/레벨",
+        "effect": {
+          "staff_elem": 0.15
+        }
+      },
+      "ps_l_hp": {
+        "name": "마도사의 체력",
+        "kind": "passive",
+        "tab": "ward",
+        "pos": [
+          0,
+          0
+        ],
+        "max": 5,
+        "req_lv": 1,
+        "pre": [],
+        "cost": 1,
+        "desc": "최대 HP +5%/레벨",
+        "effect": {
+          "hp_pct": 0.05
+        }
+      },
+      "ps_shield": {
+        "name": "마법 방패",
+        "kind": "passive",
+        "tab": "ward",
+        "pos": [
+          1,
+          0
+        ],
+        "max": 5,
+        "req_lv": 2,
+        "pre": [],
+        "cost": 1,
+        "desc": "마법 방패가 최대 HP의 6%/레벨 만큼 더 커진다 (기본 6%). 5초간 안 맞으면 다시 찬다",
+        "effect": {
+          "shield_pct": 0.06
+        }
+      },
+      "ps_l_def": {
+        "name": "룬 로브",
+        "kind": "passive",
+        "tab": "ward",
+        "pos": [
+          2,
+          0
+        ],
+        "max": 5,
+        "req_lv": 3,
+        "pre": [],
+        "cost": 1,
+        "desc": "방어력 +8%/레벨",
+        "effect": {
+          "def_pct": 0.08
+        }
+      },
+      "cb_blink2": {
+        "name": "이중 도약",
+        "kind": "combo",
+        "tab": "ward",
+        "pos": [
+          0,
+          1
+        ],
+        "max": 1,
+        "req_lv": 5,
+        "pre": [
+          "ps_l_hp"
+        ],
+        "cost": 2,
+        "desc": "순간이동 거리가 늘고 무적 시간이 길어진다",
+        "effect": {
+          "blink_up": 1
+        }
+      },
+      "ps_auto_shield": {
+        "name": "위기의 결계",
+        "kind": "passive",
+        "tab": "ward",
+        "pos": [
+          1,
+          1
+        ],
+        "max": 1,
+        "req_lv": 8,
+        "pre": [
+          "ps_shield"
+        ],
+        "cost": 2,
+        "desc": "HP 30% 아래로 떨어지면 던전마다 한 번 방패가 가득 찬다",
+        "effect": {
+          "auto_shield": 1
+        }
+      },
+      "ps_l_counter": {
+        "name": "반발 마법",
+        "kind": "passive",
+        "tab": "ward",
+        "pos": [
+          2,
+          1
+        ],
+        "max": 1,
+        "req_lv": 7,
+        "pre": [
+          "ps_l_def"
+        ],
+        "cost": 2,
+        "desc": "반격에 드는 MP가 절반",
+        "effect": {
+          "counter_cost": 1
+        }
+      },
+      "ps_l_last": {
+        "name": "마지막 주문",
+        "kind": "passive",
+        "tab": "ward",
+        "pos": [
+          1,
+          2
+        ],
+        "max": 1,
+        "req_lv": 12,
+        "pre": [
+          "ps_auto_shield"
+        ],
+        "cost": 3,
+        "desc": "던전마다 한 번, 쓰러질 공격을 HP 1로 버틴다",
+        "effect": {
+          "last_stand": 1
+        }
+      }
+    }
   }
 }

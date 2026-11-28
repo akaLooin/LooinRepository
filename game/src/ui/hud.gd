@@ -121,6 +121,14 @@ func _draw() -> void:
 		draw_rect(Rect2(39, 35, 60 * gk, 2), Tk.GOLD if gk >= 1.0 else Tk.GOLD.darkened(0.35))
 		if gk >= 1.0 and (run.ticks / 10) % 2 == 0:
 			_text(Vector2(104, 40), "금빛!", Tk.GOLD, 11)
+	if not p.elements.is_empty():
+		var ec: Color = p.ELEM_COL[p.elem()]
+		draw_rect(Rect2(38, 34, 40, 11), Tk.INK)
+		draw_rect(Rect2(39, 35, 38, 9), Color(ec, 0.85))
+		_text(Vector2(58, 43), p.ELEM_NAME[p.elem()], Tk.INK, 10, true, false)
+		if p.shield_max > 0.0:
+			draw_rect(Rect2(82, 37, 40, 4), Tk.INK)
+			draw_rect(Rect2(83, 38, 38 * p.shield / p.shield_max, 2), Tk.MP)
 	if p.buff_t > 0:
 		_text(Vector2(38, 52), "맹세 %d초" % int(ceil(p.buff_t / 60.0)), Tk.GOLD, 11)
 	if p.charge_mode and p.charge_level() > 0:

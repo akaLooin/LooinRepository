@@ -14,6 +14,7 @@ var remove_me := false
 var gravity := 0.0
 var delay := 0          # 0보다 크면 그동안 멈춰서 예고만 (판정 없음)
 var pierce := false
+var orb_size := 1
 var hit_ids: Dictionary = {}
 var homing := 0.0       # 플레이어 쪽으로 꺾는 정도
 var ground_y := 238.0
@@ -37,6 +38,11 @@ func tick() -> void:
 		var want: Vector2 = (world.player.position + Vector2(0, -12) - position).normalized() * vel.length()
 		vel = vel.lerp(want, homing)
 	position += vel
+	if kind == "meteor" and position.y >= world.ground_below(position) - 1.0:
+		remove_me = true
+		world.explode(owner_f, position, data)
+		world.shake(8.0)
+		return
 	if kind == "grenade" and position.y >= world.ground_below(position) - 1.0:
 		remove_me = true
 		world.explode(owner_f, position, data)
@@ -79,6 +85,25 @@ func _draw() -> void:
 		draw_line(Vector2.ZERO, d * 3.0, Color("dfe6ee"), 2.0)
 		draw_line(-d * ln, -d * (ln - 3.0) + Vector2(-d.y, d.x) * 2.0, Tk.GOLD, 1.0)
 		draw_line(-d * ln, -d * (ln - 3.0) - Vector2(-d.y, d.x) * 2.0, Tk.GOLD, 1.0)
+		return
+	if kind in ["orb", "lance", "meteor"]:
+		var col: Color = { "fire": Color("ff7a3c"), "ice": Color("9fd8ff"), "bolt": Color("ffe76a") }.get(data.get("elem", "fire"), Color("c77dff"))
+		if kind == "meteor":
+			draw_circle(Vector2(0, -12), 13, Color(col, 0.35))
+			draw_circle(Vector2(0, -12), 10, Color("6b3a24"))
+			draw_circle(Vector2(-3, -15), 4, Color("a8624a"))
+			draw_line(Vector2(0, -12), Vector2(-vel.x, -vel.y).normalized() * 30.0 + Vector2(0, -12), Color(col, 0.6), 6.0)
+			return
+		if kind == "lance":
+			var d := vel.normalized()
+			draw_line(-d * 12.0 + Vector2(0, -8), d * 6.0 + Vector2(0, -8), Color("e6f6ff"), 3.0)
+			draw_line(-d * 12.0 + Vector2(0, -8), d * 6.0 + Vector2(0, -8), col, 1.0)
+			return
+		var r := 2.5 + orb_size * 2.5
+		var c := Vector2(0, -orb_size * 4.0)
+		draw_circle(c, r + 2.0 + sin(life * 0.5), Color(col, 0.3))
+		draw_circle(c, r, col)
+		draw_circle(c - Vector2(r * 0.3, r * 0.3), r * 0.4, Color(1, 1, 1, 0.7))
 		return
 	if kind == "grenade":
 		draw_circle(Vector2.ZERO, 4, Color("3a2a22"))

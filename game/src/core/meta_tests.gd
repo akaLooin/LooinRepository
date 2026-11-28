@@ -129,6 +129,13 @@ static func run() -> int:
 	ck.call(Meta.tree("cls_glenn").size() == 31, "Glenn tree has 31 nodes")
 	GameState.char_data("cls_glenn")["lv"] = 4
 	ck.call(Meta.learn("cls_glenn", "ps_bash") == "" and GameState.stats("cls_glenn")["fx"].get("bash", 0.0) > 0.0, "bash passive reaches stats")
+	# 루미나: 지팡이 시작, 원소 3종, 트리 30
+	GameState.data = GameState.new_save()
+	var ld := GameState.char_data("cls_lumina")
+	ck.call(Meta.find(ld["equip"]["weapon"])["item"] == "eq_staff_01", "Lumina starts with a staff")
+	ck.call(Meta.equip("cls_lumina", Meta.add_item("eq_bow_01")) != "", "Lumina cannot equip a bow")
+	ck.call(DataDB.get_row("classes", "cls_lumina")["elements"].size() == 3, "Lumina has three elements")
+	ck.call(Meta.tree("cls_lumina").size() == 30, "Lumina tree has 30 nodes")
 	# 다운 공격: 쓰러진 몬스터는 맞고, 쓰러진 플레이어는 무적
 	var fake_world := Node.new()
 	fake_world.set_script(null)

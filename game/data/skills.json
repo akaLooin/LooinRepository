@@ -250,5 +250,133 @@
     "invuln": 100,
     "cutin": true,
     "hunt": true
+  },
+  "sk_l_split": {
+    "name": "파이어 스플릿",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_l_split",
+    "invuln": 30,
+    "cutin": false,
+    "split": {
+      "count": 5,
+      "gap": 6,
+      "mul": 0.9,
+      "speed": 5.5,
+      "elem": "fire"
+    }
+  },
+  "sk_l_frost": {
+    "name": "서리 창",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_l_frost",
+    "invuln": 20,
+    "cutin": false,
+    "lance": {
+      "mul": 2.2,
+      "speed": 7.0,
+      "elem": "ice",
+      "freeze": 90
+    }
+  },
+  "sk_l_chain": {
+    "name": "연쇄 번개",
+    "tier": 1,
+    "mp_cost": 1,
+    "attack": "atk_l_chain",
+    "invuln": 20,
+    "cutin": false,
+    "chain": {
+      "mul": 1.8,
+      "jumps": 4,
+      "range": 180,
+      "elem": "bolt"
+    }
+  },
+  "sk_l_bang": {
+    "name": "파이어 뱅",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_l_bang",
+    "invuln": 40,
+    "cutin": false,
+    "bang": {
+      "targets": 5,
+      "range": 150,
+      "radius": 34,
+      "mul": 2.0,
+      "delay": 40,
+      "elem": "fire",
+      "launch": 3.6
+    }
+  },
+  "sk_l_ring": {
+    "name": "눈보라 고리",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_l_ring",
+    "invuln": 30,
+    "cutin": false,
+    "ring": {
+      "radius": 72,
+      "mul": 2.4,
+      "freeze": 120,
+      "elem": "ice"
+    }
+  },
+  "sk_l_storm": {
+    "name": "뇌운 지대",
+    "tier": 2,
+    "mp_cost": 2,
+    "attack": "atk_l_storm",
+    "invuln": 30,
+    "cutin": false,
+    "storm": {
+      "offset": 90,
+      "width": 130,
+      "interval": 8,
+      "mul": 0.9,
+      "elem": "bolt"
+    }
+  },
+  "sk_l_meteor": {
+    "name": "메테오",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_l_meteor",
+    "invuln": 90,
+    "cutin": true,
+    "meteor": {
+      "offset": 110,
+      "radius": 80,
+      "mul": 7.0,
+      "elem": "fire",
+      "launch": 5.0
+    }
+  },
+  "sk_l_glacier": {
+    "name": "영겁의 빙하",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_l_glacier",
+    "invuln": 100,
+    "cutin": true,
+    "glacier": {
+      "mul": 5.0,
+      "elem": "ice"
+    }
+  },
+  "sk_l_judgment": {
+    "name": "천둥 심판",
+    "tier": 3,
+    "mp_cost": 3,
+    "attack": "atk_l_judgment",
+    "invuln": 80,
+    "cutin": true,
+    "judgment": {
+      "mul": 5.6,
+      "elem": "bolt"
+    }
   }
 }
